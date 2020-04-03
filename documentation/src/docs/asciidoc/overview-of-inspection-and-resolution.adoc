@@ -1,0 +1,100 @@
+
+=== Overview of inspection and resolution
+
+Step 1: Observation::  Ensure that all types are known.
+This falls into two parts: the types that are available implicitly (all types in `java.lang`, primitives, all types in the same package of the source file to be parsed) and those that are referred to explicitly in `import` statements.
+For each type, exactly one `TypeInfo` object will be stored in the `TypeStore` object present in every `TypeContext`.
+All types that are referred to will have to be inspected at some point, so that we know their visible methods and fields.
++
+Observation is done either through source code parsing (types are created while processing import statements, for example), or by going over source and class path entries provided as input.
+
+Step 2: Inspection:: Inspection is the second phase of the parser.
+A detailed picture of all methods, fields and sub-types of the type is built.
+Field initialisers and methods bodies are, in general, not yet parsed, because there is a need to know the details of all types, methods and fields to solve overloading, lambda expressions, etc.
++
+Inspection is done either through source code parsing (using the JavaParser) or byte code parsing (using ASM).
+Once a type has been inspected, `TypeInfo.typeInspection` will be set to the `TypeInspection` object.
++
+Note that annotation expressions are
+
+
+Step 3: Statement and expression parsing:: When all types, methods and fields are known, statements and expressions can be parsed.
+Once parsed, `MethodInspection.methodBody` will switch from a JavaParser's abstract syntax tree object to one of our statement objects; `FieldInspection.initializer` will switch from a JavaParser abstract syntax tree object to one of our expression objects.
+
+Step 4: Analysis:: finally, with all code available, the static code analysis phase can start.
+Analysis will fill the objects in `TypeInfo.typeAnalysis`, `MethodInfo.methodAnalysis` etc.
+
+==== Method calls
+
+===== In ExpressionContext
+
+Terminology:
+
+[source]
+----
+returnType scope.method(param1, param2)
+----
+
+The normal procedure is:
+
+. parse the scope, and determine the type of object.
+If there is no scope, the type is `this` unless we're already in a static method, then it is the class
+. parse the parameters
+. given type object, name, and parameter types, we can determine exactly which method gets called
+. we return a `MethodCall` object
+
+Method overloading is the reason we first parse the parameters to infer their types.
+
+In the light of generics, it is important to note that we do not only return a method in step 3, but a method with a translation map.
+This map is used to go from the type parameter at declaration to the type parameter from the current context.
+
+For example, if `List<String> list = new LinkedList<String>()`, then `list.add("abc")` will produce an object representing the `list` method, and a map that maps the type parameter `E` to `String`.
+
+In the first instance, this map is produced solely by examining the parameterized type represented by the scope (`list` in the example).
+We are tacitly assuming that the parameters are compatible.
+
+Now, when functional interfaces are involved (but there can be other situations as well!!), we can have the situation where the scope is `Stream<Integer>`, and the method `Stream<R> map(Function<T, R> f)` can be used to go to a `Stream<String>` by applying `map(i -> i.toHexString())` in some form.
+In this context, we must *first* determine the method, so we know the declaration type of the first parameter, before we parse the parameter: by looking at the method and the scope, we know that the concrete type for `T`
+is `Integer` so that we can find the `toHexString()` method.
+By parsing the lambda, we also know that the concrete return type of the expression `R` is `String`.
+This is important for analysing the rest of the method chain.
+
+Consider the more complicated example, with `todo` a `Map<T, Set<T>>`:
+
+[source]
+----
+toDo.entrySet().stream().min(
+    Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow()
+----
+
+The mechanisms above help deduce that after `stream()` the scope type is `Stream<Map.Entry<T, Set<T>>>`.
+The method `min` takes any `ToIntFunction<U>`; we delay evaluating the parameter of `min` until after we've found the method.
+Now the static method `comparingInt` takes a method type parameter `U` which is linked to the `ToIntFunction<U>` parameter.
+The expression inside `comparingInt` can only be evaluated properly if we know that `e` (of abstract type `U`) is actually a `Map.Entry<T, Set<T>>`.
+
+===== Exactly when to delay the evaluation of a parameter
+
+Firstly, note that this is only necessary when the return type of the method is linked to some of the parameter types of the method, as in
+
+[source]
+----
+<R> Stream<R> map(Function<? super T, ? super R> mapper);
+----
+
+When the return type is linked to the scope (`E get()` in `List<E>`) there is no such need.
+Evaluating the parameter of the example will (or should) produce the concrete result type.
+
+Irritatingly, we need to find the correct method before we can make that decision :-)
+
+So one procedure is to find out which parameters need evaluating to be able to make a decision in case of method overloading.
+These will then be evaluated first, so we can determine exactly which method we're talking about.
+All other parameters are evaluated afterwards, safely in the knowledge that we know their formal type and potentially some of their type parameters.
+
+===== What to pass on to the parameter's expression evaluation
+
+In the case that the parameter is a functional interface, we pass on its single abstract method; e.g., in the case of `Function<T, R>` we pass on `R apply(T)` which will tell us that the type `T` is responsible for the input of the lambda, and `R` for the result.
+
+Are we able to make a decision at all when the parameter's formal type is NOT a functional interface?
+In the
+`min` example, the parameter is a normal (static) method which takes a functional interface as a parameter.
+The type parameters are passed on...

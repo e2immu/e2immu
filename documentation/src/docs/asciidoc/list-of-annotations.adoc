@@ -1,0 +1,845 @@
+
+== Overview of annotations
+
+Annotations on interfaces and their components are _specified_ by hand; bar some exceptions, annotations on classes
+and their components are _computed_ by the code analyser, and, if present in the source code, _verified_.
+Please refer to the section on <<Annotating your own code>> for a more in-depth discussion.
+
+=== On classes
+
+Different types of classes are recognized:
+
+-  `@Container` stores objects, but does not change the content passed to them
+-  `@E2Final` effectively final or eventually final fields
+-  `@E2Immutable` effectively final fields combined with effectively or eventually immutable content
+-  `@UtilityClass` when all fields and methods are essentially static, and no instances can be created
+-  `@ExtensionClass` a special form of utility class or effectively immutable class
+    where all public methods with parameters have the first parameter null not allowed and of the same type
+
+Of these, `@E2Immutable`, `@E2Final` and `@Container` can be used on interfaces.
+When annotated on classes rather than interfaces, they possess a parameter that allows them to be
+specified rather than computed and verified.
+
+Other annotations on classes are short-hands to reduce clutter:
+
+-  `@NotNull` all fields, and methods that return values, will receive this annotation
+-  `@NullNotAllowed` all parameters of methods for which the annotation makes sense, will receive it
+
+=== On parameters
+
+The project only recognizes the following annotations on parameters:
+
+-  `@NullNotAllowed` passing a null to this parameter is guaranteed to throw an exception
+-  `@NotModified` the parameter's content is not modified in this method
+-  `@Output` explicitly mark the parameter as an output parameter, where one can
+    only do assignments to sub-fields, or call modification methods
+
+All parameters are forced to be `final` by the code analyser: no need to write it, but the code analyser will throw errors
+for assignments on parameters.
+
+=== On fields
+
+Annotations on fields
+
+-  `@Final` the value is not assigned to outside constructors; effectively final
+-  `@Constant` the value is effectively final, and a computable constant (no need to write `@Final`)
+-  `@NotNull` the value is never null; all assignments are guaranteed not to allow null
+-  `@NotModified` the field's content is not modified in any method
+
+The following annotation is for debugging purposes only:
+
+-  `@Linked` changes to the content of the field are linked to changes on another field, or to changes on 
+    the object passed as a parameter of a constructor or method
+
+=== On methods
+
+Annotations on methods
+
+-  `@NotNull`  the method cannot return null
+-  `@Identity` a method that returns its first parameter
+-  `@Fluent` a method that returns `this`
+-  `@NotModified` does not assign to fields, does not modify the content of fields or parameters
+-  `@Independent` When added to a method, the returned object is not linked to any of the parameters or
+    fields of the class. When added to a constructor, the annotation implies that the resulting
+    instance is not linked to the parameters of the constructor. Helper for `@NotModified`.
+-  `@Mark` as part of definition of eventual finality or immutability
+-  `@Only` marks if a method can be called in the context of eventually final or immutable classes
+
+The following annotation is for debugging purposes only:
+
+-  `@Linked` content changes to the return object of this method are linked to changes on a field
+    in the class or parameter of one of the methods or constructors. Opposite of `@Independent`; helper for `@NotModified`.
+
+[#constant-annotation]
+=== `@Constant`
+
+Is used when the value is effectively final, and the value is a constant computable by the analyser.
+Used for debugging the evaluation system of the context analyser.
+
+[#container-annotation]
+=== `@Container`
+
+A `@Container` annotation is a promise that only your own fields are being modified; 
+the methods do not touch the content of the input objects.
+
+Formally,
+a class becomes a container when the parameters of all non-private methods and constructors can be marked <<notmodified-annotation>>,
+or are of a type that is not content-modifiable (<<e2immutable-annotation>>, unbound type parameter, primitive).
+
+Containers are often used to build effectively immutable classes; a typical example is
+`java.lang.StringBuilder`, where the <<fluent-annotation>> `append()` methods can be chained until the building `toString` method is called:
+
+.IfElseStatement.java
+[source]
+----
+public class IfElseStatement extends StatementWithExpression {
+    ...
+
+    @Override
+    public String statementString(int indent) {
+        StringBuilder sb = new StringBuilder();
+        StringUtil.indent(sb, indent);
+        sb.append("if (")
+          .append(expression.expressionString(indent))
+          .append(")")
+          .append(ifBlock.statementString(indent));
+        if (elseBlock != Block.EMPTY_BLOCK) {
+            sb.append(" else")
+              .append(elseBlock.statementString(indent));
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
+}
+----
+
+Here's another example of a container used as a builder:
+
+.ParameterInspection.java
+[source]
+----
+@E2Immutable
+public class ParameterInspection {
+
+    public final List<String> parameterNames; // <1>
+    public final boolean varArgs;
+
+    private ParameterInspection(List<String> parameterNames, boolean varArgs) {
+        this.parameterNames = parameterNames;
+        this.varArgs = varArgs;
+    }
+
+    @Container
+    public static class ParameterInspectionBuilder {
+        private final List<String> parameterNames = new ArrayList<>();
+        private boolean varArgs;
+
+        @Fluent
+        public ParameterInspectionBuilder setVarArgs(boolean varArgs) {
+            this.varArgs = varArgs;
+            return this;
+        }
+
+        @Fluent
+        public ParameterInspectionBuilder addParameterName(@NullNotAllowed String name) {
+            parameterNames.add(name);
+            return this;
+        }
+
+        @NotModified // <2>
+        @NotNull
+        public ParameterInspection build() {
+            return new ParameterInspection(ImmutableList.copyOf(parameterNames), varArgs);
+        }
+    }
+}
+----
+<1> because the constructor is private, and only called in the `build` method
+with an `ImmutableList.copyOf` method, we can be sure that `parameterNames` is effectively immutable
+<2> in a container, <<notmodified-annotation>> on methods is not implied!
+
+Many generic data structures, such as the collection classes like `java.util.List`, are also containers.
+Generic data structures implemented with unbound type parameters are very likely to be containers, because they have
+no means of modifying the objects they are storing.
+
+NOTE: Note that to be able to mark the JDK collection classes as containers, we have to deal with the method
+`T[] toArray(T[] other)`, which is the only one violating the container contract. For this purpose exactly we have
+created the <<output-annotation>> parameter annotation, which marks a parameter whose content is not read,
+but is only written to.
+
+[#e2final-annotation]
+=== `@E2Final`
+
+An effectively final class focuses on a different aspect of immutability than a container does: it is a class
+where fields can be assigned only at construction time. Formally: a class is effectively final when all its
+fields are marked <<final-annotation>>. The word 'effectively' indicates that the explicit `final` marker need
+not be present on a field. We also did not want to use the term 'final class' since that
+already has an explicit meaning as a class that cannot be subclassed.
+
+There is no restriction on calling modification methods on the fields: effectively final classes need not be containers.
+Note that classes whose fields are containers received at construction time,
+are rarely containers themselves, because they may need to call the modification methods of these fields.
+
+A simple example of an effectively final class is `Pair`, which is a <<container-annotation>> at the same time:
+[source]
+----
+@E2Final
+@Container
+public class Pair<K, V> {
+    public final K k;
+    public final V v;
+
+    public Pair(K k, V v) {
+        this.k = k;
+        this.v = v;
+    }
+
+    public K getK() {
+        return k;
+    }
+
+    public V getV() {
+        return v;
+    }
+}
+----
+
+An important property of an effectively final class is that if all its fields are of effectively immutable types,
+then the class becomes effectively immutable itself.
+
+The importance of effectively final classes lies in the fact that because of _dependency injection_, many classes
+come close to being effectively final, but only after certain initialisation methods have been called.
+
+Sometimes dependency injection is executed via the constructor, sometimes dedicated methods,
+like setters or `init` methods, are used. Because control over the the dependency
+injects rests with the framework, the code analyser can help treat these dedicated methods as _framework only_,
+and block the user from assigning to fields that are technically assignable.
+
+Our system for annotating  _eventually final_ classes will be helped by two other annotations, <<mark-annotation>>
+and <<only-annotation>>, which respectively take care of marking the methods that do the assignments, and which mark
+in which phase (before, or after) a method can be executed.
+On top of that, we extend the `@E2Final` annotation to mark _eventually final_ classes with the following two parameters:
+
+`after`:: followed by a boolean expression of marks. You can use the `&&` and `||` symbols, and brackets to form expressions.
+
+`computed`:: a boolean variable, with a default value of `true` in user code and a default value of `false` in library annotations.
+When `false`, it indicates that this annotation, and all <<mark-annotation>> and <<only-annotation>> annotations on
+the methods of the type, have been set by hand, and that the code analyser does not need to verify them.
+When absent or explicitly set to `true`, the code analyser will try to ensure the correctness of these annotations.
+
+The Guice framework for dependency injection heavily stresses the use for injection via constructors. But when that
+is impossible, it allows for the `@Inject` annotation on
+
+.PayPalCreditCardProcessor example taken from https://github.com/google/guice/wiki/Injections
+[source]
+----
+public class PayPalCreditCardProcessor implements CreditCardProcessor {
+
+    private static final String DEFAULT_API_KEY = "development-use-only";
+
+    private String apiKey = DEFAULT_API_KEY;
+
+    @Inject
+    public void setApiKey(@Named("PayPal API key") String apiKey) {
+        this.apiKey = apiKey;
+    }
+    ...
+}
+----
+The code analyser recognizes the `@Inject` annotation, and adds the following annotations:
+
+.PayPalCreditCardProcessor example, annotated by code analyser
+[source]
+----
+@E2Final(after = "setApiKey")
+public class PayPalCreditCardProcessor implements CreditCardProcessor {
+
+    private static final String DEFAULT_API_KEY = "development-use-only";
+
+    private String apiKey = DEFAULT_API_KEY;
+
+    @Only(framework = true)
+    @Mark("setApiKey")
+    @Inject
+    public void setApiKey(@Named("PayPal API key") String apiKey) {
+        this.apiKey = apiKey;
+    }
+    ...
+}
+----
+
+Now let us look at an example from the <<dagger-dependency-injection>> framework. In this example,
+taken from https://dagger.dev/users-guide, the dependency injection occurs _without_ explicit setter methods
+
+[#coffeemaker-example]
+.CoffeeMaker example from the Dagger framework
+[source]
+----
+class CoffeeMaker {
+  @Inject Heater heater;
+  @Inject Pump pump;
+
+  ...
+}
+----
+
+The code analyser, which again recognizes the `@Inject` annotation, will add:
+
+[source]
+.CoffeeMaker example annotated by code analyser
+----
+@E2Final(after="heater && pump")
+class CoffeeMaker {
+  @Only(framework = true) @Mark("heater") @Inject Heater heater;
+  @Only(framework = true) @Mark("pump")   @Inject Pump pump;
+
+  ...
+}
+----
+No need to add these annotations by hand! You may do so, of course, to make the situation explicit to the reader of the code.
+
+[#e2immutable-annotation]
+=== `@E2Immutable`
+
+Indicates that a class is immutable at the level of field assignments and at the level of content assignment
+of those fields. The definition builds on that of <<e2final-annotation>>, with additional restrictions to guarantee that
+no content modifications take place inside and outside of the class:
+
+.  all fields are effectively final
+.  all fields can be annotated <<notmodified-annotation>> (explicitly, or by implication, because they are primitive or effectively immutable themselves):
+no method of the class calls modification methods on these fields
+.  to guarantee that no content modification takes place outside the class via parameters, we require that
+that fields of types that are not effectively immutable, cannot be <<linked-annotation>> to parameters of non-private methods or constructors.
+.  to guarantee that no content modification takes place outside the class via direct exposure, we restrict
+fields of types that are not effectively immutable to have the `private` modifier
+.  to guarantee that no content modification takes place outside the class via return statements and consumers,
+we require that objects returned are either effectively immutable, not <<linked-annotation>> to the fields, or
+restricted to interfaces with methods marked <<notmodified-annotation>> only.
+
+Note that all primitives and associated types, as well as `java.lang.String`, are effectively immutable.
+
+Rephrasing:
+
+-  rule 1 fights assignments
+-  rule 2 ensures that the field's contents cannot be changed after assignment inside the class
+-  rule 3 and 5 ensures that the field's content cannot be changed from the outside because the object cannot be the same as one that exists outside
+-  rule 4 prevents the fields' content from being modified once they've been exposed.
+-  rule 5 ensures that if you return
+
+Note that while many methods in an effectively immutable class can have the <<notmodified-annotation>> annotation,
+this is not a requirement per se. While many effectively immutable classes will be containers, they need not be.
+
+An eventually immutable class is an effectively final class which gains all properties of an effectively immutable class
+after some of its methods, marked with <<mark-annotation>>, have been called.
+
+See <<e2final-annotation>> for a discussion of the parameters of the annotation, which are identical.
+
+Let's discuss a slightly larger example, which starts with an abstract class called `Freezable`:
+
+.Freezable.java
+[source]
+----
+public abstract class Freezable {
+
+    private volatile boolean frozen;
+
+    @Mark("freeze")
+    @Only(before = "freeze")
+    public void freeze() {
+        ensureNotFrozen();
+        frozen = true;
+    }
+
+    public boolean isFrozen() {
+        return frozen;
+    }
+
+    @Only(before = "freeze")
+    protected void ensureNotFrozen() {
+        if (frozen) throw new UnsupportedOperationException("Already frozen!");
+    }
+
+    @Only(after = "freeze")
+    protected void ensureFrozen() {
+        if (!frozen) throw new UnsupportedOperationException("Not yet frozen!");
+    }
+}
+----
+The annotations in this class are set by hand.
+
+Classes deriving from `Freezable` can re-use the one-time transition from a _not frozen_ to a _frozen_ state.
+Here we show a freezable map with slightly different semantics than the normal `java.util.Map`: once a value
+has been set for a key, it cannot be changed anymore.
+
+.SetOnceMap.java
+[source]
+----
+@E2Immutable(after = "freeze")
+@NullNotAllowed
+public class SetOnceMap<K, V> extends Freezable {
+
+    private final Map<K, V> map = new HashMap<>();
+
+    @Only(before = "freeze")
+    public void put(K k, V v) {
+        Objects.requireNonNull(k);
+        Objects.requireNonNull(v);
+        ensureNotFrozen();
+        if (isSet(k)) throw new UnsupportedOperationException("Already decided on " + k);
+        map.put(k, v);
+        freeze();
+    }
+
+    // null means that the value was decided to be not set
+    @NotNull
+    @Only(after = "freeze")
+    public V get(K k) {
+        ensureFrozen();
+        if (!isSet(k)) throw new UnsupportedOperationException("Not yet decided on " + k);
+        return Objects.requireNonNull(map.get(k));
+    }
+
+    public V getOtherwiseNull(K k) {
+        Objects.requireNonNull(k);
+        return map.get(k);
+    }
+
+    public boolean isSet(K k) {
+        Objects.requireNonNull(k);
+        return map.containsKey(k);
+    }
+
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    public void visit(BiConsumer<K, V> consumer) { // <1>
+        map.forEach(consumer);
+    }
+
+    public Stream<Map.Entry<K, V>> stream() { // <1>
+        return map.entrySet().stream();
+    }
+}
+----
+<1> These methods allow access to the content of the map without exposing it in a modifiable way.
+
+Note that all methods have an implicit <<notmodified-annotation>>, except `put` given that is has been marked <<only-annotation>>
+with a `before` parameter. Importantly, all annotations in `SetOnceMap` can be computed by the code analyser.
+
+[#extensionclass-annotation]
+=== `@ExtensionClass`
+
+An extension class is a special form of <<utilityclass-annotation>> or <<e2immutable-annotation>> class
+where all non-private methods with parameters have a first parameter of the same type, marked <<nullnotallowed-annotation>>.
+
+The code analyser can easily distinguish between utility and effectively immutable. Note that typically some of
+these extension methods make modifications to the content of the first parameter, as would be natural in a container.
+
+[#final-annotation]
+=== `@Final`
+
+Added to fields which are assigned only in the constructors of the method. Implicitly present when the field has been marked `final`,
+and assumed in an <<e2final-annotation>> or <<e2immutable-annotation>> class.
+
+Note that when a field is not marked `final` and is set in some of the constructors, 
+but not in others, and is not modified in normal methods, that we will still call it `@Final` even
+though we would will issue a warning that its value can be `null` (as in unset).
+
+This is not an annotation that you will manually set too often, but it is an important one in the computation of other
+annotations.
+
+[#fluent-annotation]
+=== `@Fluent`
+
+This annotation is added to non-static methods that return `this`. 
+It trivially implies `@NotNull`. Fluent methods are used for method chaining on the same object, as in
+`StringBuilder.append()`.
+
+Together with <<identity-annotation>> and `void`, `@Fluent` marks methods that do not return a real value.
+Only these methods are allowed an <<output-annotation>> annotation.
+
+[#identity-annotation]
+=== `@Identity`
+
+This annotation is added to methods that 
+
+.  have at least one parameter, and return the first parameter 
+.  do not modify the content of that parameter, so `@Identity` implies `@NotModified` on the parameter
+
+A typical example of `@Identity` is the `requireNotNull` method
+[source]
+----
+    @NotNull
+    @Identity
+    @NotModified
+    public static <T> T requireNonNull(@NullNotAllowed T t) {
+        if (t == null) throw new NullPointerException();
+        return t;
+    }
+----
+Identity methods occur in expressions, and are of use to the code analyser.
+They also count as special return values, rather than 'real' return values, for example in the
+context of ...
+#TODO: add example#
+
+[#independent-annotation]
+=== `@Independent`
+
+When added to a method, this annotation implies that the object returned is not linked to any of the parameters or fields of the class.
+When added to a constructor, the annotation implies that the resulting instance is not linked to the parameters of the constructor.
+If a method does not return a real value (it is `void`, <<identity-annotation>> or <<fluent-annotation>>), and it has consumer
+parameters, the annotation indicates that the objects linked to the consumers are not linked to the fields or parameters of the class.
+The annotation is then added to the consumer, typically together with <<nullnotallowed2-annotation>>.
+
+Linking means that if a given object is modified, the linked object is modified too. Remember that as explained in <<linked-annotation>>,
+primitives, unbound type parameters, and classes marked <<e2immutable-annotation>> break the chain because of their
+content immutability.
+
+It follows that:
+
+-  empty constructors of top-level types and static sub-types (but not necessarily sub types-that are not static!) are always independent; no need to annotate
+-  methods that return effectively immutable objects are independent, since they cannot be modified
+
+The `@Independent` annotation works at the first content level only (the level of the <<notmodified-annotation>> annotation).
+Typical examples of independent methods are
+
+[source]
+----
+private Set<T> set = ...;
+
+@Independent
+@NotNull
+public Set<T> build() {
+    return ImmutableSet.copyOf(set);
+}
+----
+
+which, in a Vertx.io context would look like
+----
+public void build(@NullNotAllowed2 @Independent Handler<AsyncResult<Set<T>>> next) {
+    Set<T> set = new HashSet<>();
+    ...
+    next.handle(Future.succeededFuture(ImmutableSet.copyOf(set)));
+}
+----
+
+Consider the following methods on `java.util.Collection<E>` interface:
+
+[source]
+----
+@Container
+interface Collection<E> {
+    ...
+    boolean add(E e);
+    ...
+    @Independent
+    boolean addAll(Collection<E> collection); // @NotModified implicit
+    ...
+}
+----
+
+We understand the semantics of `addAll` to be adding the elements of `collection` to the target
+collection, one by one. Therefore, we expect that
+changing the `collection` object after a call to `addAll` should have no effect on the target collection.
+This explains why we want to mark `addAll` as `@Independent`.
+The `addAll` method iterates over the `collection` object's content, but should not modify it.
+This is understood from the implicit <<notmodified-annotation>> annotation on `collection`, which
+follows from the <<container-annotation>> on `java.util.Collection`.
+
+Now clearly changing `e` after having added it to the target collection has no bearing on the target collection either.
+Similarly, we know that the collection has no intention to modify `e`, because the `Collection` object is supposed
+to be a container. But different from the previous case,
+because of the type (an unbound type parameter `E`), the `add` method has no means of changing the content of `e`:
+the object is effectively immutable to the implementation. Therefore there is no need to write `@Independent`, it is
+implied.
+
+[#linked-annotation]
+=== `@Linked`
+
+A field can be linked to another field or parameter.
+A method's result can be linked to a field in the class, or a parameter of one of the other methods.
+The goal of linking is to help the computation of <<notmodified-annotation>> by ensuring that a field or parameter can only be
+<<notmodified-annotation>> when there are no modifications on any of the linked variables.
+
+Because linking is only used in the context of <<notmodified-annotation>>, there are some short-cuts we can take. Because
+primitives, unbound type parameters and <<e2immutable-annotation>> classes are effectively immutable (their content cannot be modified),
+their presence can break chains of linked variables.
+
+On methods, `@Linked` the exact opposite of `@Independent`.
+
+You can add this annotation to ensure that certain fields are linked to parameters, but all in all this is
+an internal annotation only.
+
+[#mark-annotation]
+=== `@Mark`
+
+The annotation takes one string parameter, representing the name of the mark.
+See <<e2final-annotation>> and <<only-annotation>>.
+
+Note that is possible to have multiple methods marked with the same name, to simplify the `after` expression
+in the <<e2final-annotation>> and <<e2immutable-annotation>> annotations. This makes most sense for
+methods already marked with `@Only(framework = true)`, because you have no control over the order of injection
+anyway. Going back to the <<coffeemaker-example>>, we can write
+
+[source]
+.CoffeeMaker example, simplified marks
+----
+@E2Final(after="init")
+class CoffeeMaker {
+  @Only(framework = true) @Mark("init") @Inject Heater heater;
+  @Only(framework = true) @Mark("init")   @Inject Pump pump;
+
+  ...
+}
+----
+which scales a lot better.
+
+[#notmodified-annotation]
+=== `@NotModified`
+
+Parameters or fields can get a `@NotModified` annotation when the contents of the object the parameter or field refers to, is not changed. This can be computed by
+
+* observing that no methods are called on the object
+* observing that _if_ methods are called on the object, these methods are themselves marked `@NotModified`
+* observing that when the parameter is used as a direct parameter to another method, this parameter has the `@NotModified` annotation
+
+Adding the annotation to a method implies that
+
+*  the method does not modify any fields or their content
+*  the method does not modify the content of the parameters (i.e. it is present on all parameters of the methods)
+   unless they are marked `@Output`
+
+The annotation is implied for
+
+*  parameters or fields of primitive types, types marked <<e2immutable-annotation>>, or unbound generic types,
+   because they do not have modification methods
+*  parameters of non-private methods in classes marked <<container-annotation>>, <<e2immutable-annotation>> (effectively immutable case)
+*  parameters of non-private methods marked <<only-annotation>> `(after="...")` in classes marked <<e2immutable-annotation>> (eventually immutable case)
+*  the first parameter of methods marked <<identity-annotation>>
+
+Actual validation is more complicated (see the <<linked-annotation>> annotation for an in-depth analysis),
+because temporary variables may be used to hide the actual object being modified:
+
+[source]
+----
+private Set<String> strings;
+
+public void clearSlightlyDisguised() {
+    Set<String> allStrings = strings;
+    allStrings.clear();
+}
+
+public void clearSlightlyDisguised2() {
+   clearHelper();
+}
+
+private void clearHelper() {
+    strings.clear();
+}
+----
+
+The `clear` method on `Set` in definitely not marked <<notmodified-annotation>>, so it must be obvious that
+the `clearSlightlyDisguised` modifies the field `strings`. Indirection via a private method is used to clear
+the set when calling `clearSlightlyDisguised2`.
+
+The rules above hold for static methods as well, except that, obviously, the fields in question have to be static fields.
+Still it is worthwhile distinguishing two kinds of static `@NotModified` methods: those that return a real value, and those
+that don't. While the former are mostly _pure functions_, w
+e could call the latter _static side effects only_, because they only have an effect in the realm of statics,
+outside the scope of our application.
+
+Consider the following example:
+
+[source]
+.StaticSideEffectOnly.java
+----
+@NotModified
+public static void checkNonNegative(int i) {
+    if(i < 0) {
+        throw new IllegalArgumentException("Non negative! "+i);
+    } else {
+        LOGGER.debug("The variable is not negative: {}", i);
+    }
+}
+----
+Another example is shown in the explanation of <<identity-annotation>>.
+Both demonstrate our initial assumption that exceptions are not part of the normal code flow, indeed,
+like synchronization statements, they do not belong to local code flow.
+
+[#notnull-annotation]
+=== `@NotNull`
+
+Methods and fields (but not parameters!) can be marked `@NotNull` when the value (or return value, in case of a method), cannot be null.
+There are a number of fairly obvious cases to apply this annotation, e.g.
+
+.  when the method ends with `return new ...`
+.  when the method returns the value of another field or method marked `@NotNull`
+.  when the field is assigned a parameter marked `@NullNotAllowed`
+
+but in general this annotation requires the same null inference engine as required for `@NullNotAllowed`.
+
+If added to the class, all methods and fields are marked `@NotNull`.
+If added to an interface, only the methods are marked `@NotNull`.
+
+
+[#notnull1-annotation]
+=== `@NotNull1`
+
+This annotation (which is a shorthand for `@NotNull(level = 1)`, indicates that the method returns a functional
+interface which is guaranteed to return values that are not null.
+
+What about Collectors and the `collect` method?
+the `@NotNull` property of `collect` depends on the nature of the collector.
+Stock collectors like `joining` and `toList` ensure `@NotNull`, but one can make collectors which don't respect this.
+
+
+[#nullnotallowed-annotation]
+=== `@NullNotAllowed`
+
+We add the annotation to the parameter declaration in three separate cases:
+
+.  when an explicit 
++
+[source]
+----
+if(parameter == null) throw new SomeException();
+----
++
+is present in the method. Later we'll implement variants like
++
+[source]
+----
+assert p != null
+----
++
+etc.
+.  when the parameter is used as a direct parameter to another method, which has the `@NullNotAllowed` added to the parameter declaration
+.  when the variable is used in a field or method context without explicit null guard, as in
++
+[source]
+----
+parameter.someMethod();
+----
+
+If added to the class, all (relevant) parameters are marked `@NullNotAllowed`.
+
+[#nullnotallowed1-annotation]
+=== `@NullNotAllowed1`
+
+Shorthand for `@NullNotAllowed(level = 1)`; useful for parameters of functional interface types, as shown in the
+following example:
+
+[source]
+----
+@NotNull
+private String base;
+
+public String applyToBase(@NullNotAllowed1 Function<String, String> f) {
+    return f.apply(base);
+}
+----
+In this example, the annotation implies that the function `f` cannot be `null`, but also that it cannot take `null` as a parameter.
+Note that it is impossible for the code analyser to compute the `@NullNotAllowed1` annotation; however, the <<notnull-annotation>>
+annotation in the example follows from a manually inserted `@NullNotAllowed1`.
+
+[#nullnotallowed2-annotation]
+=== `@NullNotAllowed2`
+
+Shorthand for `@NullNotAllowed(level = 2)`; used for consumers in a Vertx.io context.
+
+[source]
+----
+public WikiDatabaseService fetchPage(String name,
+    @NullNotAllowed2 Handler<AsyncResult<JsonObject>> resultHandler) {
+  ...
+  JsonObject jsonObject = new JsonObject();
+  ...
+  resultHandler.handle(Future.succeededFuture(jsonObject));
+}
+----
+In this example, the annotation implies that
+
+.  the `resultHandler` object cannot be null
+.  the `Future` passed to the `handle` method cannot be null
+.  the `jsonObject` passed as the primary parameter of the `AsyncResult` cannot be `null`
+
+We're currently wondering how we will validate all this. It looks very likely that the annotation cannot be computed.
+But, it can uses of the method:
+
+[source]
+----
+wikiDatabaseService.fetchPage("page1", ar -> {
+   JsonObject jsonObject = ar.result(); // <1>
+});
+----
+<1> Here jsonObject is guaranteed not to be `null`
+
+[#only-annotation]
+=== `@Only`
+
+Methods can be marked `@Only` in the context of eventually final or eventually immutable classes.
+Marks are defined with the <<mark-annotation>>.
+
+The following parameters are recognized:
+
+`after`:: a string parameter representing a mark.
+Raise an error when this method is called before this mark; only calls after the mark are allowed
+`before`:: a string parameter representing a mark.
+Raise an error when this method is called after this mark; only calls before the mark are allowed
+`framework`:: a boolean parameter, with a default value of `false`.
+A value of `true` means that some framework is responsible for calling this method:
+any use of these methods in user-land production code (non-test) will raise an error.
+
+An annotation of `@Only` without parameters is made equivalent to `@Only(after=X)`, with `X` being the
+expression in the `after` parameter of the <<e2final-annotation>> or <<e2immutable-annotation>> annotation.
+
+.Excerpt from IoVertxCore.java
+[source]
+----
+@E2Final(after = "init")
+@NullNotAllowed
+interface Verticle {
+
+    @Mark("init")
+    @Only(framework = true)
+    void init(@NotModified Vertx vertx, @NotModified Context context);
+
+    @Only // implicit: @Only(after = "init")
+    @NotModified
+    Vertx getVertx();
+
+    @Only(after = "init", framework = true)
+    void start(Promise<Void> startPromise) throws Exception;
+
+    @Only(after = "init", framework = true)
+    void stop(Promise<Void> stopPromise) throws Exception;
+}
+----
+
+Note again that in the majority of cases, the `@Only` annotation in user-land classes is inferred by the code analyser,
+which will save you from typing many tedious `after=...` parameters.
+
+[#output-annotation]
+=== `@Output`
+
+When present on a parameter, the value of this parameter may be modified in the method, even in the context of containers.
+The annotation isdoes not return a real value (it is `void`, or marked
+<<identity-annotation>> or <<fluent-annotation>>).
+
+The annotation always implies <<nullnotallowed-annotation>>, for obvious reasons.
+
+A classical example is the `toArray` method in `java.util.Collection`, which would otherwise violate the container
+contract:
+[source]
+----
+@NotNull
+@Independent
+<T> T[] toArray(@Output T[] a);
+----
+
+[#utilityclass-annotation]
+=== `@UtilityClass`
+
+Utility classes are static classes, with static methods, and
+no way of instantiating them.

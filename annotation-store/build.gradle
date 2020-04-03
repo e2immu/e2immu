@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'application'
+  //  id 'org.e2immu.analyser'
+}
+
+group 'org.e2immu'
+version '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_13
+    targetCompatibility = JavaVersion.VERSION_13
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'io.vertx', name: 'vertx-web', version: '3.8.5'
+    implementation group: 'io.vertx', name: 'vertx-config', version: '3.8.5'
+
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'io.vertx', name: 'vertx-unit', version: '3.8.5'
+    testImplementation group: 'io.vertx', name: 'vertx-web-client', version: '3.8.5'
+}
+
+application {
+    mainClassName = 'org.e2immu.kvstore.Store'
+}

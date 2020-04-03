@@ -1,0 +1,11 @@
+= e2immu IntelliJ plugin
+:source-highlighter: coderay
+:source-language: java
+:description: Annotation highlighter for IntelliJ and the e2immu project
+:author: Bart Naudts
+:sectnums:
+:icons: font
+:toc: left
+:imagesdir: images
+
+include::design.adoc[]

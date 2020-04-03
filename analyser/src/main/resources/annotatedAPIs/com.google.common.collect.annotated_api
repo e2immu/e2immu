@@ -1,0 +1,131 @@
+/*
+ * e2immu-annot: annotations for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * -------
+ *
+ * The content of this file reflects a part of the public API
+ * of the Google Guava library. The only intended contribution of the
+ * e2immu-annot project is to annotate some of the the publicly accessible
+ * classes, methods and fields. The fact that this file resembles the Java
+ * syntax is only done to facilitate the description and storage of the association
+ * between annotations and the publicly accessible API elements of the Google
+ * Guava library.
+ *
+ */
+
+package com.google.common.collect;
+
+import java.util.*;
+
+import org.e2immu.annotation.*;
+
+public abstract class ImmutableCollection<E> {
+    public ImmutableList<E> asList() {
+    }
+
+    public abstract boolean contains(Object object) {
+
+    }
+    public Object[] toArray() {
+    }
+
+    public <T> T[] toArray(T[] other) {
+    }
+}
+
+@E2Immutable
+public abstract class ImmutableList<E> extends ImmutableCollection<E> implements List<E> {
+
+    @Container
+    public static class Builder<E> {
+        @Fluent
+        public Builder<E> add(E... elements) {
+        }
+
+        @Fluent
+        public Builder<E> add(E element) {
+        }
+
+        @Fluent
+        public Builder<E> addAll(@NullNotAllowed Iterable<? extends E> iterable) {
+        }
+
+        @Fluent
+        public Builder<E> addAll(@NullNotAllowed Iterator<? extends E> iterator) {
+        }
+
+        @NotNull
+        @Independent
+        @NotModified
+        public ImmutableList<E> build() {
+        }
+    }
+}
+
+@E2Immutable
+public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements Set<E> {
+
+    @Container
+    public static class Builder<E> {
+        @Fluent
+        public Builder<E> add(E... elements) {
+        }
+
+        @Fluent
+        public Builder<E> add(E element) {
+        }
+
+        @Fluent
+        public Builder<E> addAll(@NullNotAllowed Iterable<? extends E> iterable) {
+        }
+
+        @Fluent
+        public Builder<E> addAll(@NullNotAllowed Iterator<? extends E> iterator) {
+        }
+
+        @NotNull
+        @Independent
+        @NotModified
+        public ImmutableSet<E> build() {
+        }
+    }
+
+    @NotNull
+    @Independent
+    static ImmutableSet<E> copyOf(Iterable<E> iterable);
+}
+
+@E2Immutable
+public abstract class ImmutableMap<K, V> implements Map<K, V> {
+
+    @Container
+    public static class Builder<K, V> {
+        @Fluent
+        public com.google.common.collect.ImmutableMap.Builder<K, V> put(K key, V value) {
+
+        }
+        @Fluent
+        public com.google.common.collect.ImmutableMap.Builder<K, V> putAll(@NullNotAllowed Map<? extends K, ? extends V> map) {
+
+        }
+        @NotNull
+        @Independent
+        @NotModified
+        public com.google.common.collect.ImmutableMap<K, V> build() {
+
+        }
+    }
+}

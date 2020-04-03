@@ -1,0 +1,65 @@
+/*
+ * e2immu-analyser: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package org.e2immu.analyser.model.abstractvalue;
+
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Primitives;
+
+public class EqualsValue implements Value {
+    public final Value lhs;
+    public final Value rhs;
+
+    public EqualsValue(Value lhs, Value rhs) {
+        boolean swap = lhs.compareTo(rhs) > 0;
+        this.lhs = swap ? rhs : lhs;
+        this.rhs = swap ? lhs : rhs;
+    }
+
+    public static Value equals(Value l, Value r) {
+        if (l.equals(r)) return BoolValue.TRUE;
+        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
+            return new Instance(Primitives.PRIMITIVES.booleanParameterizedType);
+        return new EqualsValue(l, r);
+    }
+
+    @Override
+    public String toString() {
+        return lhs + " == " + rhs;
+    }
+
+    @Override
+    public int compareTo(Value o) {
+        if (o instanceof EqualsValue) {
+            int c = lhs.compareTo(((EqualsValue) o).lhs);
+            if (c == 0) {
+                c = rhs.compareTo(((EqualsValue) o).rhs);
+            }
+            return c;
+        }
+        return -1;
+    }
+
+    @Override
+    public Boolean isNotNull(EvaluationContext evaluationContext) {
+        return true;
+    }
+}

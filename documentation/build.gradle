@@ -1,0 +1,17 @@
+plugins {
+    id 'org.asciidoctor.jvm.convert' 
+}
+
+asciidoctor {
+    sources {
+        include 'main.adoc'   
+    }
+    resources {
+        from(sourceDir) {
+            include 'images/*.png'
+        }
+    }
+}
+
+build.dependsOn 'asciidoctor' 
+

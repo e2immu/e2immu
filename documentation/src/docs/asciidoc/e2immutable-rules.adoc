@@ -1,0 +1,25 @@
+
+=== Discussion of E2Immutable rules
+
+Rule 1 (fields <<e2final-annotation>>)::  all fields are effectively final
+
+Rule 2 (fields <<notmodified-annotation>>)::  all fields can be annotated <<notmodified-annotation>> (explicitly, or by implication,
+because they are primitive or effectively immutable themselves):
+no method of the class calls modification methods on these fields
+
+Rule 3 (no link to parameters)::  to guarantee that no content modification takes place outside the class via parameters, we require that
+that fields of types that are not effectively immutable, cannot be <<linked-annotation>> to parameters of non-private methods or constructors.
+
+Rule 4 (no unsafe exposure)::  to guarantee that no content modification takes place outside the class via direct exposure, we restrict
+fields of types that are not effectively immutable to have the `private` modifier
+
+Rule 5 (no unsafe returns):: to guarantee that no content modification takes place outside the class via return statements,
+we require that objects returned are either effectively immutable, not <<linked-annotation>> to the fields, or
+restricted to interfaces with methods marked <<notmodified-annotation>> only.
+
+
+Rule 3 covers exposure via consumers, as detailed in <<linking-discussions>>.
+In the same way it protects fields from outside objects via suppliers and functions.
+
+#TODO: Rule 5# do we need an explanation on interfaces?
+These interfaces should be marked effectively immutable.

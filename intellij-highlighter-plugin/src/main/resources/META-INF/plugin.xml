@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>org.e2immu.intellij-plugin</id>
+    <name>e2immu highlighter</name>
+    <vendor email="support@e2immu.com" url="http://www.e2immu.org">e2immu.org</vendor>
+
+    <description><![CDATA[
+    Highlights classes and methods according to the <em>e2immu</em> code analyser.
+    ]]></description>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <additionalTextAttributes scheme="Default" file="colorSchemes/e2immu-highlighter-default.xml" />
+        <colorSettingsPage implementation="org.e2immu.intellij.highlighter.settings.E2ImmuColorSettingsPage" />
+        <applicationConfigurable
+                groupId="other"
+                id="preferences.ReturnHighlighter"
+                key="e2i.app.presentableName"
+                bundle="messages.E2ImmuHighlighterBundle"
+                instance="org.e2immu.intellij.highlighter.settings.Configurable"
+        />
+    </extensions>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends optional="true" config-file="java.xml">com.intellij.java</depends>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>

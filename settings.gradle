@@ -1,0 +1,23 @@
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenLocal()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.namespace == 'org.e2immu') {
+                useModule('org.e2immu:analyser:0.0.1')
+            }
+        }
+    }
+}
+
+rootProject.name = 'e2immu'
+include 'annotations'
+include 'annotation-store'
+include 'intellij-highlighter-plugin'
+include 'highlighter-examples'
+include 'documentation'
+include 'analyser'
+include 'gradle-plugin'

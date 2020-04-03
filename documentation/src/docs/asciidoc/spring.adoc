@@ -1,0 +1,149 @@
+[#spring-framework]
+== Spring Framework
+
+=== The core of Spring
+
+From the manual:
+
+****
+In Spring, the objects that form the backbone of your application and that are managed by the Spring IoC container are called beans. A bean is an object that is instantiated, assembled, and otherwise managed by a Spring IoC container.
+
+... the Spring IoC container consumes a form of configuration metadata. This configuration metadata represents how you, as an application developer, tell the Spring container to instantiate, configure, and assemble the objects in your application.
+****
+
+Creation of your objects is a three step process:
+
+. create and configure beans based on XML (or Groovy, or annotation) configuration; the result is a _context_.
+. obtain configured instances of the beans from the context
+. use the configured instances as normal classes.
+
+If we're going to assume that the building phase of the Java object in the Spring context ends when the IoC container has injected all dependencies,
+then we have the possibility to work with `@EventuallyImmutable` classes.
+
+****
+Since you can mix constructor-based and setter-based DI, it is a good rule of thumb to use constructors for mandatory dependencies and setter methods or configuration methods for optional dependencies. Note that use of the @Required annotation on a setter method can be used to make the property be a required dependency; however, constructor injection with programmatic validation of arguments is preferable.
+
+The Spring team generally advocates constructor injection, as it lets you implement application components as immutable objects and ensures that required dependencies are not null. Furthermore, constructor-injected components are always returned to the client (calling) code in a fully initialized state. As a side note, a large number of constructor arguments is a bad code smell, implying that the class likely has too many responsibilities and should be refactored to better address proper separation of concerns.
+
+...
+Circular dependencies: One possible solution is to edit the source code of some classes to be configured by setters rather than constructors. Alternatively, avoid constructor injection and use setter injection only. In other words, although it is not recommended, you can configure circular dependencies with setter injection.
+
+Unlike the typical case (with no circular dependencies), a circular dependency between bean A and bean B forces one of the beans to be injected into the other prior to being fully initialized itself (a classic chicken-and-egg scenario).
+****
+
+Normally, Spring does eager initialization of singleton beans, but lazy is possible.
+Next to singleton, the _request_ (_session_, _application_, _websocket_) bean scope ties the bean to the life-cycle of an HTTP request (session, servlet context, websocket). The _prototype_ scope means that new instances are created on each request.
+
+.BeanExample1.java
+[source]
+----
+@EventuallyFinal(after="dependency2 && dependency3") // <1>
+public class Bean1 {
+    public final Dependency1 dependency1; // <2>
+    private Dependency2 dependency2; // <3>
+    private String dependency3;
+
+    public Bean1(Dependency1 dependency1) {
+        this.dependency1 = dependency1;
+    }
+
+    public Dependency2 getDependency2() {
+        return dependency2;
+    }
+
+    @Mark("dependency2") // <4>
+    public void setDependency2(Dependency2 dependency2) {
+        this.dependency2 = dependency2;
+    }
+
+    public String getDependency3() {
+        return dependency3;
+    }
+
+    @Mark("dependency3")
+    public void setDependency3(String dependency3) {
+        this.dependency3 = dependency3;
+    }
+}
+----
+<1> Both marks `dependency2` and
+`dependency3` need to be active for the class to be `@EventuallyFinal`
+<2> Direct constructor injection, explicitly final.
+<3> Eventually final, after the setter `setDependency2` has been called.
+<4> Calling this method 'activates' the mark `dependency2`.
+
+When this bean is configured using an external configuration file, the (simple variant of)
+the code analyser cannot know the difference between a setter which will be
+used by Spring's dependency injection, and a general-purpose setter.
+When the bean is configured using annotations, the code analyser knows:
+
+.Bean2SpringAnnotations.java
+[source]
+----
+@EventuallyFinal(after="dependency2 && dependency3") // <1>
+public class Bean2SpringAnnotations {
+    public final Dependency1 dependency1;
+    private Dependency2 dependency2;
+    private String dependency3;
+
+    public Bean2SpringAnnotations(Dependency1 dependency1) {
+        this.dependency1 = dependency1;
+    }
+
+    public Dependency2 getDependency2() {
+        return dependency2;
+    }
+
+    @Mark("dependency2") // <2>
+    @Inject // <3>
+    public void setDependency2(Dependency2 dependency2) {
+        this.dependency2 = dependency2;
+    }
+
+    public String getDependency3() {
+        return dependency3;
+    }
+
+    @Mark("dependency3") // <4>
+    public void setDependency3(String dependency3) {
+        this.dependency3 = dependency3;
+    }
+}
+----
+<1>, <2>, <4> Can now be computed by the code analyser
+<3> because this one is present!
+
+Interestingly, both setters can be combined as in
+
+.Bean2SpringAnnotations.java
+[source]
+----
+@EventuallyFinal(after="prepare") // <1>
+public class Bean2SpringAnnotations {
+    public final Dependency1 dependency1;
+    private Dependency2 dependency2;
+    private String dependency3;
+
+    public Bean2SpringAnnotations(Dependency1 dependency1) {
+        this.dependency1 = dependency1;
+    }
+
+    @Autowired // <2>
+    @Mark("prepare") // <3>
+    public void prepare(Dependency2 dependency2, Dependency3 dependency3) {
+        this.dependency2 = dependency2;
+        this.dependency3 = dependency3;
+    }
+
+    public Dependency2 getDependency2() {
+        return dependency2;
+    }
+
+    public String getDependency3() {
+        return dependency3;
+    }
+}
+----
+<1> can be computed
+<2> Spring annotation, effectively delayed constructor
+<3> can be computed

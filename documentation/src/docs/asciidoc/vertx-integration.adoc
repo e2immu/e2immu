@@ -1,0 +1,257 @@
+
+[#vertx-integration]
+== Asynchronous programming using vertx.io
+
+=== Terminology
+
+The basis of the huge set of https://vertx.io/[vertx.io] libraries
+is a system of asynchronous programming. Here's a little bit of their terminology:
+
+`AsyncResult<T>`:: encapsulates the result of an asynchronous computation
+
+`Handler`:: Functional interface, very much like the JDK `Consumer`
+
+`Promise<T>`:: Represents the writable side of an action that may, or may not, have occurred yet. It extends `Handler<AsyncResult<T>>`.
+A `Promise` can be completed with a value, or failed with a throwable. A `Promise` has an associated `Future`.
+
+`Future<T>`:: Represents the result of an action that may, or may not, have occurred yet.
+It extends both `AsyncResult<T>` and `Handler<AsyncResult<T>>`.
+
+
+=== Result handlers, promises, futures
+
+A very common situation when using the Vertx.io framework is when a method is 'in the middle' of the
+asynchronous chain: it does a slow call, and when that slow call returns, the method passes on the result.
+
+.Method copied from https://vertx.io/docs/guide-for-java-devs/#_database_service_implementation
+[source]
+----
+@Override
+public WikiDatabaseService fetchPage(String name, // <1>
+                                     Handler<AsyncResult<JsonObject>> resultHandler) { // <2>
+    dbClient.queryWithParams(sqlQueries.get(SqlQuery.GET_PAGE), // <3>
+                         new JsonArray().add(name),
+                         fetch -> { // <4>
+        if (fetch.succeeded()) {
+            JsonObject response = new JsonObject();
+            ResultSet resultSet = fetch.result();
+            if (resultSet.getNumRows() == 0) {
+                response.put("found", false);
+            } else {
+                response.put("found", true);
+                JsonArray row = resultSet.getResults().get(0);
+                response.put("id", row.getInteger(0));
+                response.put("rawContent", row.getString(1));
+            }
+            resultHandler.handle(Future.succeededFuture(response)); // <5>
+        } else {
+            LOGGER.error("Database query error", fetch.cause());
+            resultHandler.handle(Future.failedFuture(fetch.cause())); // <6>
+        }
+    });
+    return this; // <7>
+}
+----
+<1> The input parameter to the method is `name`
+<2> The output parameter is a `JsonObject` delivered asynchronously.
+<3> The method makes use of a field `dbClient`, which should be effectively final
+<4> The slow call; `fetch` is the handler passed to `queryWithParams`, which is defined in a way similar to `fetchPage`.
+<5> A success or normal result is 'returned'
+<6> A failure or exceptional result is 'returned'
+<7> The method is `@Fluent`
+
+How do our annotations deal with this?
+
+*  Being inside an effectively or eventually final class would be good, given the asynchronous nature of the method.
+The `dbClient` field is the example in this case.
+*  We'll assume that the method either is of return type `void`, or is `@Fluent` or `@Identity`. Other return values
+are relatively rare in this context.
+*  The `resultHandler` receives the `@Output` annotation, because it is a consumer in the context of a method that
+does not return a real value.
+*  `@NullNotAllowed` is to be expected on the `resultHandler`; it is implicit because of the `@Output` annotation.
+*  `@NotNull` as an annotation on methods is used to indicate that the return value cannot be `null`. In the context
+of non-real return types, and an `@Output` annotation,
+we can use `@NullNotAllowed` with additional level indications: `@NullNotAllowed(level=1)` would mean that you can never call
++
+[source]
+----
+resultHandler.handle(null);
+----
+which would be a silly thing to do anyway. What we need, though, is that `response` can never be `null`.
+We'll solve this by adding one to the `level` parameter to `@NullNotAllowed`, to indicate the depth of
+non-null guarantees, as in
++
+[source]
+----
+... @NullNotAllowed(level=2) Handler<AsyncResult<JsonObject>> resultHandler) {
+----
+
+[TIP]
+.Notational shortcut
+====
+You can use `@NullNotAllowed2` instead of the `level=...` notation:
+[source]
+----
+... @NullNotAllowed2 Handler<AsyncResult<JsonObject>> resultHandler) {
+----
+to enforce that you cannot write
+[source]
+----
+resultHandler.handle(Future.succeededFuture(null));
+----
+====
+
+Referring a bit more to the same code in the Vertx.io manual, we see that the `dbClient` is set in the following way:
+
+.Method copied from https://vertx.io/docs/guide-for-java-devs/#_a_minimally_viable_wiki_written_with_vert_x
+[source]
+----
+private Future<Void> prepareDatabase() {
+    Promise<Void> promise = Promise.promise();
+
+    dbClient = JDBCClient.createShared(vertx, new JsonObject()
+        .put("url", "jdbc:hsqldb:file:db/wiki")
+        .put("driver_class", "org.hsqldb.jdbcDriver")
+        .put("max_pool_size", 30));
+
+    dbClient.getConnection(ar -> {
+        if (ar.failed()) {
+            LOGGER.error("Could not open a database connection", ar.cause());
+            promise.fail(ar.cause());
+        } else {
+            SQLConnection connection = ar.result();
+            connection.execute(SQL_CREATE_PAGES_TABLE, create -> {
+                connection.close();
+                if (create.failed()) {
+                    LOGGER.error("Database preparation error", create.cause());
+                    promise.fail(create.cause());
+                } else {
+                    promise.complete();
+                }
+            });
+        }
+    });
+    return promise.future();
+}
+----
+
+In other words, `dbClient` is set after calling `prepareDatabase`, but it only becomes practically usable
+as soon as the future that is returned, is successfully completed.
+It would be not much of a problem to do the assignment of `dbClient` in the constructor, so that we can
+explicitly mark it `final`. However, this does not solve the 'problem' of having a way to restrict
+calls to `fetchPage` to later in the chain.
+
+
+=== Services
+
+The https://vertx.io/docs/vertx-service-discovery/java/[service discovery system] of Vertx.io performs tasks similar
+to dependency injection (see <<spring-framework>>, <<other-di-frameworks>>).
+The process of wiring is done by registering services on the one side, and by discovering services on the other side.
+Let's first look at the discovery side, which is simply an asynchronous lookup call:
+
+.Vertx.io service discovery
+[source]
+----
+discovery.getRecord(new JsonObject().put("name", "some-service"), ar -> {
+    if (ar.succeeded()) {
+        if (ar.result() != null) {
+            // we have a record <1>
+        } else {
+            // the lookup succeeded, but no matching service
+        }
+    } else {
+        // lookup failed
+    }
+});
+----
+<1> Here we can do something with the service
+
+So either we discover once, and assign the discovered service to a field for other methods to use,
+or we discover every time we need to use the service. As the latter may be slow, and not so convenient code-wise,
+we're in the same position as we were at the end of the previous section. When do we know that the service is there,
+in other words, have we changed into the immutable state yet?
+
+Different approaches to wiring services.
+
+=== Approach 1
+
+Wait until all dependent services are available using a `CompositeFuture.all` method, then create the service
+object that will use the dependent services, using a normal constructor. Pass on the new service to those using it
+
+[source]
+----
+public class MyService {
+    private final Dependency1 dep1;
+    private final Dependency2 dep2;
+
+    public MyService(Dependency1 dep1, Dependency2 dep2) {
+        this.dep1 = dep1;
+        this.dep2 = dep2;
+    }
+    @Fluent
+    public MyService action1(String someInput, Handler<AsyncResult<String>> next) {
+        // you're good to use dep1, dep2
+    }
+}
+----
+
+In this way, a hierarchy of services is created. Vertex's service registry can be used to break the hierarchy
+at places, to be able to inject different services depending on the context (production, testing, etc.)
+
+=== Approach 2
+
+If the service is guaranteed to be a singleton, and there is a single point of entry of the application,
+we can first create the service object
+
+[source]
+----
+public class MyStartingPoint extends AbstractVerticle {
+    final MyService myService = new MyService();
+    ...
+}
+
+public class MyService {
+    private Dependency1 dep1;
+
+    public MyService(ServiceDiscovery discovery, Future<Void> next) {
+        discovery.getRecord(new JsonObject().put("name", "some-service"), ar -> {
+            if (ar.succeeded()) {
+                if (ar.result() != null) {
+                    dep1 = ar.result(); // <1>
+                    next.complete(); // we can continue
+                } else {
+                    next.fail(); // the lookup succeeded, but no matching service
+                }
+            } else {
+                next.fail(); // lookup failed
+            }
+        });
+    }
+    @Fluent
+    public MyService action1(String someInput, Handler<AsyncResult<String>> next) {
+        // we can use dep1, but only logically after it has been assigned
+    }
+}
+----
+
+
+=== Our annotations on the vertx.io core types
+
+Going over the core interfaces, we identify
+
+`Handler`:: a functional interface, much like `Consumer`
+`AsyncResult`:: could have been effectively final, but the wiser approach is `@NotModified` on all methods.
+`Promise`:: a container extending `Handler<AsyncResult>`
+`Future`:: a container extending both `AsyncResult` and `Handler<AsyncResult>`
+`Vertx`:: a container, whose implementation is the core data structure of the framework.
+`Context`:: a container holding the execution context of handlers
+`Verticle`:: eventually final, after receiving a `Vertx` and `Context` instance
+
+First, note that the interface `AsyncResult` could have had an <<e2final-annotation>> annotation, if it were not for one of the
+more important extensions of the interface: `Future` allows for modifications.
+
+Second, remark that implementations of `Verticle` (including those deriving from `AbstractVerticle`) may want to call
+on the modification methods of `Context` (which is a container, it is not @EffectivelyImmutable!)
+We do not think it is that great practice to do so, but it is possible. It very much goes against the
+grain of immutability. The code analyser will block them, however, when `AbstractVerticle` is eventually final, because
+this implies that it is a container, which implies that it does not modify its arguments.

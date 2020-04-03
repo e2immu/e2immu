@@ -1,0 +1,76 @@
+
+=== Overview of the analyser
+
+The type analyser TA's `analyse` method is given a natural order in which to analyse methods and fields.
+
+The TA runs iterations of its own analysis, the method analyser MA and field analyser FA in this particular order, until on new decisions have been made anymore.
+
+Only then the TA's `check` method is run, which recursively calls TA, MA and FA check methods. They verify the annotations. The method analyser's checks on parameters are inside the parameter analyser, which has no real analysis function.
+
+The MA internally employs a _statement analyser_ SA, which results in a list of statements computed every single pass. Also created locally is an instance of the class `VariableProperties` implementing the `EvaluationContext` interface.
+
+Definitive analysis results are stored in the `MethodAnalysis`, `FieldAnalysis`, `TypeAnalysis` and `ParameterAnalysis` objects of the respective nodes. It is important to note that definitive results cannot be overwritten -- they are all implemented using `SetOnce` or `SetOnceMap`.
+
+Iterations of the field and method analysers incrementally set definitive results, until none can made anymore. It is perfectly possible to delay decisions, but delaying should not be done more than necessary.
+
+==== Decisions about fields
+
+Many decisions about fields can only be made after aggregating data over all the methods where the field was present.
+
+By studying `fieldsLinkedToFieldsAndVariables` at method level, 
+
+==== Decisions about a method
+
+===== At end of MA cycle, based on local variable information
+
+The variable properties are computed over again, and values set here need recomputing every cycle. Nevertheless, some decisions need to be made _with a reference to local variables_.
+
+Analysing the dependency graph of linked variables, the dependencies of a field on parameters are set in `fieldsLinkedToFieldsAndVariables`; the method's `variablesLinkedToFieldsAndParameters` is filled up for local variables.
+
+The variables linked to the method result `variablesLinkedToMethodResult` and the method's `@Linked` annotation are set after a separate analysis of all return statement's `linkedVariables` data, additional input being
+-  for local variables: `variablesLinkedToFieldsAndParameters`
+-  for fields: `variablesLinkedToMe`
+
+===== At end of MA cycle, without consulting local variable info
+
+The `sideEffect` value resulting in `@StaticSideEffectsOnly` is analysed by summarizing over all statements at the end of a MA cycle.
+
+The `@Independent` of a constructor or method is computed when decisions about fields linked to parameters are known. By definition, the annotation is present on a constructor if and only if none of the fields are linked to the parameters of this constructor, as described in `variablesLinkedToMe`.
+For ordinary methods, the annotation is the exact opposite of the internal `@Linked` annotation which indicates that the return value of a method is linked to parameters or fields.
+
+By looking at the return statements only at the end of a MA cycle, a summary for return aspect of the method is made when all data is available. This is the case for the `@Identity`, `@Fluent`, `@NotNull` annotations.
+
+===== Content modification and linked variables
+
+In a method, when a modifying method is called on a local variable that is linked to a parameter, the parameter cannot get the `@NotModified` annotation. This goes further: when a field's content is modified in another method, but the field is linked to a parameter of this method, this parameter cannot get the annotation.
+
+When going over the variables, if we encounter a
+-  local variable or 
+
+===== Summary 
+
+Field modification (assignments made to fields) is set as
+*  statement analyser, analysis of assignments, set `MODIFIED`
+*  --> MA from `MODIFIED` property we set `fieldModifications`
+
+The `fieldRead` marker at the end of method analysis is set for all fields read in a method; this will be needed for content modification (variables will not be set when the field does not appear in the method).
+
+Variable linking is computed as follows: 
+
+*  statement analyser, analysis of assignments
+*  --> dependency graph in `variableProperties`
+*  --> MA: local var, field links in `establishLinks`
+*  --> (wait cycle for field analysis)
+*  --> MA: local var, field.`variablesLinkedToMe` in `updateVariablesLinkedToMethodResult`
+*  --> MA: `@Linked`, variables linked to method result
+*  --> MA: `@Independent` 
+
+In FA: `variablesLinkedToMe` and the field's `@Linked` is set based on `fieldModifications` and `fieldsLinkedToFieldsAndVariables`.
+
+
+Content modification is computed as:
+
+*  statement analyser: `CONTENT_MODIFIED` property is set for all variables
+*  --> MA, `summarizeModification` for linked variables (linked according to the dependency graph) is computed based on the `CONTENT_MODIFIED` property, and set in `directContentModification` for fields and `@NotModified` for parameters. Decisions can be delayed when the `@NotModified` status of fields has not been computed yet
+*  --> FA: based on `directContentModifications` and `fieldRead`, `@NotModifed` for fields can be set
+

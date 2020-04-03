@@ -1,0 +1,16 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <annotator
+                language="JAVA"
+                implementationClass="org.e2immu.intellij.highlighter.java.JavaAnnotator"
+        />
+        <applicationConfigurable
+                parentId="preferences.E2ImmuHighlighter"
+                id="preferences.E2ImmuHighlighter.java"
+                key="e2i.settings.java"
+                bundle="messages.E2ImmuHighlighterBundle"
+                instance="org.e2immu.intellij.highlighter.java.JavaConfigurable"
+        />
+        <applicationService serviceImplementation="org.e2immu.intellij.highlighter.java.JavaConfig" />
+    </extensions>
+</idea-plugin>

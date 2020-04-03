@@ -1,0 +1,347 @@
+/*
+ * e2immu-annot: annotations for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * -------
+ *
+ * The content of this file reflects a part of the public API
+ * of the Java SDK. The only intended contribution of the
+ * e2immu-annot project is to annotate some of the the publicly accessible
+ * classes, methods and fields. The fact that this file resembles the Java
+ * syntax is only done to facilitate the description and storage of the association
+ * between annotations and the publicly accessible API elements of the Java SDK.
+ */
+
+package java.lang;
+
+import org.e2immu.annotation.*;
+
+import java.io.PrintWriter; // used in Throwable
+import java.io.PrintStream; // used in Throwable
+import java.util.Iterator; // used in Iterable
+import java.util.Spliterator;
+import java.util.function.Consumer;
+
+@E2Immutable
+public class Object {
+    @NotNull
+    protected Object clone() {
+    }
+
+    public boolean equals(@NotModified Object object) {
+    }
+
+    protected void finalize() {
+    }
+
+    @NotNull
+    public Class<?> getClass() {
+    }
+
+    public int hashCode() {
+    }
+
+    public void notify() {
+    }
+
+    public void notifyAll() {
+    }
+
+    @NotNull
+    public String toString() {
+    }
+
+    public void wait() {
+    }
+
+    public void wait(long timeMillis) {
+    }
+
+    public void wait(long timeMillis, int nanos) {
+    }
+}
+
+@E2Immutable
+public class StackTraceElement {
+    public StackTraceElement(String declaringClass, String methodName, String fileName, int lineNumber) {
+    }
+
+    public StackTraceElement​(String classLoaderName, String moduleName, String moduleVersion,
+                              String declaringClass, String methodName, String fileName, int lineNumber) {
+    }
+
+    public String getClassLoaderName() {
+    }
+
+    public String getClassName() {
+    }
+
+    public String getFileName() {
+    }
+
+    public int getLineNumber() {
+    }
+
+    public String getMethodName() {
+    }
+
+    public String getModuleName() {
+    }
+
+    public boolean isNativeMethod() {
+    }
+}
+
+public class Throwable {
+    public Throwable() {
+    }
+
+    public Throwable(String msg) {
+    }
+
+    public Throwable(String msg, Throwable cause) {
+    }
+
+    protected Throwable(String msg, Throwable cause, boolean enableSuppression, boolean writeStackTrace) {
+    }
+
+    public Throwable(Throwable cause) {
+    }
+
+    @NotModified
+    public String getMessage() {
+    }
+
+    @NotModified
+    public String getLocalizedMessage() {
+    }
+
+    @NotModified
+    public Throwable getCause() {
+    }
+
+    @Fluent
+    public Throwable initCause(Throwable cause) {
+    }
+
+    public void printStackTrace() {
+    }
+
+    public void printStackTrace(PrintStream s) {
+    }
+
+    public void printStackTrace(PrintWriter s) {
+    }
+
+    void setStackTrace(@NullNotAllowed StackTraceElement[] stackTrace) {
+    }
+
+    void addSuppressed(@NullNotAllowed Throwable exception) {
+    }
+
+    @Fluent
+    Throwable fillinStackTrace() {
+    }
+}
+
+public class Exception extends Throwable {
+    public Exception() {
+    }
+
+    public Exception(String msg) {
+    }
+
+    public Exception(String msg, Throwable cause) {
+    }
+
+    public Exception(String msg, Throwable cause, boolean enableSuppression, boolean writeStackTrace) {
+    }
+
+    public Exception(Throwable cause) {
+    }
+}
+
+public class RuntimeException extends Exception {
+    public RuntimeException() {
+    }
+
+    public RuntimeException(String msg) {
+    }
+}
+
+public class NullPointerException extends RuntimeException {
+    public NullPointerException() {
+    }
+
+    public NullPointerException(String msg) {
+    }
+}
+
+public class IllegalArgumentException extends RuntimeException {
+    public IllegalArgumentException() {
+    }
+
+    public IllegalArgumentException(String msg) {
+    }
+}
+
+public class UnsupportedOperationException extends RuntimeException {
+    public UnsupportedOperationException() {
+    }
+
+    public UnsupportedOperationException(String msg) {
+    }
+}
+
+public @interface Override {
+
+}
+
+@E2Immutable
+public class Class {
+    String descriptorString() {
+    }
+}
+
+public interface CharSequence {
+    char charAt(int index);
+
+    int length();
+}
+
+@E2Immutable
+public class String implements CharSequence {
+    public String() {
+    }
+
+    public boolean startsWith(CharSequence s) {
+    }
+
+    public int indexOf(int ch) {
+    }
+
+    public int lastIndexOf(int ch) {
+    }
+
+    public String repeat(int count) {
+    }
+
+    public String toLowerCase() {
+    }
+
+    public String toUpperCase() {
+    }
+
+    public String trim() {
+    }
+
+    public String strip() {
+    }
+}
+
+@Container
+public class StringBuilder {
+    public StringBuilder() {
+    }
+
+    public StringBuilder(String string) {
+    }
+
+    @Fluent
+    public StringBuilder append(boolean b) {
+    }
+
+    @Fluent
+    public StringBuilder append(char c) {
+    }
+
+    @Fluent
+    public StringBuilder append(float f) {
+    }
+
+    @Fluent
+    public StringBuilder append(long l) {
+    }
+
+    @Fluent
+    public StringBuilder append(int i) {
+    }
+
+    @Fluent
+    public StringBuilder append(char[] chars) {
+    }
+
+    @Fluent
+    public StringBuilder append(String str) {
+    }
+
+    @Fluent
+    public StringBuilder append(Object o) {
+    }
+
+    public int length() {
+    }
+}
+
+@E2Immutable
+public class Integer {
+    public static final int MAX_VALUE = 0x7fffffff;
+    public static final int MIN_VALUE = 0x80000000;
+
+    int intValue() {}
+}
+
+@E2Immutable
+public class Boolean {
+    public static final boolean TRUE = true;
+    public static final boolean FALSE = false;
+
+    boolean booleanValue() {}
+}
+
+@UtilityClass
+public class Math {
+    @NotModified
+    static int max(int a, int b) {
+    }
+}
+
+@UtilityClass
+public class System {
+    public static final PrintStream out;
+    public static final PrintStream err;
+
+    public static void arraycopy(@NotModified @NullNotAllowed Object src, int srcPos, @NullNotAllowed Object dest, int destPos, int length) {
+    }
+}
+
+public @interface FunctionalInterface {
+    // marker annotation (not a marker interface...)
+}
+
+public interface Iterable<T> {
+    void forEach(@NullNotAllowed Consumer<? super T> action);
+
+    @NotNull
+    Iterator<T> iterator();
+
+    @NotNull
+    Spliterator<T> spliterator();
+}
+
+public interface Comparable<T> {
+    @NotModified
+    int compareTo(@NullNotAllowed T t);
+}

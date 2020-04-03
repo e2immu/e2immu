@@ -1,0 +1,4 @@
+[abstract]
+== Abstract
+
+The `e2immu` project provides a set of annotations and a Java code analyser to support immutability.

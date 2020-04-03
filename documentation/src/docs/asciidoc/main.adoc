@@ -1,0 +1,61 @@
+= Effective and eventual immutability
+:source-highlighter: coderay
+:source-language: java
+:description: Annotations and a code analyser in Java to support immutability
+:author: Bart Naudts
+:sectnums:
+:icons: font
+:toc: left
+:imagesdir: images
+
+include::{includedir}/abstract.adoc[]
+include::{includedir}/about.adoc[]
+include::{includedir}/motivation.adoc[]
+
+:sectnums!:
+== _Using e2immu_
+:sectnums:
+include::{includedir}/install.adoc[]
+include::{includedir}/use.adoc[]
+
+include::{includedir}/spring.adoc[]
+include::{includedir}/other_dependency_injection.adoc[]
+include::{includedir}/vertx-integration.adoc[]
+
+:sectnums!:
+== _Reference_
+:sectnums:
+include::{includedir}/list-of-annotations.adoc[]
+include::{includedir}/see-also.adoc[]
+
+:sectnums!:
+== _Technical_
+:sectnums:
+
+== Technical aspects of the analyser
+include::{includedir}/competing-definitions.adoc[]
+include::{includedir}/overview-of-inspection-and-resolution.adoc[]
+include::{includedir}/overview-of-analyser.adoc[]
+include::{includedir}/e2immutable-rules.adoc[]
+
+:sectnums!:
+== _Where next?_
+:sectnums:
+
+include::{includedir}/analysis-of-expressions.adoc[]
+
+== Copyright and License
+
+Copyright 2020, Bart Naudts
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

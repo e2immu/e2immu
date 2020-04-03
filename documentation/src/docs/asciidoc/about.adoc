@@ -1,0 +1,7 @@
+
+== About this document
+
+How to read this document?
+The <<Motivation>> section provides a narrative to the concepts that we want to introduce.
+The <<Overview of annotations>> section works more like a reference.
+

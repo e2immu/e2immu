@@ -1,0 +1,58 @@
+<?xml version='1.0'?>
+<list>
+    <option name="E2Immu highlighter defaults">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-e2immutable-t">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-e2final-t">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-container-t">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-notmodified-m">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-notmodified-p">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i-notmodified-f">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i--m">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i--p">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i--f">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+    <option name="e2i--t">
+        <value>
+            <option name="BACKGROUND" value="E8E8E8" />
+        </value>
+    </option>
+</list>

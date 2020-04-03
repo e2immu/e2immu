@@ -1,0 +1,606 @@
+/*
+ * e2immu-analyser: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package org.e2immu.analyser.analyser;
+
+import com.google.common.collect.ImmutableList;
+import org.e2immu.annotation.*;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.SetOnceMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.log;
+
+/*
+ * computes for the method:
+ *
+ * @Identity, @Fluent
+ * @StaticSideEffectsOnly
+ * @NotModified
+ *
+ * and for the parameters
+ *
+ * @NotModified
+ * @NullNotAllowed
+ *
+ */
+
+public class MethodAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
+
+    private final TypeContext typeContext;
+    private final ParameterAnalyser parameterAnalyser;
+
+    public MethodAnalyser(TypeContext typeContext) {
+        this.typeContext = typeContext;
+        this.parameterAnalyser = new ParameterAnalyser(typeContext);
+    }
+
+    public void check(MethodInfo methodInfo) {
+        log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
+
+        check(methodInfo, Independent.class, typeContext.independent.get());
+
+        if (!methodInfo.isConstructor && methodInfo.returnType() != Primitives.PRIMITIVES.voidParameterizedType) {
+            check(methodInfo, NotNull.class, typeContext.notNull.get());
+        }
+        if (!methodInfo.isConstructor) {
+            check(methodInfo, NotModified.class, typeContext.notModified.get());
+            check(methodInfo, Fluent.class, typeContext.fluent.get());
+            check(methodInfo, Identity.class, typeContext.identity.get());
+        }
+        methodInfo.methodAnalysis.unusedLocalVariables.visit((lv, b) -> {
+            if (b)
+                typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                        ", local variable " + lv.name + " is not used");
+        });
+
+        methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);
+    }
+
+    private void check(MethodInfo methodInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
+        methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
+                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getTypeName()));
+    }
+
+    public boolean analyse(MethodInfo methodInfo, VariableProperties methodProperties) {
+        List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().statements;
+        if (!statements.isEmpty()) {
+            return analyseMethod(methodInfo, methodProperties, statements);
+        }
+        return false;
+    }
+
+    // return when there have been changes
+    private boolean analyseMethod(MethodInfo methodInfo, VariableProperties methodProperties, List<Statement> statements) {
+        boolean changes = false;
+
+        log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
+
+        if (!methodInfo.methodAnalysis.numberedStatements.isSet()) {
+            List<NumberedStatement> numberedStatements = new LinkedList<>();
+            Stack<Integer> indices = new Stack<>();
+            recursivelyCreateNumberedStatements(statements, indices, numberedStatements, new SideEffectContext(typeContext, methodInfo));
+            methodInfo.methodAnalysis.numberedStatements.set(ImmutableList.copyOf(numberedStatements));
+            changes = true;
+        }
+        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            methodProperties.create(parameterInfo);
+        }
+        if (analyseFlow(methodInfo, methodProperties)) changes = true;
+        return changes;
+    }
+
+    static NumberedStatement recursivelyCreateNumberedStatements(List<Statement> statements,
+                                                                 Stack<Integer> indices,
+                                                                 List<NumberedStatement> numberedStatements,
+                                                                 SideEffectContext sideEffectContext) {
+        int statementIndex = 0;
+        NumberedStatement first = null;
+        NumberedStatement previous = null;
+        for (Statement statement : statements) {
+            NumberedStatement numberedStatement = new NumberedStatement(sideEffectContext, statement, join(indices, statementIndex));
+            numberedStatements.add(numberedStatement);
+            if (previous != null) previous.next.set(Optional.of(numberedStatement));
+            previous = numberedStatement;
+            if (first == null) first = numberedStatement;
+            indices.push(statementIndex);
+
+            int blockIndex = 0;
+            List<NumberedStatement> blocks = new ArrayList<>();
+            for (Block block : statement.blocks()) {
+                indices.push(blockIndex);
+                NumberedStatement firstOfBlock =
+                        recursivelyCreateNumberedStatements(block.statements, indices, numberedStatements, sideEffectContext);
+                blocks.add(firstOfBlock);
+                blockIndex++;
+                indices.pop();
+            }
+            numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
+            indices.pop();
+
+            ++statementIndex;
+        }
+        if (previous != null)
+            previous.next.set(Optional.empty());
+        return first;
+    }
+
+    @NotModified
+    private static int[] join(@NotModified @NullNotAllowed List<Integer> baseIndices, int index) {
+        int[] res = new int[baseIndices.size() + 1]; // f1, entry
+        int i = 0; // f1, entry
+        for (Integer bi : baseIndices) // f1
+            res[i++] = bi; // i++ part of f1; pure side effect of f1
+        res[i] = index; // f2, modification of f1 but now based on input
+        return res; // part of f1
+    }
+
+    private boolean analyseFlow(MethodInfo methodInfo, VariableProperties methodProperties) {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+
+        // pretty trivial, but no need to do computations for primitives
+        AnnotationExpression nullNotAllowed = typeContext.nullNotAllowed.get();
+        AnnotationExpression notModified = typeContext.notModified.get();
+        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            if (parameterInfo.parameterizedType.isPrimitive() && !parameterInfo.parameterAnalysis.annotations.isSet(nullNotAllowed)) {
+                log(NULL_NOT_ALLOWED, "Set @NullNotAllowed for {}", parameterInfo.detailedString());
+                parameterInfo.parameterAnalysis.annotations.put(nullNotAllowed, true);
+            }
+            if ((parameterInfo.parameterizedType.isPrimitive() || parameterInfo.parameterizedType.isFunctionalInterface(typeContext))
+                    && !parameterInfo.parameterAnalysis.annotations.isSet(notModified)) {
+                log(NOT_MODIFIED, "Set @NotModified for {}", parameterInfo.detailedString());
+                parameterInfo.parameterAnalysis.annotations.put(notModified, true);
+            }
+        }
+
+        boolean changes = false;
+        List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
+        LOGGER.debug("Analysing {} statements", numberedStatements.size());
+
+        // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
+        if (computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties)) changes = true;
+        if (updateIndependence(methodInfo)) changes = true;
+
+        /* in not modified
+        if (!methodAnalysis.sideEffect.isSet()) {
+            SideEffect sideEffect = numberedStatements.stream().map(ns -> ns.sideEffect).reduce(SideEffect.LOCAL, SideEffect::combine);
+            if (SideEffect.DELAYED == sideEffect) {
+                log(SIDE_EFFECT, "Side effect computation of {} has been delayed", methodInfo.fullyQualifiedName());
+            } else {
+                log(SIDE_EFFECT, "Side effect of {} is {}", methodInfo.fullyQualifiedName(), sideEffect);
+                methodAnalysis.sideEffect.set(sideEffect);
+                changes = true;
+
+                if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
+                    boolean sse = SideEffect.STATIC_ONLY == sideEffect;
+                    methodAnalysis.annotations.put(typeContext.notModified.get(), sse);
+                    log(SIDE_EFFECT, "Mark " + methodInfo.fullyQualifiedName() + " as " + (sse ? "" : "NOT ") + "@NotModified");
+                }
+            }
+        }
+        */
+        long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
+        if (returnStatements > 0) {
+
+            //@Identity
+            boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                    e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
+                    .count() == returnStatements;
+            if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                methodAnalysis.annotations.put(typeContext.identity.get(), true);
+                log(ANALYSER, "Set @Identity");
+                changes = true;
+            }
+            boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                    e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
+            if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                methodAnalysis.annotations.put(typeContext.identity.get(), false);
+                log(ANALYSER, "Set NOT @Identity");
+                changes = true;
+            }
+
+            //@Fluent
+            boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                    e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
+                    .count() == returnStatements;
+            if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                methodAnalysis.annotations.put(typeContext.fluent.get(), true);
+                changes = true;
+                log(ANALYSER, "Set @Fluent");
+            }
+            boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                    e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
+            if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                methodAnalysis.annotations.put(typeContext.fluent.get(), false);
+                log(ANALYSER, "Set NOT @Fluent");
+                changes = true;
+            }
+
+            // @NotNull
+            boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
+                    .count() == returnStatements;
+            if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                methodAnalysis.annotations.put(typeContext.notNull.get(), true);
+                log(ANALYSER, "Set @NotNull");
+                changes = true;
+            }
+            boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
+            if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                methodAnalysis.annotations.put(typeContext.notNull.get(), false);
+                log(ANALYSER, "Set NOT @Identity");
+                changes = true;
+            }
+        } else {
+            if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                log(ANALYSER, "Set NOT @Identity on " + methodInfo.fullyQualifiedName() + ", no return statements");
+                methodAnalysis.annotations.put(typeContext.identity.get(), false);
+            }
+            if (!methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                log(ANALYSER, "Set NOT @Fluent on " + methodInfo.fullyQualifiedName() + ", no return statements");
+                methodAnalysis.annotations.put(typeContext.fluent.get(), false);
+            }
+        }
+
+        // detect pure will rely on @Identity, @Fluent...
+        if (!methodInfo.isConstructor) {
+            if (methodInfo.isStatic) {
+                if (!methodAnalysis.createObjectOfSelf.isSet()) {
+                    boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.findInExpression(NewObject.class).stream())
+                            .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
+                    log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
+                    methodAnalysis.createObjectOfSelf.set(createSelf);
+                    changes = true;
+                }
+            }
+            if (detectNotModified(methodInfo, methodAnalysis)) changes = true;
+        }
+        return changes;
+    }
+
+    private boolean emptyOrAllStatic(SetOnceMap<FieldInfo, Boolean> map) {
+        if (map.isEmpty()) return true;
+        return map.stream().allMatch(e -> e.getKey().isStatic());
+    }
+
+    // depending on the nature of the static method, try to ensure if it is @PureFunction, @PureSupplier, @PureConsumer
+    private boolean detectNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        // already done the work?
+        if (methodAnalysis.annotations.isSet(typeContext.notModified.get())) return false;
+
+        if (!methodInfo.isStatic) {
+            // we need to check if there's fields being read/assigned/
+            if (emptyOrAllStatic(methodAnalysis.fieldRead) && emptyOrAllStatic(methodAnalysis.fieldModifications)) {
+                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                        " does not read or write fields; it should be marked static");
+                return false;
+            }
+        }
+
+        // TODO maybe a bit of overkill, need to understand how fieldmodification works again...
+        Boolean noFieldModifications = methodInfo.isAllFieldsNotModified(typeContext);
+        if (noFieldModifications == null) {
+            log(NOT_MODIFIED, "Method {} delaying @NotModified: fields modifications", methodInfo.fullyQualifiedName());
+            return false;
+        }
+        if (!noFieldModifications) {
+            log(NOT_MODIFIED, "Method {} cannot be @NotModified: it assigns its fields", methodInfo.fullyQualifiedName());
+            methodAnalysis.annotations.put(typeContext.notModified.get(), false);
+            return true;
+        }
+
+        // second step
+
+        Boolean isNotModified = methodInfo.isAllParametersNotModified(typeContext);
+        if (isNotModified == null) {
+            log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because of parameters",
+                    methodInfo.fullyQualifiedName());
+            return false;
+        }
+        if (!isNotModified) {
+            log(PURE_ANNOTATIONS, "Method {} cannot be @NotModified: some parameters are not @NotModified",
+                    methodInfo.fullyQualifiedName());
+        } else {
+            log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
+        }
+        methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
+        return true;
+    }
+
+    private boolean updateVariablesLinkedToMethodResult(List<NumberedStatement> numberedStatements,
+                                                        MethodInfo methodInfo,
+                                                        VariableProperties methodProperties) {
+        if (methodInfo.methodAnalysis.variablesLinkedToMethodResult.isSet()) return false;
+
+        Set<Variable> variables = new HashSet<>();
+        for (NumberedStatement numberedStatement : numberedStatements) {
+            if (numberedStatement.statement instanceof ReturnStatement) {
+                if (numberedStatement.linkedVariables.isSet()) { // this implies the statement is a return statement
+                    for (Variable variable : numberedStatement.linkedVariables.get()) {
+                        Set<Variable> dependencies;
+                        if (variable instanceof FieldReference) {
+                            if (!((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
+                                log(LINKED_VARIABLES, "Dependencies of {} have not yet been established", variable.detailedString());
+                                return false;
+                            }
+                            dependencies = ((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.get();
+                        } else if (variable instanceof ParameterInfo) {
+                            dependencies = Set.of(variable);
+                        } else if (variable instanceof LocalVariableReference) {
+                            dependencies = methodProperties.variablesLinkedToFieldsAndParameters.getOrDefault(variable, Set.of());
+                        } else {
+                            dependencies = Set.of(); // TODO This...
+                        }
+                        log(LINKED_VARIABLES, "Dependencies of {} are [{}]", variable.detailedString(), Variable.detailedString(dependencies));
+                        variables.addAll(dependencies);
+                    }
+                } else {
+                    log(LINKED_VARIABLES, "Not yet ready to compute linked variables of method {}", methodInfo.fullyQualifiedName());
+                    return false;
+                }
+            }
+        }
+        methodInfo.methodAnalysis.variablesLinkedToMethodResult.set(variables);
+        methodInfo.methodAnalysis.annotations.put(typeContext.linked.get(), !variables.isEmpty());
+        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", methodInfo.fullyQualifiedName(), Variable.detailedString(variables));
+        return true;
+    }
+
+    // goal: we need to establish that in this method, recursively, a given field is linked to one or more fields or parameters
+    // we need to find out if a parameter is linked, recursively, to another field or parameter
+    // local variables need to be taken out of the loop
+
+    // in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
+    // gets rid of local vars and transitive links
+    private boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
+        log(LINKED_VARIABLES, "Establishing links, copying from dependency graph of size {}",
+                methodProperties.dependencyGraph.size());
+        AtomicBoolean changes = new AtomicBoolean();
+        methodProperties.dependencyGraph.visit((variable, dependencies) -> {
+            Set<Variable> terminals = new HashSet<>(methodProperties.dependencyGraph.dependencies(variable));
+            if (dependencies != null) {
+                dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(terminals::add);
+            }
+            terminals.remove(variable); // removing myself
+            methodProperties.variablesLinkedToFieldsAndParameters.put(variable, terminals);
+            log(LINKED_VARIABLES, "MA: Set terminals of {} in {} to {}", variable.detailedString(),
+                    methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
+
+            if (variable instanceof FieldReference) {
+                if (!methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(variable)) {
+                    methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, terminals);
+                    changes.set(true);
+                    log(LINKED_VARIABLES, "MA: Decide on links of {} in {} to {}", variable.detailedString(),
+                            methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
+                }
+            }
+        });
+        return changes.get();
+    }
+
+
+    // we need a recursive structure because local variables can be defined in blocks, a little later,
+    // they disappear again. But, we should also be able to add properties simply for a block, so that those
+    // properties disappear when that level disappears
+
+    private boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements, MethodInfo methodInfo,
+                                                      VariableProperties methodProperties) {
+        boolean changes = false;
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+        StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
+        if (statementAnalyser.computeVariablePropertiesOfBlock(statements.get(0), methodProperties)) changes = true;
+
+        if (establishLinks(methodInfo, methodProperties)) changes = true;
+
+        if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodProperties))
+            changes = true;
+
+        if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
+        if (updateParameterAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
+        if (updateFieldAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
+
+        return changes;
+    }
+
+    private boolean updateIndependence(MethodInfo methodInfo) {
+        if (methodInfo.methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
+        Boolean mark = null;
+        if (methodInfo.isConstructor) {
+            List<FieldInfo> fields = methodInfo.typeInfo.typeInspection.get().fields;
+            boolean allDefined = fields.stream().allMatch(f -> f.fieldAnalysis.variablesLinkedToMe.isSet());
+            if (allDefined) {
+                mark = fields.stream().allMatch(f -> Collections.disjoint(f.fieldAnalysis.variablesLinkedToMe.get(),
+                        methodInfo.methodInspection.get().parameters));
+            }
+        } else {
+            if (methodInfo.returnType().isPrimitiveOrStringNotVoid()) mark = true;
+            if (methodInfo.returnType().isEffectivelyImmutable(typeContext) == Boolean.TRUE) mark = true;
+            Boolean linked = methodInfo.methodAnalysis.annotations.getOtherwiseNull(typeContext.linked.get());
+            if (linked != null) mark = !linked;
+        }
+        if (mark != null) {
+            methodInfo.methodAnalysis.annotations.put(typeContext.independent.get(), mark);
+            log(INDEPENDENT, "Mark method {} " + (mark ? "" : "not ") + "independent",
+                    methodInfo.fullyQualifiedName());
+        }
+        return mark != null;
+    }
+
+
+    private boolean updateAnnotationsFromMethodProperties(MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+        boolean changes = false;
+        for (Variable variable : methodProperties.variableProperties.keySet()) {
+            Set<Variable> linkedVariables = allVariablesLinkedTo(methodProperties, variable);
+            Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
+            log(MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
+                    Variable.detailedString(linkedVariables), directContentModification);
+            for (Variable linkedVariable : linkedVariables) {
+                if ((linkedVariable instanceof FieldReference)) {
+                    if (!methodAnalysis.directContentModifications.isSet(linkedVariable)) {
+                        boolean directlyModifiedField = directContentModification == Boolean.TRUE;
+                        log(MODIFY_CONTENT, "MA: Mark that the content of {} has " + (directlyModifiedField ? "" : "not ") +
+                                "been modified", linkedVariable.detailedString());
+                        methodAnalysis.directContentModifications.put(linkedVariable, directlyModifiedField);
+                        changes = true;
+                    }
+                } else if (linkedVariable instanceof ParameterInfo) {
+                    ParameterInfo parameterInfo = (ParameterInfo) linkedVariable;
+                    if (directContentModification != null) {
+                        boolean notModified = !directContentModification;
+                        if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
+                            log(MODIFY_CONTENT, "MA: Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
+                            parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
+                            changes = true;
+                        }
+                    } else {
+                        log(MODIFY_CONTENT, "Delaying setting parameter not modified on {}",
+                                Variable.detailedString(linkedVariables));
+                    }
+                }
+            }
+        }
+        return changes;
+    }
+
+    private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables) {
+        boolean hasDelays = false;
+        for (Variable variable : linkedVariables) {
+            if (variable instanceof FieldReference) {
+                Boolean notModified = ((FieldReference) variable).fieldInfo.isNotModified(typeContext);
+                if (notModified == null) hasDelays = true;
+                else if (!notModified) return true;
+            }
+            // local, parameter, field... data from statement analyser
+            VariableProperties.AboutVariable properties = methodProperties.variableProperties.get(variable);
+            // properties can be null (variable out of scope)
+            if (properties != null && properties.properties.contains(VariableProperty.CONTENT_MODIFIED)) return true;
+        }
+        return hasDelays ? null : false;
+    }
+
+    private Set<Variable> allVariablesLinkedTo(VariableProperties methodProperties, Variable variable) {
+        Set<Variable> result = new HashSet<>();
+        recursivelyAddLinkedVariables(methodProperties, variable, result);
+        return result;
+    }
+
+    private void recursivelyAddLinkedVariables(VariableProperties methodProperties, Variable variable, Set<Variable> result) {
+        if (result.contains(variable)) return;
+        result.add(variable);
+        Set<Variable> linked = methodProperties.variablesLinkedToFieldsAndParameters.get(variable);
+        if (linked != null) {
+            for (Variable v : linked) recursivelyAddLinkedVariables(methodProperties, v, result);
+        }
+        // reverse linking
+        List<Variable> reverse = methodProperties.variablesLinkedToFieldsAndParameters.entrySet()
+                .stream().filter(e -> e.getValue().contains(variable)).map(Map.Entry::getKey).collect(Collectors.toList());
+        reverse.forEach(v -> recursivelyAddLinkedVariables(methodProperties, v, result));
+    }
+
+    private boolean updateParameterAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+        boolean changes = false;
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
+            Set<VariableProperty> properties = entry.getValue().properties;
+            Variable variable = entry.getKey();
+            if (variable instanceof ParameterInfo) {
+                if (properties.contains(VariableProperty.MODIFIED)
+                        && !methodInfo.methodAnalysis.parameterModifications.isSet((ParameterInfo) variable)) {
+                    typeContext.addMessage(Message.Severity.ERROR,
+                            "Parameter " + variable.detailedString() + " should not be assigned (maybe for now)");
+                    methodInfo.methodAnalysis.parameterModifications.put((ParameterInfo) variable, true);
+                    changes = true;
+                }
+            }
+        }
+        return changes;
+    }
+
+    private boolean updateFieldAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+        boolean changes = false;
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
+            Variable variable = entry.getKey();
+            Set<VariableProperty> properties = entry.getValue().properties;
+            if (variable instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                if (!methodAnalysis.fieldModifications.isSet(fieldInfo)) {
+                    boolean isModified = properties.contains(VariableProperty.MODIFIED);
+                    methodAnalysis.fieldModifications.put(fieldInfo, isModified);
+                    log(ANALYSER, "Mark that {} is modified? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
+                    changes = true;
+                }
+                Value currentValue = entry.getValue().currentValue;
+                if (currentValue != null && properties.contains(VariableProperty.MODIFIED) &&
+                        !properties.contains(VariableProperty.MODIFIED_MULTIPLE_TIMES) &&
+                        !methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
+                    log(ANALYSER, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
+                    methodAnalysis.fieldAssignments.put(fieldInfo, currentValue);
+                }
+                if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
+                    log(ANALYSER, "Mark that the content of field {} has been read", variable.detailedString());
+                    methodAnalysis.fieldRead.put(fieldInfo, true);
+                    changes = true;
+                }
+            }
+        }
+
+        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields) {
+            if (!methodAnalysis.fieldModifications.isSet(fieldInfo)) {
+                methodAnalysis.fieldModifications.put(fieldInfo, false);
+                changes = true;
+                log(ANALYSER, "Mark field {} not modified in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
+            }
+            //FieldReference fieldReference = new FieldReference(fieldInfo, methodProperties.thisVariable);
+            //if (!methodAnalysis.directContentModifications.isSet(fieldReference)) {
+            //methodAnalysis.directContentModifications.put(fieldReference, false);
+            //changes = true;
+            //log(MODIFY_CONTENT, "Mark field {}'s content not modified in {}, not present, not delayed",
+            //        fieldInfo.fullyQualifiedName(), methodInfo.name);
+            //}
+            if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
+                methodAnalysis.fieldRead.put(fieldInfo, false);
+                log(ANALYSER, "Mark field {} as ignore in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
+                changes = true;
+            }
+        }
+        return changes;
+    }
+
+    private static Boolean onReturnStatement(NumberedStatement ns, Predicate<Expression> predicate) {
+        if (ns.statement instanceof ReturnStatement) {
+            ReturnStatement ret = (ReturnStatement) ns.statement;
+            return predicate.test(ret.expression);
+        }
+        return false;
+    }
+}

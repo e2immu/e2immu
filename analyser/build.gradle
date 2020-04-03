@@ -1,0 +1,80 @@
+/*
+ * e2immu-analyser: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+/*
+repositories {
+    mavenCentral()
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/bnaudts/e2immu-annot")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+*/
+java {
+    sourceCompatibility = JavaVersion.VERSION_13
+    targetCompatibility = JavaVersion.VERSION_13
+}
+
+dependencies {
+    implementation project(':annotations')
+
+    implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
+    implementation group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.15.7'
+                                                                                      // LGPL or Apache License 2.0
+    implementation group: 'org.ow2.asm', name: 'asm', version: '7.2'                  // 3-clause BSD permissive license
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'          // Apache License 2.0
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.6'      // Apache License 2.0
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.12'
+
+    // TEST
+
+    testImplementation "junit:junit:4.12"                                             // EPL v1.0
+    testImplementation group: 'io.vertx', name: 'vertx-core', version: '3.8.5'
+    testImplementation 'io.vertx:vertx-config:3.8.5'
+    testImplementation 'io.vertx:vertx-config-yaml:3.8.5'
+    testImplementation 'io.vertx:vertx-web:3.8.5'
+}
+
+// for now, we publish to maven local, so that we can use the plugin locally
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.e2immu'
+            artifactId = 'analyser'
+            version = '0.0.1'
+
+            from components.java
+        }
+    }
+}
+

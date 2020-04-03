@@ -1,0 +1,205 @@
+/*
+ * e2immu-analyser: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package org.e2immu.analyser.parser;
+
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.util.Resources;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.log;
+
+public class ParseAndInspect {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseAndInspect.class);
+
+    @NotNull
+    private final ByteCodeInspector byteCodeInspector;
+    @NotNull
+    private final TypeStore sourceTypeStore;
+    private final boolean hasBeenDefined;
+
+    /**
+     * @param byteCodeInspector required to inspect dependencies
+     * @param hasBeenDefined    true for normal Java source code that has bodies; false for annotated API files
+     * @param sourceTypeStore   required, to deal with asterisk imports in the sources
+     */
+    public ParseAndInspect(@NullNotAllowed ByteCodeInspector byteCodeInspector,
+                           boolean hasBeenDefined,
+                           TypeStore sourceTypeStore) {
+        this.byteCodeInspector = byteCodeInspector;
+        this.hasBeenDefined = hasBeenDefined;
+        this.sourceTypeStore = sourceTypeStore;
+    }
+
+    // NOTE: there is a bit of optimization we can do if we parse/analyse per package
+
+    /**
+     * @param typeContextOfFile this type context should contain a delegating type store, with <code>sourceTypeStore</code>
+     *                          being the local type store
+     * @param fileName          for error reporting
+     * @param sourceCode        the source code to parse
+     * @return the list of primary types found in the source code
+     */
+    public List<TypeInfo> phase1ParseAndInspect(TypeContext typeContextOfFile, String fileName, String sourceCode) {
+        CompilationUnit compilationUnit = StaticJavaParser.parse(sourceCode);
+        if (compilationUnit.getTypes().isEmpty()) {
+            LOGGER.warn("No types in compilation unit: {}", fileName);
+            return List.of();
+        }
+        String packageName = compilationUnit.getPackageDeclaration()
+                .map(pd -> pd.getName().asString())
+                .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + fileName));
+
+        // add all types from the current package that we can find in the source path
+        sourceTypeStore.visit(packageName.split("\\."), (expansion, typeInfoList) -> {
+            for (TypeInfo typeInfo : typeInfoList) {
+                if (typeInfo.fullyQualifiedName.equals(packageName + "." + typeInfo.simpleName)) {
+                    typeContextOfFile.addToContext(typeInfo);
+                }
+            }
+        });
+
+        // add all types from the current package that we can find in the class path, but ONLY
+        // if it doesn't exist already in the source path!
+        Resources classPath = byteCodeInspector.getClassPath();
+        classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
+            if (!expansion[expansion.length - 1].contains("$")) {
+                String fqn = fqnOfClassFile(packageName, expansion);
+                TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
+                if (typeInfo == null) {
+                    inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContextOfFile);
+                }
+            }
+        });
+
+        for (ImportDeclaration importDeclaration : compilationUnit.getImports()) {
+            String fullyQualified = importDeclaration.getName().asString();
+            if (importDeclaration.isStatic()) {
+                // fields and methods
+                if (importDeclaration.isAsterisk()) {
+                    TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
+                    log(INSPECT, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
+                    typeContextOfFile.addImportStaticWildcard(typeInfo);
+                } else {
+                    int dot = fullyQualified.lastIndexOf('.');
+                    String typeName = fullyQualified.substring(0, dot);
+                    String member = fullyQualified.substring(dot + 1);
+                    TypeInfo typeInfo = importType(typeName, typeContextOfFile);
+                    log(INSPECT, "Add import static member {} on class {}", typeName, member);
+                    typeContextOfFile.addImportStatic(typeInfo, member);
+                }
+            } else {
+                // types
+                if (importDeclaration.isAsterisk()) {
+                    log(INSPECT, "Need to parse folder {}", fullyQualified);
+                    if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
+                        sourceTypeStore.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
+                            for (TypeInfo typeInfo : typeInfoList) {
+                                if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
+                                    typeContextOfFile.addToContext(typeInfo);
+                                }
+                            }
+                        });
+                        classPath.expandLeaves(fullyQualified, ".class", (expansion, urls) -> {
+                            if (!expansion[expansion.length - 1].contains("$")) {
+                                String fqn = fqnOfClassFile(fullyQualified, expansion);
+                                TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
+                                if (typeInfo == null) {
+                                    inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContextOfFile);
+                                } else {
+                                    typeContextOfFile.addToContext(typeInfo);
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    log(INSPECT, "Import of {}", fullyQualified);
+                    importType(fullyQualified, typeContextOfFile);
+                }
+            }
+        }
+        // we first add the types to the type context, so that they're all known
+        compilationUnit.getTypes().forEach(td -> {
+            String name = td.getName().asString();
+            TypeInfo typeInfo = typeContextOfFile.typeStore.getOrCreate(packageName + "." + name);
+            typeContextOfFile.addToContext(typeInfo);
+            typeInfo.recursivelyAddToTypeStore(typeContextOfFile.typeStore, td);
+        });
+        // only then do we start inspection
+        List<TypeInfo> result = new ArrayList<>();
+        for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
+            String name = td.getName().asString();
+            TypeInfo typeInfo = typeContextOfFile.typeStore.get(packageName + "." + name);
+            // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
+            // have already been inspected (AnnotationType as well)
+            if (!typeInfo.typeInspection.isSet()) {
+                try {
+                    ExpressionContext expressionContext = ExpressionContext.forInspection(typeInfo,
+                            new TypeContext(packageName, typeContextOfFile));
+                    typeInfo.inspect(hasBeenDefined, null, td, expressionContext);
+                } catch (RuntimeException rte) {
+                    LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
+                    throw rte;
+                }
+            }
+            result.add(typeInfo);
+        }
+        return result;
+    }
+
+    private TypeInfo importType(String fqn, TypeContext typeContext) {
+        TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
+        if (typeInfo == null) {
+            return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
+        }
+        typeContext.addToContext(typeInfo);
+        return typeInfo;
+    }
+
+
+    // inspect from class path
+    private TypeInfo inspectWithByteCodeInspectorAndAddToTypeContext(String fqn, TypeContext typeContext) {
+        String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
+        byteCodeInspector.inspectFromPath(pathInClassPath);
+        TypeInfo typeInfo = typeContext.getFullyQualified(fqn, true);
+        log(INSPECT, "Add to type context: {}", typeInfo.fullyQualifiedName);
+        typeContext.addToContext(typeInfo);
+        return typeInfo;
+    }
+
+    static String fqnOfClassFile(String prefix, String[] suffixes) {
+        String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");
+        if ( combined.endsWith(".class")) {
+            return combined.substring(0, combined.length() -  6);
+        }
+        throw new UnsupportedOperationException("Expected .class or .java file, but got " + combined);
+    }
+
+}
