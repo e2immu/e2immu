@@ -65,7 +65,7 @@ public class TestParseUtilPackage {
         Map<String, String> properties = builder
                 .put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString())
                 .put(SOURCE, "src/main/java")
-                .put(RESTRICT_SOURCE, "org.e2immu.analyser.util")
+                .put(SOURCE_PACKAGES, "org.e2immu.analyser.util")
                 .put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod")
                 .put(Main.UPLOAD, "true")
                 .build();

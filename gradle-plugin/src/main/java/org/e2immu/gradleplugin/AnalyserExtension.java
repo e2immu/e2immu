@@ -21,11 +21,18 @@ package org.e2immu.gradleplugin;
 import org.gradle.api.Action;
 
 public class AnalyserExtension {
-    public static final String ANALYSER_EXTENSION_NAME = "e2immu-analyser";
+    public static final String ANALYSER_EXTENSION_NAME = "e2immu";
     public static final String ANALYSER_TASK_NAME = "e2immu-analyser";
 
     private boolean skipProject;
     private String jmods;
+    private String jre;
+    private String sourcePackages;
+    private String writeAnnotatedAPIPackages;
+    private String writeAnnotationXMLPackages;
+    private Boolean upload;
+    private String uploadUrl;
+    private String uploadPackages;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -51,5 +58,61 @@ public class AnalyserExtension {
 
     public void setJmods(String jmods) {
         this.jmods = jmods;
+    }
+
+    public String getJre() {
+        return jre;
+    }
+
+    public void setJre(String jre) {
+        this.jre = jre;
+    }
+
+    public String getSourcePackages() {
+        return sourcePackages;
+    }
+
+    public void setSourcePackages(String sourcePackages) {
+        this.sourcePackages = sourcePackages;
+    }
+
+    public String getWriteAnnotatedAPIPackages() {
+        return writeAnnotatedAPIPackages;
+    }
+
+    public void setWriteAnnotatedAPIPackages(String writeAnnotatedAPIPackages) {
+        this.writeAnnotatedAPIPackages = writeAnnotatedAPIPackages;
+    }
+
+    public String getWriteAnnotationXMLPackages() {
+        return writeAnnotationXMLPackages;
+    }
+
+    public void setWriteAnnotationXMLPackages(String writeAnnotationXMLPackages) {
+        this.writeAnnotationXMLPackages = writeAnnotationXMLPackages;
+    }
+
+    public Boolean getUpload() {
+        return upload;
+    }
+
+    public void setUpload(boolean upload) {
+        this.upload = upload;
+    }
+
+    public String getUploadPackages() {
+        return uploadPackages;
+    }
+
+    public void setUploadPackages(String uploadPackages) {
+        this.uploadPackages = uploadPackages;
+    }
+
+    public String getUploadUrl() {
+        return uploadUrl;
+    }
+
+    public void setUploadUrl(String uploadUrl) {
+        this.uploadUrl = uploadUrl;
     }
 }

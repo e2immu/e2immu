@@ -71,7 +71,7 @@ public class InputConfiguration {
         setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
-        setSplitStringProperty(analyserProperties, COMMA, RESTRICT_SOURCE, builder::addRestrictSourceToPackages);
+        setSplitStringProperty(analyserProperties, COMMA, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
         return builder.build();
     }
 

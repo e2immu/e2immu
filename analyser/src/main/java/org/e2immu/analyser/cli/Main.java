@@ -21,7 +21,6 @@ package org.e2immu.analyser.cli;
 import org.apache.commons.cli.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.util.Logger;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -40,7 +39,7 @@ public class Main {
     public static final String WRITE_ANNOTATION_XML_PACKAGES = "write-annotation-xml-packages";
     public static final String WRITE_ANNOTATED_API_PACKAGES = "write-annotated-api-packages";
     public static final String COMMA = ",";
-    public static final String RESTRICT_SOURCE = "restrict-source";
+    public static final String SOURCE_PACKAGES = "source-packages";
     public static final String JRE = "jre";
     public static final String CLASSPATH = "classpath";
     public static final String TEST_CLASSPATH = "test-classpath";
@@ -76,7 +75,7 @@ public class Main {
             String sourceEncoding = cmd.getOptionValue(SOURCE_ENCODING);
             inputBuilder.setSourceEncoding(sourceEncoding);
 
-            String[] restrictSourceToPackages = cmd.getOptionValues(RESTRICT_SOURCE);
+            String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
             splitAndAdd(restrictSourceToPackages, COMMA, inputBuilder::addRestrictSourceToPackages);
             builder.setInputConfiguration(inputBuilder.build());
 
@@ -160,7 +159,7 @@ public class Main {
                 .desc("Provide an alternative location for the Java Runtime Environment (JRE). " +
                         "If absent, the JRE from the analyser is used: '" + System.getProperty("java.home") + "'.").build());
         options.addOption(Option.builder()
-                .longOpt(RESTRICT_SOURCE)
+                .longOpt(SOURCE_PACKAGES)
                 .hasArg().argName("PATH")
                 .desc("Restrict the sources parsed to the paths" +
                         " specified in the argument. Use ',' to separate paths, or use this option multiple times." +

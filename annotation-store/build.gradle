@@ -28,3 +28,12 @@ dependencies {
 application {
     mainClassName = 'org.e2immu.kvstore.Store'
 }
+
+e2immu {
+    skipProject = false
+    sourcePackages = 'org.e2immu.'
+    jmods = 'java.base.jmod,java.se.jmod'
+    jre = '/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/'
+    writeAnnotatedAPIPackages = 'org.e2immu.'
+    writeAnnotationXMLPackages = 'org.e2immu.'
+}

@@ -83,7 +83,7 @@ public class AnalyserPropertyComputer {
             return;
         }
         Map<String, Object> rawProperties = new LinkedHashMap<>();
-        detectProperties(project, rawProperties);
+        detectProperties(project, rawProperties, extension);
 
         ActionBroadcast<AnalyserProperties> actionBroadcast = actionBroadcastMap.get(project.getPath());
         if (actionBroadcast != null) {
@@ -121,18 +121,26 @@ public class AnalyserPropertyComputer {
         }
     }
 
-    private void detectProperties(final Project project, final Map<String, Object> properties) {
-        properties.put(Main.UPLOAD_PROJECT, project.getName());
-        String workDir = project.getProjectDir().getAbsolutePath();
+    private void detectProperties(final Project project, final Map<String, Object> properties, AnalyserExtension extension) {
+        properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
+        properties.put(Main.JRE, extension.getJre());
 
+        properties.put(Main.UPLOAD, extension.getUpload() == null || extension.getUpload());
+        properties.put(Main.UPLOAD_PROJECT, project.getName());
+        properties.put(Main.UPLOAD_URL, extension.getUploadUrl());
+        properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
+
+        String workDir = project.getProjectDir().getAbsolutePath();
         properties.put(Main.WRITE_ANNOTATED_API, "true");
         properties.put(Main.WRITE_ANNOTATED_API_DIR, workDir + Main.PATH_SEPARATOR + "annotatedAPIs");
+        properties.put(Main.WRITE_ANNOTATED_API_PACKAGES, extension.getWriteAnnotatedAPIPackages());
 
         properties.put(Main.WRITE_ANNOTATION_XML, "true");
         properties.put(Main.WRITE_ANNOTATION_XML_DIR, workDir + Main.PATH_SEPARATOR + "annotationXml");
+        properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.getWriteAnnotationXMLPackages());
 
         project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
-            boolean hasSource = detectSourceDirsAndJavaClasspath(project, properties);
+            boolean hasSource = detectSourceDirsAndJavaClasspath(project, properties, extension.getJmods());
             if (hasSource) {
                 detectSourceEncoding(project, properties);
             }
@@ -148,7 +156,7 @@ public class AnalyserPropertyComputer {
         });
     }
 
-    private static boolean detectSourceDirsAndJavaClasspath(Project project, Map<String, Object> properties) {
+    private static boolean detectSourceDirsAndJavaClasspath(Project project, Map<String, Object> properties, String jmods) {
         JavaPluginConvention javaPluginConvention = new DslObject(project).getConvention().getPlugin(JavaPluginConvention.class);
 
         SourceSet main = javaPluginConvention.getSourceSets().getAt("main");
@@ -159,7 +167,14 @@ public class AnalyserPropertyComputer {
         String testDirectoriesPathSeparated = sourcePathFromSourceSet(test);
         properties.put(Main.TEST_SOURCE, testDirectoriesPathSeparated);
 
-        String classPathSeparated = librariesFromSourceSet(main) + Main.PATH_SEPARATOR + "jmods/java.base.jmod";
+        String jmodsSeparated;
+        if (jmods == null || jmods.trim().isEmpty()) jmodsSeparated = "";
+        else {
+            jmodsSeparated = Arrays.stream(jmods.trim().split("[" + Main.COMMA + Main.PATH_SEPARATOR + "]"))
+                    .map(s -> Main.PATH_SEPARATOR + "jmods/" + s)
+                    .collect(Collectors.joining());
+        }
+        String classPathSeparated = librariesFromSourceSet(main) + jmodsSeparated;
         properties.put(Main.CLASSPATH, classPathSeparated);
 
         String testClassPathSeparated = librariesFromSourceSet(test);
