@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  * This context is inherently recursive, dependent on the container.
  */
 public class TypeContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeContext.class);
     private final TypeContext parentContext;
 
     public final TypeStore typeStore;
@@ -167,7 +166,6 @@ public class TypeContext {
 
     public void addToContext(@NullNotAllowed NamedType namedType) {
         Objects.requireNonNull(namedType);
-        LOGGER.debug("Adding simple type name {} to type context", namedType.simpleName());
         map.put(namedType.simpleName(), namedType);
     }
 

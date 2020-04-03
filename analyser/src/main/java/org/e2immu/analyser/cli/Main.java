@@ -43,7 +43,7 @@ public class Main {
     public static final String RESTRICT_SOURCE = "restrict-source";
     public static final String JRE = "jre";
     public static final String CLASSPATH = "classpath";
-    public static final String TEST_CLASSPATH = "classpath";
+    public static final String TEST_CLASSPATH = "test-classpath";
     public static final String SOURCE = "source";
     public static final String TEST_SOURCE = "test-source";
     public static final String SOURCE_ENCODING = "source-encoding";

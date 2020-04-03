@@ -98,6 +98,8 @@ public class AnalyserPropertyComputer {
         // convert all the properties from sub-projects into dot-notated properties
         flattenProperties(rawProperties, prefix, properties);
 
+        LOGGER.debug("Resulting map is " + properties);
+
         List<Project> enabledChildProjects = project.getChildProjects().values().stream()
                 .filter(p -> !p.getExtensions().getByType(AnalyserExtension.class).isSkipProject())
                 .collect(Collectors.toList());
@@ -157,7 +159,7 @@ public class AnalyserPropertyComputer {
         String testDirectoriesPathSeparated = sourcePathFromSourceSet(test);
         properties.put(Main.TEST_SOURCE, testDirectoriesPathSeparated);
 
-        String classPathSeparated = librariesFromSourceSet(main);
+        String classPathSeparated = librariesFromSourceSet(main) + Main.PATH_SEPARATOR + "jmods/java.base.jmod";
         properties.put(Main.CLASSPATH, classPathSeparated);
 
         String testClassPathSeparated = librariesFromSourceSet(test);
@@ -186,8 +188,9 @@ public class AnalyserPropertyComputer {
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             String key = entry.getKey().toString();
             if (key.startsWith(PREFIX)) {
-                String stripped = key.substring(PREFIX.length());
-                properties.put(stripped, entry.getValue().toString());
+                LOGGER.debug("Overwriting property from system: {}", key);
+                String strippedKey = key.substring(PREFIX.length());
+                properties.put(strippedKey, entry.getValue().toString());
             }
         }
     }

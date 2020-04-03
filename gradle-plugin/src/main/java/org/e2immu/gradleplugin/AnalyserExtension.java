@@ -25,6 +25,8 @@ public class AnalyserExtension {
     public static final String ANALYSER_TASK_NAME = "e2immu-analyser";
 
     private boolean skipProject;
+    private String jmods;
+
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
     public AnalyserExtension(ActionBroadcast<AnalyserProperties> propertiesActions) {
@@ -41,5 +43,13 @@ public class AnalyserExtension {
 
     public void setSkipProject(boolean skipProject) {
         this.skipProject = skipProject;
+    }
+
+    public String getJmods() {
+        return jmods;
+    }
+
+    public void setJmods(String jmods) {
+        this.jmods = jmods;
     }
 }

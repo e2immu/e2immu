@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.cli.Main.COMMA;
-import static org.e2immu.analyser.util.Logger.log;
 
 /**
  * Basic use:
@@ -114,6 +113,7 @@ public class Configuration {
 
     static void setSplitStringProperty(Map<String, String> properties, String separator, String key, Consumer<String> consumer) {
         String value = properties.get(key);
+        LOGGER.debug("Have {}: {}", key, value);
         if (value != null) {
             String[] parts = value.split(separator);
             for (String part : parts) {

@@ -19,13 +19,9 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @E2Final(after = "set", type = AnnotationType.CONTRACT)
 public class SetOnce<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SetOnce.class);
-
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
@@ -38,7 +34,6 @@ public class SetOnce<T> {
                 throw new UnsupportedOperationException("Already set");
             }
             this.t = t;
-            LOGGER.debug("Set value of {} to {}", this, t);
         }
     }
 
@@ -48,7 +43,6 @@ public class SetOnce<T> {
         synchronized (this) {
             if (this.t == null) {
                 this.t = t;
-                LOGGER.debug("Set value of {} to {}", this, t);
             }
         }
     }
@@ -69,7 +63,6 @@ public class SetOnce<T> {
                 throw new UnsupportedOperationException("Not yet set; do not use overwrite lightly");
             }
             this.t = t;
-            LOGGER.debug("Overwrote value of {} to {}", this, t);
         }
     }
 
