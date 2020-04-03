@@ -26,8 +26,7 @@ import org.e2immu.annotation.Fluent;
 
 import java.util.*;
 
-import static org.e2immu.analyser.config.Configuration.setBooleanProperty;
-import static org.e2immu.analyser.config.Configuration.setStringProperty;
+import static org.e2immu.analyser.config.Configuration.*;
 
 @E2Immutable
 public class AnnotationXmlConfiguration {
@@ -59,7 +58,7 @@ public class AnnotationXmlConfiguration {
         Builder builder = new Builder();
         setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATION_XML, builder::setAnnotationXml);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATION_XML_DIR, builder::setWriteAnnotationXmlDir);
-        setStringProperty(analyserProperties, Main.WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATION_XML_PACKAGES, builder::addAnnotationXmlPackages);
         return builder.build();
     }
 

@@ -60,8 +60,8 @@ public class AnalyserTask extends ConventionTask {
         }
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, Set.of(CONFIGURATION));
 
-        Configuration configuration = Configuration.fromProperties(analyserProperties);
-        log(CONFIGURATION, "Configuration: {}", configuration);
+        Configuration configuration = Configuration.fromProperties(properties);
+        log(CONFIGURATION, "Configuration:\n{}", configuration);
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets);
 
         try {
@@ -77,7 +77,7 @@ public class AnalyserTask extends ConventionTask {
     }
 
     /**
-     * @return The String key/value pairs to be passed to the SonarQube Scanner.
+     * @return The String key/value pairs to be passed to the analyser.
      * {@code null} values are not permitted.
      */
     @Input

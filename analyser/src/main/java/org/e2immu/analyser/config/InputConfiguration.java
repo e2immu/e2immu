@@ -28,6 +28,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static org.e2immu.analyser.cli.Main.*;
+import static org.e2immu.analyser.config.Configuration.setSplitStringProperty;
 import static org.e2immu.analyser.config.Configuration.setStringProperty;
 
 @E2Immutable
@@ -66,11 +68,11 @@ public class InputConfiguration {
 
     public static InputConfiguration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
-        setStringProperty(analyserProperties, Main.JRE, builder::setAlternativeJREDirectory);
-        setStringProperty(analyserProperties, Main.SOURCE_ENCODING, builder::setSourceEncoding);
-        setStringProperty(analyserProperties, Main.SOURCE, builder::addSources);
-        setStringProperty(analyserProperties, Main.CLASSPATH, builder::addClassPath);
-        setStringProperty(analyserProperties, Main.RESTRICT_SOURCE, builder::addRestrictSourceToPackages);
+        setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
+        setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
+        setSplitStringProperty(analyserProperties, COMMA, RESTRICT_SOURCE, builder::addRestrictSourceToPackages);
         return builder.build();
     }
 
@@ -84,10 +86,10 @@ public class InputConfiguration {
 
         public InputConfiguration build() {
             if (classPathParts.isEmpty()) {
-                classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH.split(Main.PATH_SEPARATOR)));
+                classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH.split(PATH_SEPARATOR)));
             }
             if (sourceDirs.isEmpty()) {
-                sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(Main.PATH_SEPARATOR)));
+                sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(PATH_SEPARATOR)));
             }
             Charset sourceCharset = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
             return new InputConfiguration(ImmutableList.copyOf(sourceDirs),

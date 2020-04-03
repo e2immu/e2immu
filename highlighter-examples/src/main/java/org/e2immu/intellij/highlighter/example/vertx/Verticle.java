@@ -16,9 +16,8 @@
  *
  */
 
-package org.e2immu.framework.vertx;
+package org.e2immu.intellij.highlighter.example.vertx;
 
-import ch.qos.logback.classic.Level;
 import com.google.common.collect.ImmutableList;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
@@ -41,12 +40,12 @@ import java.util.List;
  * Class that derives from {@link io.vertx.core.AbstractVerticle()}. This super class is eventually final, after
  * a call to its {@code init()} method. Here we override the {@link #start()} method; this method acts as our local
  * eventually final marker. The Vertx.io framework is responsible for both initialisation calls.
- *
+ * <p>
  * The fact that we mark this class @EventuallyFinal also means that we're willing to make it a container,
  * in other words, all parameters of public methods will be marked @NotModified. The only parameter we have to study
  * is {@code startPromise}, of a @Container type. Two of its methods are called, and both cause modifications of the container.
  * This is not a problem because the parameter is an @Output parameter!
- *
+ * <p>
  * The assignment to {@link #configuration} happens in a handler which will be executed some time after
  * the assignment of references to two methods that refer to it, {@link #handleRequestA} and {@link #handleRequestList}.
  * These two methods are not explicitly invoked anywhere in the class.
@@ -62,8 +61,6 @@ public class Verticle extends AbstractVerticle {
     private static final Logger LOGGER = LoggerFactory.getLogger(Verticle.class);
 
     public static void main(String[] args) {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
-
         Verticle myVerticle = new Verticle();
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(myVerticle);
@@ -105,7 +102,7 @@ public class Verticle extends AbstractVerticle {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         server.close(); // not interested when this happens...
         LOGGER.info("Closed http server");
     }

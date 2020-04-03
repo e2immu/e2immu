@@ -29,8 +29,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.e2immu.analyser.config.Configuration.setBooleanProperty;
-import static org.e2immu.analyser.config.Configuration.setStringProperty;
+import static org.e2immu.analyser.cli.Main.*;
+import static org.e2immu.analyser.config.Configuration.*;
 
 @E2Immutable
 public class UploadConfiguration {
@@ -66,10 +66,10 @@ public class UploadConfiguration {
 
     public static UploadConfiguration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
-        setBooleanProperty(analyserProperties, Main.UPLOAD, builder::setUpload);
-        setStringProperty(analyserProperties, Main.UPLOAD_PROJECT, builder::setProjectName);
-        setStringProperty(analyserProperties, Main.UPLOAD_URL, builder::setAnnotationServerUrl);
-        setStringProperty(analyserProperties, Main.UPLOAD_PACKAGES, builder::addUploadPackage);
+        setBooleanProperty(analyserProperties, UPLOAD, builder::setUpload);
+        setStringProperty(analyserProperties, UPLOAD_PROJECT, builder::setProjectName);
+        setStringProperty(analyserProperties, UPLOAD_URL, builder::setAnnotationServerUrl);
+        setSplitStringProperty(analyserProperties, COMMA, UPLOAD_PACKAGES, builder::addUploadPackage);
         return builder.build();
     }
 

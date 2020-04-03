@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu;
+package org.e2immu.intellij.highlighter.example;
 
 import java.util.ArrayList;
 import java.util.List;

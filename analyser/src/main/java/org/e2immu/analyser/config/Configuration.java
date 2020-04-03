@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.cli.Main.COMMA;
 import static org.e2immu.analyser.util.Logger.log;
 
 /**
@@ -98,7 +99,7 @@ public class Configuration {
 
         setBooleanProperty(analyserProperties, Main.QUIET, builder::setQuiet);
         setBooleanProperty(analyserProperties, Main.IGNORE_ERRORS, builder::setIgnoreErrors);
-        setStringProperty(analyserProperties, Main.DEBUG, builder::addDebugLogTargets);
+        setSplitStringProperty(analyserProperties, COMMA, Main.DEBUG, builder::addDebugLogTargets);
 
         return builder.build();
     }
@@ -108,6 +109,18 @@ public class Configuration {
         if (value != null) {
             String trim = value.trim();
             if (!trim.isEmpty()) consumer.accept(trim);
+        }
+    }
+
+    static void setSplitStringProperty(Map<String, String> properties, String separator, String key, Consumer<String> consumer) {
+        String value = properties.get(key);
+        if (value != null) {
+            String[] parts = value.split(separator);
+            for (String part : parts) {
+                if (part != null && !part.trim().isEmpty()) {
+                    consumer.accept(part);
+                }
+            }
         }
     }
 
@@ -180,7 +193,7 @@ public class Configuration {
 
         @Fluent
         public Builder addDebugLogTargets(String debugLogTargets) {
-            for (String s : debugLogTargets.split(Main.COMMA)) {
+            for (String s : debugLogTargets.split(COMMA)) {
                 if (s != null && !s.trim().isEmpty()) {
                     try {
                         org.e2immu.analyser.util.Logger.LogTarget logTarget = org.e2immu.analyser.util.Logger.LogTarget.valueOf(s.toUpperCase());

@@ -1,7 +1,5 @@
 package org.e2immu.intellij.highlighter.example;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotModified;
 import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;

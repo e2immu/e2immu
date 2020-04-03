@@ -26,8 +26,7 @@ import org.e2immu.annotation.Fluent;
 
 import java.util.*;
 
-import static org.e2immu.analyser.config.Configuration.setBooleanProperty;
-import static org.e2immu.analyser.config.Configuration.setStringProperty;
+import static org.e2immu.analyser.config.Configuration.*;
 
 @E2Immutable
 public class AnnotatedAPIConfiguration {
@@ -49,7 +48,7 @@ public class AnnotatedAPIConfiguration {
         Builder builder = new Builder();
         setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATED_API, builder::setAnnotatedAPIs);
         setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_DIR, builder::setWriteAnnotatedAPIsDir);
-        setStringProperty(analyserProperties, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
+        setSplitStringProperty(analyserProperties, Main.COMMA, Main.WRITE_ANNOTATED_API_PACKAGES, builder::addAnnotatedAPIPackages);
         return builder.build();
     }
 

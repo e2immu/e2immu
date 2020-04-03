@@ -18,15 +18,24 @@
 
 package org.e2immu.analyser.parser;
 
+import com.google.common.collect.ImmutableMap;
+
+import static org.e2immu.analyser.cli.Main.*;
+
+import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
+
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class TestParseUtilPackage {
 
@@ -45,6 +54,23 @@ public class TestParseUtilPackage {
                 .setUploadConfiguration(new UploadConfiguration.Builder()
                         .setUpload(true).build())
                 .build();
+        Parser parser = new Parser(configuration);
+        List<SortedType> types = parser.run();
+        Assert.assertTrue(types.size() >= 15);
+    }
+
+    @Test
+    public void testViaProperties() throws IOException {
+        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+        Map<String, String> properties = builder
+                .put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString())
+                .put(SOURCE, "src/main/java")
+                .put(RESTRICT_SOURCE, "org.e2immu.analyser.util")
+                .put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod")
+                .put(Main.UPLOAD, "true")
+                .build();
+        Configuration configuration = Configuration.fromProperties(properties);
+        Logger.activate(configuration.logTargets);
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         Assert.assertTrue(types.size() >= 15);

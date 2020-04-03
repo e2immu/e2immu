@@ -54,11 +54,8 @@ dependencies {
 
     // TEST
 
-    testImplementation "junit:junit:4.12"                                             // EPL v1.0
-    testImplementation group: 'io.vertx', name: 'vertx-core', version: '3.8.5'
-    testImplementation 'io.vertx:vertx-config:3.8.5'
-    testImplementation 'io.vertx:vertx-config-yaml:3.8.5'
-    testImplementation 'io.vertx:vertx-web:3.8.5'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'                 // EPL v1.0
+
 }
 
 // for now, we publish to maven local, so that we can use the plugin locally
