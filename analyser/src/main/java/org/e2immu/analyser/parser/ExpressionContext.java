@@ -374,6 +374,19 @@ public class ExpressionContext {
         if (expression.isEnclosedExpr()) {
             return new EnclosedExpression(parseExpression(((EnclosedExpr) expression).getInner()));
         }
+        if (expression.isLongLiteralExpr()) {
+            String valueWithL = expression.asLongLiteralExpr().getValue();
+            String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ? valueWithL.substring(0, valueWithL.length() - 1) : valueWithL;
+            return new LongConstant(Long.parseLong(value));
+        }
+        if (expression.isDoubleLiteralExpr()) {
+            String valueWithD = expression.asDoubleLiteralExpr().getValue();
+            String value = valueWithD.endsWith("D") || valueWithD.endsWith("d") ? valueWithD.substring(0, valueWithD.length() - 1) : valueWithD;
+            return new DoubleConstant(Double.parseDouble(value));
+        }
+        if (expression.isCharLiteralExpr()) {
+            return new CharConstant(expression.asCharLiteralExpr().asChar());
+        }
         throw new UnsupportedOperationException("Unknown expression type " + expression +
                 " class " + expression.getClass() + " at " + expression.getBegin());
     }

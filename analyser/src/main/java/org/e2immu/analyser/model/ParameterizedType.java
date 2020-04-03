@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ParameterizedType {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
@@ -108,7 +107,6 @@ public class ParameterizedType {
         } else {
             name = baseType.asString();
         }
-        LOGGER.debug("Trying to find type {}", name);
         NamedType namedType = context.get(name, false);
         if (namedType instanceof TypeInfo) {
             TypeInfo typeInfo = (TypeInfo) namedType;
@@ -448,7 +446,6 @@ public class ParameterizedType {
         } else {
             if (wildCard == WildCard.UNBOUND) return true; // <?> anything goes
         }
-        LOGGER.debug("False comparing " + this.detailedString() + " to " + type.detailedString());
         return false;
     }
 

@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 
 public class VariableContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VariableContext.class);
     public final VariableContext parentContext;
 
     public static VariableContext initialVariableContext(Map<String, FieldReference> staticallyImportedFields) {
         return new VariableContext(staticallyImportedFields, null);
     }
+
     public static VariableContext dependentVariableContext(VariableContext parentContext) {
         return new VariableContext(new HashMap<>(), parentContext);
     }
@@ -63,23 +63,19 @@ public class VariableContext {
     }
 
     public void add(FieldReference variable) {
-        LOGGER.debug("Adding field {} to variable context", variable.name());
         fields.put(variable.name(), variable);
     }
 
     public void add(ParameterInfo variable) {
-        LOGGER.debug("Adding parameter {} to variable context", variable.name());
         parameters.put(variable.name(), variable);
     }
 
     public void add(LocalVariable variable, List<Expression> assignmentExpressions) {
-        LOGGER.debug("Adding local variable {} to variable context", variable.name);
         localVars.put(variable.name, new LocalVariableReference(variable, assignmentExpressions));
     }
 
     public void addAll(List<LocalVariableReference> localVariableReferences) {
         localVariableReferences.forEach(lvr -> {
-            LOGGER.debug("Adding local variable {} to variable context", lvr.variable.name);
             localVars.put(lvr.variable.name, lvr);
         });
     }
