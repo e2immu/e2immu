@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ParameterizedType {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
+
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
@@ -477,11 +479,16 @@ public class ParameterizedType {
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(TypeContext typeContext) {
-        if (!isFunctionalInterface(typeContext)) return null;
-        MethodInfo theMethod = typeInfo.typeInspection.get().methods.stream()
-                .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst()
-                .orElseThrow(() -> new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString()));
-        return new MethodTypeParameterMap(theMethod, initialTypeParameterMap());
+        try {
+            if (!isFunctionalInterface(typeContext)) return null;
+            MethodInfo theMethod = typeInfo.typeInspection.get().methods.stream()
+                    .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst()
+                    .orElseThrow(() -> new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString()));
+            return new MethodTypeParameterMap(theMethod, initialTypeParameterMap());
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while looking for functional interface on type {}", detailedString());
+            throw rte;
+        }
     }
 
 }

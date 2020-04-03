@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.upload.AnnotationUploader;
 import org.e2immu.analyser.util.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
@@ -34,6 +36,8 @@ import java.util.stream.Collectors;
 
 
 public class Parser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Parser.class);
+
     public final Configuration configuration;
     private final Input input;
     private final TypeContext globalTypeContext;
@@ -81,11 +85,16 @@ public class Parser {
         Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
         for (URL url : urls) {
-            InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
-            String source = IOUtils.toString(isr);
-            TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
-            List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
-            types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
+            try {
+                InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
+                String source = IOUtils.toString(isr);
+                TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
+                List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
+                types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
+                throw rte;
+            }
         }
         return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
     }
@@ -100,10 +109,20 @@ public class Parser {
 
         TypeAnalyser typeAnalyser = new TypeAnalyser(globalTypeContext);
         for (SortedType sortedType : sortedTypes) {
-            typeAnalyser.analyse(sortedType);
+            try {
+                typeAnalyser.analyse(sortedType);
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.typeInfo.fullyQualifiedName);
+                throw rte;
+            }
         }
         for (SortedType sortedType : sortedTypes) {
-            typeAnalyser.check(sortedType);
+            try {
+                typeAnalyser.check(sortedType);
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception while checking type {}", sortedType.typeInfo.fullyQualifiedName);
+                throw rte;
+            }
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, globalTypeContext);

@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,7 +37,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Resolver {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
     public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
@@ -43,7 +45,12 @@ public class Resolver {
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
-            recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue());
+            try {
+                recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue());
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
+                throw rte;
+            }
         }
         return typeGraph.sorted().stream().map(toSortedType::get).collect(Collectors.toList());
     }
@@ -124,32 +131,37 @@ public class Resolver {
 
         Stream.concat(typeInspection.constructors.stream(), typeInspection.methods.stream())
                 .forEach(methodInfo -> {
-                    List<TypeParameter> typeParameters = methodInfo.methodInspection.get().typeParameters;
-                    ExpressionContext subContext;
-                    if (typeParameters.isEmpty()) {
-                        subContext = expressionContext.newTypeContext("new method dependencies");
-                    } else {
-                        subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
-                                methodInfo.name);
-                        typeParameters.forEach(subContext.typeContext::addToContext);
-                    }
-                    Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
-                    // let's start by adding the types of parameters, and the return type
-                    methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType)
-                            .forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
-                    if (!methodInfo.isConstructor) {
-                        typeDependencies.addAll(methodInfo.methodInspection.get().returnType.typeInfoSet());
-                    }
-                    boolean doBlock = !methodInfo.methodInspection.get().methodBody.isSet();
-                    if (doBlock) {
-                        BlockStmt block = methodInfo.methodInspection.get().methodBody.getFirst();
-                        if (!block.getStatements().isEmpty()) {
-                            log(RESOLVE, "Parsing block of method {}", methodInfo.name);
-                            doBlock(subContext, methodInfo, block);
-                            methodGraph.addNode(methodInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
+                    try {
+                        List<TypeParameter> typeParameters = methodInfo.methodInspection.get().typeParameters;
+                        ExpressionContext subContext;
+                        if (typeParameters.isEmpty()) {
+                            subContext = expressionContext.newTypeContext("new method dependencies");
                         } else {
-                            methodInfo.methodInspection.get().methodBody.set(Block.EMPTY_BLOCK);
+                            subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
+                                    methodInfo.name);
+                            typeParameters.forEach(subContext.typeContext::addToContext);
                         }
+                        Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
+                        // let's start by adding the types of parameters, and the return type
+                        methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType)
+                                .forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
+                        if (!methodInfo.isConstructor) {
+                            typeDependencies.addAll(methodInfo.methodInspection.get().returnType.typeInfoSet());
+                        }
+                        boolean doBlock = !methodInfo.methodInspection.get().methodBody.isSet();
+                        if (doBlock) {
+                            BlockStmt block = methodInfo.methodInspection.get().methodBody.getFirst();
+                            if (!block.getStatements().isEmpty()) {
+                                log(RESOLVE, "Parsing block of method {}", methodInfo.name);
+                                doBlock(subContext, methodInfo, block);
+                                methodGraph.addNode(methodInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
+                            } else {
+                                methodInfo.methodInspection.get().methodBody.set(Block.EMPTY_BLOCK);
+                            }
+                        }
+                    } catch (RuntimeException rte) {
+                        LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
+                        throw rte;
                     }
                 });
         log(RESOLVE, "Method graph of {} has {} entries", typeInfo.fullyQualifiedName, methodGraph.size());
@@ -159,10 +171,15 @@ public class Resolver {
     }
 
     private void doBlock(ExpressionContext expressionContext, MethodInfo methodInfo, BlockStmt block) {
-        ExpressionContext newContext = expressionContext.newVariableContext("resolving " + methodInfo.fullyQualifiedName());
-        methodInfo.methodInspection.get().parameters.forEach(newContext.variableContext::add);
-        log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
-        Block parsedBlock = newContext.parseBlockOrStatement(block);
-        methodInfo.methodInspection.get().methodBody.set(parsedBlock);
+        try {
+            ExpressionContext newContext = expressionContext.newVariableContext("resolving " + methodInfo.fullyQualifiedName());
+            methodInfo.methodInspection.get().parameters.forEach(newContext.variableContext::add);
+            log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
+            Block parsedBlock = newContext.parseBlockOrStatement(block);
+            methodInfo.methodInspection.get().methodBody.set(parsedBlock);
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));
+            throw rte;
+        }
     }
 }
