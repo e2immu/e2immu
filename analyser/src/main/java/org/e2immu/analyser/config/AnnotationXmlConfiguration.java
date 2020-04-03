@@ -48,11 +48,11 @@ public class AnnotationXmlConfiguration {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", AnnotationXmlConfiguration.class.getSimpleName() + "[", "]")
-                .add("writeAnnotationXml=" + writeAnnotationXml)
-                .add("writeAnnotationXmlPackages=" + writeAnnotationXmlPackages)
-                .add("writeAnnotationXmlDir='" + writeAnnotationXmlDir + "'")
-                .toString();
+        return new StringJoiner("\n")
+                .add("write annotationXml: " + writeAnnotationXml)
+                .add("write annotationXml restrict to packages: " + writeAnnotationXmlPackages)
+                .add("write annotationXml directory: " + writeAnnotationXmlDir)
+                .toString() + "\n";
     }
 
     public static AnnotationXmlConfiguration fromProperties(Map<String, String> analyserProperties) {

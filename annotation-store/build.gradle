@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-  //  id 'org.e2immu.analyser'
+    id 'org.e2immu.analyser'
 }
 
 group 'org.e2immu'

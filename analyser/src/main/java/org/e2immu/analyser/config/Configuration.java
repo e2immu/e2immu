@@ -79,7 +79,7 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "E2Immu Analyser Configuration:\n" + inputConfiguration +
+        return inputConfiguration +
                 "logTargets: " + logTargets.stream().map(org.e2immu.analyser.util.Logger.LogTarget::toString).collect(Collectors.joining(", ")) +
                 "\nquiet: " + quiet +
                 "\nignoreErrors: " + ignoreErrors +

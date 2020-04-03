@@ -61,7 +61,7 @@ public class UploadConfiguration {
                 .add("uploadPackages: " + uploadPackages)
                 .add("annotationServerUrl: " + annotationServerUrl)
                 .add("projectName: " + projectName)
-                .toString();
+                .toString() + "\n";
     }
 
     public static UploadConfiguration fromProperties(Map<String, String> analyserProperties) {

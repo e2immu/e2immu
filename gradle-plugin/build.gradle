@@ -58,7 +58,7 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'org.e2immu'
+            groupId = 'e2immu'
             artifactId = 'gradle-plugin'
             version = '0.0.1'
 

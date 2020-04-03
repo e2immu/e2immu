@@ -25,8 +25,10 @@ repositories {
 
 version '0.0.8'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 jar {
     from sourceSets.main.java
@@ -53,4 +55,21 @@ publishing {
     }
 }
 */
+
+// for now, we publish to maven local, so that we can use the plugin locally
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'e2immu'
+            artifactId = 'annotations'
+            version = '0.0.8'
+
+            from components.java
+        }
+    }
+}
 

@@ -61,7 +61,7 @@ public class AnalyserTask extends ConventionTask {
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, Set.of(CONFIGURATION));
 
         Configuration configuration = Configuration.fromProperties(analyserProperties);
-        log(CONFIGURATION, "Configuration: {}", this);
+        log(CONFIGURATION, "Configuration: {}", configuration);
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, configuration.logTargets);
 
         try {
@@ -73,7 +73,7 @@ public class AnalyserTask extends ConventionTask {
     }
 
     private static void logMessage(LogTarget logTarget, String msg, Object[] objects) {
-        LOGGER.debug(msg, objects);
+        LOGGER.debug(logTarget + ": " + msg, objects);
     }
 
     /**

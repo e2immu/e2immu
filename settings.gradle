@@ -7,7 +7,7 @@ pluginManagement {
     resolutionStrategy {
         eachPlugin {
             if (requested.id.namespace == 'org.e2immu') {
-                useModule('org.e2immu:analyser:0.0.1')
+                useModule('e2immu:gradle-plugin:0.0.1')
             }
         }
     }

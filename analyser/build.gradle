@@ -69,7 +69,7 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'org.e2immu'
+            groupId = 'e2immu'
             artifactId = 'analyser'
             version = '0.0.1'
 

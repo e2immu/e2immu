@@ -55,11 +55,11 @@ public class AnnotatedAPIConfiguration {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", AnnotatedAPIConfiguration.class.getSimpleName() + "[", "]")
-                .add("writeAnnotatedAPIs=" + writeAnnotatedAPIs)
-                .add("writeAnnotatedAPIsPackages=" + writeAnnotatedAPIsPackages)
-                .add("writeAnnotatedAPIsDir='" + writeAnnotatedAPIsDir + "'")
-                .toString();
+        return new StringJoiner("\n")
+                .add("write annotatedAPIs: " + writeAnnotatedAPIs)
+                .add("write annotatedAPIs restrict to packages: " + writeAnnotatedAPIsPackages)
+                .add("write annotatedAPIs directory: '" + writeAnnotatedAPIsDir + "'")
+                .toString() + "\n";
     }
 
     @Container
