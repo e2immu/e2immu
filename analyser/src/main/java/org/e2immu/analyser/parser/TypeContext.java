@@ -34,6 +34,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
+import static org.e2immu.analyser.util.Logger.log;
+
 /**
  * Inside a compilation unit, there is a context in which names are known.
  * This context is inherently recursive, dependent on the container.
@@ -288,6 +291,7 @@ public class TypeContext {
         }
         typeInfo.typeInspection.get().methods.stream()
                 .filter(m -> m.name.equals(methodName))
+                .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)
                 .filter(m -> compatibleNumberOfParameters(m, parametersPresented))
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))

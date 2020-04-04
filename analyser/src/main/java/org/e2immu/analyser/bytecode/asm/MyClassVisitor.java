@@ -34,6 +34,8 @@ import org.objectweb.asm.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
@@ -50,6 +52,7 @@ public class MyClassVisitor extends ClassVisitor {
     private final Set<TypeInfo> inProcess;
     private TypeInfo currentType;
     private String currentTypePath;
+    private boolean currentTypeIsInterface;
     private TypeInspection.TypeInspectionBuilder typeInspectionBuilder;
 
     public MyClassVisitor(OnDemandInspection onDemandInspection,
@@ -103,6 +106,8 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_PRIVATE) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PROTECTED);
         if ((access & Opcodes.ACC_PUBLIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PUBLIC);
+
+        currentTypeIsInterface = currentTypeNature == TypeNature.INTERFACE;
 
         if (currentTypeNature == TypeNature.CLASS) {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
@@ -192,7 +197,12 @@ public class MyClassVisitor extends ClassVisitor {
         return attempt2;
     }
 
+    private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
+
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
+        Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
+        if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
+        // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
         return typeContext.typeStore.getOrCreate(fqn);
     }
 
@@ -361,11 +371,15 @@ public class MyClassVisitor extends ClassVisitor {
         }
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
 
-        if ((access & Opcodes.ACC_PUBLIC) != 0) methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
+        if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
+            methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
+        }
         if ((access & Opcodes.ACC_PRIVATE) != 0) methodInspectionBuilder.addModifier(MethodModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) methodInspectionBuilder.addModifier(MethodModifier.PROTECTED);
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
-        if ((access & Opcodes.ACC_ABSTRACT) != 0) methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
+        boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
+        if (isAbstract && (!currentTypeIsInterface || isStatic))
+            methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
 
         TypeContext methodContext = new TypeContext(typeContext);
 
@@ -388,9 +402,8 @@ public class MyClassVisitor extends ClassVisitor {
                 }
             }
         }
-
         return new MyMethodVisitor(methodContext, methodInfo, methodInspectionBuilder, typeInspectionBuilder, types,
-                methodItem, jetBrainsAnnotationTranslator);
+                isAbstract, methodItem, jetBrainsAnnotationTranslator);
     }
 
     // result should be

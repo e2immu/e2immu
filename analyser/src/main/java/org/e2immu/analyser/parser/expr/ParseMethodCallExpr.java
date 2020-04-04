@@ -54,7 +54,9 @@ public class ParseMethodCallExpr {
         String methodName = methodCallExpr.getName().asString();
         List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();
         expressionContext.typeContext.recursivelyResolveOverloadedMethods(typeOfObject, methodName, methodCallExpr.getArguments().size(), typeMap, methodCandidates);
-
+        if (methodCandidates.isEmpty()) {
+            throw new UnsupportedOperationException("No method candidates for method " + methodName);
+        }
         List<Expression> newParameterExpressions = new ArrayList<>();
         Map<NamedType, ParameterizedType> mapExpansion = new HashMap<>();
 
@@ -170,7 +172,7 @@ public class ParseMethodCallExpr {
                                                                            int p,
                                                                            MethodTypeParameterMap singleAbstractMethod) {
         MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface(typeContext);
-
+        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}", p, method.methodInfo.fullyQualifiedName(), abstractInterfaceMethod);
         // TODO equals should become: isAssignableFrom, in the right order (which one comes left, which one right?) and following the correct type parameter.
 
         if (abstractInterfaceMethod != null && singleAbstractMethod != null && singleAbstractMethod.methodInfo.typeInfo.equals(method.methodInfo.typeInfo)) {

@@ -33,6 +33,7 @@ public class AnalyserExtension {
     private Boolean upload;
     private String uploadUrl;
     private String uploadPackages;
+    private String debug;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -96,7 +97,7 @@ public class AnalyserExtension {
         return upload;
     }
 
-    public void setUpload(boolean upload) {
+    public void setUpload(Boolean upload) {
         this.upload = upload;
     }
 
@@ -114,5 +115,13 @@ public class AnalyserExtension {
 
     public void setUploadUrl(String uploadUrl) {
         this.uploadUrl = uploadUrl;
+    }
+
+    public String getDebug() {
+        return debug;
+    }
+
+    public void setDebug(String debug) {
+        this.debug = debug;
     }
 }

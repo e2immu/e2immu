@@ -24,11 +24,13 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
@@ -45,14 +47,16 @@ public class MyMethodVisitor extends MethodVisitor {
     private final int numberOfParameters;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final MethodItem methodItem;
-
     private int countLocalVars;
+
+    private final List<ParameterInfo> setParameterInspectionLater;
 
     public MyMethodVisitor(TypeContext typeContext,
                            MethodInfo methodInfo,
                            MethodInspection.MethodInspectionBuilder methodInspectionBuilder,
                            TypeInspection.TypeInspectionBuilder typeInspectionBuilder,
                            List<ParameterizedType> types,
+                           boolean isAbstract,
                            MethodItem methodItem,
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
         super(ASM7);
@@ -65,8 +69,20 @@ public class MyMethodVisitor extends MethodVisitor {
         this.methodItem = methodItem;
         numberOfParameters = types.size() - 1;
         parameterInspectionBuilders = new ParameterInspection.ParameterInspectionBuilder[numberOfParameters];
+        ParameterNameFactory factory = isAbstract ? new ParameterNameFactory() : null;
+        setParameterInspectionLater = isAbstract ? new ArrayList<>(numberOfParameters) : List.of();
         for (int i = 0; i < parameterInspectionBuilders.length; i++) {
             parameterInspectionBuilders[i] = new ParameterInspection.ParameterInspectionBuilder();
+
+            // if the method is abstract, visitLocalVariable will NOT be called. However, all others
+            // will be called, especially visitAnnotation
+            if (isAbstract) {
+                ParameterizedType type = types.get(i);
+                String parameterName = factory.next(type);
+                ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
+                methodInspectionBuilder.addParameter(parameterInfo);
+                setParameterInspectionLater.add(parameterInfo);
+            }
         }
     }
 
@@ -98,12 +114,14 @@ public class MyMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitParameter(String name, int access) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Seen parameter {}", name);
-    }
-
-    @Override
     public void visitEnd() {
+        int parameterIndex = 0;
+        for (ParameterInfo parameterInfo : setParameterInspectionLater) {
+            parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
+            log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", parameterIndex);
+            parameterIndex++;
+        }
+
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
                 if (parameterItem.index < parameterInspectionBuilders.length) {

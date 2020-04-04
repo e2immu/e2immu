@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
 import org.apache.commons.io.FileUtils;
@@ -26,12 +27,14 @@ import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
@@ -42,6 +45,11 @@ public class TestByteCodeInspector {
     public static final String BUILD_CLASSES_JAVA_MAIN = "build/classes/java/main";
     public static final String BUILD_CLASSES_JAVA_TEST = "build/classes/java/test";
 
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR, org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
+    }
+
     private TypeInfo parse(String path, String where) throws IOException {
         Resources resources = new Resources();
         resources.addDirectoryFromFileSystem(new File(where));
@@ -50,6 +58,21 @@ public class TestByteCodeInspector {
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         return types.get(0);
+    }
+
+    @Test
+    public void testConfigRetriever() throws IOException {
+        Resources resources = new Resources();
+        resources.addJar(new URL("jar:file:/Users/bnaudts/Downloads/vertx/lib/vertx-config-3.8.5.jar!/"));
+        Resources annotationResources = new Resources();
+        AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
+        List<TypeInfo> types = byteCodeInspector.inspectFromPath("io/vertx/config/ConfigRetriever");
+        TypeInfo typeInfo = types.get(0);
+        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature);
+        MethodInfo getConfig = typeInfo.typeInspection.get().methods.stream().filter(m -> "getConfig".equals(m.name)).findAny().orElseThrow();
+        Assert.assertEquals(1, getConfig.methodInspection.get().parameters.size());
+        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test

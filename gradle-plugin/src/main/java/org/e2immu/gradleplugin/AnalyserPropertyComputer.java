@@ -122,6 +122,7 @@ public class AnalyserPropertyComputer {
     }
 
     private void detectProperties(final Project project, final Map<String, Object> properties, AnalyserExtension extension) {
+        properties.put(Main.DEBUG, extension.getDebug());
         properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
         properties.put(Main.JRE, extension.getJre());
 

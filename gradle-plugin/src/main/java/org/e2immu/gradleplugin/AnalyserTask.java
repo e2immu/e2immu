@@ -54,9 +54,12 @@ public class AnalyserTask extends ConventionTask {
         if (!LOGGER.isInfoEnabled()) {
             properties.put(Main.QUIET, "true");
         } else if (LOGGER.isDebugEnabled()) {
-            properties.put(Main.DEBUG, DEBUG_TARGETS.stream()
-                    .map(LogTarget::toString)
-                    .collect(Collectors.joining(",")));
+            String inExtension = properties.get(Main.DEBUG);
+            if (inExtension == null || inExtension.trim().isEmpty()) {
+                properties.put(Main.DEBUG, DEBUG_TARGETS.stream()
+                        .map(LogTarget::toString)
+                        .collect(Collectors.joining(",")));
+            }
         }
         org.e2immu.analyser.util.Logger.activate(AnalyserTask::logMessage, Set.of(CONFIGURATION));
 
