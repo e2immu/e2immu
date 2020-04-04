@@ -152,7 +152,7 @@ public class BinaryOperator implements Expression {
     @NotNull
     public static MethodInfo getOperator(@NullNotAllowed @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null) {
+        if (widestType == null || !widestType.isPrimitive()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return Primitives.PRIMITIVES.equalsOperatorObject;
             }

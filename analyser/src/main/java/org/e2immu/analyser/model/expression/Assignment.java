@@ -52,7 +52,7 @@ public class Assignment implements Expression {
     @NotNull
     public static MethodInfo operator(@NullNotAllowed AssignExpr.Operator operator,
                                       @NullNotAllowed TypeInfo widestType) {
-        if (widestType == Primitives.PRIMITIVES.intTypeInfo) {
+        if (widestType == Primitives.PRIMITIVES.intTypeInfo || widestType == Primitives.PRIMITIVES.longTypeInfo) {
             switch (operator) {
                 case PLUS:
                     return Primitives.PRIMITIVES.assignPlusOperatorInt;
@@ -64,6 +64,7 @@ public class Assignment implements Expression {
             switch (operator) {
                 case ASSIGN:
                     return Primitives.PRIMITIVES.assignOperatorInt;
+                    // TODO
             }
         }
         throw new UnsupportedOperationException("Need to add primitive operator " +

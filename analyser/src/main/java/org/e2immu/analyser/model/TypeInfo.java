@@ -505,7 +505,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             sb.append(suffix);
     }
 
-    private static final Set<String> PRIMITIVES = Set.of("int", "double", "float", "char", "byte", "long", "void");
+    private static final Set<String> PRIMITIVES = Set.of("short", "int", "double", "float", "char", "byte", "long", "void");
 
     public boolean isPrimitive() {
         if (hasBeenInspected()) {
