@@ -176,7 +176,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null) {
+        if (typeInfo == null || !typeInfo.hasBeenInspected()) {
             return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
         }
         typeContext.addToContext(typeInfo);

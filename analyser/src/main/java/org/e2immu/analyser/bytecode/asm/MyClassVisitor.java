@@ -178,7 +178,8 @@ public class MyClassVisitor extends ClassVisitor {
         TypeInfo parentType = enclosingTypes.isEmpty() ? null : enclosingTypes.peek();
         if (parentType != null && parentType.fullyQualifiedName.startsWith(fqn)) {
             // the parent is in the hierarchy of objects... we should definitely NOT inspect
-            return inEnclosingTypes(fqn);
+            TypeInfo inHierarchy = inEnclosingTypes(fqn);
+            if (inHierarchy != null) return inHierarchy;
         }
         if (parentType != null && isDirectChildOf(fqn, parentType.fullyQualifiedName)) {
             onDemandInspection.inspectFromPath(path, inProcess, enclosingTypes, typeContext);
@@ -199,8 +200,11 @@ public class MyClassVisitor extends ClassVisitor {
         for (TypeInfo typeInfo : enclosingTypes) {
             if (typeInfo.fullyQualifiedName.equals(parentFqName)) return typeInfo;
         }
-        throw new UnsupportedOperationException("Could not find " + parentFqName + " in stack of enclosing types " +
+        // Example of this situation: java.util.Comparators$NullComparator is being parsed, but Comparator itself
+        // has not been seen yet.
+        log(BYTECODE_INSPECTOR_DEBUG, "Could not find " + parentFqName + " in stack of enclosing types " +
                 enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
+        return null;
     }
 
     // return true when child = parent + $ + somethingWithoutDollars
