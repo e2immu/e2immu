@@ -24,6 +24,7 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -145,6 +146,13 @@ public class ParseAndInspect {
                 }
             }
         }
+        typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
+            if (!typeInfo.hasBeenInspected()) {
+                log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
+                typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
+            }
+        });
+
         // we first add the types to the type context, so that they're all known
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
@@ -183,8 +191,12 @@ public class ParseAndInspect {
         return typeInfo;
     }
 
-
     // inspect from class path
+    private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
+        String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
+        byteCodeInspector.inspectFromPath(pathInClassPath);
+    }
+
     private TypeInfo inspectWithByteCodeInspectorAndAddToTypeContext(String fqn, TypeContext typeContext) {
         String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
         byteCodeInspector.inspectFromPath(pathInClassPath);
@@ -196,8 +208,8 @@ public class ParseAndInspect {
 
     static String fqnOfClassFile(String prefix, String[] suffixes) {
         String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");
-        if ( combined.endsWith(".class")) {
-            return combined.substring(0, combined.length() -  6);
+        if (combined.endsWith(".class")) {
+            return combined.substring(0, combined.length() - 6);
         }
         throw new UnsupportedOperationException("Expected .class or .java file, but got " + combined);
     }

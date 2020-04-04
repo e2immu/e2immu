@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public interface TypeStore {
     TypeInfo getOrCreate(String fullyQualifiedName);
@@ -34,4 +35,6 @@ public interface TypeStore {
     boolean isPackagePrefix(PackagePrefix packagePrefix);
 
     void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
+
+    void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer);
 }

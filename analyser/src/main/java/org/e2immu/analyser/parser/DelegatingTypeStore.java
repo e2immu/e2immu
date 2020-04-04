@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.TypeInfo;
 
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class DelegatingTypeStore implements TypeStore {
 
@@ -62,5 +63,10 @@ public class DelegatingTypeStore implements TypeStore {
     public void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
         local.visit(prefix, consumer);
         delegate.visit(prefix, consumer);
+    }
+
+    @Override
+    public void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer) {
+        delegate.visitAllNewlyCreatedTypes(typeInfoConsumer);
     }
 }

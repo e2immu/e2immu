@@ -24,21 +24,30 @@ import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * The type store is meant to contain all "independent" types exactly once.
  * Classes, interfaces, enums that have a fully qualified name.
  */
 public class MapBasedTypeStore implements TypeStore {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MapBasedTypeStore.class);
 
     private Trie<TypeInfo> trie = new Trie<>();
+    private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
 
     public TypeInfo getOrCreate(String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
-        List<TypeInfo> typeInfoList = trie.getOrCompute(split, strings -> new TypeInfo(fullyQualifiedName));
+        List<TypeInfo> typeInfoList = trie.getOrCompute(split, strings -> {
+            TypeInfo typeInfo = new TypeInfo(fullyQualifiedName);
+            synchronized (newlyCreatedTypes) {
+                newlyCreatedTypes.add(typeInfo);
+            }
+            return typeInfo;
+        });
         return typeInfoList.get(0);
     }
 
@@ -60,4 +69,19 @@ public class MapBasedTypeStore implements TypeStore {
         trie.visit(prefix, consumer);
     }
 
+    /**
+     * it is critical that the map is copied and traversed independently of the <code>newlyCreatedTypes</code>
+     * field, as the consumer will probably modify it!
+     *
+     * @param typeInfoConsumer receiver of the types
+     */
+    @Override
+    public void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer) {
+        List<TypeInfo> toIterate;
+        synchronized (newlyCreatedTypes) {
+            toIterate = new ArrayList<>(newlyCreatedTypes);
+            newlyCreatedTypes.clear();
+        }
+        toIterate.forEach(typeInfoConsumer);
+    }
 }

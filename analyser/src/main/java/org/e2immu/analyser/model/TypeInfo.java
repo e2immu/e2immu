@@ -26,6 +26,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceSupply;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Container;
 import org.e2immu.analyser.util.StringUtil;
@@ -52,7 +53,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public final String fullyQualifiedName;
 
     //@Immutable(after="this.inspect()")
-    public final SetOnce<TypeInspection> typeInspection = new SetOnce<>();
+    public final SetOnceSupply<TypeInspection> typeInspection = new SetOnceSupply<>();
     public final TypeAnalysis typeAnalysis = new TypeAnalysis();
 
     // creates an anonymous version of the parent type parameterizedType
