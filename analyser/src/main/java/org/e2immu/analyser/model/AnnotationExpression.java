@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 
@@ -35,18 +36,21 @@ import java.util.*;
 public class AnnotationExpression {
 
     public final TypeInfo typeInfo;
-    // one for each method
-    public final List<Expression> expressions;
+    public final FirstThen<com.github.javaparser.ast.expr.Expression, List<Expression>> expressions;
 
-    public AnnotationExpression(TypeInfo typeInfo) {
-        this(typeInfo, List.of());
+    public static AnnotationExpression fromAnalyserExpressions(TypeInfo annotationType,
+                                                               List<Expression> expressions) {
+        FirstThen<com.github.javaparser.ast.expr.Expression, List<Expression>> firstThen = new FirstThen<>(FieldInspection.EMPTY);
+        firstThen.set(ImmutableList.copyOf(expressions));
+        return new AnnotationExpression(annotationType, firstThen);
     }
 
-    public AnnotationExpression(TypeInfo typeInfo, Expression expression) {
-        this(typeInfo, List.of(expression));
+    public static AnnotationExpression fromJavaParserExpression(TypeInfo annotation,
+                                                                com.github.javaparser.ast.expr.Expression expression) {
+        return new AnnotationExpression(annotation, new FirstThen<>(expression));
     }
 
-    private AnnotationExpression(TypeInfo annotation, List<Expression> expressions) {
+    private AnnotationExpression(TypeInfo annotation, FirstThen<com.github.javaparser.ast.expr.Expression, List<Expression>> expressions) {
         Objects.requireNonNull(annotation);
         Objects.requireNonNull(expressions);
 
@@ -73,24 +77,29 @@ public class AnnotationExpression {
             throw new UnsupportedOperationException("??");
         }
         TypeInfo ti = (TypeInfo) namedType;
-        List<Expression> expressions;
+        return AnnotationExpression.fromJavaParserExpression(ti, ae);
+    }
+
+    public void resolve(ExpressionContext expressionContext) {
+        if (expressions.isSet()) throw new UnsupportedOperationException();
+        com.github.javaparser.ast.expr.Expression ae = expressions.getFirst();
+        List<Expression> analyserExpressions;
         if (ae instanceof NormalAnnotationExpr) {
-            expressions = new ArrayList<>();
+            analyserExpressions = new ArrayList<>();
             for (com.github.javaparser.ast.expr.MemberValuePair mvp : ((NormalAnnotationExpr) ae).getPairs()) {
                 Expression value = expressionContext.parseExpression(mvp.getValue());
-                expressions.add(new org.e2immu.analyser.model.expression.MemberValuePair(mvp.getName().asString(), value));
+                analyserExpressions.add(new org.e2immu.analyser.model.expression.MemberValuePair(mvp.getName().asString(), value));
             }
-        } else expressions = List.of();
-
-        return new AnnotationExpression(ti, ImmutableList.copyOf(expressions));
+        } else analyserExpressions = List.of();
+        expressions.set(analyserExpressions);
     }
 
     public String stream() {
         StringBuilder sb = new StringBuilder("@" + typeInfo.simpleName);
-        if (!expressions.isEmpty()) {
+        if (expressions.isSet() && !expressions.get().isEmpty()) {
             sb.append("(");
             boolean first = true;
-            for (Expression expression : expressions) {
+            for (Expression expression : expressions.get()) {
                 if (first) first = false;
                 else sb.append(", ");
                 if (expression instanceof Constant) {
@@ -115,8 +124,8 @@ public class AnnotationExpression {
     }
 
     private <T> T extract(String fieldName, T defaultValue) {
-        if (expressions.isEmpty()) return defaultValue;
-        for (Expression expression : expressions) {
+        if (expressions.get().isEmpty()) return defaultValue;
+        for (Expression expression : expressions.get()) {
             if (expression instanceof MemberValuePair) {
                 MemberValuePair mvp = (MemberValuePair) expression;
                 if (mvp.name.equals(fieldName)) {
@@ -175,7 +184,6 @@ public class AnnotationExpression {
         return extract("intValue", 0);
     }
 
-
     public static class AnnotationExpressionBuilder {
         private final TypeInfo typeInfo;
         private final List<Expression> expressions = new ArrayList<>();
@@ -190,7 +198,7 @@ public class AnnotationExpression {
         }
 
         public AnnotationExpression build() {
-            return new AnnotationExpression(typeInfo, ImmutableList.copyOf(expressions));
+            return AnnotationExpression.fromAnalyserExpressions(typeInfo, ImmutableList.copyOf(expressions));
         }
     }
 }

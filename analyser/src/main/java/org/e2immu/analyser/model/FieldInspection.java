@@ -45,23 +45,23 @@ public class FieldInspection extends Inspection {
 
     @NotNull
     public final List<FieldModifier> modifiers;
-    public final FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initializer;
+    public final FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initialiser;
 
     @NotNull
     public final List<AnnotationExpression> annotations;
 
     private FieldInspection(@NullNotAllowed List<FieldModifier> modifiers,
-                            @NullNotAllowed FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initializer,
+                            @NullNotAllowed FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initialiser,
                             @NullNotAllowed List<AnnotationExpression> annotations) {
         super(annotations);
         Objects.requireNonNull(modifiers);
         this.annotations = annotations;
-        this.initializer = initializer;
+        this.initialiser = initialiser;
         this.modifiers = modifiers;
     }
 
     public FieldInspection copy(List<AnnotationExpression> alternativeAnnotations) {
-        return new FieldInspection(modifiers, initializer, ImmutableList.copyOf(alternativeAnnotations));
+        return new FieldInspection(modifiers, initialiser, ImmutableList.copyOf(alternativeAnnotations));
     }
 
     public static class FieldInspectionBuilder implements BuilderWithAnnotations<FieldInspectionBuilder> {

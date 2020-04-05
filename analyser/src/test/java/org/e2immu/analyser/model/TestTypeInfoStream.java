@@ -173,8 +173,8 @@ public class TestTypeInfoStream {
                 .setReturnType(primitives.intTypeInfo)
                 .addParameter(x)
                 .addParameter(y)
-                .addAnnotation(new AnnotationExpression(commutative))
-                .addAnnotation(new AnnotationExpression(testEquivalent,new StringConstant("hello")))
+                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(commutative, List.of()))
+                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(testEquivalent, List.of(new StringConstant("hello"))))
                 .setBlock(
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(

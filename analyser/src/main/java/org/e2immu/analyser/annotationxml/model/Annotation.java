@@ -39,9 +39,11 @@ public class Annotation {
     // TODO @Mark("freeze")
     public Annotation(AnnotationExpression ae) {
         name = ae.typeInfo.fullyQualifiedName;
-        for(Expression expression: ae.expressions) {
-            Value value = new Value(expression);
-            values.add(value);
+        if (ae.expressions.isSet()) {
+            for (Expression expression : ae.expressions.get()) {
+                Value value = new Value(expression);
+                values.add(value);
+            }
         }
         freeze();
     }

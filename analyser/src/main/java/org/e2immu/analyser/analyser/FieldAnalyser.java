@@ -45,10 +45,10 @@ public class FieldAnalyser {
         boolean changes = false;
 
         Value value = null;
-        if (fieldInfo.fieldInspection.get().initializer.isSet()) {
+        if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
             FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            value = fieldInfo.fieldInspection.get().initializer.get().evaluate(fieldProperties);
+            value = fieldInfo.fieldInspection.get().initialiser.get().evaluate(fieldProperties);
             fieldProperties.setValue(fieldReference, value);
             log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
         }

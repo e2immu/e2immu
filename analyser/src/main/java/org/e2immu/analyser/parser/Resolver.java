@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
@@ -109,9 +108,31 @@ public class Resolver {
 
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = new DependencyGraph<>();
 
+        // ANNOTATIONS ON THE TYPE
+
+        typeInspection.annotations.forEach(annotationExpression -> {
+            if (!annotationExpression.expressions.isSet()) {
+                annotationExpression.resolve(expressionContext);
+            }
+        });
+
+        // FIELDS
+
         typeInspection.fields.forEach(fieldInfo -> {
-            if (!fieldInfo.fieldInspection.get().initializer.isSet()) {
-                Expression expression = fieldInfo.fieldInspection.get().initializer.getFirst();
+            if (!fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
+
+                // ANNOTATIONS
+
+                fieldInspection.annotations.forEach(annotationExpression -> {
+                    if (!annotationExpression.expressions.isSet()) {
+                        annotationExpression.resolve(expressionContext);
+                    }
+                });
+
+                // INITIALISERS
+
+                Expression expression = fieldInspection.initialiser.getFirst();
                 if (expression != FieldInspection.EMPTY) {
                     ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
                     Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
@@ -120,50 +141,70 @@ public class Resolver {
                         log(RESOLVE, "Passing on functional interface method to field initializer of {}", fieldInfo.fullyQualifiedName());
                     }
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
-                    fieldInfo.fieldInspection.get().initializer.set(parsedExpression);
+                    fieldInspection.initialiser.set(parsedExpression);
                     methodGraph.addNode(fieldInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
                 } else {
-                    fieldInfo.fieldInspection.get().initializer.set(EmptyExpression.EMPTY_EXPRESSION);
+                    fieldInspection.initialiser.set(EmptyExpression.EMPTY_EXPRESSION);
                     methodGraph.addNode(fieldInfo, List.of());
                 }
             }
         });
 
-        Stream.concat(typeInspection.constructors.stream(), typeInspection.methods.stream())
-                .forEach(methodInfo -> {
-                    try {
-                        List<TypeParameter> typeParameters = methodInfo.methodInspection.get().typeParameters;
-                        ExpressionContext subContext;
-                        if (typeParameters.isEmpty()) {
-                            subContext = expressionContext.newTypeContext("new method dependencies");
-                        } else {
-                            subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
-                                    methodInfo.name);
-                            typeParameters.forEach(subContext.typeContext::addToContext);
-                        }
-                        Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
-                        // let's start by adding the types of parameters, and the return type
-                        methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType)
-                                .forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
-                        if (!methodInfo.isConstructor) {
-                            typeDependencies.addAll(methodInfo.methodInspection.get().returnType.typeInfoSet());
-                        }
-                        boolean doBlock = !methodInfo.methodInspection.get().methodBody.isSet();
-                        if (doBlock) {
-                            BlockStmt block = methodInfo.methodInspection.get().methodBody.getFirst();
-                            if (!block.getStatements().isEmpty()) {
-                                log(RESOLVE, "Parsing block of method {}", methodInfo.name);
-                                doBlock(subContext, methodInfo, block);
-                                methodGraph.addNode(methodInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
-                            } else {
-                                methodInfo.methodInspection.get().methodBody.set(Block.EMPTY_BLOCK);
-                            }
-                        }
-                    } catch (RuntimeException rte) {
-                        LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
-                        throw rte;
+        // METHOD AND CONSTRUCTOR
+
+        typeInspection.constructorAndMethodStream().forEach(methodInfo -> {
+            try {
+                MethodInspection methodInspection = methodInfo.methodInspection.get();
+
+                // ANNOTATIONS
+
+                methodInspection.annotations.forEach(annotationExpression -> {
+                    if (!annotationExpression.expressions.isSet()) {
+                        annotationExpression.resolve(expressionContext);
                     }
                 });
+                methodInspection.parameters.forEach(parameterInfo -> {
+                    parameterInfo.parameterInspection.get().annotations.forEach(annotationExpression -> {
+                        if (!annotationExpression.expressions.isSet()) {
+                            annotationExpression.resolve(expressionContext);
+                        }
+                    });
+                });
+
+                // BODY
+
+                List<TypeParameter> typeParameters = methodInspection.typeParameters;
+                ExpressionContext subContext;
+                if (typeParameters.isEmpty()) {
+                    subContext = expressionContext.newTypeContext("new method dependencies");
+                } else {
+                    subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
+                            methodInfo.name);
+                    typeParameters.forEach(subContext.typeContext::addToContext);
+                }
+                Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
+                // let's start by adding the types of parameters, and the return type
+                methodInspection.parameters.stream().map(p -> p.parameterizedType)
+                        .forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
+                if (!methodInfo.isConstructor) {
+                    typeDependencies.addAll(methodInspection.returnType.typeInfoSet());
+                }
+                boolean doBlock = !methodInspection.methodBody.isSet();
+                if (doBlock) {
+                    BlockStmt block = methodInspection.methodBody.getFirst();
+                    if (!block.getStatements().isEmpty()) {
+                        log(RESOLVE, "Parsing block of method {}", methodInfo.name);
+                        doBlock(subContext, methodInfo, block);
+                        methodGraph.addNode(methodInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
+                    } else {
+                        methodInspection.methodBody.set(Block.EMPTY_BLOCK);
+                    }
+                }
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
+                throw rte;
+            }
+        });
         log(RESOLVE, "Method graph of {} has {} entries", typeInfo.fullyQualifiedName, methodGraph.size());
         methodGraph.visit((n, list) -> log(RESOLVE, " -- Node {} --> {}", n.name(),
                 list == null ? "[]" : StringUtil.join(list, WithInspectionAndAnalysis::name)));

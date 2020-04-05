@@ -152,7 +152,8 @@ public class TypeContext {
         FieldReference computedRef = new FieldReference(computed, null);
         FieldAccess computedAccess = new FieldAccess(new TypeExpression(annotationType.asParameterizedType()), computedRef);
         // NOTE: we've added an import statement in TypeInfo.imports() for this...
-        return new AnnotationExpression(getFullyQualified(clazz), new MemberValuePair("type", computedAccess));
+        return AnnotationExpression.fromAnalyserExpressions(getFullyQualified(clazz),
+                List.of(new MemberValuePair("type", computedAccess)));
     }
 
     public TypeInfo getFullyQualified(Class<?> clazz) {
