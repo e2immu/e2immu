@@ -100,7 +100,7 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        log(BYTECODE_INSPECTOR_DEBUG, "Have local var {}", name);
+        //log(BYTECODE_INSPECTOR_DEBUG, "Have local var {}", name);
         int parameterIndex = countLocalVars - (methodInfo.isStatic ? 0 : 1);
         if ((methodInfo.isStatic || countLocalVars > 0) && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
@@ -108,7 +108,7 @@ public class MyMethodVisitor extends MethodVisitor {
             // TODO varargs
             parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
             methodInspectionBuilder.addParameter(parameterInfo);
-            log(BYTECODE_INSPECTOR_DEBUG, "Added parameter {}", parameterIndex);
+           // log(BYTECODE_INSPECTOR_DEBUG, "Added parameter {}", parameterIndex);
         }
         countLocalVars++;
     }

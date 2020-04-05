@@ -41,6 +41,7 @@ public class SetOnceSupply<T> {
                 throw new UnsupportedOperationException("Already set");
             }
             this.t = t;
+            runnable = null;
         }
     }
 
@@ -68,6 +69,11 @@ public class SetOnceSupply<T> {
             }
             this.t = t;
         }
+    }
+
+    @NotModified
+    public boolean isSetDoNotTriggerRunnable() {
+        return t != null;
     }
 
     @NotModified

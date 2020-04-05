@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.AnnotationType;

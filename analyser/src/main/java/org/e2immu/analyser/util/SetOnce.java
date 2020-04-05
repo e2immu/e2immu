@@ -37,16 +37,6 @@ public class SetOnce<T> {
         }
     }
 
-    @Mark("set")
-    public void setIfNotYetSet(@NullNotAllowed T t) {
-        if (t == null) throw new NullPointerException("Null not allowed");
-        synchronized (this) {
-            if (this.t == null) {
-                this.t = t;
-            }
-        }
-    }
-
     @Only(after = "set")
     public T get() {
         if (t == null) {

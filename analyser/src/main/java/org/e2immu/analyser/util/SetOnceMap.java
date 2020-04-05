@@ -65,9 +65,4 @@ public class SetOnceMap<K, V> extends Freezable {
     public Stream<Map.Entry<K, V>> stream() {
         return map.entrySet().stream();
     }
-
-    // this function assumes V==Boolean
-    public boolean isTrue(K k) {
-        return (Boolean) get(k);
-    }
 }

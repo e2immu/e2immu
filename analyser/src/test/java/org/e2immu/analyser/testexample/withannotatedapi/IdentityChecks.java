@@ -16,27 +16,38 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
+import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
+public class IdentityChecks {
+    static final Logger LOGGER = LoggerFactory.getLogger(IdentityChecks.class);
 
-public class NotModifiedChecks2 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotModifiedChecks2.class);
-
-    @NotModified(type = VERIFY_ABSENT) // modified by add method
-    final Set<String> s2 = new HashSet<>();
-
-    @NotModified(type = VERIFY_ABSENT) // modifies s2
-    public int add(String s) {
-        Set<String> theSet = s2; // linked to s2, which is linked to set2
-        LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);
-        theSet.add(s); // this one modifies set2!
-        return 1;
+    @Identity
+    @NotModified
+    public static String idem(String s) {
+        LOGGER.debug(s);
+        return s;
     }
 
+    @Identity
+    @NotModified
+    public static String idem2(String s, String t) {
+        LOGGER.debug(s + " " + t);
+        return idem(s);
+    }
+
+    @Identity
+    @NotModified
+    public static String idem3(String s) {
+        LOGGER.debug(s);
+        if ("a".equals(s)) {
+            return idem(idem2(s, "abc"));
+        } else {
+            return s;
+        }
+    }
 }

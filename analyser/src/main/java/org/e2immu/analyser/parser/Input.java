@@ -24,7 +24,6 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +31,24 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Input {
     private static final Logger LOGGER = LoggerFactory.getLogger(Input.class);
+
+    /**
+     * Use of this prefix in parts of the input classpath allows for adding jars
+     * on the current classpath containing the path following the prefix.
+     *
+     * For example, adding
+     *
+     * Adds the content of
+     *
+     * jar:file:/Users/bnaudts/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/28.1-jre/b0e91dcb6a44ffb6221b5027e12a5cb34b841145/guava-28.1-jre.jar!/
+     *
+     */
+    public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     private final Configuration configuration;
     private final Resources classPath = new Resources();
@@ -133,9 +144,11 @@ public class Input {
         LOGGER.info("... inspected {} paths", inspected);
     }
 
-    private void assembleClassPath(Resources classPath, String msg, List<String> parts) {
+    private void assembleClassPath(Resources classPath, String msg, List<String> parts) throws IOException {
         for (String part : parts) {
-            if (part.endsWith(".jar")) {
+            if (part.startsWith(JAR_WITH_PATH_PREFIX)) {
+                classPath.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+            } else if (part.endsWith(".jar")) {
                 try {
                     // "jar:file:build/libs/equivalent.jar!/"
                     URL url = new URL("jar:file:" + part + "!/");

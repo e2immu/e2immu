@@ -295,7 +295,7 @@ public class StatementAnalyser {
                         ParameterInfo parameterInfo = (ParameterInfo) variable;
                         if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
                             parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                            log(VARIABLE_PROPERTIES, "Variable {} can be null, we add @NullNotAllowed", variable.detailedString());
+                            log(NULL_NOT_ALLOWED, "Variable {} can be null, we add @NullNotAllowed", variable.detailedString());
                             changes = true;
                         }
                     }
@@ -359,7 +359,7 @@ public class StatementAnalyser {
             Variable v = ((VariableExpression) parameterExpression).variable;
             if (parameterInDefinition.isNullNotAllowed(typeContext) == Boolean.TRUE) {
                 if (v instanceof ParameterInfo && !((ParameterInfo) v).parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                    log(VARIABLE_PROPERTIES, "Adding implicit null not allowed on {}", v.detailedString());
+                    log(NULL_NOT_ALLOWED, "Adding implicit null not allowed on {}", v.detailedString());
                     ((ParameterInfo) v).parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
                     changes = true;
                 }

@@ -91,13 +91,18 @@ public class ParseAndInspect {
 
         // add all types from the current package that we can find in the class path, but ONLY
         // if it doesn't exist already in the source path!
+
+        // TODO: we should not add them AND inspect them; only add them with a delayed inspection runnable!
         Resources classPath = byteCodeInspector.getClassPath();
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
+                TypeInfo typeInfo = typeContextOfFile.typeStore.get(fqn);
                 if (typeInfo == null) {
-                    inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContextOfFile);
+                    TypeInfo newTypeInfo = typeContextOfFile.typeStore.getOrCreate(fqn);
+                    log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                    newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
+                    typeContextOfFile.addToContext(newTypeInfo);
                 }
             }
         });
@@ -135,7 +140,10 @@ public class ParseAndInspect {
                                 String fqn = fqnOfClassFile(fullyQualified, expansion);
                                 TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
                                 if (typeInfo == null) {
-                                    inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContextOfFile);
+                                    TypeInfo newTypeInfo = typeContextOfFile.typeStore.getOrCreate(fqn);
+                                    log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
+                                    newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
+                                    typeContextOfFile.addToContext(newTypeInfo);
                                 } else {
                                     typeContextOfFile.addToContext(typeInfo);
                                 }

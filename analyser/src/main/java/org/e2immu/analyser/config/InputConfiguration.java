@@ -35,8 +35,8 @@ import static org.e2immu.analyser.config.Configuration.setStringProperty;
 @E2Immutable
 public class InputConfiguration {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
-    public static final String DEFAULT_CLASSPATH = "build/classes/java/main" + PATH_SEPARATOR +
-            "jmods/java.base.jmod" + PATH_SEPARATOR + "src/main/resources/annotatedAPIs";
+    public static final String[] DEFAULT_CLASSPATH = {"build/classes/java/main",
+            "jmods/java.base.jmod", "src/main/resources/annotatedAPIs"};
 
     // input options
     public final List<String> sources;
@@ -87,7 +87,7 @@ public class InputConfiguration {
 
         public InputConfiguration build() {
             if (classPathParts.isEmpty()) {
-                classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH.split(PATH_SEPARATOR)));
+                classPathParts.addAll(Arrays.asList(DEFAULT_CLASSPATH));
             }
             if (sourceDirs.isEmpty()) {
                 sourceDirs.addAll(Arrays.asList(DEFAULT_SOURCE_DIRS.split(PATH_SEPARATOR)));

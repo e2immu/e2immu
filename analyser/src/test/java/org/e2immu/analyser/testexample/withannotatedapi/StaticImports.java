@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import static java.util.Arrays.stream;
 import static org.junit.Assert.*;

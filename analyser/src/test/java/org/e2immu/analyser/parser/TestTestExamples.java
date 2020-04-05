@@ -47,27 +47,6 @@ public class TestTestExamples {
                 NULL_NOT_ALLOWED, NOT_MODIFIED);
     }
 
-
-    @Test
-    public void testE2ImmutableChecks() throws IOException {
-        goTest("testexample/E2ImmutableChecks.java");
-    }
-
-    @Test
-    public void testContainerChecks() throws IOException {
-        goTest("testexample/ContainerChecks.java");
-    }
-
-    @Test
-    public void testCyclicReferences() throws IOException {
-        goTest("testexample/CyclicReferences.java");
-    }
-
-    @Test
-    public void testEvaluateConstants() throws IOException {
-        goTest("testexample/EvaluateConstants.java");
-    }
-
     @Test
     public void testFieldResolution() throws IOException {
         goTest("testexample/FieldResolution.java");
@@ -76,11 +55,6 @@ public class TestTestExamples {
     @Test
     public void testFinalChecks() throws IOException {
         goTest("testexample/FinalChecks.java");
-    }
-
-    @Test
-    public void testIdentityChecks() throws IOException {
-        goTest("testexample/IdentityChecks.java");
     }
 
     @Test
@@ -94,39 +68,8 @@ public class TestTestExamples {
     }
 
     @Test
-    public void testNotModifiedChecks() throws IOException {
-        goTest("testexample/NotModifiedChecks.java");
-    }
-
-    // simplified version of NotModifiedChecks to debug one of the issues there
-    @Test
-    public void testNotModifiedChecks2() throws IOException {
-        goTest("testexample/NotModifiedChecks2.java");
-    }
-
-    @Test
-    public void testNullParameterChecks() throws IOException {
-        goTest("testexample/NullParameterChecks.java");
-    }
-
-    @Test
-    public void testSimpleNotModifiedChecks() throws IOException {
-        goTest("testexample/SimpleNotModifiedChecks.java");
-    }
-
-    @Test
-    public void testStaticImports() throws IOException {
-        goTest("testexample/StaticImports.java");
-    }
-
-    @Test
     public void testStaticSideEffectsOnlyChecks() throws IOException {
         goTest("testexample/StaticSideEffectsOnlyChecks.java");
-    }
-
-    @Test
-    public void testSubTypes() throws IOException {
-        goTest("testexample/SubTypes.java");
     }
 
     @Test

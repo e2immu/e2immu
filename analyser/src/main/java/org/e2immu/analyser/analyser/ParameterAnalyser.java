@@ -25,6 +25,9 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class ParameterAnalyser {
     private final TypeContext typeContext;
 
@@ -33,6 +36,8 @@ public class ParameterAnalyser {
     }
 
     public void check(ParameterInfo parameterInfo) {
+        log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
+
         Lazy<String> where = new Lazy<>(() -> "In method " +
                 parameterInfo.parameterInspection.get().owner.fullyQualifiedName() + ", " +
                 parameterInfo.detailedString());

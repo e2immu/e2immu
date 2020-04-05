@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;

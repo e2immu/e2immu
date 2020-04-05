@@ -30,6 +30,8 @@ import org.e2immu.analyser.annotationxml.model.FieldItem;
 import org.e2immu.analyser.annotationxml.model.MethodItem;
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.objectweb.asm.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,6 +45,8 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM7;
 
 public class MyClassVisitor extends ClassVisitor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyClassVisitor.class);
+
     private final List<TypeInfo> types;
     private final TypeContext typeContext;
     private final OnDemandInspection onDemandInspection;
@@ -85,7 +89,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (currentType == null) {
             currentType = new TypeInfo(fqName);
             typeContext.typeStore.add(currentType);
-        } else if (currentType.typeInspection.isSet()) {
+        } else if (currentType.typeInspection.isSetDoNotTriggerRunnable()) {
             log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
             types.add(currentType);
             currentType = null;
@@ -172,7 +176,7 @@ public class MyClassVisitor extends ClassVisitor {
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
         if (path.equals(currentTypePath)) return currentType;
         TypeInfo alreadyKnown = typeContext.typeStore.get(fqn);
-        if (alreadyKnown != null && alreadyKnown.typeInspection.isSet()) {
+        if (alreadyKnown != null && alreadyKnown.typeInspection.isSetDoNotTriggerRunnable()) {
             return alreadyKnown;
         }
         if (alreadyKnown != null) {
@@ -498,10 +502,13 @@ public class MyClassVisitor extends ClassVisitor {
             }
         } else if (innerName != null && currentTypePath.equals(outerName)) {
             log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of {}", name, currentType.fullyQualifiedName);
-            enclosingTypes.push(currentType);
-            TypeInfo subType = onDemandInspection.inspectFromPath(name, inProcess, enclosingTypes, typeContext);
-            typeInspectionBuilder.addSubType(subType);
-            enclosingTypes.pop();
+            TypeInfo subTypeInMap = typeContext.typeStore.get(pathToFqn(name));
+            if (subTypeInMap == null || !subTypeInMap.typeInspection.isSetDoNotTriggerRunnable() && !inProcess.contains(subTypeInMap)) {
+                enclosingTypes.push(currentType);
+                TypeInfo subType = onDemandInspection.inspectFromPath(name, inProcess, enclosingTypes, typeContext);
+                typeInspectionBuilder.addSubType(subType);
+                enclosingTypes.pop();
+            }
         }
     }
 
@@ -526,14 +533,19 @@ public class MyClassVisitor extends ClassVisitor {
     @Override
     public void visitEnd() {
         if (currentType != null) {
-            log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
-            if (typeInspectionBuilder == null)
-                throw new UnsupportedOperationException("? was expecting a type inspection builder");
-            currentType.typeInspection.set(typeInspectionBuilder.build(false, currentType));
-            types.add(currentType);
-            inProcess.remove(currentType);
-            currentType = null;
-            typeInspectionBuilder = null;
+            try {
+                log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
+                if (typeInspectionBuilder == null)
+                    throw new UnsupportedOperationException("? was expecting a type inspection builder");
+                currentType.typeInspection.set(typeInspectionBuilder.build(false, currentType));
+                types.add(currentType);
+                inProcess.remove(currentType);
+                currentType = null;
+                typeInspectionBuilder = null;
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught runtime exception bytecode inspecting type {}", currentType.fullyQualifiedName);
+                throw rte;
+            }
         }
     }
 }
