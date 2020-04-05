@@ -18,14 +18,11 @@
 
 package org.e2immu.analyser.bytecode;
 
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
-import org.apache.commons.io.FileUtils;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
-import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,24 +32,32 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Stack;
 
 public class TestByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
-    public static final String BUILD_CLASSES_JAVA_MAIN = "build/classes/java/main";
-    public static final String BUILD_CLASSES_JAVA_TEST = "build/classes/java/test";
-
     @BeforeClass
     public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR, org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
+                org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG);
     }
 
-    private TypeInfo parse(String path, String where) throws IOException {
+    private TypeInfo parseFromJar(String path) throws IOException {
         Resources resources = new Resources();
-        resources.addDirectoryFromFileSystem(new File(where));
+        resources.addJar(new URL("jar:file:build/libs/analyser.jar!/"));
+        resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
+        Resources annotationResources = new Resources();
+        AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
+        List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
+        return types.get(0);
+    }
+
+    private TypeInfo parseFromDirectory(String path) throws IOException {
+        Resources resources = new Resources();
+        resources.addDirectoryFromFileSystem(new File("build/classes/java/test"));
+        resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
@@ -61,37 +66,22 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testConfigRetriever() throws IOException {
-        Resources resources = new Resources();
-        resources.addJar(new URL("jar:file:/Users/bnaudts/Downloads/vertx/lib/vertx-config-3.8.5.jar!/"));
-        Resources annotationResources = new Resources();
-        AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
-        List<TypeInfo> types = byteCodeInspector.inspectFromPath("io/vertx/config/ConfigRetriever");
-        TypeInfo typeInfo = types.get(0);
-        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature);
-        MethodInfo getConfig = typeInfo.typeInspection.get().methods.stream().filter(m -> "getConfig".equals(m.name)).findAny().orElseThrow();
-        Assert.assertEquals(1, getConfig.methodInspection.get().parameters.size());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
-    }
-
-    @Test
     public void test() throws IOException {
-        TypeInfo typeInfo = parse("org/e2immu/analyser/parser/Parser", BUILD_CLASSES_JAVA_MAIN);
+        TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/parser/Parser");
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature);
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test
     public void testInterface() throws IOException {
-        TypeInfo typeInfo = parse("org/e2immu/analyser/model/EvaluationContext", BUILD_CLASSES_JAVA_MAIN);
+        TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/model/EvaluationContext");
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature);
     }
 
     @Test
     public void testSubTypes() throws IOException {
-        TypeInfo typeInfo = parse("org/e2immu/analyser/testexample/SubTypes", BUILD_CLASSES_JAVA_TEST);
+        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/SubTypes");
         Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes", typeInfo.fullyQualifiedName);
         Assert.assertEquals(2, typeInfo.typeInspection.get().subTypes.size());
 
@@ -110,64 +100,43 @@ public class TestByteCodeInspector {
 
     @Test
     public void testGenerics() throws IOException {
-        File base = new File(BUILD_CLASSES_JAVA_MAIN);
-        File path = new File("org/e2immu/analyser/util/Lazy.class");
-        byte[] bytes = FileUtils.readFileToByteArray(new File(base, path.getPath()));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector();
-        List<TypeInfo> types = byteCodeInspector.inspectByteArray(bytes, new HashSet<>(), new Stack<>(), new TypeContext());
-        TypeInfo type = types.get(0);
+        TypeInfo type = parseFromJar("org/e2immu/analyser/util/Lazy.class");
         Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature);
-        LOGGER.info("Stream is\n{}", types.get(0).stream(0));
+        LOGGER.info("Stream is\n{}", type.stream(0));
     }
 
     @Test
     public void testGenerics2() throws IOException {
-        TypeInfo typeInfo = parse("org/e2immu/analyser/util/Either", BUILD_CLASSES_JAVA_MAIN);
+        TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/util/Either");
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature);
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test
     public void testStringArray() throws IOException {
-        TypeInfo typeInfo = parse("org/e2immu/analyser/model/PackagePrefix", BUILD_CLASSES_JAVA_MAIN);
+        TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature);
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test
     public void testSetOnce() throws IOException {
-        File base = new File(BUILD_CLASSES_JAVA_MAIN);
-        File path = new File("org/e2immu/analyser/util/SetOnce.class");
-        byte[] bytes = FileUtils.readFileToByteArray(new File(base, path.getPath()));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector();
-        List<TypeInfo> types = byteCodeInspector.inspectByteArray(bytes, new HashSet<>(), new Stack<>(), new TypeContext());
-        TypeInfo type = types.get(0);
+        TypeInfo type = parseFromJar("org/e2immu/analyser/util/SetOnce.class");
         Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature);
-        LOGGER.info("Stream is\n{}", types.get(0).stream(0));
+        LOGGER.info("Stream is\n{}", type.stream(0));
     }
-
 
     @Test
     public void testEnum() throws IOException {
-        File base = new File(BUILD_CLASSES_JAVA_MAIN);
-        File path = new File("org/e2immu/analyser/model/SideEffect.class");
-        byte[] bytes = FileUtils.readFileToByteArray(new File(base, path.getPath()));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector();
-        List<TypeInfo> types = byteCodeInspector.inspectByteArray(bytes, new HashSet<>(), new Stack<>(), new TypeContext());
-        TypeInfo type = types.get(0);
+        TypeInfo type = parseFromJar("org/e2immu/analyser/model/SideEffect.class");
         Assert.assertEquals(TypeNature.ENUM, type.typeInspection.get().typeNature);
-        LOGGER.info("Stream is\n{}", types.get(0).stream(0));
+        LOGGER.info("Stream is\n{}", type.stream(0));
     }
 
     @Test
     public void testImplements() throws IOException {
-        File base = new File(BUILD_CLASSES_JAVA_MAIN);
-        File path = new File("org/e2immu/analyser/analyser/NumberedStatement.class");
-        byte[] bytes = FileUtils.readFileToByteArray(new File(base, path.getPath()));
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector();
-        List<TypeInfo> types = byteCodeInspector.inspectByteArray(bytes, new HashSet<>(), new Stack<>(), new TypeContext());
-        TypeInfo type = types.get(0);
+        TypeInfo type = parseFromJar("org/e2immu/analyser/analyser/NumberedStatement.class");
         Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature);
-        LOGGER.info("Stream is\n{}", types.get(0).stream(0));
+        LOGGER.info("Stream is\n{}", type.stream(0));
     }
 }

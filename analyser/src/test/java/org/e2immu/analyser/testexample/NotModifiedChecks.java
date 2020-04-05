@@ -19,15 +19,12 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import static org.e2immu.annotation.AnnotationType.*;
 
 import java.util.*;
 
 public class NotModifiedChecks {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotModifiedChecks.class);
-
     @NotModified
     @Linked(to = {"NotModifiedChecks.list"})
     final Collection<String> c0;
@@ -101,7 +98,7 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT) // primitive
     public int add(String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
-        LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);
+        System.out.println("The set has " + theSet.size() + " elements before adding " + s);
         theSet.add(s); // this one modifies set2!
         return example1() || example2() ? 1 : 0; // this one modifies set3!
     }

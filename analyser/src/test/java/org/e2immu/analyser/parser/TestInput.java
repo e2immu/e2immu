@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,15 +35,19 @@ import java.net.URL;
 public class TestInput {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInput.class);
 
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR,
+                org.e2immu.analyser.util.Logger.LogTarget.CONFIGURATION);
+    }
+
     @Test
     public void testInput() throws IOException, URISyntaxException {
         Input input = new Input(new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.util")
-                        .addClassPath("build/resources/main/annotations/jdkAnnotations")
-                        .addClassPath("build/resources/main/annotatedAPIs")
-                        .addClassPath("build/classes/java/main")
+                        .addClassPath("jmods/java.base.jmod")
                         .build())
                 .build());
         Assert.assertTrue("Have at least 15 classes in util package", 15 <= input.getSourceURLs().size());

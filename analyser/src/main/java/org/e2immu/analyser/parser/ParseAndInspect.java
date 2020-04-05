@@ -69,6 +69,8 @@ public class ParseAndInspect {
      * @return the list of primary types found in the source code
      */
     public List<TypeInfo> phase1ParseAndInspect(TypeContext typeContextOfFile, String fileName, String sourceCode) {
+        log(INSPECT, "Parsing compilation unit {}", fileName);
+
         CompilationUnit compilationUnit = StaticJavaParser.parse(sourceCode);
         if (compilationUnit.getTypes().isEmpty()) {
             LOGGER.warn("No types in compilation unit: {}", fileName);

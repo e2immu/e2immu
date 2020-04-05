@@ -20,6 +20,7 @@ package org.e2immu.analyser.util;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestResources {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestResources.class);
+
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.RESOURCES);
+    }
 
     @Test
     public void testViaClassPath() throws IOException {
@@ -80,7 +86,7 @@ public class TestResources {
     @Test
     public void testViaJar() throws IOException {
         Resources classPath = new Resources();
-        classPath.addJar(new URL("jar:file:build/libs/equivalent.jar!/"));
+        classPath.addJar(new URL("jar:file:build/libs/analyser.jar!/"));
         List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {

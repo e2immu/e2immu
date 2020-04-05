@@ -21,6 +21,7 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,11 @@ import java.util.stream.Collectors;
 
 public class TestAnnotationXmlReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestAnnotationXmlReader.class);
+
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER);
+    }
 
     @Test
     public void test() throws ParserConfigurationException, SAXException, IOException {
@@ -64,7 +70,7 @@ public class TestAnnotationXmlReader {
     @Test
     public void testWholeFolder() throws IOException {
         Resources resources = new Resources();
-        resources.addJarFromClassPath("annotations/jdkAnnotations");
+        resources.addDirectoryFromFileSystem(new File("src/main/resources/annotations/jdkAnnotations"));
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(resources);
         TypeItem booleanType = annotationParser.typeItemMap.get("java.lang.Boolean");
         Assert.assertNotNull(booleanType);

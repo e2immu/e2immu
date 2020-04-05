@@ -39,7 +39,6 @@ public class TestTestExamples {
 
     @BeforeClass
     public static void beforeClass() {
-
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
                 METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,

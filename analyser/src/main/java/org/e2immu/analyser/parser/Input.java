@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -56,14 +57,14 @@ public class Input {
         annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from annotation.xml files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
-        preload("org.e2immu.annotation");
+        preload("org.e2immu.annotation"); // needed for our own stuff
         preload("java.lang"); // there are needed to help with implicit imports
 
         assembleClassPath(sourcePath, "Source path", configuration.inputConfiguration.sources);
         sourceURLs = computeSourceURLs();
 
         annotatedAPIs = classPath.expandURLs("annotated_api");
-        LOGGER.info("Found {} annotated_api files in source path", annotatedAPIs.size());
+        LOGGER.info("Found {} annotated_api files in class path", annotatedAPIs.size());
     }
 
     private List<URL> computeSourceURLs() {
@@ -116,6 +117,7 @@ public class Input {
      */
     private void preload(String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
+        AtomicInteger inspected = new AtomicInteger();
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
@@ -124,9 +126,11 @@ public class Input {
                 if (typeInfo == null) {
                     String path = fqn.replace(".", "/"); // this is correct!
                     byteCodeInspector.inspectFromPath(path);
+                    inspected.incrementAndGet();
                 }
             }
         });
+        LOGGER.info("... inspected {} paths", inspected);
     }
 
     private void assembleClassPath(Resources classPath, String msg, List<String> parts) {

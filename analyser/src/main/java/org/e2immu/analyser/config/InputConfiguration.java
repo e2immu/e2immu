@@ -19,6 +19,7 @@
 package org.e2immu.analyser.config;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;
@@ -34,7 +35,8 @@ import static org.e2immu.analyser.config.Configuration.setStringProperty;
 @E2Immutable
 public class InputConfiguration {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
-    public static final String DEFAULT_CLASSPATH = "build/classes/java/main";
+    public static final String DEFAULT_CLASSPATH = "build/classes/java/main" + PATH_SEPARATOR +
+            "jmods/java.base.jmod" + PATH_SEPARATOR + "src/main/resources/annotatedAPIs";
 
     // input options
     public final List<String> sources;
