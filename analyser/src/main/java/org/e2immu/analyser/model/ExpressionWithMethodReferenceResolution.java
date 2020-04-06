@@ -18,43 +18,22 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.util.FirstThen;
 
 import java.util.Objects;
 
-// @ContextClass eventually...
-@Container
 public abstract class ExpressionWithMethodReferenceResolution implements Expression {
 
-    private final FirstThen<MethodInfo, MethodReferenceResolution> methodReferenceResolution;
+    public final MethodInfo methodInfo;
+    public final ParameterizedType concreteReturnType;
 
-    protected ExpressionWithMethodReferenceResolution(@NullNotAllowed MethodInfo methodInfo) {
-        methodReferenceResolution = new FirstThen<>(Objects.requireNonNull(methodInfo));
-    }
-
-    public boolean hasBeenResolved() {
-        return methodReferenceResolution.isSet();
-    }
-
-    @NotNull
-    @NotModified
-    public MethodInfo methodInfo() {
-        return methodReferenceResolution.isSet() ? methodReferenceResolution.get().methodInfo : methodReferenceResolution.getFirst();
+    protected ExpressionWithMethodReferenceResolution(@NullNotAllowed MethodInfo methodInfo, @NullNotAllowed ParameterizedType concreteReturnType) {
+        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
+        this.methodInfo = Objects.requireNonNull(methodInfo);
     }
 
     @Override
-    @NotNull
-    @NotModified
     public ParameterizedType returnType() {
-        return methodReferenceResolution.isSet() ? methodReferenceResolution.get().concreteReturnType :
-                methodReferenceResolution.getFirst().returnType();
-    }
-
-    public void resolve(@NullNotAllowed MethodReferenceResolution methodReferenceResolution) {
-        this.methodReferenceResolution.set(methodReferenceResolution);
+        return concreteReturnType;
     }
 }

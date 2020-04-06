@@ -38,12 +38,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public MethodCall(Expression object,
                       @NullNotAllowed MethodTypeParameterMap methodTypeParameterMap,
                       @NullNotAllowed List<Expression> parameterExpressions) {
-        super(methodTypeParameterMap.methodInfo);
+        super(methodTypeParameterMap.methodInfo, methodTypeParameterMap.getConcreteReturnType());
         this.object = object;
-        if (methodTypeParameterMap.methodInfo.methodInspection.isSet()) {
-            ParameterizedType concreteReturnType = methodTypeParameterMap.getConcreteReturnType();
-            resolve(new MethodReferenceResolution(methodTypeParameterMap.methodInfo, concreteReturnType, Reference.NORMAL));
-        }
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
     }
 
@@ -54,14 +50,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public MethodInfo getMethodInfo() {
-        return methodInfo();
+        return methodInfo;
     }
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext) {
         List<Value> parameters = parameterExpressions.stream()
                 .map(pe -> pe.evaluate(evaluationContext)).collect(Collectors.toList());
-        return new MethodValue(methodInfo(), object == null ? null : object.evaluate(evaluationContext), parameters);
+        return new MethodValue(methodInfo, object == null ? null : object.evaluate(evaluationContext), parameters);
     }
 
     @Override
@@ -72,7 +68,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (object != null) {
             scope = bracketedExpressionString(indent, object) + ".";
         }
-        return scope + methodInfo().name +
+        return scope + methodInfo.name +
                 "(" + parameterExpressions.stream().map(expression -> expression.expressionString(indent))
                 .collect(Collectors.joining(", ")) + ")";
     }
@@ -140,22 +136,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        if (hasBeenResolved()) {
-            SideEffect methodsSideEffect = methodInfo().sideEffect(sideEffectContext.typeContext);
-            if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
-                return SideEffect.STATIC_ONLY;
-            }
-            return methodsSideEffect.combine(params);
+        SideEffect methodsSideEffect = methodInfo.sideEffect(sideEffectContext.typeContext);
+        if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
+            return SideEffect.STATIC_ONLY;
         }
-
-        SideEffect outsideWorld = sideEffectContext.exposureToOutsideWorld;
-        // we don't know yet... so it will be OUTSIDE our class file.
-        // we will assume that the method we're calling cannot call us back, because the outside world
-        // does not know what we're doing, unless we implement some known outside world interface.
-        // in that case, the outside world can call all the methods of that interface.
-        //
-        if (parameterExpressions.isEmpty() || params == SideEffect.LOCAL)
-            return SideEffect.STATIC_ONLY.combine(outsideWorld);
-        return SideEffect.SIDE_EFFECT.combine(outsideWorld);
+        return methodsSideEffect.combine(params);
     }
 }

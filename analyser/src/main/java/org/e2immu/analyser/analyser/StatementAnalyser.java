@@ -372,7 +372,7 @@ public class StatementAnalyser {
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
         // not modified
 
-        boolean safeMethod = methodCall.methodInfo().sideEffect(typeContext).lessThan(SideEffect.SIDE_EFFECT);
+        boolean safeMethod = methodCall.methodInfo.sideEffect(typeContext).lessThan(SideEffect.SIDE_EFFECT);
         //boolean haveParameters = !methodCall.methodInfo().methodInspection.get().parameters.isEmpty();
         if (!safeMethod) {
             recursivelyMarkVariables(methodCall.object, variableProperties);

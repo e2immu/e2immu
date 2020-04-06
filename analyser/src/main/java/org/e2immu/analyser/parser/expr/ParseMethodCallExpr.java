@@ -87,6 +87,13 @@ public class ParseMethodCallExpr {
 
         List<Expression> parameterExpressions = new ArrayList<>();
         for (com.github.javaparser.ast.expr.Expression expr : expressions) {
+            // some expressions (Lambdas, Method references) need to be evaluated in the context of a function interface (singleAbstractMethod)
+            // but we don't have that yet, we need the correct method candidate for that
+            // therefore, in this first pass, lambdas and method references may return an "UnevaluatedLambdaExpression", which contains minimal
+            // information (number of parameters, return type, ...) to help with method overload
+
+            // note that we're not a validating compiler; we assume that the source code that we operate on, is valid :-)
+            // that surely grants us some shortcuts
             parameterExpressions.add(expressionContext.parseExpression(expr));
         }
 

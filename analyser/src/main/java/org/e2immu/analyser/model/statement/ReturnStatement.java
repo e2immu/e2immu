@@ -72,7 +72,7 @@ public class ReturnStatement extends StatementWithExpression {
         }
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
-            return methodCall.methodInfo().isFluent(typeContext);
+            return methodCall.methodInfo.isFluent(typeContext);
         }
         return false;
     }
@@ -82,7 +82,7 @@ public class ReturnStatement extends StatementWithExpression {
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
             if (methodCall.parameterExpressions.size() == 0) return false;
-            Boolean isIdentity = methodCall.methodInfo().isIdentity(typeContext);
+            Boolean isIdentity = methodCall.methodInfo.isIdentity(typeContext);
             if (isIdentity == Boolean.FALSE) return false;
             if (isIdentity == null) return null;
             return isIdentity(typeContext, methodCall.parameterExpressions.get(0));

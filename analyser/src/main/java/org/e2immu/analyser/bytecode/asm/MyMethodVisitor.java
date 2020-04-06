@@ -48,8 +48,7 @@ public class MyMethodVisitor extends MethodVisitor {
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final MethodItem methodItem;
     private int countLocalVars;
-
-    private final List<ParameterInfo> setParameterInspectionLater;
+    private boolean[] hasNameFromLocalVar;
 
     public MyMethodVisitor(TypeContext typeContext,
                            MethodInfo methodInfo,
@@ -68,21 +67,11 @@ public class MyMethodVisitor extends MethodVisitor {
         this.jetBrainsAnnotationTranslator = jetBrainsAnnotationTranslator;
         this.methodItem = methodItem;
         numberOfParameters = types.size() - 1;
+        hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspection.ParameterInspectionBuilder[numberOfParameters];
-        ParameterNameFactory factory = isAbstract ? new ParameterNameFactory() : null;
-        setParameterInspectionLater = isAbstract ? new ArrayList<>(numberOfParameters) : List.of();
+
         for (int i = 0; i < parameterInspectionBuilders.length; i++) {
             parameterInspectionBuilders[i] = new ParameterInspection.ParameterInspectionBuilder();
-
-            // if the method is abstract, visitLocalVariable will NOT be called. However, all others
-            // will be called, especially visitAnnotation
-            if (isAbstract) {
-                ParameterizedType type = types.get(i);
-                String parameterName = factory.next(type);
-                ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
-                methodInspectionBuilder.addParameter(parameterInfo);
-                setParameterInspectionLater.add(parameterInfo);
-            }
         }
     }
 
@@ -108,20 +97,27 @@ public class MyMethodVisitor extends MethodVisitor {
             // TODO varargs
             parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
             methodInspectionBuilder.addParameter(parameterInfo);
-           // log(BYTECODE_INSPECTOR_DEBUG, "Added parameter {}", parameterIndex);
+            hasNameFromLocalVar[parameterIndex] = true;
         }
         countLocalVars++;
     }
 
     @Override
     public void visitEnd() {
-        int parameterIndex = 0;
-        for (ParameterInfo parameterInfo : setParameterInspectionLater) {
-            parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
-            log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", parameterIndex);
-            parameterIndex++;
-        }
+        if (countLocalVars < numberOfParameters) {
+            ParameterNameFactory factory = new ParameterNameFactory();
+            for (int i = 0; i < numberOfParameters; i++) {
+                if (!hasNameFromLocalVar[i]) {
+                    ParameterizedType type = types.get(i);
+                    String parameterName = factory.next(type);
+                    ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
+                    methodInspectionBuilder.addParameter(parameterInfo);
 
+                    parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build(methodInfo));
+                    log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
+                }
+            }
+        }
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
                 if (parameterItem.index < parameterInspectionBuilders.length) {

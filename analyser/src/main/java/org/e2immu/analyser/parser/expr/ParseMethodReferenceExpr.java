@@ -19,10 +19,7 @@
 package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MethodTypeParameterMap;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
@@ -60,7 +57,10 @@ public class ParseMethodReferenceExpr {
             if (parameterizedType.arrays > 0) {
                 // this is a constructor we have to create ourselves...
                 MethodInfo arrayConstructor = ParseArrayCreationExpr.createArrayCreationConstructor(parameterizedType);
-                return new MethodReference(arrayConstructor, parameterizedType);
+                TypeInfo intFunction = expressionContext.typeContext.typeStore.get("java.util.function.IntFunction");
+                if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
+                ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
+                return new MethodReference(arrayConstructor, intFunctionPt);
             }
             methodNameForErrorReporting = "constructor";
             methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, parametersPresented, parameterizedType.initialTypeParameterMap());

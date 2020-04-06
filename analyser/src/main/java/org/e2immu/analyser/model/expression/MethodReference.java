@@ -33,17 +33,14 @@ import java.util.Set;
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     public MethodReference(@NullNotAllowed MethodInfo methodInfo, ParameterizedType concreteType) {
-        super(methodInfo);
-        if (!methodInfo.methodInspection.isSet()) throw new UnsupportedOperationException();
-        resolve(new MethodReferenceResolution(methodInfo, concreteType, Reference.NORMAL));
+        super(methodInfo, concreteType);
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        MethodInfo methodInfo = methodInfo();
         String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
-        return methodInfo().typeInfo.simpleName + "::" + methodName;
+        return methodInfo.typeInfo.simpleName + "::" + methodName;
     }
 
     @Override
@@ -55,8 +52,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @NotNull
     @Independent
     public Set<String> imports() {
-        return methodInfo().returnType().typeInfo != null ?
-                Set.of(methodInfo().returnType().typeInfo.fullyQualifiedName)
+        return methodInfo.returnType().typeInfo != null ?
+                Set.of(methodInfo.returnType().typeInfo.fullyQualifiedName)
                 : Set.of();
     }
 
@@ -66,11 +63,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @NotNull
     public SideEffect sideEffect(@NullNotAllowed SideEffectContext sideEffectContext) {
         Objects.requireNonNull(sideEffectContext);
-        if (hasBeenResolved()) {
-            // we know the method we're passing on...
-            if (sideEffectContext.enclosingType.inTypeInnerOuterHierarchy(methodInfo().typeInfo).isPresent()) {
-                return sideEffectContext.exposureToOutsideWorld;
-            }
+        // we know the method we're passing on...
+        if (sideEffectContext.enclosingType.inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
+            return sideEffectContext.exposureToOutsideWorld;
         }
         // no idea which method we're passing on... should not be a problem
         return SideEffect.LOCAL;

@@ -11,7 +11,11 @@ public class ParameterNameFactory {
     public String next(ParameterizedType type) {
         String base;
         if (type.typeInfo != null) {
-            base = firstLetterLowerCase(type.typeInfo.simpleName);
+            if (type.isPrimitive()) {
+                base = firstLetterLowerCase(type.typeInfo.simpleName).substring(0, 1);
+            } else {
+                base = firstLetterLowerCase(type.typeInfo.simpleName);
+            }
         } else if (type.typeParameter != null) {
             base = firstLetterLowerCase(type.typeParameter.name);
         } else {
@@ -21,7 +25,7 @@ public class ParameterNameFactory {
             names.add(base);
             return base;
         }
-        int index = 0;
+        int index = 1;
         while (true) {
             String name = base + index;
             if (!names.contains(name)) {
