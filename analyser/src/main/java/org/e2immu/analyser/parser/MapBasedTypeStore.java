@@ -69,6 +69,10 @@ public class MapBasedTypeStore implements TypeStore {
         trie.visit(prefix, consumer);
     }
 
+    public void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
+        trie.visitLeaves(prefix, consumer);
+    }
+
     /**
      * it is critical that the map is copied and traversed independently of the <code>newlyCreatedTypes</code>
      * field, as the consumer will probably modify it!

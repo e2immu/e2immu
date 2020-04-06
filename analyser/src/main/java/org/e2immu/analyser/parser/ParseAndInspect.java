@@ -81,7 +81,7 @@ public class ParseAndInspect {
                 .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + fileName));
 
         // add all types from the current package that we can find in the source path
-        sourceTypeStore.visit(packageName.split("\\."), (expansion, typeInfoList) -> {
+        sourceTypeStore.visitLeaves(packageName.split("\\."), (expansion, typeInfoList) -> {
             for (TypeInfo typeInfo : typeInfoList) {
                 if (typeInfo.fullyQualifiedName.equals(packageName + "." + typeInfo.simpleName)) {
                     typeContextOfFile.addToContext(typeInfo);
@@ -157,7 +157,7 @@ public class ParseAndInspect {
             }
         }
         typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
-            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet()) {
+            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet() && sourceTypeStore.get(typeInfo.fullyQualifiedName) == null) {
                 log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
                 typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
             }
@@ -194,7 +194,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null || !typeInfo.hasBeenInspected()) {
+        if (typeInfo == null || !typeInfo.hasBeenInspected() && sourceTypeStore.get(fqn) == null) {
             return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
         }
         typeContext.addToContext(typeInfo);

@@ -36,5 +36,7 @@ public interface TypeStore {
 
     void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
+    void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
+
     void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer);
 }

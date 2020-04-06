@@ -29,9 +29,14 @@ public class SetUtil {
     private SetUtil() {
     }
 
+    @SafeVarargs
     @NotNull
     @Independent
-    public static <T> Set<T> immutableUnion(@NullNotAllowed @NotModified Set<T> set1, @NullNotAllowed @NotModified Set<T> set2) {
-        return new ImmutableSet.Builder<T>().addAll(set1).addAll(set2).build();
+    public static <T> Set<T> immutableUnion(@NullNotAllowed @NotModified Set<T>... sets) {
+        ImmutableSet.Builder<T> builder = new ImmutableSet.Builder<T>();
+        for (Set<T> set : sets) {
+            builder.addAll(set);
+        }
+        return builder.build();
     }
 }

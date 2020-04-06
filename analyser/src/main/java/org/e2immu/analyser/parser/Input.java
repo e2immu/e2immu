@@ -90,6 +90,7 @@ public class Input {
                     if (acceptSource(packageName)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         sourceTypeStore.add(typeInfo);
+                        globalTypeContext.typeStore.add(typeInfo);
                         URL url = list.get(0);
                         sourceURLs.add(url);
                     } else {

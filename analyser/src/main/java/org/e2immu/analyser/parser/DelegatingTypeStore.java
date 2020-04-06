@@ -66,6 +66,11 @@ public class DelegatingTypeStore implements TypeStore {
     }
 
     @Override
+    public void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer) {
         delegate.visitAllNewlyCreatedTypes(typeInfoConsumer);
     }

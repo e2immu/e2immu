@@ -222,7 +222,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
         TypeInfo result = typeContext.typeStore.get(fqn);
-        return result.typeInspection.isSetDoNotTriggerRunnable() ? result : null;
+        return result != null && result.typeInspection.isSetDoNotTriggerRunnable() ? result : null;
     }
 
     private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");

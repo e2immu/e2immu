@@ -23,6 +23,8 @@ import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -157,9 +159,31 @@ public class ExpressionContext {
             } else if (statement.isExplicitConstructorInvocationStmt()) {
                 // this( ... )
                 newStatement = explicitConstructorInvocation((ExplicitConstructorInvocationStmt) statement);
-            } else {
-                LOGGER.warn("Ignoring statement " + statement);
+            } else if (statement.isTryStmt()) {
+                newStatement = tryStatement(statement.asTryStmt());
+          /*  } else if (statement.isContinueStmt()) {
+
+            } else if (statement.isBreakStmt()) {
+            } else if (statement.isDoStmt()) {
+
+            } else if (statement.isForStmt()) {
+
+            } else if (statement.isAssertStmt()) {
+            } else if (statement.isEmptyStmt()) {
+            } else if (statement.isSwitchStmt()) {
+*/
+            } else if (statement.isUnparsableStmt()) {
+                LOGGER.warn("Skipping unparsable statement at {}", statement.getBegin());
                 newStatement = null;
+            } else if (statement.isLabeledStmt()) {
+                LabeledStmt labeledStmt = statement.asLabeledStmt();
+                String label = labeledStmt.getLabel().asString();
+                Block.BlockBuilder labelStatementBuilder = new Block.BlockBuilder();
+                parseStatement(labelStatementBuilder, labeledStmt.getStatement());
+                org.e2immu.analyser.model.Statement inLabeled = blockBuilder.build().statements.get(0);
+                newStatement = new LabeledStatement(label, inLabeled);
+            } else {
+                throw new UnsupportedOperationException("Statement " + statement.getClass() + " not implemented");
             }
 
             if (newStatement != null) {
@@ -171,6 +195,23 @@ public class ExpressionContext {
             LOGGER.warn("Caught runtime exception while parsing statement at line {}", statement.getBegin().orElse(null));
             throw rte;
         }
+    }
+
+    private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt) {
+        List<Expression> resources = new ArrayList<>();
+        ExpressionContext newExpressionContext = newVariableContext("try-resources");
+        for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
+            resources.add(newExpressionContext.parseExpression(resource));
+        }
+        Block tryBlock = newExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
+        List<Pair<TryStatement.CatchParameter, Block>> catchClauses = new ArrayList<>();
+        for (CatchClause catchClause : tryStmt.getCatchClauses()) {
+
+            Block block = newExpressionContext.parseBlockOrStatement(catchClause.getBody());
+
+        }
+        Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.EMPTY_BLOCK);
+        return new TryStatement(resources, tryBlock, catchClauses, finallyBlock);
     }
 
     private org.e2immu.analyser.model.Statement whileStatement(WhileStmt statement) {
@@ -203,15 +244,15 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement forEachStatement(ForEachStmt forEachStmt, ExpressionContext expressionContext) {
-        VariableContext variableContext2 = VariableContext.dependentVariableContext(expressionContext.variableContext);
+        VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
         VariableDeclarationExpr vde = forEachStmt.getVariable();
         LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
                 .setName(vde.getVariables().get(0).getNameAsString())
                 .setParameterizedType(ParameterizedType.from(expressionContext.typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
-        variableContext2.add(localVariable, List.of(expression));
-        Block block = newVariableContext(variableContext2, "for-loop").parseBlockOrStatement(forEachStmt.getBody().asBlockStmt());
+        newVariableContext.add(localVariable, List.of(expression));
+        Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody().asBlockStmt());
         return new ForEachStatement(localVariable, expression, block);
     }
 

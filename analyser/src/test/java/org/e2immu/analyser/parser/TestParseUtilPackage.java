@@ -18,20 +18,12 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.BasicConfigurator;
 import ch.qos.logback.classic.Level;
-import com.google.common.collect.ImmutableMap;
-
-import static org.e2immu.analyser.cli.Main.*;
-
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.config.UploadConfiguration;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 public class TestParseUtilPackage {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestParseUtilPackage.class);
@@ -47,11 +38,18 @@ public class TestParseUtilPackage {
     @BeforeClass
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
-                METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
-                E2IMMUTABLE, ANNOTATION_EXPRESSION, BYTECODE_INSPECTOR,
+        org.e2immu.analyser.util.Logger.activate(
+                BYTECODE_INSPECTOR,
+                INSPECT,
+                RESOLVE,
+
+                ANALYSER, LAMBDA,
+                METHOD_CALL, VARIABLE_PROPERTIES,
+                LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
+                E2IMMUTABLE, ANNOTATION_EXPRESSION,
                 CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS, CONTEXT_ANNOTATIONS, PURE_ANNOTATIONS,
-                NULL_NOT_ALLOWED, NOT_MODIFIED);
+                NULL_NOT_ALLOWED, NOT_MODIFIED
+        );
     }
 
     @Test
@@ -68,9 +66,14 @@ public class TestParseUtilPackage {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
+                        .addClassPath("jmods/java.xml.jmod")
                         .build())
                 .build();
-        BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         Assert.assertTrue(15 <= types.size());
