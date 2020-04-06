@@ -339,6 +339,7 @@ public class TypeContext {
                                                 ParameterizedType startingPointForErrors,
                                                 Position positionForErrors) {
         return methodCandidates.stream()
+                .peek(mc -> log(METHOD_CALL, "Considering for selection: {}", mc.method.methodInfo.distinguishingName()))
                 .filter(mc -> parameterExpressions == null || compatibleParameters(mc.method.methodInfo, parameterExpressions))
                 .map(mc -> mc.method)
                 .findFirst()

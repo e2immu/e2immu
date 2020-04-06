@@ -418,6 +418,7 @@ public class ParameterizedType {
      */
     public boolean isAssignableFrom(ParameterizedType type) {
         if (type == this) return true;
+        if (arrays != type.arrays) return false;
         if (typeInfo != null) {
             if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return true;
             if ("java.util.function.Function".equals(typeInfo.fullyQualifiedName) ||
@@ -427,7 +428,20 @@ public class ParameterizedType {
             }
             if (type.typeInfo != null) {
                 if (typeInfo.equals(type.typeInfo)) return true;
-                if (typeInfo.isPrimitive() && checkBoxing(type.typeInfo)) return true;
+                if (typeInfo.isPrimitive()) {
+                    if (arrays == 0) {
+                        if (isPrimitive()) {
+                            return Primitives.PRIMITIVES.isAssignableFromTo(type, this);
+                        }
+                        return checkBoxing(type.typeInfo);
+                    }
+                    // TODO; for now: primitive array can only be assigned to its own type
+                    return false;
+                }
+                if (isPrimitive()) {
+                    // the other one is not a primitive
+                    return arrays == 0 && type.checkBoxing(typeInfo);
+                }
                 if (type.typeInfo.hasBeenInspected()) {
                     for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
                         if (isAssignableFrom(interfaceImplemented)) return true;
@@ -444,6 +458,11 @@ public class ParameterizedType {
                 return typeParameter.typeParameterInspection.get().typeBounds.stream().allMatch(this::isAssignableFrom);
             }
             // if the wildcard is ? super E or so, we're in pretty exotic waters (E extends Comparable<? super E>, for example)
+            // TODO we'll have to implement this correctly at some point
+            if (type.isPrimitive()) {
+                // int cannot be assigned to T, no matter what; neither can int[] to T[]
+                return false;
+            }
             return true; // normally the wildcard is NONE, <T>, so anything goes
         } else {
             if (wildCard == WildCard.UNBOUND) return true; // <?> anything goes
@@ -451,20 +470,16 @@ public class ParameterizedType {
         return false;
     }
 
-    private boolean checkBoxing(TypeInfo other) {
-        if (typeInfo == Primitives.PRIMITIVES.longTypeInfo && ("java.lang.Long".equals(other.fullyQualifiedName) ||
-                other == Primitives.PRIMITIVES.intTypeInfo || other == Primitives.PRIMITIVES.shortTypeInfo
-                || other == Primitives.PRIMITIVES.byteTypeInfo || other == Primitives.PRIMITIVES.charTypeInfo))
-            return true;
-        if (typeInfo == Primitives.PRIMITIVES.intTypeInfo && ("java.lang.Integer".equals(other.fullyQualifiedName)
-                || other == Primitives.PRIMITIVES.shortTypeInfo ||
-                other == Primitives.PRIMITIVES.byteTypeInfo || other == Primitives.PRIMITIVES.charTypeInfo))
-            return true;
-        if (typeInfo == Primitives.PRIMITIVES.shortTypeInfo && ("java.lang.Short".equals(other.fullyQualifiedName) ||
-                other == Primitives.PRIMITIVES.byteTypeInfo || other == Primitives.PRIMITIVES.charTypeInfo))
-            return true;
-        // TODO complete boxing rules (double, float, ...)
-        return false;
+    private boolean checkBoxing(TypeInfo primitiveType) {
+        String fqn = primitiveType.fullyQualifiedName;
+        return typeInfo == Primitives.PRIMITIVES.longTypeInfo && "java.lang.Long".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.intTypeInfo && "java.lang.Integer".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.shortTypeInfo && "java.lang.Short".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.byteTypeInfo && "java.lang.Byte".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.charTypeInfo && "java.lang.Character".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.booleanTypeInfo && "java.lang.Boolean".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.floatTypeInfo && "java.lang.Float".equals(fqn) ||
+                typeInfo == Primitives.PRIMITIVES.doubleTypeInfo && "java.lang.Double".equals(fqn);
     }
 
     public boolean isFunctionalInterface(TypeContext typeContext) {

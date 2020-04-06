@@ -157,7 +157,7 @@ public class ParseAndInspect {
             }
         }
         typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
-            if (!typeInfo.hasBeenInspected()) {
+            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet()) {
                 log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
                 typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
             }

@@ -85,4 +85,8 @@ public class SetOnceSupply<T> {
         localRunnable.run();
         return t != null;
     }
+
+    public boolean hasRunnable() {
+        return runnable != null;
+    }
 }

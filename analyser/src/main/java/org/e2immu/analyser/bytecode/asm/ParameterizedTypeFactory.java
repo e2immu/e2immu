@@ -159,6 +159,11 @@ public class ParameterizedTypeFactory {
         String fqn = path.toString().replaceAll("[/$]", ".");
 
         TypeInfo typeInfo = findType.find(fqn, path.toString());
+
+        boolean unableToLoadTypeError = typeInfo == null;
+        if (unableToLoadTypeError) {
+            return null;
+        }
         ParameterizedType parameterizedType = new ParameterizedType(typeInfo, arrays, wildCard, typeParameters);
         return new Result(parameterizedType, semiColon + 1, typeNotFoundError);
     }

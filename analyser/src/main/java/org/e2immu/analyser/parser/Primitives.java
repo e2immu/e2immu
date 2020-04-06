@@ -205,4 +205,12 @@ public class Primitives {
         if (ti == null) throw new UnsupportedOperationException("Type " + asString + " not (yet) a primitive");
         return ti;
     }
+
+    public boolean isAssignableFromTo(ParameterizedType from, ParameterizedType to) {
+        int fromOrder = primitiveTypeOrder(from);
+        if (fromOrder <= 1 || fromOrder >= 9) return false;
+        int toOrder = primitiveTypeOrder(to);
+        if (toOrder <= 1 || toOrder >= 9) return false;
+        return fromOrder <= toOrder;
+    }
 }

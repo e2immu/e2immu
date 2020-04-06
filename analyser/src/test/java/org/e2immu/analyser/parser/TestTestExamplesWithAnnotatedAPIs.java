@@ -39,7 +39,6 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestTestExamplesWithAnnotatedAPIs {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamplesWithAnnotatedAPIs.class);
-    public static final String SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER = "src/test/java/org/e2immu/analyser/";
 
     @BeforeClass
     public static void beforeClass() {
@@ -51,70 +50,8 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 NULL_NOT_ALLOWED, NOT_MODIFIED);
     }
 
-
     @Test
-    public void testE2ImmutableChecks() throws IOException {
-        goTest("testexample/E2ImmutableChecks.java");
-    }
-
-    @Test
-    public void testContainerChecks() throws IOException {
-        goTest("testexample/ContainerChecks.java");
-    }
-
-    @Test
-    public void testCyclicReferences() throws IOException {
-        goTest("testexample/CyclicReferences.java");
-    }
-
-    @Test
-    public void testEvaluateConstants() throws IOException {
-        goTest("testexample/EvaluateConstants.java");
-    }
-
-    @Test
-    public void testIdentityChecks() throws IOException {
-        goTest("testexample/IdentityChecks.java");
-    }
-
-    @Test
-    public void testNotModifiedChecks() throws IOException {
-        goTest("testexample/NotModifiedChecks.java");
-    }
-
-    // simplified version of NotModifiedChecks to debug one of the issues there
-    @Test
-    public void testNotModifiedChecks2() throws IOException {
-        goTest("testexample/NotModifiedChecks2.java");
-    }
-
-    @Test
-    public void testNullParameterChecks() throws IOException {
-        goTest("testexample/NullParameterChecks.java");
-    }
-
-    @Test
-    public void testSimpleNotModifiedChecks() throws IOException {
-        goTest("testexample/SimpleNotModifiedChecks.java");
-    }
-
-    @Test
-    public void testStaticImports() throws IOException {
-        goTest("testexample/StaticImports.java");
-    }
-
-    @Test
-    public void testSubTypes() throws IOException {
-        goTest("testexample/SubTypes.java");
-    }
-
-    @NotModified
-    private void goTest(String fileName) throws IOException {
-        goTest(fileName, 0);
-    }
-
-    @NotModified
-    private void goTest(String fileName, long countError) throws IOException {
+    public void test() throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         Configuration configuration = new Configuration.Builder()
@@ -139,7 +76,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());
         }
-        Assert.assertEquals(countError, parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
+        Assert.assertTrue(parser.getMessages().stream().noneMatch(m -> m.severity == Message.Severity.ERROR));
     }
 
 }

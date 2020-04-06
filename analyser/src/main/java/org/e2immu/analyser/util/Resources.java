@@ -118,7 +118,8 @@ public class Resources {
                 }
             }
         }
-        throw new UnsupportedOperationException(path + " not found in class path");
+        log(RESOURCES, "{} not found in class path", path);
+        return null;
     }
 
 

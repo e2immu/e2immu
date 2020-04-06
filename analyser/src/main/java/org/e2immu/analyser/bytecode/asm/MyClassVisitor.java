@@ -40,6 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM7;
@@ -124,12 +125,24 @@ public class MyClassVisitor extends ClassVisitor {
         if (signature == null) {
             if (haveParentType) {
                 TypeInfo typeInfo = mustFindTypeInfo(parentFqName, superName);
+                if (typeInfo == null) {
+                    log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type {} unknown",
+                            currentType.fullyQualifiedName, parentFqName);
+                    errorStateForType(parentFqName);
+                    return;
+                }
                 typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType());
             }
             if (interfaces != null) {
                 for (String interfaceName : interfaces) {
                     String fqn = pathToFqn(interfaceName);
                     TypeInfo typeInfo = mustFindTypeInfo(fqn, interfaceName);
+                    if (typeInfo == null) {
+                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type {} unknown",
+                                currentType.fullyQualifiedName, fqn);
+                        errorStateForType(fqn);
+                        return;
+                    }
                     typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType());
                 }
             }
@@ -141,6 +154,12 @@ public class MyClassVisitor extends ClassVisitor {
             {
                 ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
                         this::mustFindTypeInfo, signature.substring(pos));
+                if (res == null) {
+                    log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type unknown",
+                            currentType.fullyQualifiedName);
+                    errorStateForType(parentFqName);
+                    return;
+                }
                 if (Primitives.PRIMITIVES.objectTypeInfo != res.parameterizedType.typeInfo) {
                     typeInspectionBuilder.setParentClass(res.parameterizedType);
                 }
@@ -150,6 +169,12 @@ public class MyClassVisitor extends ClassVisitor {
                 for (int i = 0; i < interfaces.length; i++) {
                     ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
                             this::mustFindTypeInfo, signature.substring(pos));
+                    if (interFaceRes == null) {
+                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type unknown",
+                                currentType.fullyQualifiedName);
+                        errorStateForType(parentFqName);
+                        return;
+                    }
                     if (Primitives.PRIMITIVES.objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
                         typeInspectionBuilder.addInterfaceImplemented(interFaceRes.parameterizedType);
                     }
@@ -195,10 +220,9 @@ public class MyClassVisitor extends ClassVisitor {
         } else {
             onDemandInspection.inspectFromPath(path, inProcess);
         }
-        // try again...
-        TypeInfo attempt2 = typeContext.typeStore.get(fqn);
-        if (attempt2 == null) throw new UnsupportedOperationException("Unknown type " + fqn);
-        return attempt2;
+        // try again... result can be null or not inspected, in case the path is not on the classpath
+        TypeInfo result = typeContext.typeStore.get(fqn);
+        return result.typeInspection.isSetDoNotTriggerRunnable() ? result : null;
     }
 
     private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
@@ -258,6 +282,9 @@ public class MyClassVisitor extends ClassVisitor {
                             typeContext.addToContext(typeParameter);
                         }, typeContext,
                         this::mustFindTypeInfo);
+                if (iterativeParsing == null) {
+                    return -1; // error state
+                }
             } while (iterativeParsing.more);
             if (!iterativeParsing.typeNotFoundError) break;
             iterativeParsing = new IterativeParsing();
@@ -281,6 +308,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
                 signature.substring(afterColon));
+        if (result == null) return null; // unable to load type
         int end = result.nextPos + afterColon;
         char atEnd = signature.charAt(end);
         IterativeParsing next = new IterativeParsing();
@@ -506,8 +534,12 @@ public class MyClassVisitor extends ClassVisitor {
             if (subTypeInMap == null || !subTypeInMap.typeInspection.isSetDoNotTriggerRunnable() && !inProcess.contains(subTypeInMap)) {
                 enclosingTypes.push(currentType);
                 TypeInfo subType = onDemandInspection.inspectFromPath(name, inProcess, enclosingTypes, typeContext);
-                typeInspectionBuilder.addSubType(subType);
                 enclosingTypes.pop();
+                if (subType != null) {
+                    typeInspectionBuilder.addSubType(subType);
+                } else {
+                    errorStateForType(name);
+                }
             }
         }
     }
@@ -547,5 +579,18 @@ public class MyClassVisitor extends ClassVisitor {
                 throw rte;
             }
         }
+    }
+
+    private void errorStateForType(String pathCausingFailure) {
+        if (currentType == null || currentType.typeInspection.isSetDoNotTriggerRunnable())
+            throw new UnsupportedOperationException();
+        String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
+        log(BYTECODE_INSPECTOR, message);
+        currentType.typeInspection.setRunnable(() -> {
+            throw new RuntimeException(message);
+        });
+        inProcess.remove(currentType);
+        currentType = null;
+        typeInspectionBuilder = null;
     }
 }

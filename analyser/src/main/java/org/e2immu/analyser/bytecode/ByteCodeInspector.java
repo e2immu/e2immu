@@ -83,6 +83,7 @@ public class ByteCodeInspector implements OnDemandInspection {
                 inProcess.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(", ")));
         String pathWithDotClass = path.endsWith(".class") ? path : path + ".class";
         byte[] classBytes = classPath.loadBytes(pathWithDotClass);
+        if (classBytes == null) return List.of();
         return inspectByteArray(classBytes, inProcess, new Stack<>(), typeContext);
     }
 
@@ -98,7 +99,10 @@ public class ByteCodeInspector implements OnDemandInspection {
                 inProcess.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(", ")),
                 enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
         byte[] classBytes = classPath.loadBytes(path + ".class");
-        return inspectByteArray(classBytes, inProcess, enclosingTypes, parentTypeContext).get(0);
+        if (classBytes == null) return null;
+        List<TypeInfo> result = inspectByteArray(classBytes, inProcess, enclosingTypes, parentTypeContext);
+        if(result.isEmpty()) return null;
+        return result.get(0);
     }
 
     public List<TypeInfo> inspectByteArray(byte[] classBytes,
