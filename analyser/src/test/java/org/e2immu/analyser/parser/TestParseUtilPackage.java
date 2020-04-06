@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.parser;
 
+import ch.qos.logback.classic.BasicConfigurator;
+import ch.qos.logback.classic.Level;
 import com.google.common.collect.ImmutableMap;
 
 import static org.e2immu.analyser.cli.Main.*;
@@ -31,48 +33,53 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 public class TestParseUtilPackage {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestParseUtilPackage.class);
+
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.configure(Level.INFO);
+        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
+                METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
+                E2IMMUTABLE, ANNOTATION_EXPRESSION, BYTECODE_INSPECTOR,
+                CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS, CONTEXT_ANNOTATIONS, PURE_ANNOTATIONS,
+                NULL_NOT_ALLOWED, NOT_MODIFIED);
+    }
 
     @Test
     public void test() throws IOException {
-        Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR,
-                Logger.LogTarget.INSPECT,
-                Logger.LogTarget.ANALYSER);
+        // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
+        // test runner's classpath to ours
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.util")
-                        .addClassPath("build/resources/main/annotatedAPIs")
-                        .addClassPath("build/resources/main/annotations/jdkAnnotations")
-                        .addClassPath("jmods/java.base.jmod").build())
-                .setUploadConfiguration(new UploadConfiguration.Builder()
-                        .setUpload(true).build())
+                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
+                        .build())
                 .build();
+        BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
-        Assert.assertTrue(types.size() >= 15);
-    }
-
-    @Test
-    public void testViaProperties() throws IOException {
-        ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        Map<String, String> properties = builder
-                .put(DEBUG, BYTECODE_INSPECTOR.toString() + "," + INSPECT.toString() + "," + ANALYSER.toString())
-                .put(SOURCE, "src/main/java")
-                .put(SOURCE_PACKAGES, "org.e2immu.analyser.util")
-                .put(CLASSPATH, "build/resources/main/annotatedAPIs" + PATH_SEPARATOR + "build/resources/main/annotations/jdkAnnotations" + PATH_SEPARATOR + "jmods/java.base.jmod")
-                .put(Main.UPLOAD, "true")
-                .build();
-        Configuration configuration = Configuration.fromProperties(properties);
-        Logger.activate(configuration.logTargets);
-        Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run();
-        Assert.assertTrue(types.size() >= 15);
+        Assert.assertTrue(15 <= types.size());
+        for (SortedType sortedType : types) {
+            LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
+        }
+        for (Message message : parser.getMessages()) {
+            LOGGER.info(message.toString());
+        }
+        Assert.assertTrue(parser.getMessages().stream().noneMatch(m -> m.severity == Message.Severity.ERROR));
     }
 }

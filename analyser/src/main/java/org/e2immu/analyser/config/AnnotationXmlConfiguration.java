@@ -54,6 +54,21 @@ public class AnnotationXmlConfiguration {
                 .toString() + "\n";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnnotationXmlConfiguration that = (AnnotationXmlConfiguration) o;
+        return writeAnnotationXml == that.writeAnnotationXml &&
+                writeAnnotationXmlPackages.equals(that.writeAnnotationXmlPackages) &&
+                Objects.equals(writeAnnotationXmlDir, that.writeAnnotationXmlDir);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(writeAnnotationXml, writeAnnotationXmlPackages, writeAnnotationXmlDir);
+    }
+
     public static AnnotationXmlConfiguration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
         setBooleanProperty(analyserProperties, Main.WRITE_ANNOTATION_XML, builder::setAnnotationXml);

@@ -64,6 +64,22 @@ public class UploadConfiguration {
                 .toString() + "\n";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UploadConfiguration that = (UploadConfiguration) o;
+        return upload == that.upload &&
+                uploadPackages.equals(that.uploadPackages) &&
+                annotationServerUrl.equals(that.annotationServerUrl) &&
+                projectName.equals(that.projectName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(upload, uploadPackages, annotationServerUrl, projectName);
+    }
+
     public static UploadConfiguration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
         setBooleanProperty(analyserProperties, UPLOAD, builder::setUpload);

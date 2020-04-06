@@ -89,6 +89,27 @@ public class Configuration {
                 annotationXmlConfiguration;
     }
 
+    // the equals method is here primarily for testing! It should include all fields
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Configuration that = (Configuration) o;
+        return quiet == that.quiet &&
+                ignoreErrors == that.ignoreErrors &&
+                inputConfiguration.equals(that.inputConfiguration) &&
+                logTargets.equals(that.logTargets) &&
+                uploadConfiguration.equals(that.uploadConfiguration) &&
+                annotatedAPIConfiguration.equals(that.annotatedAPIConfiguration) &&
+                annotationXmlConfiguration.equals(that.annotationXmlConfiguration);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(inputConfiguration, logTargets, quiet, ignoreErrors, uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration);
+    }
+
     public static Configuration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
         builder.setInputConfiguration(InputConfiguration.fromProperties(analyserProperties));

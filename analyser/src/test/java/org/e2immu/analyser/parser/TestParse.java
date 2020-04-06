@@ -67,16 +67,6 @@ public class TestParse {
     }
 
     @Test
-    public void testListUtil() throws IOException {
-        goTest("util/ListUtil.java");
-    }
-
-    @Test
-    public void testLogger() throws IOException {
-        goTest("util/Logger.java");
-    }
-
-    @Test
     public void testPair() throws IOException {
         goTest("util/Pair.java");
     }
@@ -89,16 +79,6 @@ public class TestParse {
     @Test
     public void testSetOnceMap() throws IOException {
         goTest("util/SetOnceMap.java");
-    }
-
-    @Test
-    public void testSetUtil() throws IOException {
-        goTest("util/SetUtil.java");
-    }
-
-    @Test
-    public void testSMapSet() throws IOException {
-        goTest("util/SMapSet.java");
     }
 
     @Test

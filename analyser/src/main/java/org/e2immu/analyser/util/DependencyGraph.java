@@ -19,8 +19,6 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -32,8 +30,6 @@ import java.util.function.BiConsumer;
  */
 @E2Immutable(after = "freeze")
 public class DependencyGraph<T> extends Freezable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DependencyGraph.class);
-
     private static class Node<T> {
         List<T> dependsOn;
         final T t;
@@ -135,7 +131,6 @@ public class DependencyGraph<T> extends Freezable {
                 toDo.remove(key);
                 done.add(key);
                 result.add(key);
-                LOGGER.debug("Found a cycle... removing arbitrarily {}, {} left", key, toDo.size());
             } else {
                 toDo.keySet().removeAll(keys);
                 result.addAll(keys);

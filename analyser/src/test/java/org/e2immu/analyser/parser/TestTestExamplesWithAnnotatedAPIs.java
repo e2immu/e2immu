@@ -61,15 +61,18 @@ public class TestTestExamplesWithAnnotatedAPIs {
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/hamcrest")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "javax/servlet/http")
                         .build())
                 .build();
+        // important: we do not need to include
+        //                       //  .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/hamcrest")
+        // in the classpath; as no actual methods of hamcrest are being parsed!
+
         BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
+        Assert.assertTrue(10 <= types.size());
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }

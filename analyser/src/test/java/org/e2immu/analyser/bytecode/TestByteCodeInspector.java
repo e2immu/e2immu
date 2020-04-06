@@ -62,6 +62,7 @@ public class TestByteCodeInspector {
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
+        if (types.isEmpty()) throw new UnsupportedOperationException("Cannot find path " + path);
         return types.get(0);
     }
 
@@ -81,7 +82,7 @@ public class TestByteCodeInspector {
 
     @Test
     public void testSubTypes() throws IOException {
-        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/SubTypes");
+        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/withannotatedapi/SubTypes");
         Assert.assertEquals("org.e2immu.analyser.testexample.withannotatedapi.SubTypes", typeInfo.fullyQualifiedName);
         Assert.assertEquals(2, typeInfo.typeInspection.get().subTypes.size());
 

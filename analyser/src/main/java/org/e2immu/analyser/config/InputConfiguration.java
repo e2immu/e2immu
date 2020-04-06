@@ -67,6 +67,23 @@ public class InputConfiguration {
                 '\n';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InputConfiguration that = (InputConfiguration) o;
+        return sources.equals(that.sources) &&
+                sourceEncoding.equals(that.sourceEncoding) &&
+                classPathParts.equals(that.classPathParts) &&
+                restrictSourceToPackages.equals(that.restrictSourceToPackages) &&
+                Objects.equals(alternativeJREDirectory, that.alternativeJREDirectory);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sources, sourceEncoding, classPathParts, restrictSourceToPackages, alternativeJREDirectory);
+    }
+
     public static InputConfiguration fromProperties(Map<String, String> analyserProperties) {
         Builder builder = new Builder();
         setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
