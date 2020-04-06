@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.MethodTypeParameterMap;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 
@@ -34,7 +35,9 @@ import java.util.Objects;
 
 public class ParseMethodReferenceExpr {
     public static Expression parse(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr, MethodTypeParameterMap singleAbstractMethod) {
-        Objects.requireNonNull(singleAbstractMethod);
+        if (singleAbstractMethod == null) {
+            return unevaluated(expressionContext, methodReferenceExpr);
+        }
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         ParameterizedType parameterizedType = scope.returnType();
         expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
@@ -75,5 +78,10 @@ public class ParseMethodReferenceExpr {
         method.methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType).forEach(types::add);
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
         return new MethodReference(method.methodInfo, functionalType);
+    }
+
+    private static Expression unevaluated(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {
+        // TODO we can try to see how many constructors there are, or how many methods... if so, we can be pretty specific... or not.
+        return new UnevaluatedLambdaExpression(-1, null);
     }
 }

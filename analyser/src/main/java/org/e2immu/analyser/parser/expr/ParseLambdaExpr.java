@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LambdaExpression;
+import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.VariableContext;
@@ -33,13 +34,19 @@ import org.e2immu.analyser.parser.VariableContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseLambdaExpr {
+
     public static Expression parse(ExpressionContext expressionContext, LambdaExpr lambdaExpr, MethodTypeParameterMap singleAbstractMethod) {
-        Objects.requireNonNull(singleAbstractMethod);
+        if (singleAbstractMethod == null) {
+            return partiallyParse(lambdaExpr);
+        }
         log(LAMBDA, "Start parsing lambda {}, single abstract method context {}", lambdaExpr, singleAbstractMethod);
 
         List<ParameterInfo> parameters = new ArrayList<>();
@@ -86,4 +93,9 @@ public class ParseLambdaExpr {
         return new LambdaBlock(parameters, block, functionalType);
     }
 
+    // experimental: we look at the parameters, and return an expression which is superficial, with only
+    // the return type as functional type of importance
+    private static Expression partiallyParse(LambdaExpr lambdaExpr) {
+        return new UnevaluatedLambdaExpression(lambdaExpr.getParameters().size(), lambdaExpr.getExpressionBody().isPresent() ? true : null);
+    }
 }

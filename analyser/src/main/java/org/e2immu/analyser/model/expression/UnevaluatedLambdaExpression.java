@@ -18,30 +18,52 @@
 
 package org.e2immu.analyser.model.expression;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @E2Immutable
-public class EmptyExpression implements Expression {
-    public static final Expression EMPTY_EXPRESSION = new EmptyExpression();
+public class UnevaluatedLambdaExpression implements Expression {
+    public final int numberOfParameters; // the amount of parameters of the lambda
+    public final Boolean nonVoid; // true when expression without block, null otherwise
 
-    private EmptyExpression() {
+    public UnevaluatedLambdaExpression(int numberOfParameters, Boolean nonVoid) {
+        this.numberOfParameters = numberOfParameters;
+        this.nonVoid = nonVoid;
     }
 
+    // this is NOT a functional interface, merely the return type of the lambda
     @Override
+    @NotNull
     public ParameterizedType returnType() {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    @NotNull
     public String expressionString(int indent) {
-        return "";
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int precedence() {
-        return 0;
+        return 16;
     }
 
+    @Override
+    @Independent
+    @NotNull
+    public Set<String> imports() {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -23,15 +23,13 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
@@ -88,29 +86,8 @@ public class ParseMethodCallExpr {
                                                Position positionForErrorReporting) {
 
         List<Expression> parameterExpressions = new ArrayList<>();
-        int p = 0;
         for (com.github.javaparser.ast.expr.Expression expr : expressions) {
-            boolean delay = false;
-            // if there is a functional interface in position p in only one of the candidate methods, we do not need to delay
-            // the search for the actual method; if there's multiple candidates with (different, is the assumption) functional
-            // interfaces, we use the other parameters first to determine the method
-            MethodTypeParameterMap abstractInterfaceMethod = null;
-            for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
-                if (methodCandidate.parameterIndicesOfFunctionalInterfaces.contains(p)) {
-                    if (abstractInterfaceMethod != null) {
-                        delay = true;
-                        break;
-                    }
-                    abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext,
-                            methodCandidate.method, p, singleAbstractMethod);
-                }
-            }
-            if (delay) {
-                parameterExpressions.add(EmptyExpression.DELAYED_EXPRESSION);
-            } else {
-                parameterExpressions.add(expressionContext.parseExpression(expr, abstractInterfaceMethod));
-            }
-            p++;
+            parameterExpressions.add(expressionContext.parseExpression(expr));
         }
 
         // then find out which method
@@ -120,23 +97,22 @@ public class ParseMethodCallExpr {
         log(METHOD_CALL, "resolved method is {}, return type {}", method.methodInfo.fullyQualifiedName(), method.getConcreteReturnType());
 
         // now parse the lambda's with our new info
+
+        log(METHOD_CALL, "Reevaluating parameter expressions, single abstract method {}", singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
         int i = 0;
         for (Expression e : parameterExpressions) {
-            Expression eParsed = e;
-            if (e == EmptyExpression.DELAYED_EXPRESSION && method.methodInfo.methodInspection.isSet()) {
-                // abstract version of method.getConcreteTypeOfParameter = method.methodInfo.methodInspection.get().parameters.get(i).parameterizedType
+            if (e instanceof UnevaluatedLambdaExpression) {
                 MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, method, i, singleAbstractMethod);
                 if (abstractInterfaceMethod != null) {
-                    if (singleAbstractMethod != null && singleAbstractMethod.methodInfo.typeInfo.equals(method.methodInfo.typeInfo)) {
-                        // TODO same code as above
-                        throw new UnsupportedOperationException("NYI");
-                    }
-                    eParsed = expressionContext.parseExpression(expressions.get(i), abstractInterfaceMethod);
+                    Expression reParsed = expressionContext.parseExpression(expressions.get(i), abstractInterfaceMethod);
+                    newParameterExpressions.add(reParsed);
+                } else {
+                    throw new UnsupportedOperationException();
                 }
-            }
-            newParameterExpressions.add(eParsed);
+            } else newParameterExpressions.add(e);
             i++;
         }
+
         // fill in the map expansion
         i = 0;
         List<ParameterInfo> formalParameters = method.methodInfo.methodInspection.get().parameters;

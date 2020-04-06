@@ -20,13 +20,10 @@ package org.e2immu.analyser.parser;
 
 import com.github.javaparser.Position;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.Lazy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -357,7 +354,6 @@ public class TypeContext {
     }
 
     private boolean compatibleParameters(MethodInfo m, List<Expression> parameterExpressions) {
-        if (!m.hasBeenInspected()) return true;
         MethodInspection methodInspection = m.methodInspection.get();
         List<ParameterInfo> params = methodInspection.parameters;
         if (params.isEmpty() && parameterExpressions.size() > 0) {
@@ -379,8 +375,16 @@ public class TypeContext {
             if (parameterExpression == EmptyExpression.EMPTY_EXPRESSION) {
                 return false;
             }
-            if (parameterExpression != EmptyExpression.DELAYED_EXPRESSION &&
-                    !parameterInDefinition.parameterizedType.isAssignableFrom(parameterExpression.returnType())) {
+            if (parameterExpression instanceof UnevaluatedLambdaExpression) {
+                MethodTypeParameterMap sam = parameterInDefinition.parameterizedType.findSingleAbstractMethodOfInterface(this);
+                if (sam == null) return false;
+                int numberOfParameters = ((UnevaluatedLambdaExpression) parameterExpression).numberOfParameters;
+                // if numberOfParameters < 0, we don't even know for sure how many params we're going to get
+                if (numberOfParameters >= 0 && sam.methodInfo.methodInspection.get().parameters.size() != numberOfParameters) {
+                    return false;
+                }
+                // TODO this can be done better? but it should cover 99% of cases
+            } else if (!parameterInDefinition.parameterizedType.isAssignableFrom(parameterExpression.returnType())) {
                 return false;
             }
             parameterCount++;
