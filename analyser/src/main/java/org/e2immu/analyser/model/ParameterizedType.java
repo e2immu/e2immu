@@ -418,8 +418,10 @@ public class ParameterizedType {
      */
     public boolean isAssignableFrom(ParameterizedType type) {
         if (type == this) return true;
-        if (arrays != type.arrays) return false;
         if (typeInfo != null) {
+            // the following statement does hold wrt a type parameter (<T> allows for String[])
+            if (arrays != type.arrays) return false;
+
             if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return true;
             if ("java.util.function.Function".equals(typeInfo.fullyQualifiedName) ||
                     "java.util.function.BiFunction".equals(typeInfo.fullyQualifiedName) ||
