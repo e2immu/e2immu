@@ -121,12 +121,16 @@ public class ParseMethodCallExpr {
             throw new UnsupportedOperationException("No candidate found for method " + methodNameForErrorReporting + " in type "
                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
         if (methodCandidates.size() > 1) {
-            TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-            Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
-            for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                if (!overloads.contains(mcN.method.methodInfo))
-                    throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " not found in known type "
-                            + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
+            trimVarargsVsMethodsWithFewerParameters(methodCandidates);
+            if (methodCandidates.size() > 1) {
+                TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
+                Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
+                    if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                        throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " not found in known type "
+                                + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
+                    }
+                }
             }
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;
@@ -159,6 +163,12 @@ public class ParseMethodCallExpr {
             if (i >= formalParameters.size()) break; // varargs... we have more than there are
         }
         return method;
+    }
+
+    // List.of() vs List.of(E[]...) -> the one with fewer parameters gets priority
+    private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
+        int min = methodCandidates.stream().mapToInt(mc -> mc.method.methodInfo.methodInspection.get().parameters.size()).min().orElseThrow();
+        methodCandidates.removeIf(mc -> mc.method.methodInfo.methodInspection.get().parameters.size() > min);
     }
 
     private static Integer findParameterWhereUnevaluatedLambdaWillHelp(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> keySet) {

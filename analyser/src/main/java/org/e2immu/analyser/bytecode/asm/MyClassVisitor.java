@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -280,6 +281,7 @@ public class MyClassVisitor extends ClassVisitor {
                             TypeParameter typeParameter = new TypeParameter(currentType, name, index.getAndIncrement());
                             typeInspectionBuilder.addTypeParameter(typeParameter);
                             typeContext.addToContext(typeParameter);
+                            return typeParameter;
                         }, typeContext,
                         this::mustFindTypeInfo);
                 if (iterativeParsing == null) {
@@ -294,7 +296,7 @@ public class MyClassVisitor extends ClassVisitor {
 
     private IterativeParsing iterativelyParseGenerics(String signature,
                                                       IterativeParsing iterativeParsing,
-                                                      Consumer<String> onTypeParameterName,
+                                                      Function<String, TypeParameter> onTypeParameterName,
                                                       TypeContext typeContext,
                                                       FindType findType) {
         int colon = signature.indexOf(':', iterativeParsing.startPos);
@@ -304,11 +306,18 @@ public class MyClassVisitor extends ClassVisitor {
         // method getAnnotation in java.lang.reflect.AnnotatedElement
 
         String name = signature.substring(iterativeParsing.startPos, colon);
-        onTypeParameterName.accept(name);
-
+        TypeParameter typeParameter = onTypeParameterName.apply(name);
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
                 signature.substring(afterColon));
         if (result == null) return null; // unable to load type
+        List<ParameterizedType> typeBounds;
+        if(result.parameterizedType.typeInfo != null && Primitives.PRIMITIVES.objectTypeInfo == result.parameterizedType.typeInfo) {
+            typeBounds = List.of();
+        } else {
+           typeBounds = List.of(result.parameterizedType);
+        }
+        typeParameter.typeParameterInspection.set(new TypeParameterInspection(typeBounds));
+
         int end = result.nextPos + afterColon;
         char atEnd = signature.charAt(end);
         IterativeParsing next = new IterativeParsing();
@@ -471,6 +480,7 @@ public class MyClassVisitor extends ClassVisitor {
                             TypeParameter typeParameter = new TypeParameter(methodInfo, name, index.getAndIncrement());
                             methodInspectionBuilder.addTypeParameter(typeParameter);
                             methodContext.addToContext(typeParameter);
+                            return typeParameter;
                         },
                         methodContext,
                         this::getOrCreateTypeInfo);

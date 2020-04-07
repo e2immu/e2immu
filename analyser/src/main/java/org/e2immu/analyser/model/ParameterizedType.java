@@ -157,8 +157,9 @@ public class ParameterizedType {
     // T[], ? super T
     public ParameterizedType(TypeParameter typeParameter, int arrays, WildCard wildCard) {
         this.typeParameter = Objects.requireNonNull(typeParameter);
-        if (!typeParameter.typeParameterInspection.isSet())
-            throw new UnsupportedOperationException("Type parameter must be set");
+        // it is possible that type parameter inspection will be set slightly later, given signatures like
+        // <U::Ljava/lang/Comparable<-TU;>;>
+        // U is defined, and used before its full inspection is done
         this.parameters = List.of();
         this.typeInfo = null;
         this.arrays = arrays;
@@ -470,7 +471,7 @@ public class ParameterizedType {
                 // int cannot be assigned to T, no matter what; neither can int[] to T[]
                 return false;
             }
-            return arrays == type.arrays; // normally the wildcard is NONE, <T>, so anything goes
+            return arrays <= type.arrays; // normally the wildcard is NONE, <T>, so anything goes
         }
         return wildCard == WildCard.UNBOUND; // <?> anything goes
     }
