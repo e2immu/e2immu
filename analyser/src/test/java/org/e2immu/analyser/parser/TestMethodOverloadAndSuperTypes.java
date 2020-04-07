@@ -43,6 +43,20 @@ public class TestMethodOverloadAndSuperTypes {
     }
 
     @Test
+    public void testSetCollection() throws IOException {
+        Parser parser = new Parser();
+        TypeContext typeContext = parser.getTypeContext();
+        TypeInfo set = typeContext.typeStore.get("java.util.Set");
+        Assert.assertNotNull(set);
+        MethodInfo containsAll = set.typeInspection.get().methods.stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
+        Set<MethodInfo> overloads = set.overloads(containsAll, typeContext);
+        TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
+        Assert.assertNotNull(collection);
+        MethodInfo containsAllInCollection = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
+        Assert.assertTrue(overloads.contains(containsAllInCollection));
+    }
+
+    @Test
     public void test() throws IOException {
         Parser parser = new Parser();
         List<SortedType> types = parser.parseJavaFiles(new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java"));

@@ -486,6 +486,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
             return false;
         }
+        if (pt2.typeInfo != null) return true;
+        if (pt1.typeParameter == null && pt2.typeParameter == null) return false;
         return pt1.typeParameter == null || pt2.typeParameter == null ||
                 pt1.typeParameter.index != pt2.typeParameter.index ||
                 pt1.typeParameter.owner.isLeft() != pt2.typeParameter.owner.isLeft();
