@@ -186,9 +186,9 @@ public class TypeContext {
             if (pt == null) {
                 // rather than give an exception here, we replace t by the type that it extends, so that we can find those methods
                 // in the case that there is no explicit extension/super, we replace it by the implicit Object
-                if (typeOfObject.typeParameter.typeParameterInspection.isSet() && !typeOfObject.typeParameter.typeParameterInspection.get().typeBounds.isEmpty()) {
-                    return typeOfObject.typeParameter.typeParameterInspection.get().typeBounds
-                            .stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
+                List<ParameterizedType> typeBounds = typeOfObject.typeParameter.typeParameterInspection.get().typeBounds;
+                if (!typeBounds.isEmpty()) {
+                    return typeBounds.stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
                 } else {
                     typeInfo = Primitives.PRIMITIVES.objectTypeInfo;
                 }
@@ -353,7 +353,7 @@ public class TypeContext {
         return res;
     }
 
-    private boolean compatibleParameters(MethodInfo m, List<Expression> parameterExpressions) {
+    public boolean compatibleParameters(MethodInfo m, List<Expression> parameterExpressions) {
         MethodInspection methodInspection = m.methodInspection.get();
         List<ParameterInfo> params = methodInspection.parameters;
         if (params.isEmpty() && parameterExpressions.size() > 0) {

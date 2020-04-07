@@ -24,6 +24,7 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceSupply;
@@ -687,8 +688,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param methodInfo: the method for which we're looking for overloads
      * @return all super methods
      */
-    public List<MethodInfo> overloads(MethodInfo methodInfo, TypeContext typeContext) {
-        List<MethodInfo> myOverloads = typeInspection.get().overloads.getOtherwiseNull(methodInfo);
+    public Set<MethodInfo> overloads(MethodInfo methodInfo, TypeContext typeContext) {
+        Set<MethodInfo> myOverloads = typeInspection.get().overloads.getOtherwiseNull(methodInfo);
         if (myOverloads != null) return myOverloads;
         List<MethodInfo> result = new ArrayList<>();
         for (TypeInfo superType : directSuperTypes(typeContext)) {
@@ -698,7 +699,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
             result.addAll(superType.overloads(methodInfo, typeContext));
         }
-        List<MethodInfo> immutable = ImmutableList.copyOf(result);
+        Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
         typeInspection.get().overloads.put(methodInfo, immutable);
         return immutable;
     }

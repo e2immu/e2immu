@@ -157,6 +157,8 @@ public class ParameterizedType {
     // T[], ? super T
     public ParameterizedType(TypeParameter typeParameter, int arrays, WildCard wildCard) {
         this.typeParameter = Objects.requireNonNull(typeParameter);
+        if (!typeParameter.typeParameterInspection.isSet())
+            throw new UnsupportedOperationException("Type parameter must be set");
         this.parameters = List.of();
         this.typeInfo = null;
         this.arrays = arrays;
@@ -454,20 +456,23 @@ public class ParameterizedType {
         }
         if (typeParameter != null) {
             // T extends Comparable<...> & Serializable
-            if (typeParameter.typeParameterInspection.isSet() && !typeParameter.typeParameterInspection.get().typeBounds.isEmpty()) {
-                return typeParameter.typeParameterInspection.get().typeBounds.stream().allMatch(this::isAssignableFrom);
+            List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
+            if (!typeBounds.isEmpty()) {
+                if (wildCard == WildCard.EXTENDS) {
+                    return typeBounds.stream().allMatch(this::isAssignableFrom);
+                }
+                if (wildCard == WildCard.SUPER) {
+                    return typeBounds.stream().allMatch(tb -> tb.isAssignableFrom(this));
+                }
+                throw new UnsupportedOperationException("?");
             }
-            // if the wildcard is ? super E or so, we're in pretty exotic waters (E extends Comparable<? super E>, for example)
-            // TODO we'll have to implement this correctly at some point
             if (type.isPrimitive()) {
                 // int cannot be assigned to T, no matter what; neither can int[] to T[]
                 return false;
             }
-            return true; // normally the wildcard is NONE, <T>, so anything goes
-        } else {
-            if (wildCard == WildCard.UNBOUND) return true; // <?> anything goes
+            return arrays == type.arrays; // normally the wildcard is NONE, <T>, so anything goes
         }
-        return false;
+        return wildCard == WildCard.UNBOUND; // <?> anything goes
     }
 
     private boolean checkBoxing(TypeInfo primitiveType) {

@@ -26,10 +26,7 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.util.Either;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -58,7 +55,7 @@ public class TypeInspection extends Inspection {
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
 
-    public final SetOnceMap<MethodInfo, List<MethodInfo>> overloads = new SetOnceMap<>();
+    public final SetOnceMap<MethodInfo, Set<MethodInfo>> overloads = new SetOnceMap<>();
     public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
 
     private TypeInspection(boolean hasBeenDefined,

@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestMethodOverloadAndSuperTypes {
@@ -38,7 +39,7 @@ public class TestMethodOverloadAndSuperTypes {
 
     @BeforeClass
     public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
+        org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECT);
     }
 
     @Test
@@ -51,7 +52,7 @@ public class TestMethodOverloadAndSuperTypes {
         TypeInfo methodOverload = types.get(0).typeInfo;
         MethodInfo hashCode = methodOverload.typeInspection.get().methods
                 .stream().filter(m -> m.name.equals("hashCode")).findFirst().orElseThrow();
-        List<MethodInfo> overloadsOfHashCode = methodOverload.overloads(hashCode, parser.getTypeContext());
+        Set<MethodInfo> overloadsOfHashCode = methodOverload.overloads(hashCode, parser.getTypeContext());
         LOGGER.info("Overloads of hashCode: {}", overloadsOfHashCode);
         Assert.assertEquals("[java.lang.Object.hashCode()]", overloadsOfHashCode.toString());
 
@@ -68,7 +69,7 @@ public class TestMethodOverloadAndSuperTypes {
                 c1.typeInspection.get().methods.stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
         MethodInfo m1 = c1.typeInspection.get().methods.stream().filter(m -> m.distinguishingName()
                 .equals("org.e2immu.analyser.testexample.MethodOverload.C1.method(int)")).findFirst().orElseThrow();
-        List<MethodInfo> overloadsOfM1 = c1.overloads(m1, parser.getTypeContext());
+        Set<MethodInfo> overloadsOfM1 = c1.overloads(m1, parser.getTypeContext());
         LOGGER.info("Overloads of m1: {}", overloadsOfM1);
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1.method(int)]", overloadsOfM1.toString());
 
@@ -83,7 +84,7 @@ public class TestMethodOverloadAndSuperTypes {
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
         MethodInfo toString = c2.typeInspection.get().methods.stream().filter(m -> m.name.equals("toString")).findFirst().orElseThrow();
-        List<MethodInfo> overloadsOfToString = c2.overloads(toString, parser.getTypeContext());
+        Set<MethodInfo> overloadsOfToString = c2.overloads(toString, parser.getTypeContext());
         LOGGER.info("Overloads of toString: {}", overloadsOfToString);
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1.toString(), java.lang.Object.toString()]",
                 overloadsOfToString.toString());
