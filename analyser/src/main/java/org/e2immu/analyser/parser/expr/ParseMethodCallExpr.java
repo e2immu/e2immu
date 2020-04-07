@@ -32,6 +32,7 @@ import org.e2immu.analyser.util.StringUtil;
 
 import java.util.*;
 
+import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
@@ -87,6 +88,7 @@ public class ParseMethodCallExpr {
                                                                  ParameterizedType startingPointForErrorReporting,
                                                                  Position positionForErrorReporting) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
+        Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
         boolean changes = true;
         while (changes) {
             changes = false;
@@ -112,23 +114,26 @@ public class ParseMethodCallExpr {
             }
             if (pos != null) {
                 evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
-                changes = filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates) && !methodCandidates.isEmpty();
+                changes = filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore) && !methodCandidates.isEmpty();
             }
         }
-        // now we need to ensure that there is only 1 method left. It is quite possible that the list is not yet empty,
-        // but they should all be overloads of each other; the 1st one is the one most down the hierarchy
+        // now we need to ensure that there is only 1 method left, but, there can be overloads and
+        // methods with implicit type conversions, varargs, etc. etc.
         if (methodCandidates.isEmpty())
             throw new UnsupportedOperationException("No candidate found for method " + methodNameForErrorReporting + " in type "
                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
         if (methodCandidates.size() > 1) {
             trimVarargsVsMethodsWithFewerParameters(methodCandidates);
             if (methodCandidates.size() > 1) {
-                TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
-                for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                    if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
-                        throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " not found in known type "
-                                + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
+                trimMethodsWithBestScore(methodCandidates, compatibilityScore);
+                if (methodCandidates.size() > 1) {
+                    TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
+                    Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                    for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
+                        if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                            throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " not found in known type "
+                                    + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
+                        }
                     }
                 }
             }
@@ -163,6 +168,12 @@ public class ParseMethodCallExpr {
             if (i >= formalParameters.size()) break; // varargs... we have more than there are
         }
         return method;
+    }
+
+    private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
+        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method.methodInfo, 0)).min().orElseThrow();
+        if(min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
+        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInfo, 0) > min);
     }
 
     // List.of() vs List.of(E[]...) -> the one with fewer parameters gets priority
@@ -245,11 +256,23 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static boolean filterMethodCandidates(ExpressionContext expressionContext, Expression evaluatedExpression, Integer pos, List<TypeContext.MethodCandidate> methodCandidates) {
-        return methodCandidates.removeIf(mc -> !compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInfo.methodInspection.get()));
+    private static boolean filterMethodCandidates(ExpressionContext expressionContext,
+                                                  Expression evaluatedExpression,
+                                                  Integer pos,
+                                                  List<TypeContext.MethodCandidate> methodCandidates,
+                                                  Map<MethodInfo, Integer> compatibilityScore) {
+        return methodCandidates.removeIf(mc -> {
+            int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInfo.methodInspection.get());
+            if (score >= 0) {
+                Integer inMap = compatibilityScore.get(mc.method.methodInfo);
+                inMap = inMap == null ? score : score + inMap;
+                compatibilityScore.put(mc.method.methodInfo, inMap);
+            }
+            return score < 0;
+        });
     }
 
-    private static boolean compatibleParameter(ExpressionContext expressionContext, Expression evaluatedExpression, Integer pos, MethodInspection methodInspection) {
+    private static int compatibleParameter(ExpressionContext expressionContext, Expression evaluatedExpression, Integer pos, MethodInspection methodInspection) {
         List<ParameterInfo> params = methodInspection.parameters;
 
         ParameterInfo parameterInDefinition;
@@ -258,86 +281,24 @@ public class ParseMethodCallExpr {
             if (lastParameter.parameterInspection.get().varArgs) {
                 parameterInDefinition = lastParameter;
             } else {
-                return false;
+                return NOT_ASSIGNABLE;
             }
         } else {
             parameterInDefinition = methodInspection.parameters.get(pos);
         }
         if (evaluatedExpression == EmptyExpression.EMPTY_EXPRESSION) {
-            return false;
+            return NOT_ASSIGNABLE;
         }
         if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
             MethodTypeParameterMap sam = parameterInDefinition.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-            if (sam == null) return false;
+            if (sam == null) return NOT_ASSIGNABLE;
             int numberOfParameters = ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters;
             // if numberOfParameters < 0, we don't even know for sure how many params we're going to get
             // TODO this can be done better? but it should cover 99% of cases
-            return numberOfParameters < 0 || sam.methodInfo.methodInspection.get().parameters.size() == numberOfParameters;
+            return numberOfParameters < 0 || sam.methodInfo.methodInspection.get().parameters.size() == numberOfParameters ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
-        return parameterInDefinition.parameterizedType.isAssignableFrom(returnType);
-    }
-
-    static MethodTypeParameterMap evaluateCall(ExpressionContext expressionContext,
-                                               List<TypeContext.MethodCandidate> methodCandidates,
-                                               List<com.github.javaparser.ast.expr.Expression> expressions,
-                                               List<Expression> newParameterExpressions,
-                                               MethodTypeParameterMap singleAbstractMethod,
-                                               Map<NamedType, ParameterizedType> mapExpansion,
-                                               String methodNameForErrorReporting,
-                                               ParameterizedType startingPointForErrorReporting,
-                                               Position positionForErrorReporting) {
-
-        List<Expression> parameterExpressions = new ArrayList<>();
-        for (com.github.javaparser.ast.expr.Expression expr : expressions) {
-            log(METHOD_CALL, "Evaluating parameter expression #{}: {}", parameterExpressions.size(), expr);
-            // some expressions (Lambdas, Method references) need to be evaluated in the context of a function interface (singleAbstractMethod)
-            // but we don't have that yet, we need the correct method candidate for that
-            // therefore, in this first pass, lambdas and method references may return an "UnevaluatedLambdaExpression", which contains minimal
-            // information (number of parameters, return type, ...) to help with method overload
-
-            // note that we're not a validating compiler; we assume that the source code that we operate on, is valid :-)
-            // that surely grants us some shortcuts
-            parameterExpressions.add(expressionContext.parseExpression(expr));
-        }
-
-        // then find out which method
-        log(METHOD_CALL, "parameters are of type [{}]", StringUtil.join(parameterExpressions, e -> e.getClass().getSimpleName()));
-        MethodTypeParameterMap method = expressionContext.typeContext.resolveMethod(methodCandidates, parameterExpressions,
-                methodNameForErrorReporting, startingPointForErrorReporting, positionForErrorReporting);
-        log(METHOD_CALL, "resolved method is {}, return type {}", method.methodInfo.fullyQualifiedName(), method.getConcreteReturnType());
-
-        // now parse the lambda's with our new info
-
-        log(METHOD_CALL, "Reevaluating parameter expressions, single abstract method {}", singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
-        int i = 0;
-        for (Expression e : parameterExpressions) {
-            if (e instanceof UnevaluatedLambdaExpression) {
-                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, method, i, singleAbstractMethod);
-                if (abstractInterfaceMethod != null) {
-                    Expression reParsed = expressionContext.parseExpression(expressions.get(i), abstractInterfaceMethod);
-                    newParameterExpressions.add(reParsed);
-                } else {
-                    throw new UnsupportedOperationException();
-                }
-            } else newParameterExpressions.add(e);
-            i++;
-        }
-
-        // fill in the map expansion
-        i = 0;
-        List<ParameterInfo> formalParameters = method.methodInfo.methodInspection.get().parameters;
-        for (Expression expression : newParameterExpressions) {
-            log(METHOD_CALL, "Examine parameter {}", i);
-            ParameterizedType concreteParameterType = expression.returnType();
-            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType.translateMap(concreteParameterType, expressionContext.typeContext);
-            translated.forEach((k, v) -> {
-                if (!mapExpansion.containsKey(k)) mapExpansion.put(k, v);
-            });
-            i++;
-            if (i >= formalParameters.size()) break; // varargs... we have more than there are
-        }
-        return method;
+        return parameterInDefinition.parameterizedType.numericIsAssignableFrom(returnType);
     }
 
     /*

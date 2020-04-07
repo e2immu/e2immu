@@ -48,7 +48,7 @@ public class ParseObjectCreationExpr {
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap();
         List<TypeContext.MethodCandidate> methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, objectCreationExpr.getArguments().size(), typeMap);
         List<Expression> newParameterExpressions = new ArrayList<>();
-        MethodTypeParameterMap method = ParseMethodCallExpr.evaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
+        MethodTypeParameterMap method = ParseMethodCallExpr.chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                 newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                 parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         return new NewObject(method.methodInfo, parameterizedType, newParameterExpressions);

@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 
 public class ParameterizedType {
@@ -419,39 +420,44 @@ public class ParameterizedType {
         List<? super Integer> foo3 = new ArrayList<Number>();   // Number is a superclass of Integer
         List<? super Integer> foo3 = new ArrayList<Object>();   // Object is a superclass of Integer
      */
+    public static int NOT_ASSIGNABLE = -1;
+
     public boolean isAssignableFrom(ParameterizedType type) {
-        if (type == this) return true;
+        return numericIsAssignableFrom(type) != NOT_ASSIGNABLE;
+    }
+
+    private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
+
+    public int numericIsAssignableFrom(ParameterizedType type) {
+        if (type == this || equals(type)) return 0;
         if (typeInfo != null) {
 
-            if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return true;
-            if ("java.util.function.Function".equals(typeInfo.fullyQualifiedName) ||
-                    "java.util.function.BiFunction".equals(typeInfo.fullyQualifiedName) ||
-                    "java.util.function.Supplier".equals(typeInfo.fullyQualifiedName)) {
-                return parameters.get(parameters.size() - 1).isAssignableFrom(type);
-            }
+            if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return 1; // or should we count the steps?
             if (type.typeInfo != null) {
-                if (arrays != type.arrays) return false;
-                if (typeInfo.equals(type.typeInfo)) return true;
+                if (arrays != type.arrays) return NOT_ASSIGNABLE;
+                if (typeInfo.equals(type.typeInfo)) return 1;
                 if (typeInfo.isPrimitive()) {
                     if (arrays == 0) {
                         if (isPrimitive()) {
-                            return Primitives.PRIMITIVES.isAssignableFromTo(type, this);
+                            return Primitives.PRIMITIVES.isAssignableFromTo(type, this) ? 1 : NOT_ASSIGNABLE;
                         }
-                        return checkBoxing(type.typeInfo);
+                        return checkBoxing(type.typeInfo) ? 1 : NOT_ASSIGNABLE;
                     }
                     // TODO; for now: primitive array can only be assigned to its own type
-                    return false;
+                    return NOT_ASSIGNABLE;
                 }
                 if (isPrimitive()) {
                     // the other one is not a primitive
-                    return arrays == 0 && type.checkBoxing(typeInfo);
+                    return arrays == 0 && type.checkBoxing(typeInfo) ? 1 : NOT_ASSIGNABLE;
                 }
 
                 for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
-                    if (isAssignableFrom(interfaceImplemented)) return true;
+                    int scoreInterface = numericIsAssignableFrom(interfaceImplemented);
+                    if (scoreInterface != NOT_ASSIGNABLE) return 1 + scoreInterface;
                 }
                 if (type.typeInfo.typeInspection.get().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-                    if (isAssignableFrom(typeInfo.typeInspection.get().parentClass)) return true;
+                    int scoreParent = numericIsAssignableFrom(typeInfo.typeInspection.get().parentClass);
+                    if (scoreParent != NOT_ASSIGNABLE) return 1 + scoreParent;
                 }
             }
         }
@@ -460,20 +466,20 @@ public class ParameterizedType {
             List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
             if (!typeBounds.isEmpty()) {
                 if (wildCard == WildCard.EXTENDS) {
-                    return typeBounds.stream().allMatch(this::isAssignableFrom);
+                    return typeBounds.stream().mapToInt(this::numericIsAssignableFrom).reduce(1, REDUCER);
                 }
                 if (wildCard == WildCard.SUPER) {
-                    return typeBounds.stream().allMatch(tb -> tb.isAssignableFrom(this));
+                    return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(this)).reduce(1, REDUCER);
                 }
                 throw new UnsupportedOperationException("?");
             }
             if (type.isPrimitive()) {
                 // int cannot be assigned to T, no matter what; neither can int[] to T[]
-                return false;
+                return NOT_ASSIGNABLE;
             }
-            return arrays <= type.arrays; // normally the wildcard is NONE, <T>, so anything goes
+            return arrays <= type.arrays ? 1 : NOT_ASSIGNABLE; // normally the wildcard is NONE, <T>, so anything goes
         }
-        return wildCard == WildCard.UNBOUND; // <?> anything goes
+        return wildCard == WildCard.UNBOUND ? 1 : NOT_ASSIGNABLE; // <?> anything goes
     }
 
     private boolean checkBoxing(TypeInfo primitiveType) {

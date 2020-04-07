@@ -684,6 +684,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     /**
      * What does it do: look into my super types, and see if you find a method like the one specified
+     * NOTE: it does not look "sideways: methods of the same type but where implicit type conversion can take place
      *
      * @param methodInfo: the method for which we're looking for overloads
      * @return all super methods
