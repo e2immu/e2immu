@@ -55,7 +55,7 @@ public class MyMethodVisitor extends MethodVisitor {
                            MethodInspection.MethodInspectionBuilder methodInspectionBuilder,
                            TypeInspection.TypeInspectionBuilder typeInspectionBuilder,
                            List<ParameterizedType> types,
-                           boolean isAbstract,
+                           boolean lastParameterIsVarargs,
                            MethodItem methodItem,
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
         super(ASM7);
@@ -70,8 +70,11 @@ public class MyMethodVisitor extends MethodVisitor {
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspection.ParameterInspectionBuilder[numberOfParameters];
 
-        for (int i = 0; i < parameterInspectionBuilders.length; i++) {
+        for (int i = 0; i < numberOfParameters; i++) {
             parameterInspectionBuilders[i] = new ParameterInspection.ParameterInspectionBuilder();
+            if(lastParameterIsVarargs && i == numberOfParameters-1) {
+                parameterInspectionBuilders[i].setVarArgs(true);
+            }
         }
     }
 
@@ -93,7 +96,6 @@ public class MyMethodVisitor extends MethodVisitor {
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(parameterizedType, name, parameterIndex);
-            // TODO varargs
             parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
             methodInspectionBuilder.addParameter(parameterInfo);
             hasNameFromLocalVar[parameterIndex] = true;

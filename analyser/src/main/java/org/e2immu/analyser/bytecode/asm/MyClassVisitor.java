@@ -412,6 +412,7 @@ public class MyClassVisitor extends ClassVisitor {
         boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
         if (isAbstract && (!currentTypeIsInterface || isStatic))
             methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
+        boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
         TypeContext methodContext = new TypeContext(typeContext);
 
@@ -440,7 +441,7 @@ public class MyClassVisitor extends ClassVisitor {
             }
         }
         return new MyMethodVisitor(methodContext, methodInfo, methodInspectionBuilder, typeInspectionBuilder, types,
-                isAbstract, methodItem, jetBrainsAnnotationTranslator);
+                lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
     }
 
     // result should be
