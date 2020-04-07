@@ -48,10 +48,15 @@ public class ParameterizedType {
 
     @NotNull
     public static ParameterizedType from(TypeContext context, Type type) {
-        return from(context, type, WildCard.NONE);
+        return from(context, type, WildCard.NONE, false);
     }
 
-    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard) {
+    @NotNull
+    public static ParameterizedType from(TypeContext context, Type type, boolean varargs) {
+        return from(context, type, WildCard.NONE, varargs);
+    }
+
+    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard, boolean varargs) {
         Type baseType = type;
         int arrays = 0;
         if (type.isArrayType()) {
@@ -59,6 +64,7 @@ public class ParameterizedType {
             baseType = arrayType.getComponentType();
             arrays = arrayType.getArrayLevel();
         }
+        if (varargs) arrays++; // if we have a varargs type Object..., we store a parameterized type Object[]
         if (baseType.isPrimitiveType()) {
             return new ParameterizedType(Primitives.PRIMITIVES.primitiveByName(baseType.asString()), arrays);
         }
@@ -66,11 +72,11 @@ public class ParameterizedType {
             WildcardType wildcardType = (WildcardType) type;
             if (wildcardType.getExtendedType().isPresent()) {
                 // ? extends T
-                return from(context, wildcardType.getExtendedType().get(), WildCard.EXTENDS);
+                return from(context, wildcardType.getExtendedType().get(), WildCard.EXTENDS, false);
             }
             if (wildcardType.getSuperType().isPresent()) {
                 // ? super T
-                return from(context, wildcardType.getSuperType().get(), WildCard.SUPER);
+                return from(context, wildcardType.getSuperType().get(), WildCard.SUPER, false);
             }
             return WILDCARD_PARAMETERIZED_TYPE; // <?>
         }
@@ -116,7 +122,8 @@ public class ParameterizedType {
             if (parameters.isEmpty()) {
                 return new ParameterizedType(typeInfo, arrays);
             }
-            return new ParameterizedType(typeInfo, parameters);
+            // Set<T>... == Set<T>[]
+            return new ParameterizedType(typeInfo, arrays, WildCard.NONE, parameters);
         }
         if (namedType instanceof TypeParameter) {
             if (!parameters.isEmpty()) {
@@ -204,6 +211,19 @@ public class ParameterizedType {
         this.typeParameter = null;
     }
 
+    private ParameterizedType(TypeInfo typeInfo, int arrays, WildCard wildCard, List<ParameterizedType> typeParameters, TypeParameter typeParameter) {
+        this.typeInfo = typeInfo;
+        this.arrays = arrays;
+        this.wildCard = wildCard;
+        this.parameters = typeParameters;
+        this.typeParameter = typeParameter;
+    }
+
+    public ParameterizedType copyWithOneFewerArrays() {
+        if (arrays == 0) throw new UnsupportedOperationException();
+        return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
+    }
+
     @Override
     public String toString() {
         return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") +
@@ -268,7 +288,9 @@ public class ParameterizedType {
             }
         }
         if (varargs) {
-            if (arrays == 0) throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
+            if (arrays == 0) {
+                throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
+            }
             sb.append("[]".repeat(arrays - 1)).append("...");
         } else {
             sb.append("[]".repeat(arrays));

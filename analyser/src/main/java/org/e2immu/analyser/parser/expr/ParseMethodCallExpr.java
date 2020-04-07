@@ -172,7 +172,7 @@ public class ParseMethodCallExpr {
 
     private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
         int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method.methodInfo, 0)).min().orElseThrow();
-        if(min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
+        if (min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
         methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInfo, 0) > min);
     }
 
@@ -272,25 +272,38 @@ public class ParseMethodCallExpr {
         });
     }
 
+    // different situations with varargs: method(int p1, String... args)
+    // 1: method(1) is possible, but pos will not get here, so there's no reason for incompatibility
+    // 2: pos == params.size()-1: method(p, "abc")
+    // 3: pos == params.size()-1: method(p, new String[] { "a", "b"} )
+    // 4: pos >= params.size(): method(p, "a", "b")  -> we need the base type
     private static int compatibleParameter(ExpressionContext expressionContext, Expression evaluatedExpression, Integer pos, MethodInspection methodInspection) {
-        List<ParameterInfo> params = methodInspection.parameters;
-
-        ParameterInfo parameterInDefinition;
-        if (pos >= params.size()) {
-            ParameterInfo lastParameter = params.get(params.size() - 1);
-            if (lastParameter.parameterInspection.get().varArgs) {
-                parameterInDefinition = lastParameter;
-            } else {
-                return NOT_ASSIGNABLE;
-            }
-        } else {
-            parameterInDefinition = methodInspection.parameters.get(pos);
-        }
         if (evaluatedExpression == EmptyExpression.EMPTY_EXPRESSION) {
             return NOT_ASSIGNABLE;
         }
+        List<ParameterInfo> params = methodInspection.parameters;
+
+        if (pos >= params.size()) {
+            ParameterInfo lastParameter = params.get(params.size() - 1);
+            if (lastParameter.parameterInspection.get().varArgs) {
+                ParameterizedType typeOfParameter = lastParameter.parameterizedType.copyWithOneFewerArrays();
+                return compatibleParameter(expressionContext, evaluatedExpression, typeOfParameter);
+            }
+            return NOT_ASSIGNABLE;
+        }
+        ParameterInfo parameterInfo = params.get(pos);
+        if (pos == params.size() - 1 && parameterInfo.parameterInspection.get().varArgs) {
+            int withArrays = compatibleParameter(expressionContext, evaluatedExpression, parameterInfo.parameterizedType);
+            int withoutArrays = compatibleParameter(expressionContext, evaluatedExpression, parameterInfo.parameterizedType.copyWithOneFewerArrays());
+            return Math.min(withArrays, withoutArrays);
+        }
+        // the normal situation
+        return compatibleParameter(expressionContext, evaluatedExpression, parameterInfo.parameterizedType);
+    }
+
+    private static int compatibleParameter(ExpressionContext expressionContext, Expression evaluatedExpression, ParameterizedType typeOfParameter) {
         if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
-            MethodTypeParameterMap sam = parameterInDefinition.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+            MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (sam == null) return NOT_ASSIGNABLE;
             int numberOfParameters = ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters;
             // if numberOfParameters < 0, we don't even know for sure how many params we're going to get
@@ -298,7 +311,7 @@ public class ParseMethodCallExpr {
             return numberOfParameters < 0 || sam.methodInfo.methodInspection.get().parameters.size() == numberOfParameters ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
-        return parameterInDefinition.parameterizedType.numericIsAssignableFrom(returnType);
+        return typeOfParameter.numericIsAssignableFrom(returnType);
     }
 
     /*

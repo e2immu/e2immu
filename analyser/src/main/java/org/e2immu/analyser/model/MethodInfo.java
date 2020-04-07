@@ -161,7 +161,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
 
     public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext) {
-        log(INSPECT,"Inspecting constructor {}", fullyQualifiedName());
+        log(INSPECT, "Inspecting constructor {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         addAnnotations(builder, cd.getAnnotations(), expressionContext);
         addModifiers(builder, cd.getModifiers());
@@ -172,7 +172,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public void inspect(boolean isInterface, MethodDeclaration md, ExpressionContext expressionContext) {
-        log(INSPECT,"Inspecting method {}", fullyQualifiedName());
+        log(INSPECT, "Inspecting method {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         int tpIndex = 0;
         TypeContext typeContextWithParameters = md.getTypeParameters().isNonEmpty() ?
@@ -222,7 +222,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                                ExpressionContext expressionContext) {
         int i = 0;
         for (Parameter parameter : parameters) {
-            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType());
+            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs());
             ParameterInfo parameterInfo = new ParameterInfo(pt, parameter.getNameAsString(), i++);
             parameterInfo.inspect(this, parameter, expressionContext, parameter.isVarArgs());
             builder.addParameter(parameterInfo);
