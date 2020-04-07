@@ -38,14 +38,18 @@ public class MethodTypeParameterMap {
     }
 
     public ParameterizedType getConcreteReturnType() {
-        if (!methodInfo.hasBeenInspected()) return methodInfo.returnTypeObserved;
         ParameterizedType returnType = methodInfo.methodInspection.get().returnType;
         return apply(returnType);
     }
 
     public ParameterizedType getConcreteTypeOfParameter(int i) {
-        if (!methodInfo.hasBeenInspected()) return methodInfo.parametersAsObserved.get(i).parameterizedType();
-        return apply(methodInfo.methodInspection.get().parameters.get(i).parameterizedType);
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        int n = methodInspection.parameters.size();
+        if (i >= n) {
+            // varargs
+            return apply(methodInspection.parameters.get(n - 1).parameterizedType);
+        }
+        return apply(methodInspection.parameters.get(i).parameterizedType);
     }
 
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {

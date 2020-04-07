@@ -89,9 +89,7 @@ public class ParseMethodCallExpr {
                                                                  Position positionForErrorReporting) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
-        boolean changes = true;
-        while (changes) {
-            changes = false;
+        while (true) {
             Expression evaluatedExpression = null;
             // we know that all method candidates have an identical amount of parameters
             Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(expressionContext, methodCandidates, evaluatedExpressions.keySet());
@@ -114,7 +112,10 @@ public class ParseMethodCallExpr {
             }
             if (pos != null) {
                 evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
-                changes = filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore) && !methodCandidates.isEmpty();
+                filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore);
+                if(methodCandidates.isEmpty()) break;
+            } else {
+                break;
             }
         }
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
@@ -256,12 +257,12 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static boolean filterMethodCandidates(ExpressionContext expressionContext,
-                                                  Expression evaluatedExpression,
-                                                  Integer pos,
-                                                  List<TypeContext.MethodCandidate> methodCandidates,
-                                                  Map<MethodInfo, Integer> compatibilityScore) {
-        return methodCandidates.removeIf(mc -> {
+    private static void filterMethodCandidates(ExpressionContext expressionContext,
+                                               Expression evaluatedExpression,
+                                               Integer pos,
+                                               List<TypeContext.MethodCandidate> methodCandidates,
+                                               Map<MethodInfo, Integer> compatibilityScore) {
+        methodCandidates.removeIf(mc -> {
             int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInfo.methodInspection.get());
             if (score >= 0) {
                 Integer inMap = compatibilityScore.get(mc.method.methodInfo);
