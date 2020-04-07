@@ -79,10 +79,10 @@ public class MethodInspection extends Inspection {
         this.exceptionTypes = exceptionTypes;
         this.implementationOf = implementationOf;
         fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                .map(p -> p.parameterizedType.stream() + (p.parameterInspection.isSet() && p.parameterInspection.get().varArgs ? "..." : ""))
+                .map(p -> p.parameterizedType.stream(p.parameterInspection.get().varArgs))
                 .collect(Collectors.joining(",")) + ")";
         distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                .map(p -> p.parameterizedType.distinguishingStream() + (p.parameterInspection.isSet() && p.parameterInspection.get().varArgs ? "..." : ""))
+                .map(p -> p.parameterizedType.distinguishingStream(p.parameterInspection.get().varArgs))
                 .collect(Collectors.joining(",")) + ")";
     }
 

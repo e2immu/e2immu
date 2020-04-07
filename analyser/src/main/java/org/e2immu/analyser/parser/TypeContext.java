@@ -330,66 +330,11 @@ public class TypeContext {
         return parametersPresented == declared;
     }
 
-    public MethodTypeParameterMap resolveMethod(List<MethodCandidate> methodCandidates,
-                                                List<Expression> parameterExpressions,
-                                                String methodName,
-                                                ParameterizedType startingPointForErrors,
-                                                Position positionForErrors) {
-        return methodCandidates.stream()
-                .peek(mc -> log(METHOD_CALL, "Considering for selection: {}", mc.method.methodInfo.distinguishingName()))
-                .filter(mc -> parameterExpressions == null || compatibleParameters(mc.method.methodInfo, parameterExpressions))
-                .map(mc -> mc.method)
-                .findFirst()
-                .orElseThrow(() -> {
-                    throw new UnsupportedOperationException(methodName + " not found in known type "
-                            + startingPointForErrors.detailedString() + " at position " + positionForErrors);
-                });
-    }
-
     private Map<NamedType, ParameterizedType> joinMaps(Map<NamedType, ParameterizedType> previous,
                                                        ParameterizedType target) {
         HashMap<NamedType, ParameterizedType> res = new HashMap<>(previous);
         res.putAll(target.initialTypeParameterMap());
         return res;
-    }
-
-    public boolean compatibleParameters(MethodInfo m, List<Expression> parameterExpressions) {
-        MethodInspection methodInspection = m.methodInspection.get();
-        List<ParameterInfo> params = methodInspection.parameters;
-        if (params.isEmpty() && parameterExpressions.size() > 0) {
-            return false;
-        }
-        int parameterCount = 0;
-        for (Expression parameterExpression : parameterExpressions) {
-            ParameterInfo parameterInDefinition;
-            if (parameterCount >= params.size()) {
-                ParameterInfo lastParameter = params.get(params.size() - 1);
-                if (lastParameter.parameterInspection.get().varArgs) {
-                    parameterInDefinition = lastParameter;
-                } else {
-                    return false;
-                }
-            } else {
-                parameterInDefinition = methodInspection.parameters.get(parameterCount);
-            }
-            if (parameterExpression == EmptyExpression.EMPTY_EXPRESSION) {
-                return false;
-            }
-            if (parameterExpression instanceof UnevaluatedLambdaExpression) {
-                MethodTypeParameterMap sam = parameterInDefinition.parameterizedType.findSingleAbstractMethodOfInterface(this);
-                if (sam == null) return false;
-                int numberOfParameters = ((UnevaluatedLambdaExpression) parameterExpression).numberOfParameters;
-                // if numberOfParameters < 0, we don't even know for sure how many params we're going to get
-                if (numberOfParameters >= 0 && sam.methodInfo.methodInspection.get().parameters.size() != numberOfParameters) {
-                    return false;
-                }
-                // TODO this can be done better? but it should cover 99% of cases
-            } else if (!parameterInDefinition.parameterizedType.isAssignableFrom(parameterExpression.returnType())) {
-                return false;
-            }
-            parameterCount++;
-        }
-        return true;
     }
 
     public void addMessage(Message.Severity severity, String text) {

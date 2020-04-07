@@ -108,15 +108,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     // the in-line method
     public String stream() {
         StringBuilder sb = new StringBuilder();
-        if (hasBeenInspected()) {
-            ParameterInspection parameterInspection = this.parameterInspection.get();
-            for (AnnotationExpression annotation : parameterInspection.annotations) {
-                sb.append(annotation.stream());
-                sb.append(" ");
-            }
+        ParameterInspection parameterInspection = this.parameterInspection.get();
+        for (AnnotationExpression annotation : parameterInspection.annotations) {
+            sb.append(annotation.stream());
+            sb.append(" ");
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
-            sb.append(parameterizedType.stream());
+            sb.append(parameterizedType.stream(parameterInspection.varArgs));
             sb.append(" ");
         }
         sb.append(name);
@@ -150,7 +148,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     public Boolean isNullNotAllowed(TypeContext typeContext) {
         Boolean directly = annotatedWith(typeContext.nullNotAllowed.get());
-        if(directly != Boolean.FALSE) {
+        if (directly != Boolean.FALSE) {
             return directly;
         }
         return parameterInspection.get().owner.typeInfo.annotatedWith(typeContext.nullNotAllowed.get());

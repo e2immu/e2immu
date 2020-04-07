@@ -207,28 +207,33 @@ public class ParameterizedType {
     @Override
     public String toString() {
         return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") +
-                stream(true, false);
+                stream(true, false, false);
     }
 
     public String stream() {
-        return stream(false, false);
+        return stream(false, false, false);
+    }
+
+    public String stream(boolean varargs) {
+        return stream(false, false, varargs);
     }
 
     /**
      * Stream for sending the qualified name to the KV store
      *
+     * @param varArgs
      * @return the type as a fully qualified name, with type parameters according to the format
      * Tn or Mn, with n the index, and T for type, M for method
      */
-    public String distinguishingStream() {
-        return stream(true, true);
+    public String distinguishingStream(boolean varArgs) {
+        return stream(true, true, varArgs);
     }
 
     public String detailedString() {
-        return stream(true, false);
+        return stream(true, false, false);
     }
 
-    private String stream(boolean fullyQualified, boolean numericTypeParameters) {
+    private String stream(boolean fullyQualified, boolean numericTypeParameters, boolean varargs) {
         StringBuilder sb = new StringBuilder();
         switch (wildCard) {
             case UNBOUND:
@@ -257,12 +262,17 @@ public class ParameterizedType {
             if (!parameters.isEmpty()) {
                 sb.append("<");
                 sb.append(parameters.stream()
-                        .map(pt -> pt.stream(fullyQualified, numericTypeParameters))
+                        .map(pt -> pt.stream(fullyQualified, numericTypeParameters, false))
                         .collect(Collectors.joining(", ")));
                 sb.append(">");
             }
         }
-        sb.append("[]".repeat(arrays));
+        if (varargs) {
+            if (arrays == 0) throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
+            sb.append("[]".repeat(arrays - 1)).append("...");
+        } else {
+            sb.append("[]".repeat(arrays));
+        }
         return sb.toString();
     }
 

@@ -30,6 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class ParseMethodReferenceExpr {
     public static Expression parse(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr, MethodTypeParameterMap singleAbstractMethod) {
         if (singleAbstractMethod == null) {
@@ -70,9 +73,14 @@ public class ParseMethodReferenceExpr {
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
                     methodName, parametersPresented, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
-        MethodTypeParameterMap method = expressionContext.typeContext.resolveMethod(methodCandidates, null,
-                methodNameForErrorReporting, parameterizedType, methodReferenceExpr.getBegin().orElseThrow());
-
+        if (methodCandidates.isEmpty()) {
+            throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
+        }
+        if (methodCandidates.size() > 1) {
+            log(METHOD_CALL, "Have multiple candidates, would need to sort somehow to take the best one");
+            // TODO doesn't happen that frequently...
+        }
+        MethodTypeParameterMap method = methodCandidates.get(0).method;
         List<ParameterizedType> types = new ArrayList<>();
         types.add(parameterizedType);
         method.methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType).forEach(types::add);
