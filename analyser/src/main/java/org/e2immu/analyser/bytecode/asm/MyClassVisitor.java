@@ -418,6 +418,11 @@ public class MyClassVisitor extends ClassVisitor {
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
             int end = parseMethodGenerics(signatureOrDescription, methodInfo, methodInspectionBuilder, methodContext);
+            if (end < 0) {
+                // error state
+                errorStateForType(signatureOrDescription);
+                return null; // dropping the method, and the type!
+            }
             signatureOrDescription = signatureOrDescription.substring(end + 1); // 1 to get rid of >
         }
         List<ParameterizedType> types = parseParameterTypesOfMethod(methodContext, signatureOrDescription);
@@ -468,6 +473,9 @@ public class MyClassVisitor extends ClassVisitor {
                         },
                         methodContext,
                         this::getOrCreateTypeInfo);
+                if (iterativeParsing == null) {
+                    return -1; // error state
+                }
             } while (iterativeParsing.more);
             if (!iterativeParsing.typeNotFoundError) break;
             iterativeParsing = new IterativeParsing();

@@ -419,8 +419,6 @@ public class ParameterizedType {
     public boolean isAssignableFrom(ParameterizedType type) {
         if (type == this) return true;
         if (typeInfo != null) {
-            // the following statement does hold wrt a type parameter (<T> allows for String[])
-            if (arrays != type.arrays) return false;
 
             if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return true;
             if ("java.util.function.Function".equals(typeInfo.fullyQualifiedName) ||
@@ -429,6 +427,7 @@ public class ParameterizedType {
                 return parameters.get(parameters.size() - 1).isAssignableFrom(type);
             }
             if (type.typeInfo != null) {
+                if (arrays != type.arrays) return false;
                 if (typeInfo.equals(type.typeInfo)) return true;
                 if (typeInfo.isPrimitive()) {
                     if (arrays == 0) {
@@ -444,13 +443,12 @@ public class ParameterizedType {
                     // the other one is not a primitive
                     return arrays == 0 && type.checkBoxing(typeInfo);
                 }
-                if (type.typeInfo.hasBeenInspected()) {
-                    for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
-                        if (isAssignableFrom(interfaceImplemented)) return true;
-                    }
-                    if (type.typeInfo.typeInspection.get().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-                        if (isAssignableFrom(typeInfo.typeInspection.get().parentClass)) return true;
-                    }
+
+                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
+                    if (isAssignableFrom(interfaceImplemented)) return true;
+                }
+                if (type.typeInfo.typeInspection.get().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+                    if (isAssignableFrom(typeInfo.typeInspection.get().parentClass)) return true;
                 }
             }
         }

@@ -11,7 +11,9 @@ public class ParameterNameFactory {
     public String next(ParameterizedType type) {
         String base;
         if (type.typeInfo != null) {
-            if (type.isPrimitive()) {
+            // cheap way of finding out with high likelihood if we're dealing with a primitive
+            // under no conditions can we trigger a type inspection here!
+            if (type.typeInfo.fullyQualifiedName.indexOf('.') < 0) {
                 base = firstLetterLowerCase(type.typeInfo.simpleName).substring(0, 1);
             } else {
                 base = firstLetterLowerCase(type.typeInfo.simpleName);

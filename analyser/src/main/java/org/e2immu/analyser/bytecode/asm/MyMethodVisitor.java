@@ -89,9 +89,8 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        //log(BYTECODE_INSPECTOR_DEBUG, "Have local var {}", name);
         int parameterIndex = countLocalVars - (methodInfo.isStatic ? 0 : 1);
-        if ((methodInfo.isStatic || countLocalVars > 0) && parameterIndex < numberOfParameters) {
+        if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(parameterizedType, name, parameterIndex);
             // TODO varargs
@@ -104,18 +103,16 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitEnd() {
-        if (countLocalVars < numberOfParameters) {
-            ParameterNameFactory factory = new ParameterNameFactory();
-            for (int i = 0; i < numberOfParameters; i++) {
-                if (!hasNameFromLocalVar[i]) {
-                    ParameterizedType type = types.get(i);
-                    String parameterName = factory.next(type);
-                    ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
-                    methodInspectionBuilder.addParameter(parameterInfo);
+        ParameterNameFactory factory = new ParameterNameFactory();
+        for (int i = 0; i < numberOfParameters; i++) {
+            if (!hasNameFromLocalVar[i]) {
+                ParameterizedType type = types.get(i);
+                String parameterName = factory.next(type);
+                ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
+                methodInspectionBuilder.addParameter(parameterInfo);
 
-                    parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build(methodInfo));
-                    log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
-                }
+                parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build(methodInfo));
+                log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
             }
         }
         if (methodItem != null) {
