@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class ParameterizedType {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
 
+    public static final ParameterizedType NULL_CONSTANT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
@@ -462,8 +463,11 @@ public class ParameterizedType {
 
     public int numericIsAssignableFrom(ParameterizedType type) {
         if (type == this || equals(type)) return 0;
+        if( type == ParameterizedType.NULL_CONSTANT) {
+            if(isPrimitive()) return NOT_ASSIGNABLE;
+            return 1;
+        }
         if (typeInfo != null) {
-
             if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return 1; // or should we count the steps?
             if (type.typeInfo != null) {
                 if (arrays != type.arrays) return NOT_ASSIGNABLE;

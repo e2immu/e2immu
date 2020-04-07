@@ -31,7 +31,7 @@ public class NullConstant implements Expression, Constant<Object> {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.voidParameterizedType;
+        return ParameterizedType.NULL_CONSTANT;
     }
 
     @Override

@@ -28,4 +28,15 @@ public class TestIsAssignableFrom {
         Assert.assertFalse(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(stringPt));
         Assert.assertFalse(stringPt.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
     }
+
+    @Test
+    public void testNull() {
+        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
+
+        Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(stringPt));
+        Assert.assertTrue(stringPt.isAssignableFrom(ParameterizedType.NULL_CONSTANT));
+
+        Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
+        Assert.assertFalse(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(ParameterizedType.NULL_CONSTANT));
+    }
 }
