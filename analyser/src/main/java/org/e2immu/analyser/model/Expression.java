@@ -19,11 +19,14 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.*;
 import java.util.function.Consumer;

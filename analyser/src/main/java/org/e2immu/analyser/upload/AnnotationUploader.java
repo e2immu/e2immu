@@ -28,13 +28,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.e2immu.analyser.config.UploadConfiguration;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.*;
-import org.e2immu.annotation.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

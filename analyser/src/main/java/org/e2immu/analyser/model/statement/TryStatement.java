@@ -105,17 +105,18 @@ public class TryStatement implements Statement {
 
     @Override
     public List<LocalVariableReference> newLocalVariables() {
-        return null;
+        // none of the local variables survives the statement
+        return List.of();
     }
 
     @Override
     public <E extends Expression> List<E> findInExpression(Class<E> clazz) {
-        return null;
+        return List.of();
     }
 
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return null;
+        return tryBlock.sideEffect(sideEffectContext);
     }
 
 }

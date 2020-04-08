@@ -20,13 +20,16 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.util.Either;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**

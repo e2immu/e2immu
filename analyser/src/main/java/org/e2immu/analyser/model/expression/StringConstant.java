@@ -19,12 +19,12 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 

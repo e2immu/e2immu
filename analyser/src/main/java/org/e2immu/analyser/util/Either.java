@@ -18,7 +18,10 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Final;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 

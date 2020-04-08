@@ -18,10 +18,10 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.model.BuilderWithAnnotations;
 import org.e2immu.analyser.model.ParameterInspection;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.annotationxml.model.Annotation;
 
 import java.util.List;
 

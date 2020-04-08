@@ -25,12 +25,14 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.TypeStore;
 import org.e2immu.analyser.util.SetOnceSupply;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Container;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -297,7 +299,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 List<AnnotationExpression> annotations = fd.getAnnotations().stream()
                         .map(ae -> AnnotationExpression.from(ae, expressionContext)).collect(Collectors.toList());
                 ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, fd.getElementType());
-                This thisScope = new This(this);
                 for (VariableDeclarator vd : fd.getVariables()) {
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, this);
@@ -309,13 +310,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
                     }
                     if (vd.getInitializer().isPresent()) {
-                        //fieldInspectionBuilder.setInitializer(subContext.parseExpression(vd.getInitializer()));
                         fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
                     }
                     fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
                     builder.addField(fieldInfo);
-                    //subContext.variableContext.add(new FieldReference(fieldInfo,
-                    //        fieldInfo.isStatic() ? null : thisScope));
                 }
             });
         }

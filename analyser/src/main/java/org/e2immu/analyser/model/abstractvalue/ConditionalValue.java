@@ -18,10 +18,10 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Set;

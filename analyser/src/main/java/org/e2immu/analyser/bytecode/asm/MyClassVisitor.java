@@ -18,24 +18,23 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
+import org.e2immu.analyser.annotationxml.AnnotationStore;
+import org.e2immu.analyser.annotationxml.model.FieldItem;
+import org.e2immu.analyser.annotationxml.model.MethodItem;
+import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.e2immu.analyser.bytecode.ExpressionFactory;
+import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.annotationxml.AnnotationStore;
-import org.e2immu.analyser.annotationxml.model.FieldItem;
-import org.e2immu.analyser.annotationxml.model.MethodItem;
-import org.e2immu.analyser.annotationxml.model.TypeItem;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

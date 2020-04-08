@@ -21,14 +21,18 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.FieldAccess;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.*;
-import org.e2immu.analyser.parser.ExpressionContext;
 
-import static org.e2immu.analyser.util.Logger.log;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @E2Immutable
 @NullNotAllowed

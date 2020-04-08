@@ -39,4 +39,6 @@ public interface TypeStore {
     void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
     void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer);
+
+    boolean containsPrefix(String fullyQualifiedName);
 }

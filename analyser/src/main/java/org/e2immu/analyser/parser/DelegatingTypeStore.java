@@ -74,4 +74,9 @@ public class DelegatingTypeStore implements TypeStore {
     public void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer) {
         delegate.visitAllNewlyCreatedTypes(typeInfoConsumer);
     }
+
+    @Override
+    public boolean containsPrefix(String fullyQualifiedName) {
+        return local.containsPrefix(fullyQualifiedName) || delegate.containsPrefix(fullyQualifiedName);
+    }
 }

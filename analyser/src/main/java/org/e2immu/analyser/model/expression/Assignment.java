@@ -20,12 +20,12 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;

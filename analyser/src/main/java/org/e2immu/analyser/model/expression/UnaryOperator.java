@@ -19,15 +19,15 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.UnaryExpr;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;

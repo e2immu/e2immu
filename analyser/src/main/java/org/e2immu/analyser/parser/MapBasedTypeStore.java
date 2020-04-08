@@ -21,8 +21,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Trie;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -59,6 +57,18 @@ public class MapBasedTypeStore implements TypeStore {
 
     public void add(TypeInfo typeInfo) {
         trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
+    }
+
+    @Override
+    public boolean containsPrefix(String fullyQualifiedName) {
+        String[] split = fullyQualifiedName.split("\\.");
+        // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
+        // (there'll be more hits outside the source than inside the source dir)
+        for (int i = 1; i <= split.length; i++) {
+            List<TypeInfo> typeInfoList = trie.get(split, i);
+            if (typeInfoList != null && !typeInfoList.isEmpty()) return true;
+        }
+        return false;
     }
 
     public boolean isPackagePrefix(PackagePrefix packagePrefix) {

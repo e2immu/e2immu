@@ -18,19 +18,15 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
+import org.e2immu.analyser.annotationxml.model.MethodItem;
+import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.annotationxml.model.MethodItem;
-import org.e2immu.analyser.annotationxml.model.ParameterItem;
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;

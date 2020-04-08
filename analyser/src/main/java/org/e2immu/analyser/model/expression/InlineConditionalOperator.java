@@ -19,10 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -30,6 +26,10 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;

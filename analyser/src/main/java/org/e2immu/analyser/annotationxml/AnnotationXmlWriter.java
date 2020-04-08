@@ -18,9 +18,9 @@
 
 package org.e2immu.analyser.annotationxml;
 
+import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.parser.TypeStore;
-import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,10 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;

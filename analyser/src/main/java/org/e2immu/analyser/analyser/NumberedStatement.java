@@ -19,10 +19,12 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NullNotAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

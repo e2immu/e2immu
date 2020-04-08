@@ -24,7 +24,6 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -157,7 +156,7 @@ public class ParseAndInspect {
             }
         }
         typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
-            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet() && sourceTypeStore.get(typeInfo.fullyQualifiedName) == null) {
+            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet() && sourceTypeStore.containsPrefix(typeInfo.fullyQualifiedName)) {
                 log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
                 typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
             }
@@ -194,7 +193,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null || !typeInfo.hasBeenInspected() && sourceTypeStore.get(fqn) == null) {
+        if (typeInfo == null || !typeInfo.hasBeenInspected() && sourceTypeStore.containsPrefix(fqn)) {
             return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
         }
         typeContext.addToContext(typeInfo);

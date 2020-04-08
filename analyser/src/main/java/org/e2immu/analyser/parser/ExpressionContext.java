@@ -18,20 +18,23 @@
 
 package org.e2immu.analyser.parser;
 
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.UnionType;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.parser.expr.*;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.parser.expr.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +146,7 @@ public class ExpressionContext {
             } else if (statement.isExpressionStmt()) {
                 newStatement = new ExpressionAsStatement(parseExpression(((ExpressionStmt) statement).getExpression()));
             } else if (statement.isForEachStmt()) {
-                newStatement = forEachStatement((ForEachStmt) statement, this);
+                newStatement = forEachStatement((ForEachStmt) statement);
             } else if (statement.isWhileStmt()) {
                 newStatement = whileStatement((WhileStmt) statement);
             } else if (statement.isBlockStmt()) {
@@ -161,17 +164,20 @@ public class ExpressionContext {
                 newStatement = explicitConstructorInvocation((ExplicitConstructorInvocationStmt) statement);
             } else if (statement.isTryStmt()) {
                 newStatement = tryStatement(statement.asTryStmt());
-          /*  } else if (statement.isContinueStmt()) {
-
+            } else if (statement.isContinueStmt()) {
+                newStatement = new ContinueStatement();
             } else if (statement.isBreakStmt()) {
+                newStatement = new BreakStatement();
             } else if (statement.isDoStmt()) {
-
+                newStatement = doStatement(statement.asDoStmt());
             } else if (statement.isForStmt()) {
-
+                newStatement = forStatement(statement.asForStmt());
             } else if (statement.isAssertStmt()) {
+                newStatement = assertStatement(statement.asAssertStmt());
             } else if (statement.isEmptyStmt()) {
+                newStatement = EmptyStatement.EMPTY_STATEMENT;
             } else if (statement.isSwitchStmt()) {
-*/
+                newStatement = switchStatement(statement.asSwitchStmt());
             } else if (statement.isUnparsableStmt()) {
                 LOGGER.warn("Skipping unparsable statement at {}", statement.getBegin());
                 newStatement = null;
@@ -188,6 +194,8 @@ public class ExpressionContext {
 
             if (newStatement != null) {
                 List<LocalVariableReference> newLocalVariables = newStatement.newLocalVariables();
+                if (newLocalVariables == null)
+                    throw new NullPointerException("Statement of " + newStatement.getClass() + " produces null local vars");
                 variableContext.addAll(newLocalVariables);
                 blockBuilder.addStatement(newStatement);
             }
@@ -197,18 +205,83 @@ public class ExpressionContext {
         }
     }
 
+    private org.e2immu.analyser.model.Statement switchStatement(SwitchStmt switchStmt) {
+        Expression selector = parseExpression(switchStmt.getSelector());
+        List<SwitchEntry> entries = switchStmt.getEntries().stream().map(this::switchEntry).collect(Collectors.toList());
+        return new SwitchStatement(selector, entries);
+    }
+
+    private SwitchEntry switchEntry(com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
+        List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
+        switch (switchEntry.getType()) {
+            case EXPRESSION:
+            case THROWS_STATEMENT:
+            case STATEMENT_GROUP:
+                Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+                for (Statement statement : switchEntry.getStatements()) {
+                    parseStatement(blockBuilder, statement);
+                }
+                boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
+                return new SwitchEntry.StatementsEntry(java12Style, labels, blockBuilder.build().statements);
+            case BLOCK:
+                Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
+                return new SwitchEntry.BlockEntry(labels, block);
+            default:
+                throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
+        }
+    }
+
+    private org.e2immu.analyser.model.Statement forStatement(ForStmt forStmt) {
+        List<Expression> initialisers = forStmt.getInitialization().stream().map(this::parseExpression).collect(Collectors.toList());
+        ExpressionContext newExpressionContext = newVariableContext("for-loop");
+        for (Expression initialiser : initialisers) {
+            List<LocalVariableReference> newLocalVariables = initialiser.newLocalVariables();
+            if (newLocalVariables == null)
+                throw new NullPointerException("Statement of " + initialiser.getClass() + " produces null local vars");
+            newExpressionContext.variableContext.addAll(newLocalVariables);
+        }
+        Expression condition = forStmt.getCompare().map(newExpressionContext::parseExpression).orElse(EmptyExpression.EMPTY_EXPRESSION);
+        List<Expression> updaters = forStmt.getUpdate().stream().map(newExpressionContext::parseExpression).collect(Collectors.toList());
+        Block block = newExpressionContext.parseBlockOrStatement(forStmt.getBody());
+        return new ForStatement(initialisers, condition, updaters, block);
+    }
+
+    private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt) {
+        Expression check = parseExpression(assertStmt.getCheck());
+        Expression message = assertStmt.getMessage().map(this::parseExpression).orElse(null);
+        return new AssertStatement(check, message);
+    }
+
     private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt) {
         List<Expression> resources = new ArrayList<>();
         ExpressionContext newExpressionContext = newVariableContext("try-resources");
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
-            resources.add(newExpressionContext.parseExpression(resource));
+            LocalVariableCreation localVariableCreation = (LocalVariableCreation) newExpressionContext.parseExpression(resource);
+            newExpressionContext.variableContext.add(localVariableCreation.localVariable, List.of(localVariableCreation.expression));
+            resources.add(localVariableCreation);
         }
         Block tryBlock = newExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
         List<Pair<TryStatement.CatchParameter, Block>> catchClauses = new ArrayList<>();
         for (CatchClause catchClause : tryStmt.getCatchClauses()) {
-
+            Parameter parameter = catchClause.getParameter();
+            List<ParameterizedType> unionOfTypes;
+            ParameterizedType typeOfVariable;
+            if (parameter.getType().isUnionType()) {
+                UnionType unionType = parameter.getType().asUnionType();
+                unionOfTypes = unionType.getElements()
+                        .stream()
+                        .map(rt -> ParameterizedType.from(newExpressionContext.typeContext, rt)).collect(Collectors.toList());
+                typeOfVariable = typeContext.typeStore.get("java.lang.Exception").asParameterizedType();
+            } else {
+                typeOfVariable = ParameterizedType.from(newExpressionContext.typeContext, parameter.getType());
+                unionOfTypes = List.of(typeOfVariable);
+            }
+            String name = parameter.getName().asString();
+            LocalVariable localVariable = new LocalVariable.LocalVariableBuilder().setName(name).setParameterizedType(typeOfVariable).build();
+            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(name, unionOfTypes);
+            newExpressionContext.variableContext.add(localVariable, List.of());
             Block block = newExpressionContext.parseBlockOrStatement(catchClause.getBody());
-
+            catchClauses.add(new Pair<>(catchParameter, block));
         }
         Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement).orElse(Block.EMPTY_BLOCK);
         return new TryStatement(resources, tryBlock, catchClauses, finallyBlock);
@@ -218,6 +291,12 @@ public class ExpressionContext {
         Block block = parseBlockOrStatement(statement.getBody());
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         return new WhileStatement(expression, block);
+    }
+
+    private org.e2immu.analyser.model.Statement doStatement(DoStmt statement) {
+        Block block = parseBlockOrStatement(statement.getBody());
+        org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
+        return new DoStatement(expression, block);
     }
 
     private org.e2immu.analyser.model.Statement explicitConstructorInvocation(ExplicitConstructorInvocationStmt statement) {
@@ -243,12 +322,12 @@ public class ExpressionContext {
         return new SynchronizedStatement(expression, block);
     }
 
-    private org.e2immu.analyser.model.Statement forEachStatement(ForEachStmt forEachStmt, ExpressionContext expressionContext) {
-        VariableContext newVariableContext = VariableContext.dependentVariableContext(expressionContext.variableContext);
+    private org.e2immu.analyser.model.Statement forEachStatement(ForEachStmt forEachStmt) {
+        VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
         VariableDeclarationExpr vde = forEachStmt.getVariable();
         LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
                 .setName(vde.getVariables().get(0).getNameAsString())
-                .setParameterizedType(ParameterizedType.from(expressionContext.typeContext, vde.getVariables().get(0).getType()))
+                .setParameterizedType(ParameterizedType.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
         newVariableContext.add(localVariable, List.of(expression));
@@ -433,6 +512,12 @@ public class ExpressionContext {
             }
             if (expression.isCharLiteralExpr()) {
                 return new CharConstant(expression.asCharLiteralExpr().asChar());
+            }
+            if (expression.isArrayAccessExpr()) {
+                ArrayAccessExpr arrayAccessExpr = expression.asArrayAccessExpr();
+                Expression scope = parseExpression(arrayAccessExpr.getName());
+                Expression index = parseExpression(arrayAccessExpr.getIndex());
+                return new ArrayAccess(scope, index);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());

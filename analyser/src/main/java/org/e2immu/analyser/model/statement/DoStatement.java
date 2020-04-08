@@ -18,51 +18,29 @@
 
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.List;
-import java.util.Set;
-
 // @ContextClass
-// @NullNotAllowed
 // @NotNull
-public class ForEachStatement extends LoopStatement {
-    public final LocalVariable localVariable;
+// @NullNotAllowed
+public class DoStatement extends LoopStatement {
 
-    public ForEachStatement(LocalVariable localVariable,
-                            Expression expression,
-                            Block block) {
+    public DoStatement(Expression expression,
+                       Block block) {
         super(expression, block);
-        this.localVariable = localVariable;
-    }
-
-    @Override
-    public Set<String> imports() {
-        return Sets.union(expression.imports(), localVariable.imports());
     }
 
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append("for (");
-        sb.append(localVariable.parameterizedType.stream());
-        sb.append(" ");
-        sb.append(localVariable.name);
-        sb.append(" : ");
-        sb.append(expression.expressionString(indent));
-        sb.append(")");
+        sb.append("do {");
         sb.append(block.statementString(indent));
-        sb.append("\n");
+        sb.append(" while(");
+        sb.append(expression.expressionString(indent));
+        sb.append(");\n");
         return sb.toString();
     }
 
-    @Override
-    public List<LocalVariableReference> newLocalVariables() {
-        return List.of(); // has been added in ExpressionContext.forEachStatement()
-    }
 }

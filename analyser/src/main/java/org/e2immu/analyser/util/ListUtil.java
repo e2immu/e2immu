@@ -19,7 +19,10 @@
 package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 

@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -113,7 +112,7 @@ public class ParseMethodCallExpr {
             if (pos != null) {
                 evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
                 filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore);
-                if(methodCandidates.isEmpty()) break;
+                if (methodCandidates.isEmpty() || evaluatedExpressions.size() == expressions.size()) break;
             } else {
                 break;
             }
@@ -183,9 +182,34 @@ public class ParseMethodCallExpr {
         methodCandidates.removeIf(mc -> mc.method.methodInfo.methodInspection.get().parameters.size() > min);
     }
 
-    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> keySet) {
+    // File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with a different number of parameters
+    // (fileFilter takes 1, fileNameFilter takes 2)
+    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
+        if (methodCandidates.isEmpty()) return null;
+        MethodInspection mi0 = methodCandidates.get(0).method.methodInfo.methodInspection.get();
+        for (int i = 0; i < mi0.parameters.size(); i++) {
+            com.github.javaparser.ast.expr.Expression expression = expressions.get(i);
+            if (!ignore.contains(i) && (expression.isLambdaExpr() || expression.isMethodReferenceExpr())) {
+                Set<Integer> numberOfParametersInFunctionalInterface = new HashSet<>();
+                boolean success = true;
+                for (TypeContext.MethodCandidate mc : methodCandidates) {
+                    MethodInspection mi = mc.method.methodInfo.methodInspection.get();
+                    ParameterInfo pi = mi.parameters.get(i);
+                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                    if (isFunctionalInterface) {
+                        MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                        int numberOfParameters = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size();
+                        boolean added = numberOfParametersInFunctionalInterface.add(numberOfParameters);
+                        if (!added) {
+                            success = false;
+                            break;
+                        }
+                    }
+                }
+                if (success) return i;
+            }
+        }
         return null;
-        // TODO
     }
 
     private static Pair<MethodTypeParameterMap, Integer> findParameterWithASingleFunctionalInterfaceType(ExpressionContext expressionContext,
@@ -296,6 +320,8 @@ public class ParseMethodCallExpr {
         if (pos == params.size() - 1 && parameterInfo.parameterInspection.get().varArgs) {
             int withArrays = compatibleParameter(expressionContext, evaluatedExpression, parameterInfo.parameterizedType);
             int withoutArrays = compatibleParameter(expressionContext, evaluatedExpression, parameterInfo.parameterizedType.copyWithOneFewerArrays());
+            if (withArrays == -1) return withoutArrays;
+            if (withoutArrays == -1) return withArrays;
             return Math.min(withArrays, withoutArrays);
         }
         // the normal situation

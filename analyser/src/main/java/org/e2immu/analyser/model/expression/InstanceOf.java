@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -27,6 +26,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.List;

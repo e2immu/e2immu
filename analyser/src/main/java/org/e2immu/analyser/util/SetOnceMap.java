@@ -18,7 +18,10 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.Only;
 
 import java.util.HashMap;
 import java.util.Map;

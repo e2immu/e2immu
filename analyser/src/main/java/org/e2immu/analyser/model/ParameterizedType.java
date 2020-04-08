@@ -24,9 +24,9 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,15 +104,25 @@ public class ParameterizedType {
                 }
                 ParameterizedType scopePt = from(context, scopeType);
                 // name probably is a sub type in scopePt...
-                if (scopePt.typeInfo != null && scopePt.typeInfo.typeInspection.isSet()) {
-                    Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
-                    if (subType.isPresent()) {
-                        return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
+                if (scopePt.typeInfo != null) {
+                    if (scopePt.typeInfo.typeInspection.isSet()) {
+                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
+                        if (subType.isPresent()) {
+                            return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
+                        }
+                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals(name)).findFirst();
+                        if (field.isPresent()) return field.get().type;
+                        throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
                     }
-                    Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals(name)).findFirst();
-                    if (field.isPresent()) return field.get().type;
-                    throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
+                    // we're going to assume that we're creating a subtype
+                    String subTypeFqn = scopePt.typeInfo.fullyQualifiedName + "." + name;
+                    TypeInfo subType = context.typeStore.getOrCreate(subTypeFqn);
+                    return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
+            } else {
+                // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
+                // could be a subtype of one of the interfaces (here, we're in an implementation of Expression, and InScopeType is a subtype of Expression)
+                LOGGER.debug("?");
             }
         } else {
             name = baseType.asString();
@@ -462,9 +472,10 @@ public class ParameterizedType {
     private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
 
     public int numericIsAssignableFrom(ParameterizedType type) {
+        Objects.requireNonNull(type);
         if (type == this || equals(type)) return 0;
-        if( type == ParameterizedType.NULL_CONSTANT) {
-            if(isPrimitive()) return NOT_ASSIGNABLE;
+        if (type == ParameterizedType.NULL_CONSTANT) {
+            if (isPrimitive()) return NOT_ASSIGNABLE;
             return 1;
         }
         if (typeInfo != null) {
@@ -491,8 +502,9 @@ public class ParameterizedType {
                     int scoreInterface = numericIsAssignableFrom(interfaceImplemented);
                     if (scoreInterface != NOT_ASSIGNABLE) return 1 + scoreInterface;
                 }
-                if (type.typeInfo.typeInspection.get().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-                    int scoreParent = numericIsAssignableFrom(typeInfo.typeInspection.get().parentClass);
+                ParameterizedType parentClass = type.typeInfo.typeInspection.get().parentClass;
+                if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+                    int scoreParent = numericIsAssignableFrom(parentClass);
                     if (scoreParent != NOT_ASSIGNABLE) return 1 + scoreParent;
                 }
             }

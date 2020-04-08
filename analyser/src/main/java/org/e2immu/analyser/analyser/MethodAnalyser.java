@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
@@ -29,6 +28,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,30 +167,31 @@ public class MethodAnalyser {
     }
 
     private boolean analyseFlow(MethodInfo methodInfo, VariableProperties methodProperties) {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+        try {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
 
-        // pretty trivial, but no need to do computations for primitives
-        AnnotationExpression nullNotAllowed = typeContext.nullNotAllowed.get();
-        AnnotationExpression notModified = typeContext.notModified.get();
-        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            if (parameterInfo.parameterizedType.isPrimitive() && !parameterInfo.parameterAnalysis.annotations.isSet(nullNotAllowed)) {
-                log(NULL_NOT_ALLOWED, "Set @NullNotAllowed for {}", parameterInfo.detailedString());
-                parameterInfo.parameterAnalysis.annotations.put(nullNotAllowed, true);
+            // pretty trivial, but no need to do computations for primitives
+            AnnotationExpression nullNotAllowed = typeContext.nullNotAllowed.get();
+            AnnotationExpression notModified = typeContext.notModified.get();
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                if (parameterInfo.parameterizedType.isPrimitive() && !parameterInfo.parameterAnalysis.annotations.isSet(nullNotAllowed)) {
+                    log(NULL_NOT_ALLOWED, "Set @NullNotAllowed for {}", parameterInfo.detailedString());
+                    parameterInfo.parameterAnalysis.annotations.put(nullNotAllowed, true);
+                }
+                if ((parameterInfo.parameterizedType.isPrimitive() || parameterInfo.parameterizedType.isFunctionalInterface(typeContext))
+                        && !parameterInfo.parameterAnalysis.annotations.isSet(notModified)) {
+                    log(NOT_MODIFIED, "Set @NotModified for {}", parameterInfo.detailedString());
+                    parameterInfo.parameterAnalysis.annotations.put(notModified, true);
+                }
             }
-            if ((parameterInfo.parameterizedType.isPrimitive() || parameterInfo.parameterizedType.isFunctionalInterface(typeContext))
-                    && !parameterInfo.parameterAnalysis.annotations.isSet(notModified)) {
-                log(NOT_MODIFIED, "Set @NotModified for {}", parameterInfo.detailedString());
-                parameterInfo.parameterAnalysis.annotations.put(notModified, true);
-            }
-        }
 
-        boolean changes = false;
-        List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
-        LOGGER.debug("Analysing {} statements", numberedStatements.size());
+            boolean changes = false;
+            List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
+            LOGGER.debug("Analysing {} statements", numberedStatements.size());
 
-        // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
-        if (computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties)) changes = true;
-        if (updateIndependence(methodInfo)) changes = true;
+            // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
+            if (computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties)) changes = true;
+            if (updateIndependence(methodInfo)) changes = true;
 
         /* in not modified
         if (!methodAnalysis.sideEffect.isSet()) {
@@ -210,82 +211,86 @@ public class MethodAnalyser {
             }
         }
         */
-        long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
-        if (returnStatements > 0) {
+            long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
+            if (returnStatements > 0) {
 
-            //@Identity
-            boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                    e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
-                    .count() == returnStatements;
-            if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                methodAnalysis.annotations.put(typeContext.identity.get(), true);
-                log(ANALYSER, "Set @Identity");
-                changes = true;
-            }
-            boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                    e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
-            if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                methodAnalysis.annotations.put(typeContext.identity.get(), false);
-                log(ANALYSER, "Set NOT @Identity");
-                changes = true;
-            }
-
-            //@Fluent
-            boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                    e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
-                    .count() == returnStatements;
-            if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                methodAnalysis.annotations.put(typeContext.fluent.get(), true);
-                changes = true;
-                log(ANALYSER, "Set @Fluent");
-            }
-            boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                    e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
-            if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                methodAnalysis.annotations.put(typeContext.fluent.get(), false);
-                log(ANALYSER, "Set NOT @Fluent");
-                changes = true;
-            }
-
-            // @NotNull
-            boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
-                    .count() == returnStatements;
-            if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                methodAnalysis.annotations.put(typeContext.notNull.get(), true);
-                log(ANALYSER, "Set @NotNull");
-                changes = true;
-            }
-            boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
-            if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                methodAnalysis.annotations.put(typeContext.notNull.get(), false);
-                log(ANALYSER, "Set NOT @Identity");
-                changes = true;
-            }
-        } else {
-            if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                log(ANALYSER, "Set NOT @Identity on " + methodInfo.fullyQualifiedName() + ", no return statements");
-                methodAnalysis.annotations.put(typeContext.identity.get(), false);
-            }
-            if (!methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                log(ANALYSER, "Set NOT @Fluent on " + methodInfo.fullyQualifiedName() + ", no return statements");
-                methodAnalysis.annotations.put(typeContext.fluent.get(), false);
-            }
-        }
-
-        // detect pure will rely on @Identity, @Fluent...
-        if (!methodInfo.isConstructor) {
-            if (methodInfo.isStatic) {
-                if (!methodAnalysis.createObjectOfSelf.isSet()) {
-                    boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.findInExpression(NewObject.class).stream())
-                            .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
-                    log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
-                    methodAnalysis.createObjectOfSelf.set(createSelf);
+                //@Identity
+                boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                        e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
+                        .count() == returnStatements;
+                if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                    methodAnalysis.annotations.put(typeContext.identity.get(), true);
+                    log(ANALYSER, "Set @Identity");
                     changes = true;
                 }
+                boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                        e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
+                if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                    methodAnalysis.annotations.put(typeContext.identity.get(), false);
+                    log(ANALYSER, "Set NOT @Identity");
+                    changes = true;
+                }
+
+                //@Fluent
+                boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                        e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
+                        .count() == returnStatements;
+                if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                    methodAnalysis.annotations.put(typeContext.fluent.get(), true);
+                    changes = true;
+                    log(ANALYSER, "Set @Fluent");
+                }
+                boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                        e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
+                if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                    methodAnalysis.annotations.put(typeContext.fluent.get(), false);
+                    log(ANALYSER, "Set NOT @Fluent");
+                    changes = true;
+                }
+
+                // @NotNull
+                boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
+                        .count() == returnStatements;
+                if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                    methodAnalysis.annotations.put(typeContext.notNull.get(), true);
+                    log(ANALYSER, "Set @NotNull");
+                    changes = true;
+                }
+                boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
+                if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                    methodAnalysis.annotations.put(typeContext.notNull.get(), false);
+                    log(ANALYSER, "Set NOT @Identity");
+                    changes = true;
+                }
+            } else {
+                if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+                    log(ANALYSER, "Set NOT @Identity on " + methodInfo.fullyQualifiedName() + ", no return statements");
+                    methodAnalysis.annotations.put(typeContext.identity.get(), false);
+                }
+                if (!methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+                    log(ANALYSER, "Set NOT @Fluent on " + methodInfo.fullyQualifiedName() + ", no return statements");
+                    methodAnalysis.annotations.put(typeContext.fluent.get(), false);
+                }
             }
-            if (detectNotModified(methodInfo, methodAnalysis)) changes = true;
+
+            // detect pure will rely on @Identity, @Fluent...
+            if (!methodInfo.isConstructor) {
+                if (methodInfo.isStatic) {
+                    if (!methodAnalysis.createObjectOfSelf.isSet()) {
+                        boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.findInExpression(NewObject.class).stream())
+                                .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
+                        log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
+                        methodAnalysis.createObjectOfSelf.set(createSelf);
+                        changes = true;
+                    }
+                }
+                if (detectNotModified(methodInfo, methodAnalysis)) changes = true;
+            }
+            return changes;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
+            throw rte;
         }
-        return changes;
     }
 
     private boolean emptyOrAllStatic(SetOnceMap<FieldInfo, Boolean> map) {

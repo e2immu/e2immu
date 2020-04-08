@@ -18,11 +18,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
 
 @E2Immutable
 public class NullConstant implements Expression, Constant<Object> {

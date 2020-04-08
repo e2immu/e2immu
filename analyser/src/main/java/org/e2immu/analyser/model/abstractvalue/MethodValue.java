@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashSet;
 import java.util.List;

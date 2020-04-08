@@ -19,18 +19,18 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashSet;
 import java.util.List;

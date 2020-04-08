@@ -18,12 +18,15 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.model.ExpressionWithMethodReferenceResolution;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.Objects;
 import java.util.Set;

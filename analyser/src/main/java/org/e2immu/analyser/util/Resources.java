@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.jar.JarFile;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOURCES;

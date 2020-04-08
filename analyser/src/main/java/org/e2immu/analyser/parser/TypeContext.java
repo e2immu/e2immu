@@ -18,15 +18,14 @@
 
 package org.e2immu.analyser.parser;
 
-import com.github.javaparser.Position;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.FieldAccess;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.*;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.util.Lazy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -240,6 +239,8 @@ public class TypeContext {
         }
     }
 
+    public static final int IGNORE_PARAMETER_NUMBERS = -1;
+
     public List<MethodCandidate> resolveConstructor(ParameterizedType typeOfObject,
                                                     int parametersPresented,
                                                     Map<NamedType, ParameterizedType> typeMap) {
@@ -250,7 +251,7 @@ public class TypeContext {
             return List.of(new MethodCandidate(new MethodTypeParameterMap(emptyConstructor(typeInfo), Map.of()), Set.of()));
         }
         return typeInfo.typeInspection.get().constructors.stream()
-                .filter(m -> compatibleNumberOfParameters(m, parametersPresented))
+                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))
                 .collect(Collectors.toList());
     }
@@ -291,7 +292,7 @@ public class TypeContext {
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)
-                .filter(m -> compatibleNumberOfParameters(m, parametersPresented))
+                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))
                 .forEach(result::add);
 

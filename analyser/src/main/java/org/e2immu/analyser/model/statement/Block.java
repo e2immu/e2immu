@@ -20,13 +20,13 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;

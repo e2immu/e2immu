@@ -27,6 +27,8 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -35,6 +37,8 @@ import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class StatementAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
+
     private final TypeContext typeContext;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
@@ -46,80 +50,85 @@ public class StatementAnalyser {
     }
 
     boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, VariableProperties variableProperties) {
-        boolean changes = false;
-        NumberedStatement statement = startStatement;
-        boolean neverContinues = false;
-        boolean escapes = false;
-        while (statement != null) {
-            if (computeVariablePropertiesOfStatement(statement, variableProperties)) changes = true;
+        try {
+            boolean changes = false;
+            NumberedStatement statement = startStatement;
+            boolean neverContinues = false;
+            boolean escapes = false;
+            while (statement != null) {
+                if (computeVariablePropertiesOfStatement(statement, variableProperties)) changes = true;
 
-            if (statement.statement instanceof ReturnStatement ||
-                    statement.statement instanceof ThrowStatement) neverContinues = true;
-            if (statement.statement instanceof ThrowStatement) {
-                escapes = true;
+                if (statement.statement instanceof ReturnStatement ||
+                        statement.statement instanceof ThrowStatement) neverContinues = true;
+                if (statement.statement instanceof ThrowStatement) {
+                    escapes = true;
+                }
+                if (statement.neverContinues.isSet() && statement.neverContinues.get()) neverContinues = true;
+                if (statement.escapes.isSet() && statement.escapes.get()) escapes = true;
+                statement = statement.next.get().orElse(null);
             }
-            if (statement.neverContinues.isSet() && statement.neverContinues.get()) neverContinues = true;
-            if (statement.escapes.isSet() && statement.escapes.get()) escapes = true;
-            statement = statement.next.get().orElse(null);
-        }
-        if (!startStatement.neverContinues.isSet()) {
-            log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
-            startStatement.neverContinues.set(neverContinues);
-            changes = true;
-        }
-        if (!startStatement.escapes.isSet()) {
-            log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapes);
-            startStatement.escapes.set(escapes);
-            changes = true;
+            if (!startStatement.neverContinues.isSet()) {
+                log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
+                startStatement.neverContinues.set(neverContinues);
+                changes = true;
+            }
+            if (!startStatement.escapes.isSet()) {
+                log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapes);
+                startStatement.escapes.set(escapes);
+                changes = true;
 
-            if (escapes) {
-                List<Value> conditionals = variableProperties.getNullConditionals();
-                for (Value value : conditionals) {
-                    Optional<Variable> isNull = value.variableIsNull();
-                    if (isNull.isPresent()) {
-                        Variable variable = isNull.get();
-                        log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
-                        if (variable instanceof ParameterInfo) {
-                            ParameterInfo parameterInfo = (ParameterInfo) variable;
-                            if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                                parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                                log(NULL_NOT_ALLOWED, "Mark parameter {} as @NullNotAllowed", variable.detailedString());
-                                changes = true;
-                            }
-                        } else if (variable instanceof FieldReference) {
-                            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                            if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                                fieldInfo.fieldAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                                log(NULL_NOT_ALLOWED, "Mark field {} as @NullNotAllowed", fieldInfo.fullyQualifiedName());
-                                changes = true;
+                if (escapes) {
+                    List<Value> conditionals = variableProperties.getNullConditionals();
+                    for (Value value : conditionals) {
+                        Optional<Variable> isNull = value.variableIsNull();
+                        if (isNull.isPresent()) {
+                            Variable variable = isNull.get();
+                            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
+                            if (variable instanceof ParameterInfo) {
+                                ParameterInfo parameterInfo = (ParameterInfo) variable;
+                                if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
+                                    parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
+                                    log(NULL_NOT_ALLOWED, "Mark parameter {} as @NullNotAllowed", variable.detailedString());
+                                    changes = true;
+                                }
+                            } else if (variable instanceof FieldReference) {
+                                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                                if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
+                                    fieldInfo.fieldAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
+                                    log(NULL_NOT_ALLOWED, "Mark field {} as @NullNotAllowed", fieldInfo.fullyQualifiedName());
+                                    changes = true;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            Set<VariableProperty> properties = entry.getValue().properties;
-            if (properties.contains(VariableProperty.CREATED) &&
-                    !properties.contains(VariableProperty.READ)) {
-                if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
-                LocalVariable localVariable = ((LocalVariableReference) variable).variable;
-                if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
-                    methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                    log(ANALYSER, "Mark local variable {} as unused", localVariable.name);
-                    changes = true;
+            for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
+                Variable variable = entry.getKey();
+                Set<VariableProperty> properties = entry.getValue().properties;
+                if (properties.contains(VariableProperty.CREATED) &&
+                        !properties.contains(VariableProperty.READ)) {
+                    if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
+                    LocalVariable localVariable = ((LocalVariableReference) variable).variable;
+                    if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
+                        methodAnalysis.unusedLocalVariables.put(localVariable, true);
+                        log(ANALYSER, "Mark local variable {} as unused", localVariable.name);
+                        changes = true;
+                    }
                 }
             }
-        }
-        if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
-            log(LINKED_VARIABLES, "Dependency graph of linked variables:");
-            variableProperties.dependencyGraph.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
-                    list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
-        }
+            if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
+                log(LINKED_VARIABLES, "Dependency graph of linked variables:");
+                variableProperties.dependencyGraph.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+                        list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
+            }
 
-        return changes;
+            return changes;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception in statement analyser {}", startStatement.streamIndices());
+            throw rte;
+        }
     }
 
     private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,

@@ -18,13 +18,13 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.annotationxml.AnnotationStore;
-import org.objectweb.asm.*;
+import org.e2immu.analyser.util.Resources;
+import org.objectweb.asm.ClassReader;
 
 import java.util.ArrayList;
 import java.util.List;

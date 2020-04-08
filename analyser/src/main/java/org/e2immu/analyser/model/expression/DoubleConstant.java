@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.DoubleValue;
-import org.e2immu.analyser.model.value.LongValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;

@@ -19,12 +19,12 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Optional;

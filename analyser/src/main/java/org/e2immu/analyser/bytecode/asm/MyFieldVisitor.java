@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;

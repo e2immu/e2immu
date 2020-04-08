@@ -19,12 +19,13 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.BuilderWithAnnotations;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;

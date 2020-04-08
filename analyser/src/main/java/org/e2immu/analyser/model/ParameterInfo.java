@@ -20,11 +20,11 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import org.e2immu.annotation.Container;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.Container;
 
 import java.util.HashSet;
 import java.util.Objects;

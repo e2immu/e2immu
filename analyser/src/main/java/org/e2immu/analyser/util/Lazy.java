@@ -22,7 +22,8 @@ import org.e2immu.annotation.*;
 
 import java.util.Objects;
 import java.util.function.Supplier;
-import static org.e2immu.annotation.AnnotationType.*;
+
+import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 /**
  * Implementation of a lazy value, where <code>null</code> is used to indicate that the value has not been

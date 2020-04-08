@@ -20,11 +20,14 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.google.common.collect.Sets;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
@@ -86,11 +89,25 @@ public class BinaryOperator implements Expression {
             }
             return EqualsValue.equals(l, r);
         }
+        if (operator == Primitives.PRIMITIVES.equalsOperatorInt) {
+            if (l.equals(r)) return BoolValue.TRUE;
+            if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
+                throw new UnsupportedOperationException();
+            }
+            return EqualsValue.equals(l, r);
+        }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorObject) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE && r.isNotNull(evaluationContext) == Boolean.TRUE ||
                     r == NullValue.NULL_VALUE && l.isNotNull(evaluationContext) == Boolean.TRUE) {
                 return BoolValue.TRUE;
+            }
+            return NegatedValue.negate(EqualsValue.equals(l, r));
+        }
+        if (operator == Primitives.PRIMITIVES.notEqualsOperatorInt) {
+            if (l.equals(r)) return BoolValue.FALSE;
+            if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
+                throw new UnsupportedOperationException();
             }
             return NegatedValue.negate(EqualsValue.equals(l, r));
         }
@@ -191,6 +208,10 @@ public class BinaryOperator implements Expression {
                     return Primitives.PRIMITIVES.lessOperatorInt;
                 case LESS_EQUALS:
                     return Primitives.PRIMITIVES.lessEqualsOperatorInt;
+                case EQUALS:
+                    return Primitives.PRIMITIVES.equalsOperatorInt;
+                case NOT_EQUALS:
+                    return Primitives.PRIMITIVES.notEqualsOperatorInt;
             }
         }
         // TODO type could be void even (method call, not yet inspected)
@@ -236,9 +257,11 @@ public class BinaryOperator implements Expression {
         throw new UnsupportedOperationException("? unknown operator " + operator);
     }
 
+    // TODO needs cleanup
     @Override
     public ParameterizedType returnType() {
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject || operator == Primitives.PRIMITIVES.notEqualsOperatorObject
+                || operator == Primitives.PRIMITIVES.equalsOperatorInt || operator == Primitives.PRIMITIVES.notEqualsOperatorInt
                 || operator == Primitives.PRIMITIVES.lessEqualsOperatorInt || operator == Primitives.PRIMITIVES.lessOperatorInt
                 || operator == Primitives.PRIMITIVES.greaterEqualsOperatorInt || operator == Primitives.PRIMITIVES.greaterOperatorInt
                 || operator == Primitives.PRIMITIVES.orOperatorBool || operator == Primitives.PRIMITIVES.andOperatorBool) {

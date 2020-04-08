@@ -95,6 +95,10 @@ public class Primitives {
     public final MethodInfo divideOperatorInt = new MethodInfo(intTypeInfo, "/",
             List.of(), intParameterizedType, true);
 
+    public final MethodInfo equalsOperatorInt = new MethodInfo(intTypeInfo, "==",
+            List.of(), booleanParameterizedType, true);
+    public final MethodInfo notEqualsOperatorInt = new MethodInfo(intTypeInfo, "!=",
+            List.of(), booleanParameterizedType, true);
     public final MethodInfo greaterOperatorInt = new MethodInfo(intTypeInfo, ">",
             List.of(), booleanParameterizedType, true);
     public final MethodInfo greaterEqualsOperatorInt = new MethodInfo(intTypeInfo, ">=",

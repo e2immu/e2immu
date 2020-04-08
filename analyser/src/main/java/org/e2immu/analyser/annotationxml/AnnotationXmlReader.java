@@ -19,8 +19,8 @@
 package org.e2immu.analyser.annotationxml;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.annotationxml.model.*;
+import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.E2Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

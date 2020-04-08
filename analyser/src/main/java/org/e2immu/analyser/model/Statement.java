@@ -19,11 +19,11 @@
 package org.e2immu.analyser.model;
 
 
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.List;
 import java.util.Optional;

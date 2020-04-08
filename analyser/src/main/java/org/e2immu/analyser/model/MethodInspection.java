@@ -20,9 +20,9 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;

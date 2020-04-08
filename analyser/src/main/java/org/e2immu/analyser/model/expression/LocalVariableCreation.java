@@ -19,13 +19,13 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.HashSet;
 import java.util.List;

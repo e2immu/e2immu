@@ -21,8 +21,11 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;

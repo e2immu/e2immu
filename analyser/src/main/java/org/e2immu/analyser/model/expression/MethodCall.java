@@ -20,10 +20,10 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;

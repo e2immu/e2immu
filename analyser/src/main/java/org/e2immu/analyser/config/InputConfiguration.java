@@ -19,7 +19,6 @@
 package org.e2immu.analyser.config;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Fluent;

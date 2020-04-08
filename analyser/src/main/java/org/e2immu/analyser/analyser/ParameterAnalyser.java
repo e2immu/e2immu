@@ -18,12 +18,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NullNotAllowed;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;

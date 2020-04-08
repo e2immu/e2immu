@@ -30,6 +30,21 @@ public class TestIsAssignableFrom {
     }
 
     @Test
+    public void testArray() {
+        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeStore.get("java.lang.String")), 1);
+        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeStore.get("java.lang.CharSequence")), 1);
+
+        String[] strings = {"a", "b"};
+        CharSequence[] sequences = strings;
+        for (CharSequence sequence : sequences) {
+            Assert.assertEquals(1, sequence.length());
+        }
+        Assert.assertFalse(stringArrayPt.isAssignableFrom(charSeqArrayPt));
+        Assert.assertTrue(charSeqArrayPt.isAssignableFrom(stringArrayPt));
+    }
+
+
+    @Test
     public void testNull() {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
 

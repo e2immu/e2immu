@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Set;
