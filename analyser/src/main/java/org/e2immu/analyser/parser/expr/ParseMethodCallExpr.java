@@ -57,7 +57,7 @@ public class ParseMethodCallExpr {
         log(METHOD_CALL, "Type map of method call {} is {}", methodCallExpr.getNameAsString(), typeMap);
         String methodName = methodCallExpr.getName().asString();
         List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();
-        expressionContext.typeContext.recursivelyResolveOverloadedMethods(typeOfObject, methodName, methodCallExpr.getArguments().size(), typeMap, methodCandidates);
+        expressionContext.typeContext.recursivelyResolveOverloadedMethods(typeOfObject, methodName, methodCallExpr.getArguments().size(), false, typeMap, methodCandidates);
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("No method candidates for method " + methodName);
         }

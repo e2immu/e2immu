@@ -45,6 +45,8 @@ public class TypeContext {
     private final List<Message> messages;
     private final List<TypeInfo> importStaticAsterisk;
     private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
+
+    // TODO at some point move the lazy's to typeStore, and use methods here to grab them
     public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));
     public final Lazy<AnnotationExpression> container = new Lazy<>(() -> create(Container.class));
     public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
@@ -83,8 +85,8 @@ public class TypeContext {
     public TypeContext(String packageName, TypeContext parentContext) {
         this.parentContext = Objects.requireNonNull(parentContext);
         typeStore = parentContext.typeStore;
-        importStaticMemberToTypeInfo = parentContext.importStaticMemberToTypeInfo;
-        importStaticAsterisk = parentContext.importStaticAsterisk;
+        importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
+        importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         messages = List.of();
         this.packageName = packageName;
     }
@@ -100,8 +102,8 @@ public class TypeContext {
     public TypeContext(TypeContext parentContext, String packageName, TypeStore typeStore) {
         this.parentContext = Objects.requireNonNull(parentContext);
         this.typeStore = typeStore;
-        importStaticMemberToTypeInfo = parentContext.importStaticMemberToTypeInfo;
-        importStaticAsterisk = parentContext.importStaticAsterisk;
+        importStaticMemberToTypeInfo = new HashMap<>( parentContext.importStaticMemberToTypeInfo);
+        importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         messages = List.of();
         this.packageName = packageName;
     }
@@ -259,14 +261,16 @@ public class TypeContext {
     public void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
                                                     String methodName,
                                                     int parametersPresented,
+                                                    boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result) {
-        recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, typeMap, result, new HashSet<>());
+        recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, new HashSet<>());
     }
 
     private void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
                                                      String methodName,
                                                      int parametersPresented,
+                                                     boolean decrementWhenNotStatic,
                                                      Map<NamedType, ParameterizedType> typeMap,
                                                      List<MethodCandidate> result,
                                                      Set<TypeInfo> visited) {
@@ -275,21 +279,21 @@ public class TypeContext {
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
-                resolveOverloadedMethodsSingleType(typeInfo, false, methodName, parametersPresented, typeMap, result, visited);
+                resolveOverloadedMethodsSingleType(typeInfo, false, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
             }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
         for (TypeInfo typeInfo : importStaticAsterisk) {
             if (!visited.contains(typeInfo)) {
                 visited.add(typeInfo);
-                resolveOverloadedMethodsSingleType(typeInfo, true, methodName, parametersPresented, typeMap, result, visited);
+                resolveOverloadedMethodsSingleType(typeInfo, true, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
             }
         }
         // or import by name
         TypeInfo byName = importStaticMemberToTypeInfo.get(methodName);
         if (byName != null && !visited.contains(byName)) {
             visited.add(byName);
-            resolveOverloadedMethodsSingleType(byName, true, methodName, parametersPresented, typeMap, result, visited);
+            resolveOverloadedMethodsSingleType(byName, true, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
         }
     }
 
@@ -297,6 +301,7 @@ public class TypeContext {
                                                     boolean staticOnly,
                                                     String methodName,
                                                     int parametersPresented,
+                                                    boolean decrementWhenNotStatic,
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
                                                     Set<TypeInfo> visited) {
@@ -307,19 +312,20 @@ public class TypeContext {
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)
-                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
+                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented +
+                        (!m.isStatic && decrementWhenNotStatic ? -1 : 0)))
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
         if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, joinMaps(typeMap, parentClass), result, visited);
+            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, parentClass), result, visited);
         }
         for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.get().interfacesImplemented) {
-            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, joinMaps(typeMap, interfaceImplemented), result, visited);
+            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited);
         }
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
-            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, typeMap, result, visited);
+            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited);
         }
     }
 

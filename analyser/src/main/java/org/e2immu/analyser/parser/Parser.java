@@ -135,6 +135,7 @@ public class Parser {
         return sortedTypes;
     }
 
+    // only meant to be used in tests!!
     public TypeContext getTypeContext() {
         return globalTypeContext;
     }

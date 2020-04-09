@@ -44,18 +44,7 @@ public class ParseMethodReferenceExpr {
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
-        // the following examples say that you should look for a method with identical number of parameters:
-        // e.g. Function<T, R> has R apply(T t), and we present C::new (where C has a constructor C(String s) { .. }
-        // e.g. Consumer<T> has void accept(T t), and we present System.out::println
-
-        // but this example says you need to subtract:
-        // e.g. Function<T, R> has R apply(T t), and we present Object::toString
-
-        // the difference is that there is an object scope in the 3rd example, whereas there are none in the first 2
-        boolean subTractBecauseOfScope = !constructor &&
-                !(scope instanceof TypeExpression) &&
-                !((scope instanceof FieldAccess && ((FieldAccess) scope).variable.isStatic()));
-        int parametersPresented = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size() - (subTractBecauseOfScope ? 1 : 0);
+        int parametersPresented = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size();
         List<TypeContext.MethodCandidate> methodCandidates;
         String methodNameForErrorReporting;
         if (constructor) {
@@ -67,8 +56,17 @@ public class ParseMethodReferenceExpr {
         } else {
             methodCandidates = new ArrayList<>();
             methodNameForErrorReporting = "method " + methodName;
+
+            // the following examples say that you should look for a method with identical number of parameters:
+            // e.g. Function<T, R> has R apply(T t), and we present C::new (where C has a constructor C(String s) { .. }
+            // e.g. Consumer<T> has void accept(T t), and we present System.out::println
+            // e.g. Functional interface LogMethod:  void log(LogTarget logTarget, String message, Object... objects), we present Logger::logViaLogBackClassic
+
+            // but this example says you need to subtract:
+            // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
+
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, parameterizedType.initialTypeParameterMap(), methodCandidates);
+                    methodName, parametersPresented, true, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -100,7 +98,7 @@ public class ParseMethodReferenceExpr {
         } else {
             methodCandidates = new ArrayList<>();
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(), methodCandidates);
+                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());

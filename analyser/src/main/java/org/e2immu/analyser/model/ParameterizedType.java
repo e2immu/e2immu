@@ -544,7 +544,7 @@ public class ParameterizedType {
     }
 
     public boolean isFunctionalInterface(TypeContext typeContext) {
-        if (typeInfo == null || typeInfo.typeInspection.get().typeNature != TypeNature.INTERFACE) {
+        if (typeInfo == null || typeInfo.typeInspection.get("isFunctional interface on "+typeInfo.fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
             return false;
         }
         return typeInfo.typeInspection.get().annotations.contains(typeContext.functionalInterface.get());

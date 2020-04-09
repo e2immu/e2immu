@@ -59,7 +59,7 @@ public class TestParseUtilPackage {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.util")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
