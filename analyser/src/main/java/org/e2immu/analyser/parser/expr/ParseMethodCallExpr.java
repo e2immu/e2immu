@@ -28,6 +28,8 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -37,6 +39,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseMethodCallExpr {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
+
     public static Expression parse(ExpressionContext expressionContext, MethodCallExpr methodCallExpr, MethodTypeParameterMap singleAbstractMethod) {
         log(METHOD_CALL, "Start parsing method call {}, method name {}, single abstract {}", methodCallExpr,
                 methodCallExpr.getNameAsString(), singleAbstractMethod);
@@ -119,9 +123,12 @@ public class ParseMethodCallExpr {
         }
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
         // methods with implicit type conversions, varargs, etc. etc.
-        if (methodCandidates.isEmpty())
-            throw new UnsupportedOperationException("No candidate found for method " + methodNameForErrorReporting + " in type "
+        if (methodCandidates.isEmpty()) {
+            LOGGER.warn("Evaluated expressions for {}: ", methodNameForErrorReporting);
+            evaluatedExpressions.forEach((i, expr) -> LOGGER.warn("  {} = {}", i, expr.expressionString(0)));
+            throw new UnsupportedOperationException("No candidate found for " + methodNameForErrorReporting + " in type "
                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
+        }
         if (methodCandidates.size() > 1) {
             trimMethodsWithBestScore(methodCandidates, compatibilityScore);
             if (methodCandidates.size() > 1) {
@@ -131,7 +138,7 @@ public class ParseMethodCallExpr {
                     Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
-                            throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " not found in known type "
+                            throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " found in known type "
                                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
                         }
                     }

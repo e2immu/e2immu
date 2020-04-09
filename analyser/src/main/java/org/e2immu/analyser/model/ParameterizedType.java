@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 
@@ -554,16 +555,24 @@ public class ParameterizedType {
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(TypeContext typeContext) {
-        try {
-            if (!isFunctionalInterface(typeContext)) return null;
-            MethodInfo theMethod = typeInfo.typeInspection.get().methods.stream()
-                    .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst()
-                    .orElseThrow(() -> new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString()));
-            return new MethodTypeParameterMap(theMethod, initialTypeParameterMap());
-        } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while looking for functional interface on type {}", detailedString());
-            throw rte;
+        return findSingleAbstractMethodOfInterface(typeContext, true);
+    }
+
+    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(TypeContext typeContext, boolean complain) {
+        if (!isFunctionalInterface(typeContext)) return null;
+        Optional<MethodInfo> theMethod = typeInfo.typeInspection.get().methods.stream()
+                .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
+        if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
+        for (ParameterizedType extension : typeInfo.typeInspection.get().interfacesImplemented) {
+            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(typeContext, false);
+            if (ofExtension != null) {
+                return ofExtension;
+            }
         }
+        if (complain) {
+            throw new UnsupportedOperationException("Cannot find a single abstract method in the interface " + detailedString());
+        }
+        return null;
     }
 
 }

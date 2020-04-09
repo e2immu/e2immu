@@ -49,6 +49,8 @@ public class FieldInspection extends Inspection {
     @NotNull
     public final List<FieldModifier> modifiers;
     public final FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initialiser;
+    @NotNull
+    public final FieldModifier access;
 
     @NotNull
     public final List<AnnotationExpression> annotations;
@@ -61,6 +63,14 @@ public class FieldInspection extends Inspection {
         this.annotations = annotations;
         this.initialiser = initialiser;
         this.modifiers = modifiers;
+        access = computeAccess();
+    }
+
+    private FieldModifier computeAccess() {
+        if(modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
+        if(modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
+        if(modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
+        return FieldModifier.PACKAGE;
     }
 
     public FieldInspection copy(List<AnnotationExpression> alternativeAnnotations) {

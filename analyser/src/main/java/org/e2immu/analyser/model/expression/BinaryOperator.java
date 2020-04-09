@@ -178,8 +178,16 @@ public class BinaryOperator implements Expression {
             }
         }
         if (widestType == Primitives.PRIMITIVES.booleanTypeInfo) {
-            if (operator == BinaryExpr.Operator.OR) return Primitives.PRIMITIVES.orOperatorBool;
-            if (operator == BinaryExpr.Operator.AND) return Primitives.PRIMITIVES.andOperatorBool;
+            switch (operator) {
+                case OR:
+                    return Primitives.PRIMITIVES.orOperatorBool;
+                case AND:
+                    return Primitives.PRIMITIVES.andOperatorBool;
+                case EQUALS:
+                    return Primitives.PRIMITIVES.equalsOperatorInt; // TODO should clean up
+                case NOT_EQUALS:
+                    return Primitives.PRIMITIVES.notEqualsOperatorInt;
+            }
             throw new UnsupportedOperationException();
         }
         if (widestType == Primitives.PRIMITIVES.intTypeInfo) {

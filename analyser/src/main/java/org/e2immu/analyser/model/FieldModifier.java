@@ -24,7 +24,10 @@ public enum FieldModifier {
     FINAL,
     TRANSIENT, VOLATILE,
     STATIC,
-    PRIVATE, PUBLIC, PROTECTED;
+    PRIVATE, PUBLIC, PROTECTED,
+
+    // this one obviously does not exist, but is useful so we can use this enum as an 'access' type
+    PACKAGE;
 
 
     public static FieldModifier from(Modifier m) {

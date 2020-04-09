@@ -46,7 +46,7 @@ public class UnevaluatedLambdaExpression implements Expression {
     @Override
     @NotNull
     public String expressionString(int indent) {
-        throw new UnsupportedOperationException();
+        return "<unevaluated lambda with " + numberOfParameters + " parameters>";
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -51,7 +52,9 @@ public class ParseMethodReferenceExpr {
         // e.g. Function<T, R> has R apply(T t), and we present Object::toString
 
         // the difference is that there is an object scope in the 3rd example, whereas there are none in the first 2
-        boolean subTractBecauseOfScope = !constructor && !((scope instanceof FieldAccess && ((FieldAccess) scope).variable.isStatic()));
+        boolean subTractBecauseOfScope = !constructor &&
+                !(scope instanceof TypeExpression) &&
+                !((scope instanceof FieldAccess && ((FieldAccess) scope).variable.isStatic()));
         int parametersPresented = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size() - (subTractBecauseOfScope ? 1 : 0);
         List<TypeContext.MethodCandidate> methodCandidates;
         String methodNameForErrorReporting;

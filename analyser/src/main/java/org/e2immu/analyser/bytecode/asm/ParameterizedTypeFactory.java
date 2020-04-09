@@ -139,9 +139,9 @@ public class ParameterizedTypeFactory {
                 iterativeParsing.startPos = openGenerics + 1;
                 do {
                     iterativeParsing = iterativelyParseTypes(typeContext, findType, signature, iterativeParsing);
-                    if (!iterativeParsing.result.isTypeParameter() || !typeParameters.contains(iterativeParsing.result)) {
-                        typeParameters.add(iterativeParsing.result);
-                    }
+                    //if (!iterativeParsing.result.isTypeParameter() || !typeParameters.contains(iterativeParsing.result)) {
+                    typeParameters.add(iterativeParsing.result);
+                    //} we should be repeating, e.g., BinaryOperator<T> extends BiFunction<T,T,T>
                     typeNotFoundError = typeNotFoundError || iterativeParsing.typeNotFoundError;
                 } while (iterativeParsing.more);
                 haveDot = iterativeParsing.endPos < signature.length() && signature.charAt(iterativeParsing.endPos) == '.';

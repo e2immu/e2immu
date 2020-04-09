@@ -36,6 +36,7 @@ public class Logger {
     private static LogMethod logger;
     private static Set<LogTarget> logTargets;
 
+    @FunctionalInterface
     public interface LogMethod {
         void log(LogTarget logTarget, String message, Object... objects);
     }
