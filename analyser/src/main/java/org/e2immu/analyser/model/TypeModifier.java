@@ -21,7 +21,10 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.Modifier;
 
 public enum TypeModifier {
-    ABSTRACT, PUBLIC, PROTECTED, PRIVATE, FINAL, STATIC;
+    ABSTRACT, PUBLIC, PROTECTED, PRIVATE, FINAL, STATIC,
+
+    // added to be able to use this type for access privileges
+    PACKAGE;
 
     public static TypeModifier from(Modifier modifier) {
         Modifier.Keyword keyword = modifier.getKeyword();

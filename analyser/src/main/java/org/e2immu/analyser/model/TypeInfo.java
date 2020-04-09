@@ -40,10 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -124,16 +122,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     /**
-     * @param hasBeenDefined    when true, parsing .java; otherwise, parsing .annotated_api
-     * @param enclosingType     when not null, denotes the parent type; otherwise, this is a primary type
-     * @param typeDeclaration   the JavaParser object to inspect
-     * @param expressionContext the context to inspect in
+     * @param hasBeenDefined           when true, parsing .java; otherwise, parsing .annotated_api
+     * @param enclosingTypeIsInterface when true, the enclosing type is an interface, and we need to add PUBLIC
+     * @param enclosingType            when not null, denotes the parent type; otherwise, this is a primary type
+     * @param typeDeclaration          the JavaParser object to inspect
+     * @param expressionContext        the context to inspect in
      */
     public void inspect(boolean hasBeenDefined,
+                        boolean enclosingTypeIsInterface,
                         TypeInfo enclosingType,
                         TypeDeclaration<?> typeDeclaration,
                         ExpressionContext expressionContext) {
-        LOGGER.info("Inspecting type " + fullyQualifiedName);
+        LOGGER.info("Inspecting type {}", fullyQualifiedName);
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         if (enclosingType != null) {
             builder.setEnclosingType(enclosingType);
@@ -144,6 +144,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         TypeNature typeNature = typeNature(typeDeclaration);
         builder.setTypeNature(typeNature);
+
+        if (enclosingTypeIsInterface) {
+            builder.addTypeModifier(TypeModifier.PUBLIC);
+            if (typeNature == TypeNature.INTERFACE) {
+                builder.addTypeModifier(TypeModifier.STATIC);
+            }
+        }
 
         if (typeDeclaration instanceof EnumDeclaration) {
             doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration, builder);
@@ -331,13 +338,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
                 TypeInfo subType = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + cid.getNameAsString());
                 ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, this, cid.asTypeDeclaration(), newExpressionContext);
+                subType.inspect(hasBeenDefined, isInterface, this, cid.asTypeDeclaration(), newExpressionContext);
                 builder.addSubType(subType);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
                 TypeInfo subType = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + ed.getNameAsString());
                 ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, this, ed.asTypeDeclaration(), newExpressionContext);
+                subType.inspect(hasBeenDefined, isInterface, this, ed.asTypeDeclaration(), newExpressionContext);
                 builder.addSubType(subType);
             });
         }
@@ -360,7 +367,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                     .addAnnotations(annotations)
                                     .addModifiers(modifiers);
                     if (isInterface) {
-                        fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
+                        fieldInspectionBuilder
+                                .addModifier(FieldModifier.STATIC)
+                                .addModifier(FieldModifier.FINAL)
+                                .addModifier(FieldModifier.PUBLIC);
                     }
                     if (vd.getInitializer().isPresent()) {
                         fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
@@ -392,6 +402,40 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             });
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
+    }
+
+    public Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream() {
+        return accessibleBySimpleNameTypeInfoStream(this, new HashSet<>());
+    }
+
+    private Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(TypeInfo startingPoint, Set<TypeInfo> visited) {
+        if (visited.contains(this)) return Stream.empty();
+        visited.add(this);
+        Stream<TypeInfo> mySelf = Stream.of(this);
+
+        TypeInspection typeInspection = this.typeInspection.get();
+        boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
+        boolean inSamePackage = !inSameCompilationUnit &&
+                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
+                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+
+        Stream<TypeInfo> localStream = typeInspection.subTypes
+                .stream()
+                .filter(typeInfo -> inSameCompilationUnit ||
+                        typeInfo.typeInspection.get().access == TypeModifier.PUBLIC ||
+                        inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PACKAGE ||
+                        !inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PROTECTED);
+        Stream<TypeInfo> parentStream;
+        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+            parentStream = typeInspection.parentClass.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
+        } else parentStream = Stream.empty();
+
+        Stream<TypeInfo> joint = Stream.concat(Stream.concat(mySelf, localStream), parentStream);
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+            Stream<TypeInfo> fromInterface = interfaceType.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
+            joint = Stream.concat(joint, fromInterface);
+        }
+        return joint;
     }
 
     public Stream<FieldInfo> accessibleFieldsStream() {
@@ -725,9 +769,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             parent = Objects.requireNonNull(parentPt.typeInfo);
         }
         list.add(parent);
-        typeInspection.get().interfacesImplemented.forEach(i -> {
-            list.add(i.typeInfo);
-        });
+        typeInspection.get().interfacesImplemented.forEach(i -> list.add(i.typeInfo));
         return list;
     }
 

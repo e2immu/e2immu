@@ -42,7 +42,7 @@ public class Resolver {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
-
+        
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
                 recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue());
@@ -102,8 +102,10 @@ public class Resolver {
                 typeContextOfType, typeDependencies);
 
         expressionContext.typeContext.addToContext(typeInfo);
-        typeInspection.subTypes.forEach(expressionContext.typeContext::addToContext);
         typeInspection.typeParameters.forEach(expressionContext.typeContext::addToContext);
+
+        // add visible types to the type context
+        typeInfo.accessibleBySimpleNameTypeInfoStream().forEach(expressionContext.typeContext::addToContext);
 
         // add visible fields to variable context
         typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
@@ -166,13 +168,12 @@ public class Resolver {
                         annotationExpression.resolve(expressionContext);
                     }
                 });
-                methodInspection.parameters.forEach(parameterInfo -> {
-                    parameterInfo.parameterInspection.get().annotations.forEach(annotationExpression -> {
-                        if (!annotationExpression.expressions.isSet()) {
-                            annotationExpression.resolve(expressionContext);
-                        }
-                    });
-                });
+                methodInspection.parameters.forEach(parameterInfo -> parameterInfo.parameterInspection
+                        .get().annotations.forEach(annotationExpression -> {
+                            if (!annotationExpression.expressions.isSet()) {
+                                annotationExpression.resolve(expressionContext);
+                            }
+                        }));
 
                 // BODY
 

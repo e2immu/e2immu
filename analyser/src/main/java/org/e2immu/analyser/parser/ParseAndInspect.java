@@ -183,7 +183,7 @@ public class ParseAndInspect {
                 try {
                     ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
                             new TypeContext(packageName, typeContextOfFile));
-                    typeInfo.inspect(hasBeenDefined, null, td, expressionContext);
+                    typeInfo.inspect(hasBeenDefined, false, null, td, expressionContext);
                 } catch (RuntimeException rte) {
                     LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
                     throw rte;

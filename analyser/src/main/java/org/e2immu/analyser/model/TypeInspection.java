@@ -60,6 +60,7 @@ public class TypeInspection extends Inspection {
 
     public final SetOnceMap<MethodInfo, Set<MethodInfo>> overloads = new SetOnceMap<>();
     public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
+    public final TypeModifier access;
 
     private TypeInspection(boolean hasBeenDefined,
                            TypeInfo typeInfo,
@@ -91,6 +92,10 @@ public class TypeInspection extends Inspection {
         else {
             this.hasBeenDefined = hasBeenDefined;
         }
+        if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
+        else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
+        else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
+        else access = TypeModifier.PACKAGE;
     }
 
     public boolean isClass() {
