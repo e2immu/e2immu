@@ -58,7 +58,7 @@ public class ParseFieldAccessExpr {
         if (objectType.arrays > 0 && "length".equals(name)) return new ArrayLengthExpression(object);
 
         if (objectType.typeInfo != null) {
-            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.typeInspection.get().fields.stream().filter(f -> name.equals(f.name)).findFirst();
+            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.accessibleFieldsStream().filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {
                 return fieldAccess(expressionContext, oFieldInfo.get(), object);
             }

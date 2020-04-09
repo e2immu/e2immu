@@ -93,29 +93,6 @@ public class Resolver {
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
     }
 
-    private void addFieldsToVariableContext(ExpressionContext expressionContext, TypeInfo typeInfo, TypeInfo startingPoint) {
-        This thisScope = new This(typeInfo);
-        TypeInspection typeInspection = typeInfo.typeInspection.get();
-        boolean inSameCompilationUnit = typeInfo == startingPoint || typeInfo.primaryType() == startingPoint.primaryType();
-        boolean inSamePackage = !inSameCompilationUnit &&
-                typeInfo.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
-                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
-        typeInspection.fields
-                .stream()
-                .filter(fieldInfo -> inSameCompilationUnit ||
-                        fieldInfo.fieldInspection.get().access == FieldModifier.PUBLIC ||
-                        inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PACKAGE ||
-                        !inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PROTECTED)
-                .forEach(fieldInfo -> expressionContext.variableContext.add(
-                        new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisScope)));
-        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-            addFieldsToVariableContext(expressionContext, typeInspection.parentClass.typeInfo, startingPoint);
-        }
-        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
-            addFieldsToVariableContext(expressionContext, interfaceType.typeInfo, startingPoint);
-        }
-    }
-
     private DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
 
@@ -128,7 +105,9 @@ public class Resolver {
         typeInspection.subTypes.forEach(expressionContext.typeContext::addToContext);
         typeInspection.typeParameters.forEach(expressionContext.typeContext::addToContext);
 
-        addFieldsToVariableContext(expressionContext, typeInfo, typeInfo);
+        // add visible fields to variable context
+        typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
+                fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = new DependencyGraph<>();
 

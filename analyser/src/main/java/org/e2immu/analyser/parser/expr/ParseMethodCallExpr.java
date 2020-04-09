@@ -236,21 +236,23 @@ public class ParseMethodCallExpr {
                 MethodTypeParameterMap singleAbstractMethod = null;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
-                    ParameterInfo pi = mi.parameters.get(i);
-                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
-                    if (isFunctionalInterface) {
-                        if (functionalInterface == null) {
-                            functionalInterface = pi.parameterizedType;
-                            mcOfFunctionalInterface = mc;
-                            singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-                        } else {
-                            MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-                            if (!compatibleFunctionalInterfaces(sam2, singleAbstractMethod)) {
-                                log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
-                                        pi.parameterizedType.detailedString(), functionalInterface.detailedString(),
-                                        mi.distinguishingName, mcOfFunctionalInterface.method.methodInfo.distinguishingName());
-                                functionalInterface = null;
-                                break;
+                    if (i < mi.parameters.size()) {
+                        ParameterInfo pi = mi.parameters.get(i);
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                        if (isFunctionalInterface) {
+                            if (functionalInterface == null) {
+                                functionalInterface = pi.parameterizedType;
+                                mcOfFunctionalInterface = mc;
+                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                            } else {
+                                MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                                if (!compatibleFunctionalInterfaces(sam2, singleAbstractMethod)) {
+                                    log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
+                                            pi.parameterizedType.detailedString(), functionalInterface.detailedString(),
+                                            mi.distinguishingName, mcOfFunctionalInterface.method.methodInfo.distinguishingName());
+                                    functionalInterface = null;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -280,11 +282,16 @@ public class ParseMethodCallExpr {
                 boolean ok = true;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
-                    ParameterInfo pi = mi.parameters.get(i);
-                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
-                    if (isFunctionalInterface) {
+                    if (i < mi.parameters.size()) {
+                        ParameterInfo pi = mi.parameters.get(i);
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                        if (isFunctionalInterface) {
+                            ok = false;
+                            break;
+                        }
+                    } else {
+                        // we have more parameters than mi, which is using a varargs
                         ok = false;
-                        break;
                     }
                 }
                 if (ok) return i;

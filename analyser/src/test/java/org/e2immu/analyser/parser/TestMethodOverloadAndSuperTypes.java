@@ -59,6 +59,24 @@ public class TestMethodOverloadAndSuperTypes {
     }
 
     @Test
+    public void testSetCollectionEquals() throws IOException {
+        Parser parser = new Parser();
+        TypeContext typeContext = parser.getTypeContext();
+        TypeInfo set = typeContext.typeStore.get("java.util.Set");
+        Assert.assertNotNull(set);
+        MethodInfo equalsInSet = set.typeInspection.get().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        Set<MethodInfo> overloads = set.overloads(equalsInSet, typeContext);
+        TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
+        Assert.assertNotNull(collection);
+        MethodInfo equalsInCollection = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        Assert.assertTrue(overloads.contains(equalsInCollection));
+        TypeInfo object = typeContext.typeStore.get("java.lang.Object");
+        Assert.assertNotNull(object);
+        MethodInfo equalsInObject = object.typeInspection.get().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        Assert.assertTrue(overloads.contains(equalsInObject));
+    }
+
+    @Test
     public void test() throws IOException {
         Parser parser = new Parser();
         TypeInfo methodOverloadOrig = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample.MethodOverload");

@@ -26,7 +26,7 @@ public enum FieldModifier {
     STATIC,
     PRIVATE, PUBLIC, PROTECTED,
 
-    // this one obviously does not exist, but is useful so we can use this enum as an 'access' type
+    // this one obviously does not exist as a field modifier in Java code, but is useful so we can use this enum as an 'access' type
     PACKAGE;
 
 

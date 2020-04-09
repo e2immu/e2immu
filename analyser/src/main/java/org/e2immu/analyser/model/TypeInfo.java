@@ -40,8 +40,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -197,8 +199,22 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 Primitives.PRIMITIVES.stringParameterizedType, false);
         nameMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notModified.get())
-                .setReturnType(Primitives.PRIMITIVES.stringParameterizedType).build(nameMethodInfo));
-        builder.addMethod(nameMethodInfo);
+                .setReturnType(Primitives.PRIMITIVES.stringParameterizedType)
+                .build(nameMethodInfo));
+
+        MethodInfo valueOfMethodInfo = new MethodInfo(this, "valueOf", List.of(),
+                Primitives.PRIMITIVES.stringParameterizedType, true);
+        ParameterInfo valueOfP0 = new ParameterInfo(Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
+        valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
+                .addAnnotation(expressionContext.typeContext.nullNotAllowed.get())
+                .build(valueOfMethodInfo));
+        valueOfMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .addAnnotation(expressionContext.typeContext.notModified.get())
+                .setReturnType(asParameterizedType())
+                .addParameter(valueOfP0)
+                .build(valueOfMethodInfo));
+
+        builder.addMethod(nameMethodInfo).addMethod(valueOfMethodInfo);
     }
 
     private void doClassOrInterfaceDeclaration(
@@ -376,6 +392,34 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             });
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
+    }
+
+    public Stream<FieldInfo> accessibleFieldsStream() {
+        return accessibleFieldsStream(this);
+    }
+
+    private Stream<FieldInfo> accessibleFieldsStream(TypeInfo startingPoint) {
+        TypeInspection typeInspection = this.typeInspection.get();
+        boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
+        boolean inSamePackage = !inSameCompilationUnit &&
+                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
+                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+        Stream<FieldInfo> localStream = typeInspection.fields
+                .stream()
+                .filter(fieldInfo -> inSameCompilationUnit ||
+                        fieldInfo.fieldInspection.get().access == FieldModifier.PUBLIC ||
+                        inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PACKAGE ||
+                        !inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PROTECTED);
+        Stream<FieldInfo> parentStream;
+        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+            parentStream = typeInspection.parentClass.typeInfo.accessibleFieldsStream(startingPoint);
+        } else parentStream = Stream.empty();
+        Stream<FieldInfo> joint = Stream.concat(localStream, parentStream);
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+            Stream<FieldInfo> fromInterface = interfaceType.typeInfo.accessibleFieldsStream(startingPoint);
+            joint = Stream.concat(joint, fromInterface);
+        }
+        return joint;
     }
 
     private TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
@@ -673,17 +717,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
         List<TypeInfo> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.get().parentClass;
-        TypeInfo parent;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
+        TypeInfo parent;
         if (parentIsJLO) {
             parent = Objects.requireNonNull(typeContext.typeStore.get(Primitives.JAVA_LANG_OBJECT));
-            if (typeInspection.get().isClass()) {
-                list.add(parent);
-            }
         } else {
             parent = Objects.requireNonNull(parentPt.typeInfo);
-            list.add(parent);
         }
+        list.add(parent);
         typeInspection.get().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
         });
