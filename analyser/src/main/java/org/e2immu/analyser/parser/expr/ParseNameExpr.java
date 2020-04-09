@@ -40,14 +40,7 @@ public class ParseNameExpr {
         }
         Variable variable = expressionContext.variableContext.get(name, false);
         if (variable != null) {
-            if (variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                if (fieldInfo.owner == expressionContext.enclosingType) {
-                    log(RESOLVE, "Adding dependence on field {}", fieldInfo.fullyQualifiedName());
-                    expressionContext.dependenciesOnOtherMethodsAndFields.add(fieldInfo);
-                }
-            }
-            return new VariableExpression(variable);
+            return fromVariableToExpression(expressionContext, variable);
         }
         PackagePrefix packagePrefix = new PackagePrefix(new String[]{name});
         if (expressionContext.typeContext.isPackagePrefix(packagePrefix)) {
@@ -55,5 +48,16 @@ public class ParseNameExpr {
         }
         throw new UnsupportedOperationException("Unknown name " + name + " at " + nameExpr.getBegin() +
                 "; variable context is " + expressionContext.variableContext);
+    }
+
+    public static Expression fromVariableToExpression(ExpressionContext expressionContext, Variable variable) {
+        if (variable instanceof FieldReference) {
+            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            if (fieldInfo.owner == expressionContext.enclosingType) {
+                log(RESOLVE, "Adding dependence on field {}", fieldInfo.fullyQualifiedName());
+                expressionContext.dependenciesOnOtherMethodsAndFields.add(fieldInfo);
+            }
+        }
+        return new VariableExpression(variable);
     }
 }

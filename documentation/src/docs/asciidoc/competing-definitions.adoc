@@ -103,6 +103,37 @@ Types for which we have a `.java` source file (as seen in the parsing order), ar
 
 The `e2immu` annotations will have to be in the classpath (ideally by including `e2immu-annot` in the dependencies) as soon as the first annotations are being seen.
 
+=== Notes on method references
+
+`Consumer<T>` has `void accept(T t)`, and we accept
+
+- `System.out::println`, which takes 1 parameter, `out` is static **+0, void**
+-  `HasAnnotations::freeze`, which takes no parameters, but operates on an object **+1 for object, void**.
+
+`Function<T, R>` has `R apply(T t)`, and we accept
+
+- `C::new`, where `C` has a 1-parameter constructor `C(String s) { .. }`  **+0, new=R**
+-  `Object::toString`, which takes no parameters, but operates on an object **+1 for object**
+-  `this::parseExpression`, which takes 1 and returns 1 **+0**
+
+`ToIntFunction<T>` has `int apply(T t)`, and
+
+- `this::numericIsAssignableFrom`, which returns `int` and takes 1 parameter; a direct match **+0**
+
+`BinaryOperator<T>` has `T apply(T t1, T t2)`
+
+- `SideEffect::combine`, which takes 1 parameter, and returns a new `SideEffect`  **+1 for object**
+
+
+Rules
+
+-  scope field :: static method, e.g. `System.out::println` **+0**
+-  scope field :: instance method, e.g., `this::numericIsAssignableFrom` **+0**
+-  scope type :: constructor, e.g. `C::new`  **+0**
+-  scope type :: static method, e.g. `Math::min` **+0**
+-  scope type :: instance method, e.g. `Object::toString`, `SideEffect::combine`, `HasAnnotations::freeze` **+1**
+
+
 === Annotations to be written out
 
 Let us first consider those written to `annotations.xml`; they are meant to be used in libraries.

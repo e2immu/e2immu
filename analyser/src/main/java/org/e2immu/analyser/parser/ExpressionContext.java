@@ -453,6 +453,13 @@ public class ExpressionContext {
                         return ParseFieldAccessExpr.createFieldAccess(this, typeExpression, cit.getNameAsString(), expression.getBegin().orElseThrow());
                     }
                 }
+                // there is a real possibility that the type expression is NOT a type but a local field...
+                // therefore we check the variable context first
+                Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
+                if (variable != null) {
+                    dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
+                    return ParseNameExpr.fromVariableToExpression(this, variable);
+                }
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, typeExpr.getType());
                 dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                 return new TypeExpression(parameterizedType);

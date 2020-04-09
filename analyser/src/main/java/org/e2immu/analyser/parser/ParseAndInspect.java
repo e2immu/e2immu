@@ -109,7 +109,7 @@ public class ParseAndInspect {
         for (ImportDeclaration importDeclaration : compilationUnit.getImports()) {
             String fullyQualified = importDeclaration.getName().asString();
             if (importDeclaration.isStatic()) {
-                // fields and methods
+                // fields and methods; important: we do NOT add the type itself to the type context
                 if (importDeclaration.isAsterisk()) {
                     TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
                     log(INSPECT, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
@@ -151,7 +151,8 @@ public class ParseAndInspect {
                     }
                 } else {
                     log(INSPECT, "Import of {}", fullyQualified);
-                    importType(fullyQualified, typeContextOfFile);
+                    TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
+                    typeContextOfFile.addToContext(typeInfo);
                 }
             }
         }
@@ -172,6 +173,7 @@ public class ParseAndInspect {
             typeContextOfFile.addToContext(typeInfo);
             typeInfo.recursivelyAddToTypeStore(typeContextOfFile.typeStore, td);
         });
+
         // only then do we start inspection
         List<TypeInfo> result = new ArrayList<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
@@ -197,9 +199,8 @@ public class ParseAndInspect {
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
         if (typeInfo == null || !typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !sourceTypeStore.containsPrefix(fqn)) {
-            return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
+            return inspectWithByteCodeInspector(fqn, typeContext);
         }
-        typeContext.addToContext(typeInfo);
         return typeInfo;
     }
 
@@ -209,12 +210,11 @@ public class ParseAndInspect {
         byteCodeInspector.inspectFromPath(pathInClassPath);
     }
 
-    private TypeInfo inspectWithByteCodeInspectorAndAddToTypeContext(String fqn, TypeContext typeContext) {
+    private TypeInfo inspectWithByteCodeInspector(String fqn, TypeContext typeContext) {
         String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
         byteCodeInspector.inspectFromPath(pathInClassPath);
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, true);
         log(INSPECT, "Add to type context: {}", typeInfo.fullyQualifiedName);
-        typeContext.addToContext(typeInfo);
         return typeInfo;
     }
 

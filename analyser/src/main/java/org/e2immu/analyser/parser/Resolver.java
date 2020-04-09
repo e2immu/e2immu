@@ -42,7 +42,7 @@ public class Resolver {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
-        
+
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
                 recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue());
