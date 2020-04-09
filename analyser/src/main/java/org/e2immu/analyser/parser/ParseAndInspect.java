@@ -179,7 +179,7 @@ public class ParseAndInspect {
             TypeInfo typeInfo = typeContextOfFile.typeStore.get(packageName + "." + name);
             // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
             // have already been inspected (AnnotationType as well)
-            if (!typeInfo.typeInspection.isSet()) {
+            if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
                 try {
                     ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
                             new TypeContext(packageName, typeContextOfFile));

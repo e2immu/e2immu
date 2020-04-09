@@ -73,17 +73,7 @@ public class Parser {
         return types.stream().map(SortedType::new).collect(Collectors.toList());
     }
 
-    public List<SortedType> parseJavaFiles(File... files) throws IOException {
-        List<URL> list = new ArrayList<>();
-        for (File f : files) {
-            URL url = f.toURI().toURL();
-            list.add(url);
-        }
-        throw new UnsupportedOperationException(); // TODO
-        //return parseJavaFiles(list);
-    }
-
-    private List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) throws IOException {
+    public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) throws IOException {
         Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
         urls.forEach((typeInfo, url) -> {
@@ -108,7 +98,8 @@ public class Parser {
                 }
             });
         });
-        urls.keySet().forEach(typeInfo -> typeInfo.typeInspection.get());
+        // TODO this can be a bit more efficient
+        urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e -> e.getKey().typeInspection.get());
         return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
     }
 

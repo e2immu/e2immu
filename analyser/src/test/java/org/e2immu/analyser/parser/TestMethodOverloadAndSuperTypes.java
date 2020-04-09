@@ -29,7 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,11 +61,15 @@ public class TestMethodOverloadAndSuperTypes {
     @Test
     public void test() throws IOException {
         Parser parser = new Parser();
-        List<SortedType> types = parser.parseJavaFiles(new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java"));
+        TypeInfo methodOverloadOrig = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample.MethodOverload");
+        URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
+        List<SortedType> types = parser.parseJavaFiles(Map.of(methodOverloadOrig, url));
         LOGGER.info("Have {} types", types.size());
 
         // method: hashCode
         TypeInfo methodOverload = types.get(0).typeInfo;
+        Assert.assertSame(methodOverload, methodOverloadOrig);
+
         MethodInfo hashCode = methodOverload.typeInspection.get().methods
                 .stream().filter(m -> m.name.equals("hashCode")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfHashCode = methodOverload.overloads(hashCode, parser.getTypeContext());

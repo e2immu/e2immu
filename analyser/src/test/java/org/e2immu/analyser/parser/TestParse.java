@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.annotation.NotModified;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,13 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestParse {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestParse.class);
-    public static final String SRC_MAIN_JAVA_ORG_E2IMMU_ANALYSER = "src/main/java/org/e2immu/analyser/";
 
     @BeforeClass
     public static void beforeClass() {
@@ -48,55 +50,59 @@ public class TestParse {
 
     @Test
     public void testDependencyGraph() throws IOException {
-        goTest("util/DependencyGraph.java");
+        goTest("DependencyGraph");
     }
 
     @Test
     public void testEither() throws IOException {
-        goTest("util/Either.java");
+        goTest("Either");
     }
 
     @Test
     public void testFirstThen() throws IOException {
-        goTest("util/FirstThen.java");
+        goTest("FirstThen");
     }
 
     @Test
     public void testLazy() throws IOException {
-        goTest("util/Lazy.java");
+        goTest("Lazy");
     }
 
     @Test
     public void testPair() throws IOException {
-        goTest("util/Pair.java");
+        goTest("Pair");
     }
 
     @Test
     public void testSetOnce() throws IOException {
-        goTest("util/SetOnce.java");
+        goTest("SetOnce");
     }
 
     @Test
     public void testSetOnceMap() throws IOException {
-        goTest("util/SetOnceMap.java");
+        goTest("SetOnceMap");
     }
 
     @Test
     public void testStringUtil() throws IOException {
-        goTest("util/StringUtil.java");
+        goTest("StringUtil");
     }
 
     @Test
     public void testTrie() throws IOException {
-        goTest("util/Trie.java");
+        goTest("Trie");
     }
 
     @NotModified
-    private void goTest(String fileName) throws IOException {
+    private void goTest(String typeName) throws IOException {
         Parser parser = new Parser();
-        List<SortedType> types = parser.parseJavaFiles(
-                new File(SRC_MAIN_JAVA_ORG_E2IMMU_ANALYSER + "util/Freezable.java"),
-                new File(SRC_MAIN_JAVA_ORG_E2IMMU_ANALYSER + fileName));
+        String path = "src/main/java/org/e2immu/analyser/util/";
+        TypeInfo freezable = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.util.Freezable");
+        TypeInfo other = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.util." + typeName);
+        URL urlFreezable = new File(path + "Freezable.java").toURI().toURL();
+        URL urlOther = new File(path + typeName + ".java").toURI().toURL();
+
+        List<SortedType> types = parser.parseJavaFiles(Map.of(freezable, urlFreezable, other, urlOther));
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }

@@ -256,26 +256,40 @@ public class TypeContext {
                 .collect(Collectors.toList());
     }
 
-    // TODO make more efficient by keeping track of where we've already been
-
     public void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
                                                     String methodName,
                                                     int parametersPresented,
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result) {
+        recursivelyResolveOverloadedMethods(typeOfObject, methodName, parametersPresented, typeMap, result, new HashSet<>());
+    }
+
+    private void recursivelyResolveOverloadedMethods(ParameterizedType typeOfObject,
+                                                     String methodName,
+                                                     int parametersPresented,
+                                                     Map<NamedType, ParameterizedType> typeMap,
+                                                     List<MethodCandidate> result,
+                                                     Set<TypeInfo> visited) {
         List<TypeInfo> multipleTypeInfoObjects = extractTypeInfo(typeOfObject, typeMap);
         // more than one: only in the rare situation of multiple type bounds
         for (TypeInfo typeInfo : multipleTypeInfoObjects) {
-            resolveOverloadedMethodsSingleType(typeInfo, false, methodName, parametersPresented, typeMap, result);
+            if (!visited.contains(typeInfo)) {
+                visited.add(typeInfo);
+                resolveOverloadedMethodsSingleType(typeInfo, false, methodName, parametersPresented, typeMap, result, visited);
+            }
         }
         // it is possible that we find the method in one of the statically imported types... with * import
         for (TypeInfo typeInfo : importStaticAsterisk) {
-            resolveOverloadedMethodsSingleType(typeInfo, true, methodName, parametersPresented, typeMap, result);
+            if (!visited.contains(typeInfo)) {
+                visited.add(typeInfo);
+                resolveOverloadedMethodsSingleType(typeInfo, true, methodName, parametersPresented, typeMap, result, visited);
+            }
         }
         // or import by name
         TypeInfo byName = importStaticMemberToTypeInfo.get(methodName);
-        if (byName != null) {
-            resolveOverloadedMethodsSingleType(byName, true, methodName, parametersPresented, typeMap, result);
+        if (byName != null && !visited.contains(byName)) {
+            visited.add(byName);
+            resolveOverloadedMethodsSingleType(byName, true, methodName, parametersPresented, typeMap, result, visited);
         }
     }
 
@@ -284,7 +298,8 @@ public class TypeContext {
                                                     String methodName,
                                                     int parametersPresented,
                                                     Map<NamedType, ParameterizedType> typeMap,
-                                                    List<MethodCandidate> result) {
+                                                    List<MethodCandidate> result,
+                                                    Set<TypeInfo> visited) {
         if (!typeInfo.typeInspection.isSet()) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected yet");
         }
@@ -298,13 +313,13 @@ public class TypeContext {
 
         ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
         if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, joinMaps(typeMap, parentClass), result);
+            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, joinMaps(typeMap, parentClass), result, visited);
         }
         for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.get().interfacesImplemented) {
-            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, joinMaps(typeMap, interfaceImplemented), result);
+            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, joinMaps(typeMap, interfaceImplemented), result, visited);
         }
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
-            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, typeMap, result);
+            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, typeMap, result, visited);
         }
     }
 

@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.annotation.NotModified;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -29,13 +30,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestTestExamples {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamples.class);
-    public static final String SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER = "src/test/java/org/e2immu/analyser/";
 
     @BeforeClass
     public static void beforeClass() {
@@ -49,42 +51,42 @@ public class TestTestExamples {
 
     @Test
     public void testFieldResolution() throws IOException {
-        goTest("testexample/FieldResolution.java");
+        goTest("FieldResolution");
     }
 
     @Test
     public void testFinalChecks() throws IOException {
-        goTest("testexample/FinalChecks.java");
+        goTest("FinalChecks");
     }
 
     @Test
     public void testMethodReferences() throws IOException {
-        goTest("testexample/MethodReferences.java");
+        goTest("MethodReferences");
     }
 
     @Test
     public void testModifyParameterChecks() throws IOException {
-        goTest("testexample/ModifyParameterChecks.java", 2);
+        goTest("ModifyParameterChecks", 2);
     }
 
     @Test
     public void testStaticSideEffectsOnlyChecks() throws IOException {
-        goTest("testexample/StaticSideEffectsOnlyChecks.java");
+        goTest("StaticSideEffectsOnlyChecks");
     }
 
     @Test
     public void testTypeParameters() throws IOException {
-        goTest("testexample/TypeParameters.java");
+        goTest("TypeParameters");
     }
 
     @Test
     public void testUnusedLocalVariableChecks() throws IOException {
-        goTest("testexample/UnusedLocalVariableChecks.java", 3);
+        goTest("UnusedLocalVariableChecks", 3);
     }
 
     @Test
     public void testUtilityClassChecks() throws IOException {
-        goTest("testexample/UtilityClassChecks.java");
+        goTest("UtilityClassChecks");
     }
 
     @NotModified
@@ -93,9 +95,11 @@ public class TestTestExamples {
     }
 
     @NotModified
-    private void goTest(String fileName, long countError) throws IOException {
+    private void goTest(String typeName, long countError) throws IOException {
         Parser parser = new Parser();
-        List<SortedType> types = parser.parseJavaFiles(new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + fileName));
+        URL url = new File("src/test/java/org/e2immu/analyser/testexample/" + typeName + ".java").toURI().toURL();
+        TypeInfo typeInfo = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample." + typeName);
+        List<SortedType> types = parser.parseJavaFiles(Map.of(typeInfo, url));
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }
