@@ -216,8 +216,25 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement switchStatement(SwitchStmt switchStmt) {
         Expression selector = parseExpression(switchStmt.getSelector());
-        List<SwitchEntry> entries = switchStmt.getEntries().stream().map(this::switchEntry).collect(Collectors.toList());
+        ExpressionContext newExpressionContext;
+        TypeInfo enumType = selectorIsEnumType(selector);
+        if (enumType != null) {
+            newExpressionContext = newVariableContext("switch-statement");
+            Variable scope = new This(enumType);
+            enumType.typeInspection.get().fields.forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
+        } else {
+            newExpressionContext = this;
+        }
+        List<SwitchEntry> entries = switchStmt.getEntries().stream().map(newExpressionContext::switchEntry).collect(Collectors.toList());
         return new SwitchStatement(selector, entries);
+    }
+
+    private TypeInfo selectorIsEnumType(Expression selector) {
+        TypeInfo typeInfo = selector.returnType().typeInfo;
+        if (typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM) {
+            return typeInfo;
+        }
+        return null;
     }
 
     private SwitchEntry switchEntry(com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
@@ -527,6 +544,12 @@ public class ExpressionContext {
                 Expression scope = parseExpression(arrayAccessExpr.getName());
                 Expression index = parseExpression(arrayAccessExpr.getIndex());
                 return new ArrayAccess(scope, index);
+            }
+            if (expression.isInstanceOfExpr()) {
+                InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
+                Expression e = parseExpression(instanceOfExpr.getExpression());
+                ParameterizedType type = ParameterizedType.from(typeContext, instanceOfExpr.getType());
+                return new InstanceOf(e, type);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());

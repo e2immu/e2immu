@@ -112,7 +112,7 @@ public interface Expression {
 
     @NotModified
     default Variable variableFromExpression() {
-        throw new UnsupportedOperationException("Expecting a variable from expression class " + getClass());
+        throw new UnsupportedOperationException("Expecting a variable from expression " + getClass());
     }
 
     @NotModified

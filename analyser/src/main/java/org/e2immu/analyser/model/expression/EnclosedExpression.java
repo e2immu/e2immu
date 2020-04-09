@@ -20,6 +20,9 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Variable;
+
+import java.util.List;
 
 public class EnclosedExpression implements Expression {
     public final Expression inner;
@@ -27,7 +30,6 @@ public class EnclosedExpression implements Expression {
     public EnclosedExpression(Expression inner) {
         this.inner = inner;
     }
-
 
     @Override
     public ParameterizedType returnType() {
@@ -42,5 +44,15 @@ public class EnclosedExpression implements Expression {
     @Override
     public int precedence() {
         return 16;
+    }
+
+    @Override
+    public List<Variable> variablesUsed() {
+        return inner.variablesUsed();
+    }
+
+    @Override
+    public Variable variableFromExpression() {
+        return inner.variableFromExpression();
     }
 }

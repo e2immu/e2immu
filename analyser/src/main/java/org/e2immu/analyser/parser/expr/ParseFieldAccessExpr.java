@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 
+import java.util.Optional;
+
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -55,15 +57,22 @@ public class ParseFieldAccessExpr {
         expressionContext.dependenciesOnOtherTypes.addAll(objectType.typeInfoSet());
         if (objectType.arrays > 0 && "length".equals(name)) return new ArrayLengthExpression(object);
 
-        FieldInfo fieldInfo;
-        if (objectType.typeInfo != null && objectType.typeInfo.hasBeenInspected()) {
-            fieldInfo = objectType.typeInfo.typeInspection.get().fields.stream().filter(f -> name.equals(f.name))
-                    .findAny().orElseThrow(() ->
-                            new UnsupportedOperationException("Unknown field " + name + " in type " + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting));
+        if (objectType.typeInfo != null) {
+            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.typeInspection.get().fields.stream().filter(f -> name.equals(f.name)).findFirst();
+            if (oFieldInfo.isPresent()) {
+                return fieldAccess(expressionContext, oFieldInfo.get(), object);
+            }
+            Optional<TypeInfo> oSubType = objectType.typeInfo.typeInspection.get().subTypes.stream().filter(s -> name.equals(s.name())).findFirst();
+            if (oSubType.isPresent()) {
+                return new TypeExpression(oSubType.get().asParameterizedType());
+            }
+            throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type " + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
         } else {
-            throw new UnsupportedOperationException();
-            //fieldInfo = expressionContext.variableContext.resolveField(objectType, name);
+            throw new UnsupportedOperationException("Object type has no typeInfo? at " + positionForErrorReporting);
         }
+    }
+
+    private static FieldAccess fieldAccess(ExpressionContext expressionContext, FieldInfo fieldInfo, Expression object) {
         if (fieldInfo.owner == expressionContext.enclosingType) {
             log(RESOLVE, "Adding dependency on field {}", fieldInfo.fullyQualifiedName());
             expressionContext.dependenciesOnOtherMethodsAndFields.add(fieldInfo);
