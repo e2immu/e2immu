@@ -96,7 +96,9 @@ public class Resolver {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
-        ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeContextOfType, typeDependencies);
+        ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
+                typeInfo.primaryType(),
+                typeContextOfType, typeDependencies);
 
         expressionContext.typeContext.addToContext(typeInfo);
         typeInspection.subTypes.forEach(expressionContext.typeContext::addToContext);

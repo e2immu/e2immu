@@ -30,9 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -42,13 +40,12 @@ public class Input {
     /**
      * Use of this prefix in parts of the input classpath allows for adding jars
      * on the current classpath containing the path following the prefix.
-     *
+     * <p>
      * For example, adding
-     *
+     * <p>
      * Adds the content of
-     *
+     * <p>
      * jar:file:/Users/bnaudts/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/28.1-jre/b0e91dcb6a44ffb6221b5027e12a5cb34b841145/guava-28.1-jre.jar!/
-     *
      */
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
@@ -61,7 +58,7 @@ public class Input {
     private final AnnotationStore annotationStore;
     private final ByteCodeInspector byteCodeInspector;
     private final List<URL> annotatedAPIs;
-    private final List<URL> sourceURLs;
+    private final Map<TypeInfo, URL> sourceURLs;
 
     public Input(Configuration configuration) throws IOException {
         this.configuration = configuration;
@@ -80,8 +77,8 @@ public class Input {
         LOGGER.info("Found {} annotated_api files in class path", annotatedAPIs.size());
     }
 
-    private List<URL> computeSourceURLs() {
-        List<URL> sourceURLs = new LinkedList<>();
+    private Map<TypeInfo, URL> computeSourceURLs() {
+        Map<TypeInfo, URL> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
             if (parts.length >= 1) {
@@ -94,7 +91,7 @@ public class Input {
                         sourceTypeStore.add(typeInfo);
                         globalTypeContext.typeStore.add(typeInfo);
                         URL url = list.get(0);
-                        sourceURLs.add(url);
+                        sourceURLs.put(typeInfo, url);
                     } else {
                         ignored.incrementAndGet();
                     }
@@ -195,7 +192,7 @@ public class Input {
         return annotatedAPIs;
     }
 
-    public List<URL> getSourceURLs() {
+    public Map<TypeInfo, URL> getSourceURLs() {
         return sourceURLs;
     }
 

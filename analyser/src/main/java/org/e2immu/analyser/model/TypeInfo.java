@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeStore;
+import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnceSupply;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.AnnotationType;
@@ -120,6 +121,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         continueInspection(true, expressionContext, builder, members, false);
     }
 
+    /**
+     * @param hasBeenDefined    when true, parsing .java; otherwise, parsing .annotated_api
+     * @param enclosingType     when not null, denotes the parent type; otherwise, this is a primary type
+     * @param typeDeclaration   the JavaParser object to inspect
+     * @param expressionContext the context to inspect in
+     */
     public void inspect(boolean hasBeenDefined,
                         TypeInfo enclosingType,
                         TypeDeclaration<?> typeDeclaration,
@@ -143,7 +150,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration, builder);
         }
         if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
-            doClassOrInterfaceDeclaration(expressionContext, typeNature, (ClassOrInterfaceDeclaration) typeDeclaration, builder);
+            doClassOrInterfaceDeclaration(hasBeenDefined, expressionContext, typeNature, (ClassOrInterfaceDeclaration) typeDeclaration, builder);
         }
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
             builder.addAnnotation(AnnotationExpression.from(annotationExpr, expressionContext));
@@ -195,6 +202,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private void doClassOrInterfaceDeclaration(
+            boolean hasBeenDefined,
             ExpressionContext expressionContext,
             TypeNature typeNature,
             ClassOrInterfaceDeclaration cid,
@@ -209,25 +217,54 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeNature == TypeNature.CLASS) {
             if (!cid.getExtendedTypes().isEmpty()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, cid.getExtendedTypes(0));
+                // why this check? hasBeenDefined == true signifies Java parsing; == false is annotated APIs.
+                // the annotated APIs are backed by .class files, which can be inspected with byte code; there, we only have
+                // fully qualified names. In Java, we must add type names of parent's subtypes etc.
+                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
                 builder.setParentClass(parameterizedType);
             }
             for (ClassOrInterfaceType extended : cid.getImplementedTypes()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
+                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
         } else {
             if (typeNature != TypeNature.INTERFACE) throw new UnsupportedOperationException();
             for (ClassOrInterfaceType extended : cid.getExtendedTypes()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
+                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
+        }
+    }
+
+    /**
+     * calling "get" on the typeInspection of the parameterizedType will trigger recursive parsing.
+     * But we should not do that when we're inside the same compilation unit: the primary type and all its subtypes.
+     * <p>
+     * We should be wary of loops here; we may have to extend this whole system, and somehow keep track of
+     * all types currently under inspection, as we do with the bytecode inspector.
+     */
+    private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
+        boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType.fullyQualifiedName);
+        if (!insideCompilationUnit) {
+            parameterizedType.typeInfo.typeInspection.get(parameterizedType.typeInfo.fullyQualifiedName);
+            // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
+            TypeInspection typeInspection = parameterizedType.typeInfo.typeInspection.get();
+            for (TypeInfo subType : typeInspection.subTypes) {
+                expressionContext.typeContext.addToContext(subType);
+            }
+            if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+                ensureLoaded(expressionContext, typeInspection.parentClass);
+            }
+            typeInspection.interfacesImplemented.forEach(i -> ensureLoaded(expressionContext, i));
         }
     }
 
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(expressionContext.enclosingType);
-        doClassOrInterfaceDeclaration(expressionContext, TypeNature.CLASS, cid, builder);
+        doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid, builder);
         continueInspection(true, expressionContext, builder, cid.getMembers(), false);
     }
 
@@ -277,13 +314,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
                 TypeInfo subType = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + cid.getNameAsString());
-                ExpressionContext newExpressionContext = expressionContext.newEnclosingType(subType);
+                ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
                 subType.inspect(hasBeenDefined, this, cid.asTypeDeclaration(), newExpressionContext);
                 builder.addSubType(subType);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
                 TypeInfo subType = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + ed.getNameAsString());
-                ExpressionContext newExpressionContext = expressionContext.newEnclosingType(subType);
+                ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
                 subType.inspect(hasBeenDefined, this, ed.asTypeDeclaration(), newExpressionContext);
                 builder.addSubType(subType);
             });
@@ -714,5 +751,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public FieldInfo getFieldByName(String name) {
         return typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
+    }
+
+    public TypeInfo primaryType() {
+        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
+        if (packageNameOrEnclosingType.isLeft()) return this;
+        return packageNameOrEnclosingType.getRight().primaryType();
     }
 }

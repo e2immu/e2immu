@@ -156,7 +156,10 @@ public class ParseAndInspect {
             }
         }
         typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
-            if (!typeInfo.typeInspection.hasRunnable() && !typeInfo.typeInspection.isSet() && sourceTypeStore.containsPrefix(typeInfo.fullyQualifiedName)) {
+            if (!typeInfo.typeInspection.hasRunnable() &&
+                    !typeInfo.typeInspection.isSetDoNotTriggerRunnable() &&
+                    // this is to check that we're not talking about a subtype of a source type
+                    !sourceTypeStore.containsPrefix(typeInfo.fullyQualifiedName)) {
                 log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
                 typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
             }
@@ -178,7 +181,7 @@ public class ParseAndInspect {
             // have already been inspected (AnnotationType as well)
             if (!typeInfo.typeInspection.isSet()) {
                 try {
-                    ExpressionContext expressionContext = ExpressionContext.forInspection(typeInfo,
+                    ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
                             new TypeContext(packageName, typeContextOfFile));
                     typeInfo.inspect(hasBeenDefined, null, td, expressionContext);
                 } catch (RuntimeException rte) {
@@ -193,7 +196,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null || !typeInfo.hasBeenInspected() && sourceTypeStore.containsPrefix(fqn)) {
+        if (typeInfo == null || !typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !sourceTypeStore.containsPrefix(fqn)) {
             return inspectWithByteCodeInspectorAndAddToTypeContext(fqn, typeContext);
         }
         typeContext.addToContext(typeInfo);

@@ -105,7 +105,7 @@ public class ParameterizedType {
                 ParameterizedType scopePt = from(context, scopeType);
                 // name probably is a sub type in scopePt...
                 if (scopePt.typeInfo != null) {
-                    if (scopePt.typeInfo.typeInspection.isSet()) {
+                    if (scopePt.typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
                         Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
                         if (subType.isPresent()) {
                             return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);

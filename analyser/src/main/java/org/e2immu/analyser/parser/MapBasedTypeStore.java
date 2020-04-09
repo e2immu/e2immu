@@ -66,7 +66,8 @@ public class MapBasedTypeStore implements TypeStore {
         // (there'll be more hits outside the source than inside the source dir)
         for (int i = 1; i <= split.length; i++) {
             List<TypeInfo> typeInfoList = trie.get(split, i);
-            if (typeInfoList != null && !typeInfoList.isEmpty()) return true;
+            if (typeInfoList == null) return false;
+            if (!typeInfoList.isEmpty()) return true;
         }
         return false;
     }

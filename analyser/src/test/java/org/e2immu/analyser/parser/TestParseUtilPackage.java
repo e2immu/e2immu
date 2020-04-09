@@ -39,7 +39,7 @@ public class TestParseUtilPackage {
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(
-                BYTECODE_INSPECTOR, BYTECODE_INSPECTOR_DEBUG,
+                BYTECODE_INSPECTOR,
                 INSPECT,
                 RESOLVE,
 

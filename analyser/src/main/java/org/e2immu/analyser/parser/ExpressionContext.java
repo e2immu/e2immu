@@ -51,6 +51,7 @@ public class ExpressionContext {
 
     public final TypeContext typeContext;
     public final TypeInfo enclosingType;
+    public final TypeInfo primaryType;
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final TopLevel topLevel;
     public final Set<TypeInfo> dependenciesOnOtherTypes;
@@ -64,10 +65,10 @@ public class ExpressionContext {
         }
     }
 
-    public static ExpressionContext forInspection(@NullNotAllowed @NotModified TypeInfo enclosingType,
-                                                  @NullNotAllowed @NotModified TypeContext typeContext) {
-        log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
-        return new ExpressionContext(Objects.requireNonNull(enclosingType),
+    public static ExpressionContext forInspectionOfPrimaryType(@NullNotAllowed @NotModified TypeInfo typeInfo,
+                                                               @NullNotAllowed @NotModified TypeContext typeContext) {
+        log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
+        return new ExpressionContext(Objects.requireNonNull(typeInfo), typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(new HashMap<>()),
                 new TopLevel(),
@@ -76,11 +77,13 @@ public class ExpressionContext {
     }
 
     public static ExpressionContext forBodyParsing(@NullNotAllowed @NotModified TypeInfo enclosingType,
+                                                   @NullNotAllowed @NotModified TypeInfo primaryType,
                                                    @NullNotAllowed @NotModified TypeContext typeContext,
                                                    @NullNotAllowed Set<TypeInfo> dependenciesOnOtherTypes) {
         Map<String, FieldReference> staticallyImportedFields = typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType),
+                Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(staticallyImportedFields),
                 new TopLevel(),
@@ -89,12 +92,14 @@ public class ExpressionContext {
     }
 
     private ExpressionContext(TypeInfo enclosingType,
+                              TypeInfo primaryType,
                               TypeContext typeContext,
                               VariableContext variableContext,
                               TopLevel topLevel,
                               Set<TypeInfo> dependenciesOnOtherTypes,
                               Set<WithInspectionAndAnalysis> dependenciesOnOtherMethods) {
         this.typeContext = typeContext;
+        this.primaryType = primaryType;
         this.enclosingType = enclosingType;
         this.topLevel = topLevel;
         this.variableContext = variableContext;
@@ -104,23 +109,27 @@ public class ExpressionContext {
 
     public ExpressionContext newVariableContext(String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, typeContext, VariableContext.dependentVariableContext(variableContext),
+        return new ExpressionContext(enclosingType, primaryType,
+                typeContext, VariableContext.dependentVariableContext(variableContext),
                 topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
     }
 
     public ExpressionContext newVariableContext(@NullNotAllowed VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, typeContext, newVariableContext, topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
+        return new ExpressionContext(enclosingType, primaryType, typeContext,
+                newVariableContext, topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
     }
 
-    public ExpressionContext newEnclosingType(TypeInfo subType) {
+    public ExpressionContext newSubType(TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
-        return new ExpressionContext(subType, new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
+        return new ExpressionContext(subType, primaryType,
+                new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
-        return new ExpressionContext(enclosingType, new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
+        return new ExpressionContext(enclosingType, primaryType,
+                new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
     }
 
     // method makes changes to variableContext

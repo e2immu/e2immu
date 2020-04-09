@@ -20,6 +20,8 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
+import java.util.function.Supplier;
+
 @E2Final(after = "set", type = AnnotationType.CONTRACT)
 public class SetOnceSupply<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
@@ -45,15 +47,21 @@ public class SetOnceSupply<T> {
 
     @Only(after = "set")
     public T get() {
+        return get("?");
+    }
+
+    @Only(after = "set")
+    public T get(String errorContext) {
         if (t == null) {
             if (runnable == null) {
-                throw new UnsupportedOperationException("Not yet set, and no runnable provided");
+                throw new UnsupportedOperationException("Not yet set, and no runnable provided: " + errorContext);
             }
             // we're assuming the runnable will set the value via the 'set' method
             Runnable localRunnable = runnable;
             runnable = null;
             localRunnable.run();
-            if (t == null) throw new NullPointerException("Not yet set, the runnable did not set the value");
+            if (t == null)
+                throw new NullPointerException("Not yet set, the runnable did not set the value: " + errorContext);
         }
         return t;
     }

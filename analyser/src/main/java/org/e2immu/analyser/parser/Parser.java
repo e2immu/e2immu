@@ -33,10 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -67,7 +64,7 @@ public class Parser {
     public List<SortedType> run() throws IOException {
         List<URL> annotatedAPIs = input.getAnnotatedAPIs();
         if (!annotatedAPIs.isEmpty()) runAnnotatedAPIs(annotatedAPIs);
-        return parseJavaFiles(input.getSourcePath(), input.getSourceURLs());
+        return parseJavaFiles(input.getSourceURLs());
     }
 
     public List<SortedType> runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
@@ -82,25 +79,36 @@ public class Parser {
             URL url = f.toURI().toURL();
             list.add(url);
         }
-        return parseJavaFiles(null, list);
+        throw new UnsupportedOperationException(); // TODO
+        //return parseJavaFiles(list);
     }
 
-    private List<SortedType> parseJavaFiles(Resources sourcePath,
-                                            List<URL> urls) throws IOException {
+    private List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) throws IOException {
         Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
-        for (URL url : urls) {
-            try {
-                InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
-                String source = IOUtils.toString(isr);
-                TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
-                List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
-                types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
-                throw rte;
-            }
-        }
+        urls.forEach((typeInfo, url) -> {
+            typeInfo.typeInspection.setRunnable(() -> {
+                if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
+                    try {
+                        LOGGER.info("Starting source code inspection of {}", url);
+                        InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
+                        String source = IOUtils.toString(isr);
+                        TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
+                        List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
+                        types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
+                    } catch (RuntimeException rte) {
+                        LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
+                        throw rte;
+                    } catch (IOException ioe) {
+                        LOGGER.warn("Stopping runnable because of an IOException parsing URL {}", url);
+                        throw new RuntimeException(ioe);
+                    }
+                } else {
+                    LOGGER.info("Source code inspection of {} already done", url);
+                }
+            });
+        });
+        urls.keySet().forEach(typeInfo -> typeInfo.typeInspection.get());
         return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
     }
 

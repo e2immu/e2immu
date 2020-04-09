@@ -45,7 +45,7 @@ public class Trie<T> extends Freezable {
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
     private TrieNode<T> goTo(@NotModified String[] strings, int upToPosition) {
         TrieNode<T> node = root;
-        for (int i=0; i<upToPosition; i++) {
+        for (int i = 0; i < upToPosition; i++) {
             if (node.map == null) return null;
             node = node.map.get(strings[i]);
             if (node == null) return null;
@@ -67,8 +67,8 @@ public class Trie<T> extends Freezable {
 
     @NotModified
     public List<T> get(String[] strings, int upToPosition) {
-        TrieNode<T> node = goTo(strings);
-        return node == null ? null : node.data;
+        TrieNode<T> node = goTo(strings, upToPosition);
+        return node == null ? null : node.data == null ? List.of() : node.data;
     }
 
     @Only(before = "freeze")
