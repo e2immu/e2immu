@@ -512,21 +512,29 @@ public class ParameterizedType {
         }
         if (typeParameter != null) {
             // T extends Comparable<...> & Serializable
-            List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
-            if (!typeBounds.isEmpty()) {
-                if (wildCard == WildCard.EXTENDS) {
-                    return typeBounds.stream().mapToInt(this::numericIsAssignableFrom).reduce(1, REDUCER);
+            try {
+                //if(typeParameter.owner.isLeft()) typeParameter.owner.getLeft().typeInspection.get();
+                //else typeParameter.owner.getRight().typeInfo.typeInspection.get();
+
+                List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
+                if (!typeBounds.isEmpty()) {
+                    if (wildCard == WildCard.EXTENDS) {
+                        return typeBounds.stream().mapToInt(this::numericIsAssignableFrom).reduce(1, REDUCER);
+                    }
+                    if (wildCard == WildCard.SUPER) {
+                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(this)).reduce(1, REDUCER);
+                    }
+                    throw new UnsupportedOperationException("?");
                 }
-                if (wildCard == WildCard.SUPER) {
-                    return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(this)).reduce(1, REDUCER);
+                if (type.isPrimitive()) {
+                    // int cannot be assigned to T, no matter what; neither can int[] to T[]
+                    return NOT_ASSIGNABLE;
                 }
-                throw new UnsupportedOperationException("?");
+                return arrays <= type.arrays ? 1 : NOT_ASSIGNABLE; // normally the wildcard is NONE, <T>, so anything goes
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught exception examining type bounds of {}", typeParameter.toString());
+                throw rte;
             }
-            if (type.isPrimitive()) {
-                // int cannot be assigned to T, no matter what; neither can int[] to T[]
-                return NOT_ASSIGNABLE;
-            }
-            return arrays <= type.arrays ? 1 : NOT_ASSIGNABLE; // normally the wildcard is NONE, <T>, so anything goes
         }
         return wildCard == WildCard.UNBOUND ? 1 : NOT_ASSIGNABLE; // <?> anything goes
     }
@@ -544,7 +552,7 @@ public class ParameterizedType {
     }
 
     public boolean isFunctionalInterface(TypeContext typeContext) {
-        if (typeInfo == null || typeInfo.typeInspection.get("isFunctional interface on "+typeInfo.fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
+        if (typeInfo == null || typeInfo.typeInspection.get("isFunctional interface on " + typeInfo.fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
             return false;
         }
         return typeInfo.typeInspection.get().annotations.contains(typeContext.functionalInterface.get());

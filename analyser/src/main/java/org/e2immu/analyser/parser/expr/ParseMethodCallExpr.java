@@ -148,12 +148,12 @@ public class ParseMethodCallExpr {
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         // now parse the lambda's with our new info
 
-        log(METHOD_CALL, "Reevaluating parameter expressions on {}, single abstract method {}",
-                methodNameForErrorReporting,
-                singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
             if (e == null || e instanceof UnevaluatedLambdaExpression) {
+                log(METHOD_CALL, "Reevaluating unevaluated lambda expression on {}, pos {}, single abstract method {}",
+                        methodNameForErrorReporting, i,
+                        singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
                 MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, method, i, singleAbstractMethod);
                 // note that abstractInterfaceMethod can be null! there's no guarantee we're dealing with a functional interface here
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), abstractInterfaceMethod);

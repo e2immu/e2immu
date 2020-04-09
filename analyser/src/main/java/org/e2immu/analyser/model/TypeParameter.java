@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class TypeParameter implements NamedType {
 
     // the type the parameter belongs to
@@ -89,6 +92,7 @@ public class TypeParameter implements NamedType {
     public void inspect(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
         List<ParameterizedType> typeBounds = new ArrayList<>();
         typeParameter.getTypeBound().forEach(cit -> {
+            log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
             ParameterizedType bound = ParameterizedType.from(typeContext, cit);
             typeBounds.add(bound);
         });

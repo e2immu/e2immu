@@ -180,6 +180,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             builder.addTypeParameter(tp);
             expressionContext.typeContext.addToContext(tp);
             typeContextWithParameters.addToContext(tp);
+            tp.inspect(expressionContext.typeContext, typeParameter);
         }
         addAnnotations(builder, md.getAnnotations(), expressionContext);
         addModifiers(builder, md.getModifiers());

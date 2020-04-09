@@ -20,10 +20,7 @@ package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MethodReference;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 
@@ -34,6 +31,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseMethodReferenceExpr {
+
     public static Expression parse(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr, MethodTypeParameterMap singleAbstractMethod) {
         if (singleAbstractMethod == null) {
             return unevaluated(expressionContext, methodReferenceExpr);
@@ -64,9 +62,9 @@ public class ParseMethodReferenceExpr {
 
             // but this example says you need to subtract:
             // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
-
+            boolean scopeIsStatic = !(scope instanceof VariableExpression); // if not a variable, then a type; not constructor, now decide instance vs static method || ((VariableExpression) scope).variable.isStatic();
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, true, parameterizedType.initialTypeParameterMap(), methodCandidates);
+                    methodName, parametersPresented, scopeIsStatic, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -126,7 +124,8 @@ public class ParseMethodReferenceExpr {
             TypeContext.MethodCandidate methodCandidate = methodCandidates.get(0);
             log(METHOD_CALL, "Have exactly one method reference candidate, this can work: {}", methodCandidate.method.methodInfo.distinguishingName());
             MethodInspection methodInspection = methodCandidate.method.methodInfo.methodInspection.get();
-            boolean addOne = !methodCandidate.method.methodInfo.isConstructor && !methodCandidate.method.methodInfo.isStatic;
+            boolean scopeIsType = !(scope instanceof VariableExpression);
+            boolean addOne = scopeIsType && !methodCandidate.method.methodInfo.isConstructor && !methodCandidate.method.methodInfo.isStatic; // && !methodInspection.returnType.isPrimitive();
             int numberOfParameters = methodInspection.parameters.size() + (addOne ? 1 : 0);
             return new UnevaluatedLambdaExpression(numberOfParameters, !methodInspection.returnType.isVoid());
         }
