@@ -123,9 +123,9 @@ public class ParseMethodCallExpr {
             throw new UnsupportedOperationException("No candidate found for method " + methodNameForErrorReporting + " in type "
                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
         if (methodCandidates.size() > 1) {
-            trimVarargsVsMethodsWithFewerParameters(methodCandidates);
+            trimMethodsWithBestScore(methodCandidates, compatibilityScore);
             if (methodCandidates.size() > 1) {
-                trimMethodsWithBestScore(methodCandidates, compatibilityScore);
+                trimVarargsVsMethodsWithFewerParameters(methodCandidates);
                 if (methodCandidates.size() > 1) {
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
                     Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
@@ -176,10 +176,15 @@ public class ParseMethodCallExpr {
         methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInfo, 0) > min);
     }
 
-    // List.of() vs List.of(E[]...) -> the one with fewer parameters gets priority
+    // remove varargs if there's also non-varargs solutions
+    //
+    // this step if AFTER the score step, so we've already dealt with type conversions.
+    // we still have to deal with overloads in supertypes, methods with the same type signature
     private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
-        int min = methodCandidates.stream().mapToInt(mc -> mc.method.methodInfo.methodInspection.get().parameters.size()).min().orElseThrow();
-        methodCandidates.removeIf(mc -> mc.method.methodInfo.methodInspection.get().parameters.size() > min);
+        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method.methodInfo.isVarargs()).count();
+        if (countVarargs > 0 && countVarargs < methodCandidates.size()) {
+            methodCandidates.removeIf(mc -> mc.method.methodInfo.isVarargs());
+        }
     }
 
     // File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with a different number of parameters

@@ -495,4 +495,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public String toString() {
         return fullyQualifiedName();
     }
+
+    public boolean isVarargs() {
+        MethodInspection mi = methodInspection.get();
+        if (mi.parameters.isEmpty()) return false;
+        return mi.parameters.get(mi.parameters.size() - 1).parameterInspection.get().varArgs;
+    }
 }
