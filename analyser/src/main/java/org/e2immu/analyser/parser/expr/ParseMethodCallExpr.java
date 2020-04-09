@@ -148,7 +148,9 @@ public class ParseMethodCallExpr {
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         // now parse the lambda's with our new info
 
-        log(METHOD_CALL, "Reevaluating parameter expressions, single abstract method {}", singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
+        log(METHOD_CALL, "Reevaluating parameter expressions on {}, single abstract method {}",
+                methodNameForErrorReporting,
+                singleAbstractMethod == null ? "-" : singleAbstractMethod.methodInfo.distinguishingName());
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
             if (e == null || e instanceof UnevaluatedLambdaExpression) {

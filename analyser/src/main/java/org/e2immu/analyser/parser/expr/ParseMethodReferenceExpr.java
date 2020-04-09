@@ -73,13 +73,32 @@ public class ParseMethodReferenceExpr {
         }
         if (methodCandidates.size() > 1) {
             log(METHOD_CALL, "Have multiple candidates, would need to sort somehow to take the best one");
-            // TODO doesn't happen that frequently...
+            methodCandidates.removeIf(mc -> {
+                // check types of parameters in SAM
+                // example here is in Variable: there is a detailedString(), and a static detailedString(Set<>)
+                for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
+                    ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
+                    ParameterizedType typeOfMethodCandidate;
+                    int param = mc.method.methodInfo.isStatic ? i : i - 1;
+                    if (param == -1) {
+                        typeOfMethodCandidate = mc.method.methodInfo.typeInfo.asParameterizedType();
+                    } else {
+                        typeOfMethodCandidate = mc.method.methodInfo.methodInspection.get().parameters.get(i).parameterizedType;
+                    }
+                    if (!typeOfMethodCandidate.isAssignableFrom(concreteType)) return true;
+                }
+                return false;
+            });
+            if (methodCandidates.size() > 1) {
+                throw new UnsupportedOperationException();
+            }
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         List<ParameterizedType> types = new ArrayList<>();
         types.add(parameterizedType);
         method.methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType).forEach(types::add);
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
+        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInfo.distinguishingName());
         return new MethodReference(method.methodInfo, functionalType);
     }
 
