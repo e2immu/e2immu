@@ -357,7 +357,7 @@ public class ExpressionContext {
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
         newVariableContext.add(localVariable, List.of(expression));
-        Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody().asBlockStmt());
+        Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody());
         return new ForEachStatement(localVariable, expression, block);
     }
 

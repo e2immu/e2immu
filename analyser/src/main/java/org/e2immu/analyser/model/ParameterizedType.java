@@ -526,10 +526,6 @@ public class ParameterizedType {
                     }
                     throw new UnsupportedOperationException("?");
                 }
-                if (type.isPrimitive()) {
-                    // int cannot be assigned to T, no matter what; neither can int[] to T[]
-                    return NOT_ASSIGNABLE;
-                }
                 return arrays <= type.arrays ? 1 : NOT_ASSIGNABLE; // normally the wildcard is NONE, <T>, so anything goes
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught exception examining type bounds of {}", typeParameter.toString());

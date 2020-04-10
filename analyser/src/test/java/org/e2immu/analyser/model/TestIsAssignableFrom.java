@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 public class TestIsAssignableFrom {
@@ -19,8 +20,10 @@ public class TestIsAssignableFrom {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECT);
         Parser parser = new Parser();
         typeContext = parser.getTypeContext();
+        parser.getByteCodeInspector().inspectFromPath("java/util/List");
     }
 
+    // int <- String should fail
     @Test
     public void test() {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
@@ -29,6 +32,7 @@ public class TestIsAssignableFrom {
         Assert.assertFalse(stringPt.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
     }
 
+    // CharSequence[] <- String[] should be allowed
     @Test
     public void testArray() {
         ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeStore.get("java.lang.String")), 1);
@@ -43,7 +47,7 @@ public class TestIsAssignableFrom {
         Assert.assertTrue(charSeqArrayPt.isAssignableFrom(stringArrayPt));
     }
 
-
+    // String <- null should be allowed, but int <- null should fail
     @Test
     public void testNull() {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
@@ -53,5 +57,25 @@ public class TestIsAssignableFrom {
 
         Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
         Assert.assertFalse(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(ParameterizedType.NULL_CONSTANT));
+    }
+
+    // E <- String, E <- Integer, E <- int, E <- int[] should work
+    @Test
+    public void testBoxing() {
+        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
+        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.Integer").asParameterizedType());
+        ParameterizedType listPt = Objects.requireNonNull(typeContext.typeStore.get("java.util.List").asParameterizedType());
+        ParameterizedType typeParam = listPt.parameters.get(0);
+        Assert.assertNotNull(typeParam);
+
+        Assert.assertTrue(typeParam.isAssignableFrom(stringPt));
+        Assert.assertFalse(stringPt.isAssignableFrom(typeParam));
+
+        Assert.assertTrue(typeParam.isAssignableFrom(integerPt));
+        Assert.assertFalse(integerPt.isAssignableFrom(typeParam));
+
+        List<int[]> intArrayList;
+        Assert.assertTrue(typeParam.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
+        Assert.assertFalse(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(typeParam));
     }
 }

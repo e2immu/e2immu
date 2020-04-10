@@ -140,6 +140,11 @@ public class Parser {
         return globalTypeContext;
     }
 
+    // only meant to be used in tests!
+    public ByteCodeInspector getByteCodeInspector() {
+        return byteCodeInspector;
+    }
+
     public List<Message> getMessages() {
         return globalTypeContext.getMessages();
     }
