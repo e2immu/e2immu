@@ -102,7 +102,7 @@ public class TypeContext {
     public TypeContext(TypeContext parentContext, String packageName, TypeStore typeStore) {
         this.parentContext = Objects.requireNonNull(parentContext);
         this.typeStore = typeStore;
-        importStaticMemberToTypeInfo = new HashMap<>( parentContext.importStaticMemberToTypeInfo);
+        importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         messages = List.of();
         this.packageName = packageName;
@@ -167,8 +167,15 @@ public class TypeContext {
     }
 
     public void addToContext(@NullNotAllowed NamedType namedType) {
+        addToContext(namedType, true);
+    }
+
+    public void addToContext(@NullNotAllowed NamedType namedType, boolean allowOverwrite) {
         Objects.requireNonNull(namedType);
-        map.put(namedType.simpleName(), namedType);
+        String simpleName = namedType.simpleName();
+        if (allowOverwrite || !map.containsKey(simpleName)) {
+            map.put(simpleName, namedType);
+        }
     }
 
     private static MethodInfo emptyConstructor(TypeInfo typeInfo) {
@@ -231,6 +238,9 @@ public class TypeContext {
         return map;
     }
 
+    // TODO: this would be a good candidate to make into a non-static inner class, so that it can be made
+    // Comparable!
+
     public static class MethodCandidate {
         public final MethodTypeParameterMap method;
         public final Set<Integer> parameterIndicesOfFunctionalInterfaces;
@@ -239,6 +249,15 @@ public class TypeContext {
             this.parameterIndicesOfFunctionalInterfaces = parameterIndicesOfFunctionalInterfaces;
             this.method = method;
         }
+    }
+
+    // TODO remove me
+    public int compareMethodCandidates(MethodCandidate mc1, MethodCandidate mc2) {
+        Set<MethodInfo> overloads1 = mc1.method.methodInfo.typeInfo.overloads(mc1.method.methodInfo, this);
+        if (overloads1.contains(mc2.method.methodInfo)) return -1;
+        Set<MethodInfo> overloads2 = mc2.method.methodInfo.typeInfo.overloads(mc2.method.methodInfo, this);
+        if (overloads2.contains(mc1.method.methodInfo)) return 1;
+        return mc1.method.methodInfo.typeInfo.fullyQualifiedName.compareTo(mc2.method.methodInfo.typeInfo.fullyQualifiedName);
     }
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;

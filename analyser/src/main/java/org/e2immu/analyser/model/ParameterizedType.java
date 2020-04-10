@@ -579,4 +579,7 @@ public class ParameterizedType {
         return null;
     }
 
+    public boolean betterDefinedThan(ParameterizedType v) {
+        return (typeParameter != null || typeInfo != null) && v.typeParameter == null && v.typeInfo == null;
+    }
 }

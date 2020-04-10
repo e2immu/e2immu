@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
@@ -56,6 +55,18 @@ public class TestMethodOverloadAndSuperTypes {
         Assert.assertNotNull(collection);
         MethodInfo containsAllInCollection = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
         Assert.assertTrue(overloads.contains(containsAllInCollection));
+    }
+
+    @Test
+    public void testThrowable() throws IOException {
+        Parser parser = new Parser();
+        TypeContext typeContext = parser.getTypeContext();
+        TypeInfo throwable = typeContext.typeStore.get("java.lang.Throwable");
+        Assert.assertNotNull(throwable);
+        List<TypeInfo> superTypes = throwable.superTypes(parser.getTypeContext());
+        TypeInfo object = typeContext.typeStore.get("java.lang.Object");
+        Assert.assertNotNull(object);
+        Assert.assertTrue(superTypes.contains(object));
     }
 
     @Test

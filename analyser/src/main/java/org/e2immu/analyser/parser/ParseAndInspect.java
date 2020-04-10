@@ -125,12 +125,13 @@ public class ParseAndInspect {
             } else {
                 // types
                 if (importDeclaration.isAsterisk()) {
+                    // lower priority names (so allowOverwrite = false
                     log(INSPECT, "Need to parse folder {}", fullyQualified);
                     if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
                         sourceTypeStore.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
                             for (TypeInfo typeInfo : typeInfoList) {
                                 if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
-                                    typeContextOfFile.addToContext(typeInfo);
+                                    typeContextOfFile.addToContext(typeInfo, false);
                                 }
                             }
                         });
@@ -142,17 +143,18 @@ public class ParseAndInspect {
                                     TypeInfo newTypeInfo = typeContextOfFile.typeStore.getOrCreate(fqn);
                                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                                     newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
-                                    typeContextOfFile.addToContext(newTypeInfo);
+                                    typeContextOfFile.addToContext(newTypeInfo, false);
                                 } else {
-                                    typeContextOfFile.addToContext(typeInfo);
+                                    typeContextOfFile.addToContext(typeInfo, false);
                                 }
                             }
                         });
                     }
                 } else {
+                    // higher priority names, allowOverwrite = true
                     log(INSPECT, "Import of {}", fullyQualified);
                     TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
-                    typeContextOfFile.addToContext(typeInfo);
+                    typeContextOfFile.addToContext(typeInfo, true);
                 }
             }
         }

@@ -134,10 +134,17 @@ public class ParseMethodCallExpr {
             if (methodCandidates.size() > 1) {
                 trimVarargsVsMethodsWithFewerParameters(methodCandidates);
                 if (methodCandidates.size() > 1) {
+                    //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
                     Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                            for (TypeContext.MethodCandidate mc : methodCandidates) {
+                                log(METHOD_CALL, "Candidate: " + mc.method.methodInfo.distinguishingName());
+                            }
+                            for (MethodInfo overload : overloads) {
+                                log(METHOD_CALL, "Overloads of 1st: {}", overload.distinguishingName());
+                            }
                             throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " + methodNameForErrorReporting + " found in known type "
                                     + startingPointForErrorReporting.detailedString() + " at position " + positionForErrorReporting);
                         }
@@ -170,8 +177,19 @@ public class ParseMethodCallExpr {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
             Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType.translateMap(concreteParameterType, expressionContext.typeContext);
+            ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
             translated.forEach((k, v) -> {
-                if (!mapExpansion.containsKey(k)) mapExpansion.put(k, v);
+                // we can go in two directions here.
+                // either the type parameter gets a proper value by the concreteParameterType, or the concreteParameter type should
+                // agree with the concrete types map in the method candidate. It is quite possible that concreteParameterType == ParameterizedType.NULL,
+                // and then the value in the map should prevail
+                ParameterizedType valueToAdd;
+                if(concreteTypeInMethod.betterDefinedThan(v)) {
+                    valueToAdd = concreteTypeInMethod;
+                } else {
+                    valueToAdd = v;
+                }
+                if (!mapExpansion.containsKey(k)) mapExpansion.put(k, valueToAdd);
             });
             i++;
             if (i >= formalParameters.size()) break; // varargs... we have more than there are
