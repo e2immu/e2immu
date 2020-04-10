@@ -140,7 +140,7 @@ public class ParseMethodCallExpr {
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
                             for (TypeContext.MethodCandidate mc : methodCandidates) {
-                                log(METHOD_CALL, "Candidate: " + mc.method.methodInfo.distinguishingName());
+                                log(METHOD_CALL, "Candidate: {} score {}", mc.method.methodInfo.distinguishingName(), compatibilityScore.get(mc.method.methodInfo));
                             }
                             for (MethodInfo overload : overloads) {
                                 log(METHOD_CALL, "Overloads of 1st: {}", overload.distinguishingName());

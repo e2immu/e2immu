@@ -314,13 +314,13 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement whileStatement(WhileStmt statement) {
-        Block block = parseBlockOrStatement(statement.getBody());
+        Block block = newVariableContext("while-block").parseBlockOrStatement(statement.getBody());
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         return new WhileStatement(expression, block);
     }
 
     private org.e2immu.analyser.model.Statement doStatement(DoStmt statement) {
-        Block block = parseBlockOrStatement(statement.getBody());
+        Block block = newVariableContext("do-block").parseBlockOrStatement(statement.getBody());
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getCondition());
         return new DoStatement(expression, block);
     }
@@ -333,8 +333,6 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
         String localName = statement.getClassDeclaration().getNameAsString();
-        int index = topLevel.newIndex(enclosingType);
-        String fullyQualifiedName = enclosingType.fullyQualifiedName + "." + index + "." + localName;
         TypeInfo typeInfo = new TypeInfo(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
@@ -343,8 +341,8 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement) {
-        Block block = parseBlockOrStatement(statement.getBody());
         org.e2immu.analyser.model.Expression expression = parseExpression(statement.getExpression());
+        Block block = newVariableContext("synchronized-block").parseBlockOrStatement(statement.getBody());
         return new SynchronizedStatement(expression, block);
     }
 
@@ -362,9 +360,11 @@ public class ExpressionContext {
     }
 
     private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {
-        Block ifBlock = parseBlockOrStatement(statement.getThenStmt());
         org.e2immu.analyser.model.Expression conditional = parseExpression(statement.getCondition());
-        Block elseBlock = statement.getElseStmt().map(this::parseBlockOrStatement).orElse(Block.EMPTY_BLOCK);
+        Block ifBlock = newVariableContext("if-block").parseBlockOrStatement(statement.getThenStmt());
+        Block elseBlock = statement.getElseStmt()
+                .map(stmt -> newVariableContext("else-block").parseBlockOrStatement(stmt))
+                .orElse(Block.EMPTY_BLOCK);
         return new IfElseStatement(conditional, ifBlock, elseBlock);
     }
 
