@@ -190,7 +190,9 @@ public class BinaryOperator implements Expression {
             }
             throw new UnsupportedOperationException();
         }
-        if (widestType == Primitives.PRIMITIVES.intTypeInfo) {
+        if (widestType == Primitives.PRIMITIVES.intTypeInfo ||
+                widestType == Primitives.PRIMITIVES.shortTypeInfo ||
+                widestType == Primitives.PRIMITIVES.longTypeInfo) {
             switch (operator) {
                 case MULTIPLY:
                     return Primitives.PRIMITIVES.multiplyOperatorInt;

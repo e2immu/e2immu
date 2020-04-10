@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
@@ -37,6 +38,7 @@ public class ParseMethodReferenceExpr {
             return unevaluated(expressionContext, methodReferenceExpr);
         }
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
+        boolean scopeIsNotAField = !(scope instanceof VariableExpression); // if not a variable, then a type
         ParameterizedType parameterizedType = scope.returnType();
         expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
         String methodName = methodReferenceExpr.getIdentifier();
@@ -62,9 +64,8 @@ public class ParseMethodReferenceExpr {
 
             // but this example says you need to subtract:
             // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
-            boolean scopeIsStatic = !(scope instanceof VariableExpression); // if not a variable, then a type; not constructor, now decide instance vs static method || ((VariableExpression) scope).variable.isStatic();
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, scopeIsStatic, parameterizedType.initialTypeParameterMap(), methodCandidates);
+                    methodName, parametersPresented, scopeIsNotAField, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -77,7 +78,7 @@ public class ParseMethodReferenceExpr {
                 for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
                     ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
                     ParameterizedType typeOfMethodCandidate;
-                    int param = mc.method.methodInfo.isStatic ? i : i - 1;
+                    int param = scopeIsNotAField && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
                     if (param == -1) {
                         typeOfMethodCandidate = mc.method.methodInfo.typeInfo.asParameterizedType();
                     } else {
@@ -88,7 +89,14 @@ public class ParseMethodReferenceExpr {
                 return false;
             });
             if (methodCandidates.size() > 1) {
-                throw new UnsupportedOperationException();
+                TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
+                Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
+                    if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                        throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " +
+                                methodNameForErrorReporting + " found in known at position " + methodReferenceExpr.getBegin());
+                    }
+                }
             }
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;

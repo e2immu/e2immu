@@ -110,7 +110,7 @@ public class UnaryOperator implements Expression {
                 default:
             }
         }
-        if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) {
+        if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
             if (operator == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
                 return Primitives.PRIMITIVES.logicalNotOperatorBool;
             }
