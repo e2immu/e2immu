@@ -169,15 +169,19 @@ public class BinaryOperator implements Expression {
     @NotNull
     public static MethodInfo getOperator(@NullNotAllowed @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null || !widestType.isPrimitive()) {
+        if (widestType == null || !widestType.isPrimitiveOrBoxed()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return Primitives.PRIMITIVES.equalsOperatorObject;
             }
             if (operator == BinaryExpr.Operator.NOT_EQUALS) {
                 return Primitives.PRIMITIVES.notEqualsOperatorObject;
             }
+            if (widestType == Primitives.PRIMITIVES.stringTypeInfo && operator == BinaryExpr.Operator.PLUS) {
+                return Primitives.PRIMITIVES.plusOperatorString;
+            }
+            throw new UnsupportedOperationException("? what else can you have on " + widestType + ", operator " + operator);
         }
-        if (widestType == Primitives.PRIMITIVES.booleanTypeInfo) {
+        if (widestType == Primitives.PRIMITIVES.booleanTypeInfo || widestType.fullyQualifiedName.equals("java.lang.Boolean")) {
             switch (operator) {
                 case OR:
                     return Primitives.PRIMITIVES.orOperatorBool;
@@ -190,7 +194,7 @@ public class BinaryOperator implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
-        if (widestType == Primitives.PRIMITIVES.charTypeInfo) {
+        if (widestType == Primitives.PRIMITIVES.charTypeInfo|| widestType.fullyQualifiedName.equals("java.lang.Character")) {
             switch (operator) {
                 case PLUS:
                     return Primitives.PRIMITIVES.plusOperatorInt;
@@ -203,7 +207,7 @@ public class BinaryOperator implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on char");
         }
-        if (widestType != null && widestType.isNumericPrimitive()) {
+        if (widestType.isNumericPrimitiveBoxed()) {
             switch (operator) {
                 case MULTIPLY:
                     return Primitives.PRIMITIVES.multiplyOperatorInt;
@@ -235,12 +239,9 @@ public class BinaryOperator implements Expression {
                     return Primitives.PRIMITIVES.notEqualsOperatorInt;
             }
         }
-        // TODO type could be void even (method call, not yet inspected)
-        //if (widestType == null && operator == BinaryExpr.Operator.PLUS) {
-        if (widestType == Primitives.PRIMITIVES.stringTypeInfo)
-            return Primitives.PRIMITIVES.plusOperatorString;
+
         throw new UnsupportedOperationException("Unknown operator " + operator + " on widest type " +
-                (widestType == null ? "null" : widestType.fullyQualifiedName));
+                widestType.fullyQualifiedName);
     }
 
     public static int precedence(@NullNotAllowed @NotModified BinaryExpr.Operator operator) {

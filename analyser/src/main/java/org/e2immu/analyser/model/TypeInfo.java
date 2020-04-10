@@ -661,13 +661,31 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             sb.append(suffix);
     }
 
-    private static final Set<String> PRIMITIVES = Set.of("short", "int", "double", "float", "char", "byte", "long", "void");
+    private static final Set<String> PRIMITIVES = Set.of("boolean", "short", "int", "double", "float", "char", "byte", "long", "void");
+
+    private static final Set<String> NUMERIC_PRIMITIVES = Set.of("short", "int", "double", "float", "byte", "long");
+
+    private static final Set<String> PRIMITIVES_BOX = Set.of("java.lang.Short", "java.lang.Integer", "java.lang.Double",
+            "java.lang.Float", "java.lang.Character", "java.lang.Byte", "java.lang.Boolean",
+            "java.lang.Long", "java.lang.Void");
+
+    private static final Set<String> NUMERIC_PRIMITIVES_BOX = Set.of("java.lang.Short", "java.lang.Integer", "java.lang.Double",
+            "java.lang.Float", "java.lang.Byte", "java.lang.Long");
 
     public boolean isPrimitive() {
-        if (hasBeenInspected()) {
-            return typeInspection.get().typeNature == TypeNature.PRIMITIVE;
-        }
         return PRIMITIVES.contains(fullyQualifiedName);
+    }
+
+    public boolean isPrimitiveOrBoxed() {
+        return isPrimitive() || PRIMITIVES_BOX.contains(fullyQualifiedName);
+    }
+
+    public boolean isNumericPrimitive() {
+        return NUMERIC_PRIMITIVES.contains(fullyQualifiedName);
+    }
+
+    public boolean isNumericPrimitiveBoxed() {
+        return isNumericPrimitive() || NUMERIC_PRIMITIVES_BOX.contains(fullyQualifiedName);
     }
 
     public boolean isJavaLang() {
@@ -872,12 +890,5 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
         if (packageNameOrEnclosingType.isLeft()) return this;
         return packageNameOrEnclosingType.getRight().primaryType();
-    }
-
-    public boolean isNumericPrimitive() {
-        return this == Primitives.PRIMITIVES.intTypeInfo || this == Primitives.PRIMITIVES.doubleTypeInfo
-                || this == Primitives.PRIMITIVES.longTypeInfo || this == Primitives.PRIMITIVES.floatTypeInfo
-                || this == Primitives.PRIMITIVES.byteTypeInfo || this == Primitives.PRIMITIVES.shortTypeInfo;
-
     }
 }

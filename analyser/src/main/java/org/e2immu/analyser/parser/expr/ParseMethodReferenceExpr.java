@@ -72,7 +72,7 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
         }
         if (methodCandidates.size() > 1) {
-            log(METHOD_CALL, "Have multiple candidates, would need to sort somehow to take the best one");
+            log(METHOD_CALL, "Have multiple candidates, try to weed out");
             methodCandidates.removeIf(mc -> {
                 // check types of parameters in SAM
                 // example here is in Variable: there is a detailedString(), and a static detailedString(Set<>)
@@ -90,12 +90,16 @@ public class ParseMethodReferenceExpr {
                 return false;
             });
             if (methodCandidates.size() > 1) {
-                TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
-                for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                    if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
-                        throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " +
-                                methodNameForErrorReporting + " found in known at position " + methodReferenceExpr.getBegin());
+                log(METHOD_CALL, "Trying to weed out those of the same type, static vs instane");
+                staticVsInstance(methodCandidates);
+                if (methodCandidates.size() > 1) {
+                    TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
+                    Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                    for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
+                        if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                            throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " +
+                                    methodNameForErrorReporting + " found in known at position " + methodReferenceExpr.getBegin());
+                        }
                     }
                 }
             }
@@ -107,6 +111,12 @@ public class ParseMethodReferenceExpr {
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
         log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInfo.distinguishingName());
         return new MethodReference(method.methodInfo, functionalType);
+    }
+
+    private static void staticVsInstance(List<TypeContext.MethodCandidate> methodCandidates) {
+        Set<TypeInfo> haveInstance = new HashSet<>();
+        methodCandidates.stream().filter(mc -> !mc.method.methodInfo.isStatic).forEach(mc -> haveInstance.add(mc.method.methodInfo.typeInfo));
+        methodCandidates.removeIf(mc -> mc.method.methodInfo.isStatic && haveInstance.contains(mc.method.methodInfo.typeInfo));
     }
 
     private static Expression unevaluated(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {

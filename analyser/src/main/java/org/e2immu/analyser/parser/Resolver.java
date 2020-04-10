@@ -141,9 +141,11 @@ public class Resolver {
                 if (expression != FieldInspection.EMPTY) {
                     ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
                     Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
+                    // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
                     MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(subContext.typeContext);
                     if (singleAbstractMethod != null) {
-                        log(RESOLVE, "Passing on functional interface method to field initializer of {}", fieldInfo.fullyQualifiedName());
+                        singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
+                        log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
                     }
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
                     fieldInspection.initialiser.set(parsedExpression);
