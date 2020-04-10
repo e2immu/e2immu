@@ -23,10 +23,15 @@ public class TestIsAssignableFrom {
         parser.getByteCodeInspector().inspectFromPath("java/util/List");
     }
 
-    // int <- String should fail
+    // int <- String should fail, int <- Integer should not
     @Test
     public void test() {
         ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
+        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.Integer").asParameterizedType());
+
+        Assert.assertTrue(integerPt.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
+        Assert.assertTrue(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
+        Assert.assertTrue(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(integerPt));
 
         Assert.assertFalse(Primitives.PRIMITIVES.intParameterizedType.isAssignableFrom(stringPt));
         Assert.assertFalse(stringPt.isAssignableFrom(Primitives.PRIMITIVES.intParameterizedType));
