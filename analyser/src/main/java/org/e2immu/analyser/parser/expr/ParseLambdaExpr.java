@@ -33,6 +33,7 @@ import org.e2immu.analyser.parser.VariableContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
@@ -92,6 +93,6 @@ public class ParseLambdaExpr {
     // experimental: we look at the parameters, and return an expression which is superficial, with only
     // the return type as functional type of importance
     private static Expression partiallyParse(LambdaExpr lambdaExpr) {
-        return new UnevaluatedLambdaExpression(lambdaExpr.getParameters().size(), lambdaExpr.getExpressionBody().isPresent() ? true : null);
+        return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()), lambdaExpr.getExpressionBody().isPresent() ? true : null);
     }
 }

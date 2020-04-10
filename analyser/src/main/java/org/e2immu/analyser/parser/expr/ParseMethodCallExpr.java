@@ -184,7 +184,7 @@ public class ParseMethodCallExpr {
                 // agree with the concrete types map in the method candidate. It is quite possible that concreteParameterType == ParameterizedType.NULL,
                 // and then the value in the map should prevail
                 ParameterizedType valueToAdd;
-                if(concreteTypeInMethod.betterDefinedThan(v)) {
+                if (concreteTypeInMethod.betterDefinedThan(v)) {
                     valueToAdd = concreteTypeInMethod;
                 } else {
                     valueToAdd = v;
@@ -371,10 +371,8 @@ public class ParseMethodCallExpr {
         if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
             MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (sam == null) return NOT_ASSIGNABLE;
-            int numberOfParameters = ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters;
-            // if numberOfParameters < 0, we don't even know for sure how many params we're going to get
-            // TODO this can be done better? but it should cover 99% of cases
-            return numberOfParameters < 0 || sam.methodInfo.methodInspection.get().parameters.size() == numberOfParameters ? 0 : NOT_ASSIGNABLE;
+            int numberOfParametersInSam = sam.methodInfo.methodInspection.get().parameters.size();
+            return ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters.contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
         return typeOfParameter.numericIsAssignableFrom(returnType);

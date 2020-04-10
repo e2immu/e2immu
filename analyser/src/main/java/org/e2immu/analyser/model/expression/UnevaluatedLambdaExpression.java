@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.annotation.E2Immutable;
@@ -28,11 +29,11 @@ import java.util.Set;
 
 @E2Immutable
 public class UnevaluatedLambdaExpression implements Expression {
-    public final int numberOfParameters; // the amount of parameters of the lambda
+    public final Set<Integer> numberOfParameters; // the amount of parameters of the lambda
     public final Boolean nonVoid; // true when expression without block, null otherwise
 
-    public UnevaluatedLambdaExpression(int numberOfParameters, Boolean nonVoid) {
-        this.numberOfParameters = numberOfParameters;
+    public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid) {
+        this.numberOfParameters = ImmutableSet.copyOf(numberOfParameters);
         this.nonVoid = nonVoid;
     }
 

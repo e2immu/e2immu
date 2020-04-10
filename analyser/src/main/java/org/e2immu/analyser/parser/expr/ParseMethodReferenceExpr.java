@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,7 +39,7 @@ public class ParseMethodReferenceExpr {
             return unevaluated(expressionContext, methodReferenceExpr);
         }
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
-        boolean scopeIsNotAField = !(scope instanceof VariableExpression); // if not a variable, then a type
+        boolean scopeIsAType = scopeIsAType(scope);
         ParameterizedType parameterizedType = scope.returnType();
         expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
         String methodName = methodReferenceExpr.getIdentifier();
@@ -65,7 +66,7 @@ public class ParseMethodReferenceExpr {
             // but this example says you need to subtract:
             // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
             expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, scopeIsNotAField, parameterizedType.initialTypeParameterMap(), methodCandidates);
+                    methodName, parametersPresented, scopeIsAType, parameterizedType.initialTypeParameterMap(), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -78,7 +79,7 @@ public class ParseMethodReferenceExpr {
                 for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
                     ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
                     ParameterizedType typeOfMethodCandidate;
-                    int param = scopeIsNotAField && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
+                    int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
                     if (param == -1) {
                         typeOfMethodCandidate = mc.method.methodInfo.typeInfo.asParameterizedType();
                     } else {
@@ -128,16 +129,18 @@ public class ParseMethodReferenceExpr {
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());
         }
-        if (methodCandidates.size() == 1) {
-            TypeContext.MethodCandidate methodCandidate = methodCandidates.get(0);
+        Set<Integer> numberOfParameters = new HashSet<>();
+        for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
             log(METHOD_CALL, "Have exactly one method reference candidate, this can work: {}", methodCandidate.method.methodInfo.distinguishingName());
             MethodInspection methodInspection = methodCandidate.method.methodInfo.methodInspection.get();
-            boolean scopeIsType = !(scope instanceof VariableExpression);
+            boolean scopeIsType = scopeIsAType(scope);
             boolean addOne = scopeIsType && !methodCandidate.method.methodInfo.isConstructor && !methodCandidate.method.methodInfo.isStatic; // && !methodInspection.returnType.isPrimitive();
-            int numberOfParameters = methodInspection.parameters.size() + (addOne ? 1 : 0);
-            return new UnevaluatedLambdaExpression(numberOfParameters, !methodInspection.returnType.isVoid());
+            int n = methodInspection.parameters.size() + (addOne ? 1 : 0);
+            if (!numberOfParameters.add(n)) {
+                // throw new UnsupportedOperationException("Multiple candidates with the same amount of parameters");
+            }
         }
-        return new UnevaluatedLambdaExpression(-1, null);
+        return new UnevaluatedLambdaExpression(numberOfParameters, null);
     }
 
     private static MethodReference arrayConstruction(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
@@ -146,5 +149,9 @@ public class ParseMethodReferenceExpr {
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
         return new MethodReference(arrayConstructor, intFunctionPt);
+    }
+
+    public static boolean scopeIsAType(Expression scope) {
+        return !(scope instanceof VariableExpression) && !(scope instanceof FieldAccess);
     }
 }

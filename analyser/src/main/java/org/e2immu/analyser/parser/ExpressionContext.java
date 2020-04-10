@@ -446,19 +446,27 @@ public class ExpressionContext {
                 if (typeExpr.getType().isClassOrInterfaceType()) {
                     ClassOrInterfaceType cit = typeExpr.getType().asClassOrInterfaceType();
                     if (cit.getScope().isPresent()) {
-                        // System.out, we'll return a field access!
-                        ParameterizedType parameterizedType = ParameterizedType.from(typeContext, cit.getScope().get());
-                        dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
-                        TypeExpression typeExpression = new TypeExpression(parameterizedType);
-                        return ParseFieldAccessExpr.createFieldAccess(this, typeExpression, cit.getNameAsString(), expression.getBegin().orElseThrow());
+                        // System.out, we'll return a field access, scope is System
+                        // but: expressionContext.typeContext, scope is expressionContext = variable!
+                        Variable variable = variableContext.get(cit.getScope().get().getNameAsString(), false);
+                        Expression scope;
+                        if (variable != null) {
+                            dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
+                            scope = ParseNameExpr.fromVariableToExpression(this, variable);
+                        } else {
+                            ParameterizedType parameterizedType = ParameterizedType.from(typeContext, cit.getScope().get());
+                            dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
+                            scope = new TypeExpression(parameterizedType);
+                        }
+                        return ParseFieldAccessExpr.createFieldAccess(this, scope, cit.getNameAsString(), expression.getBegin().orElseThrow());
                     }
-                }
-                // there is a real possibility that the type expression is NOT a type but a local field...
-                // therefore we check the variable context first
-                Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
-                if (variable != null) {
-                    dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
-                    return ParseNameExpr.fromVariableToExpression(this, variable);
+                    // there is a real possibility that the type expression is NOT a type but a local field...
+                    // therefore we check the variable context first
+                    Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
+                    if (variable != null) {
+                        dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
+                        return ParseNameExpr.fromVariableToExpression(this, variable);
+                    }
                 }
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, typeExpr.getType());
                 dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
