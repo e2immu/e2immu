@@ -44,7 +44,7 @@ public class ArrayAccess implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return expression.returnType();
+        return expression.returnType().copyWithOneFewerArrays();
     }
 
     @Override

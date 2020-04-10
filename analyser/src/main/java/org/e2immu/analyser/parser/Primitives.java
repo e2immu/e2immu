@@ -168,13 +168,30 @@ public class Primitives {
             typeByName.put(ti.simpleName, ti);
         }
 
+        MethodInfo valueOf = new MethodInfo(annotationTypeTypeInfo, "valueOf", true);
+        ParameterInfo valueOf1 = new ParameterInfo(stringParameterizedType, "s", 0);
+        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
+                .build(valueOf));
+        valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .setReturnType(annotationTypeTypeInfo)
+                .addParameter(valueOf1)
+                .addModifier(MethodModifier.PUBLIC)
+                .build(valueOf));
+        MethodInfo name = new MethodInfo(annotationTypeTypeInfo, "name", false);
+        name.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .setReturnType(stringTypeInfo)
+                .addModifier(MethodModifier.PUBLIC)
+                .build(name));
         annotationTypeTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)
+                .addTypeModifier(TypeModifier.PUBLIC)
                 .addField(annotationTypeComputed)
                 .addField(annotationTypeContract)
                 .addField(annotationTypeVerify)
                 .addField(annotationTypeVerifyAbsent)
+                .addMethod(valueOf)
+                .addMethod(name)
                 .build(true, annotationTypeTypeInfo));
         for (FieldInfo fieldInfo : new FieldInfo[]{annotationTypeComputed, annotationTypeContract, annotationTypeVerify, annotationTypeVerifyAbsent}) {
             fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()

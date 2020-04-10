@@ -91,7 +91,7 @@ public class UnaryOperator implements Expression {
 
     // TODO interesting case for null not allowed on typeInfo :-)
     public static MethodInfo getOperator(@NullNotAllowed UnaryExpr.Operator operator, @NullNotAllowed TypeInfo typeInfo) {
-        if (typeInfo == Primitives.PRIMITIVES.intTypeInfo) {
+        if (typeInfo.isNumericPrimitive()) {
             switch (operator) {
                 case MINUS:
                     return Primitives.PRIMITIVES.unaryMinusOperatorInt;

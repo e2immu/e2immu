@@ -873,4 +873,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (packageNameOrEnclosingType.isLeft()) return this;
         return packageNameOrEnclosingType.getRight().primaryType();
     }
+
+    public boolean isNumericPrimitive() {
+        return this == Primitives.PRIMITIVES.intTypeInfo || this == Primitives.PRIMITIVES.doubleTypeInfo
+                || this == Primitives.PRIMITIVES.longTypeInfo || this == Primitives.PRIMITIVES.floatTypeInfo
+                || this == Primitives.PRIMITIVES.byteTypeInfo || this == Primitives.PRIMITIVES.shortTypeInfo;
+
+    }
 }

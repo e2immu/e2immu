@@ -188,7 +188,7 @@ public class BinaryOperator implements Expression {
                 case NOT_EQUALS:
                     return Primitives.PRIMITIVES.notEqualsOperatorInt;
             }
-            throw new UnsupportedOperationException("Operator "+operator+" on boolean");
+            throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
         if (widestType == Primitives.PRIMITIVES.charTypeInfo) {
             switch (operator) {
@@ -201,11 +201,9 @@ public class BinaryOperator implements Expression {
                 case NOT_EQUALS:
                     return Primitives.PRIMITIVES.notEqualsOperatorInt;
             }
-            throw new UnsupportedOperationException("Operator "+operator+" on char");
+            throw new UnsupportedOperationException("Operator " + operator + " on char");
         }
-        if (widestType == Primitives.PRIMITIVES.intTypeInfo ||
-                widestType == Primitives.PRIMITIVES.shortTypeInfo ||
-                widestType == Primitives.PRIMITIVES.longTypeInfo) {
+        if (widestType != null && widestType.isNumericPrimitive()) {
             switch (operator) {
                 case MULTIPLY:
                     return Primitives.PRIMITIVES.multiplyOperatorInt;
