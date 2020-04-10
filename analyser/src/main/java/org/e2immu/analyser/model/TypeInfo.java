@@ -358,8 +358,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         .collect(Collectors.toList());
                 List<AnnotationExpression> annotations = fd.getAnnotations().stream()
                         .map(ae -> AnnotationExpression.from(ae, expressionContext)).collect(Collectors.toList());
-                ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, fd.getElementType());
                 for (VariableDeclarator vd : fd.getVariables()) {
+                    ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, vd.getType());
+
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, this);
                     FieldInspection.FieldInspectionBuilder fieldInspectionBuilder =
@@ -448,21 +449,37 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         boolean inSamePackage = !inSameCompilationUnit &&
                 primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
                         startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+
+        // my own field
         Stream<FieldInfo> localStream = typeInspection.fields
                 .stream()
                 .filter(fieldInfo -> inSameCompilationUnit ||
                         fieldInfo.fieldInspection.get().access == FieldModifier.PUBLIC ||
                         inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PACKAGE ||
                         !inSamePackage && fieldInfo.fieldInspection.get().access == FieldModifier.PROTECTED);
+
+        // my enclosing type's fields
+        Stream<FieldInfo> enclosingStream;
+        if (typeInspection.packageNameOrEnclosingType.isRight()) {
+            enclosingStream = typeInspection.packageNameOrEnclosingType.getRight().accessibleFieldsStream(startingPoint);
+        } else {
+            enclosingStream = Stream.empty();
+        }
+        Stream<FieldInfo> joint = Stream.concat(localStream, enclosingStream);
+
+        // my parent's fields
         Stream<FieldInfo> parentStream;
         if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
             parentStream = typeInspection.parentClass.typeInfo.accessibleFieldsStream(startingPoint);
         } else parentStream = Stream.empty();
-        Stream<FieldInfo> joint = Stream.concat(localStream, parentStream);
+        joint = Stream.concat(joint, parentStream);
+
+        // my interfaces' fields
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
             Stream<FieldInfo> fromInterface = interfaceType.typeInfo.accessibleFieldsStream(startingPoint);
             joint = Stream.concat(joint, fromInterface);
         }
+
         return joint;
     }
 

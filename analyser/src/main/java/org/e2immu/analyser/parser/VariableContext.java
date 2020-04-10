@@ -60,8 +60,16 @@ public class VariableContext {
         return variable;
     }
 
+    /**
+     * we'll add them in the correct order, so no overwriting!
+     *
+     * @param variable the variable to be added
+     */
     public void add(FieldReference variable) {
-        fields.put(variable.name(), variable);
+        String name = variable.name();
+        if(!fields.containsKey(name)) {
+            fields.put(name, variable);
+        }
     }
 
     public void add(ParameterInfo variable) {
