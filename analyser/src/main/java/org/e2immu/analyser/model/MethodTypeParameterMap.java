@@ -63,6 +63,11 @@ public class MethodTypeParameterMap {
     }
 
     // also used for fields
+    // INFINITE LOOP TODO
+
+    // [Type java.util.function.Function<E, ?>], concrete type java.util.stream.Stream<R>, mapExpansion
+    // {R as #0 in java.util.stream.Stream.map(Function<? super T, ? extends R>)=Type java.util.function.Function<E, ? extends R>,
+    // T as #0 in java.util.function.Function=Type param E}
     public static ParameterizedType apply(Map<NamedType, ParameterizedType> concreteTypes, ParameterizedType input) {
         ParameterizedType pt = input;
         while (pt.isTypeParameter() && concreteTypes.containsKey(pt.typeParameter)) {
@@ -70,12 +75,15 @@ public class MethodTypeParameterMap {
             if (newPt.equals(pt)) break;
             pt = newPt;
         }
-        if (pt.parameters.isEmpty()) return pt;
-        List<ParameterizedType> recursivelyMappedParameters = pt.parameters.stream().map(x -> apply(concreteTypes, x)).collect(Collectors.toList());
-        if (pt.typeInfo == null) {
-            throw new UnsupportedOperationException("? input " + pt + " has no type");
+        final ParameterizedType stablePt = pt;
+        if (stablePt.parameters.isEmpty()) return stablePt;
+        List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
+                .map(x -> x == stablePt || x == input ? stablePt : apply(concreteTypes, x))
+                .collect(Collectors.toList());
+        if (stablePt.typeInfo == null) {
+            throw new UnsupportedOperationException("? input " + stablePt + " has no type");
         }
-        return new ParameterizedType(pt.typeInfo, recursivelyMappedParameters);
+        return new ParameterizedType(stablePt.typeInfo, recursivelyMappedParameters);
     }
 
     @Override

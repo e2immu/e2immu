@@ -188,7 +188,20 @@ public class BinaryOperator implements Expression {
                 case NOT_EQUALS:
                     return Primitives.PRIMITIVES.notEqualsOperatorInt;
             }
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Operator "+operator+" on boolean");
+        }
+        if (widestType == Primitives.PRIMITIVES.charTypeInfo) {
+            switch (operator) {
+                case PLUS:
+                    return Primitives.PRIMITIVES.plusOperatorInt;
+                case MINUS:
+                    return Primitives.PRIMITIVES.minusOperatorInt;
+                case EQUALS:
+                    return Primitives.PRIMITIVES.equalsOperatorInt; // TODO should clean up
+                case NOT_EQUALS:
+                    return Primitives.PRIMITIVES.notEqualsOperatorInt;
+            }
+            throw new UnsupportedOperationException("Operator "+operator+" on char");
         }
         if (widestType == Primitives.PRIMITIVES.intTypeInfo ||
                 widestType == Primitives.PRIMITIVES.shortTypeInfo ||
@@ -204,9 +217,9 @@ public class BinaryOperator implements Expression {
                     return Primitives.PRIMITIVES.plusOperatorInt;
                 case MINUS:
                     return Primitives.PRIMITIVES.minusOperatorInt;
-                case OR:
+                case BINARY_OR:
                     return Primitives.PRIMITIVES.bitwiseOrOperatorInt;
-                case AND:
+                case BINARY_AND:
                     return Primitives.PRIMITIVES.bitwiseAndOperatorInt;
                 case XOR:
                     return Primitives.PRIMITIVES.bitwiseXorOperatorInt;

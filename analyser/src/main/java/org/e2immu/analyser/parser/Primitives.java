@@ -118,6 +118,9 @@ public class Primitives {
     public final MethodInfo assignPlusOperatorInt = new MethodInfo(intTypeInfo, "+=",
             List.of(), intParameterizedType, true);
 
+    public final MethodInfo assignOrOperatorBoolean = new MethodInfo(intTypeInfo, "|=",
+            List.of(), booleanParameterizedType, true);
+
     public final MethodInfo postfixIncrementOperatorInt = new MethodInfo(intTypeInfo, "++",
             List.of(), intParameterizedType, true);
     public final MethodInfo prefixIncrementOperatorInt = new MethodInfo(intTypeInfo, "++",

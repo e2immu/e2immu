@@ -406,10 +406,8 @@ public class ParameterizedType {
         Map<NamedType, ParameterizedType> res = new HashMap<>();
         boolean iAmFunctionalInterface = isFunctionalInterface(typeContext);
         boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface(typeContext);
-        if (iAmFunctionalInterface != concreteTypeIsFunctionalInterface) {
-            throw new UnsupportedOperationException("Have " + iAmFunctionalInterface + " but " + concreteTypeIsFunctionalInterface);
-        }
-        if (iAmFunctionalInterface) {
+
+        if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
             MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(typeContext);
             List<ParameterInfo> methodParams = methodTypeParameterMap.methodInfo.methodInspection.get().parameters;
             MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(typeContext);

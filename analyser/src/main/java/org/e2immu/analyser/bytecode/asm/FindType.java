@@ -20,6 +20,7 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.model.TypeInfo;
 
+// not explicitly, good for testing our own code @FunctionalInterface
 public interface FindType {
 
     TypeInfo find(String fqn, String path);

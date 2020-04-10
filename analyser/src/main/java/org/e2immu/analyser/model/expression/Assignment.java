@@ -52,21 +52,23 @@ public class Assignment implements Expression {
     @NotNull
     public static MethodInfo operator(@NullNotAllowed AssignExpr.Operator operator,
                                       @NullNotAllowed TypeInfo widestType) {
-        if (widestType == Primitives.PRIMITIVES.intTypeInfo || widestType == Primitives.PRIMITIVES.longTypeInfo) {
-            switch (operator) {
-                case PLUS:
-                    return Primitives.PRIMITIVES.assignPlusOperatorInt;
-                case ASSIGN:
-                    return Primitives.PRIMITIVES.assignOperatorInt;
-            }
+        // if (widestType == Primitives.PRIMITIVES.intTypeInfo || widestType == Primitives.PRIMITIVES.longTypeInfo) {
+        switch (operator) {
+            case PLUS:
+                return Primitives.PRIMITIVES.assignPlusOperatorInt;
+            case BINARY_OR:
+                return Primitives.PRIMITIVES.assignOrOperatorBoolean;
+            case ASSIGN:
+                return Primitives.PRIMITIVES.assignOperatorInt;
         }
-        if (widestType == Primitives.PRIMITIVES.booleanTypeInfo) {
+        /// }
+        /*if (widestType == Primitives.PRIMITIVES.booleanTypeInfo) {
             switch (operator) {
                 case ASSIGN:
                     return Primitives.PRIMITIVES.assignOperatorInt;
                     // TODO
             }
-        }
+        }*/
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);
     }

@@ -118,7 +118,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             builder.setParentClass(classImplemented);
         }
-        continueInspection(true, expressionContext, builder, members, false);
+        continueInspection(true, expressionContext, builder, members, false, false);
     }
 
     /**
@@ -161,13 +161,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
             doClassOrInterfaceDeclaration(hasBeenDefined, expressionContext, typeNature, (ClassOrInterfaceDeclaration) typeDeclaration, builder);
         }
+        boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
-            builder.addAnnotation(AnnotationExpression.from(annotationExpr, expressionContext));
+            AnnotationExpression ae = AnnotationExpression.from(annotationExpr, expressionContext);
+            haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo.fullyQualifiedName);
+            builder.addAnnotation(ae);
         }
         for (Modifier modifier : typeDeclaration.getModifiers()) {
             builder.addTypeModifier(TypeModifier.from(modifier));
         }
-        continueInspection(hasBeenDefined, expressionContext, builder, typeDeclaration.getMembers(), typeNature == TypeNature.INTERFACE);
+        continueInspection(hasBeenDefined, expressionContext, builder, typeDeclaration.getMembers(), typeNature == TypeNature.INTERFACE, haveFunctionalInterface);
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration,
@@ -288,7 +291,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid, builder);
-        continueInspection(true, expressionContext, builder, cid.getMembers(), false);
+        continueInspection(true, expressionContext, builder, cid.getMembers(), false, false);
     }
 
 
@@ -313,7 +316,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             boolean hasBeenDefined,
             ExpressionContext expressionContext,
             TypeInspection.TypeInspectionBuilder builder,
-            NodeList<BodyDeclaration<?>> members, boolean isInterface) {
+            NodeList<BodyDeclaration<?>> members,
+            boolean isInterface,
+            boolean haveFunctionalInterface) {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + fullyQualifiedName);
 
@@ -386,6 +391,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         log(INSPECT, "Variable context after parsing fields of type {}: {}", fullyQualifiedName, subContext.variableContext);
 
+        AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
+
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(this, List.of());
@@ -399,9 +406,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
                         Primitives.PRIMITIVES.voidParameterizedType, md.isStatic(), md.isDefault());
                 methodInfo.inspect(isInterface, md, subContext);
+                if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
+                    countNonStaticNonDefaultIfInterface.incrementAndGet();
+                }
                 builder.addMethod(methodInfo);
             });
         }
+
+        if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && hasBeenDefined) {
+            builder.addAnnotation(expressionContext.typeContext.functionalInterface.get());
+        }
+
         typeInspection.set(builder.build(hasBeenDefined, this));
     }
 
