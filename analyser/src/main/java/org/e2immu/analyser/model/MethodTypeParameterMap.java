@@ -39,7 +39,7 @@ public class MethodTypeParameterMap {
 
     public ParameterizedType getConcreteReturnType() {
         ParameterizedType returnType = methodInfo.methodInspection.get().returnType;
-        return apply(returnType);
+        return apply(concreteTypes, returnType);
     }
 
     public ParameterizedType getConcreteTypeOfParameter(int i) {
@@ -47,9 +47,9 @@ public class MethodTypeParameterMap {
         int n = methodInspection.parameters.size();
         if (i >= n) {
             // varargs
-            return apply(methodInspection.parameters.get(n - 1).parameterizedType);
+            return apply(concreteTypes, methodInspection.parameters.get(n - 1).parameterizedType);
         }
-        return apply(methodInspection.parameters.get(i).parameterizedType);
+        return apply(concreteTypes, methodInspection.parameters.get(i).parameterizedType);
     }
 
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
@@ -62,7 +62,8 @@ public class MethodTypeParameterMap {
         return concreteTypes.get(typeParameter);
     }
 
-    public ParameterizedType apply(ParameterizedType input) {
+    // also used for fields
+    public static ParameterizedType apply(Map<NamedType, ParameterizedType> concreteTypes, ParameterizedType input) {
         ParameterizedType pt = input;
         while (pt.isTypeParameter() && concreteTypes.containsKey(pt.typeParameter)) {
             ParameterizedType newPt = concreteTypes.get(pt.typeParameter);
@@ -70,9 +71,9 @@ public class MethodTypeParameterMap {
             pt = newPt;
         }
         if (pt.parameters.isEmpty()) return pt;
-        List<ParameterizedType> recursivelyMappedParameters = pt.parameters.stream().map(this::apply).collect(Collectors.toList());
+        List<ParameterizedType> recursivelyMappedParameters = pt.parameters.stream().map(x -> apply(concreteTypes, x)).collect(Collectors.toList());
         if (pt.typeInfo == null) {
-            throw new UnsupportedOperationException("? in " + this + ", input " + pt + " has no type");
+            throw new UnsupportedOperationException("? input " + pt + " has no type");
         }
         return new ParameterizedType(pt.typeInfo, recursivelyMappedParameters);
     }

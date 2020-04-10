@@ -51,6 +51,11 @@ public class This implements Variable {
     }
 
     @Override
+    public ParameterizedType concreteReturnType() {
+        return parameterizedType();
+    }
+
+    @Override
     public String name() {
         return "this"; // TODO could also be typeInfo.name()+".this"
     }

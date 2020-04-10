@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.List;
@@ -26,11 +27,13 @@ import java.util.Objects;
 
 // NOTE that equality is on the variable ONLY
 
-public class LocalVariableReference implements Variable {
+public class LocalVariableReference extends VariableWithConcreteReturnType {
     public final LocalVariable variable;
     public final List<Expression> assignmentExpressions;
 
     public LocalVariableReference(LocalVariable localVariable, List<Expression> assignmentExpressions) {
+        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType :
+                localVariable.parameterizedType.fillTypeParameters(assignmentExpressions.get(0).returnType()));
         this.variable = Objects.requireNonNull(localVariable);
         this.assignmentExpressions = Objects.requireNonNull(assignmentExpressions);
     }

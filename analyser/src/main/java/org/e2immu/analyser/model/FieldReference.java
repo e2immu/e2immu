@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 
+import java.util.Map;
 import java.util.Objects;
 
-public class FieldReference implements Variable {
+public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
     // can be a Resolved field again, but ends with This
@@ -44,6 +46,7 @@ public class FieldReference implements Variable {
     }
 
     public FieldReference(FieldInfo fieldInfo, Variable scope) {
+        super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters(scope.concreteReturnType()));
         this.fieldInfo = fieldInfo;
         this.scope = scope;
     }

@@ -582,4 +582,17 @@ public class ParameterizedType {
     public boolean betterDefinedThan(ParameterizedType v) {
         return (typeParameter != null || typeInfo != null) && v.typeParameter == null && v.typeInfo == null;
     }
+
+
+    /*
+     * Pair<Integer, String> pair = new Pair<>(); expression = pair.k
+     * The scope of the expression is 'pair', which has a concrete return type of 'Pair<Integer, String>'.
+     * The field 'k' has an abstract type K, which can be filled to get a concrete return type Integer
+     */
+
+    public ParameterizedType fillTypeParameters(ParameterizedType concreteType) {
+        Map<NamedType, ParameterizedType> typeParameterMap = concreteType.initialTypeParameterMap();
+        return MethodTypeParameterMap.apply(typeParameterMap, this);
+    }
+
 }

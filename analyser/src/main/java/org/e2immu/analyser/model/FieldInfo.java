@@ -23,10 +23,7 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -161,4 +158,5 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public boolean isExplicitlyFinal() {
         return fieldInspection.get().modifiers.contains(FieldModifier.FINAL);
     }
+
 }

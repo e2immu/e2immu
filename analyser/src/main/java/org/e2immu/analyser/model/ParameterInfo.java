@@ -63,6 +63,12 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
+    public ParameterizedType concreteReturnType() {
+        return parameterizedType; // there's nothing more we can know; we're NOT treating it as a local variable!!!
+        // TODO or should we surf on the concrete information in the method?
+    }
+
+    @Override
     public String name() {
         return name;
     }

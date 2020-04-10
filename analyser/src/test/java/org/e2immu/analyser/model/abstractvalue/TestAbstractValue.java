@@ -40,6 +40,11 @@ public class TestAbstractValue {
             }
 
             @Override
+            public ParameterizedType concreteReturnType() {
+                return null;
+            }
+
+            @Override
             public String name() {
                 return name;
             }

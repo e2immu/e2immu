@@ -18,16 +18,22 @@
 
 package org.e2immu.analyser.model;
 
-public class MethodReferenceResolution {
+import org.e2immu.annotation.NullNotAllowed;
 
-    public final MethodInfo methodInfo;
-    public final Reference reference;
-    // in the case of a method reference or a constructor reference, the concrete return type is a functional interface
+import java.util.Objects;
+
+// see ExpressionWithMethodReferenceResolution, try to do something similar
+
+public abstract class VariableWithConcreteReturnType implements Variable {
+
     public final ParameterizedType concreteReturnType;
 
-    public MethodReferenceResolution(MethodInfo methodInfo, ParameterizedType concreteReturnType, Reference reference) {
-        this.methodInfo = methodInfo;
-        this.reference = reference;
-        this.concreteReturnType = concreteReturnType;
+    protected VariableWithConcreteReturnType(@NullNotAllowed ParameterizedType concreteReturnType) {
+        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
+    }
+
+    @Override
+    public ParameterizedType concreteReturnType() {
+        return concreteReturnType;
     }
 }

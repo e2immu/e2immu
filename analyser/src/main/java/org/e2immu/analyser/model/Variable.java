@@ -33,6 +33,8 @@ public interface Variable {
         return dependencies.stream().map(Variable::detailedString).collect(Collectors.joining("; "));
     }
 
+    ParameterizedType concreteReturnType();
+
     ParameterizedType parameterizedType();
 
     String name();

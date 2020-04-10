@@ -43,7 +43,7 @@ public class FieldAccess implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return variable.parameterizedType();
+        return variable.concreteReturnType();
     }
 
     @Override
