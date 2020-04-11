@@ -185,6 +185,10 @@ public class TypeInspection extends Inspection {
             return this;
         }
 
+        public List<ParameterizedType> getInterfacesImplemented() {
+            return interfacesImplemented;
+        }
+
         @Override
         public TypeInspectionBuilder addAnnotation(AnnotationExpression annotation) {
             annotations.add(annotation);

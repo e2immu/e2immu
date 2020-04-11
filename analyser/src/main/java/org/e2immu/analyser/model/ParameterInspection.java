@@ -28,6 +28,7 @@ import java.util.List;
 @NullNotAllowed
 public class ParameterInspection extends Inspection {
 
+    // NOTE: owner can be null, when this is a parameter of a lambda expression
     public final MethodInfo owner;
     public final boolean varArgs;
 

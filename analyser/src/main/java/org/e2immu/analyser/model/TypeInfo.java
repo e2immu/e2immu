@@ -186,6 +186,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
                         Primitives.PRIMITIVES.voidParameterizedType, true, true);
                 methodInfo.inspect(amd, subContext);
+
                 builder.addMethod(methodInfo);
             }
         }
@@ -414,10 +415,29 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
 
         if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && hasBeenDefined) {
-            builder.addAnnotation(expressionContext.typeContext.functionalInterface.get());
+            boolean haveNonStaticNonDefaultsInSuperType = false;
+            for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
+                if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
+                    haveNonStaticNonDefaultsInSuperType = true;
+                    break;
+                }
+            }
+            if (!haveNonStaticNonDefaultsInSuperType) {
+                builder.addAnnotation(expressionContext.typeContext.functionalInterface.get());
+            }
         }
 
         typeInspection.set(builder.build(hasBeenDefined, this));
+    }
+
+    private boolean haveNonStaticNonDefaultMethods() {
+        if (typeInspection.get().methods.stream().anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
+        for (ParameterizedType superInterface : typeInspection.get().interfacesImplemented) {
+            if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream() {

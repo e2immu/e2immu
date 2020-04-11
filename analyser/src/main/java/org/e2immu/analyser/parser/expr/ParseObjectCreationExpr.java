@@ -21,6 +21,7 @@ package org.e2immu.analyser.parser.expr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Resolver;
 import org.e2immu.analyser.parser.TypeContext;
@@ -51,6 +52,7 @@ public class ParseObjectCreationExpr {
         MethodTypeParameterMap method = ParseMethodCallExpr.chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                 newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                 parameterizedType, objectCreationExpr.getBegin().orElseThrow());
+        if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return new NewObject(method.methodInfo, parameterizedType, newParameterExpressions);
     }
 }

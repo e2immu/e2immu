@@ -20,13 +20,11 @@ package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodTypeParameterMap;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
+import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.VariableContext;
@@ -41,7 +39,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ParseLambdaExpr {
 
     public static Expression parse(ExpressionContext expressionContext, LambdaExpr lambdaExpr, MethodTypeParameterMap singleAbstractMethod) {
-        if (singleAbstractMethod == null) {
+        if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
             return partiallyParse(lambdaExpr);
         }
         log(LAMBDA, "Start parsing lambda {}, single abstract method context {}", lambdaExpr, singleAbstractMethod);
@@ -67,6 +65,7 @@ public class ParseLambdaExpr {
             }
             types.add(parameterType);
             ParameterInfo parameterInfo = new ParameterInfo(parameterType, parameter.getName().asString(), cnt++);
+            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(null));
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);
         }
@@ -78,6 +77,10 @@ public class ParseLambdaExpr {
 
         if (lambdaExpr.getExpressionBody().isPresent()) {
             Expression expr = newExpressionContext.parseExpression(lambdaExpr.getExpressionBody());
+            if (expr instanceof UnevaluatedMethodCall) {
+                log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
+                return partiallyParse(lambdaExpr);
+            }
             ParameterizedType inferredReturnType = expr.returnType();
             ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
             log(LAMBDA, "End parsing lambda as expression, inferred functional type {}", functionalType);

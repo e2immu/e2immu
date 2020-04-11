@@ -19,6 +19,8 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,23 +28,51 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-// contains all information to generate concrete types from a method info
+/**
+ * Contains all information to generate concrete types from a method info.
+ * Instances of this class are often called "SAM" or "single abstract method", because they
+ * represent the method of a functional interface.
+ * <p>
+ * As an extension, methodInfo can be null. This is because concrete types may have to be propagated
+ * through a medium of non-functional interfaces to wards lambdas.
+ * <p>
+ * Example:
+ * Map&lt;String, String&gt; map; map.entrySet().stream().collect(Collectors.toMap(e->, e->e.getValue()))
+ * <p>
+ * The method collect ends up with a concreteTypes map that maps <code>T -> Entry&lt;String, String&gt;</code>.
+ * We need to pass this on "through" toMap (which is NOT a functional interface) towards the parameters of toMap,
+ * which are functional interfaces.
+ */
+//
 public class MethodTypeParameterMap {
 
     public final MethodInfo methodInfo;
-    private final Map<NamedType, ParameterizedType> concreteTypes;
+    @NotNull
+    public final Map<NamedType, ParameterizedType> concreteTypes;
 
-    public MethodTypeParameterMap(MethodInfo methodInfo, Map<NamedType, ParameterizedType> concreteTypes) {
+    public MethodTypeParameterMap(@NullNotAllowed MethodInfo methodInfo, @NullNotAllowed Map<NamedType, ParameterizedType> concreteTypes) {
         this.methodInfo = methodInfo;
         this.concreteTypes = ImmutableMap.copyOf(concreteTypes);
     }
 
+    public boolean isSingleAbstractMethod() {
+        return methodInfo != null;
+    }
+
+    public MethodTypeParameterMap copyWithoutMethod() {
+        return new MethodTypeParameterMap(null, concreteTypes);
+    }
+
     public ParameterizedType getConcreteReturnType() {
+        if (!isSingleAbstractMethod())
+            throw new UnsupportedOperationException("Can only be called on a single abstract method");
         ParameterizedType returnType = methodInfo.methodInspection.get().returnType;
         return apply(concreteTypes, returnType);
     }
 
     public ParameterizedType getConcreteTypeOfParameter(int i) {
+        if (!isSingleAbstractMethod())
+            throw new UnsupportedOperationException("Can only be called on a single abstract method");
         MethodInspection methodInspection = methodInfo.methodInspection.get();
         int n = methodInspection.parameters.size();
         if (i >= n) {
@@ -63,7 +93,6 @@ public class MethodTypeParameterMap {
     }
 
     // also used for fields
-    // INFINITE LOOP TODO
 
     // [Type java.util.function.Function<E, ?>], concrete type java.util.stream.Stream<R>, mapExpansion
     // {R as #0 in java.util.stream.Stream.map(Function<? super T, ? extends R>)=Type java.util.function.Function<E, ? extends R>,
@@ -88,12 +117,31 @@ public class MethodTypeParameterMap {
 
     @Override
     public String toString() {
-        return "method " + methodInfo.fullyQualifiedName() + ", map " + concreteTypes;
+        return (isSingleAbstractMethod() ? ("method " + methodInfo.fullyQualifiedName()) : "No method") + ", map " + concreteTypes;
     }
 
     public ParameterizedType inferFunctionalType(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
         Objects.requireNonNull(inferredReturnType);
         Objects.requireNonNull(types);
+        if (!isSingleAbstractMethod())
+            throw new UnsupportedOperationException("Can only be called on a single abstract method");
+
         return new ParameterizedType(methodInfo.typeInfo, methodInfo.typeParametersComputed(types, inferredReturnType));
     }
+
+    public boolean isAssignableFrom(MethodTypeParameterMap other) {
+        if (!isSingleAbstractMethod() || !other.isSingleAbstractMethod()) throw new UnsupportedOperationException();
+        if (methodInfo.equals(other.methodInfo)) return true;
+        MethodInspection mi = methodInfo.methodInspection.get();
+        MethodInspection miOther = other.methodInfo.methodInspection.get();
+        if (mi.parameters.size() != miOther.parameters.size()) return false;
+        int i = 0;
+        for (ParameterInfo pi : methodInfo.methodInspection.get().parameters) {
+            ParameterInfo piOther = other.methodInfo.methodInspection.get().parameters.get(i);
+            i++;
+        }
+        // TODO
+        return mi.returnType.isVoid() == miOther.returnType.isVoid();
+    }
+
 }

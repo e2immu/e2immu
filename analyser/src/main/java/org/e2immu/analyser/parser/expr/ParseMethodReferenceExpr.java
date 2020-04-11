@@ -35,9 +35,12 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ParseMethodReferenceExpr {
 
     public static Expression parse(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr, MethodTypeParameterMap singleAbstractMethod) {
-        if (singleAbstractMethod == null) {
+        if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
+            log(METHOD_CALL, "Start parsing unevaluated method reference {}", methodReferenceExpr);
             return unevaluated(expressionContext, methodReferenceExpr);
         }
+        log(METHOD_CALL, "Start parsing method reference {}", methodReferenceExpr);
+
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
         ParameterizedType parameterizedType = scope.returnType();
@@ -141,7 +144,7 @@ public class ParseMethodReferenceExpr {
         }
         Set<Integer> numberOfParameters = new HashSet<>();
         for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
-            log(METHOD_CALL, "Have exactly one method reference candidate, this can work: {}", methodCandidate.method.methodInfo.distinguishingName());
+            log(METHOD_CALL, "Found method reference candidate, this can work: {}", methodCandidate.method.methodInfo.distinguishingName());
             MethodInspection methodInspection = methodCandidate.method.methodInfo.methodInspection.get();
             boolean scopeIsType = scopeIsAType(scope);
             boolean addOne = scopeIsType && !methodCandidate.method.methodInfo.isConstructor && !methodCandidate.method.methodInfo.isStatic; // && !methodInspection.returnType.isPrimitive();
@@ -150,6 +153,7 @@ public class ParseMethodReferenceExpr {
                 // throw new UnsupportedOperationException("Multiple candidates with the same amount of parameters");
             }
         }
+        log(METHOD_CALL, "End parsing unevaluated method reference {}, found parameter set {}", methodReferenceExpr, numberOfParameters);
         return new UnevaluatedLambdaExpression(numberOfParameters, null);
     }
 
