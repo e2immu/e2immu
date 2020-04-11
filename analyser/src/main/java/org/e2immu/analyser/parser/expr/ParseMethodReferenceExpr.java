@@ -81,6 +81,7 @@ public class ParseMethodReferenceExpr {
                 // example here is in Variable: there is a detailedString(), and a static detailedString(Set<>)
                 for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
                     ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
+                    if(concreteType.isTypeParameter()) return false; // no concrete data in the SAM yet
                     ParameterizedType typeOfMethodCandidate;
                     int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
                     if (param == -1) {
@@ -88,7 +89,8 @@ public class ParseMethodReferenceExpr {
                     } else {
                         typeOfMethodCandidate = mc.method.methodInfo.methodInspection.get().parameters.get(i).parameterizedType;
                     }
-                    if (!typeOfMethodCandidate.isAssignableFrom(concreteType)) return true;
+                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(concreteType);
+                    if (!isAssignable) return true;
                 }
                 return false;
             });
@@ -106,6 +108,9 @@ public class ParseMethodReferenceExpr {
                     }
                 }
             }
+        }
+        if(methodCandidates.isEmpty()) {
+            throw new UnsupportedOperationException("I've killed all the candidates myself??");
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         List<ParameterizedType> types = new ArrayList<>();
