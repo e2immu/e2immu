@@ -169,21 +169,49 @@ public class ParseMethodCallExpr {
             if (e == null || e instanceof UnevaluatedLambdaExpression || e instanceof UnevaluatedMethodCall) {
                 log(METHOD_CALL, "Reevaluating unevaluated expression on {}, pos {}, single abstract method {}",
                         methodNameForErrorReporting, i, singleAbstractMethod);
+                MethodTypeParameterMap mapForEvaluation;
+
                 MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, method, i, singleAbstractMethod);
-                // note that abstractInterfaceMethod can be null! there's no guarantee we're dealing with a functional interface here
-                if(e instanceof UnevaluatedMethodCall && abstractInterfaceMethod == null && singleAbstractMethod != null) {
-                    ParameterInfo parameterInfo = method.methodInfo.methodInspection.get().parameters.get(i);
-                    ParameterizedType parameterizedType = parameterInfo.parameterizedType; // Collector<T,A,R>, with T linked to T0 of Stream
-                    ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType();
-                    Map<NamedType, ParameterizedType> links = new HashMap<>();
-                    int pos = 0;
-                    for (ParameterizedType typeParameter : formalParameterizedType.parameters) {
-                        links.put(typeParameter.typeParameter, parameterizedType.parameters.get(pos));
-                        pos++;
+                if (abstractInterfaceMethod != null) {
+                    if (singleAbstractMethod != null) {
+                        ParameterizedType returnTypeOfMethod = method.methodInfo.methodInspection.get().returnType;
+                        if (returnTypeOfMethod.typeInfo != null) {
+                            // a type with its own formal parameters, we try to jump from the concrete value in the AIM (entry.getValue) to
+                            // the type parameter in the method's return type (tpInReturnType) to the type parameter in the method's formal return type (tpInFormalReturnType)
+                            // to the value in the SAM (best)
+                            ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType();
+                            // we should expect type parameters of the return type to be present in the SAM; the ones of the formal type are in the AIM
+                            Map<NamedType, ParameterizedType> newMap = new HashMap<>();
+                            for (Map.Entry<NamedType, ParameterizedType> entry : abstractInterfaceMethod.concreteTypes.entrySet()) {
+                                ParameterizedType typeParameter = entry.getValue();
+                                ParameterizedType best = null;
+                                ParameterizedType tpInReturnType = returnTypeOfMethod.parameters.stream().filter(pt -> pt.typeParameter == typeParameter.typeParameter).findFirst().orElse(null);
+                                if (tpInReturnType != null) {
+                                    ParameterizedType tpInFormalReturnType = formalReturnTypeOfMethod.parameters.get(tpInReturnType.typeParameter.index);
+                                    best = MethodTypeParameterMap.apply(singleAbstractMethod.concreteTypes, tpInFormalReturnType);
+                                }
+                                if (best == null) {
+                                    best = entry.getValue();
+                                }
+                                newMap.put(entry.getKey(), best);
+                            }
+                            mapForEvaluation = new MethodTypeParameterMap(abstractInterfaceMethod.methodInfo, newMap);
+                        } else {
+                            mapForEvaluation = abstractInterfaceMethod;
+                        }
+                    } else {
+                        mapForEvaluation = abstractInterfaceMethod;
                     }
-                    abstractInterfaceMethod = singleAbstractMethod.expand(links);
+                } else {
+                    // could be that e == null, we did not evaluate
+                    if (e instanceof UnevaluatedMethodCall && singleAbstractMethod != null) {
+                        Map<NamedType, ParameterizedType> newMap = makeTranslationMap(method, i, singleAbstractMethod);
+                        mapForEvaluation = new MethodTypeParameterMap(null, newMap);
+                    } else {
+                        mapForEvaluation = singleAbstractMethod;
+                    }
                 }
-                Expression reParsed = expressionContext.parseExpression(expressions.get(i), abstractInterfaceMethod == null ? singleAbstractMethod : abstractInterfaceMethod);
+                Expression reParsed = expressionContext.parseExpression(expressions.get(i), mapForEvaluation);
                 if (reParsed instanceof UnevaluatedMethodCall || reParsed instanceof UnevaluatedLambdaExpression) {
                     log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.expressionString(0));
                     return null;
@@ -220,6 +248,20 @@ public class ParseMethodCallExpr {
             if (i >= formalParameters.size()) break; // varargs... we have more than there are
         }
         return method;
+    }
+
+    private static Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method, int i, MethodTypeParameterMap singleAbstractMethod) {
+        ParameterInfo parameterInfo = method.methodInfo.methodInspection.get().parameters.get(i);
+        ParameterizedType parameterizedType = parameterInfo.parameterizedType; // Collector<T,A,R>, with T linked to T0 of Stream
+        ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType();
+        Map<NamedType, ParameterizedType> newMap = new HashMap<>();
+        int pos = 0;
+        for (ParameterizedType typeParameter : formalParameterizedType.parameters) {
+            ParameterizedType best = MethodTypeParameterMap.apply(singleAbstractMethod.concreteTypes, parameterizedType.parameters.get(pos));
+            newMap.put(typeParameter.typeParameter, best);
+            pos++;
+        }
+        return newMap;
     }
 
     private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
@@ -436,7 +478,8 @@ public class ParseMethodCallExpr {
             }
             return abstractInterfaceMethod.expand(links);
         }
-
+        // Map<NamedType, ParameterizedType> newMap = makeTranslationMap(method, p, singleAbstractMethod);
+        // return new MethodTypeParameterMap(abstractInterfaceMethod.methodInfo, abstractInterfaceMethod.expand(newMap).concreteTypes);
         return abstractInterfaceMethod;
     }
 
