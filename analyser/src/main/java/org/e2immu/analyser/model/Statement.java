@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @E2Immutable
 @NullNotAllowed
@@ -43,10 +44,10 @@ public interface Statement {
     SideEffect sideEffect(SideEffectContext sideEffectContext);
 
     default CodeOrganization codeOrganization() {
-        return new CodeOrganization(null, List.of());
+        return new CodeOrganization.Builder().build();
     }
 
-    static <E extends Expression> List<E> findInExpression(Statement statement, Class<E> clazz) {
-       return statement.codeOrganization().findInExpression(clazz);
+    static <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Statement statement, Class<E> clazz) {
+        return statement.codeOrganization().findExpressionRecursivelyInStatements(clazz);
     }
 }

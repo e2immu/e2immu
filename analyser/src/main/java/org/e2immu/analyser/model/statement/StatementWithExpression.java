@@ -40,7 +40,7 @@ public abstract class StatementWithExpression implements Statement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(expression, List.of());
+        return new CodeOrganization.Builder().setExpression(expression).build();
     }
 
     @Override

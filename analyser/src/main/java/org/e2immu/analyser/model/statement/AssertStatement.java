@@ -27,7 +27,7 @@ public class AssertStatement implements Statement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(check, List.of());
+        return new CodeOrganization.Builder().setExpression(check).build();
     }
 
     @Override
@@ -51,8 +51,6 @@ public class AssertStatement implements Statement {
 
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        SideEffect effectOfCheck = check.sideEffect(sideEffectContext);
-        if (message != null) return effectOfCheck.combine(message.sideEffect(sideEffectContext));
-        return effectOfCheck;
+        return check.sideEffect(sideEffectContext);
     }
 }

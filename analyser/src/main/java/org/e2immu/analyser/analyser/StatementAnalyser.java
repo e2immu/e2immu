@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -56,7 +57,8 @@ public class StatementAnalyser {
         boolean escapes = false;
         try {
             while (statement != null) {
-                if (computeVariablePropertiesOfStatement(statement, variableProperties)) changes = true;
+                if (computeVariablePropertiesOfStatement(statement, statement.statement.codeOrganization(), variableProperties))
+                    changes = true;
 
                 if (statement.statement instanceof ReturnStatement ||
                         statement.statement instanceof ThrowStatement) neverContinues = true;
@@ -131,18 +133,25 @@ public class StatementAnalyser {
         }
     }
 
-    private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
+    private boolean computeVariablePropertiesOfStatement(NumberedStatement statement, CodeOrganization codeOrganization,
                                                          VariableProperties variableProperties) {
         boolean changes = false;
 
-        List<LocalVariableCreation> localVariablesCreated = Statement.findInExpression(statement.statement, LocalVariableCreation.class);
-        localVariablesCreated.stream()
+        // forEach, catch-clause
+        if (codeOrganization.localVariableCreation != null) {
+            variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation, List.of()));
+        }
+
+        // initialisers in try-resources, for-loop, expression as statement
+        List<LocalVariableCreation> localVariableCreations = codeOrganization.initialisers.stream()
+                .flatMap(expr -> expr.find(LocalVariableCreation.class).stream())
+                .collect(Collectors.toList());
+        localVariableCreations.stream()
                 .map(lvc -> new LocalVariableReference(lvc.localVariable, List.of()))
                 .forEach(lvr -> variableProperties.create(lvr, VariableProperty.CREATED));
-        if (statement.statement instanceof ForEachStatement) {
-            ForEachStatement forEachStatement = (ForEachStatement) statement.statement;
-            variableProperties.create(new LocalVariableReference(forEachStatement.localVariable, List.of()));
-        }
+
+        // TODO lots more work
+
         statement.inputVariables
                 .forEach(variable -> {
                     if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
@@ -171,7 +180,7 @@ public class StatementAnalyser {
                     log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
                 });
 
-        for (LocalVariableCreation localVariableCreation : localVariablesCreated) {
+        for (LocalVariableCreation localVariableCreation : localVariableCreations) {
             Value value = localVariableCreation.expression.evaluate(variableProperties);
             Set<Variable> linkTo = value.linkedVariables(variableProperties);
             log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}]", localVariableCreation.localVariable.name,
@@ -184,8 +193,7 @@ public class StatementAnalyser {
 
         Value value;
         try {
-            value = (statement.statement instanceof StatementWithExpression) ?
-                    ((StatementWithExpression) statement.statement).expression.evaluate(variableProperties) : null;
+            value = codeOrganization.expression != null ? codeOrganization.expression.evaluate(variableProperties) : null;
         } catch (RuntimeException rte) {
             log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
             throw rte;

@@ -27,6 +27,8 @@ import org.e2immu.annotation.NotNull;
 
 @E2Immutable
 public class BooleanConstant implements Expression, Constant<Boolean> {
+    public static final BooleanConstant TRUE = new BooleanConstant(true);
+
     @Override
     @NotNull
     public ParameterizedType returnType() {

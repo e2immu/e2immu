@@ -42,6 +42,8 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(expression, switchEntries.stream().map(SwitchEntry::toExpressionsWithStatements).collect(Collectors.toList()));
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression);
+        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()));
+        return builder.build();
     }
 }

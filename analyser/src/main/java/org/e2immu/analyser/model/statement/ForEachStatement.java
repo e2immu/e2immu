@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.Sets;
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.LocalVariableReference;
@@ -39,6 +40,11 @@ public class ForEachStatement extends LoopStatement {
                             Block block) {
         super(label, expression, block);
         this.localVariable = localVariable;
+    }
+
+    @Override
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization.Builder().setLocalVariableCreation(localVariable).setExpression(expression).setStatements(block).build();
     }
 
     @Override

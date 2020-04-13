@@ -63,10 +63,11 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.ExpressionsWithStatements ews = new CodeOrganization.ExpressionsWithStatements(List.of(), ifBlock);
-        return new CodeOrganization(expression, elseBlock != Block.EMPTY_BLOCK ?
-                List.of(ews, new CodeOrganization.ExpressionsWithStatements(List.of(), elseBlock)) :
-                List.of(ews));
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression).setStatements(ifBlock);
+        if (elseBlock != Block.EMPTY_BLOCK) {
+            builder.addSubStatement(new CodeOrganization.Builder().setNegateParentExpression(true).setStatements(elseBlock).build());
+        }
+        return builder.build();
     }
 
     @Override

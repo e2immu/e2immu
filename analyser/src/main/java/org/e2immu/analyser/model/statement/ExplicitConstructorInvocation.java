@@ -41,7 +41,7 @@ public class ExplicitConstructorInvocation implements Statement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(parameterExpressions, null)));
+        return new CodeOrganization.Builder().setUpdaters(parameterExpressions).build();
     }
 
     @Override

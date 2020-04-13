@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -52,6 +53,12 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(expression, List.of());
+        CodeOrganization.Builder builder = new CodeOrganization.Builder();
+        if (expression instanceof LocalVariableCreation) {
+            builder.addInitialisers(List.of(expression));
+        } else {
+            builder.setExpression(expression);
+        }
+        return builder.build();
     }
 }

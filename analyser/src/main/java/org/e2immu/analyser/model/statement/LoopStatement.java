@@ -21,7 +21,7 @@ public abstract class LoopStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(List.of(expression), block)));
+        return new CodeOrganization.Builder().setExpression(expression).setStatements(block).build();
     }
 
     @Override

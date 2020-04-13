@@ -45,7 +45,10 @@ public class ForStatement extends LoopStatement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        List<Expression> expressions = ListUtil.immutableConcat(initialisers, List.of(expression), updaters);
-        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(expressions, block)));
+        return new CodeOrganization.Builder()
+                .addInitialisers(initialisers)
+                .setExpression(expression)
+                .setUpdaters(updaters)
+                .setStatements(block).build();
     }
 }

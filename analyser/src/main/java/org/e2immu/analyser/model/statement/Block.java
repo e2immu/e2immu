@@ -115,7 +115,7 @@ public class Block implements Statement, HasStatements {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(List.of(), this)));
+        return new CodeOrganization.Builder().setStatements(this).build();
     }
 
     @Override

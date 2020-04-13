@@ -309,7 +309,7 @@ public class ExpressionContext {
             }
             String name = parameter.getName().asString();
             LocalVariable localVariable = new LocalVariable.LocalVariableBuilder().setName(name).setParameterizedType(typeOfVariable).build();
-            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(name, unionOfTypes);
+            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(localVariable, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(localVariable, List.of());
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());

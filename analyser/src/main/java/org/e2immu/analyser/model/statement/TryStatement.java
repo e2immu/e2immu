@@ -2,6 +2,7 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
@@ -31,11 +32,11 @@ public class TryStatement implements Statement {
     }
 
     public static class CatchParameter implements Expression {
-        public final String name;
+        public final LocalVariable localVariable;
         public final List<ParameterizedType> unionOfTypes;
 
-        public CatchParameter(String name, List<ParameterizedType> unionOfTypes) {
-            this.name = name;
+        public CatchParameter(LocalVariable localVariable, List<ParameterizedType> unionOfTypes) {
+            this.localVariable = localVariable;
             this.unionOfTypes = ImmutableList.copyOf(unionOfTypes);
         }
 
@@ -89,12 +90,16 @@ public class TryStatement implements Statement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization(null,
-                ListUtil.immutableConcat(
-                        List.of(new CodeOrganization.ExpressionsWithStatements(resources, tryBlock)),
-                        catchClauses.stream().map(cc -> new CodeOrganization.ExpressionsWithStatements(List.of(cc.k), cc.v)).collect(Collectors.toList()),
-                        finallyBlock != Block.EMPTY_BLOCK ? List.of(new CodeOrganization.ExpressionsWithStatements(List.of(), finallyBlock)) : List.of()
-                ));
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources).setStatements(tryBlock);
+        for (Pair<CatchParameter, Block> pair : catchClauses) {
+            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable).setStatements(pair.v).build());
+        }
+        if (finallyBlock != null) {
+            builder.addSubStatement(new CodeOrganization.Builder()
+                    .setExpression(BooleanConstant.TRUE)
+                    .setStatements(finallyBlock).build());
+        }
+        return builder.build();
     }
 
     @Override
