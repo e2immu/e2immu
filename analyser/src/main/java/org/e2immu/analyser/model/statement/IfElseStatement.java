@@ -18,9 +18,11 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -56,17 +58,23 @@ public class IfElseStatement extends StatementWithExpression {
         return sb.toString();
     }
 
+    // note that we add the expression only once
+
+
     @Override
-    public List<Block> blocks() {
-        if (elseBlock == Block.EMPTY_BLOCK) return List.of(ifBlock);
-        return List.of(ifBlock, elseBlock);
+    public CodeOrganization codeOrganization() {
+        CodeOrganization.ExpressionsWithStatements ews = new CodeOrganization.ExpressionsWithStatements(null, ifBlock);
+        return new CodeOrganization(expression, elseBlock != Block.EMPTY_BLOCK ?
+                List.of(ews, new CodeOrganization.ExpressionsWithStatements(null, elseBlock)) :
+                List.of(ews));
     }
 
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        SideEffect blocksSideEffect = blocks().stream()
-                .map(s -> s.sideEffect(sideEffectContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
+        SideEffect blocksSideEffect = ifBlock.sideEffect(sideEffectContext);
+        if (elseBlock != Block.EMPTY_BLOCK) {
+            blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(sideEffectContext));
+        }
         SideEffect conditionSideEffect = expression.sideEffect(sideEffectContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;

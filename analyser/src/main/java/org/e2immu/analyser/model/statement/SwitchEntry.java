@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
@@ -53,7 +51,9 @@ public abstract class SwitchEntry implements Statement {
         }
     }
 
-    public static class StatementsEntry extends SwitchEntry {
+    public abstract CodeOrganization.ExpressionsWithStatements toExpressionsWithStatements();
+
+    public static class StatementsEntry extends SwitchEntry implements HasStatements {
         public final List<Statement> statements;
         public final boolean java12Style;
 
@@ -61,6 +61,11 @@ public abstract class SwitchEntry implements Statement {
             super(labels);
             this.java12Style = java12Style;
             this.statements = statements;
+        }
+
+        @Override
+        public CodeOrganization.ExpressionsWithStatements toExpressionsWithStatements() {
+            return new CodeOrganization.ExpressionsWithStatements(labels, this);
         }
 
         @Override
@@ -79,6 +84,11 @@ public abstract class SwitchEntry implements Statement {
                 }
             }
             return sb.toString();
+        }
+
+        @Override
+        public List<Statement> getStatements() {
+            return statements;
         }
 
         @Override
@@ -124,6 +134,11 @@ public abstract class SwitchEntry implements Statement {
             SideEffect sideEffect = labels.stream().map(s -> s.sideEffect(sideEffectContext))
                     .reduce(SideEffect.LOCAL, SideEffect::combine);
             return sideEffect.combine(block.sideEffect(sideEffectContext));
+        }
+
+        @Override
+        public CodeOrganization.ExpressionsWithStatements toExpressionsWithStatements() {
+            return new CodeOrganization.ExpressionsWithStatements(labels, block);
         }
     }
 }

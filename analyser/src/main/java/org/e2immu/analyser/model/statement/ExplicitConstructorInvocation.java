@@ -18,22 +18,30 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+// this( )
 public class ExplicitConstructorInvocation implements Statement {
 
     public final List<Expression> parameterExpressions;
 
     public ExplicitConstructorInvocation(List<Expression> parameterExpressions) {
         this.parameterExpressions = parameterExpressions;
+    }
+
+    @Override
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(parameterExpressions, null)));
     }
 
     @Override

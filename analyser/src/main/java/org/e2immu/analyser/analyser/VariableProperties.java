@@ -146,6 +146,12 @@ class VariableProperties implements EvaluationContext {
         throw new UnsupportedOperationException("Cannot find variable " + target.detailedString());
     }
 
+    /**
+     * this method is the only way of adding variables to the VariableProperties class
+     *
+     * @param variable          the variable to add
+     * @param initialProperties initial properties about this variable
+     */
     public void create(Variable variable, VariableProperty... initialProperties) {
         AboutVariable aboutVariable = new AboutVariable();
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
@@ -155,6 +161,7 @@ class VariableProperties implements EvaluationContext {
 
     public void setValue(Variable variable, Value value) {
         AboutVariable aboutVariable = find(variable, true);
+        assert aboutVariable != null; // to keep intellij happy, because of the complain we know it cannot be null
         aboutVariable.currentValue = value;
     }
 
@@ -166,6 +173,7 @@ class VariableProperties implements EvaluationContext {
 
     public boolean removeProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = find(variable, true);
+        assert aboutVariable != null; // to keep intellij happy
         return aboutVariable.properties.remove(variableProperty);
     }
 
@@ -182,7 +190,20 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public Optional<Value> get(Variable variable) {
-        AboutVariable aboutVariable = find(variable, true);
+        AboutVariable aboutVariable = find(variable, false);
+        if (aboutVariable == null) {
+            if (variable instanceof FieldReference) {
+                FieldReference fieldReference = (FieldReference) variable;
+                ParameterizedType type = fieldReference.fieldInfo.type;
+                if (type.typeInfo != null && type.typeInfo.primaryType().equals(currentMethod.typeInfo.primaryType())) {
+                    throw new UnsupportedOperationException("Coming across reference to field of my own primary type? should have been declared");
+                }
+                root.create(variable);
+                aboutVariable = Objects.requireNonNull(find(variable, true));
+            } else {
+                throw new UnsupportedOperationException("Coming across variable " + variable + " of " + variable.getClass() + "; should have been declared");
+            }
+        }
         return Optional.of(Objects.requireNonNullElseGet(aboutVariable.currentValue, () -> new VariableValue(variable)));
     }
 

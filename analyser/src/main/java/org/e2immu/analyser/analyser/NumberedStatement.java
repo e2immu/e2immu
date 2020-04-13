@@ -83,6 +83,10 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
         return Arrays.stream(indices).mapToObj(Integer::toString).collect(Collectors.joining("."));
     }
 
+    public String toString() {
+        return streamIndices() + ": " + statement.getClass().getSimpleName();
+    }
+
     @Override
     public int compareTo(@NullNotAllowed NumberedStatement o) {
         for (int i = 0; i < indices.length; i++) { // f1

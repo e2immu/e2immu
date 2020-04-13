@@ -1,9 +1,11 @@
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -20,13 +22,12 @@ public class AssertStatement implements Statement {
         this.message = message;
     }
 
-    /**
-     * @return the check; the message itself is not relevant for code analysis as
-     * it gets us in an exception state
-     */
+    // we're currently NOT adding message!
+
+
     @Override
-    public List<Expression> expressions() {
-        return List.of(check);
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(check, List.of());
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -41,19 +42,11 @@ public interface Statement {
 
     SideEffect sideEffect(SideEffectContext sideEffectContext);
 
-    default List<Block> blocks() {
-        return List.of();
-    }
-
-    default List<Expression> expressions() {
-        return List.of();
-    }
-
-    static List<LocalVariableReference> newLocalVariables(Statement statement) {
-        return statement.expressions().stream().flatMap(i -> i.allNewLocalVariables().stream()).collect(Collectors.toList());
+    default CodeOrganization codeOrganization() {
+        return new CodeOrganization(null, List.of());
     }
 
     static <E extends Expression> List<E> findInExpression(Statement statement, Class<E> clazz) {
-        return statement.expressions().stream().flatMap(e -> e.find(clazz).stream()).collect(Collectors.toList());
+        return statement.blocksAndExpressions().stream().flatMap(pair -> pair.v.stream()).flatMap(e -> e.find(clazz).stream()).collect(Collectors.toList());
     }
 }

@@ -20,11 +20,10 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 
@@ -36,7 +35,7 @@ import java.util.Set;
 // @ContextClass
 // @NotNull
 // @NullNotAllowed
-public class Block implements Statement {
+public class Block implements Statement, HasStatements {
     public static final Block EMPTY_BLOCK = new Block(List.of());
 
     public final List<Statement> statements;
@@ -103,8 +102,12 @@ public class Block implements Statement {
     }
 
     @Override
-    // @Immutable
-    public List<Block> blocks() {
-        return List.of(this);
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(List.of(), this)));
+    }
+
+    @Override
+    public List<Statement> getStatements() {
+        return statements;
     }
 }

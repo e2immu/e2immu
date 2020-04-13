@@ -18,9 +18,11 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.util.Pair;
 
 import java.util.List;
 import java.util.Objects;
@@ -37,8 +39,8 @@ public abstract class StatementWithExpression implements Statement {
     }
 
     @Override
-    public List<Expression> expressions() {
-        return List.of(expression);
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(expression, List.of());
     }
 
     @Override

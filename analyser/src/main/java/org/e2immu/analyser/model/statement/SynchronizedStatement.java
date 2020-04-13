@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -53,9 +54,8 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    // @Immutable
-    public List<Block> blocks() {
-        return List.of(block);
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(null, List.of(new CodeOrganization.ExpressionsWithStatements(List.of(expression), block)));
     }
 
     @Override

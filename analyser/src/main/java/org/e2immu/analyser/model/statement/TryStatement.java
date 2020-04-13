@@ -3,10 +3,12 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -86,19 +88,13 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public List<Block> blocks() {
-        ImmutableList.Builder<Block> builder = new ImmutableList.Builder<>();
-        builder.add(tryBlock);
-        for (Pair<CatchParameter, Block> pair : catchClauses) {
-            if (pair.v != Block.EMPTY_BLOCK) builder.add(pair.v);
-        }
-        if (finallyBlock != Block.EMPTY_BLOCK) builder.add(finallyBlock);
-        return builder.build();
-    }
-
-    @Override
-    public List<Expression> expressions() {
-        return resources;
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization(null,
+                ListUtil.immutableConcat(
+                        List.of(new CodeOrganization.ExpressionsWithStatements(resources, tryBlock)),
+                        catchClauses.stream().map(cc -> new CodeOrganization.ExpressionsWithStatements(List.of(cc.k), cc.v)).collect(Collectors.toList()),
+                        finallyBlock != Block.EMPTY_BLOCK ? List.of(new CodeOrganization.ExpressionsWithStatements(List.of(), finallyBlock)) : List.of()
+                ));
     }
 
     @Override

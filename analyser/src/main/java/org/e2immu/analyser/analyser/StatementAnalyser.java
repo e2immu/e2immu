@@ -50,11 +50,11 @@ public class StatementAnalyser {
     }
 
     boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, VariableProperties variableProperties) {
+        boolean changes = false;
+        NumberedStatement statement = startStatement;
+        boolean neverContinues = false;
+        boolean escapes = false;
         try {
-            boolean changes = false;
-            NumberedStatement statement = startStatement;
-            boolean neverContinues = false;
-            boolean escapes = false;
             while (statement != null) {
                 if (computeVariablePropertiesOfStatement(statement, variableProperties)) changes = true;
 
@@ -126,7 +126,7 @@ public class StatementAnalyser {
 
             return changes;
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in statement analyser {}", startStatement.streamIndices());
+            LOGGER.warn("Caught exception in statement analyser: {}", statement);
             throw rte;
         }
     }
@@ -182,9 +182,14 @@ public class StatementAnalyser {
 
         // TODO there may be duplicate evaluation
 
-        Value value = (statement.statement instanceof StatementWithExpression) ?
-                ((StatementWithExpression) statement.statement).expression.evaluate(variableProperties) : null;
-
+        Value value;
+        try {
+            value = (statement.statement instanceof StatementWithExpression) ?
+                    ((StatementWithExpression) statement.statement).expression.evaluate(variableProperties) : null;
+        } catch (RuntimeException rte) {
+            log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
+            throw rte;
+        }
         if (value != null) {
             Set<Variable> vars = value.linkedVariables(variableProperties);
             if (!statement.linkedVariables.isSet() && statement.statement instanceof ReturnStatement) {

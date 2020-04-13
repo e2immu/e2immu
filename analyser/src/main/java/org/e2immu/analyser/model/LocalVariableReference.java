@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 // NOTE that equality is on the variable ONLY
 
@@ -74,5 +75,10 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return assignmentExpressions.stream().map(e -> e.sideEffect(sideEffectContext)).reduce(SideEffect.LOCAL, SideEffect::combine);
+    }
+
+    @Override
+    public String toString() {
+        return variable.name;
     }
 }
