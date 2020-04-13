@@ -39,17 +39,7 @@ public class LabeledStatement implements Statement {
     }
 
     @Override
-    public Optional<Expression> expression() {
-        return statement.expression();
-    }
-
-    @Override
-    public List<LocalVariableReference> newLocalVariables() {
-        return statement.newLocalVariables();
-    }
-
-    @Override
-    public <E extends Expression> List<E> findInExpression(Class<E> clazz) {
-        return statement.findInExpression(clazz);
+    public List<Expression> expressions() {
+        return statement.expressions();
     }
 }

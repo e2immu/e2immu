@@ -64,6 +64,7 @@ public class TypeAnalyser {
     }
 
     public void analyse(SortedType sortedType) {
+        log(ANALYSER, "Analysing type {}", sortedType.typeInfo.fullyQualifiedName);
         boolean changes = true;
         int cnt = 0;
         while (changes) {

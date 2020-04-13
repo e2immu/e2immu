@@ -28,6 +28,7 @@ import org.e2immu.annotation.NullNotAllowed;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @E2Immutable
 @NullNotAllowed
@@ -38,21 +39,21 @@ public interface Statement {
 
     Set<String> imports();
 
+    SideEffect sideEffect(SideEffectContext sideEffectContext);
+
     default List<Block> blocks() {
         return List.of();
     }
 
-    default Optional<Expression> expression() {
-        return Optional.empty();
-    }
-
-    default List<LocalVariableReference> newLocalVariables() {
+    default List<Expression> expressions() {
         return List.of();
     }
 
-    default <E extends Expression> List<E> findInExpression(Class<E> clazz) {
-        return List.of();
+    static List<LocalVariableReference> newLocalVariables(Statement statement) {
+        return statement.expressions().stream().flatMap(i -> i.allNewLocalVariables().stream()).collect(Collectors.toList());
     }
 
-    SideEffect sideEffect(SideEffectContext sideEffectContext);
+    static <E extends Expression> List<E> findInExpression(Statement statement, Class<E> clazz) {
+        return statement.expressions().stream().flatMap(e -> e.find(clazz).stream()).collect(Collectors.toList());
+    }
 }

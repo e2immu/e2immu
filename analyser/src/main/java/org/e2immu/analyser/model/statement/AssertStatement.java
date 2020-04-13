@@ -7,6 +7,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
 import java.util.Set;
 
 public class AssertStatement implements Statement {
@@ -14,11 +15,18 @@ public class AssertStatement implements Statement {
     public final Expression check;
     public final Expression message; // can be null
 
-    // TODO the Optional[Expression] is a problem, we have 2
-
     public AssertStatement(Expression check, Expression message) {
         this.check = check;
         this.message = message;
+    }
+
+    /**
+     * @return the check; the message itself is not relevant for code analysis as
+     * it gets us in an exception state
+     */
+    @Override
+    public List<Expression> expressions() {
+        return List.of(check);
     }
 
     @Override

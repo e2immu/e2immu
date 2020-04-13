@@ -32,9 +32,13 @@ public class ListUtil {
     private ListUtil() {
     }
 
+    @SafeVarargs
     @NotNull
-    public static <T> List<T> immutableConcat(@NotModified @NullNotAllowed Iterable<? extends T> list1,
-                                              @NotModified @NullNotAllowed Iterable<? extends T> list2) {
-        return new ImmutableList.Builder<T>().addAll(list1).addAll(list2).build();
+    public static <T> List<T> immutableConcat(@NotModified @NullNotAllowed Iterable<? extends T>... lists) {
+        ImmutableList.Builder<T> builder = new ImmutableList.Builder<T>();
+        for (Iterable<? extends T> list : lists) {
+            builder.addAll(list);
+        }
+        return builder.build();
     }
 }

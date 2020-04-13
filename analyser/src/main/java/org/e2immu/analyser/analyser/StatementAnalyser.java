@@ -135,7 +135,7 @@ public class StatementAnalyser {
                                                          VariableProperties variableProperties) {
         boolean changes = false;
 
-        List<LocalVariableCreation> localVariablesCreated = statement.statement.findInExpression(LocalVariableCreation.class);
+        List<LocalVariableCreation> localVariablesCreated = Statement.findInExpression(statement.statement, LocalVariableCreation.class);
         localVariablesCreated.stream()
                 .map(lvc -> new LocalVariableReference(lvc.localVariable, List.of()))
                 .forEach(lvr -> variableProperties.create(lvr, VariableProperty.CREATED));

@@ -44,11 +44,6 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public <E extends Expression> List<E> findInExpression(Class<E> clazz) {
-        return expression.find(clazz);
-    }
-
-    @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return expression.sideEffect(sideEffectContext);
     }

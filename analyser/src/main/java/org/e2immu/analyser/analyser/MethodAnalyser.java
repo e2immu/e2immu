@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -138,13 +140,20 @@ public class MethodAnalyser {
 
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
+            if (statement instanceof SwitchStatement) {
+                SwitchStatement switchStatement = (SwitchStatement) statement;
+                for (SwitchEntry switchEntry : switchStatement.switchEntries) {
+                    if (switchEntry instanceof SwitchEntry.StatementsEntry) {
+                        List<Statement> switchStatements = ((SwitchEntry.StatementsEntry) switchEntry).statements;
+                        blockIndex = createStatements(blockIndex, switchStatements, indices, numberedStatements, blocks, sideEffectContext);
+                    } else if (switchEntry instanceof SwitchEntry.BlockEntry) {
+                        Block switchBlock = ((SwitchEntry.BlockEntry) switchEntry).block;
+                        blockIndex = createStatements(blockIndex, switchBlock.statements, indices, blocks, numberedStatements, sideEffectContext);
+                    } else throw new UnsupportedOperationException();
+                }
+            }
             for (Block block : statement.blocks()) {
-                indices.push(blockIndex);
-                NumberedStatement firstOfBlock =
-                        recursivelyCreateNumberedStatements(block.statements, indices, numberedStatements, sideEffectContext);
-                blocks.add(firstOfBlock);
-                blockIndex++;
-                indices.pop();
+                blockIndex = createStatements(blockIndex, block.statements, indices, numberedStatements, blocks, sideEffectContext);
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
             indices.pop();
@@ -154,6 +163,15 @@ public class MethodAnalyser {
         if (previous != null)
             previous.next.set(Optional.empty());
         return first;
+    }
+
+    private static int createStatements(int blockIndex, List<Statement> statements, Stack<Integer> indices, List<NumberedStatement> numberedStatements, List<NumberedStatement> blocks, SideEffectContext sideEffectContext) {
+        indices.push(blockIndex);
+        NumberedStatement firstOfBlock =
+                recursivelyCreateNumberedStatements(statements, indices, numberedStatements, sideEffectContext);
+        blocks.add(firstOfBlock);
+        indices.pop();
+        return blockIndex + 1;
     }
 
     @NotModified
@@ -277,7 +295,7 @@ public class MethodAnalyser {
             if (!methodInfo.isConstructor) {
                 if (methodInfo.isStatic) {
                     if (!methodAnalysis.createObjectOfSelf.isSet()) {
-                        boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.findInExpression(NewObject.class).stream())
+                        boolean createSelf = numberedStatements.stream().flatMap(ns -> Statement.findInExpression(ns.statement, NewObject.class).stream())
                                 .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
                         log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
                         methodAnalysis.createObjectOfSelf.set(createSelf);

@@ -2,6 +2,8 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariableReference;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -33,5 +35,10 @@ public class ForStatement extends LoopStatement {
         sb.append(updaters.stream().map(u -> u.expressionString(0)).collect(Collectors.joining(", ")));
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override
+    public List<Expression> expressions() {
+        return ListUtil.immutableConcat(initialisers, List.of(expression), updaters);
     }
 }

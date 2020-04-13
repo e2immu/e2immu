@@ -96,22 +96,9 @@ public class TryStatement implements Statement {
         return builder.build();
     }
 
-    // TODO all methods below
-
     @Override
-    public Optional<Expression> expression() {
-        return Optional.empty();
-    }
-
-    @Override
-    public List<LocalVariableReference> newLocalVariables() {
-        // none of the local variables survives the statement
-        return List.of();
-    }
-
-    @Override
-    public <E extends Expression> List<E> findInExpression(Class<E> clazz) {
-        return List.of();
+    public List<Expression> expressions() {
+        return resources;
     }
 
     @Override

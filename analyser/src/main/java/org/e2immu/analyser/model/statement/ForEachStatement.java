@@ -60,9 +60,4 @@ public class ForEachStatement extends LoopStatement {
         sb.append("\n");
         return sb.toString();
     }
-
-    @Override
-    public List<LocalVariableReference> newLocalVariables() {
-        return List.of(); // has been added in ExpressionContext.forEachStatement()
-    }
 }

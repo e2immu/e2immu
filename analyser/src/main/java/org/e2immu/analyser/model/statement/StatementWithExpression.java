@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.Statement;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 // @ContextClass inherited
@@ -38,20 +37,14 @@ public abstract class StatementWithExpression implements Statement {
     }
 
     @Override
-    public Optional<Expression> expression() {
-        return Optional.of(expression);
+    public List<Expression> expressions() {
+        return List.of(expression);
     }
 
     @Override
     // @Immutable inherited
     public Set<String> imports() {
         return expression.imports();
-    }
-
-    @Override
-    // @Immutable inherited
-    public List<LocalVariableReference> newLocalVariables() {
-        return expression.allNewLocalVariables();
     }
 
 }

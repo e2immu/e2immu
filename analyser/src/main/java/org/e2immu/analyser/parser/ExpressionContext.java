@@ -202,7 +202,7 @@ public class ExpressionContext {
             }
 
             if (newStatement != null) {
-                List<LocalVariableReference> newLocalVariables = newStatement.newLocalVariables();
+                List<LocalVariableReference> newLocalVariables = org.e2immu.analyser.model.Statement.newLocalVariables(newStatement);
                 if (newLocalVariables == null)
                     throw new NullPointerException("Statement of " + newStatement.getClass() + " produces null local vars");
                 variableContext.addAll(newLocalVariables);

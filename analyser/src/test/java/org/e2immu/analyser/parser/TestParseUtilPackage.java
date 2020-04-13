@@ -43,8 +43,10 @@ public class TestParseUtilPackage {
                 INSPECT,
                 RESOLVE,
 
-                ANALYSER, LAMBDA,
-                METHOD_CALL, VARIABLE_PROPERTIES,
+                // LAMBDA,
+                //METHOD_CALL,
+                ANALYSER,
+                VARIABLE_PROPERTIES,
                 LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
                 E2IMMUTABLE, ANNOTATION_EXPRESSION,
                 CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS, CONTEXT_ANNOTATIONS, PURE_ANNOTATIONS,
@@ -59,7 +61,7 @@ public class TestParseUtilPackage {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.util")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
