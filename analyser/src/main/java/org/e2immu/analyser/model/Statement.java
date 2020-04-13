@@ -47,6 +47,6 @@ public interface Statement {
     }
 
     static <E extends Expression> List<E> findInExpression(Statement statement, Class<E> clazz) {
-        return statement.blocksAndExpressions().stream().flatMap(pair -> pair.v.stream()).flatMap(e -> e.find(clazz).stream()).collect(Collectors.toList());
+       return statement.codeOrganization().findInExpression(clazz);
     }
 }

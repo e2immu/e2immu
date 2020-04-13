@@ -36,11 +36,12 @@ import java.util.Set;
 // @NotNull
 // @NullNotAllowed
 public class Block implements Statement, HasStatements {
-    public static final Block EMPTY_BLOCK = new Block(List.of());
-
+    public static final Block EMPTY_BLOCK = new Block(List.of(), null);
+    public final String label;
     public final List<Statement> statements;
 
-    private Block(List<Statement> statements) {
+    private Block(List<Statement> statements, String label) {
+        this.label = label;
         this.statements = statements;
     }
 
@@ -53,6 +54,13 @@ public class Block implements Statement, HasStatements {
     @Container
     public static class BlockBuilder {
         private final List<Statement> statements = new ArrayList<>();
+        private String label;
+
+        @Fluent
+        public BlockBuilder setLabel(String label) {
+            this.label = label;
+            return this;
+        }
 
         @Fluent
         public BlockBuilder addStatement(@NullNotAllowed Statement statement) {
@@ -63,13 +71,17 @@ public class Block implements Statement, HasStatements {
         @NotModified
         @NotNull
         public Block build() {
-            return new Block(new ImmutableList.Builder<Statement>().addAll(statements).build());
+            return new Block(new ImmutableList.Builder<Statement>().addAll(statements).build(), label);
         }
     }
 
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
+        if (label != null) {
+            sb.append(label);
+            sb.append(":");
+        }
         sb.append(" {");
         if (statements.isEmpty()) {
             sb.append(" }\n");

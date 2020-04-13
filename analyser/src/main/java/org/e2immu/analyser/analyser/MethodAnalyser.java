@@ -140,20 +140,14 @@ public class MethodAnalyser {
 
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
-            if (statement instanceof SwitchStatement) {
-                SwitchStatement switchStatement = (SwitchStatement) statement;
-                for (SwitchEntry switchEntry : switchStatement.switchEntries) {
-                    if (switchEntry instanceof SwitchEntry.StatementsEntry) {
-                        List<Statement> switchStatements = ((SwitchEntry.StatementsEntry) switchEntry).statements;
-                        blockIndex = createStatements(blockIndex, switchStatements, indices, numberedStatements, blocks, sideEffectContext);
-                    } else if (switchEntry instanceof SwitchEntry.BlockEntry) {
-                        Block switchBlock = ((SwitchEntry.BlockEntry) switchEntry).block;
-                        blockIndex = createStatements(blockIndex, switchBlock.statements, indices, blocks, numberedStatements, sideEffectContext);
-                    } else throw new UnsupportedOperationException();
-                }
-            }
-            for (Block block : statement.blocks()) {
-                blockIndex = createStatements(blockIndex, block.statements, indices, numberedStatements, blocks, sideEffectContext);
+            CodeOrganization codeOrganization = statement.codeOrganization();
+            for (CodeOrganization.ExpressionsWithStatements ews : codeOrganization.expressionsWithStatements) {
+                indices.push(blockIndex);
+                NumberedStatement firstOfBlock =
+                        recursivelyCreateNumberedStatements(ews.statements.getStatements(), indices, numberedStatements, sideEffectContext);
+                blocks.add(firstOfBlock);
+                indices.pop();
+                blockIndex++;
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
             indices.pop();
@@ -165,23 +159,13 @@ public class MethodAnalyser {
         return first;
     }
 
-    private static int createStatements(int blockIndex, List<Statement> statements, Stack<Integer> indices, List<NumberedStatement> numberedStatements, List<NumberedStatement> blocks, SideEffectContext sideEffectContext) {
-        indices.push(blockIndex);
-        NumberedStatement firstOfBlock =
-                recursivelyCreateNumberedStatements(statements, indices, numberedStatements, sideEffectContext);
-        blocks.add(firstOfBlock);
-        indices.pop();
-        return blockIndex + 1;
-    }
-
     @NotModified
     private static int[] join(@NotModified @NullNotAllowed List<Integer> baseIndices, int index) {
-        int[] res = new int[baseIndices.size() + 1]; // f1, entry
-        int i = 0; // f1, entry
-        for (Integer bi : baseIndices) // f1
-            res[i++] = bi; // i++ part of f1; pure side effect of f1
-        res[i] = index; // f2, modification of f1 but now based on input
-        return res; // part of f1
+        int[] res = new int[baseIndices.size() + 1];
+        int i = 0;
+        for (Integer bi : baseIndices) res[i++] = bi;
+        res[i] = index;
+        return res;
     }
 
     private boolean analyseFlow(MethodInfo methodInfo, VariableProperties methodProperties) {

@@ -9,11 +9,22 @@ import java.util.Set;
 
 public class ContinueStatement implements Statement {
 
+    public final String label;
+
+    public ContinueStatement(String label) {
+        this.label = label;
+    }
+
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append("continue;\n");
+        sb.append("continue");
+        if (label != null) {
+            sb.append(" ");
+            sb.append(label);
+        }
+        sb.append(";\n");
         return sb.toString();
     }
 

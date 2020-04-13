@@ -26,15 +26,19 @@ import org.e2immu.analyser.util.StringUtil;
 // @NullNotAllowed
 public class WhileStatement extends LoopStatement {
 
-    public WhileStatement(Expression expression,
+    public WhileStatement(String label,
+                          Expression expression,
                           Block block) {
-        super(expression, block);
+        super(label, expression, block);
     }
 
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
+        if (label != null) {
+            sb.append(label).append(": ");
+        }
         sb.append("while (");
         sb.append(expression.expressionString(indent));
         sb.append(")");

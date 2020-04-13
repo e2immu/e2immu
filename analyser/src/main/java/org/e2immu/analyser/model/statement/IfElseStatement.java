@@ -63,9 +63,9 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.ExpressionsWithStatements ews = new CodeOrganization.ExpressionsWithStatements(null, ifBlock);
+        CodeOrganization.ExpressionsWithStatements ews = new CodeOrganization.ExpressionsWithStatements(List.of(), ifBlock);
         return new CodeOrganization(expression, elseBlock != Block.EMPTY_BLOCK ?
-                List.of(ews, new CodeOrganization.ExpressionsWithStatements(null, elseBlock)) :
+                List.of(ews, new CodeOrganization.ExpressionsWithStatements(List.of(), elseBlock)) :
                 List.of(ews));
     }
 

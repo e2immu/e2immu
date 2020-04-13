@@ -8,12 +8,22 @@ import org.e2immu.analyser.util.StringUtil;
 import java.util.Set;
 
 public class BreakStatement implements Statement {
+    public final String label;
+
+    public BreakStatement(String label) {
+        this.label = label;
+    }
 
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append("break;\n");
+        sb.append("break");
+        if (label != null) {
+            sb.append(" ");
+            sb.append(label);
+        }
+        sb.append(";\n");
         return sb.toString();
     }
 

@@ -102,29 +102,31 @@ public class ParseMethodCallExpr {
                                                                  Position positionForErrorReporting) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
-        while (true) {
-            Expression evaluatedExpression = null;
-            // we know that all method candidates have an identical amount of parameters
-            Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(expressionContext, methodCandidates, evaluatedExpressions.keySet());
-            if (pos == null) {
-                pos = findParameterWhereUnevaluatedLambdaWillHelp(expressionContext, expressions, methodCandidates, evaluatedExpressions.keySet());
-            }
-            if (pos != null) {
-                evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
-            } else {
-                Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(expressionContext, methodCandidates, evaluatedExpressions.keySet());
-                if (pair != null) {
-                    pos = pair.v;
-                    MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, pair.k, pos, singleAbstractMethod);
-                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), abstractInterfaceMethod);
+        if (!expressions.isEmpty()) {
+            while (true) {
+                Expression evaluatedExpression = null;
+                // we know that all method candidates have an identical amount of parameters
+                Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(expressionContext, methodCandidates, evaluatedExpressions.keySet());
+                if (pos == null) {
+                    pos = findParameterWhereUnevaluatedLambdaWillHelp(expressionContext, expressions, methodCandidates, evaluatedExpressions.keySet());
                 }
-            }
-            if (pos != null) {
-                evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
-                filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore);
-                if (methodCandidates.isEmpty() || evaluatedExpressions.size() == expressions.size()) break;
-            } else {
-                break;
+                if (pos != null) {
+                    evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
+                } else {
+                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(expressionContext, methodCandidates, evaluatedExpressions.keySet());
+                    if (pair != null) {
+                        pos = pair.v;
+                        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, pair.k, pos, singleAbstractMethod);
+                        evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), abstractInterfaceMethod);
+                    }
+                }
+                if (pos != null) {
+                    evaluatedExpressions.put(pos, Objects.requireNonNull(evaluatedExpression));
+                    filterMethodCandidates(expressionContext, evaluatedExpression, pos, methodCandidates, compatibilityScore);
+                    if (methodCandidates.isEmpty() || evaluatedExpressions.size() == expressions.size()) break;
+                } else {
+                    break;
+                }
             }
         }
         // now we need to ensure that there is only 1 method left, but, there can be overloads and
@@ -286,11 +288,11 @@ public class ParseMethodCallExpr {
     private static Integer findParameterWhereUnevaluatedLambdaWillHelp(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
         MethodInspection mi0 = methodCandidates.get(0).method.methodInfo.methodInspection.get();
+        outer:
         for (int i = 0; i < mi0.parameters.size(); i++) {
             com.github.javaparser.ast.expr.Expression expression = expressions.get(i);
             if (!ignore.contains(i) && (expression.isLambdaExpr() || expression.isMethodReferenceExpr())) {
                 Set<Integer> numberOfParametersInFunctionalInterface = new HashSet<>();
-                boolean success = true;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
                     ParameterInfo pi = mi.parameters.get(i);
@@ -300,12 +302,11 @@ public class ParseMethodCallExpr {
                         int numberOfParameters = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size();
                         boolean added = numberOfParametersInFunctionalInterface.add(numberOfParameters);
                         if (!added) {
-                            success = false;
-                            break;
+                            continue outer;
                         }
                     }
                 }
-                if (success) return i;
+                return i;
             }
         }
         return null;

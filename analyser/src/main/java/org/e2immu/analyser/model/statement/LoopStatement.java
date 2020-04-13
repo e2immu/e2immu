@@ -11,9 +11,11 @@ import java.util.Objects;
 
 public abstract class LoopStatement extends StatementWithExpression {
     public final Block block;
+    public final String label;
 
-    protected LoopStatement(Expression condition, Block block) {
+    protected LoopStatement(String label, Expression condition, Block block) {
         super(condition);
+        this.label = label;
         this.block = Objects.requireNonNull(block);
     }
 

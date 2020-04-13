@@ -94,7 +94,7 @@ public class TestTypeInfoStream {
                                         )
                                 )
                                 .addStatement(
-                                        new ForEachStatement(
+                                        new ForEachStatement(null,
                                                 new LocalVariable.LocalVariableBuilder()
                                                         .setName("entry")
                                                         .setParameterizedType(new ParameterizedType(mapEntry, List.of(Primitives.PRIMITIVES.stringParameterizedType, typeT)))

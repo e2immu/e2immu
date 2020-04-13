@@ -51,7 +51,7 @@ public class StatementAnalyser {
 
     boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, VariableProperties variableProperties) {
         boolean changes = false;
-        NumberedStatement statement = startStatement;
+        NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
         boolean neverContinues = false;
         boolean escapes = false;
         try {

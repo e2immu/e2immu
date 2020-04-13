@@ -33,10 +33,11 @@ import java.util.Set;
 public class ForEachStatement extends LoopStatement {
     public final LocalVariable localVariable;
 
-    public ForEachStatement(LocalVariable localVariable,
+    public ForEachStatement(String label,
+                            LocalVariable localVariable,
                             Expression expression,
                             Block block) {
-        super(expression, block);
+        super(label, expression, block);
         this.localVariable = localVariable;
     }
 
@@ -49,6 +50,9 @@ public class ForEachStatement extends LoopStatement {
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
+        if (label != null) {
+            sb.append(label).append(": ");
+        }
         sb.append("for (");
         sb.append(localVariable.parameterizedType.stream());
         sb.append(" ");

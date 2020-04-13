@@ -26,15 +26,19 @@ import org.e2immu.analyser.util.StringUtil;
 // @NullNotAllowed
 public class DoStatement extends LoopStatement {
 
-    public DoStatement(Expression expression,
+    public DoStatement(String label,
+                       Expression expression,
                        Block block) {
-        super(expression, block);
+        super(label, expression, block);
     }
 
     @Override
     public String statementString(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
+        if (label != null) {
+            sb.append(label).append(": ");
+        }
         sb.append("do {");
         sb.append(block.statementString(indent));
         sb.append(" while(");

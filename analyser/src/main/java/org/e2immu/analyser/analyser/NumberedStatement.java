@@ -57,11 +57,10 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
                              @NotModified @NullNotAllowed int[] indices) {
         this.indices = Objects.requireNonNull(indices);
         this.statement = Objects.requireNonNull(statement);
-        assignmentTargets = statement.expressions().stream().flatMap(e -> e.assignmentTargets().stream()).collect(Collectors.toList());
+        assignmentTargets = statement.codeOrganization().expressions().flatMap(e -> e.assignmentTargets().stream()).collect(Collectors.toList());
 
         // important: only remove the first occurrence (LIST-wise) of the assignment target
-        List<Variable> variableList = statement.expressions().stream()
-                .flatMap(e -> e.nonStaticVariablesUsed().stream())
+        List<Variable> variableList = statement.codeOrganization().expressions().flatMap(e -> e.nonStaticVariablesUsed().stream())
                 .collect(Collectors.toCollection(LinkedList::new));
         for (Variable v : assignmentTargets) {
             variableList.remove(v);
