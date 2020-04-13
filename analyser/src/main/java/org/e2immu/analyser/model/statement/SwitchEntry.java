@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
@@ -143,9 +144,10 @@ public abstract class SwitchEntry implements Statement {
         public CodeOrganization codeOrganization() {
             Expression or;
             if (labels.isEmpty()) {
-                or = BooleanConstant.TRUE; // TODO: this should be the negation of all other values?
+                or = EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
             } else {
                 or = labels.get(0);
+                // we group multiple "labels" into one disjunction
                 for (int i = 1; i < labels.size(); i++) {
                     or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, labels.get(i), BinaryOperator.LOGICAL_OR_PRECEDENCE);
                 }

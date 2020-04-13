@@ -141,13 +141,13 @@ public class MethodAnalyser {
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
             CodeOrganization codeOrganization = statement.codeOrganization();
-            for (CodeOrganization.ExpressionsWithStatements ews : codeOrganization.expressionsWithStatements) {
-                indices.push(blockIndex);
-                NumberedStatement firstOfBlock =
-                        recursivelyCreateNumberedStatements(ews.statements.getStatements(), indices, numberedStatements, sideEffectContext);
-                blocks.add(firstOfBlock);
-                indices.pop();
-                blockIndex++;
+            if (codeOrganization.statements != Block.EMPTY_BLOCK) {
+                blockIndex = createBlock(indices, numberedStatements, sideEffectContext, blockIndex, blocks, codeOrganization.statements);
+            }
+            for (CodeOrganization subStatements : codeOrganization.subStatements) {
+                if (subStatements.statements != Block.EMPTY_BLOCK) {
+                    blockIndex = createBlock(indices, numberedStatements, sideEffectContext, blockIndex, blocks, subStatements.statements);
+                }
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
             indices.pop();
@@ -157,6 +157,17 @@ public class MethodAnalyser {
         if (previous != null)
             previous.next.set(Optional.empty());
         return first;
+    }
+
+    private static int createBlock(Stack<Integer> indices, List<NumberedStatement> numberedStatements,
+                                   SideEffectContext sideEffectContext, int blockIndex,
+                                   List<NumberedStatement> blocks, HasStatements statements) {
+        indices.push(blockIndex);
+        NumberedStatement firstOfBlock =
+                recursivelyCreateNumberedStatements(statements.getStatements(), indices, numberedStatements, sideEffectContext);
+        blocks.add(firstOfBlock);
+        indices.pop();
+        return blockIndex + 1;
     }
 
     @NotModified

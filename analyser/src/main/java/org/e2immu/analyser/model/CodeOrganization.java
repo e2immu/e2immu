@@ -1,10 +1,13 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -23,21 +26,23 @@ public class CodeOrganization {
     public final List<Expression> initialisers; // try, for   (example: int i=0; )
     public final LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
     public final Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
-    public final boolean negateParentExpression; // else statement
     public final List<Expression> updaters; // for, explicit constructor invocation
 
     public final HasStatements statements;  // block in loops, statements or block in switch statement
     public final List<CodeOrganization> subStatements; // catches, finally, switch entries
 
     private CodeOrganization(List<Expression> initialisers, LocalVariable localVariableCreation,
-                             Expression expression, boolean negateParentExpression, List<Expression> updaters, HasStatements statements, List<CodeOrganization> subStatements) {
-        this.initialisers = initialisers;
+                             Expression expression, List<Expression> updaters, HasStatements statements, List<CodeOrganization> subStatements) {
+        this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
-        this.expression = expression;
-        this.negateParentExpression = negateParentExpression;
-        this.updaters = updaters;
-        this.statements = statements;
-        this.subStatements = subStatements;
+        this.expression = Objects.requireNonNull(expression);
+        this.updaters = Objects.requireNonNull(updaters);
+        this.statements = Objects.requireNonNull(statements);
+        this.subStatements = Objects.requireNonNull(subStatements);
+    }
+
+    public Stream<Expression> expressionsWithAssignmentTargets() {
+        return Stream.concat(initialisers.stream(), Stream.of(expression));
     }
 
     public <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Class<E> clazz) {
@@ -45,15 +50,17 @@ public class CodeOrganization {
         Stream<E> s2 = Stream.concat(s1, expression.find(clazz).stream());
         Stream<E> s3 = Stream.concat(s2, updaters.stream().flatMap(e -> e.find(clazz).stream()));
         Stream<E> s4 = Stream.concat(s3, statements.getStatements().stream().flatMap(s -> Statement.findExpressionRecursivelyInStatements(s, clazz)));
-        Stream<E> s5 = Stream.concat(s4, subStatements.stream().flatMap(s -> s.findExpressionRecursivelyInStatements(clazz)));
-        return s5;
+        return Stream.concat(s4, subStatements.stream().flatMap(s -> s.findExpressionRecursivelyInStatements(clazz)));
+    }
+
+    public Stream<Expression> expressionsForInputVariables() {
+        return Stream.concat(Stream.concat(initialisers.stream(), Stream.of(expression)), updaters.stream());
     }
 
     public static class Builder {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
         private LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
-        private boolean negateParentExpression; // else statement
         private final List<Expression> updaters = new ArrayList<>(); // for
 
         private HasStatements statements;  // block in loops, statements or block in switch statement
@@ -71,11 +78,6 @@ public class CodeOrganization {
 
         public Builder setLocalVariableCreation(LocalVariable localVariableCreation) {
             this.localVariableCreation = localVariableCreation;
-            return this;
-        }
-
-        public Builder setNegateParentExpression(boolean negateParentExpression) {
-            this.negateParentExpression = negateParentExpression;
             return this;
         }
 
@@ -98,10 +100,9 @@ public class CodeOrganization {
         public CodeOrganization build() {
             return new CodeOrganization(ImmutableList.copyOf(initialisers),
                     localVariableCreation,
-                    expression,
-                    negateParentExpression,
+                    expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     ImmutableList.copyOf(updaters),
-                    statements,
+                    statements == null ? Block.EMPTY_BLOCK : statements,
                     ImmutableList.copyOf(subStatements));
         }
     }

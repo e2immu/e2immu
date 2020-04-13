@@ -26,6 +26,9 @@ import org.e2immu.annotation.E2Immutable;
 public class EmptyExpression implements Expression {
     public static final Expression EMPTY_EXPRESSION = new EmptyExpression();
 
+    public static final Expression DEFAULT_EXPRESSION = new EmptyExpression(); // negation of the disjunction of all earlier conditions
+    public static final Expression FINALLY_EXPRESSION = new EmptyExpression(); // always true condition
+
     private EmptyExpression() {
     }
 

@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -57,7 +58,7 @@ public class StatementAnalyser {
         boolean escapes = false;
         try {
             while (statement != null) {
-                if (computeVariablePropertiesOfStatement(statement, statement.statement.codeOrganization(), variableProperties))
+                if (computeVariablePropertiesOfStatement(statement, variableProperties))
                     changes = true;
 
                 if (statement.statement instanceof ReturnStatement ||
@@ -133,16 +134,19 @@ public class StatementAnalyser {
         }
     }
 
-    private boolean computeVariablePropertiesOfStatement(NumberedStatement statement, CodeOrganization codeOrganization,
+    private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
                                                          VariableProperties variableProperties) {
         boolean changes = false;
+        CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
-        // forEach, catch-clause
+        // PART 1: filling of of the variable properties: parameters of statement "forEach"
+
         if (codeOrganization.localVariableCreation != null) {
             variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation, List.of()));
         }
 
-        // initialisers in try-resources, for-loop, expression as statement
+        // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
+
         List<LocalVariableCreation> localVariableCreations = codeOrganization.initialisers.stream()
                 .flatMap(expr -> expr.find(LocalVariableCreation.class).stream())
                 .collect(Collectors.toList());
@@ -150,7 +154,7 @@ public class StatementAnalyser {
                 .map(lvc -> new LocalVariableReference(lvc.localVariable, List.of()))
                 .forEach(lvr -> variableProperties.create(lvr, VariableProperty.CREATED));
 
-        // TODO lots more work
+        // PART 3: more filling up of the variable properties, this time for "input" to the statement
 
         statement.inputVariables
                 .forEach(variable -> {
@@ -158,6 +162,9 @@ public class StatementAnalyser {
                         variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
                     }
                 });
+
+        // PART 4: more filling up of the variable properties, this time for assignments
+
         statement.assignmentTargets
                 .stream()
                 .filter(v -> !(v instanceof FieldReference) || ((FieldReference) v).scope instanceof This)
@@ -180,6 +187,8 @@ public class StatementAnalyser {
                     log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
                 });
 
+        // PART 5: computing linking between local variables and fields, parameters
+
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
             Value value = localVariableCreation.expression.evaluate(variableProperties);
             Set<Variable> linkTo = value.linkedVariables(variableProperties);
@@ -189,11 +198,11 @@ public class StatementAnalyser {
             variableProperties.linkVariables(lvr, linkTo);
         }
 
-        // TODO there may be duplicate evaluation
+        // PART 6: evaluation of the core expression of the statement (if the statement has such a thing)
 
         Value value;
         try {
-            value = codeOrganization.expression != null ? codeOrganization.expression.evaluate(variableProperties) : null;
+            value = codeOrganization.expression != EmptyExpression.EMPTY_EXPRESSION ? codeOrganization.expression.evaluate(variableProperties) : null;
         } catch (RuntimeException rte) {
             log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
             throw rte;
@@ -204,50 +213,69 @@ public class StatementAnalyser {
                 statement.linkedVariables.set(vars);
             }
         }
+        log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
-        if (statement.statement instanceof IfElseStatement) {
-            if (value == BoolValue.FALSE || value == BoolValue.TRUE) {
-                log(ANALYSER, "condition in if statement is constant {}", value);
-                typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() + ", if statement evaluates to constant");
-            }
-            VariableProperties copyForThen = new VariableProperties(variableProperties, value);
+        // PART 7: compute variable properties of the expression, if around
 
-            log(VARIABLE_PROPERTIES, "IfThenElse statement {}: {}", statement.streamIndices(), variableProperties);
-            if (computeVariablePropertiesOfExpression(((IfElseStatement) statement.statement).expression, variableProperties, value)) {
+        if (codeOrganization.expression != EmptyExpression.EMPTY_EXPRESSION && computeVariablePropertiesOfExpression(codeOrganization.expression, variableProperties, value)) {
+            changes = true;
+        }
+
+        // PART 8: some specific checks for certain types of statements
+
+        if (value != null && statement.statement instanceof ReturnStatement) {
+            Boolean notNull = value.isNotNull(variableProperties);
+            if (notNull != null && !statement.returnsNotNull.isSet()) {
+                statement.returnsNotNull.set(notNull);
                 changes = true;
             }
-            NumberedStatement startOfThenBlock = statement.blocks.get().get(0);
-            computeVariablePropertiesOfBlock(startOfThenBlock, copyForThen);
-            if (statement.blocks.get().size() > 1) {
-                VariableProperties copyForElse = new VariableProperties(variableProperties, NegatedValue.negate(value));
-                computeVariablePropertiesOfBlock(statement.blocks.get().get(1), copyForElse);
-            }
-            // if the "then" block ends in return or throw (we recursively need to know)
-            // then we need to copy the check of the "else" continue (regardless if we
-            // have an else or not, or if that else returns or not.
-            if (startOfThenBlock.neverContinues.get()) {
-                variableProperties.addToConditional(value);
-                log(VARIABLE_PROPERTIES, "Then-part of If-Then-Else never continues, added Else-part to variable properties, now {}",
-                        variableProperties);
-            }
-        } else {
-            log(VARIABLE_PROPERTIES, "Statement {}: {}", statement.streamIndices(), variableProperties);
-            if (statement.statement instanceof StatementWithExpression) {
-                Expression expression = ((StatementWithExpression) statement.statement).expression;
+        }
+        if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
+            log(ANALYSER, "condition in if statement is constant {}", value);
+            typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() + ", if statement evaluates to constant");
+        }
 
-                if (computeVariablePropertiesOfExpression(expression, variableProperties, value)) changes = true;
+        // PART 9: the primary block, if it's there
+        // we'll treat it as a conditional on 'value', even if there is no if() statement
 
-                if (statement.statement instanceof ReturnStatement) {
-                    Boolean notNull = value.isNotNull(variableProperties);
-                    if (notNull != null && !statement.returnsNotNull.isSet()) {
-                        statement.returnsNotNull.set(notNull);
-                        changes = true;
+        List<NumberedStatement> startOfBlocks = statement.blocks.get();
+        if (!startOfBlocks.isEmpty()) {
+
+            NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
+            VariableProperties variablePropertiesWithValue = new VariableProperties(variableProperties, value);
+            computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
+
+            // PART 10: other conditions, including the else, switch entries, catch clauses
+            List<Value> conditions = new ArrayList<>();
+            for (int count = 1; count < startOfBlocks.size(); count++) {
+                CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
+
+                Value valueForSubStatement;
+                if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
+                    Value or = value;
+                    for (Value condition : conditions) {
+                        or = new OrValue(or, condition);
                     }
+                    valueForSubStatement = NegatedValue.negate(or);
+                } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression || EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {
+                    valueForSubStatement = null;
+                } else {
+                    // real expression
+                    valueForSubStatement = subStatements.expression.evaluate(variableProperties);
+                    conditions.add(valueForSubStatement);
                 }
-            }
+                VariableProperties copyForElse = valueForSubStatement == null ? variableProperties : new VariableProperties(variableProperties, valueForSubStatement);
+                computeVariablePropertiesOfBlock(statement.blocks.get().get(count), copyForElse);
 
-            for (NumberedStatement block : statement.blocks.get()) {
-                computeVariablePropertiesOfBlock(block, new VariableProperties(variableProperties));
+                // if the "then" block ends in return or throw (we recursively need to know)
+                // then we need to copy the check of the "else" continue (regardless if we
+                // have an else or not, or if that else returns or not.
+                if (startOfFirstBlock.neverContinues.get() && startOfBlocks.size() == 2) {
+                    variableProperties.addToConditional(valueForSubStatement);
+                    log(VARIABLE_PROPERTIES, "Then-part of If-Then-Else never continues, added Else-part to variable properties, now {}",
+                            variableProperties);
+                }
+
             }
         }
         return changes;

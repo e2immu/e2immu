@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
@@ -96,7 +97,7 @@ public class TryStatement implements Statement {
         }
         if (finallyBlock != null) {
             builder.addSubStatement(new CodeOrganization.Builder()
-                    .setExpression(BooleanConstant.TRUE)
+                    .setExpression(EmptyExpression.FINALLY_EXPRESSION)
                     .setStatements(finallyBlock).build());
         }
         return builder.build();
