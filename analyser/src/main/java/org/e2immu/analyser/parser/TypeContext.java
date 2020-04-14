@@ -186,7 +186,7 @@ public class TypeContext {
         return constructor;
     }
 
-    private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
+    private static List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
         TypeInfo typeInfo;
         if (typeOfObject.typeInfo == null) {
             if (typeOfObject.typeParameter == null) throw new UnsupportedOperationException();
@@ -249,15 +249,6 @@ public class TypeContext {
             this.parameterIndicesOfFunctionalInterfaces = parameterIndicesOfFunctionalInterfaces;
             this.method = method;
         }
-    }
-
-    // TODO remove me
-    public int compareMethodCandidates(MethodCandidate mc1, MethodCandidate mc2) {
-        Set<MethodInfo> overloads1 = mc1.method.methodInfo.typeInfo.overrides(mc1.method.methodInfo);
-        if (overloads1.contains(mc2.method.methodInfo)) return -1;
-        Set<MethodInfo> overloads2 = mc2.method.methodInfo.typeInfo.overrides(mc2.method.methodInfo);
-        if (overloads2.contains(mc1.method.methodInfo)) return 1;
-        return mc1.method.methodInfo.typeInfo.fullyQualifiedName.compareTo(mc2.method.methodInfo.typeInfo.fullyQualifiedName);
     }
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;
@@ -372,8 +363,8 @@ public class TypeContext {
         return parametersPresented == declared;
     }
 
-    private Map<NamedType, ParameterizedType> joinMaps(Map<NamedType, ParameterizedType> previous,
-                                                       ParameterizedType target) {
+    private static Map<NamedType, ParameterizedType> joinMaps(Map<NamedType, ParameterizedType> previous,
+                                                              ParameterizedType target) {
         HashMap<NamedType, ParameterizedType> res = new HashMap<>(previous);
         res.putAll(target.initialTypeParameterMap());
         return res;

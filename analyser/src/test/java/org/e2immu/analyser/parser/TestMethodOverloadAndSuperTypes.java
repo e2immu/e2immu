@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -110,7 +111,7 @@ public class TestMethodOverloadAndSuperTypes {
 
         List<TypeInfo> superTypesC1 = c1.superTypes();
         Assert.assertEquals("[java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
-        List<TypeInfo> directSuperTypesC1 = c1.directSuperTypes();
+        List<ParameterizedType> directSuperTypesC1 = c1.directSuperTypes();
         Assert.assertEquals("[java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
 
 
@@ -129,7 +130,7 @@ public class TestMethodOverloadAndSuperTypes {
 
         List<TypeInfo> superTypesC2 = c2.superTypes();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
-        List<TypeInfo> directSuperTypesC2 = c2.directSuperTypes();
+        List<ParameterizedType> directSuperTypesC2 = c2.directSuperTypes();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
         MethodInfo toString = c2.typeInspection.get().methods.stream().filter(m -> m.name.equals("toString")).findFirst().orElseThrow();

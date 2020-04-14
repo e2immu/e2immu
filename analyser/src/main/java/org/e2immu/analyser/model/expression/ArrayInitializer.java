@@ -43,7 +43,7 @@ public class ArrayInitializer implements Expression {
     }
 
     // TODO needs better implementation!!
-    private ParameterizedType commonType(List<Expression> expressions) {
+    private static ParameterizedType commonType(List<Expression> expressions) {
         if (expressions.isEmpty()) return Primitives.PRIMITIVES.voidParameterizedType;
         return expressions.get(0).returnType();
     }

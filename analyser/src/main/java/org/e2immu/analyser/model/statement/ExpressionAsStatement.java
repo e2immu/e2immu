@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.Pair;
@@ -58,6 +59,9 @@ public class ExpressionAsStatement extends StatementWithExpression {
             builder.addInitialisers(List.of(expression));
         } else {
             builder.setExpression(expression);
+        }
+        if(expression instanceof LambdaBlock) {
+            builder.setStatements(((LambdaBlock)expression).block);
         }
         return builder.build();
     }

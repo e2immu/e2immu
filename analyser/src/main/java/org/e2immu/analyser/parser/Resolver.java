@@ -38,7 +38,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
-    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
+    public static List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
@@ -58,7 +58,7 @@ public class Resolver {
     // one level down, it contains the imports, the top-level types, and for one top-level type, all sub-level types
 
     // the typeContextOfFile contains the types imported; we have no other access to import statements here
-    private void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType,
+    private static void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType,
                                            Set<TypeInfo> stayWithin, TypeInfo typeInfo, TypeContext typeContextOfFile) {
         Set<TypeInfo> typeDependencies = new HashSet<>();
 
@@ -93,7 +93,7 @@ public class Resolver {
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
     }
 
-    private DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
+    private static DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
@@ -217,7 +217,7 @@ public class Resolver {
         return methodGraph;
     }
 
-    private void doBlock(ExpressionContext expressionContext, MethodInfo methodInfo, BlockStmt block) {
+    private static void doBlock(ExpressionContext expressionContext, MethodInfo methodInfo, BlockStmt block) {
         try {
             ExpressionContext newContext = expressionContext.newVariableContext("resolving " + methodInfo.fullyQualifiedName());
             methodInfo.methodInspection.get().parameters.forEach(newContext.variableContext::add);

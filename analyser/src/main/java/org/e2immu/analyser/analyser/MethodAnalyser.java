@@ -328,7 +328,7 @@ public class MethodAnalyser {
         }
     }
 
-    private boolean emptyOrStaticIfTrue(SetOnceMap<FieldInfo, Boolean> map) {
+    private static boolean emptyOrStaticIfTrue(SetOnceMap<FieldInfo, Boolean> map) {
         if (map.isEmpty()) return true;
         return map.stream().allMatch(e -> !e.getValue() || e.getKey().isStatic());
     }
@@ -338,20 +338,24 @@ public class MethodAnalyser {
         // already done the work?
         if (methodAnalysis.annotations.isSet(typeContext.notModified.get())) return false;
 
-        if (!methodInfo.isStatic) {
-            // we need to check if there's fields being read/assigned/
-            if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
-                    emptyOrStaticIfTrue(methodAnalysis.fieldModifications) &&
-                    !methodInfo.hasOverrides() &&
-                    !methodInfo.isDefaultImplementation &&
-                    methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
-                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                        " should be marked static");
-                return false;
+        if(!methodAnalysis.complainedAboutMissingStaticStatement.isSet()) {
+            if (!methodInfo.isStatic) {
+                // we need to check if there's fields being read/assigned/
+                if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
+                        emptyOrStaticIfTrue(methodAnalysis.fieldModifications) &&
+                        !methodInfo.hasOverrides() &&
+                        !methodInfo.isDefaultImplementation &&
+                        methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
+                    typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                            " should be marked static");
+                    methodAnalysis.complainedAboutMissingStaticStatement.set(true);
+                    return false;
+                }
             }
+            methodAnalysis.complainedAboutMissingStaticStatement.set(false);
         }
 
-        // TODO maybe a bit of overkill, need to understand how fieldmodification works again...
+        // TODO maybe a bit of overkill, need to understand how field modification works again...
         Boolean noFieldModifications = methodInfo.isAllFieldsNotModified(typeContext);
         if (noFieldModifications == null) {
             log(NOT_MODIFIED, "Method {} delaying @NotModified: fields modifications", methodInfo.fullyQualifiedName());
@@ -426,7 +430,7 @@ public class MethodAnalyser {
 
     // in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
     // gets rid of local vars and transitive links
-    private boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private static boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
         log(LINKED_VARIABLES, "Establishing links, copying from dependency graph of size {}",
                 methodProperties.dependencyGraph.size());
         AtomicBoolean changes = new AtomicBoolean();
@@ -617,7 +621,7 @@ public class MethodAnalyser {
         return changes;
     }
 
-    private boolean updateFieldAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private static boolean updateFieldAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
         for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {

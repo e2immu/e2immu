@@ -195,13 +195,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         methodInspection.set(builder.build(this));
     }
 
-    private void addAnnotations(MethodInspection.MethodInspectionBuilder builder, NodeList<AnnotationExpr> annotations, ExpressionContext expressionContext) {
+    private static void addAnnotations(MethodInspection.MethodInspectionBuilder builder, NodeList<AnnotationExpr> annotations, ExpressionContext expressionContext) {
         for (AnnotationExpr ae : annotations) {
             builder.addAnnotation(AnnotationExpression.from(ae, expressionContext));
         }
     }
 
-    private void addExceptionTypes(MethodInspection.MethodInspectionBuilder builder,
+    private static void addExceptionTypes(MethodInspection.MethodInspectionBuilder builder,
                                    NodeList<ReferenceType> thrownExceptions,
                                    TypeContext typeContext) {
         for (ReferenceType referenceType : thrownExceptions) {
@@ -210,7 +210,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
     }
 
-    private void addModifiers(MethodInspection.MethodInspectionBuilder builder, NodeList<Modifier> modifiers) {
+    private static void addModifiers(MethodInspection.MethodInspectionBuilder builder, NodeList<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
             if (!"static".equals(modifier.getKeyword().asString()))
                 builder.addModifier(MethodModifier.from(modifier));
@@ -453,17 +453,19 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodAnalysis.fieldModifications.stream().noneMatch(e -> e.getValue() == Boolean.TRUE);
     }
 
-    public boolean sameMethod(MethodInfo target) {
+    public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
         return name.equals(target.name) &&
-                sameParameters(methodInspection.get().parameters, target.methodInspection.get().parameters);
+                sameParameters(methodInspection.get().parameters, target.methodInspection.get().parameters, translationMap);
     }
 
-    private static boolean sameParameters(List<ParameterInfo> list1, List<ParameterInfo> list2) {
-        if (list1.size() != list2.size()) return false;
+    private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,
+                                          List<ParameterInfo> parametersOfTarget,
+                                          Map<NamedType, ParameterizedType> translationMap) {
+        if (parametersOfMyMethod.size() != parametersOfTarget.size()) return false;
         int i = 0;
-        for (ParameterInfo parameterInfo : list1) {
-            ParameterInfo p2 = list2.get(i);
-            if (differentType(parameterInfo.parameterizedType, p2.parameterizedType)) return false;
+        for (ParameterInfo parameterInfo : parametersOfMyMethod) {
+            ParameterInfo p2 = parametersOfTarget.get(i);
+            if (differentType(parameterInfo.parameterizedType, p2.parameterizedType, translationMap)) return false;
             i++;
         }
         return true;
@@ -479,31 +481,39 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * On the other hand, int comparable(Value other) is the same method as int comparable(T) in Comparable.
      * This is solved by taking the concrete type when we move from concrete types to parameterized types.
      *
-     * @param pt1 first type
-     * @param pt2 second type
+     * @param inSuperType    first type
+     * @param inSubType      second type
+     * @param translationMap a map from type parameters in the super type to (more) concrete types in the sub-type
      * @return true if the types are "different"
      */
-    private static boolean differentType(ParameterizedType pt1, ParameterizedType pt2) {
-        Objects.requireNonNull(pt1);
-        Objects.requireNonNull(pt2);
-        if (pt1 == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR && pt2 == pt1) return false;
+    private static boolean differentType(ParameterizedType inSuperType,
+                                         ParameterizedType inSubType,
+                                         Map<NamedType, ParameterizedType> translationMap) {
+        Objects.requireNonNull(inSuperType);
+        Objects.requireNonNull(inSubType);
+        if (inSuperType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR && inSubType == inSuperType) return false;
 
-        if (pt1.typeInfo != null) {
-            if (pt2.typeInfo != pt1.typeInfo) return true;
-            if (pt1.parameters.size() != pt2.parameters.size()) return true;
+        if (inSuperType.typeInfo != null) {
+            if (inSubType.typeInfo != inSuperType.typeInfo) return true;
+            if (inSuperType.parameters.size() != inSubType.parameters.size()) return true;
             int i = 0;
-            for (ParameterizedType param1 : pt1.parameters) {
-                ParameterizedType param2 = pt2.parameters.get(i);
-                if (differentType(param1, param2)) return true;
+            for (ParameterizedType param1 : inSuperType.parameters) {
+                ParameterizedType param2 = inSubType.parameters.get(i);
+                if (differentType(param1, param2, translationMap)) return true;
                 i++;
             }
             return false;
         }
-        if (pt2.typeInfo != null) return true;
-        if (pt1.typeParameter == null && pt2.typeParameter == null) return false;
-        return pt1.typeParameter == null || pt2.typeParameter == null ||
-                pt1.typeParameter.index != pt2.typeParameter.index ||
-                pt1.typeParameter.owner.isLeft() != pt2.typeParameter.owner.isLeft();
+        if (inSuperType.typeParameter != null && inSubType.typeInfo != null) {
+            // check if we can go from the parameter to the concrete type
+            ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
+            if (inMap == null) return true;
+            return differentType(inMap, inSubType, translationMap);
+        }
+        if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
+        return inSuperType.typeParameter == null || inSubType.typeParameter == null ||
+                inSuperType.typeParameter.index != inSubType.typeParameter.index ||
+                inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
     }
 
     @Override

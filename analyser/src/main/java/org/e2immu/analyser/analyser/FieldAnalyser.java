@@ -289,19 +289,19 @@ public class FieldAnalyser {
         });
     }
 
-    private boolean isType(ParameterizedType type, Set<String> typeNames) {
+    private static boolean isType(ParameterizedType type, Set<String> typeNames) {
         return type.typeInfo != null && typeNames.contains(type.typeInfo.fullyQualifiedName);
     }
 
-    private boolean isIntType(ParameterizedType parameterizedType) {
+    private static boolean isIntType(ParameterizedType parameterizedType) {
         return isType(parameterizedType, Set.of("java.lang.Integer", "int"));
     }
 
-    private boolean isBoolType(ParameterizedType parameterizedType) {
+    private static boolean isBoolType(ParameterizedType parameterizedType) {
         return isType(parameterizedType, Set.of("java.lang.Boolean", "boolean"));
     }
 
-    private boolean isStringType(ParameterizedType parameterizedType) {
+    private static boolean isStringType(ParameterizedType parameterizedType) {
         return isType(parameterizedType, Set.of("java.lang.String"));
     }
 

@@ -518,7 +518,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return joint;
     }
 
-    private TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
+    private static TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
         if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
             ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) typeDeclaration;
             if (cid.isInterface()) {
@@ -818,28 +818,35 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().modifiers.contains(TypeModifier.STATIC); // static sub type
     }
 
-    public MethodInfo findMethod(MethodInfo target) {
+    /**
+     * Find a method, given a translation map
+     *
+     * @param target         the method to find (typically from a sub type)
+     * @param translationMap from the type parameters of this to the concrete types of the sub-type
+     * @return the method of this, if deemed the same
+     */
+    private MethodInfo findMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
         for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
-            if (methodInfo.sameMethod(target)) {
+            if (methodInfo.sameMethod(target, translationMap)) {
                 return methodInfo;
             }
         }
         return null;
     }
 
-    public List<TypeInfo> directSuperTypes() {
+    public List<ParameterizedType> directSuperTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
-        List<TypeInfo> list = new ArrayList<>();
+        List<ParameterizedType> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.get().parentClass;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
-        TypeInfo parent;
+        ParameterizedType parent;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectTypeInfo);
+            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectParameterizedType);
         } else {
-            parent = Objects.requireNonNull(parentPt.typeInfo);
+            parent = Objects.requireNonNull(parentPt);
         }
         list.add(parent);
-        typeInspection.get().interfacesImplemented.forEach(i -> list.add(i.typeInfo));
+        list.addAll(typeInspection.get().interfacesImplemented);
         return list;
     }
 
@@ -877,21 +884,44 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    public Set<MethodInfo> overrides(MethodInfo methodInfo  ) {
-        Set<MethodInfo> myOverrides = typeInspection.get().overrides.getOtherwiseNull(methodInfo);
+    public Set<MethodInfo> overrides(MethodInfo methodInfo) {
+        // NOTE: we cache, but only at our own level
+        boolean ourOwnLevel = methodInfo.typeInfo == this;
+        Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.get().overrides.getOtherwiseNull(methodInfo) : null;
         if (myOverrides != null) return myOverrides;
-        List<MethodInfo> result = new ArrayList<>();
-        for (TypeInfo superType : directSuperTypes()) {
+        Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
+        Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
+        if (ourOwnLevel) {
+            typeInspection.get().overrides.put(methodInfo, immutable);
+        }
+        return immutable;
+    }
 
-            MethodInfo override = superType.findMethod(methodInfo);
+    private Set<MethodInfo> recursiveOverridesCall(MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
+        Set<MethodInfo> result = new HashSet<>();
+        for (ParameterizedType superType : directSuperTypes()) {
+            Map<NamedType, ParameterizedType> translationMapOfSuperType;
+            if (superType.parameters.isEmpty()) {
+                translationMapOfSuperType = translationMap;
+            } else {
+                ParameterizedType formalType = superType.typeInfo.asParameterizedType();
+                translationMapOfSuperType = new HashMap<>(translationMap);
+                int index = 0;
+                for (ParameterizedType parameter : formalType.parameters) {
+                    ParameterizedType concreteParameter = superType.parameters.get(index);
+                    translationMapOfSuperType.put(parameter.typeParameter, concreteParameter);
+                    index++;
+                }
+            }
+            MethodInfo override = superType.typeInfo.findMethod(methodInfo, translationMapOfSuperType);
             if (override != null) {
                 result.add(override);
             }
-            result.addAll(superType.overrides(methodInfo));
+            if (superType.typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
+                result.addAll(superType.typeInfo.recursiveOverridesCall(methodInfo, translationMapOfSuperType));
+            }
         }
-        Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
-        typeInspection.get().overrides.put(methodInfo, immutable);
-        return immutable;
+        return result;
     }
 
     @Override

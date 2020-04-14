@@ -91,7 +91,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         this.typeItemMap.values().forEach(TypeItem::freeze);
     }
 
-    private int parse(URL annotationXml, Map<String, TypeItem> typeItemMap) throws ParserConfigurationException, IOException, SAXException {
+    private static int parse(URL annotationXml, Map<String, TypeItem> typeItemMap) throws ParserConfigurationException, IOException, SAXException {
         log(ANNOTATION_XML_READER, "Parsing {}", annotationXml);
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -181,14 +181,14 @@ public class AnnotationXmlReader implements AnnotationStore {
     }
 
 
-    private ParameterItem parameterItem(TypeItem typeItem, String methodName, String returnType, String parameterIndex) {
+    private static ParameterItem parameterItem(TypeItem typeItem, String methodName, String returnType, String parameterIndex) {
         MethodItem methodItem = methodItem(typeItem, methodName, returnType);
         ParameterItem parameterItem = new ParameterItem(Integer.parseInt(parameterIndex));
         methodItem.getParameterItems().add(parameterItem);
         return parameterItem;
     }
 
-    private MethodItem methodItem(TypeItem typeItem, String methodName, String returnType) {
+    private static MethodItem methodItem(TypeItem typeItem, String methodName, String returnType) {
         MethodItem methodItem = typeItem.getMethodItems().get(methodName);
         if (methodItem == null) {
             methodItem = new MethodItem(methodName, returnType);
@@ -198,7 +198,7 @@ public class AnnotationXmlReader implements AnnotationStore {
         return methodItem;
     }
 
-    private FieldItem fieldItem(TypeItem typeItem, String fieldName) {
+    private static FieldItem fieldItem(TypeItem typeItem, String fieldName) {
         FieldItem fieldItem = typeItem.getFieldItems().get(fieldName);
         if (fieldItem == null) {
             fieldItem = new FieldItem(fieldName);

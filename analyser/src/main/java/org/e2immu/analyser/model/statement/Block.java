@@ -45,12 +45,6 @@ public class Block implements Statement, HasStatements {
         this.statements = statements;
     }
 
-    // all statements should have been parsed, but not all methods are known yet... so there's a serious chance
-    // we have no clue... TODO
-    public ParameterizedType inferReturnType() {
-        return Primitives.PRIMITIVES.voidParameterizedType;
-    }
-
     @Container
     public static class BlockBuilder {
         private final List<Statement> statements = new ArrayList<>();

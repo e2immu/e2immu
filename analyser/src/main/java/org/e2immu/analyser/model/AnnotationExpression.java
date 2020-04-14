@@ -142,7 +142,7 @@ public class AnnotationExpression {
         return defaultValue;
     }
 
-    private Object returnValueOfAnnotationExpression(Expression expression) {
+    private static Object returnValueOfAnnotationExpression(Expression expression) {
         // normal "constant" or 123
         if (expression instanceof Constant) return ((Constant) expression).getValue();
 

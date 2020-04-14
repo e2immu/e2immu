@@ -98,7 +98,7 @@ public class InspectAnnotatedAPIs {
         return typesInGlobalTypeContext;
     }
 
-    private void mergeAnnotations(TypeInfo typeFrom, TypeInfo typeTo) {
+    private static void mergeAnnotations(TypeInfo typeFrom, TypeInfo typeTo) {
         if (typeFrom == typeTo) return; // same object, nothing to do
         typeTo.typeInspection.overwrite(typeTo.typeInspection.get().copy(typeFrom.typeInspection.get().annotations));
         typeTo.typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {

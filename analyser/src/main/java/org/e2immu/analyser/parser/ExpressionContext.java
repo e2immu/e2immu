@@ -234,7 +234,7 @@ public class ExpressionContext {
         return new SwitchStatement(selector, entries);
     }
 
-    private TypeInfo selectorIsEnumType(Expression selector) {
+    private static TypeInfo selectorIsEnumType(Expression selector) {
         TypeInfo typeInfo = selector.returnType().typeInfo;
         if (typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM) {
             return typeInfo;
@@ -342,7 +342,7 @@ public class ExpressionContext {
         TypeInfo typeInfo = new TypeInfo(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
-        new Resolver().sortTypes(Map.of(typeInfo, typeContext));
+        Resolver.sortTypes(Map.of(typeInfo, typeContext));
         return new LocalClassDeclaration(typeInfo);
     }
 

@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.VariableContext;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class ParseLambdaExpr {
             return new LambdaExpression(parameters, expr, functionalType);
         }
         Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-        ParameterizedType inferredReturnType = block.inferReturnType();
+        ParameterizedType inferredReturnType = Primitives.PRIMITIVES.voidParameterizedType; // TODO
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}", functionalType);
         return new LambdaBlock(parameters, block, functionalType);
