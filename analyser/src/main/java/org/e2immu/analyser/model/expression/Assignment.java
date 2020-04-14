@@ -108,11 +108,6 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public Variable variableFromExpression() {
-        return target.variableFromExpression();
-    }
-
-    @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         if (target instanceof FieldAccess) {
             return SideEffect.SIDE_EFFECT;

@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
@@ -84,7 +85,9 @@ public class ParseFieldAccessExpr {
         if (object instanceof TypeExpression || object instanceof MethodCall) {
             objectVariable = null;
         } else {
-            objectVariable = object.variableFromExpression();
+            List<Variable> vars = object.variables();
+            if(vars.isEmpty()) throw new UnsupportedOperationException("? expected a variable, object is "+object.getClass());
+            objectVariable = object.variables().get(0);
         }
         FieldReference fieldReference = new FieldReference(fieldInfo, objectVariable);
         return new FieldAccess(object, fieldReference);

@@ -138,14 +138,6 @@ public interface Expression {
         }
     }
 
-    @NotModified
-    // @Immutable
-    default List<Variable> nonStaticVariablesUsed() {
-        List<Variable> result = new ArrayList<>();
-        collectStream(e -> e.variablesUsed().stream().filter(v -> !v.isStatic()), str -> str.forEach(result::add));
-        return ImmutableList.copyOf(result);
-    }
-
     // we want the variables on the left hand side of an assignment, but this could be complex, as in
     // object.field.field2[i++] --> field2
     @NotModified

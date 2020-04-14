@@ -8,4 +8,12 @@ public interface EvaluationVisitor {
         visit(expression, evaluationContext, value, false);
     }
 
+
+    EvaluationVisitor NO_VISITOR = new EvaluationVisitor() {
+        @Override
+        public void visit(Expression expression, EvaluationContext evaluationContext, Value value, boolean changes) {
+            // no code at all
+        }
+    };
+
 }

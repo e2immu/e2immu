@@ -81,7 +81,7 @@ public class ParseMethodReferenceExpr {
                 // example here is in Variable: there is a detailedString(), and a static detailedString(Set<>)
                 for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
                     ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
-                    if(concreteType.isTypeParameter()) return false; // no concrete data in the SAM yet
+                    if (concreteType.isTypeParameter()) return false; // no concrete data in the SAM yet
                     ParameterizedType typeOfMethodCandidate;
                     int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
                     if (param == -1) {
@@ -109,7 +109,7 @@ public class ParseMethodReferenceExpr {
                 }
             }
         }
-        if(methodCandidates.isEmpty()) {
+        if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("I've killed all the candidates myself??");
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;
@@ -118,7 +118,7 @@ public class ParseMethodReferenceExpr {
         method.methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType).forEach(types::add);
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
         log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInfo.distinguishingName());
-        return new MethodReference(method.methodInfo, functionalType);
+        return new MethodReference(scope, method.methodInfo, functionalType);
     }
 
     private static void staticVsInstance(List<TypeContext.MethodCandidate> methodCandidates) {
@@ -167,7 +167,7 @@ public class ParseMethodReferenceExpr {
         TypeInfo intFunction = expressionContext.typeContext.typeStore.get("java.util.function.IntFunction");
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
-        return new MethodReference(arrayConstructor, intFunctionPt);
+        return new MethodReference(new TypeExpression(parameterizedType), arrayConstructor, intFunctionPt);
     }
 
     public static boolean scopeIsAType(Expression scope) {

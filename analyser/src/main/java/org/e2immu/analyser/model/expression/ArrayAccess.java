@@ -77,11 +77,6 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Variable variableFromExpression() {
-        return expression.variableFromExpression();
-    }
-
-    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value array = expression.evaluate(evaluationContext, visitor);
         Value index = expression.evaluate(evaluationContext, visitor);

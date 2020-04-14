@@ -48,7 +48,7 @@ public class FieldAnalyser {
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
             FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            value = fieldInfo.fieldInspection.get().initialiser.get().evaluate(fieldProperties);
+            value = fieldInfo.fieldInspection.get().initialiser.get().evaluate(fieldProperties, EvaluationVisitor.NO_VISITOR);
             fieldProperties.setValue(fieldReference, value);
             log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
         }
