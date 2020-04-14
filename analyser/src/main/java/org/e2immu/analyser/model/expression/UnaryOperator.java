@@ -66,14 +66,12 @@ public class UnaryOperator implements Expression {
         Value v = expression.evaluate(evaluationContext);
         if (v == UnknownValue.UNKNOWN_VALUE) return v;
 
-        if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool) {
+        if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
+                operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {
             return NegatedValue.negate(v);
         }
         if (operator == Primitives.PRIMITIVES.unaryPlusOperatorInt) {
             return v;
-        }
-        if (operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {
-            return new IntValue(-((IntValue) v).value);
         }
         if (operator == Primitives.PRIMITIVES.bitWiseNotOperatorInt) {
             return new IntValue(~((IntValue) v).value);

@@ -43,12 +43,15 @@ public class InstanceOf implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext) {
-        if (expression instanceof VariableExpression)
+        if (expression instanceof VariableExpression || expression instanceof FieldAccess)
             return new InstanceOfValue(expression.variableFromExpression(), parameterizedType);
         if (expression instanceof ClassExpression) {
             return BoolValue.of(parameterizedType.isAssignableFrom(((ClassExpression) expression).parameterizedType));
         }
-        throw new UnsupportedOperationException("?");
+        // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
+        // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
+        // horrible practice. We leave the bug for now.
+        throw new UnsupportedOperationException("? have expression of " + expression.getClass());
     }
 
     @Override

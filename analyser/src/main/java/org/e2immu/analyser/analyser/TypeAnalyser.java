@@ -75,13 +75,13 @@ public class TypeAnalyser {
             This thisVariable = new This(sortedType.typeInfo);
             VariableProperties fieldProperties = initializeVariableProperties(sortedType, thisVariable, null);
 
-            for (WithInspectionAndAnalysis WithInspectionAndAnalysis : sortedType.methodsAndFields) {
-                if (WithInspectionAndAnalysis instanceof MethodInfo) {
-                    VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariable, (MethodInfo) WithInspectionAndAnalysis);
-                    if (methodAnalyser.analyse((MethodInfo) WithInspectionAndAnalysis, methodProperties))
+            for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
+                if (member instanceof MethodInfo) {
+                    VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariable, (MethodInfo) member);
+                    if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
-                    if (fieldAnalyser.analyse((FieldInfo) WithInspectionAndAnalysis, thisVariable, fieldProperties))
+                    if (fieldAnalyser.analyse((FieldInfo) member, thisVariable, fieldProperties))
                         changes = true;
                 }
             }
@@ -148,9 +148,20 @@ public class TypeAnalyser {
         VariableProperties fieldProperties = new VariableProperties(typeContext, thisVariable, currentMethod);
         fieldProperties.create(thisVariable);
 
-        for (WithInspectionAndAnalysis WithInspectionAndAnalysis : sortedType.methodsAndFields) {
-            if (WithInspectionAndAnalysis instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) WithInspectionAndAnalysis;
+        for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
+            if (member instanceof FieldInfo) {
+                FieldInfo fieldInfo = (FieldInfo) member;
+                FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+                fieldProperties.create(fieldReference);
+            }
+        }
+        // fields from sub-types... how do they fit in? It is well possible that the subtype has already been analysed,
+        // or will be analysed later. However, we need to "know" the fields because they may transfer information
+
+        // note that only fields of sub-types should be accessible for modification; fields of other types that are
+        // accessible will be forced to be public final
+        for (TypeInfo subType : sortedType.typeInfo.typeInspection.get().subTypes) {
+            for (FieldInfo fieldInfo : subType.typeInspection.get().fields) {
                 FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
                 fieldProperties.create(fieldReference);
             }

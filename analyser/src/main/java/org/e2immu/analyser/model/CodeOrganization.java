@@ -38,6 +38,9 @@ public class CodeOrganization {
         this.expression = Objects.requireNonNull(expression);
         this.updaters = Objects.requireNonNull(updaters);
         this.statements = Objects.requireNonNull(statements);
+        if(this.statements.getStatements().isEmpty() && this.statements != Block.EMPTY_BLOCK) {
+            throw new UnsupportedOperationException();
+        }
         this.subStatements = Objects.requireNonNull(subStatements);
     }
 

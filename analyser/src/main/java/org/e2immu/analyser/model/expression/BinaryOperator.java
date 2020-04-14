@@ -92,7 +92,7 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.equalsOperatorInt) {
             if (l.equals(r)) return BoolValue.TRUE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
-                throw new UnsupportedOperationException();
+               // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
             return EqualsValue.equals(l, r);
         }
@@ -107,7 +107,7 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorInt) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
-                throw new UnsupportedOperationException();
+                // TODO need more resolution throw new UnsupportedOperationException();
             }
             return NegatedValue.negate(EqualsValue.equals(l, r));
         }

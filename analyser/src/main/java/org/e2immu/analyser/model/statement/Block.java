@@ -71,6 +71,8 @@ public class Block implements Statement, HasStatements {
         @NotModified
         @NotNull
         public Block build() {
+            if (statements.isEmpty()) return Block.EMPTY_BLOCK;
+            // NOTE: we don't do labels on empty blocks. that's pretty useless anyway
             return new Block(new ImmutableList.Builder<Statement>().addAll(statements).build(), label);
         }
     }

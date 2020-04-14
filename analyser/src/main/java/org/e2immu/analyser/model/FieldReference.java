@@ -31,18 +31,23 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be null, in which case this is a reference to a static field
     public final Variable scope;
 
+    /**
+     *
+     * @param o the other one
+     * @return true if the same field is being referred to
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FieldReference that = (FieldReference) o;
-        return fieldInfo.equals(that.fieldInfo) &&
-                Objects.equals(scope, that.scope);
+        return fieldInfo.equals(that.fieldInfo);// && Objects.equals(scope, that.scope);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fieldInfo, scope);
+        return fieldInfo.hashCode();
+       // return Objects.hash(fieldInfo, scope);
     }
 
     public FieldReference(FieldInfo fieldInfo, Variable scope) {

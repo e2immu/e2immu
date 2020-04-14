@@ -42,9 +42,6 @@ public class TestParseUtilPackage {
                 BYTECODE_INSPECTOR,
                 INSPECT,
                 RESOLVE,
-
-                LAMBDA,
-                METHOD_CALL,
                 ANALYSER,
                 VARIABLE_PROPERTIES,
                 LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,

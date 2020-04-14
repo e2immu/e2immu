@@ -55,6 +55,18 @@ public abstract class SwitchEntry implements Statement {
         }
     }
 
+    protected Expression generateConditionExpression() {
+        if (labels.isEmpty()) {
+            return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
+        }
+        Expression or = labels.get(0);
+        // we group multiple "labels" into one disjunction
+        for (int i = 1; i < labels.size(); i++) {
+            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, labels.get(i), BinaryOperator.LOGICAL_OR_PRECEDENCE);
+        }
+        return or;
+    }
+
     public abstract CodeOrganization codeOrganization();
 
     public static class StatementsEntry extends SwitchEntry implements HasStatements {
@@ -69,7 +81,10 @@ public abstract class SwitchEntry implements Statement {
 
         @Override
         public CodeOrganization codeOrganization() {
-            return null;
+            return new CodeOrganization.Builder()
+                    .setExpression(generateConditionExpression())
+                    .setStatements(statements == null || statements.isEmpty() ? null : this)
+                    .build();
         }
 
         @Override
@@ -142,16 +157,7 @@ public abstract class SwitchEntry implements Statement {
 
         @Override
         public CodeOrganization codeOrganization() {
-            Expression or;
-            if (labels.isEmpty()) {
-                or = EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
-            } else {
-                or = labels.get(0);
-                // we group multiple "labels" into one disjunction
-                for (int i = 1; i < labels.size(); i++) {
-                    or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, labels.get(i), BinaryOperator.LOGICAL_OR_PRECEDENCE);
-                }
-            }
+            Expression or = generateConditionExpression();
             return new CodeOrganization.Builder().setExpression(or).setStatements(block).build();
         }
     }

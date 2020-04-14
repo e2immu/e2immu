@@ -26,7 +26,6 @@ import java.util.Objects;
 
 public class IntValue implements Constant<Integer>, NumericValue {
     public static final IntValue ZERO_VALUE = new IntValue(0);
-    public static final IntValue ONE_VALUE = new IntValue(1);
     public static final IntValue TWO_VALUE = new IntValue(2);
 
     public final int value;

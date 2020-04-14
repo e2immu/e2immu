@@ -196,12 +196,14 @@ class VariableProperties implements EvaluationContext {
                 FieldReference fieldReference = (FieldReference) variable;
                 ParameterizedType type = fieldReference.fieldInfo.type;
                 if (type.typeInfo != null && type.typeInfo.primaryType().equals(currentMethod.typeInfo.primaryType())) {
-                    throw new UnsupportedOperationException("Coming across reference to field of my own primary type? should have been declared");
+                    throw new UnsupportedOperationException("Coming across reference to field of my own primary type?" +
+                            " should have been declared: "+variable.detailedString());
                 }
                 root.create(variable);
                 aboutVariable = Objects.requireNonNull(find(variable, true));
             } else {
-                throw new UnsupportedOperationException("Coming across variable " + variable + " of " + variable.getClass() + "; should have been declared");
+                throw new UnsupportedOperationException("Coming across variable " + variable + " of " +
+                        variable.getClass() + "; should have been declared: "+variable.detailedString());
             }
         }
         return Optional.of(Objects.requireNonNullElseGet(aboutVariable.currentValue, () -> new VariableValue(variable)));

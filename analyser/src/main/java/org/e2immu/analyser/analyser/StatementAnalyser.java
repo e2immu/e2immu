@@ -139,7 +139,7 @@ public class StatementAnalyser {
         boolean changes = false;
         CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
-        // PART 1: filling of of the variable properties: parameters of statement "forEach"
+        // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 11
 
         if (codeOrganization.localVariableCreation != null) {
             variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation, List.of()));
@@ -249,6 +249,14 @@ public class StatementAnalyser {
             List<Value> conditions = new ArrayList<>();
             for (int count = 1; count < startOfBlocks.size(); count++) {
                 CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
+
+                // PART 11: add parameters of sub statements
+
+                if (subStatements.localVariableCreation != null) {
+                    variableProperties.create(new LocalVariableReference(subStatements.localVariableCreation, List.of()));
+                }
+
+                // PART 12: evaluate the sub-expression
 
                 Value valueForSubStatement;
                 if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
