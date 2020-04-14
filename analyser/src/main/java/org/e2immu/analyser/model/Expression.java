@@ -131,25 +131,6 @@ public interface Expression {
     }
 
     @NotModified
-    default <T> void collectStream(Function<Expression, Stream<T>> collector, Consumer<Stream<T>> handler) {
-        handler.accept(collector.apply(this));
-        for (Expression sub : subExpressions()) {
-            sub.collectStream(collector, handler);
-        }
-    }
-
-    // we want the variables on the left hand side of an assignment, but this could be complex, as in
-    // object.field.field2[i++] --> field2
-    @NotModified
-    //@Immutable // unModifiableList
-    default List<Variable> assignmentTargets() {
-        List<Assignment> assignments = find(Assignment.class);
-        return assignments.stream()
-                .map(a -> a.target.assignmentTarget().orElseThrow())
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    @NotModified
     default <E extends Expression> List<E> find(Class<E> clazz) {
         List<E> result = new ArrayList<>();
         collect(e -> {

@@ -99,4 +99,9 @@ public class ArrayAccess implements Expression {
     public List<Variable> variablesInScopeSide() {
         return expression.variables();
     }
+
+    @Override
+    public List<Variable> variables() {
+        return expression.variables();
+    }
 }

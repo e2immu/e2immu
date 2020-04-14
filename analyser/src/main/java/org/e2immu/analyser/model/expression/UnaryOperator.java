@@ -76,13 +76,18 @@ public class UnaryOperator implements Expression {
             return v;
         }
         if (operator == Primitives.PRIMITIVES.bitWiseNotOperatorInt) {
-            return new IntValue(~((IntValue) v).value);
+            if (v instanceof IntValue)
+                return new IntValue(~((IntValue) v).value);
+            return UnknownValue.UNKNOWN_VALUE;
         }
-        if (operator == Primitives.PRIMITIVES.postfixDecrementOperatorInt || operator == Primitives.PRIMITIVES.prefixDecrementOperatorInt) {
-            return new IntValue(((IntValue) v).value - 1);
+        if (operator == Primitives.PRIMITIVES.postfixDecrementOperatorInt
+                || operator == Primitives.PRIMITIVES.prefixDecrementOperatorInt) {
+            if (v instanceof IntValue)
+                return new IntValue(((IntValue) v).value - 1);
+            return UnknownValue.UNKNOWN_VALUE;
         }
         if (operator == Primitives.PRIMITIVES.postfixIncrementOperatorInt || operator == Primitives.PRIMITIVES.prefixIncrementOperatorInt) {
-            if (v instanceof NumericValue)
+            if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value + 1);
             return UnknownValue.UNKNOWN_VALUE;
         }

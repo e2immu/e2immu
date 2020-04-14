@@ -207,25 +207,6 @@ public class MethodAnalyser {
             if (computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties)) changes = true;
             if (updateIndependence(methodInfo)) changes = true;
 
-        /* in not modified
-        if (!methodAnalysis.sideEffect.isSet()) {
-            SideEffect sideEffect = numberedStatements.stream().map(ns -> ns.sideEffect).reduce(SideEffect.LOCAL, SideEffect::combine);
-            if (SideEffect.DELAYED == sideEffect) {
-                log(SIDE_EFFECT, "Side effect computation of {} has been delayed", methodInfo.fullyQualifiedName());
-            } else {
-                log(SIDE_EFFECT, "Side effect of {} is {}", methodInfo.fullyQualifiedName(), sideEffect);
-                methodAnalysis.sideEffect.set(sideEffect);
-                changes = true;
-
-                if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
-                    boolean sse = SideEffect.STATIC_ONLY == sideEffect;
-                    methodAnalysis.annotations.put(typeContext.notModified.get(), sse);
-                    log(SIDE_EFFECT, "Mark " + methodInfo.fullyQualifiedName() + " as " + (sse ? "" : "NOT ") + "@NotModified");
-                }
-            }
-        }
-        */
-
             if (!methodAnalysis.staticMethodCallsOnly.isSet()) {
                 if (methodInfo.isStatic) {
                     methodAnalysis.staticMethodCallsOnly.set(true);

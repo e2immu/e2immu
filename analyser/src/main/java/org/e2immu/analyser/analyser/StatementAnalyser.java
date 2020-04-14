@@ -151,49 +151,12 @@ public class StatementAnalyser {
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
 
         List<LocalVariableCreation> localVariableCreations = codeOrganization.initialisers.stream()
-                .flatMap(expr -> expr.find(LocalVariableCreation.class).stream())
+                .map(expr -> (LocalVariableCreation) expr)
                 .collect(Collectors.toList());
-        localVariableCreations.stream()
-                .map(lvc -> new LocalVariableReference(lvc.localVariable, List.of()))
-                .forEach(lvr -> variableProperties.create(lvr, VariableProperty.CREATED));
-
-        // PART 3: more filling up of the variable properties, this time for "input" to the statement
-
-        statement.inputVariables
-                .forEach(variable -> {
-                    if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
-                        variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
-                    }
-                });
-
-        // PART 4: more filling up of the variable properties, this time for assignments
-
-        statement.assignmentTargets
-                .stream()
-                .filter(v -> !(v instanceof FieldReference) || ((FieldReference) v).scope instanceof This)
-                .forEach(at -> {
-                    if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
-                        log(ANALYSER, "Cleared check-null property of {}", at.detailedString());
-                    }
-                    if (!variableProperties.addProperty(at, VariableProperty.MODIFIED)) {
-                        variableProperties.addProperty(at, VariableProperty.MODIFIED_MULTIPLE_TIMES);
-                    }
-                    Value value = null;
-                    if (statement.statement instanceof StatementWithExpression) {
-                        Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(
-                                ((StatementWithExpression) statement.statement).expression,
-                                variableProperties);
-                        value = pair.k;
-                    }
-                    if (value != null) {
-                        variableProperties.setValue(at, value);
-                        Set<Variable> linkTo = value.linkedVariables(variableProperties);
-                        log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
-                                Variable.detailedString(linkTo));
-                        variableProperties.linkVariables(at, linkTo);
-                    }
-                    log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
-                });
+        for (LocalVariableCreation localVariableCreation : localVariableCreations) {
+            LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
+            variableProperties.create(lvr, VariableProperty.CREATED);
+        }
 
         // PART 5: computing linking between local variables and fields, parameters
 
@@ -243,7 +206,8 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
             log(ANALYSER, "condition in if statement is constant {}", value);
-            typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() + ", if statement evaluates to constant");
+            typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                    ", if statement evaluates to constant");
         }
 
         // PART 9: the primary block, if it's there
@@ -276,7 +240,8 @@ public class StatementAnalyser {
                         or = new OrValue(or, condition);
                     }
                     valueForSubStatement = NegatedValue.negate(or);
-                } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression || EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {
+                } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression ||
+                        EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {
                     valueForSubStatement = null;
                 } else {
                     // real expression
@@ -285,7 +250,9 @@ public class StatementAnalyser {
                     if (pair.v) changes = true;
                     conditions.add(valueForSubStatement);
                 }
-                VariableProperties copyForElse = valueForSubStatement == null ? variableProperties : new VariableProperties(variableProperties, valueForSubStatement);
+                VariableProperties copyForElse = valueForSubStatement == null ?
+                        variableProperties :
+                        new VariableProperties(variableProperties, valueForSubStatement);
                 computeVariablePropertiesOfBlock(statement.blocks.get().get(count), copyForElse);
 
                 // if the "then" block ends in return or throw (we recursively need to know)
@@ -293,12 +260,20 @@ public class StatementAnalyser {
                 // have an else or not, or if that else returns or not.
                 if (startOfFirstBlock.neverContinues.get() && startOfBlocks.size() == 2) {
                     variableProperties.addToConditional(valueForSubStatement);
-                    log(VARIABLE_PROPERTIES, "Then-part of If-Then-Else never continues, added Else-part to variable properties, now {}",
-                            variableProperties);
+                    log(VARIABLE_PROPERTIES, "Then-part of If-Then-Else never continues, " +
+                            "added Else-part to variable properties, now {}", variableProperties);
                 }
 
             }
         }
+
+        // finally there are the updaters
+        for (Expression updater : codeOrganization.updaters) {
+            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties);
+            Value v = pair.k;
+            if (pair.v) changes = true;
+        }
+
         return changes;
     }
 
@@ -308,11 +283,43 @@ public class StatementAnalyser {
         AtomicBoolean changes = new AtomicBoolean();
         Value value = expression.evaluate(variableProperties,
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
-                    if (doImplicitNullCheck(expression, variableProperties)) changes.set(true);
-                    if (analyseCallsWithParameters(expression, variableProperties)) changes.set(true);
+                    if (localChanges) changes.set(true);
+                    VariableProperties lvp = (VariableProperties) localVariableProperties;
+                    doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
+                    if (doImplicitNullCheck(localExpression, lvp)) changes.set(true);
+                    if (analyseCallsWithParameters(localExpression, lvp)) changes.set(true);
                 });
 
         return new Pair<>(value, changes.get());
+    }
+
+    private void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+        if (expression instanceof Assignment) {
+            Assignment assignment = (Assignment) expression;
+            Variable at = assignment.target.assignmentTarget().orElseThrow();
+            // PART 4: more filling up of the variable properties, this time for assignments
+            if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
+                if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
+                    log(ANALYSER, "Cleared check-null property of {}", at.detailedString());
+                }
+                if (!variableProperties.addProperty(at, VariableProperty.MODIFIED)) {
+                    variableProperties.addProperty(at, VariableProperty.MODIFIED_MULTIPLE_TIMES);
+                }
+                if (value != null) {
+                    variableProperties.setValue(at, value);
+                    Set<Variable> linkTo = value.linkedVariables(variableProperties);
+                    log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
+                            Variable.detailedString(linkTo));
+                    variableProperties.linkVariables(at, linkTo);
+                }
+                log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
+            }
+        }
+        for (Variable variable : expression.variables()) {
+            if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
+                variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+            }
+        }
     }
 
     private boolean doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {
@@ -413,7 +420,7 @@ public class StatementAnalyser {
 
     private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties) {
         if (expression instanceof VariableExpression) {
-            Variable variable = expression.variableFromExpression();
+            Variable variable = expression.variables().get(0);
             log(MODIFY_CONTENT, "SA: mark method object as content modified: {}", variable.detailedString());
             variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED);
         } else if (expression instanceof FieldAccess) {

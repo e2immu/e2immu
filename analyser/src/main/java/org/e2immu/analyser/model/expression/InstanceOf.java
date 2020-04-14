@@ -82,4 +82,8 @@ public class InstanceOf implements Expression {
         return List.of(expression);
     }
 
+    @Override
+    public List<Variable> variables() {
+        return expression.variables();
+    }
 }

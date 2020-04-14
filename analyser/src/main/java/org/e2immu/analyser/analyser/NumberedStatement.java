@@ -47,39 +47,11 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public final int[] indices;
     public final SideEffect sideEffect;
 
-    // derivatives
-    public final Set<LocalVariableReference> localVariableReferences;
-    public final Set<Variable> inputVariables;
-    public final List<Variable> assignmentTargets;
-
     public NumberedStatement(SideEffectContext sideEffectContext,
                              @NullNotAllowed Statement statement,
                              @NotModified @NullNotAllowed int[] indices) {
         this.indices = Objects.requireNonNull(indices);
         this.statement = Objects.requireNonNull(statement);
-        assignmentTargets = statement
-                .codeOrganization()
-                .expressionsWithAssignmentTargets()
-                .flatMap(e ->
-                        e.assignmentTargets().stream())
-                .collect(Collectors.toList());
-
-        // important: only remove the first occurrence (LIST-wise) of the assignment target
-        List<Variable> variableList = statement.codeOrganization().expressionsForInputVariables().flatMap(e -> e.nonStaticVariablesUsed().stream())
-                .collect(Collectors.toCollection(LinkedList::new));
-        for (Variable v : assignmentTargets) {
-            variableList.remove(v);
-            Variable vv = v;
-            while (vv instanceof FieldReference) {
-                vv = ((FieldReference) vv).scope;
-                variableList.remove(vv);
-            }
-        }
-
-        inputVariables = ImmutableSet.copyOf(variableList);
-        localVariableReferences = variableList.stream().filter(v -> v instanceof LocalVariableReference)
-                .map(v -> (LocalVariableReference) v)
-                .collect(Collectors.toSet());
         sideEffect = statement.sideEffect(sideEffectContext);
     }
 
@@ -93,14 +65,14 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
 
     @Override
     public int compareTo(@NullNotAllowed NumberedStatement o) {
-        for (int i = 0; i < indices.length; i++) { // f1
-            if (i >= o.indices.length) // f2 i, o.indices.length
-                return 1; // f3
-            int c = indices[i] - o.indices[i]; // f4 indices, i, o.indices -> c
-            if (c != 0) // f5 -- c cannot be substituted in trivially?
-                return c; // f6
+        for (int i = 0; i < indices.length; i++) {
+            if (i >= o.indices.length)
+                return 1;
+            int c = indices[i] - o.indices[i];
+            if (c != 0)
+                return c;
         }
-        if (o.indices.length > indices.length) return -1; // f7
-        return 0; // f7
+        if (o.indices.length > indices.length) return -1;
+        return 0;
     }
 }

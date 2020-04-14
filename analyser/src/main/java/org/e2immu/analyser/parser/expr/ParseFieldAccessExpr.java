@@ -81,14 +81,8 @@ public class ParseFieldAccessExpr {
         // in a static context, the object is a type expression.
         // it can be a method call, such as findNode().data (data is the field)
         // Otherwise, it has to be a variable
-        Variable objectVariable;
-        if (object instanceof TypeExpression || object instanceof MethodCall) {
-            objectVariable = null;
-        } else {
-            List<Variable> vars = object.variables();
-            if(vars.isEmpty()) throw new UnsupportedOperationException("? expected a variable, object is "+object.getClass());
-            objectVariable = object.variables().get(0);
-        }
+        List<Variable> vars = object.variables();
+        Variable objectVariable = vars.isEmpty() ? null : vars.get(0);
         FieldReference fieldReference = new FieldReference(fieldInfo, objectVariable);
         return new FieldAccess(object, fieldReference);
     }

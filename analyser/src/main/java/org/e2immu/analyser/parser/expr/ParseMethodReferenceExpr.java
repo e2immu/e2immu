@@ -95,7 +95,7 @@ public class ParseMethodReferenceExpr {
                 return false;
             });
             if (methodCandidates.size() > 1) {
-                log(METHOD_CALL, "Trying to weed out those of the same type, static vs instane");
+                log(METHOD_CALL, "Trying to weed out those of the same type, static vs instance");
                 staticVsInstance(methodCandidates);
                 if (methodCandidates.size() > 1) {
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);

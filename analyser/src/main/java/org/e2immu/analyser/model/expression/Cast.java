@@ -75,4 +75,8 @@ public class Cast implements Expression {
         return List.of(expression);
     }
 
+    @Override
+    public List<Variable> variables() {
+        return expression.variables();
+    }
 }

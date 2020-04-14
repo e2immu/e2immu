@@ -81,7 +81,7 @@ public class TestTestExamples {
 
     @Test
     public void testUnusedLocalVariableChecks() throws IOException {
-        goTest("UnusedLocalVariableChecks", 3);
+        goTest("UnusedLocalVariableChecks", 4);
     }
 
     @Test

@@ -20,15 +20,19 @@ package org.e2immu.analyser.testexample;
 
 public class UnusedLocalVariableChecks {
 
+    // ERROR 3: private field b is not read outside constructors
     private boolean b;
 
     public UnusedLocalVariableChecks() {
         int a = 0;
+        // ERROR 4: private variable a is not used
         b = true;
     }
 
+    // ERROR 1: method1 should be marked static
     private void method1(String t) {
         String s;
+        // ERROR 2: local variable s is not used
         if (t.length() < 19) {
             return;
         }

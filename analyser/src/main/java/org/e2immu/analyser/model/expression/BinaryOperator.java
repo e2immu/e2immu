@@ -136,6 +136,9 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.divideOperatorInt) {
             return DivideValue.divide(l, r);
         }
+        if (operator == Primitives.PRIMITIVES.remainderOperatorInt) {
+            return RemainderValue.remainder(l, r);
+        }
         if (operator == Primitives.PRIMITIVES.lessEqualsOperatorInt) {
             return GreaterThanZeroValue.less(l, r, true);
         }
@@ -151,20 +154,19 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.plusOperatorString) {
             return StringValue.concat(l, r);
         }
-        if (l instanceof NumericValue && r instanceof NumericValue) {
-            if (operator == Primitives.PRIMITIVES.remainderOperatorInt) {
-                return new IntValue(l.toInt().value % r.toInt().value);
-            }
+        /*
             if (operator == Primitives.PRIMITIVES.bitwiseOrOperatorInt) {
                 return new IntValue(l.toInt().value | r.toInt().value);
             }
             if (operator == Primitives.PRIMITIVES.bitwiseAndOperatorInt) {
-                return new IntValue(l.toInt().value * r.toInt().value);
+                return new IntValue(l.toInt().value & r.toInt().value);
             }
             if (operator == Primitives.PRIMITIVES.bitwiseXorOperatorInt) {
                 return new IntValue(l.toInt().value ^ r.toInt().value);
             }
         }
+         TODO
+         */
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
