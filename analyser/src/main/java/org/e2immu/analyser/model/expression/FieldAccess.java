@@ -18,9 +18,9 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
@@ -72,14 +72,13 @@ public class FieldAccess implements Expression {
     @Override
     @NotNull
     @Independent
-    public List<Variable> variablesUsed() {
-        return ListUtil.immutableConcat(List.of(variable), expression.variablesUsed());
+    public List<Variable> variables() {
+        return List.of(variable);
     }
 
     @Override
-    @NotNull
-    public Variable variableFromExpression() {
-        return variable;
+    public List<Variable> variablesInScopeSide() {
+        return expression.variables();
     }
 
     @Override
@@ -89,7 +88,9 @@ public class FieldAccess implements Expression {
     }
 
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of(new InScopeSide(expression, true));
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value value = new VariableValue(variable);
+        visitor.visit(this, evaluationContext, value);
+        return value;
     }
 }

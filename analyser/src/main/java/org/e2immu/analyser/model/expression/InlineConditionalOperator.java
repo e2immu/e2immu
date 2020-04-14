@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -50,17 +47,30 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        Value c = conditional.evaluate(evaluationContext);
-        if (c == BoolValue.TRUE) return ifTrue.evaluate(evaluationContext);
-        if (c == BoolValue.FALSE) return ifFalse.evaluate(evaluationContext);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor) {
+        Value c = conditional.evaluate(evaluationContext, evaluationVisitor);
+
+        if (c == BoolValue.TRUE) {
+            Value v = ifTrue.evaluate(evaluationContext, evaluationVisitor);
+            evaluationVisitor.visit(this, evaluationContext, v);
+            return v;
+        }
+        if (c == BoolValue.FALSE) {
+            Value v = ifFalse.evaluate(evaluationContext, evaluationVisitor);
+            evaluationVisitor.visit(this, evaluationContext, v);
+            return v;
+        }
 
         // we'll want to evaluate in a different context
         EvaluationContext copyForThen = evaluationContext.child(c);
+        Value t = ifTrue.evaluate(copyForThen, evaluationVisitor);
+
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c));
-        Value t = ifTrue.evaluate(copyForThen);
-        Value f = ifFalse.evaluate(copyForElse);
-        return new ConditionalValue(c, t, f);
+        Value f = ifFalse.evaluate(copyForElse, evaluationVisitor);
+
+        Value res = new ConditionalValue(c, t, f);
+        evaluationVisitor.visit(this, evaluationContext, res);
+        return res;
     }
 
     @Override
@@ -92,11 +102,5 @@ public class InlineConditionalOperator implements Expression {
     @Independent
     public List<Expression> subExpressions() {
         return List.of(conditional, ifTrue, ifFalse);
-    }
-
-
-    @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of(); // dealt with separately new InScopeSide(conditional, true), new InScopeSide(ifTrue, false), new InScopeSide(ifFalse, false));
     }
 }

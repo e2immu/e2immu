@@ -54,10 +54,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         List<Value> parameters = parameterExpressions.stream()
-                .map(pe -> pe.evaluate(evaluationContext)).collect(Collectors.toList());
-        return new MethodValue(methodInfo, object == null ? null : object.evaluate(evaluationContext), parameters);
+                .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+        Value result = new MethodValue(methodInfo, object == null ? null : object.evaluate(evaluationContext, visitor), parameters);
+        visitor.visit(this, evaluationContext, result);
+        return result;
     }
 
     @Override
@@ -102,10 +104,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return Stream.concat(object == null ? Stream.empty() : Stream.of(new InScopeSide(object, true)),
-                parameterExpressions.stream().map(expression -> new InScopeSide(expression, false)))
-                .collect(Collectors.toList());
+    public List<Variable> variablesInScopeSide() {
+        return object == null ? List.of() : object.variables();
     }
 
     @Override

@@ -19,12 +19,12 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.E2Immutable;
@@ -32,10 +32,7 @@ import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @E2Immutable
@@ -92,5 +89,31 @@ public class LambdaBlock implements Expression {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return block.sideEffect(sideEffectContext);
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        if (block == Block.EMPTY_BLOCK) return UnknownValue.UNKNOWN_VALUE;
+
+        EvaluationContext child = evaluationContext.child(null);
+        parameters.forEach(pi -> child.create(pi));
+
+        boolean changes = false;
+        if (!numberedStatements.isSet()) {
+            List<NumberedStatement> numberedStatements = new LinkedList<>();
+            Stack<Integer> indices = new Stack<>();
+            MethodAnalyser.recursivelyCreateNumberedStatements(block.statements,
+                    indices,
+                    numberedStatements,
+                    new SideEffectContext(child.getTypeContext(), child.getCurrentMethod()));
+            this.numberedStatements.set(numberedStatements);
+            changes = true;
+        }
+        StatementAnalyser statementAnalyser = new StatementAnalyser(child.getTypeContext(), child.getCurrentMethod());
+        if (!this.numberedStatements.get().isEmpty() && statementAnalyser.computeVariablePropertiesOfBlock(this.numberedStatements.get().get(0), child)) {
+            changes = true;
+        }
+        visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
+        return UnknownValue.UNKNOWN_VALUE;
     }
 }

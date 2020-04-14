@@ -53,7 +53,7 @@ public class ByteConstant implements Expression, Constant<Byte> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

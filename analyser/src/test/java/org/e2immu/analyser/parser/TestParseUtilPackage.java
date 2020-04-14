@@ -42,7 +42,7 @@ public class TestParseUtilPackage {
                 BYTECODE_INSPECTOR,
                 INSPECT,
                 RESOLVE,
-                METHOD_CALL, LAMBDA,
+                // METHOD_CALL, LAMBDA,
 
                 ANALYSER,
 

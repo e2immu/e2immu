@@ -57,12 +57,6 @@ public class TypeExpression implements Expression {
 
     @Override
     @NotNull
-    public List<Variable> variablesUsed() {
-        return List.of();
-    }
-
-    @Override
-    @NotNull
     public Set<String> imports() {
         if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
         return Set.of();

@@ -18,16 +18,15 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.ExpressionWithMethodReferenceResolution;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,15 +34,19 @@ import java.util.Set;
 @Container
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
-    public MethodReference(@NullNotAllowed MethodInfo methodInfo, ParameterizedType concreteType) {
+    // either "this", a variable, or a type
+    public final Expression scope;
+
+    public MethodReference(Expression scope, @NullNotAllowed MethodInfo methodInfo, ParameterizedType concreteType) {
         super(methodInfo, concreteType);
+        this.scope = scope;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
         String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
-        return methodInfo.typeInfo.simpleName + "::" + methodName;
+        return scope.expressionString(0) + "::" + methodName;
     }
 
     @Override
@@ -72,5 +75,16 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         }
         // no idea which method we're passing on... should not be a problem
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public List<Variable> variablesInScopeSide() {
+        return scope.variables();
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        visitor.visit(this, evaluationContext, UnknownValue.UNKNOWN_VALUE);
+        return UnknownValue.UNKNOWN_VALUE;
     }
 }

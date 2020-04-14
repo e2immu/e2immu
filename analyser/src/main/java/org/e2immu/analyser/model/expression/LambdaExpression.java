@@ -19,9 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -73,10 +71,18 @@ public class LambdaExpression implements Expression {
         return ImmutableSet.copyOf(imports);
     }
 
-    // NOTE: we're not going into the lambda here. The statement analyser will do the lambda's in a separate
-    // evaluation context, where the lambda's parameters have been added
+    // NOTE: this one is used for finding structures inside the lambda
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of();
+    public List<Expression> subExpressions() {
+        return List.of(expression);
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        EvaluationContext childContext = evaluationContext.child(null);
+        parameters.forEach(pi -> childContext.create(pi));
+        Value v = expression.evaluate(childContext, visitor);
+        visitor.visit(this, evaluationContext, v);
+        return v;
     }
 }

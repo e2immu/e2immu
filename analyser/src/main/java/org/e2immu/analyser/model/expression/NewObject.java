@@ -108,14 +108,13 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return parameterExpressions.stream().map(expression -> new InScopeSide(expression, false)).collect(Collectors.toList());
-    }
-
-    @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        List<Value> parameterValues = parameterExpressions.stream().map(pe -> pe.evaluate(evaluationContext)).collect(Collectors.toList());
-        return new Instance(parameterizedType, constructor, parameterValues);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        List<Value> parameterValues = parameterExpressions.stream()
+                .map(pe -> pe.evaluate(evaluationContext, visitor))
+                .collect(Collectors.toList());
+        Value value = new Instance(parameterizedType, constructor, parameterValues);
+        visitor.visit(this, evaluationContext, value);
+        return value;
     }
 
     @Override

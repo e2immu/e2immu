@@ -18,8 +18,10 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
@@ -60,5 +62,24 @@ public class ArrayLengthExpression implements Expression {
     @Override
     public int precedence() {
         return 16;
+    }
+
+    @Override
+    public List<Variable> variablesInScopeSide() {
+        return scope.variables();
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value v = scope.evaluate(evaluationContext, visitor);
+        Value result;
+        if (v instanceof ArrayValue) {
+            ArrayValue arrayValue = (ArrayValue) v;
+            result = new IntValue(arrayValue.values.size());
+        } else {
+            result = UnknownValue.UNKNOWN_VALUE;
+        }
+        visitor.visit(this, evaluationContext, result);
+        return result;
     }
 }

@@ -40,7 +40,7 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return new ClassValue(parameterizedType);
     }
 
@@ -58,12 +58,6 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     @Override
     public int precedence() {
         return 17;
-    }
-
-    @Override
-    @NotNull
-    public List<Variable> variablesUsed() {
-        return List.of();
     }
 
     @Override

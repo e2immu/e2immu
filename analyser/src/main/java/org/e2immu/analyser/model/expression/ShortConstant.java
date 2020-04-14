@@ -53,7 +53,7 @@ public class ShortConstant implements Expression, Constant<Short> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

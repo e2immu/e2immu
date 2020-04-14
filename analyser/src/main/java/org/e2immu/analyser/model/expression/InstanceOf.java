@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Primitives;
@@ -42,9 +39,9 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         if (expression instanceof VariableExpression || expression instanceof FieldAccess)
-            return new InstanceOfValue(expression.variableFromExpression(), parameterizedType);
+            return new InstanceOfValue(expression.variables().get(0), parameterizedType);
         if (expression instanceof ClassExpression) {
             return BoolValue.of(parameterizedType.isAssignableFrom(((ClassExpression) expression).parameterizedType));
         }
@@ -85,9 +82,4 @@ public class InstanceOf implements Expression {
         return List.of(expression);
     }
 
-
-    @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of(new InScopeSide(expression, false));
-    }
 }

@@ -40,9 +40,9 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         // for now, casting will simply keep the value
-        return expression.evaluate(evaluationContext);
+        return expression.evaluate(evaluationContext, visitor);
     }
 
     @Override
@@ -75,14 +75,4 @@ public class Cast implements Expression {
         return List.of(expression);
     }
 
-
-    @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of(new InScopeSide(expression, false));
-    }
-
-    @Override
-    public Variable variableFromExpression() {
-        return expression.variableFromExpression();
-    }
 }

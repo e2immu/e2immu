@@ -39,8 +39,10 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        return evaluationContext.get(variable).orElse(UnknownValue.UNKNOWN_VALUE);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value v = evaluationContext.get(variable).orElse(UnknownValue.UNKNOWN_VALUE);
+        visitor.visit(this, evaluationContext, v);
+        return v;
     }
 
     @Override
@@ -62,7 +64,7 @@ public class VariableExpression implements Expression {
     @Override
     @NotNull
     @Independent
-    public List<Variable> variablesUsed() {
+    public List<Variable> variables() {
         return List.of(variable);
     }
 
@@ -70,11 +72,6 @@ public class VariableExpression implements Expression {
     @NotNull
     public Optional<Variable> assignmentTarget() {
         return Optional.of(variable);
-    }
-
-    @Override
-    public Variable variableFromExpression() {
-        return variable;
     }
 
     @Override

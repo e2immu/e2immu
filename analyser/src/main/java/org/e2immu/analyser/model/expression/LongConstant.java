@@ -53,7 +53,7 @@ public class LongConstant implements Expression, Constant<Long> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

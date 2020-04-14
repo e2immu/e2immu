@@ -47,12 +47,8 @@ public class EnclosedExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variablesUsed() {
-        return inner.variablesUsed();
+    public List<Expression> subExpressions() {
+        return List.of(inner);
     }
 
-    @Override
-    public Variable variableFromExpression() {
-        return inner.variableFromExpression();
-    }
 }

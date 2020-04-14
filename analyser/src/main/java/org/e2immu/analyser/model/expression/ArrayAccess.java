@@ -19,9 +19,10 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -78,5 +79,29 @@ public class ArrayAccess implements Expression {
     @Override
     public Variable variableFromExpression() {
         return expression.variableFromExpression();
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value array = expression.evaluate(evaluationContext, visitor);
+        Value index = expression.evaluate(evaluationContext, visitor);
+        Value value;
+        if (array instanceof ArrayValue && index instanceof NumericValue) {
+            int intIndex = (((NumericValue) index).toInt()).value;
+            ArrayValue arrayValue = (ArrayValue) array;
+            if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+            value = arrayValue.values.get(intIndex);
+        } else {
+            value = UnknownValue.UNKNOWN_VALUE;
+        }
+        visitor.visit(expression, evaluationContext, value);
+        return value;
+    }
+
+    @Override
+    public List<Variable> variablesInScopeSide() {
+        return expression.variables();
     }
 }

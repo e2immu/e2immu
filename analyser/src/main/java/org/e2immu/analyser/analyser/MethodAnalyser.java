@@ -124,10 +124,10 @@ public class MethodAnalyser {
         return changes;
     }
 
-    static NumberedStatement recursivelyCreateNumberedStatements(List<Statement> statements,
-                                                                 Stack<Integer> indices,
-                                                                 List<NumberedStatement> numberedStatements,
-                                                                 SideEffectContext sideEffectContext) {
+    public static NumberedStatement recursivelyCreateNumberedStatements(List<Statement> statements,
+                                                                        Stack<Integer> indices,
+                                                                        List<NumberedStatement> numberedStatements,
+                                                                        SideEffectContext sideEffectContext) {
         int statementIndex = 0;
         NumberedStatement first = null;
         NumberedStatement previous = null;

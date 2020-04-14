@@ -18,13 +18,14 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NullNotAllowed;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -59,7 +60,16 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return expressions.stream().map(expression -> new InScopeSide(expression, false)).collect(Collectors.toList());
+    public List<Expression> subExpressions() {
+        return expressions;
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+
+        ArrayValue arrayValue = new ArrayValue(values);
+        visitor.visit(this, evaluationContext, arrayValue);
+        return arrayValue;
     }
 }

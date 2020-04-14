@@ -152,6 +152,7 @@ class VariableProperties implements EvaluationContext {
      * @param variable          the variable to add
      * @param initialProperties initial properties about this variable
      */
+    @Override
     public void create(Variable variable, VariableProperty... initialProperties) {
         AboutVariable aboutVariable = new AboutVariable();
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
@@ -197,13 +198,13 @@ class VariableProperties implements EvaluationContext {
                 ParameterizedType type = fieldReference.fieldInfo.type;
                 if (type.typeInfo != null && type.typeInfo.primaryType().equals(currentMethod.typeInfo.primaryType())) {
                     throw new UnsupportedOperationException("Coming across reference to field of my own primary type?" +
-                            " should have been declared: "+variable.detailedString());
+                            " should have been declared: " + variable.detailedString());
                 }
                 root.create(variable);
                 aboutVariable = Objects.requireNonNull(find(variable, true));
             } else {
-                throw new UnsupportedOperationException("Coming across variable " + variable + " of " +
-                        variable.getClass() + "; should have been declared: "+variable.detailedString());
+                throw new UnsupportedOperationException("Coming across variable that should have been declared: " +
+                        variable.detailedString());
             }
         }
         return Optional.of(Objects.requireNonNullElseGet(aboutVariable.currentValue, () -> new VariableValue(variable)));

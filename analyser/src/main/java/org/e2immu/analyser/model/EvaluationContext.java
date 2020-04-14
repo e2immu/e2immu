@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.Optional;
@@ -32,6 +33,8 @@ public interface EvaluationContext {
     MethodInfo getCurrentMethod();
 
     EvaluationContext child(Value conditional);
+
+    void create(Variable variable, VariableProperty... initialProperties);
 
     TypeContext getTypeContext();
 

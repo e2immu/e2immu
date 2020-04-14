@@ -76,10 +76,12 @@ public class BinaryOperator implements Expression {
         this.operator = Objects.requireNonNull(operator);
     }
 
+    // NOTE: we're not visiting here!
+
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        Value l = lhs.evaluate(evaluationContext);
-        Value r = rhs.evaluate(evaluationContext);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value l = lhs.evaluate(evaluationContext, visitor);
+        Value r = rhs.evaluate(evaluationContext, visitor);
 
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject) {
             if (l.equals(r)) return BoolValue.TRUE;
@@ -314,11 +316,4 @@ public class BinaryOperator implements Expression {
         return List.of(lhs, rhs);
     }
 
-
-    @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        boolean inScopeSide = operator != Primitives.PRIMITIVES.notEqualsOperatorObject &&
-                operator != Primitives.PRIMITIVES.equalsOperatorObject;
-        return List.of(new InScopeSide(lhs, inScopeSide), new InScopeSide(rhs, inScopeSide));
-    }
 }

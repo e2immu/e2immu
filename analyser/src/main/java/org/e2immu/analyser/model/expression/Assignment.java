@@ -121,12 +121,14 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public List<InScopeSide> expressionsInScopeSide() {
-        return List.of(new InScopeSide(target, true), new InScopeSide(value, false));
+    public List<Variable> variablesInScopeSide() {
+        return target.variables();
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        return value.evaluate(evaluationContext);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value v = value.evaluate(evaluationContext, visitor);
+        visitor.visit(this, evaluationContext, v);
+        return v;
     }
 }

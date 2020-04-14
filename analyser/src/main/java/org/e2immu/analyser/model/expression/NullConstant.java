@@ -45,7 +45,7 @@ public class NullConstant implements Expression, Constant<Object> {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return NullValue.NULL_VALUE;
     }
 

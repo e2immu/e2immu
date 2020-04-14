@@ -42,7 +42,7 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

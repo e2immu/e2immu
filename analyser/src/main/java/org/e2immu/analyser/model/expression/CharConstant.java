@@ -53,7 +53,7 @@ public class CharConstant implements Expression, Constant<Character> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

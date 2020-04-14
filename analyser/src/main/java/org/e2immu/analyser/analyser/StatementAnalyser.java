@@ -27,11 +27,13 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -51,7 +53,8 @@ public class StatementAnalyser {
         this.methodInfo = methodInfo;
     }
 
-    boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, VariableProperties variableProperties) {
+    public boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, EvaluationContext evaluationContext) {
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
         boolean changes = false;
         NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
         boolean neverContinues = false;
@@ -175,8 +178,13 @@ public class StatementAnalyser {
                     if (!variableProperties.addProperty(at, VariableProperty.MODIFIED)) {
                         variableProperties.addProperty(at, VariableProperty.MODIFIED_MULTIPLE_TIMES);
                     }
-                    Value value = (statement.statement instanceof StatementWithExpression) ?
-                            ((StatementWithExpression) statement.statement).expression.evaluate(variableProperties) : null;
+                    Value value = null;
+                    if (statement.statement instanceof StatementWithExpression) {
+                        Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(
+                                ((StatementWithExpression) statement.statement).expression,
+                                variableProperties);
+                        value = pair.k;
+                    }
                     if (value != null) {
                         variableProperties.setValue(at, value);
                         Set<Variable> linkTo = value.linkedVariables(variableProperties);
@@ -190,7 +198,9 @@ public class StatementAnalyser {
         // PART 5: computing linking between local variables and fields, parameters
 
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
-            Value value = localVariableCreation.expression.evaluate(variableProperties);
+            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression, variableProperties);
+            Value value = pair.k;
+            if (pair.v) changes = true;
             Set<Variable> linkTo = value.linkedVariables(variableProperties);
             log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}]", localVariableCreation.localVariable.name,
                     Variable.detailedString(linkTo));
@@ -201,35 +211,36 @@ public class StatementAnalyser {
         // PART 6: evaluation of the core expression of the statement (if the statement has such a thing)
 
         Value value;
-        try {
-            value = codeOrganization.expression != EmptyExpression.EMPTY_EXPRESSION ? codeOrganization.expression.evaluate(variableProperties) : null;
-        } catch (RuntimeException rte) {
-            log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
-            throw rte;
-        }
-        if (value != null) {
-            Set<Variable> vars = value.linkedVariables(variableProperties);
-            if (!statement.linkedVariables.isSet() && statement.statement instanceof ReturnStatement) {
-                statement.linkedVariables.set(vars);
+        if (codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
+            value = null;
+        } else {
+            try {
+                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(codeOrganization.expression, variableProperties);
+                if (pair.v) changes = true;
+                value = pair.k;
+            } catch (RuntimeException rte) {
+                log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
+                throw rte;
             }
         }
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
-        // PART 7: compute variable properties of the expression, if around
-
-        if (codeOrganization.expression != EmptyExpression.EMPTY_EXPRESSION && computeVariablePropertiesOfExpression(codeOrganization.expression, variableProperties, value)) {
-            changes = true;
-        }
-
-        // PART 8: some specific checks for certain types of statements
+        // PART 7: checks for ReturnStatement
 
         if (value != null && statement.statement instanceof ReturnStatement) {
+            Set<Variable> vars = value.linkedVariables(variableProperties);
+            if (!statement.linkedVariables.isSet()) {
+                statement.linkedVariables.set(vars);
+            }
             Boolean notNull = value.isNotNull(variableProperties);
             if (notNull != null && !statement.returnsNotNull.isSet()) {
                 statement.returnsNotNull.set(notNull);
                 changes = true;
             }
         }
+
+        // PART 8: checks for IfElse
+
         if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
             log(ANALYSER, "condition in if statement is constant {}", value);
             typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() + ", if statement evaluates to constant");
@@ -269,7 +280,9 @@ public class StatementAnalyser {
                     valueForSubStatement = null;
                 } else {
                     // real expression
-                    valueForSubStatement = subStatements.expression.evaluate(variableProperties);
+                    Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(subStatements.expression, variableProperties);
+                    valueForSubStatement = pair.k;
+                    if (pair.v) changes = true;
                     conditions.add(valueForSubStatement);
                 }
                 VariableProperties copyForElse = valueForSubStatement == null ? variableProperties : new VariableProperties(variableProperties, valueForSubStatement);
@@ -289,62 +302,22 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private boolean computeVariablePropertiesOfExpression(Expression expression, VariableProperties variableProperties, Value value) {
-        boolean changes = false;
-        List<InlineConditionalOperator> ternaries = expression.find(InlineConditionalOperator.class);
-        for (InlineConditionalOperator operator : ternaries) {
-            Value conditional = operator.conditional.evaluate(variableProperties);
-            if (value == BoolValue.FALSE || value == BoolValue.TRUE) {
-                typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() + ", ternary expression evaluates to constant");
-            }
-            log(VARIABLE_PROPERTIES, "Entering ternary, condition {}", operator.conditional.expressionString(0));
-            VariableProperties copyForThen = new VariableProperties(variableProperties, conditional);
-            VariableProperties copyForElse = new VariableProperties(variableProperties, NegatedValue.negate(conditional));
+    // recursive evaluation of an Expression
 
-            computeVariablePropertiesOfExpression(operator.ifTrue, copyForThen, operator.ifTrue.evaluate(copyForThen));
-            computeVariablePropertiesOfExpression(operator.ifFalse, copyForElse, operator.ifFalse.evaluate(copyForElse));
-            log(VARIABLE_PROPERTIES, "Exited ternary, condition {}", operator.conditional.expressionString(0));
-        }
-        List<LambdaExpression> lambdaExpressions = expression.find(LambdaExpression.class);
-        for (LambdaExpression lambdaExpression : lambdaExpressions) {
-            VariableProperties withLambdaParameters = new VariableProperties(variableProperties);
-            lambdaExpression.parameters.forEach(pi -> withLambdaParameters.create(pi));
-            computeVariablePropertiesOfExpression(lambdaExpression.expression, withLambdaParameters, lambdaExpression.evaluate(withLambdaParameters));
-        }
-        List<LambdaBlock> lambdaBlocks = expression.find(LambdaBlock.class);
-        for (LambdaBlock lambdaBlock : lambdaBlocks) {
-            if (handleLambdaBlock(lambdaBlock, variableProperties)) changes = true;
-        }
+    private Pair<Value, Boolean> computeVariablePropertiesOfExpression(Expression expression, VariableProperties variableProperties) {
+        AtomicBoolean changes = new AtomicBoolean();
+        Value value = expression.evaluate(variableProperties,
+                (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
+                    if (doImplicitNullCheck(expression, variableProperties)) changes.set(true);
+                    if (analyseCallsWithParameters(expression, variableProperties)) changes.set(true);
+                });
 
-        if (doImplicitNullCheck(expression, variableProperties)) changes = true;
-        if (analyseCallsWithParameters(expression, variableProperties)) changes = true;
-
-        return changes;
-    }
-
-    // moved the code in a separate method, so it's easier to spot this type of recursion in stack traces
-    private boolean handleLambdaBlock(LambdaBlock lambdaBlock, VariableProperties variableProperties) {
-        boolean changes = false;
-        VariableProperties withLambdaParameters = new VariableProperties(variableProperties);
-        lambdaBlock.parameters.forEach(pi -> withLambdaParameters.create(pi));
-
-        if (!lambdaBlock.numberedStatements.isSet()) {
-            List<NumberedStatement> numberedStatements = new LinkedList<>();
-            Stack<Integer> indices = new Stack<>();
-            MethodAnalyser.recursivelyCreateNumberedStatements(lambdaBlock.block.statements, indices, numberedStatements, new SideEffectContext(typeContext, methodInfo));
-            lambdaBlock.numberedStatements.set(numberedStatements);
-            changes = true;
-        }
-        StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
-        if (!lambdaBlock.numberedStatements.get().isEmpty() &&
-                statementAnalyser.computeVariablePropertiesOfBlock(lambdaBlock.numberedStatements.get().get(0), withLambdaParameters))
-            changes = true;
-        return changes;
+        return new Pair<>(value, changes.get());
     }
 
     private boolean doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {
         boolean changes = false;
-        for (Variable variable : expression.variablesInScopeSide(true)) {
+        for (Variable variable : expression.variablesInScopeSide()) {
             if (!(variable instanceof This)) {
                 if (variableProperties.isNotNull(variable)) {
                     log(VARIABLE_PROPERTIES, "Null has been excluded for {}", variable.detailedString());
@@ -367,7 +340,8 @@ public class StatementAnalyser {
 
     private boolean analyseCallsWithParameters(Expression expression, VariableProperties variableProperties) {
         boolean changes = false;
-        for (HasParameterExpressions call : expression.find(HasParameterExpressions.class)) {
+        if (expression instanceof HasParameterExpressions) {
+            HasParameterExpressions call = (HasParameterExpressions) expression;
             if (call.getMethodInfo() != null && // otherwise, nothing to show for; anonymous constructor
                     analyseCallWithParameters(call, variableProperties)) changes = true;
         }

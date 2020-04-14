@@ -29,6 +29,7 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,7 +52,7 @@ public interface Expression {
     int precedence();
 
     @NotModified
-    default Value evaluate(EvaluationContext evaluationContext) {
+    default Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return UnknownValue.UNKNOWN_VALUE;
     }
 
@@ -76,27 +77,21 @@ public interface Expression {
         return expression.expressionString(indent);
     }
 
+    /**
+     * @return variables in this expression
+     */
     @NotModified
     // TODO immutable
-    default List<Variable> variablesUsed() {
+    default List<Variable> variables() {
         return List.of();
     }
 
-    class InScopeSide {
-        public final Expression expression;
-        public final boolean inScopeSide;
-
-        public InScopeSide(Expression expression, boolean inScopeSide) {
-            this.inScopeSide = inScopeSide;
-            this.expression = Objects.requireNonNull(expression);
-        }
-    }
-
-    // a.b() or a.b -> a is on the scope side
-    // the default is to check your sub-expressions
+    /**
+     * @return variables in the scope side of THIS expression (not sub-expressions!)
+     */
     @NotModified
-    default List<InScopeSide> expressionsInScopeSide() {
-        return subExpressions().stream().map(expression -> new InScopeSide(expression, true)).collect(Collectors.toList());
+    default List<Variable> variablesInScopeSide() {
+        return List.of();
     }
 
     // TODO @Immutable
@@ -111,11 +106,6 @@ public interface Expression {
     }
 
     @NotModified
-    default Variable variableFromExpression() {
-        throw new UnsupportedOperationException("Expecting a variable from expression " + getClass());
-    }
-
-    @NotModified
     default SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return subExpressions().stream()
                 .map(e -> e.sideEffect(sideEffectContext))
@@ -123,25 +113,6 @@ public interface Expression {
     }
 
     // *************************** methods that are not meant to be overridden *****************
-
-    @NotModified
-    default List<Variable> variablesInScopeSide(boolean inScopeSide) {
-        List<Variable> result = new ArrayList<>();
-        if (inScopeSide) {
-            if (this instanceof VariableExpression) {
-                VariableExpression variableExpression = (VariableExpression) this;
-                result.add(variableExpression.variable);
-            } else if (this instanceof FieldReference) {
-                FieldReference fieldReference = (FieldReference) this;
-                result.add(fieldReference);
-            }
-        }
-        for (InScopeSide i : expressionsInScopeSide()) {
-            result.addAll(i.expression.variablesInScopeSide(i.inScopeSide));
-        }
-        return result;
-    }
-
 
     @NotModified
     // @Immutable

@@ -61,9 +61,11 @@ public class UnaryOperator implements Expression {
         }
     }
 
+    // NOTE: we're not visiting here!
+
     @Override
-    public Value evaluate(EvaluationContext evaluationContext) {
-        Value v = expression.evaluate(evaluationContext);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value v = expression.evaluate(evaluationContext, visitor);
         if (v == UnknownValue.UNKNOWN_VALUE) return v;
 
         if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||

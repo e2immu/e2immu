@@ -53,7 +53,7 @@ public class FloatConstant implements Expression, Constant<Float> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         return constant;
     }
 

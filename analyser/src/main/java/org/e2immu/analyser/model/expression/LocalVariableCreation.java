@@ -20,6 +20,8 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Immutable;
@@ -37,12 +39,14 @@ import java.util.stream.Collectors;
 public class LocalVariableCreation implements Expression {
 
     public final LocalVariable localVariable;
+    public final LocalVariableReference localVariableReference;
     public final Expression expression;
 
     public LocalVariableCreation(@NullNotAllowed LocalVariable localVariable,
                                  @NullNotAllowed Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
+        localVariableReference = new LocalVariableReference(localVariable, subExpressions());
     }
 
     @Override
@@ -93,12 +97,7 @@ public class LocalVariableCreation implements Expression {
     @Independent
     @NotNull
     public List<LocalVariableReference> newLocalVariables() {
-        return List.of(new LocalVariableReference(localVariable, subExpressions()));
-    }
-
-    @Override
-    public List<Variable> variablesUsed() {
-        return expression.variablesUsed();
+        return List.of(localVariableReference);
     }
 
     @Override
@@ -106,5 +105,25 @@ public class LocalVariableCreation implements Expression {
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         // the creation itself is local; the assignment references in LocalVariableReference are what matters
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        Value value;
+        if (expression != EmptyExpression.EMPTY_EXPRESSION) {
+            value = expression.evaluate(evaluationContext, visitor);
+            if (value == UnknownValue.UNKNOWN_VALUE) {
+                value = new VariableValue(localVariableReference);
+            }
+        } else {
+            value = UnknownValue.UNKNOWN_VALUE; // no assignment yet
+        }
+        visitor.visit(this, evaluationContext, value);
+        return value;
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return List.of(localVariableReference);
     }
 }
