@@ -358,10 +358,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public Boolean annotatedWithCheckOverloads(AnnotationExpression annotation, TypeContext typeContext) {
+    public Boolean annotatedWithCheckOverloads(AnnotationExpression annotation) {
         Boolean result = annotatedWith(annotation);
         if (result != Boolean.FALSE) return result;
-        for (MethodInfo methodInfo : typeInfo.overloads(this, typeContext)) {
+        for (MethodInfo methodInfo : typeInfo.overrides(this)) {
             Boolean resultFromOverload = methodInfo.annotatedWith(annotation);
             if (resultFromOverload != Boolean.FALSE) return resultFromOverload;
         }
@@ -369,15 +369,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Boolean isFluent(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.fluent.get(), typeContext);
+        return annotatedWithCheckOverloads(typeContext.fluent.get());
     }
 
     public Boolean isIdentity(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.identity.get(), typeContext);
+        return annotatedWithCheckOverloads(typeContext.identity.get());
     }
 
     public Boolean isIndependent(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.independent.get(), typeContext);
+        return annotatedWithCheckOverloads(typeContext.independent.get());
     }
 
     // this one is not "inheritable" but a shorthand to allow us not to have to write...
@@ -389,7 +389,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     // this one is both inheritable and shortcut-able
     public Boolean isNotModified(TypeContext typeContext) {
         if (typeInfo.annotatedWith(typeContext.notNull.get()) == Boolean.TRUE) return true;
-        return annotatedWithCheckOverloads(typeContext.notModified.get(), typeContext);
+        return annotatedWithCheckOverloads(typeContext.notModified.get());
     }
 
     public SideEffect sideEffect(TypeContext typeContext) {
@@ -469,6 +469,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return true;
     }
 
+    /**
+     * This method is NOT the same as <code>isAssignableFrom</code>, and it serves a different purpose.
+     * We need to take care to ensure that overloads are different.
+     * <p>
+     * java.lang.Appendable.append(java.lang.CharSequence) and java.lang.AbstractStringBuilder.append(java.lang.String)
+     * can exist together in one class. They are different, even if String is assignable to CharSequence.
+     * <p>
+     * On the other hand, int comparable(Value other) is the same method as int comparable(T) in Comparable.
+     * This is solved by taking the concrete type when we move from concrete types to parameterized types.
+     *
+     * @param pt1 first type
+     * @param pt2 second type
+     * @return true if the types are "different"
+     */
     private static boolean differentType(ParameterizedType pt1, ParameterizedType pt2) {
         Objects.requireNonNull(pt1);
         Objects.requireNonNull(pt2);
@@ -501,5 +515,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         MethodInspection mi = methodInspection.get();
         if (mi.parameters.isEmpty()) return false;
         return mi.parameters.get(mi.parameters.size() - 1).parameterInspection.get().varArgs;
+    }
+
+    public boolean hasOverrides() {
+        return !typeInfo.overrides(this).isEmpty();
     }
 }

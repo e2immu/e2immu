@@ -20,11 +20,10 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.statement.SwitchEntry;
-import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -36,8 +35,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -224,6 +225,27 @@ public class MethodAnalyser {
             }
         }
         */
+
+            if (!methodAnalysis.staticMethodCallsOnly.isSet()) {
+                if (methodInfo.isStatic) {
+                    methodAnalysis.staticMethodCallsOnly.set(true);
+                } else {
+                    AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
+                    statementVisitor(numberedStatements, numberedStatement -> {
+                        Stream<MethodCall> methodCalls = numberedStatement.statement.codeOrganization().findExpressionRecursivelyInStatements(MethodCall.class);
+                        boolean callOnThis = methodCalls.anyMatch(methodCall ->
+                                !methodCall.methodInfo.isStatic &&
+                                        methodCall.object == null || ((methodCall.object instanceof This) &&
+                                        ((This) methodCall.object).typeInfo == methodInfo.typeInfo));
+                        if (callOnThis) atLeastOneCallOnThis.set(true);
+                        return !callOnThis; // we have not found a call on This yet, so we keep on searching!
+                    });
+                    boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
+                    log(STATIC_METHOD_CALLS, "Method {} is not static, does it have no calls on <this> scope? {}", methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
+                    methodAnalysis.staticMethodCallsOnly.set(staticMethodCallsOnly);
+                }
+                changes = true;
+            }
             long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
             if (returnStatements > 0) {
 
@@ -306,9 +328,9 @@ public class MethodAnalyser {
         }
     }
 
-    private boolean emptyOrAllStatic(SetOnceMap<FieldInfo, Boolean> map) {
+    private boolean emptyOrStaticIfTrue(SetOnceMap<FieldInfo, Boolean> map) {
         if (map.isEmpty()) return true;
-        return map.stream().allMatch(e -> e.getKey().isStatic());
+        return map.stream().allMatch(e -> !e.getValue() || e.getKey().isStatic());
     }
 
     // depending on the nature of the static method, try to ensure if it is @PureFunction, @PureSupplier, @PureConsumer
@@ -318,9 +340,13 @@ public class MethodAnalyser {
 
         if (!methodInfo.isStatic) {
             // we need to check if there's fields being read/assigned/
-            if (emptyOrAllStatic(methodAnalysis.fieldRead) && emptyOrAllStatic(methodAnalysis.fieldModifications)) {
+            if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
+                    emptyOrStaticIfTrue(methodAnalysis.fieldModifications) &&
+                    !methodInfo.hasOverrides() &&
+                    !methodInfo.isDefaultImplementation &&
+                    methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
                 typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                        " does not read or write fields; it should be marked static");
+                        " should be marked static");
                 return false;
             }
         }
@@ -524,6 +550,34 @@ public class MethodAnalyser {
             if (properties != null && properties.properties.contains(VariableProperty.CONTENT_MODIFIED)) return true;
         }
         return hasDelays ? null : false;
+    }
+
+    /**
+     * Pure convenience method
+     *
+     * @param statements the statements to visit
+     * @param visitor    will accept a statement; must return true for the visiting to continue
+     */
+    private static void statementVisitor(List<NumberedStatement> statements, Function<NumberedStatement, Boolean> visitor) {
+        if (!statements.isEmpty()) {
+            statementVisitor(statements.get(0), visitor);
+        }
+    }
+
+    /**
+     * @param start   starting point, according to the way we have organized statement flows
+     * @param visitor will accept a statement; must return true for the visiting to continue
+     */
+    private static boolean statementVisitor(NumberedStatement start, Function<NumberedStatement, Boolean> visitor) {
+        NumberedStatement ns = start;
+        while (ns != null) {
+            if (!visitor.apply(ns)) return false;
+            for (NumberedStatement sub : ns.blocks.get()) {
+                if (!statementVisitor(sub, visitor)) return false;
+            }
+            ns = ns.next.get().orElse(null);
+        }
+        return true; // continue
     }
 
     private Set<Variable> allVariablesLinkedTo(VariableProperties methodProperties, Variable variable) {

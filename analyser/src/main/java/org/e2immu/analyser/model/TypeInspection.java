@@ -58,7 +58,7 @@ public class TypeInspection extends Inspection {
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
 
-    public final SetOnceMap<MethodInfo, Set<MethodInfo>> overloads = new SetOnceMap<>();
+    public final SetOnceMap<MethodInfo, Set<MethodInfo>> overrides = new SetOnceMap<>();
     public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
     public final TypeModifier access;
 

@@ -827,14 +827,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return null;
     }
 
-    public List<TypeInfo> directSuperTypes(TypeContext typeContext) {
+    public List<TypeInfo> directSuperTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
         List<TypeInfo> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.get().parentClass;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         TypeInfo parent;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(typeContext.typeStore.get(Primitives.JAVA_LANG_OBJECT));
+            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectTypeInfo);
         } else {
             parent = Objects.requireNonNull(parentPt.typeInfo);
         }
@@ -843,7 +843,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return list;
     }
 
-    public List<TypeInfo> superTypes(TypeContext typeContext) {
+    public List<TypeInfo> superTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
         if (typeInspection.get().superTypes.isSet()) return typeInspection.get().superTypes.get();
         List<TypeInfo> list = new ArrayList<>();
@@ -851,19 +851,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInfo parent;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(typeContext.typeStore.get(Primitives.JAVA_LANG_OBJECT));
+            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectTypeInfo);
             if (typeInspection.get().isClass()) {
                 list.add(parent);
             }
         } else {
             parent = Objects.requireNonNull(parentPt.typeInfo);
             list.add(parent);
-            list.addAll(parent.superTypes(typeContext));
+            list.addAll(parent.superTypes());
         }
 
         typeInspection.get().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
-            list.addAll(i.typeInfo.superTypes(typeContext));
+            list.addAll(i.typeInfo.superTypes());
         });
         List<TypeInfo> immutable = ImmutableList.copyOf(list);
         typeInspection.get().superTypes.set(immutable);
@@ -874,22 +874,23 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * What does it do: look into my super types, and see if you find a method like the one specified
      * NOTE: it does not look "sideways: methods of the same type but where implicit type conversion can take place
      *
-     * @param methodInfo: the method for which we're looking for overloads
+     * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    public Set<MethodInfo> overloads(MethodInfo methodInfo, TypeContext typeContext) {
-        Set<MethodInfo> myOverloads = typeInspection.get().overloads.getOtherwiseNull(methodInfo);
-        if (myOverloads != null) return myOverloads;
+    public Set<MethodInfo> overrides(MethodInfo methodInfo  ) {
+        Set<MethodInfo> myOverrides = typeInspection.get().overrides.getOtherwiseNull(methodInfo);
+        if (myOverrides != null) return myOverrides;
         List<MethodInfo> result = new ArrayList<>();
-        for (TypeInfo superType : directSuperTypes(typeContext)) {
-            MethodInfo overload = superType.findMethod(methodInfo);
-            if (overload != null) {
-                result.add(overload);
+        for (TypeInfo superType : directSuperTypes()) {
+
+            MethodInfo override = superType.findMethod(methodInfo);
+            if (override != null) {
+                result.add(override);
             }
-            result.addAll(superType.overloads(methodInfo, typeContext));
+            result.addAll(superType.overrides(methodInfo));
         }
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
-        typeInspection.get().overloads.put(methodInfo, immutable);
+        typeInspection.get().overrides.put(methodInfo, immutable);
         return immutable;
     }
 

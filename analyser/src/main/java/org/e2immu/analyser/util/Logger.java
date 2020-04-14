@@ -77,6 +77,8 @@ public class Logger {
 
         ANNOTATION_EXPRESSION,
         MERGE_ANNOTATIONS,
+
+        STATIC_METHOD_CALLS,
     }
 
     private Logger() {

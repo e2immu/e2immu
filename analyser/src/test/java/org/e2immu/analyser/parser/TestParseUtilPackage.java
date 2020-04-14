@@ -42,7 +42,10 @@ public class TestParseUtilPackage {
                 BYTECODE_INSPECTOR,
                 INSPECT,
                 RESOLVE,
+                METHOD_CALL, LAMBDA,
+
                 ANALYSER,
+
                 VARIABLE_PROPERTIES,
                 LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
                 E2IMMUTABLE, ANNOTATION_EXPRESSION,

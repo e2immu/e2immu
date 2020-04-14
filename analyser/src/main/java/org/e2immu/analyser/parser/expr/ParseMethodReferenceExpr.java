@@ -99,10 +99,10 @@ public class ParseMethodReferenceExpr {
                 staticVsInstance(methodCandidates);
                 if (methodCandidates.size() > 1) {
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                    Set<MethodInfo> overrides = mc0.method.methodInfo.typeInfo.overrides(mc0.method.methodInfo);
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                        if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
-                            throw new UnsupportedOperationException("Not all candidates are overloads of the 1st one! No unique " +
+                        if (!overrides.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                            throw new UnsupportedOperationException("Not all candidates are overrides of the 1st one! No unique " +
                                     methodNameForErrorReporting + " found in known at position " + methodReferenceExpr.getBegin());
                         }
                     }

@@ -253,9 +253,9 @@ public class TypeContext {
 
     // TODO remove me
     public int compareMethodCandidates(MethodCandidate mc1, MethodCandidate mc2) {
-        Set<MethodInfo> overloads1 = mc1.method.methodInfo.typeInfo.overloads(mc1.method.methodInfo, this);
+        Set<MethodInfo> overloads1 = mc1.method.methodInfo.typeInfo.overrides(mc1.method.methodInfo);
         if (overloads1.contains(mc2.method.methodInfo)) return -1;
-        Set<MethodInfo> overloads2 = mc2.method.methodInfo.typeInfo.overloads(mc2.method.methodInfo, this);
+        Set<MethodInfo> overloads2 = mc2.method.methodInfo.typeInfo.overrides(mc2.method.methodInfo);
         if (overloads2.contains(mc1.method.methodInfo)) return 1;
         return mc1.method.methodInfo.typeInfo.fullyQualifiedName.compareTo(mc2.method.methodInfo.typeInfo.fullyQualifiedName);
     }

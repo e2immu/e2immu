@@ -25,7 +25,7 @@ public class UnknownValue implements Value {
     public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("?");
     public static final UnknownValue DIVISION_BY_ZERO = new UnknownValue("division by zero");
 
-    private String msg;
+    private final String msg;
 
     private UnknownValue(String msg) {
         this.msg = msg;

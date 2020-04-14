@@ -145,16 +145,16 @@ public class ParseMethodCallExpr {
                 if (methodCandidates.size() > 1) {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overloads = mc0.method.methodInfo.typeInfo.overloads(mc0.method.methodInfo, expressionContext.typeContext);
+                    Set<MethodInfo> overrides = mc0.method.methodInfo.typeInfo.overrides(mc0.method.methodInfo);
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                        if (!overloads.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
+                        if (!overrides.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
                             for (TypeContext.MethodCandidate mc : methodCandidates) {
                                 log(METHOD_CALL, "Candidate: {} score {}", mc.method.methodInfo.distinguishingName(), compatibilityScore.get(mc.method.methodInfo));
                             }
-                            for (MethodInfo overload : overloads) {
-                                log(METHOD_CALL, "Overloads of 1st: {}", overload.distinguishingName());
+                            for (MethodInfo override : overrides) {
+                                log(METHOD_CALL, "Overrides of 1st: {}", override.distinguishingName());
                             }
-                            log(METHOD_CALL, "Not all candidates of {} are overloads of the 1st one! {} at position {}", methodNameForErrorReporting,
+                            log(METHOD_CALL, "Not all candidates of {} are overrides of the 1st one! {} at position {}", methodNameForErrorReporting,
                                     startingPointForErrorReporting.detailedString(), positionForErrorReporting);
                             return null;
                         }

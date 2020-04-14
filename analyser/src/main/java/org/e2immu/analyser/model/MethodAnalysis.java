@@ -40,6 +40,9 @@ public class MethodAnalysis extends Analysis {
     // TODO ditto
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
+    // if true, the method has no (non-static) method calls on the "this" scope
+    public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
+
     // produces an error
     public final SetOnceMap<ParameterInfo, Boolean> parameterModifications = new SetOnceMap<>();
 
