@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
@@ -76,24 +73,30 @@ public class ParseMethodReferenceExpr {
         }
         if (methodCandidates.size() > 1) {
             log(METHOD_CALL, "Have multiple candidates, try to weed out");
-            methodCandidates.removeIf(mc -> {
-                // check types of parameters in SAM
-                // example here is in Variable: there is a detailedString(), and a static detailedString(Set<>)
-                for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
-                    ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
-                    if (concreteType.isTypeParameter()) return false; // no concrete data in the SAM yet
+            // check types of parameters in SAM
+            // see if the method candidate's type fits the SAMs
+            for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
+                final int index = i;
+                ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
+                List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
+                copy.removeIf(mc -> {
                     ParameterizedType typeOfMethodCandidate;
-                    int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? i - 1 : i;
+                    int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? index - 1 : index;
                     if (param == -1) {
                         typeOfMethodCandidate = mc.method.methodInfo.typeInfo.asParameterizedType();
                     } else {
-                        typeOfMethodCandidate = mc.method.methodInfo.methodInspection.get().parameters.get(i).parameterizedType;
+                        typeOfMethodCandidate = mc.method.methodInfo.methodInspection.get().parameters.get(index).parameterizedType;
                     }
                     boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(concreteType);
-                    if (!isAssignable) return true;
+                    return !isAssignable;
+                });
+                // only accept of this is an improvement
+                // there are situations where this method kills all, as the concrete type
+                // can be a type parameter while the method candidates only have concrete types
+                if (copy.size() > 0 && copy.size() < methodCandidates.size()) {
+                    methodCandidates.retainAll(copy);
                 }
-                return false;
-            });
+            }
             if (methodCandidates.size() > 1) {
                 log(METHOD_CALL, "Trying to weed out those of the same type, static vs instance");
                 staticVsInstance(methodCandidates);
