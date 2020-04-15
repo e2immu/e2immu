@@ -21,7 +21,12 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.ClazzValue;
+import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -40,15 +45,24 @@ public class InstanceOf implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        if (expression instanceof VariableExpression || expression instanceof FieldAccess)
-            return new InstanceOfValue(expression.variables().get(0), parameterizedType);
-        if (expression instanceof ClassExpression) {
-            return BoolValue.of(parameterizedType.isAssignableFrom(((ClassExpression) expression).parameterizedType));
+        Value value = expression.evaluate(evaluationContext, visitor);
+        Value result;
+        if (value instanceof NullValue) {
+            result = BoolValue.FALSE;
+        } else if (value instanceof VariableValue) {
+            result = new InstanceOfValue(((VariableValue) value).value, parameterizedType);
+        } else if(value instanceof MethodValue) {
+            result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
+        } else if (value instanceof ClazzValue) {
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClazzValue) value).value));
+        } else {
+            // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
+            // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
+            // horrible practice. We leave the bug for now.
+            throw new UnsupportedOperationException("? have expression of " + expression.getClass()+" value is "+value+" of "+value.getClass());
         }
-        // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
-        // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
-        // horrible practice. We leave the bug for now.
-        throw new UnsupportedOperationException("? have expression of " + expression.getClass());
+        visitor.visit(this, evaluationContext, result);
+        return result;
     }
 
     @Override

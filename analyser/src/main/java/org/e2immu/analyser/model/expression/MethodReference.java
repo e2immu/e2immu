@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.Container;
@@ -84,7 +85,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        visitor.visit(this, evaluationContext, UnknownValue.UNKNOWN_VALUE);
-        return UnknownValue.UNKNOWN_VALUE;
+        Value value = scope.evaluate(evaluationContext, visitor);
+        Value result;
+        if(value instanceof NullValue) {
+            result = NullValue.NULL_POINTER_EXCEPTION;
+        } else {
+            result = UnknownValue.UNKNOWN_VALUE;
+        }
+        visitor.visit(this, evaluationContext, result);
+        return result;
     }
 }

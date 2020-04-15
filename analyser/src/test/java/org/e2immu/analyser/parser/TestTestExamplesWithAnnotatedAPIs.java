@@ -47,9 +47,11 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 BYTECODE_INSPECTOR,
                 INSPECT,
                 RESOLVE,
-                LAMBDA,
-                METHOD_CALL,
-/*
+               // LAMBDA,
+               // METHOD_CALL,
+
+                STATIC_METHOD_CALLS,
+
                 ANALYSER,
                 VARIABLE_PROPERTIES,
                 LINKED_VARIABLES,
@@ -63,7 +65,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 UTILITY_CLASS,
                 CONTEXT_ANNOTATIONS,
                 PURE_ANNOTATIONS,
-                NULL_NOT_ALLOWED,*/
+                NULL_NOT_ALLOWED,
                 NOT_MODIFIED
         );
     }

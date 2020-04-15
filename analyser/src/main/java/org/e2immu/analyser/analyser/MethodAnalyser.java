@@ -319,11 +319,12 @@ public class MethodAnalyser {
         // already done the work?
         if (methodAnalysis.annotations.isSet(typeContext.notModified.get())) return false;
 
-        if(!methodAnalysis.complainedAboutMissingStaticStatement.isSet()) {
+        if (!methodAnalysis.complainedAboutMissingStaticStatement.isSet()) {
             if (!methodInfo.isStatic) {
                 // we need to check if there's fields being read/assigned/
                 if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
                         emptyOrStaticIfTrue(methodAnalysis.fieldModifications) &&
+                        (!methodAnalysis.thisRead.isSet() || !methodAnalysis.thisRead.get()) &&
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation &&
                         methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
@@ -627,6 +628,11 @@ public class MethodAnalyser {
                     log(ANALYSER, "Mark that the content of field {} has been read", variable.detailedString());
                     methodAnalysis.fieldRead.put(fieldInfo, true);
                     changes = true;
+                }
+            } else if (variable instanceof This && properties.contains(VariableProperty.READ)) {
+                if (!methodAnalysis.thisRead.isSet()) {
+                    log(ANALYSER, "Mark that 'this' has been read in {}", variable.detailedString());
+                    methodAnalysis.thisRead.set(true);
                 }
             }
         }

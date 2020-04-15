@@ -18,8 +18,8 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.E2Immutable;
 
 @E2Immutable
@@ -47,4 +47,8 @@ public class EmptyExpression implements Expression {
         return 0;
     }
 
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        return UnknownValue.UNKNOWN_VALUE;
+    }
 }

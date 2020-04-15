@@ -55,6 +55,7 @@ public class MethodAnalysis extends Analysis {
     // used in the computation of content modification of fields
     public final SetOnceMap<Variable, Boolean> directContentModifications = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, Boolean> fieldRead = new SetOnceMap<>();
+    public final SetOnce<Boolean> thisRead = new SetOnce<>();
 
     // produces a warning
     public final SetOnceMap<LocalVariable, Boolean> unusedLocalVariables = new SetOnceMap<>();

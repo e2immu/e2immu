@@ -52,9 +52,7 @@ public interface Expression {
     int precedence();
 
     @NotModified
-    default Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        return UnknownValue.UNKNOWN_VALUE;
-    }
+    Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor);
 
     @NotNull
     @NotModified

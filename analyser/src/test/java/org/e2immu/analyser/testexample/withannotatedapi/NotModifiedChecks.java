@@ -106,8 +106,8 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT) // primitive
     private boolean example1() {
         C1 c = new C1(s0); // c.set is linked to s0 which is linked to set3
-        C1 d = new C1(Set.of("a", "b", "c"));
-        return addAll(c.set, d.set); // c cannot be @NotModified because of the addAll call
+        C1 localD = new C1(Set.of("a", "b", "c"));
+        return addAll(c.set, localD.set); // c cannot be @NotModified because of the addAll call
     }
 
     @Linked(type = VERIFY_ABSENT) // primitive

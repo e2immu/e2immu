@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.parser.expr;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.PackagePrefix;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 
 class PackagePrefixExpression implements Expression {
     public final PackagePrefix packagePrefix;
@@ -41,6 +39,11 @@ class PackagePrefixExpression implements Expression {
 
     @Override
     public int precedence() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         throw new UnsupportedOperationException();
     }
 }

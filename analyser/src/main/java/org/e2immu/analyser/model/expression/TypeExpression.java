@@ -19,9 +19,8 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
@@ -60,5 +59,10 @@ public class TypeExpression implements Expression {
     public Set<String> imports() {
         if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
         return Set.of();
+    }
+
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        return UnknownValue.UNKNOWN_VALUE; // TODO we should have a type here?
     }
 }

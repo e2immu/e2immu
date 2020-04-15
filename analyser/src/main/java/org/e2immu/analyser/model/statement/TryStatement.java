@@ -55,6 +55,11 @@ public class TryStatement implements Statement {
         public int precedence() {
             return 0;
         }
+
+        @Override
+        public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override

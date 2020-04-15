@@ -94,7 +94,7 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.equalsOperatorInt) {
             if (l.equals(r)) return BoolValue.TRUE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
-               // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
+                // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
             return EqualsValue.equals(l, r);
         }
@@ -151,22 +151,23 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.greaterOperatorInt) {
             return GreaterThanZeroValue.greater(l, r, false);
         }
-        if (operator == Primitives.PRIMITIVES.plusOperatorString) {
-            return StringValue.concat(l, r);
+        if (operator == Primitives.PRIMITIVES.bitwiseAndOperatorInt) {
+            return new BitwiseAndValue(l, r);
         }
         /*
             if (operator == Primitives.PRIMITIVES.bitwiseOrOperatorInt) {
                 return new IntValue(l.toInt().value | r.toInt().value);
             }
-            if (operator == Primitives.PRIMITIVES.bitwiseAndOperatorInt) {
-                return new IntValue(l.toInt().value & r.toInt().value);
-            }
+
             if (operator == Primitives.PRIMITIVES.bitwiseXorOperatorInt) {
                 return new IntValue(l.toInt().value ^ r.toInt().value);
             }
         }
          TODO
          */
+        if (operator == Primitives.PRIMITIVES.plusOperatorString) {
+            return StringValue.concat(l, r);
+        }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
@@ -198,7 +199,7 @@ public class BinaryOperator implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on boolean");
         }
-        if (widestType == Primitives.PRIMITIVES.charTypeInfo|| widestType.fullyQualifiedName.equals("java.lang.Character")) {
+        if (widestType == Primitives.PRIMITIVES.charTypeInfo || widestType.fullyQualifiedName.equals("java.lang.Character")) {
             switch (operator) {
                 case PLUS:
                     return Primitives.PRIMITIVES.plusOperatorInt;

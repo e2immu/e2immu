@@ -293,7 +293,7 @@ public class StatementAnalyser {
         return new Pair<>(value, changes.get());
     }
 
-    private void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+    private static void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
             Variable at = assignment.target.assignmentTarget().orElseThrow();

@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 
 import java.util.List;
 
@@ -51,4 +49,8 @@ public class EnclosedExpression implements Expression {
         return List.of(inner);
     }
 
+    @Override
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        return inner.evaluate(evaluationContext, visitor);
+    }
 }
