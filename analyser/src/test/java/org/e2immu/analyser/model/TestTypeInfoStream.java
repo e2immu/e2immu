@@ -79,9 +79,11 @@ public class TestTypeInfoStream {
                 .build();
         MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of());
+        ParameterInfo p0 = new ParameterInfo(typeT, "value", 0);
+        p0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(genericContainerPutMethod));
         genericContainerPutMethod.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .setReturnType(typeT)
-                .addParameter(new ParameterInfo(typeT, "value", 0))
+                .addParameter(p0)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setBlock(
@@ -167,7 +169,9 @@ public class TestTypeInfoStream {
         emptyConstructor.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .build(emptyConstructor));
         ParameterInfo x = new ParameterInfo(primitives.intTypeInfo, "x", 0);
+        x.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(intSum));
         ParameterInfo y = new ParameterInfo(primitives.intTypeInfo, "y", 1);
+        y.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(intSum));
         intSum.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addModifier(MethodModifier.PUBLIC)
                 .setReturnType(primitives.intTypeInfo)

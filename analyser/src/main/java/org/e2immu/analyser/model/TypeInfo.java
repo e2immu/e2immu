@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -941,5 +942,40 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
         if (packageNameOrEnclosingType.isLeft()) return this;
         return packageNameOrEnclosingType.getRight().primaryType();
+    }
+
+    /*
+
+    Function<String, Integer> f = s -> Integer.parseInt(s);
+    Function<String, Integer> f2 = new Function<String, Integer>() {
+        @Override
+        public Integer apply(String s) {
+            return Integer.parseInt(s);
+        }
+    };
+
+     */
+
+    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(TypeContext typeContext, ParameterizedType type, Expression expression) {
+        MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface(typeContext);
+        TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anonymous");
+        TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
+        builder.setEnclosingType(this);
+        builder.setTypeNature(TypeNature.CLASS);
+        builder.addInterfaceImplemented(type);
+
+        // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
+
+        MethodInfo methodInfo = method.buildCopy(typeInfo);
+        builder.addMethod(methodInfo);
+
+        // compose the content of the method...
+
+        methodInfo.methodInspection.get().methodBody.set(Block.EMPTY_BLOCK);
+        typeInfo.typeInspection.set(builder.build(true, typeInfo));
+
+        // and done.
+
+        return methodInfo;
     }
 }

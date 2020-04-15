@@ -73,16 +73,20 @@ class VariableProperties implements EvaluationContext {
         this.dependencyGraph = new DependencyGraph<>();
     }
 
-    public VariableProperties(VariableProperties parent) {
-        this(parent, null);
+    public VariableProperties copyWithConditional(Value conditional) {
+        return new VariableProperties(this, currentMethod, conditional);
     }
 
-    public VariableProperties(VariableProperties parent, Value conditional) {
+    public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
+        return new VariableProperties(this, methodInfo, conditional);
+    }
+
+    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional) {
         this.parent = parent;
         this.root = parent.root;
-        this.conditional = conditional == null ? UnknownValue.UNKNOWN_VALUE : conditional;
+        this.conditional = conditional;
         this.typeContext = parent.typeContext;
-        this.currentMethod = parent.currentMethod;
+        this.currentMethod = currentMethod;
         thisVariable = parent.thisVariable;
         dependencyGraph = parent.dependencyGraph;
     }
@@ -99,7 +103,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public EvaluationContext child(Value conditional) {
-        return new VariableProperties(this, conditional);
+        return copyWithConditional(conditional);
     }
 
     public void addToConditional(Value value) {

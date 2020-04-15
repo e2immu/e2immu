@@ -48,7 +48,7 @@ public class FieldInspection extends Inspection {
 
     @NotNull
     public final List<FieldModifier> modifiers;
-    public final FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initialiser;
+    public final FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser;
     @NotNull
     public final FieldModifier access;
 
@@ -56,7 +56,7 @@ public class FieldInspection extends Inspection {
     public final List<AnnotationExpression> annotations;
 
     private FieldInspection(@NullNotAllowed List<FieldModifier> modifiers,
-                            @NullNotAllowed FirstThen<com.github.javaparser.ast.expr.Expression, Expression> initialiser,
+                            @NullNotAllowed FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser,
                             @NullNotAllowed List<AnnotationExpression> annotations) {
         super(annotations);
         Objects.requireNonNull(modifiers);
@@ -67,9 +67,9 @@ public class FieldInspection extends Inspection {
     }
 
     private FieldModifier computeAccess() {
-        if(modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
-        if(modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
-        if(modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
+        if (modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
+        if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
+        if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
         return FieldModifier.PACKAGE;
     }
 
@@ -116,9 +116,19 @@ public class FieldInspection extends Inspection {
 
         @NotNull
         public FieldInspection build() {
-            FirstThen<com.github.javaparser.ast.expr.Expression, Expression> firstThen = new FirstThen<>(initializer != null ? initializer : EMPTY);
-            if (alreadyKnown != null) firstThen.set(alreadyKnown);
+            FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> firstThen = new FirstThen<>(initializer != null ? initializer : EMPTY);
+            if (alreadyKnown != null) firstThen.set(new FieldInitialiser(alreadyKnown, null));
             return new FieldInspection(modifiers.build(), firstThen, annotations.build());
+        }
+    }
+
+    public static class FieldInitialiser {
+        public final Expression initialiser;
+        public final MethodInfo implementationOfSingleAbstractMethod;
+
+        public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod) {
+            this.implementationOfSingleAbstractMethod = implementationOfSingleAbstractMethod;
+            this.initialiser = initialiser;
         }
     }
 }

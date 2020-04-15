@@ -48,7 +48,16 @@ public class TypeAnalyser {
     public void check(SortedType sortedType) {
         for (WithInspectionAndAnalysis m : sortedType.methodsAndFields) {
             if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
-            else if (m instanceof FieldInfo) fieldAnalyser.check((FieldInfo) m);
+            else if (m instanceof FieldInfo) {
+                FieldInfo fieldInfo = (FieldInfo) m;
+                if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
+                    if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
+                        methodAnalyser.check(fieldInitialiser.implementationOfSingleAbstractMethod);
+                    }
+                }
+                fieldAnalyser.check(fieldInfo);
+            }
         }
         check(sortedType, UtilityClass.class, typeContext.utilityClass.get());
         check(sortedType, E2Final.class, typeContext.e2Final.get());
@@ -81,7 +90,20 @@ public class TypeAnalyser {
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
-                    if (fieldAnalyser.analyse((FieldInfo) member, thisVariable, fieldProperties))
+                    FieldInfo fieldInfo = (FieldInfo) member;
+
+                    // these are the "hidden" methods: fields of functional interfaces
+                    if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                        FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
+                        if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
+                            VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariable, fieldInitialiser.implementationOfSingleAbstractMethod);
+                            if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
+                                changes = true;
+                            }
+                        }
+                    }
+
+                    if (fieldAnalyser.analyse(fieldInfo, thisVariable, fieldProperties))
                         changes = true;
                 }
             }

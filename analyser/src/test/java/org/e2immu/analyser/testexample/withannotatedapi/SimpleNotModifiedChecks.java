@@ -25,7 +25,9 @@ import org.e2immu.annotation.NullNotAllowed;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+
 import static org.e2immu.annotation.AnnotationType.*;
 
 public class SimpleNotModifiedChecks {
@@ -109,4 +111,16 @@ public class SimpleNotModifiedChecks {
         if (it.hasNext()) it.remove();
         return set;
     };
+
+    static class Example7<T> {
+        BiFunction<Integer, T, String> method = (i, t) -> {
+            return i + t.toString();
+        };
+        BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
+            @Override
+            public String apply(Integer i, T t) {
+                return i + t.toString();
+            }
+        };
+    }
 }

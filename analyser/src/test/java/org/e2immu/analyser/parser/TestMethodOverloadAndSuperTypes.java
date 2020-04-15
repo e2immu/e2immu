@@ -112,7 +112,7 @@ public class TestMethodOverloadAndSuperTypes {
         List<TypeInfo> superTypesC1 = c1.superTypes();
         Assert.assertEquals("[java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
         List<ParameterizedType> directSuperTypesC1 = c1.directSuperTypes();
-        Assert.assertEquals("[java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
+        Assert.assertEquals("[Type java.lang.Object, Type org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
 
 
         LOGGER.info("Distinguishing names of C1 methods: " +
@@ -131,12 +131,12 @@ public class TestMethodOverloadAndSuperTypes {
         List<TypeInfo> superTypesC2 = c2.superTypes();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
         List<ParameterizedType> directSuperTypesC2 = c2.directSuperTypes();
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
+        Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
         MethodInfo toString = c2.typeInspection.get().methods.stream().filter(m -> m.name.equals("toString")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfToString = c2.overrides(toString);
         LOGGER.info("Overloads of toString: {}", overloadsOfToString);
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1.toString(), java.lang.Object.toString()]",
+        Assert.assertEquals("[java.lang.Object.toString(), org.e2immu.analyser.testexample.MethodOverload.C1.toString()]",
                 overloadsOfToString.toString());
     }
 

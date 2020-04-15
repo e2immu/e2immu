@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
+import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.List;
@@ -36,6 +38,9 @@ public abstract class StatementWithExpression implements Statement {
 
     protected StatementWithExpression(Expression expression) {
         this.expression = Objects.requireNonNull(expression);
+        if (expression instanceof UnevaluatedMethodCall || expression instanceof UnevaluatedLambdaExpression) {
+            throw new UnsupportedOperationException("?");
+        }
     }
 
     @Override

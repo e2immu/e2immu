@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -47,8 +48,15 @@ public class FieldAnalyser {
         Value value = null;
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
+            FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
             FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            value = fieldInfo.fieldInspection.get().initialiser.get().evaluate(fieldProperties, EvaluationVisitor.NO_VISITOR);
+            VariableProperties localVariableProperties;
+            if(fieldInitialiser.implementationOfSingleAbstractMethod == null) {
+                localVariableProperties = fieldProperties;
+            } else {
+                localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
+            }
+            value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
             fieldProperties.setValue(fieldReference, value);
             log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
         }
@@ -167,7 +175,7 @@ public class FieldAnalyser {
 
         if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notModified.get())) {
             // first check if we're dealing with fields of ENUM's; they're not modifiable at all
-            if(fieldInfo.owner.typeInspection.get().typeNature == TypeNature.ENUM) {
+            if (fieldInfo.owner.typeInspection.get().typeNature == TypeNature.ENUM) {
                 fieldInfo.fieldAnalysis.annotations.put(typeContext.notModified.get(), true);
                 log(MODIFY_CONTENT, "FA: Mark field {} of enum as @NotModified", fieldInfo.fullyQualifiedName());
                 changes = true;

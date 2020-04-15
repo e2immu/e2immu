@@ -69,6 +69,7 @@ public class Input {
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         preload("org.e2immu.annotation"); // needed for our own stuff
         preload("java.lang"); // there are needed to help with implicit imports
+        preload("java.util.function"); // they are needed for functional interfaces that lurk in the background
 
         assembleClassPath(sourcePath, "Source path", configuration.inputConfiguration.sources);
         sourceURLs = computeSourceURLs();

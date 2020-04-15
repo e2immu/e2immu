@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
+
 public class Primitives {
     public static final Primitives PRIMITIVES = new Primitives();
 
@@ -230,11 +232,12 @@ public class Primitives {
         return ti;
     }
 
-    public boolean isAssignableFromTo(ParameterizedType from, ParameterizedType to) {
+    public int isAssignableFromTo(ParameterizedType from, ParameterizedType to) {
         int fromOrder = primitiveTypeOrder(from);
-        if (fromOrder <= 1 || fromOrder >= 9) return false;
+        if (fromOrder <= 1 || fromOrder >= 9) return NOT_ASSIGNABLE;
         int toOrder = primitiveTypeOrder(to);
-        if (toOrder <= 1 || toOrder >= 9) return false;
-        return fromOrder <= toOrder;
+        if (toOrder <= 1 || toOrder >= 9) return NOT_ASSIGNABLE;
+        int diff = toOrder - fromOrder;
+        return diff < 0 ? NOT_ASSIGNABLE : diff;
     }
 }

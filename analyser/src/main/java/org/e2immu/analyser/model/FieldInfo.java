@@ -107,7 +107,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 .append(" ")
                 .append(name);
         if (fieldInspection.isSet() && fieldInspection.get().initialiser.isSet()) {
-            Expression expression = fieldInspection.get().initialiser.get();
+            Expression expression = fieldInspection.get().initialiser.get().initialiser;
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 sb.append(" = ");
                 sb.append(expression.expressionString(indent));

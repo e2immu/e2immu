@@ -23,6 +23,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.StringUtil;
@@ -59,7 +60,7 @@ public class Resolver {
 
     // the typeContextOfFile contains the types imported; we have no other access to import statements here
     private static void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType,
-                                           Set<TypeInfo> stayWithin, TypeInfo typeInfo, TypeContext typeContextOfFile) {
+                                                  Set<TypeInfo> stayWithin, TypeInfo typeInfo, TypeContext typeContextOfFile) {
         Set<TypeInfo> typeDependencies = new HashSet<>();
 
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -138,6 +139,8 @@ public class Resolver {
                 // INITIALISERS
 
                 Expression expression = fieldInspection.initialiser.getFirst();
+                FieldInspection.FieldInitialiser fieldInitialiser;
+                List<WithInspectionAndAnalysis> dependencies;
                 if (expression != FieldInspection.EMPTY) {
                     ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
                     Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
@@ -148,12 +151,21 @@ public class Resolver {
                         log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
                     }
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
-                    fieldInspection.initialiser.set(parsedExpression);
-                    methodGraph.addNode(fieldInfo, ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields));
+
+                    MethodInfo sam;
+                    if (fieldInfo.type.isFunctionalInterface(typeContextOfType) && !parsedExpression.find(LambdaBlock.class).isEmpty()) {
+                        sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(typeContextOfType, fieldInfo.type, parsedExpression);
+                    } else {
+                        sam = null;
+                    }
+                    fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam);
+                    dependencies = ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields);
                 } else {
-                    fieldInspection.initialiser.set(EmptyExpression.EMPTY_EXPRESSION);
-                    methodGraph.addNode(fieldInfo, List.of());
+                    fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null);
+                    dependencies = List.of();
                 }
+                methodGraph.addNode(fieldInfo, dependencies);
+                fieldInspection.initialiser.set(fieldInitialiser);
             }
         });
 

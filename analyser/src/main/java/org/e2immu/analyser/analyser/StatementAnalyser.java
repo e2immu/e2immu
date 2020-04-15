@@ -217,7 +217,7 @@ public class StatementAnalyser {
         if (!startOfBlocks.isEmpty()) {
 
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            VariableProperties variablePropertiesWithValue = new VariableProperties(variableProperties, value);
+            VariableProperties variablePropertiesWithValue = variableProperties.copyWithConditional(value);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
 
             // PART 10: other conditions, including the else, switch entries, catch clauses
@@ -252,7 +252,7 @@ public class StatementAnalyser {
                 }
                 VariableProperties copyForElse = valueForSubStatement == null ?
                         variableProperties :
-                        new VariableProperties(variableProperties, valueForSubStatement);
+                        variableProperties.copyWithConditional(valueForSubStatement);
                 computeVariablePropertiesOfBlock(statement.blocks.get().get(count), copyForElse);
 
                 // if the "then" block ends in return or throw (we recursively need to know)
