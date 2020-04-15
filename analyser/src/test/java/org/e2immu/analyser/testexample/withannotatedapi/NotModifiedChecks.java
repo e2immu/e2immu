@@ -58,7 +58,7 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT)
     final int l2;
 
-    public NotModifiedChecks(@NotModified List<String> list,
+    public NotModifiedChecks(@NullNotAllowed @NotModified List<String> list,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set2,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set3,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set4) {
@@ -96,7 +96,7 @@ public class NotModifiedChecks {
 
     @NotModified(type = VERIFY_ABSENT)
     @Linked(type = VERIFY_ABSENT) // primitive
-    public int add(String s) {
+    public int add(@NullNotAllowed String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
         System.out.println("The set has " + theSet.size() + " elements before adding " + s);
         theSet.add(s); // this one modifies set2!
@@ -118,16 +118,16 @@ public class NotModifiedChecks {
 
     // this is an extension function on Set
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAll(@NotModified(type = VERIFY_ABSENT) Set<String> c,
-                                  @NotModified Set<String> d) {
+    private static boolean addAll(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) Set<String> c,
+                                  @NullNotAllowed @NotModified Set<String> d) {
         return c.addAll(d);
     }
 
     // this is an extension function on C1
     // not modified applies to sub-fields as well.
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAllOnC(@NotModified(type = VERIFY_ABSENT) C1 c,
-                                     @NotModified C1 d) {
+    private static boolean addAllOnC(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) C1 c,
+                                     @NullNotAllowed @NotModified C1 d) {
         return c.set.addAll(d.set);
     }
 }

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
+import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NullNotAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +70,7 @@ public class NullParameterChecks {
         this.s = s.strip();
     }
 
-    public void method8Implicit(@NullNotAllowed String s) {
+    public void method8Implicit(@NullNotAllowed(type = AnnotationType.VERIFY_ABSENT) String s) {
         if (s != null) {
             this.s = s.strip();
         } else {
@@ -81,19 +82,19 @@ public class NullParameterChecks {
         return s == null ? k.length() : s.length();
     }
 
-    public int method10(@NullNotAllowed String t, @NullNotAllowed String k) {
+    public static int method10(@NullNotAllowed(type = AnnotationType.VERIFY_ABSENT) String t, @NullNotAllowed String k) {
         return t == null ? k.length() : t.length();
     }
 
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
-    public String method11Lambda(@NullNotAllowed String t) {
+    public static String method11Lambda(@NullNotAllowed String t) {
         Supplier<String> supplier = () -> t.trim()+".";
         return supplier.get();
     }
 
 
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
-    public String method12LambdaBlock(@NullNotAllowed String t) {
+    public static String method12LambdaBlock(@NullNotAllowed String t) {
         Supplier<String> supplier = () -> {
             return t.trim()+".";
         };

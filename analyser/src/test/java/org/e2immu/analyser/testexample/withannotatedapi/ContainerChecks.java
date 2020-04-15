@@ -114,7 +114,7 @@ public class ContainerChecks {
         }
 
         // we link the set 'out' to the set 'in', but who cares about this? how can we use this linkage later?
-        public void crossModify(@NotModified Set<String> in, @NotModified(type = VERIFY_ABSENT) Set<String> out) {
+        public static void crossModify(@NotModified Set<String> in, @NotModified(type = VERIFY_ABSENT) Set<String> out) {
             out.addAll(in);
         }
     }

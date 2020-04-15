@@ -93,7 +93,7 @@ public class E2ImmutableChecks {
         }
     }
 
-    int getSize(int i) {
+    static int getSize(int i) {
         return 10+i;
     }
 }
