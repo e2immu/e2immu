@@ -21,10 +21,7 @@ package org.e2immu.analyser.parser.expr;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
-import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
@@ -49,6 +46,7 @@ public class ParseMethodCallExpr {
         Expression scope = methodCallExpr.getScope().map(expressionContext::parseExpression).orElse(null);
         // depending on the object, we'll need to find the method somewhere
         ParameterizedType scopeType;
+
         if (scope == null) {
             scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
         } else {
@@ -88,7 +86,18 @@ public class ParseMethodCallExpr {
             log(RESOLVE, "Add method dependency to {}", method.methodInfo.name);
             expressionContext.dependenciesOnOtherMethodsAndFields.add(method.methodInfo);
         }
-        return new MethodCall(scope, mapExpansion.isEmpty() ? method : method.expand(mapExpansion), newParameterExpressions);
+        Expression computedScope;
+        if (scope == null) {
+            if (method.methodInfo.isStatic) {
+                computedScope = new TypeExpression(method.methodInfo.typeInfo.asParameterizedType());
+            } else {
+                Variable thisVariable = new This(expressionContext.enclosingType);
+                computedScope = new VariableExpression(thisVariable);
+            }
+        } else {
+            computedScope = scope;
+        }
+        return new MethodCall(scope, computedScope, mapExpansion.isEmpty() ? method : method.expand(mapExpansion), newParameterExpressions);
     }
 
     static MethodTypeParameterMap chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,

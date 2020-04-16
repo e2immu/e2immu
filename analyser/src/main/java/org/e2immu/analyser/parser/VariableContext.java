@@ -40,9 +40,9 @@ public class VariableContext {
         this.parentContext = parentContext;
     }
 
-    private Map<String, FieldReference> fields;
-    private Map<String, LocalVariableReference> localVars = new HashMap<>();
-    private Map<String, ParameterInfo> parameters = new HashMap<>();
+    private final Map<String, FieldReference> fields;
+    private final Map<String, LocalVariableReference> localVars = new HashMap<>();
+    private final Map<String, ParameterInfo> parameters = new HashMap<>();
 
     public Variable get(String name, boolean complain) {
         Variable variable = localVars.get(name);
@@ -55,7 +55,7 @@ public class VariableContext {
             variable = parentContext.get(name, false);
         }
         if (variable == null && complain) {
-            throw new UnsupportedOperationException("Unknown variable in context " + name);
+            throw new UnsupportedOperationException("Unknown variable in context: '" + name + "'");
         }
         return variable;
     }
@@ -67,7 +67,7 @@ public class VariableContext {
      */
     public void add(FieldReference variable) {
         String name = variable.name();
-        if(!fields.containsKey(name)) {
+        if (!fields.containsKey(name)) {
             fields.put(name, variable);
         }
     }

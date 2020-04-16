@@ -1,5 +1,7 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
+import java.util.stream.Stream;
+
 public class MethodMustBeStatic {
 
     static class ParentClass {
@@ -33,6 +35,17 @@ public class MethodMustBeStatic {
 
         public ChildClass methodMustNotBeStatic3(String input) {
             return this;
+        }
+
+        public String methodMustNotBeStatic4(String input) {
+            return Stream.of(input).map(s -> {
+                System.out.println(s);
+                return s + "something" + t;
+            }).findAny().get();
+        }
+
+        public ChildClass methodMustNotBeStatic5(String input) {
+            return methodMustNotBeStatic3(input);
         }
 
     }

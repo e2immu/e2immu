@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 
@@ -28,8 +29,8 @@ import java.util.Objects;
 public class This implements Variable {
     public final TypeInfo typeInfo;
 
-    public This(TypeInfo typeInfo) {
-        this.typeInfo = typeInfo;
+    public This(@NullNotAllowed TypeInfo typeInfo) {
+        this.typeInfo = Objects.requireNonNull(typeInfo);
     }
 
     @Override

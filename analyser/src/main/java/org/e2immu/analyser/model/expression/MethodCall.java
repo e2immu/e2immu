@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.*;
 
@@ -33,14 +34,17 @@ import java.util.stream.Stream;
 @Container
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
     public final Expression object;
+    public final Expression computedScope;
     public final List<Expression> parameterExpressions;
 
     public MethodCall(Expression object,
+                      @NullNotAllowed Expression computedScope,
                       @NullNotAllowed MethodTypeParameterMap methodTypeParameterMap,
                       @NullNotAllowed List<Expression> parameterExpressions) {
         super(methodTypeParameterMap.methodInfo, methodTypeParameterMap.getConcreteReturnType());
         this.object = object;
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
+        this.computedScope = Objects.requireNonNull(computedScope);
     }
 
     @Override
@@ -55,9 +59,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        List<Value> parameters = parameterExpressions.stream()
-                .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
-        Value result = new MethodValue(methodInfo, object == null ? null : object.evaluate(evaluationContext, visitor), parameters);
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor);
+        Value result;
+        if (objectValue instanceof NullValue) {
+            result = NullValue.NULL_POINTER_EXCEPTION;
+        } else {
+            List<Value> parameters = parameterExpressions.stream()
+                    .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+            result = new MethodValue(methodInfo, objectValue, parameters);
+        }
         visitor.visit(this, evaluationContext, result);
         return result;
     }
