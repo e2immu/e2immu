@@ -44,7 +44,7 @@ public class TestTestExamples {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
                 METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
-                E2IMMUTABLE, ANNOTATION_EXPRESSION,
+                E2IMMUTABLE, ANNOTATION_EXPRESSION, CONSTANT,
                 CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS, CONTEXT_ANNOTATIONS, PURE_ANNOTATIONS,
                 NULL_NOT_ALLOWED, NOT_MODIFIED);
     }

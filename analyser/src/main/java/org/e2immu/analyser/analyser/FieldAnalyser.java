@@ -261,7 +261,7 @@ public class FieldAnalyser {
                     " is not effectively final (@Final)");
         }
 
-        Value initialiserValue = fieldInfo.fieldAnalysis.initialValue.isSet() ? fieldInfo.fieldAnalysis.initialValue.get() : null;
+        Value initialiserValue = fieldInfo.fieldAnalysis.initialValue.isSet() ? fieldInfo.fieldAnalysis.initialValue.get() : UnknownValue.NO_VALUE;
         boolean haveConstantAnnotation =
                 CheckConstant.checkConstant(initialiserValue, fieldInfo.type, fieldInfo.fieldInspection.get().annotations,
                         (valueToTest, typeMsg) -> {
@@ -269,7 +269,7 @@ public class FieldAnalyser {
                                     ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + initialiserValue);
 
                         });
-        if (haveConstantAnnotation && initialiserValue == null) {
+        if (haveConstantAnnotation && initialiserValue == UnknownValue.NO_VALUE) {
             typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() + " has no initial value set");
         }
     }

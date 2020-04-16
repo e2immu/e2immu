@@ -22,7 +22,8 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 
 public class UnknownValue implements Value {
-    public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("?");
+    public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("<unknown value>");
+    public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
     public static final UnknownValue DIVISION_BY_ZERO = new UnknownValue("division by zero");
 
     private final String msg;

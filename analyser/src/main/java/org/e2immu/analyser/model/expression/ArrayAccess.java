@@ -82,7 +82,7 @@ public class ArrayAccess implements Expression {
         Value indexValue = index.evaluate(evaluationContext, visitor);
         Value value;
         if (array instanceof ArrayValue && indexValue instanceof NumericValue) {
-            int intIndex = (((NumericValue) indexValue).toInt()).value;
+            int intIndex = (indexValue).toInt().value;
             ArrayValue arrayValue = (ArrayValue) array;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
                 throw new ArrayIndexOutOfBoundsException();

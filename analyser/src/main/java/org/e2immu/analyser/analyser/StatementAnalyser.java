@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -157,6 +158,11 @@ public class StatementAnalyser {
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
             variableProperties.create(lvr, VariableProperty.CREATED);
+            if (localVariableCreation.expression != EmptyExpression.EMPTY_EXPRESSION) {
+                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression, variableProperties);
+                if (pair.v) changes = true;
+                variableProperties.setValue(lvr, pair.k);
+            }
         }
 
         // PART 5: computing linking between local variables and fields, parameters
@@ -191,15 +197,20 @@ public class StatementAnalyser {
 
         // PART 7: checks for ReturnStatement
 
-        if (value != null && statement.statement instanceof ReturnStatement) {
-            Set<Variable> vars = value.linkedVariables(variableProperties);
-            if (!statement.linkedVariables.isSet()) {
-                statement.linkedVariables.set(vars);
+        if (statement.statement instanceof ReturnStatement) {
+            if (value != null) {
+                Set<Variable> vars = value.linkedVariables(variableProperties);
+                if (!statement.linkedVariables.isSet()) {
+                    statement.linkedVariables.set(vars);
+                }
+                Boolean notNull = value.isNotNull(variableProperties);
+                if (notNull != null && !statement.returnsNotNull.isSet()) {
+                    statement.returnsNotNull.set(notNull);
+                    changes = true;
+                }
             }
-            Boolean notNull = value.isNotNull(variableProperties);
-            if (notNull != null && !statement.returnsNotNull.isSet()) {
-                statement.returnsNotNull.set(notNull);
-                changes = true;
+            if (!statement.returnValue.isSet()) {
+                statement.returnValue.set(value == null ? UnknownValue.NO_VALUE : value);
             }
         }
 

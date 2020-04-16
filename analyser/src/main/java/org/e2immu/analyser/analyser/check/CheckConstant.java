@@ -3,10 +3,7 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.value.*;
 import org.e2immu.annotation.Constant;
 
 import java.util.List;
@@ -15,6 +12,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.CONSTANT;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class CheckConstant {
@@ -55,9 +53,9 @@ public class CheckConstant {
                 valueToTest = value == null ? NullValue.NULL_VALUE : new StringValue(value);
                 typeMsg = "string";
             } else throw new UnsupportedOperationException("TODO need more types in @Constant checks");
-            if (computedValue != null) {
+            if (computedValue != null && computedValue != UnknownValue.NO_VALUE) {
                 if (testValue) {
-                    log(ANALYSER, "Checking value {}, type {}", valueToTest, typeMsg);
+                    log(CONSTANT, "Checking value {}, type {}", valueToTest, typeMsg);
                     if (!computedValue.equals(valueToTest)) {
                         onDifference.accept(valueToTest, typeMsg);
                     }

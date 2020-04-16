@@ -59,6 +59,7 @@ public class Logger {
         CONTEXT_ANNOTATIONS,
         NULL_NOT_ALLOWED,
         NOT_MODIFIED,
+        CONSTANT,
 
         SIDE_EFFECT,
 

@@ -194,7 +194,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public Optional<Value> get(Variable variable) {
+    public Optional<Value> currentValue(Variable variable) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) {
             if (variable instanceof FieldReference) {

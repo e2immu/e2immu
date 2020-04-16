@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface EvaluationContext {
-    Optional<Value> get(Variable variable);
+    Optional<Value> currentValue(Variable variable);
 
     // with null meaning that no decision can be made yet
     boolean isNotNull(Variable variable);

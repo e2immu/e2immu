@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -82,7 +83,7 @@ public class MethodAnalyser {
             check(methodInfo, Fluent.class, typeContext.fluent.get());
             check(methodInfo, Identity.class, typeContext.identity.get());
 
-            Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : null;
+            Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
             boolean haveConstantAnnotation =
                     CheckConstant.checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
                             (valueToTest, typeMsg) -> {
@@ -90,7 +91,7 @@ public class MethodAnalyser {
                                         ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue);
 
                             });
-            if (haveConstantAnnotation && singleReturnValue == null) {
+            if (haveConstantAnnotation && singleReturnValue == UnknownValue.NO_VALUE) {
                 typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() + " has no single return value");
             }
         }
@@ -290,6 +291,21 @@ public class MethodAnalyser {
                     methodAnalysis.annotations.put(typeContext.notNull.get(), false);
                     log(ANALYSER, "Set NOT @Identity");
                     changes = true;
+                }
+
+                // @Constant,
+                // this runs in the first pass
+                if (!methodAnalysis.singleReturnValue.isSet()) {
+                    Value value;
+                    if (returnStatements == 1) {
+                        value = numberedStatements.stream()
+                                .filter(ns -> ns.returnValue.isSet())
+                                .map(ns -> ns.returnValue.get())
+                                .findAny().orElse(UnknownValue.NO_VALUE);
+                    } else {
+                        value = UnknownValue.NO_VALUE;
+                    }
+                    methodAnalysis.singleReturnValue.set(value);
                 }
             } else {
                 if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {
