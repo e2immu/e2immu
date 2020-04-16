@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Immutable;
@@ -122,8 +123,14 @@ public class Assignment implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value v = value.evaluate(evaluationContext, visitor);
-        visitor.visit(this, evaluationContext, v);
-        return v;
+        Value t = target.evaluate(evaluationContext, visitor);
+        Value result;
+        if(t instanceof NullValue) {
+            result = NullValue.NULL_POINTER_EXCEPTION;
+        } else {
+            result = value.evaluate(evaluationContext, visitor);
+        }
+        visitor.visit(this, evaluationContext, result);
+        return result;
     }
 }

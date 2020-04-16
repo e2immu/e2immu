@@ -79,10 +79,10 @@ public class ArrayAccess implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value array = expression.evaluate(evaluationContext, visitor);
-        Value index = expression.evaluate(evaluationContext, visitor);
+        Value indexValue = index.evaluate(evaluationContext, visitor);
         Value value;
-        if (array instanceof ArrayValue && index instanceof NumericValue) {
-            int intIndex = (((NumericValue) index).toInt()).value;
+        if (array instanceof ArrayValue && indexValue instanceof NumericValue) {
+            int intIndex = (((NumericValue) indexValue).toInt()).value;
             ArrayValue arrayValue = (ArrayValue) array;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
                 throw new ArrayIndexOutOfBoundsException();

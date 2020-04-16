@@ -60,6 +60,11 @@ public class TestTestExamples {
     }
 
     @Test
+    public void testMethodMustBeStatic() throws IOException {
+        goTest("MethodMustBeStatic");
+    }
+
+    @Test
     public void testMethodReferences() throws IOException {
         goTest("MethodReferences");
     }
@@ -81,7 +86,7 @@ public class TestTestExamples {
 
     @Test
     public void testUnusedLocalVariableChecks() throws IOException {
-        goTest("UnusedLocalVariableChecks", 4);
+        goTest("UnusedLocalVariableChecks", 5);
     }
 
     @Test

@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Constant;
+
 public class UnusedLocalVariableChecks {
 
     // ERROR 3: private field b is not read outside constructors
@@ -25,7 +27,7 @@ public class UnusedLocalVariableChecks {
 
     public UnusedLocalVariableChecks() {
         int a = 0;
-        // ERROR 4: private variable a is not used
+        // ERROR 5: private variable a is not used
         b = true;
     }
 
@@ -37,5 +39,26 @@ public class UnusedLocalVariableChecks {
             return;
         }
         t.trim();
+    }
+
+    @Constant(intValue = 1)
+    private static int checkArray() {
+        int[] integers = {1, 2, 3};
+        int i = 0;
+        return integers[i];
+    }
+
+    private static void checkArray2() {
+        int[] integers = {1, 2, 3};
+        int i = 0;
+        integers[i] = 3;
+    }
+
+    private static void checkForEach() {
+        int[] integers = {1, 2, 3};
+        for(int loopVar: integers) {
+            // ERROR 4: loopVar is not used
+            System.out.println("hello!");
+        }
     }
 }

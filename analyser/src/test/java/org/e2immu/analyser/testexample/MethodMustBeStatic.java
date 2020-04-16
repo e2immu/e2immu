@@ -1,4 +1,4 @@
-package org.e2immu.analyser.testexample.withannotatedapi;
+package org.e2immu.analyser.testexample;
 
 import java.util.stream.Stream;
 

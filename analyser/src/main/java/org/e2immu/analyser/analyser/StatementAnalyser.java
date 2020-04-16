@@ -145,7 +145,8 @@ public class StatementAnalyser {
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 11
 
         if (codeOrganization.localVariableCreation != null) {
-            variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation, List.of()));
+            variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation,
+                    List.of()), VariableProperty.CREATED);
         }
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
@@ -270,7 +271,6 @@ public class StatementAnalyser {
         // finally there are the updaters
         for (Expression updater : codeOrganization.updaters) {
             Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties);
-            Value v = pair.k;
             if (pair.v) changes = true;
         }
 

@@ -66,4 +66,6 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
+
+    public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 }

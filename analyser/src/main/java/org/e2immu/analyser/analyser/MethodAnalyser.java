@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -80,6 +81,18 @@ public class MethodAnalyser {
             check(methodInfo, NotModified.class, typeContext.notModified.get());
             check(methodInfo, Fluent.class, typeContext.fluent.get());
             check(methodInfo, Identity.class, typeContext.identity.get());
+
+            Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : null;
+            boolean haveConstantAnnotation =
+                    CheckConstant.checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
+                            (valueToTest, typeMsg) -> {
+                                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                                        ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue);
+
+                            });
+            if (haveConstantAnnotation && singleReturnValue == null) {
+                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() + " has no single return value");
+            }
         }
         methodInfo.methodAnalysis.unusedLocalVariables.visit((lv, b) -> {
             if (b)

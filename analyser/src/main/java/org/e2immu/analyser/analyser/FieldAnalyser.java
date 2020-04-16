@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.value.*;
@@ -51,7 +52,7 @@ public class FieldAnalyser {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
             FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
             VariableProperties localVariableProperties;
-            if(fieldInitialiser.implementationOfSingleAbstractMethod == null) {
+            if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
                 localVariableProperties = fieldProperties;
             } else {
                 localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
@@ -260,57 +261,16 @@ public class FieldAnalyser {
                     " is not effectively final (@Final)");
         }
 
-        Optional<AnnotationExpression> oConstant = fieldInfo.getInspection().annotations.stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Constant.class.getName())).findFirst();
-        oConstant.ifPresent(constant -> {
-            boolean testValue = constant.test();
-            Value valueToTest = null;
-            String typeMsg = "";
-            if (isIntType(fieldInfo.type)) {
-                int value = constant.intValue();
-                if (value != 0) testValue = true;
-                valueToTest = new IntValue(value);
-                typeMsg = "int";
-            } else if (isBoolType(fieldInfo.type)) {
-                boolean value = constant.boolValue();
-                if (value) testValue = true;
-                valueToTest = BoolValue.of(value);
-                typeMsg = "boolean";
-            } else if (isStringType(fieldInfo.type)) {
-                String value = constant.stringValue();
-                if (!"".equals(value)) testValue = true;
-                valueToTest = value == null ? NullValue.NULL_VALUE : new StringValue(value);
-                typeMsg = "string";
-            }
-            if (fieldInfo.fieldAnalysis.initialValue.isSet()) {
-                if (testValue) {
-                    log(ANALYSER, "Checking value {}, type {}", valueToTest, typeMsg);
-                    Value value = fieldInfo.fieldAnalysis.initialValue.get();
-                    if (!value.equals(valueToTest)) {
-                        typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                                ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + value);
-                    }
-                }
-            } else {
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() + " has no initial value set");
-            }
-        });
-    }
+        Value initialiserValue = fieldInfo.fieldAnalysis.initialValue.isSet() ? fieldInfo.fieldAnalysis.initialValue.get() : null;
+        boolean haveConstantAnnotation =
+                CheckConstant.checkConstant(initialiserValue, fieldInfo.type, fieldInfo.fieldInspection.get().annotations,
+                        (valueToTest, typeMsg) -> {
+                            typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
+                                    ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + initialiserValue);
 
-    private static boolean isType(ParameterizedType type, Set<String> typeNames) {
-        return type.typeInfo != null && typeNames.contains(type.typeInfo.fullyQualifiedName);
+                        });
+        if (haveConstantAnnotation && initialiserValue == null) {
+            typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() + " has no initial value set");
+        }
     }
-
-    private static boolean isIntType(ParameterizedType parameterizedType) {
-        return isType(parameterizedType, Set.of("java.lang.Integer", "int"));
-    }
-
-    private static boolean isBoolType(ParameterizedType parameterizedType) {
-        return isType(parameterizedType, Set.of("java.lang.Boolean", "boolean"));
-    }
-
-    private static boolean isStringType(ParameterizedType parameterizedType) {
-        return isType(parameterizedType, Set.of("java.lang.String"));
-    }
-
 }
