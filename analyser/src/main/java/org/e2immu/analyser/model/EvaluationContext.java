@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface EvaluationContext {
-    Optional<Value> currentValue(Variable variable);
+    Value currentValue(Variable variable);
 
     // with null meaning that no decision can be made yet
     boolean isNotNull(Variable variable);
@@ -34,7 +34,7 @@ public interface EvaluationContext {
 
     EvaluationContext child(Value conditional);
 
-    void create(Variable variable, VariableProperty... initialProperties);
+    void create(Variable variable, Value initialValue, VariableProperty... initialProperties);
 
     TypeContext getTypeContext();
 

@@ -19,6 +19,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
@@ -168,13 +170,12 @@ public class TypeAnalyser {
 
     private VariableProperties initializeVariableProperties(SortedType sortedType, This thisVariable, MethodInfo currentMethod) {
         VariableProperties fieldProperties = new VariableProperties(typeContext, thisVariable, currentMethod);
-        fieldProperties.create(thisVariable);
+        fieldProperties.create(thisVariable, new VariableValue(thisVariable));
 
         for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
             if (member instanceof FieldInfo) {
                 FieldInfo fieldInfo = (FieldInfo) member;
-                FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-                fieldProperties.create(fieldReference);
+                createFieldReference(thisVariable, fieldProperties, fieldInfo);
             }
         }
         // fields from sub-types... how do they fit in? It is well possible that the subtype has already been analysed,
@@ -184,13 +185,31 @@ public class TypeAnalyser {
         // accessible will be forced to be public final
         for (TypeInfo subType : sortedType.typeInfo.typeInspection.get().subTypes) {
             for (FieldInfo fieldInfo : subType.typeInspection.get().fields) {
-                FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-                fieldProperties.create(fieldReference);
+                createFieldReference(thisVariable, fieldProperties, fieldInfo);
             }
         }
         return fieldProperties;
     }
 
+    private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
+        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+        Value value;
+        Boolean isFinal = fieldInfo.isFinal(typeContext);
+        if (Boolean.TRUE == isFinal) {
+            if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+            } else {
+                value = UnknownValue.NO_VALUE;
+            }
+        } else if (null == isFinal) {
+            value = UnknownValue.NO_VALUE;
+        } else {
+            // we know the field is not effectively final, so there's multiple modifications
+            // so we start off with a variable value
+            value = new VariableValue(fieldReference);
+        }
+        fieldProperties.create(fieldReference, value);
+    }
 
     private boolean detectContainer(SortedType sortedType) {
         if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;

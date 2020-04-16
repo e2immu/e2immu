@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.OrValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -147,8 +148,9 @@ public class StatementAnalyser {
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 11
 
         if (codeOrganization.localVariableCreation != null) {
-            variableProperties.create(new LocalVariableReference(codeOrganization.localVariableCreation,
-                    List.of()), VariableProperty.CREATED);
+            LocalVariableReference lvr = new LocalVariableReference(codeOrganization.localVariableCreation,
+                    List.of());
+            variableProperties.create(lvr, new VariableValue(lvr), VariableProperty.CREATED);
         }
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
@@ -158,13 +160,16 @@ public class StatementAnalyser {
                 .collect(Collectors.toList());
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
-            variableProperties.create(lvr, VariableProperty.CREATED);
+            Value value;
             if (localVariableCreation.expression != EmptyExpression.EMPTY_EXPRESSION) {
                 Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
                         variableProperties, statement);
                 if (pair.v) changes = true;
-                variableProperties.setValue(lvr, pair.k);
+                value = pair.k;
+            } else {
+                value = UnknownValue.NO_VALUE;
             }
+            variableProperties.create(lvr, value, VariableProperty.CREATED);
         }
 
         // PART 5: computing linking between local variables and fields, parameters
@@ -214,14 +219,19 @@ public class StatementAnalyser {
                 }
             }
             if (!statement.returnValue.isSet()) {
-                statement.returnValue.set(value == null ? UnknownValue.NO_VALUE : value);
+                if (value != UnknownValue.NO_VALUE) {
+                    statement.returnValue.set(value == null ? UnknownValue.NO_VALUE : value);
+                } else {
+                    log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
+                            methodInfo.fullyQualifiedName(), statement.streamIndices());
+                }
             }
         }
 
         // PART 8: checks for IfElse
 
         if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
-            if(!statement.errorValue.isSet()) {
+            if (!statement.errorValue.isSet()) {
                 log(ANALYSER, "condition in if statement is constant {}", value);
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                         ", if statement evaluates to constant");
@@ -247,7 +257,8 @@ public class StatementAnalyser {
                 // PART 11: add parameters of sub statements
 
                 if (subStatements.localVariableCreation != null) {
-                    variableProperties.create(new LocalVariableReference(subStatements.localVariableCreation, List.of()));
+                    LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
+                    variableProperties.create(lvr, new VariableValue(lvr));
                 }
 
                 // PART 12: evaluate the sub-expression
@@ -312,8 +323,9 @@ public class StatementAnalyser {
                             typeContext.addMessage(Message.Severity.ERROR,
                                     "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
                             statementForErrorReporting.errorValue.set(true);
+                            changes.set(true);
                         }
-                    } else if (intermediateValue == UnknownValue.DELAYED_VALUE) {
+                    } else if (intermediateValue == UnknownValue.NO_VALUE) {
                         log(ANALYSER, "Delaying analysis of expression {} in {}",
                                 localExpression.getClass(),
                                 methodInfo.fullyQualifiedName());

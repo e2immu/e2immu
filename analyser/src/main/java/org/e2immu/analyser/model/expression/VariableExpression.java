@@ -40,7 +40,7 @@ public class VariableExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value v = evaluationContext.currentValue(variable).orElse(UnknownValue.UNKNOWN_VALUE);
+        Value v = evaluationContext.currentValue(variable);
         visitor.visit(this, evaluationContext, v);
         return v;
     }

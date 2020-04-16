@@ -97,10 +97,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {
-                    result = UnknownValue.UNKNOWN_VALUE;
+                    // TODO we have no idea about the parameters here
+                    result = new MethodValue(methodInfo, value, List.of());
                 }
             } else {
-                result = UnknownValue.DELAYED_VALUE;
+                result = UnknownValue.NO_VALUE;
             }
         }
         visitor.visit(this, evaluationContext, result);

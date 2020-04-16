@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -96,7 +97,7 @@ public class LambdaBlock implements Expression {
         if (block == Block.EMPTY_BLOCK) return UnknownValue.UNKNOWN_VALUE;
 
         EvaluationContext child = evaluationContext.child(null);
-        parameters.forEach(pi -> child.create(pi));
+        parameters.forEach(pi -> child.create(pi, new VariableValue(pi)));
 
         boolean changes = false;
         if (!numberedStatements.isSet()) {

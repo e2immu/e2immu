@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,7 +41,8 @@ class VariableProperties implements EvaluationContext {
 
     static class AboutVariable {
         final Set<VariableProperty> properties = new HashSet<>();
-        Value currentValue;
+        @NotNull
+        private Value currentValue = UnknownValue.NO_VALUE;
 
         @Override
         public String toString() {
@@ -49,6 +52,10 @@ class VariableProperties implements EvaluationContext {
                 sb.append(", currentValue=").append(currentValue);
             }
             return sb.toString();
+        }
+
+        public Value getCurrentValue() {
+            return currentValue;
         }
     }
 
@@ -157,17 +164,18 @@ class VariableProperties implements EvaluationContext {
      * @param initialProperties initial properties about this variable
      */
     @Override
-    public void create(Variable variable, VariableProperty... initialProperties) {
+    public void create(Variable variable, @NullNotAllowed Value initialValue, VariableProperty... initialProperties) {
         AboutVariable aboutVariable = new AboutVariable();
+        aboutVariable.currentValue = Objects.requireNonNull(initialValue);
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
         if (variableProperties.put(variable, aboutVariable) != null) throw new UnsupportedOperationException();
         log(Logger.LogTarget.ANALYSER, "Created variable {}", variable.detailedString());
     }
 
-    public void setValue(Variable variable, Value value) {
+    public void setValue(Variable variable, @NullNotAllowed Value value) {
         AboutVariable aboutVariable = find(variable, true);
         assert aboutVariable != null; // to keep intellij happy, because of the complain we know it cannot be null
-        aboutVariable.currentValue = value;
+        aboutVariable.currentValue = Objects.requireNonNull(value);
     }
 
     public boolean addProperty(Variable variable, VariableProperty variableProperty) {
@@ -194,7 +202,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public Optional<Value> currentValue(Variable variable) {
+    @NotNull
+    public Value currentValue(Variable variable) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) {
             if (variable instanceof FieldReference) {
@@ -204,14 +213,14 @@ class VariableProperties implements EvaluationContext {
                     throw new UnsupportedOperationException("Coming across reference to field of my own primary type?" +
                             " should have been declared: " + variable.detailedString());
                 }
-                root.create(variable);
+                root.create(variable, new VariableValue(variable));
                 aboutVariable = Objects.requireNonNull(find(variable, true));
             } else {
                 throw new UnsupportedOperationException("Coming across variable that should have been declared: " +
                         variable.detailedString());
             }
         }
-        return Optional.of(Objects.requireNonNullElseGet(aboutVariable.currentValue, () -> new VariableValue(variable)));
+        return aboutVariable.currentValue;
     }
 
     @Override

@@ -67,6 +67,7 @@ public class UnaryOperator implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value v = expression.evaluate(evaluationContext, visitor);
         if (v == UnknownValue.UNKNOWN_VALUE) return v;
+        if (v == UnknownValue.NO_VALUE) return v;
 
         if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
                 operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {

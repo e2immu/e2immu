@@ -75,7 +75,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     result = new MethodValue(methodInfo, objectValue, parameters);
                 }
             } else {
-                result = UnknownValue.DELAYED_VALUE;
+                result = UnknownValue.NO_VALUE;
             }
         }
         visitor.visit(this, evaluationContext, result);

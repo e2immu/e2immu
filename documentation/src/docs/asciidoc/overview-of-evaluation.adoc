@@ -1,0 +1,22 @@
+=== Overview of evaluation
+
+Evaluation occurs multiple times, until there are no changes anymore.
+
+During each evaluation, unless a constant value has been established already, the _current value_ of a variable starts with
+
+- `NO_VALUE` for fields and local variables
+- `VariableValue` for parameters
+
+Local variables immediately graduate to real values, or a `VariableValue` if an initialiser is present.
+Given that the Java compiler will complain about missing initialisers, we do not need to worry about this.
+
+Fields either:
+
+- have an initialiser, and are final, in which case there is a concrete current value set as soon as the field has been analysed
+- are assigned a value, exactly once, somewhere reachable from each of the constructors, which means they are effectively final
+- are not effectively final, so there is nothing we can say about them; the value becomes `VariableValue`.
+
+Until a field is declared effectively final, or not, its current value starts with `NO_VALUE`.
+
+Method calls can potentially return constant values.
+Until it has been established that there is not a single return statement, `NO_VALUE` is returned.

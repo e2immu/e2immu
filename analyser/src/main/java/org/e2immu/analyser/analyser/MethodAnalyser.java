@@ -21,6 +21,8 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
@@ -132,7 +134,7 @@ public class MethodAnalyser {
             changes = true;
         }
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            methodProperties.create(parameterInfo);
+            methodProperties.create(parameterInfo, new VariableValue(parameterInfo));
         }
         if (analyseFlow(methodInfo, methodProperties)) changes = true;
         return changes;
@@ -301,12 +303,13 @@ public class MethodAnalyser {
                         value = numberedStatements.stream()
                                 .filter(ns -> ns.returnValue.isSet())
                                 .map(ns -> ns.returnValue.get())
-                                .findAny().orElse(UnknownValue.DELAYED_VALUE);
+                                .findAny().orElse(UnknownValue.NO_VALUE);
                     } else {
-                        value = UnknownValue.NO_VALUE;
+                        value = new Instance(methodInfo.returnType());
                     }
-                    if(value != UnknownValue.DELAYED_VALUE) {
+                    if (value != UnknownValue.NO_VALUE) {
                         methodAnalysis.singleReturnValue.set(value);
+                        changes = true;
                     }
                 }
             } else {
@@ -648,12 +651,13 @@ public class MethodAnalyser {
                     log(ANALYSER, "Mark that {} is modified? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
-                Value currentValue = entry.getValue().currentValue;
-                if (currentValue != null && properties.contains(VariableProperty.MODIFIED) &&
+                Value currentValue = entry.getValue().getCurrentValue();
+                if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.MODIFIED) &&
                         !properties.contains(VariableProperty.MODIFIED_MULTIPLE_TIMES) &&
                         !methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     log(ANALYSER, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
                     methodAnalysis.fieldAssignments.put(fieldInfo, currentValue);
+                    changes = true;
                 }
                 if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
                     log(ANALYSER, "Mark that the content of field {} has been read", variable.detailedString());
@@ -664,6 +668,7 @@ public class MethodAnalyser {
                 if (!methodAnalysis.thisRead.isSet()) {
                     log(ANALYSER, "Mark that 'this' has been read in {}", variable.detailedString());
                     methodAnalysis.thisRead.set(true);
+                    changes = true;
                 }
             }
         }

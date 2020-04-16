@@ -21,15 +21,12 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.*;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -46,7 +43,7 @@ public class FieldAnalyser {
     public boolean analyse(FieldInfo fieldInfo, Variable thisVariable, VariableProperties fieldProperties) {
         boolean changes = false;
 
-        Value value = null;
+        Value value;
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
@@ -60,6 +57,8 @@ public class FieldAnalyser {
             value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
             fieldProperties.setValue(fieldReference, value);
             log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
+        } else {
+            value = UnknownValue.NO_VALUE;
         }
 
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
@@ -84,7 +83,7 @@ public class FieldAnalyser {
                     log(ANALYSER, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;
-                    if (!isModifiedOutsideConstructors && !fieldInfo.fieldAnalysis.initialValue.isSet()) {
+                    if (!isModifiedOutsideConstructors && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                         // find the constructors where the value is set; if they're all set to the same value,
                         // we can set the initial value
                         Value consistentValue = null;
@@ -102,7 +101,7 @@ public class FieldAnalyser {
                         }
                         if (consistentValue != null) {
                             if (consistentValue instanceof org.e2immu.analyser.model.Constant) {
-                                fieldInfo.fieldAnalysis.initialValue.set(consistentValue);
+                                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(consistentValue);
                                 log(ANALYSER, "Set initial value of effectively final {} to {}", fieldInfo.fullyQualifiedName(),
                                         consistentValue);
                                 changes = true;
@@ -124,20 +123,18 @@ public class FieldAnalyser {
             }
         }
 
-        if (fieldInfo.isExplicitlyFinal()) {
-            if (value != UnknownValue.UNKNOWN_VALUE && value != null) {
-                if (!fieldInfo.fieldAnalysis.initialValue.isSet()) {
-                    log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), value);
-                    fieldInfo.fieldAnalysis.initialValue.set(value);
-                    changes = true;
-                }
-                if (value.isNotNull(fieldProperties) == Boolean.TRUE &&
-                        !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                    log(ANALYSER, "Mark field {} as not null, given that it is final and the value initializes to not null",
-                            fieldInfo.fullyQualifiedName());
-                    fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), true);
-                    changes = true;
-                }
+        if (fieldInfo.isExplicitlyFinal() && value != UnknownValue.NO_VALUE) {
+            if (!fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), value);
+                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(value);
+                changes = true;
+            }
+            if (value.isNotNull(fieldProperties) == Boolean.TRUE &&
+                    !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                log(ANALYSER, "Mark field {} as not null, given that it is final and the value initializes to not null",
+                        fieldInfo.fullyQualifiedName());
+                fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), true);
+                changes = true;
             }
         }
         if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get()) &&
@@ -261,8 +258,8 @@ public class FieldAnalyser {
                     " is not effectively final (@Final)");
         }
 
-        if (fieldInfo.fieldAnalysis.initialValue.isSet()) {
-            Value fieldValue = fieldInfo.fieldAnalysis.initialValue.get();
+        if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+            Value fieldValue = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
             CheckConstant.checkConstant(fieldValue, fieldInfo.type, fieldInfo.fieldInspection.get().annotations,
                     (valueToTest, typeMsg) -> {
                         typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +

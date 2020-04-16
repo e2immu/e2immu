@@ -95,6 +95,7 @@ public class EvaluateConstants {
 
     @Final
     @NotNull
+    @Linked(type = AnnotationType.VERIFY_ABSENT)
     private String effectivelyFinal;
 
     @Final
@@ -103,12 +104,13 @@ public class EvaluateConstants {
     private String constant;
 
     public EvaluateConstants(@NullNotAllowed String in) {
-        if(in == null) throw new UnsupportedOperationException();
+        if (in == null) throw new UnsupportedOperationException();
         effectivelyFinal = in;
         constant = "abc";
     }
 
     @NotNull
+    @Independent
     public String getEffectivelyFinal() {
         return effectivelyFinal;
     }

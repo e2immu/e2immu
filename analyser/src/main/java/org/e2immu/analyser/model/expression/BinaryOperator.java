@@ -82,6 +82,7 @@ public class BinaryOperator implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value l = lhs.evaluate(evaluationContext, visitor);
         Value r = rhs.evaluate(evaluationContext, visitor);
+        if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
 
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject) {
             if (l.equals(r)) return BoolValue.TRUE;

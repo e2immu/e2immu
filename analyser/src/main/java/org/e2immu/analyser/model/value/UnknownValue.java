@@ -23,8 +23,9 @@ import org.e2immu.analyser.model.Value;
 
 public class UnknownValue implements Value {
     public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("<unknown value>");
+
+    // used if we don't know yet which value a variable will have
     public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
-    public static final UnknownValue DELAYED_VALUE = new UnknownValue("<delayed value>");
 
     private final String msg;
 
