@@ -21,14 +21,13 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 
-public class UnknownValue implements Value {
-    public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("<unknown value>");
-    public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
-    public static final UnknownValue DELAYED_VALUE = new UnknownValue("<delayed value>");
+public class ErrorValue implements Value {
+    public static final ErrorValue DIVISION_BY_ZERO = new ErrorValue("division by zero");
+    public static final ErrorValue NULL_POINTER_EXCEPTION = new ErrorValue("null pointer exception");
 
     private final String msg;
 
-    private UnknownValue(String msg) {
+    private ErrorValue(String msg) {
         this.msg = msg;
     }
 

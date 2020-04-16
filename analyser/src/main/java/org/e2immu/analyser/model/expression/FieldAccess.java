@@ -20,9 +20,8 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -93,7 +92,7 @@ public class FieldAccess implements Expression {
         Value scope = expression.evaluate(evaluationContext, visitor);
         Value value;
         if (scope instanceof NullValue) {
-            value = NullValue.NULL_POINTER_EXCEPTION;
+            value = ErrorValue.NULL_POINTER_EXCEPTION;
         } else {
             value = new VariableValue(variable);
         }

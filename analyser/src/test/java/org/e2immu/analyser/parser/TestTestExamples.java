@@ -50,6 +50,16 @@ public class TestTestExamples {
     }
 
     @Test
+    public void testEvaluateConstants() throws IOException {
+        goTest("EvaluateConstants", 2);
+    }
+
+    @Test
+    public void testEvaluationErrors() throws IOException {
+        goTest("EvaluationErrors", 2);
+    }
+
+    @Test
     public void testFieldResolution() throws IOException {
         goTest("FieldResolution");
     }

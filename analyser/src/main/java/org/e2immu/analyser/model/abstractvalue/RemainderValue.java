@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -39,7 +40,7 @@ public class RemainderValue implements Value {
     public static Value remainder(Value l, Value r) {
 
         if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
-        if (r instanceof NumericValue && r.toInt().value == 0) return UnknownValue.DIVISION_BY_ZERO;
+        if (r instanceof NumericValue && r.toInt().value == 0) return ErrorValue.DIVISION_BY_ZERO;
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof IntValue && r instanceof IntValue)
             return new IntValue(l.toInt().value % r.toInt().value);

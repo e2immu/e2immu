@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -126,7 +127,7 @@ public class Assignment implements Expression {
         Value t = target.evaluate(evaluationContext, visitor);
         Value result;
         if(t instanceof NullValue) {
-            result = NullValue.NULL_POINTER_EXCEPTION;
+            result = ErrorValue.NULL_POINTER_EXCEPTION;
         } else {
             result = value.evaluate(evaluationContext, visitor);
         }

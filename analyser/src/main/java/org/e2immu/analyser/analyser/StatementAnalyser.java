@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -159,7 +160,8 @@ public class StatementAnalyser {
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
             variableProperties.create(lvr, VariableProperty.CREATED);
             if (localVariableCreation.expression != EmptyExpression.EMPTY_EXPRESSION) {
-                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression, variableProperties);
+                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
+                        variableProperties, statement);
                 if (pair.v) changes = true;
                 variableProperties.setValue(lvr, pair.k);
             }
@@ -168,7 +170,8 @@ public class StatementAnalyser {
         // PART 5: computing linking between local variables and fields, parameters
 
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
-            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression, variableProperties);
+            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
+                    variableProperties, statement);
             Value value = pair.k;
             if (pair.v) changes = true;
             Set<Variable> linkTo = value.linkedVariables(variableProperties);
@@ -185,7 +188,8 @@ public class StatementAnalyser {
             value = null;
         } else {
             try {
-                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(codeOrganization.expression, variableProperties);
+                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(codeOrganization.expression,
+                        variableProperties, statement);
                 if (pair.v) changes = true;
                 value = pair.k;
             } catch (RuntimeException rte) {
@@ -217,9 +221,12 @@ public class StatementAnalyser {
         // PART 8: checks for IfElse
 
         if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
-            log(ANALYSER, "condition in if statement is constant {}", value);
-            typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                    ", if statement evaluates to constant");
+            if(!statement.errorValue.isSet()) {
+                log(ANALYSER, "condition in if statement is constant {}", value);
+                typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                        ", if statement evaluates to constant");
+                statement.errorValue.set(true);
+            }
         }
 
         // PART 9: the primary block, if it's there
@@ -257,7 +264,8 @@ public class StatementAnalyser {
                     valueForSubStatement = null;
                 } else {
                     // real expression
-                    Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(subStatements.expression, variableProperties);
+                    Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(subStatements.expression,
+                            variableProperties, statement);
                     valueForSubStatement = pair.k;
                     if (pair.v) changes = true;
                     conditions.add(valueForSubStatement);
@@ -281,7 +289,7 @@ public class StatementAnalyser {
 
         // finally there are the updaters
         for (Expression updater : codeOrganization.updaters) {
-            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties);
+            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
             if (pair.v) changes = true;
         }
 
@@ -290,17 +298,31 @@ public class StatementAnalyser {
 
     // recursive evaluation of an Expression
 
-    private Pair<Value, Boolean> computeVariablePropertiesOfExpression(Expression expression, VariableProperties variableProperties) {
+    private Pair<Value, Boolean> computeVariablePropertiesOfExpression(Expression expression,
+                                                                       VariableProperties variableProperties,
+                                                                       NumberedStatement statementForErrorReporting) {
         AtomicBoolean changes = new AtomicBoolean();
         Value value = expression.evaluate(variableProperties,
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     if (localChanges) changes.set(true);
+                    if (intermediateValue instanceof ErrorValue) {
+                        log(ANALYSER, "Encountered error in expression {} in {}",
+                                localExpression.getClass(), methodInfo.fullyQualifiedName());
+                        if (!statementForErrorReporting.errorValue.isSet()) {
+                            typeContext.addMessage(Message.Severity.ERROR,
+                                    "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
+                            statementForErrorReporting.errorValue.set(true);
+                        }
+                    } else if (intermediateValue == UnknownValue.DELAYED_VALUE) {
+                        log(ANALYSER, "Delaying analysis of expression {} in {}",
+                                localExpression.getClass(),
+                                methodInfo.fullyQualifiedName());
+                    }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
                     doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
                     if (doImplicitNullCheck(localExpression, lvp)) changes.set(true);
                     if (analyseCallsWithParameters(localExpression, lvp)) changes.set(true);
                 });
-
         return new Pair<>(value, changes.get());
     }
 

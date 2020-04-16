@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.Value;
 
 public class NullValue implements Value, Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
-    public static final NullValue NULL_POINTER_EXCEPTION = new NullValue();
 
     private NullValue() {
     }

@@ -301,11 +301,13 @@ public class MethodAnalyser {
                         value = numberedStatements.stream()
                                 .filter(ns -> ns.returnValue.isSet())
                                 .map(ns -> ns.returnValue.get())
-                                .findAny().orElse(UnknownValue.NO_VALUE);
+                                .findAny().orElse(UnknownValue.DELAYED_VALUE);
                     } else {
                         value = UnknownValue.NO_VALUE;
                     }
-                    methodAnalysis.singleReturnValue.set(value);
+                    if(value != UnknownValue.DELAYED_VALUE) {
+                        methodAnalysis.singleReturnValue.set(value);
+                    }
                 }
             } else {
                 if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {

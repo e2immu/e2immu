@@ -22,13 +22,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // cannot be @Context class, its parent contains a @Container field
 @Container
@@ -62,11 +63,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Value objectValue = computedScope.evaluate(evaluationContext, visitor);
         Value result;
         if (objectValue instanceof NullValue) {
-            result = NullValue.NULL_POINTER_EXCEPTION;
+            result = ErrorValue.NULL_POINTER_EXCEPTION;
         } else {
             List<Value> parameters = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
-            result = new MethodValue(methodInfo, objectValue, parameters);
+            if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
+                Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
+                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                    result = singleValue;
+                } else {
+                    result = new MethodValue(methodInfo, objectValue, parameters);
+                }
+            } else {
+                result = UnknownValue.DELAYED_VALUE;
+            }
         }
         visitor.visit(this, evaluationContext, result);
         return result;

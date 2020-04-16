@@ -202,8 +202,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     private static void addExceptionTypes(MethodInspection.MethodInspectionBuilder builder,
-                                   NodeList<ReferenceType> thrownExceptions,
-                                   TypeContext typeContext) {
+                                          NodeList<ReferenceType> thrownExceptions,
+                                          TypeContext typeContext) {
         for (ReferenceType referenceType : thrownExceptions) {
             ParameterizedType pt = ParameterizedType.from(typeContext, referenceType);
             builder.addExceptionType(pt);
@@ -529,5 +529,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean hasOverrides() {
         return !typeInfo.overrides(this).isEmpty();
+    }
+
+
+    public boolean cannotBeOverridden() {
+        return isStatic ||
+                methodInspection.get().modifiers.contains(MethodModifier.FINAL)
+                || methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)
+                || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
     }
 }

@@ -14,7 +14,7 @@ public class MethodMustBeStatic {
 
     static class ChildClass extends ParentClass {
 
-        String t;
+        private String t;
 
         public ChildClass(String s, String t) {
             super(s);

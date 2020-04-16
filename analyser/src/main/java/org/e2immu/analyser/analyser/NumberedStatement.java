@@ -42,6 +42,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Boolean> escapes = new SetOnce<>(); // escapes, on the beginning of a block
     public SetOnce<Boolean> returnsNotNull = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Value> returnValue = new SetOnce<>(); // if returns, whether not null or not
+    public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
 
     public SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 

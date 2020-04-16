@@ -16,11 +16,9 @@
  *
  */
 
-package org.e2immu.analyser.testexample.withannotatedapi;
+package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
-
-import java.util.Objects;
 
 public class EvaluateConstants {
 
@@ -45,7 +43,9 @@ public class EvaluateConstants {
     @NotModified
     @Constant(stringValue = "b")
     public static String print() {
+        // ERROR: if statement evaluates to constant
         if (ee()) return "a";
+        // ERROR: not a single return statement, so we cannot compute @Constant
         return "b";
     }
 
@@ -68,7 +68,7 @@ public class EvaluateConstants {
     final boolean l = k > 400;
 
     @NotModified
-    @Constant(intValue = 702)
+    @Constant(intValue = 162870)
     public int allThree() {
         return i + j * k;
     }
@@ -103,7 +103,8 @@ public class EvaluateConstants {
     private String constant;
 
     public EvaluateConstants(@NullNotAllowed String in) {
-        effectivelyFinal = Objects.requireNonNull(in);
+        if(in == null) throw new UnsupportedOperationException();
+        effectivelyFinal = in;
         constant = "abc";
     }
 
