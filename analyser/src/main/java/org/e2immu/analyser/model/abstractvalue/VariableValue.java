@@ -62,13 +62,18 @@ public class VariableValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
+        if (value.parameterizedType().isPrimitive()) return true;
         if (evaluationContext.isNotNull(value)) return true;
         if (value instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) value).fieldInfo;
             // quite possibly the field is final and has been annotated...
             return fieldInfo.isNotNull(evaluationContext.getTypeContext());
         }
-        if (value.parameterizedType().isPrimitive()) return true;
+        if (value instanceof ParameterInfo) {
+            ParameterInfo parameterInfo  = ((ParameterInfo) value);
+            // quite possibly the field is final and has been annotated...
+            return parameterInfo.isNullNotAllowed(evaluationContext.getTypeContext());
+        }
         return null; // we don't know yet
     }
 

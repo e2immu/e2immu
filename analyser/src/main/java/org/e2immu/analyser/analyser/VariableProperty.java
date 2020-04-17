@@ -24,8 +24,8 @@ public enum VariableProperty {
     // read multiple times will be used in Flow partitioning
     READ_MULTIPLE_TIMES("read+"),
 
-    MODIFIED("modified"),
-    MODIFIED_MULTIPLE_TIMES("modified+"),
+    ASSIGNED("modified"),
+    ASSIGNED_MULTIPLE_TIMES("modified+"),
 
     CREATED("created"),
     CONTENT_MODIFIED("content modified");

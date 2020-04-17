@@ -20,3 +20,65 @@ Until a field is declared effectively final, or not, its current value starts wi
 
 Method calls can potentially return constant values.
 Until it has been established that there is not a single return statement, `NO_VALUE` is returned.
+
+=== Overview of analysis
+
+The analyser produces and validates annotations.
+At the same time, it emits errors for some common programming errors.
+
+The evaluation context keeps a map of properties of variables during the sequential evaluation of the statements of a method.
+It is a hierarchical structure, as local variables can be created at many levels.
+It also must contain the fields that are being referred to, since fields can be assigned to multiple times in a method, or can appear in null checks.
+
+This map is re-created at each round of evaluation.
+It important to have a mechanism to avoid drawing conclusions from iterative steps, as detailed in the following example:
+
+[source]
+----
+public String method(String input) {
+  if(input == null) throw new NullPointerException();
+  ...
+}
+----
+
+As a result of the first iteration, the analyser will decide that the parameter `input` receives the <<nullnotallowed-annotation>> annotation.
+If we were to add the is-not-null property to the evaluation context at the second iteration, the conclusion will be that `input == null` results in a constant `false`, which would result in the analyser issuing an error for a redundant `if` statement.
+
+In this section we first detail how each we compute each of the annotations.
+
+@Constant for methods::
+Immediately after evaluating the main expression of a statement, the statement analyser looks at return statements.
+If the evaluation renders a definite value (different from `NO_VALUE`), then it writes this value in `numberedStatement.returnValue`.
+At the end of the method analysis, it counts the number of return statements in the method.
+If there is only one, and it has a definite value (i.e., `numberedStatement.returnValue` is different from `NO_VALUE`), the code writes `methodAnalysis.singleReturnValue` to this value.
+If the value turns out to be a constant, then the code appends a <<constant-annotation>> to the method.
+In the case of multiple return statements, it writes an `Instance` value.
+The method analysis `check` method validates if the annotation corresponds to this value.
+Note that evaluation of the `MethodCall` and `MethodReference` expressions makes use of `methodAnalysis.singleReturnValue`.
+
+@Fluent for methods::
+At the end of the method analysis, the code computes whether all return statements return `this`, or the result of another fluent call.
+If this is the case, it directly writes a <<fluent-annotation>>.
+If the method call has no annotation or negative marker yet, the code delays a decision.
+If there is one example of a non-fluent statement, the code writes a negative marker.
+The method analysis `check` method validates source code annotations against the presence of computed <<fluent-annotation>> annotations.
+
+@NotNull for methods::
+In the method analyser, the code for <<notnull-annotation>> behaves identically to that of <<fluent-annotation>> and <<identity-annotation>>, basing its decision on the `numberedStatement.returnsNotNull` boolean.
+The statement analyser potentially writes this boolean immediately after having evaluated the main expression of the statement, based on the `isNotNull` property of the evaluation result.
+The most interesting implementations of this property are in `VariableValue` and `MethodValue`.
+Others are mostly trivial: constants are not null unless they are the `null` constant, operator values are generally not null, etc.
+
+@Identity for methods::
+Similarly to the <<fluent-annotation>> computation, the method analyser computes whether all return statements return the value of the first parameter, or the result of a method call which has been assigned <<identity-annotation>> already.
+If that method call has no annotation yet, the code delays a decision.
+If all return statements are identity, the code writes the annotation.
+As soon as one return statement is not fluent, the code writes a negative marker to indicate that the method is not identity.
+The method analysis `check` method validates source code annotations against the presence of computed <<identity-annotation>> annotations.
+
+Now we explain how we determine the errors:
+
+Unused local variable::
+Finally, based on `methodAnalysis.unusedLocalVariables`, we emit errors during checking.
+
+Unused assignment:: It makes no sense to assign a value to a variable, and then assign another value before reading the former.

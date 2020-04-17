@@ -76,15 +76,16 @@ public class MethodAnalyser {
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
         check(methodInfo, Independent.class, typeContext.independent.get());
+        check(methodInfo, NotModified.class, typeContext.notModified.get());
 
-        if (!methodInfo.isConstructor && methodInfo.returnType() != Primitives.PRIMITIVES.voidParameterizedType) {
+        if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
             check(methodInfo, NotNull.class, typeContext.notNull.get());
-        }
-        if (!methodInfo.isConstructor) {
-            check(methodInfo, NotModified.class, typeContext.notModified.get());
             check(methodInfo, Fluent.class, typeContext.fluent.get());
             check(methodInfo, Identity.class, typeContext.identity.get());
 
+            // NOTE: the reason we do not check @Constant in the same way is that there can be many types
+            // of constants, and we have not yet provided them all in @Constant. At the same time,
+            // singleReturnValue is used in expressions; this is faster and more reliable
             Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
             boolean haveConstantAnnotation =
                     CheckConstant.checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
@@ -309,17 +310,11 @@ public class MethodAnalyser {
                     }
                     if (value != UnknownValue.NO_VALUE) {
                         methodAnalysis.singleReturnValue.set(value);
+                        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+                        methodAnalysis.annotations.put(constantAnnotation, true);
+                        log(CONSTANT, "Added @Constant annotation on {}", methodInfo.fullyQualifiedName());
                         changes = true;
                     }
-                }
-            } else {
-                if (!methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                    log(ANALYSER, "Set NOT @Identity on " + methodInfo.fullyQualifiedName() + ", no return statements");
-                    methodAnalysis.annotations.put(typeContext.identity.get(), false);
-                }
-                if (!methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                    log(ANALYSER, "Set NOT @Fluent on " + methodInfo.fullyQualifiedName() + ", no return statements");
-                    methodAnalysis.annotations.put(typeContext.fluent.get(), false);
                 }
             }
 
@@ -625,7 +620,7 @@ public class MethodAnalyser {
             Set<VariableProperty> properties = entry.getValue().properties;
             Variable variable = entry.getKey();
             if (variable instanceof ParameterInfo) {
-                if (properties.contains(VariableProperty.MODIFIED)
+                if (properties.contains(VariableProperty.ASSIGNED)
                         && !methodInfo.methodAnalysis.parameterModifications.isSet((ParameterInfo) variable)) {
                     typeContext.addMessage(Message.Severity.ERROR,
                             "Parameter " + variable.detailedString() + " should not be assigned (maybe for now)");
@@ -646,14 +641,14 @@ public class MethodAnalyser {
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!methodAnalysis.fieldModifications.isSet(fieldInfo)) {
-                    boolean isModified = properties.contains(VariableProperty.MODIFIED);
+                    boolean isModified = properties.contains(VariableProperty.ASSIGNED);
                     methodAnalysis.fieldModifications.put(fieldInfo, isModified);
                     log(ANALYSER, "Mark that {} is modified? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
                 Value currentValue = entry.getValue().getCurrentValue();
-                if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.MODIFIED) &&
-                        !properties.contains(VariableProperty.MODIFIED_MULTIPLE_TIMES) &&
+                if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.ASSIGNED) &&
+                        !properties.contains(VariableProperty.ASSIGNED_MULTIPLE_TIMES) &&
                         !methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     log(ANALYSER, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
                     methodAnalysis.fieldAssignments.put(fieldInfo, currentValue);

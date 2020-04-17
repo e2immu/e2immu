@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -344,13 +343,18 @@ public class StatementAnalyser {
             Variable at = assignment.target.assignmentTarget().orElseThrow();
             // PART 4: more filling up of the variable properties, this time for assignments
             if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
-                if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
+                Boolean isNotNull = value.isNotNull(variableProperties);
+                if (isNotNull == Boolean.TRUE) {
+                    variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
+                    log(ANALYSER, "Added check-null property of {}", at.detailedString());
+                } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
                     log(ANALYSER, "Cleared check-null property of {}", at.detailedString());
                 }
-                if (!variableProperties.addProperty(at, VariableProperty.MODIFIED)) {
-                    variableProperties.addProperty(at, VariableProperty.MODIFIED_MULTIPLE_TIMES);
+
+                if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
+                    variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
                 }
-                if (value != null) {
+                if (value != UnknownValue.NO_VALUE) {
                     variableProperties.setValue(at, value);
                     Set<Variable> linkTo = value.linkedVariables(variableProperties);
                     log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),

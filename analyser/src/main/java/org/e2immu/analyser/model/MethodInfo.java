@@ -31,6 +31,7 @@ import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
@@ -537,5 +538,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 methodInspection.get().modifiers.contains(MethodModifier.FINAL)
                 || methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)
                 || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
+    }
+
+    public boolean isVoid() {
+        return returnType() == Primitives.PRIMITIVES.voidParameterizedType;
     }
 }

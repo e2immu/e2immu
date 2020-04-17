@@ -1,9 +1,15 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.IntConstant;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.Constant;
 
 import java.util.List;
@@ -80,5 +86,29 @@ public class CheckConstant {
 
     private static boolean isStringType(ParameterizedType parameterizedType) {
         return isType(parameterizedType, Set.of("java.lang.String"));
+    }
+
+    public static AnnotationExpression createConstantAnnotation(TypeContext typeContext, Value value) {
+        Expression test;
+        Expression valueExpression;
+        Expression computed = typeContext.constant.get().expressions.get().get(0);
+        if (value instanceof NumericValue || value instanceof StringConstant || value instanceof BoolValue) {
+            test = new MemberValuePair("test", BooleanConstant.TRUE);
+            if (value instanceof NumericValue) {
+                int constant = value.toInt().value;
+                valueExpression = new MemberValuePair("intValue", new IntConstant(constant));
+            } else if (value instanceof BoolValue) {
+                boolean constant = ((BoolValue) value).value;
+                valueExpression = new MemberValuePair("boolValue", new BooleanConstant(constant));
+            } else {
+                String constant = ((StringConstant) value).getValue();
+                valueExpression = new MemberValuePair("stringValue", new StringConstant(constant));
+            }
+        } else {
+            test = null;
+            valueExpression = null;
+        }
+        List<Expression> expressions = test == null ? List.of(computed) : List.of(computed, test, valueExpression);
+        return AnnotationExpression.fromAnalyserExpressions(typeContext.constant.get().typeInfo, expressions);
     }
 }
