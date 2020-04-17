@@ -60,6 +60,7 @@ public class Logger {
         NULL_NOT_ALLOWED,
         NOT_MODIFIED,
         CONSTANT,
+        NOT_NULL,
 
         SIDE_EFFECT,
 

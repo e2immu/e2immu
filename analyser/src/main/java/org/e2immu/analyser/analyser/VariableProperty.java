@@ -19,6 +19,10 @@
 package org.e2immu.analyser.analyser;
 
 public enum VariableProperty {
+
+    // we know this variable can never be null (effectively final)
+    PERMANENTLY_NOT_NULL("permanently not null"),
+
     CHECK_NOT_NULL("check not null"),
     READ("read"),
     // read multiple times will be used in Flow partitioning

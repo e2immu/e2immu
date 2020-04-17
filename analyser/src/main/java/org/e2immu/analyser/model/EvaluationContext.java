@@ -32,7 +32,7 @@ public interface EvaluationContext {
 
     MethodInfo getCurrentMethod();
 
-    EvaluationContext child(Value conditional);
+    EvaluationContext child(Value conditional, Runnable uponUsingConditional);
 
     void create(Variable variable, Value initialValue, VariableProperty... initialProperties);
 

@@ -2,4 +2,4 @@
 **/.gradle/
 **/out/
 .idea
-documentation/**/.*pdf
+documentation/**/*.pdf

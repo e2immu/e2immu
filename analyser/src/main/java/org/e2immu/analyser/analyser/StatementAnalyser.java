@@ -96,16 +96,18 @@ public class StatementAnalyser {
                                 ParameterInfo parameterInfo = (ParameterInfo) variable;
                                 if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
                                     parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
+                                    if (null != variableProperties.uponUsingConditional)
+                                        variableProperties.uponUsingConditional.run();
                                     log(NULL_NOT_ALLOWED, "Mark parameter {} as @NullNotAllowed", variable.detailedString());
                                     changes = true;
                                 }
                             } else if (variable instanceof FieldReference) {
-                                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                                if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                                    fieldInfo.fieldAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                                    log(NULL_NOT_ALLOWED, "Mark field {} as @NullNotAllowed", fieldInfo.fullyQualifiedName());
-                                    changes = true;
-                                }
+                                // NOTE: because of multi-threading, fields that are not effectively final
+                                // cannot be marked @NotNull. See notes in documentation.
+                                FieldInfo fieldInfo = ((FieldReference)variable).fieldInfo;
+                                // take action, but only when during the construction phase of the method
+                                // (which can be more than the constructor)
+                                // TODO
                             }
                         }
                     }
@@ -214,6 +216,7 @@ public class StatementAnalyser {
                 Boolean notNull = value.isNotNull(variableProperties);
                 if (notNull != null && !statement.returnsNotNull.isSet()) {
                     statement.returnsNotNull.set(notNull);
+                    log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
                     changes = true;
                 }
             }
@@ -229,13 +232,20 @@ public class StatementAnalyser {
 
         // PART 8: checks for IfElse
 
-        if (statement.statement instanceof IfElseStatement && (value == BoolValue.FALSE || value == BoolValue.TRUE)) {
-            if (!statement.errorValue.isSet()) {
+        Runnable uponUsingConditional;
+        if (statement.statement instanceof IfElseStatement) {
+            if ((value == BoolValue.FALSE || value == BoolValue.TRUE) && !statement.errorValue.isSet()) {
                 log(ANALYSER, "condition in if statement is constant {}", value);
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                         ", if statement evaluates to constant");
                 statement.errorValue.set(true);
             }
+            uponUsingConditional = () -> {
+                log(ANALYSER, "Triggering errorValue true on if-else-statement");
+                statement.errorValue.set(true);
+            };
+        } else {
+            uponUsingConditional = null;
         }
 
         // PART 9: the primary block, if it's there
@@ -245,7 +255,7 @@ public class StatementAnalyser {
         if (!startOfBlocks.isEmpty()) {
 
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            VariableProperties variablePropertiesWithValue = variableProperties.copyWithConditional(value);
+            EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
 
             // PART 10: other conditions, including the else, switch entries, catch clauses
@@ -280,9 +290,9 @@ public class StatementAnalyser {
                     if (pair.v) changes = true;
                     conditions.add(valueForSubStatement);
                 }
-                VariableProperties copyForElse = valueForSubStatement == null ?
+                EvaluationContext copyForElse = valueForSubStatement == null ?
                         variableProperties :
-                        variableProperties.copyWithConditional(valueForSubStatement);
+                        variableProperties.child(valueForSubStatement, uponUsingConditional);
                 computeVariablePropertiesOfBlock(statement.blocks.get().get(count), copyForElse);
 
                 // if the "then" block ends in return or throw (we recursively need to know)
@@ -386,7 +396,7 @@ public class StatementAnalyser {
                             changes = true;
                         }
                     }
-                    variableProperties.addProperty(variable, VariableProperty.CHECK_NOT_NULL);
+                    variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
                 }
             }
         }
@@ -451,7 +461,7 @@ public class StatementAnalyser {
                     ((ParameterInfo) v).parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
                     changes = true;
                 }
-                variableProperties.addProperty(v, VariableProperty.CHECK_NOT_NULL);
+                variableProperties.addProperty(v, VariableProperty.PERMANENTLY_NOT_NULL);
             }
         }
         return changes;

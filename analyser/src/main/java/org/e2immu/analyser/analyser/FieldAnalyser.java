@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -100,15 +101,16 @@ public class FieldAnalyser {
                             }
                         }
                         if (consistentValue != null) {
-                            if (consistentValue instanceof org.e2immu.analyser.model.Constant) {
-                                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(consistentValue);
-                                log(ANALYSER, "Set initial value of effectively final {} to {}", fieldInfo.fullyQualifiedName(),
-                                        consistentValue);
-                                changes = true;
+                            Value valueToSet;
+                            if (!(consistentValue instanceof org.e2immu.analyser.model.Constant)) {
+                                valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
                             } else {
-                                log(ANALYSER, "Not setting initial value of effectively final {}, not constant but {}",
-                                        fieldInfo.fullyQualifiedName(), consistentValue);
+                                valueToSet = consistentValue;
                             }
+                            fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+                            log(ANALYSER, "Setting initial value of effectively final {} to {}",
+                                    fieldInfo.fullyQualifiedName(), consistentValue);
+
                             if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
                                 Boolean nonNull = consistentValue.isNotNull(fieldProperties);
                                 if (nonNull != null) {
@@ -125,8 +127,14 @@ public class FieldAnalyser {
 
         if (fieldInfo.isExplicitlyFinal() && value != UnknownValue.NO_VALUE) {
             if (!fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), value);
-                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(value);
+                Value valueToSet;
+                if (!(value instanceof org.e2immu.analyser.model.Constant)) {
+                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
+                } else {
+                    valueToSet = value;
+                }
+                log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), valueToSet);
+                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
                 changes = true;
             }
             if (value.isNotNull(fieldProperties) == Boolean.TRUE &&

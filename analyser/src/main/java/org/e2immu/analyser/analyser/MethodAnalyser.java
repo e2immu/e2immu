@@ -286,13 +286,13 @@ public class MethodAnalyser {
                         .count() == returnStatements;
                 if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
                     methodAnalysis.annotations.put(typeContext.notNull.get(), true);
-                    log(ANALYSER, "Set @NotNull");
+                    log(NOT_NULL, "Set @NotNull on {}", methodInfo.fullyQualifiedName());
                     changes = true;
                 }
                 boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
                 if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
                     methodAnalysis.annotations.put(typeContext.notNull.get(), false);
-                    log(ANALYSER, "Set NOT @Identity");
+                    log(NOT_NULL, "Set NOT @NotNull on {}", methodInfo.fullyQualifiedName());
                     changes = true;
                 }
 

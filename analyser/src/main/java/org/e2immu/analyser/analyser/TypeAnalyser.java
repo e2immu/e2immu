@@ -195,11 +195,17 @@ public class TypeAnalyser {
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         Value value;
         Boolean isFinal = fieldInfo.isFinal(typeContext);
+        VariableProperty[] properties = {};
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+                // most likely value here is "variable value"
+                if(value instanceof UnknownValue) throw new UnsupportedOperationException();
             } else {
                 value = UnknownValue.NO_VALUE;
+            }
+            if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
+                properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
             }
         } else if (null == isFinal) {
             value = UnknownValue.NO_VALUE;
@@ -208,7 +214,7 @@ public class TypeAnalyser {
             // so we start off with a variable value
             value = new VariableValue(fieldReference);
         }
-        fieldProperties.create(fieldReference, value);
+        fieldProperties.create(fieldReference, value, properties);
     }
 
     private boolean detectContainer(SortedType sortedType) {

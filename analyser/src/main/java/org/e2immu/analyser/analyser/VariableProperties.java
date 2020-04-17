@@ -65,6 +65,7 @@ class VariableProperties implements EvaluationContext {
     final VariableProperties parent;
     final VariableProperties root;
     Value conditional; // any conditional added to this block
+    final Runnable uponUsingConditional;
     final TypeContext typeContext;
     final MethodInfo currentMethod;
     final This thisVariable;
@@ -74,23 +75,21 @@ class VariableProperties implements EvaluationContext {
         this.parent = null;
         this.root = this;
         conditional = null;
+        uponUsingConditional = null;
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
         this.thisVariable = thisVariable;
         this.dependencyGraph = new DependencyGraph<>();
     }
 
-    public VariableProperties copyWithConditional(Value conditional) {
-        return new VariableProperties(this, currentMethod, conditional);
-    }
-
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, methodInfo, conditional);
+        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional);
     }
 
-    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional) {
+    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional) {
         this.parent = parent;
         this.root = parent.root;
+        this.uponUsingConditional = uponUsingConditional;
         this.conditional = conditional;
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
@@ -109,8 +108,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public EvaluationContext child(Value conditional) {
-        return copyWithConditional(conditional);
+    public EvaluationContext child(Value conditional, Runnable uponUsingConditional) {
+        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional);
     }
 
     public void addToConditional(Value value) {
@@ -228,7 +227,8 @@ class VariableProperties implements EvaluationContext {
         // step 1. is the variable defined at this level? look at the properties
         AboutVariable aboutVariable = variableProperties.get(variable);
         if (aboutVariable != null) {
-            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
+            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL)
+                    || aboutVariable.properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
         }
         // step 2. check the conditional
         if (conditional != null) {
