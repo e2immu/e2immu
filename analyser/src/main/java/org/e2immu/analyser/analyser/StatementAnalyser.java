@@ -104,7 +104,7 @@ public class StatementAnalyser {
                             } else if (variable instanceof FieldReference) {
                                 // NOTE: because of multi-threading, fields that are not effectively final
                                 // cannot be marked @NotNull. See notes in documentation.
-                                FieldInfo fieldInfo = ((FieldReference)variable).fieldInfo;
+                                //FieldInfo fieldInfo = ((FieldReference)variable).fieldInfo;
                                 // take action, but only when during the construction phase of the method
                                 // (which can be more than the constructor)
                                 // TODO

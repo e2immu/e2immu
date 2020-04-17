@@ -84,7 +84,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public boolean hasBeenDefined() {
-        return hasBeenInspected() && parameterInspection.get().owner.hasBeenDefined();
+        return parameterInspection.isSet() && (parameterInspection.get().owner == null ||
+                parameterInspection.get().owner.hasBeenDefined());
     }
 
     @Override

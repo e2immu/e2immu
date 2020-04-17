@@ -56,9 +56,26 @@ public class UnusedLocalVariableChecks {
 
     private static void checkForEach() {
         int[] integers = {1, 2, 3};
-        for(int loopVar: integers) {
+        for (int loopVar : integers) {
             // ERROR 4: loopVar is not used
             System.out.println("hello!");
         }
+    }
+
+    private static String someMethod(String a) {
+        return a.toLowerCase();
+    }
+
+    private static String checkDoubleMethod(String param) {
+        String b = someMethod(param);
+        if (b == null) {
+            if (param.contains("a")) {
+                String a = someMethod("xzy").toString();
+                if (a == null) {
+                    return b + "c";
+                }
+            }
+        }
+        return "c";
     }
 }

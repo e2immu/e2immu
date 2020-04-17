@@ -47,11 +47,13 @@ public class InstanceOf implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value value = expression.evaluate(evaluationContext, visitor);
         Value result;
-        if (value instanceof NullValue) {
+        if (value instanceof UnknownValue) {
+            result = value;
+        } else if (value instanceof NullValue) {
             result = BoolValue.FALSE;
         } else if (value instanceof VariableValue) {
             result = new InstanceOfValue(((VariableValue) value).value, parameterizedType);
-        } else if(value instanceof MethodValue) {
+        } else if (value instanceof MethodValue) {
             result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
         } else if (value instanceof ClazzValue) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((ClazzValue) value).value));
@@ -59,7 +61,7 @@ public class InstanceOf implements Expression {
             // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
             // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
             // horrible practice. We leave the bug for now.
-            throw new UnsupportedOperationException("? have expression of " + expression.getClass()+" value is "+value+" of "+value.getClass());
+            throw new UnsupportedOperationException("? have expression of " + expression.getClass() + " value is " + value + " of " + value.getClass());
         }
         visitor.visit(this, evaluationContext, result);
         return result;

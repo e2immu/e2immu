@@ -154,8 +154,8 @@ public class ExpressionContext {
     // method modifies the blockBuilder...
     private void parseStatement(@NullNotAllowed Block.BlockBuilder blockBuilder, @NullNotAllowed @NotModified Statement statement, String labelOfStatement) {
         try {
-            if(statement.isLabeledStmt()) {
-                if(labelOfStatement != null) throw new UnsupportedOperationException();
+            if (statement.isLabeledStmt()) {
+                if (labelOfStatement != null) throw new UnsupportedOperationException();
                 String label = statement.asLabeledStmt().getLabel().asString();
                 parseStatement(blockBuilder, statement.asLabeledStmt().getStatement(), label);
                 return;
@@ -414,12 +414,18 @@ public class ExpressionContext {
                 BinaryExpr binaryExpr = (BinaryExpr) expression;
                 org.e2immu.analyser.model.Expression lhs = parseExpression(binaryExpr.getLeft());
                 org.e2immu.analyser.model.Expression rhs = parseExpression(binaryExpr.getRight());
-                TypeInfo typeInfo = null;
-                if (lhs.returnType().isPrimitiveOrStringNotVoid() || rhs.returnType().isPrimitiveOrStringNotVoid()) {
+                TypeInfo typeInfo;
+                if (lhs instanceof NullConstant) {
+                    typeInfo = rhs.returnType().typeInfo;
+                } else if (rhs instanceof NullConstant) {
+                    typeInfo = lhs.returnType().typeInfo;
+                } else if (lhs.returnType().isPrimitiveOrStringNotVoid() || rhs.returnType().isPrimitiveOrStringNotVoid()) {
                     ParameterizedType widestType = Primitives.PRIMITIVES.widestType(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())
                         throw new UnsupportedOperationException("? for " + lhs.returnType() + " and " + rhs.returnType());
                     typeInfo = widestType.typeInfo;
+                } else {
+                    typeInfo = null;
                 }
                 return new BinaryOperator(
                         lhs,
