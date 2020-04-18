@@ -520,11 +520,11 @@ public class MethodAnalyser {
                     Variable.detailedString(linkedVariables), directContentModification);
             for (Variable linkedVariable : linkedVariables) {
                 if ((linkedVariable instanceof FieldReference)) {
-                    if (!methodAnalysis.directContentModifications.isSet(linkedVariable)) {
+                    if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
                         boolean directlyModifiedField = directContentModification == Boolean.TRUE;
                         log(MODIFY_CONTENT, "MA: Mark that the content of {} has " + (directlyModifiedField ? "" : "not ") +
                                 "been modified", linkedVariable.detailedString());
-                        methodAnalysis.directContentModifications.put(linkedVariable, directlyModifiedField);
+                        methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
                         changes = true;
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {

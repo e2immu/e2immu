@@ -78,19 +78,15 @@ This annotation indicates that the field has been assigned to another field or p
 The annotation corresponds to the `fieldAnalysis.variablesLinkedToMe` set, which can be computed once all `methodAnalysis.fieldAssignments` booleans have been determined for the field, and, when positive, also the `methodAnalysis.fieldsLinkedToFieldsAndVariables` sets have been filled in.
 
 @NotModified for fields::
-The field analyser sets the annotation directly based on the `directContentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalyser.fieldRead`) should have `directContentModifications` set to true.
-+
-#TODO:# how do we solve indirect content modification? when a field is linked to another field?
+The field analyser sets the annotation directly based on the `contentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalyser.fieldRead`) should have `contentModifications` set to true.
+This implies that all linking should have been computed before `read` can be set to true.
 
 @NotModified for methods::
 
 @NotNull for fields::
-In the field analyser, the <<notnull-annotation>> is closely linked to the computation of effective finality.
-Only during the construction phase of what turns out to be an effectively final field, it makes sense to do null pointer checks:
-in a normal method, the thread can be interrupted between the check and the next statement.
-+
-#TODO:# it should be possible to have a not null not effectively private field (non-private fields must be effectively final) whose assignments are guaranteed to be not null.
-
+The computation consists of checking the not null property of the all assignments to the field, in the initialiser, and all the methods.
+It uses the `methodAnalysis.fieldAssignments` booleans as a precondition to check that all `methodAnalysis.fieldAssignmentValues` are valid.
+This implies that all linking should have been computed before `fieldAssignments` can be set to true.
 
 @NotNull for methods::
 In the method analyser, the code for <<notnull-annotation>> behaves identically to that of <<fluent-annotation>> and <<identity-annotation>>, basing its decision on the `numberedStatement.returnsNotNull` boolean.

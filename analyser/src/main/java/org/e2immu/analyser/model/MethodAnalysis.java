@@ -52,7 +52,7 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>();
 
     // used in the computation of content modification of fields
-    public final SetOnceMap<Variable, Boolean> directContentModifications = new SetOnceMap<>();
+    public final SetOnceMap<Variable, Boolean> contentModifications = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, Boolean> fieldRead = new SetOnceMap<>();
     public final SetOnce<Boolean> thisRead = new SetOnce<>();
 
