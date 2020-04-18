@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -52,16 +53,20 @@ public class FieldAnalyser {
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
-            FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            VariableProperties localVariableProperties;
-            if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
-                localVariableProperties = fieldProperties;
+            if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
+                FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+                VariableProperties localVariableProperties;
+                if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
+                    localVariableProperties = fieldProperties;
+                } else {
+                    localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
+                }
+                value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
+                fieldProperties.setValue(fieldReference, value);
+                log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
             } else {
-                localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
+                value = UnknownValue.NO_VALUE; // initialiser set, but to empty expression
             }
-            value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
-            fieldProperties.setValue(fieldReference, value);
-            log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
         } else {
             value = UnknownValue.NO_VALUE;
         }
@@ -165,8 +170,8 @@ public class FieldAnalyser {
         if (fieldInfo.isFinal(typeContext) == Boolean.FALSE && !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
             boolean allDefined = typeInspection.constructorAndMethodStream()
                     .allMatch(m -> m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo));
-            if(allDefined) {
-                boolean allAssignmentValuesNotNull =  typeInspection.constructorAndMethodStream()
+            if (allDefined) {
+                boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
                         .allMatch(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties));
                 fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), allAssignmentValuesNotNull);
                 log(NOT_NULL, "Set non-null of non-final {} to {}", fieldInfo.fullyQualifiedName(), allAssignmentValuesNotNull);

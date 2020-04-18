@@ -49,6 +49,6 @@ public class EmptyExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        return UnknownValue.UNKNOWN_VALUE;
+        return UnknownValue.NO_VALUE;
     }
 }
