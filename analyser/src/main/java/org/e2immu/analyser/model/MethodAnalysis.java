@@ -67,4 +67,11 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
+
+    public final SetOnce<Set<MethodInfo>> methodsOfOwnClassCalled = new SetOnce<>();
+    /**
+     * this one contains all methods called, and the transitive closure
+     */
+    public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
+
 }

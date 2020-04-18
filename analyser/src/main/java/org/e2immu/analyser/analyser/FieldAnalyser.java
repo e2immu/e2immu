@@ -92,6 +92,7 @@ public class FieldAnalyser {
                 changes = true;
             } else {
                 Boolean isModifiedOutsideConstructors = typeInspection.methods.stream()
+                        .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
                         .map(m -> m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo))
                         .reduce(false, TypeAnalyser.TERNARY_OR);
 

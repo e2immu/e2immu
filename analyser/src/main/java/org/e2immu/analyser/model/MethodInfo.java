@@ -540,7 +540,25 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
     }
 
+    public boolean isPrivate() {
+        return methodInspection.get().modifiers.contains(MethodModifier.PRIVATE);
+    }
+
     public boolean isVoid() {
         return returnType() == Primitives.PRIMITIVES.voidParameterizedType;
+    }
+
+    /**
+     * Note that this computation has to contain transitive calls.
+     *
+     * @return true if there is a non-private method in this class which calls this private method.
+     */
+    public boolean isCalledFromNonPrivateMethod() {
+        for (MethodInfo other : typeInfo.typeInspection.get().methods) {
+            if (!other.isPrivate() && other.methodAnalysis.methodsOfOwnClassReached.get().contains(this)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

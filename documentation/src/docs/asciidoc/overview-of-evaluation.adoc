@@ -47,7 +47,49 @@ Similarly, the code needs to avoid issuing the same error as iterations go.
 
 ==== Annotations
 
-In this section we first detail how each we compute each of the annotations.
+In this section we first detail how each we compute each of the annotations on fields.
+
+@Constant on fields::
+This annotation only makes sense when the field is also <<final-annotation>>.
+The field analyser will set in when the initialiser or computed value for the field turns out to be a constant.
+
+@Final on fields::
+The annotation follows automatically when the field is explicitly final, i.e., when it has the `final` modifier.
+When not explicitly final, the field becomes effectively final when the `methodAnalysis.fieldAssignments` map for the field has been set in any of the methods that are either non-private, or called from outside a constructor.
+
+@Linked on fields::
+This annotation indicates that the field has been assigned to another field or parameter, so that content modifications in this link target reflect in the field.
+The annotation corresponds to the `fieldAnalysis.variablesLinkedToMe` set, which can be computed once all `methodAnalysis.fieldAssignments` booleans have been determined for the field, and, when positive, also the `methodAnalysis.fieldsLinkedToFieldsAndVariables` sets have been filled in.
+
+@NotModified for fields::
+The field analyser sets the annotation directly based on the `contentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalyser.fieldRead`) should have `contentModifications` set to true.
+This implies that all linking should have been computed before `read` can be set to true.
+
+@NotNull for fields::
+The computation consists of checking the not null property of the all assignments to the field, in the initialiser, and all the methods.
+It uses the `methodAnalysis.fieldAssignments` booleans as a precondition to check that all `methodAnalysis.fieldAssignmentValues` are valid.
+This implies that all linking should have been computed before `fieldAssignments` can be set to true.
+
+==== Annotations on parameters
+
+@NullNotAllowed for parameters::
+When, implicitly or explicitly, passing a `null` value to a parameter would result in an exception, the <<nullnotallowed-annotation>> will be added to the parameter.
+The statement analyser makes this assessment in three locations in the statement analyser.
++
+It first does this in the `doImplicitNullCheck` method, which detects if a variable, appearing in the scope side of an expression, has a `isNotNull` property.
+If it does not have this property, then the implicit null check is present, and the annotation should be added.
+Once added, the code adds the `CHECK_NOT_NULL` property for the rest of the cycle.
++
+Secondly, it looks at arguments to method calls which already have the <<nullnotallowed-annotation>> annotation.
+If the argument is a parameter, then it inherits the annotation.
++
+Finally, the statement analyser looks at _escapes_ associated with _null conditionals_.
+An escape is the termination of a block caused by explicitly throwing an exception.
+A null conditional is an `Value` object added to the blocks of an _if-then-else_ statement, or the expressions of the inline conditional operator.
+This value, in the case of `if` and `else`, is not a constant but generally an `EqualsValue` object optionally enclosed in a `NegatedValue` or `AndValue`.
+The inline conditional operator returns a `ConditionalValue` object which also can act as a null conditional.
+
+==== Annotations on methods
 
 @Constant for methods::
 Immediately after evaluating the main expression of a statement, the statement analyser looks at return statements.
@@ -73,43 +115,12 @@ If all return statements are identity, the code writes the annotation.
 As soon as one return statement is not fluent, the code writes a negative marker to indicate that the method is not identity.
 The method analysis `check` method validates source code annotations against the presence of computed <<identity-annotation>> annotations.
 
-@Linked on fields::
-This annotation indicates that the field has been assigned to another field or parameter, so that content modifications in this link target reflect in the field.
-The annotation corresponds to the `fieldAnalysis.variablesLinkedToMe` set, which can be computed once all `methodAnalysis.fieldAssignments` booleans have been determined for the field, and, when positive, also the `methodAnalysis.fieldsLinkedToFieldsAndVariables` sets have been filled in.
-
-@NotModified for fields::
-The field analyser sets the annotation directly based on the `contentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalyser.fieldRead`) should have `contentModifications` set to true.
-This implies that all linking should have been computed before `read` can be set to true.
-
-@NotModified for methods::
-
-@NotNull for fields::
-The computation consists of checking the not null property of the all assignments to the field, in the initialiser, and all the methods.
-It uses the `methodAnalysis.fieldAssignments` booleans as a precondition to check that all `methodAnalysis.fieldAssignmentValues` are valid.
-This implies that all linking should have been computed before `fieldAssignments` can be set to true.
 
 @NotNull for methods::
 In the method analyser, the code for <<notnull-annotation>> behaves identically to that of <<fluent-annotation>> and <<identity-annotation>>, basing its decision on the `numberedStatement.returnsNotNull` boolean.
 The statement analyser potentially writes this boolean immediately after having evaluated the main expression of the statement, based on the `isNotNull` property of the evaluation result.
 The most interesting implementations of this property are in `VariableValue` and `MethodValue`.
 Others are mostly trivial: constants are not null unless they are the `null` constant, operator values are generally not null, etc.
-
-@NullNotAllowed for parameters::
-When, implicitly or explicitly, passing a `null` value to a parameter would result in an exception, the <<nullnotallowed-annotation>> will be added to the parameter.
-The statement analyser makes this assessment in three locations in the statement analyser.
-+
-It first does this in the `doImplicitNullCheck` method, which detects if a variable, appearing in the scope side of an expression, has a `isNotNull` property.
-If it does not have this property, then the implicit null check is present, and the annotation should be added.
-Once added, the code adds the `CHECK_NOT_NULL` property for the rest of the cycle.
-+
-Secondly, it looks at arguments to method calls which already have the <<nullnotallowed-annotation>> annotation.
-If the argument is a parameter, then it inherits the annotation.
-+
-Finally, the statement analyser looks at _escapes_ associated with _null conditionals_.
-An escape is the termination of a block caused by explicitly throwing an exception.
-A null conditional is an `Value` object added to the blocks of an _if-then-else_ statement, or the expressions of the inline conditional operator.
-This value, in the case of `if` and `else`, is not a constant but generally an `EqualsValue` object optionally enclosed in a `NegatedValue` or `AndValue`.
-The inline conditional operator returns a `ConditionalValue` object which also can act as a null conditional.
 
 ==== Errors
 

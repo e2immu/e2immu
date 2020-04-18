@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
@@ -194,26 +195,29 @@ public class TypeAnalyser {
     private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         Value value;
+
         Boolean isFinal = fieldInfo.isFinal(typeContext);
-        VariableProperty[] properties = {};
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
                 // most likely value here is "variable value"
-                if(value instanceof UnknownValue) throw new UnsupportedOperationException();
+                if (value instanceof UnknownValue) throw new UnsupportedOperationException();
             } else {
                 value = UnknownValue.NO_VALUE;
             }
-            if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
-                properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
-            }
-        } else if (null == isFinal) {
-            value = UnknownValue.NO_VALUE;
-        } else {
-            // we know the field is not effectively final, so there's multiple modifications
-            // so we start off with a variable value
+        } else if (Boolean.FALSE == isFinal) {
             value = new VariableValue(fieldReference);
+        } else {
+            value = UnknownValue.NO_VALUE;
         }
+
+        VariableProperty[] properties;
+        if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
+            properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
+        } else {
+            properties = new VariableProperty[0];
+        }
+
         fieldProperties.create(fieldReference, value, properties);
     }
 

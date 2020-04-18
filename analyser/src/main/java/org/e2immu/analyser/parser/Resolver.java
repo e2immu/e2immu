@@ -81,6 +81,7 @@ public class Resolver {
                 });
         // TODO add non-static sub-types to the methodGraph
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
+        fillInternalMethodCalls(typeInfo, methodGraph);
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
 
         // remove myself, and stay within the set of inspectedTypes
@@ -240,5 +241,20 @@ public class Resolver {
             LOGGER.warn("Caught runtime exception while resolving block starting at line {}", block.getBegin().orElse(null));
             throw rte;
         }
+    }
+
+
+    private static void fillInternalMethodCalls(TypeInfo typeInfo, DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+        methodGraph.visit((from, toList) -> {
+            if (from instanceof MethodInfo) {
+                MethodInfo methodInfo = ((MethodInfo) from);
+                Set<MethodInfo> methodsCalled = toList == null ? Set.of() :
+                        toList.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
+                methodInfo.methodAnalysis.methodsOfOwnClassCalled.set(methodsCalled);
+                Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependencies(from);
+                Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
+                methodInfo.methodAnalysis.methodsOfOwnClassReached.set(methodsReached);
+            }
+        });
     }
 }
