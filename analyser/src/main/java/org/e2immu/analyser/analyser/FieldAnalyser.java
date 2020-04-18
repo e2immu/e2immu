@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
+import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.*;
@@ -150,12 +151,25 @@ public class FieldAnalyser {
                     if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
                         Boolean nonNull = consistentValue.isNotNull(fieldProperties);
                         if (nonNull != null) {
-                            log(ANALYSER, "Set non-null of effectively final {} to {}", fieldInfo.fullyQualifiedName(), nonNull);
+                            log(NOT_NULL, "Set non-null of effectively final {} to {}", fieldInfo.fullyQualifiedName(), nonNull);
                             fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), nonNull);
                             changes = true;
                         }
                     }
                 }
+            }
+        }
+
+        // STEP 4: @NotNull, when not @Final
+
+        if (fieldInfo.isFinal(typeContext) == Boolean.FALSE && !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
+            boolean allDefined = typeInspection.constructorAndMethodStream()
+                    .allMatch(m -> m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo));
+            if(allDefined) {
+                boolean allAssignmentValuesNotNull =  typeInspection.constructorAndMethodStream()
+                        .allMatch(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties));
+                fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), allAssignmentValuesNotNull);
+                log(NOT_NULL, "Set non-null of non-final {} to {}", fieldInfo.fullyQualifiedName(), allAssignmentValuesNotNull);
             }
         }
 
@@ -208,14 +222,16 @@ public class FieldAnalyser {
                 boolean allReadNotNull = typeInspection.constructorAndMethodStream().allMatch(m ->
                         m.methodAnalysis.fieldRead.isSet(fieldInfo));
                 if (allReadNotNull) {
-                    boolean notDecided = typeInspection.constructorAndMethodStream().anyMatch(m ->
-                            !m.methodAnalysis.directContentModifications.isSet(fieldReference));
+                    boolean notDecided = typeInspection.constructorAndMethodStream()
+                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                            .anyMatch(m -> !m.methodAnalysis.directContentModifications.isSet(fieldReference));
                     if (notDecided) {
                         log(MODIFY_CONTENT, "Cannot yet conclude if {}'s contents have been modified, not all modifications known",
                                 fieldInfo.fullyQualifiedName());
                     } else {
-                        boolean notModified = typeInspection.constructorAndMethodStream().allMatch(m ->
-                                m.methodAnalysis.directContentModifications.getOtherwiseNull(fieldReference) != Boolean.TRUE);
+                        boolean notModified = typeInspection.constructorAndMethodStream()
+                                .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                                .noneMatch(m -> m.methodAnalysis.directContentModifications.get(fieldReference));
                         fieldInfo.fieldAnalysis.annotations.put(typeContext.notModified.get(), notModified);
                         log(MODIFY_CONTENT, "FA: Mark field {} as " + (notModified ? "" : "not ") +
                                 "@NotModified", fieldInfo.fullyQualifiedName());
@@ -232,10 +248,9 @@ public class FieldAnalyser {
 
         if (!fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
             boolean allDefined = typeInspection.constructorAndMethodStream()
-                    .allMatch(m ->
-                            m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.FALSE ||
-                                    m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE &&
-                                            m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference));
+                    .allMatch(m -> m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                            (!m.methodAnalysis.fieldAssignments.get(fieldInfo) ||
+                                    m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference)));
             if (allDefined) {
                 Set<Variable> links = new HashSet<>();
                 typeInspection.constructorAndMethodStream().forEach(m -> {
@@ -246,8 +261,8 @@ public class FieldAnalyser {
                 log(LINKED_VARIABLES, "Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
                 changes = true;
 
-                // TODO set correct names in the annotation
-                fieldInfo.fieldAnalysis.annotations.put(typeContext.linked.get(), !links.isEmpty());
+                AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(typeContext, links);
+                fieldInfo.fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
             }
         }
         return changes;

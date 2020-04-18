@@ -514,7 +514,7 @@ public class MethodAnalyser {
     private boolean updateAnnotationsFromMethodProperties(MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
         boolean changes = false;
         for (Variable variable : methodProperties.variableProperties.keySet()) {
-            Set<Variable> linkedVariables = allVariablesLinkedTo(methodProperties, variable);
+            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodProperties, variable);
             Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
             log(MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
                     Variable.detailedString(linkedVariables), directContentModification);
@@ -590,7 +590,7 @@ public class MethodAnalyser {
         return true; // continue
     }
 
-    private Set<Variable> allVariablesLinkedTo(VariableProperties methodProperties, Variable variable) {
+    private Set<Variable> allVariablesLinkedToIncludingMyself(VariableProperties methodProperties, Variable variable) {
         Set<Variable> result = new HashSet<>();
         recursivelyAddLinkedVariables(methodProperties, variable, result);
         return result;
