@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @NotNull
@@ -62,9 +63,13 @@ public class MethodAnalysis extends Analysis {
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
     // In other words, if A->B, then B cannot be @NotModified unless A is too
+
+    // valid as soon as fieldAssignments is set, and currently only used to compute @Linked annotations
+    // THIS IS NOT A CRITICAL TRANSFER MAP
     public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
+    public final SetOnce<Optional<Variable>> variableAssignedToMethodResult = new SetOnce<>();
 
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 

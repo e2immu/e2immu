@@ -45,32 +45,87 @@ As a result of the first iteration, the analyser will decide that the parameter 
 If we were to add the is-not-null property to the evaluation context at the second iteration, the conclusion will be that `input == null` results in a constant `false`, which would result in the analyser issuing an error for a redundant `if` statement.
 Similarly, the code needs to avoid issuing the same error as iterations go.
 
-==== Annotations
+==== Linking of variables
+
+Definition: content modification propagates in variables that are linked.
+Linking is not relevant for primitives and effectively immutable objects, because their content cannot be modified.
+Independence is the exact opposite of linking.
+There are two types of linkage: normal links, which are the result of potentially complex assignments, and direct assignments.
+Method return values can also be directly assigned to a variable, or linked to multiple variables.
+
+Direct assignments occur in the following situations:
+
+. local variable = some variable.
+Anywhere in a method.
+. field = some variable.
+This typically occurs once in a constructor, but in theory it can occur multiple times and anywhere in a constructor or method reachable from constructors only.
+. some variable = identity method(some variable, ....)
+. return some variable.
+
+An example of a indirect assignment link is a method call like `field = object.method(p1, p2)` which links `field` to `object`, `p1` and `p2` unless there is an <<independent-annotation>> annotation on the method.
+In absence of this annotation, the method can either return `object`, `p1` or `p2` directly, or some new intermediary composed of all three.
+Modifications to `p1` or `p2`, or other method calls on `object`, then have the potential to be modifications to `field`.
+
+The evaluation properties hold two dependency graphs, one for links and one for direct assignments, during each evaluation of a method body.
+The transitive closure of dependencies can be evaluated after each evaluation phase.
+
+Is it possible that we need information from the "outside" before we can build the dependency graphs?
+
+. it is possible that the linking properties of a method have not been analysed yet.
+This should not occur too often, as we already analyse all methods within a type in the best dependency order, and each type according to dependencies.
+However, should a method linking return `NO_VALUE`, we can delay writing the final results.
+We will use `variablesLinkedToMethodResult` as a marker, setting an empty set for methods that do not return a result.
+. during the evaluation of a assignments, links are computed in the `Value` classes `Instance` (constructors) and `MethodValue` #TODO#.
+Both make use of `variablesLinkedToMethodResult` and `variableAssignedToMethodResult`.
+. exposing a variable as a argument to a method may cause a link to a field to be formed, but not to our local variables, nor to the other arguments.
++
+[source]
+----
+class Test {
+  final Set<String> set; // linked to input via s1
+  Test(Set<String> input) {
+    copy(input);
+  }
+  void copy(Set<String> s1) {
+    set = s1;
+  }
+}
+----
++
+This link can be read from the method's `fieldsLinkedToFieldsAndVariables` map.
+
+==== Annotations on fields
 
 In this section we first detail how each we compute each of the annotations on fields.
 
-@Constant on fields::
-This annotation only makes sense when the field is also <<final-annotation>>.
-The field analyser will set in when the initialiser or computed value for the field turns out to be a constant.
+@Constant::
+This annotation only makes sense when the field also has the annotation <<final-annotation>>.
+The field analyser will set it when the initialiser or computed value for the field can be evaluated to a constant.
 
-@Final on fields::
+@Final::
 The annotation follows automatically when the field is explicitly final, i.e., when it has the `final` modifier.
-When not explicitly final, the field becomes effectively final when the `methodAnalysis.fieldAssignments` map for the field has been set in any of the methods that are either non-private, or called from outside a constructor.
+When not explicitly final, the field becomes effectively final when the `methodAnalysis.fieldAssignments` map has been set for the field for none of the methods that are either non-private, or called from outside a constructor.
 
-@Linked on fields::
+@Linked::
 This annotation indicates that the field has been assigned to another field or parameter, so that content modifications in this link target reflect in the field.
 The annotation corresponds to the `fieldAnalysis.variablesLinkedToMe` set, which can be computed once all `methodAnalysis.fieldAssignments` booleans have been determined for the field, and, when positive, also the `methodAnalysis.fieldsLinkedToFieldsAndVariables` sets have been filled in.
 
-@NotModified for fields::
-The field analyser sets the annotation directly based on the `contentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalyser.fieldRead`) should have `contentModifications` set to true.
-This implies that all linking should have been computed before `read` can be set to true.
+@NotModified::
+The field analyser sets the annotation directly based on the `methodAnalysis.contentModifications` field of the method analyser: none of the methods which read the field (as indicated by `methodAnalysis.fieldRead`) should have `contentModifications` set to true.
+This implies that all linking should have been computed before `fieldRead` can be set to true.
 
-@NotNull for fields::
+@NotNull::
 The computation consists of checking the not null property of the all assignments to the field, in the initialiser, and all the methods.
 It uses the `methodAnalysis.fieldAssignments` booleans as a precondition to check that all `methodAnalysis.fieldAssignmentValues` are valid.
 This implies that all linking should have been computed before `fieldAssignments` can be set to true.
 
 ==== Annotations on parameters
+
+@NotModified for parameters::
+The method analyser potentially sets this annotation directly from the variable properties at the end of each expression evaluation, for all linked variables at the same time.
+The equivalent for fields is to set the `methodAnalysis.contentModifications` boolean.
++
+#TODO:# this is problematic, because its either too early or too late, and no links are taken into account.
 
 @NullNotAllowed for parameters::
 When, implicitly or explicitly, passing a `null` value to a parameter would result in an exception, the <<nullnotallowed-annotation>> will be added to the parameter.
@@ -78,16 +133,18 @@ The statement analyser makes this assessment in three locations in the statement
 +
 It first does this in the `doImplicitNullCheck` method, which detects if a variable, appearing in the scope side of an expression, has a `isNotNull` property.
 If it does not have this property, then the implicit null check is present, and the annotation should be added.
-Once added, the code adds the `CHECK_NOT_NULL` property for the rest of the cycle.
+Once added, the code adds the `PERMANENTLY_NOT_NULL` property for the rest of the cycle.
 +
 Secondly, it looks at arguments to method calls which already have the <<nullnotallowed-annotation>> annotation.
 If the argument is a parameter, then it inherits the annotation.
 +
 Finally, the statement analyser looks at _escapes_ associated with _null conditionals_.
 An escape is the termination of a block caused by explicitly throwing an exception.
-A null conditional is an `Value` object added to the blocks of an _if-then-else_ statement, or the expressions of the inline conditional operator.
-This value, in the case of `if` and `else`, is not a constant but generally an `EqualsValue` object optionally enclosed in a `NegatedValue` or `AndValue`.
+A null conditional is a `Value` object added to the blocks of an _if-then-else_ statement, or the expressions of the inline conditional operator.
+This value, in the case of _if-then-else_, is not a constant but generally an `EqualsValue` object optionally enclosed in a `NegatedValue` or `AndValue`.
 The inline conditional operator returns a `ConditionalValue` object which also can act as a null conditional.
++
+#TODO:# when the parameter is directly assigned (stronger than linked) to another variable, which undergoes said conditions, the parameter should get the annotation as well.
 
 ==== Annotations on methods
 
