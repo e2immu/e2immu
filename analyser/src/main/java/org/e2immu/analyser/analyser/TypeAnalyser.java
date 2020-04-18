@@ -331,7 +331,7 @@ public class TypeAnalyser {
                 Boolean independent = methodInfo.isIndependent(typeContext);
 
                 for (FieldInfo fieldInfo : nonPrimitiveNonE2ImmutableFields) {
-                    Boolean modified = methodInfo.methodAnalysis.fieldModifications.getOtherwiseNull(fieldInfo);
+                    Boolean modified = methodInfo.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo);
                     if (modified == null) {
                         log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether {} is assigned in {}",
                                 sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);

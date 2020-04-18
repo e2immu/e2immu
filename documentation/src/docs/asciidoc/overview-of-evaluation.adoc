@@ -118,5 +118,5 @@ Condition in if-statement evaluates to constant::
 The condition in an `if` statement should not be a constant.
 
 Assignment of a parameter::
-Intentionally we raise an error when a parameter to a method is assigned to in the method body.
-The method analyser determines this in a straightforward way, by looking at the `ASSIGNED` property in the evaluation context.
+Intentionally we raise an error when the user assigns a value to a parameter in the method body.
+The method analyser determines this straightforwardly, in `updateParameterAnnotationsFromMethodProperties`, by looking at the `ASSIGNED` property in the evaluation context.

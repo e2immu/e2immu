@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +30,8 @@ import static org.e2immu.annotation.AnnotationType.*;
 
 public class SimpleNotModifiedChecks {
 
+    // first example shows direct modification
+
     static class Example1 {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set1 = new HashSet<>();
@@ -41,12 +41,22 @@ public class SimpleNotModifiedChecks {
         }
     }
 
+    // second example shows no modification
+
     static class Example2 {
         @NotModified
         public Set<String> set2 = new HashSet<>();
+
+        int size() {
+            return set2.size();
+        }
     }
 
+    // third example shows modification, with a local variable as an indirection step
+
     static class Example3 {
+        @NotNull
+        @Final
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set3 = new HashSet<>();
 
@@ -55,6 +65,9 @@ public class SimpleNotModifiedChecks {
             local3.add(v);
         }
     }
+
+    // fourth example shows the same indirect modification, with a set now linked to a
+    // parameter which also becomes not modified
 
     static class Example4 {
         @NotModified(type = VERIFY_ABSENT)
@@ -70,6 +83,9 @@ public class SimpleNotModifiedChecks {
         }
     }
 
+    // fifth example shows the same indirect modification; this time construction is not
+    // linked to the set
+
     static class Example5 {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set5;
@@ -84,6 +100,8 @@ public class SimpleNotModifiedChecks {
         }
     }
 
+    // sixth example is direct modification, but indirectly on an instance variable of the class
+
     static class Example6 {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set6 = new HashSet<>();
@@ -91,36 +109,5 @@ public class SimpleNotModifiedChecks {
         public static void copyIn(@NullNotAllowed Example6 example6, @NullNotAllowed @NotModified Set<String> values) {
             example6.set6.addAll(values);
         }
-    }
-
-    // somehow we should add the @NotModified(absent=true)
-    static Function<Set<String>, Set<String>> removeElement = set -> {
-        Iterator<String> it = set.iterator();
-        if (it.hasNext()) it.remove();
-        return set;
-    };
-
-    @FunctionalInterface
-    interface RemoveOne {
-        @Fluent
-        Set<String> go(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) Set<String> in);
-    }
-
-    static RemoveOne removeOne = set -> {
-        Iterator<String> it = set.iterator();
-        if (it.hasNext()) it.remove();
-        return set;
-    };
-
-    static class Example7<T> {
-        BiFunction<Integer, T, String> method = (i, t) -> {
-            return i + t.toString();
-        };
-        BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
-            @Override
-            public String apply(Integer i, T t) {
-                return i + t.toString();
-            }
-        };
     }
 }

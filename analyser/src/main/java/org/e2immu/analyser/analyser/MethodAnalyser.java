@@ -29,7 +29,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -89,11 +88,8 @@ public class MethodAnalyser {
             Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
             boolean haveConstantAnnotation =
                     CheckConstant.checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
-                            (valueToTest, typeMsg) -> {
-                                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                                        ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue);
-
-                            });
+                            (valueToTest, typeMsg) -> typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                                    ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue));
             if (haveConstantAnnotation && singleReturnValue == UnknownValue.NO_VALUE) {
                 typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() + " has no single return value");
             }
@@ -352,7 +348,7 @@ public class MethodAnalyser {
             if (!methodInfo.isStatic) {
                 // we need to check if there's fields being read/assigned/
                 if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
-                        emptyOrStaticIfTrue(methodAnalysis.fieldModifications) &&
+                        emptyOrStaticIfTrue(methodAnalysis.fieldAssignments) &&
                         (!methodAnalysis.thisRead.isSet() || !methodAnalysis.thisRead.get()) &&
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation &&
@@ -366,13 +362,12 @@ public class MethodAnalyser {
             methodAnalysis.complainedAboutMissingStaticStatement.set(false);
         }
 
-        // TODO maybe a bit of overkill, need to understand how field modification works again...
-        Boolean noFieldModifications = methodInfo.isAllFieldsNotModified(typeContext);
-        if (noFieldModifications == null) {
-            log(NOT_MODIFIED, "Method {} delaying @NotModified: fields modifications", methodInfo.fullyQualifiedName());
+        Boolean noFieldsAssigned = methodInfo.isNoFieldsAssigned(typeContext);
+        if (noFieldsAssigned == null) {
+            log(NOT_MODIFIED, "Method {} delaying @NotModified: fields assignments", methodInfo.fullyQualifiedName());
             return false;
         }
-        if (!noFieldModifications) {
+        if (!noFieldsAssigned) {
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: it assigns its fields", methodInfo.fullyQualifiedName());
             methodAnalysis.annotations.put(typeContext.notModified.get(), false);
             return true;
@@ -621,10 +616,10 @@ public class MethodAnalyser {
             Variable variable = entry.getKey();
             if (variable instanceof ParameterInfo) {
                 if (properties.contains(VariableProperty.ASSIGNED)
-                        && !methodInfo.methodAnalysis.parameterModifications.isSet((ParameterInfo) variable)) {
+                        && !methodInfo.methodAnalysis.parameterAssignments.isSet((ParameterInfo) variable)) {
                     typeContext.addMessage(Message.Severity.ERROR,
-                            "Parameter " + variable.detailedString() + " should not be assigned (maybe for now)");
-                    methodInfo.methodAnalysis.parameterModifications.put((ParameterInfo) variable, true);
+                            "Parameter " + variable.detailedString() + " should not be assigned to");
+                    methodInfo.methodAnalysis.parameterAssignments.put((ParameterInfo) variable, true);
                     changes = true;
                 }
             }
@@ -640,18 +635,18 @@ public class MethodAnalyser {
             Set<VariableProperty> properties = entry.getValue().properties;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                if (!methodAnalysis.fieldModifications.isSet(fieldInfo)) {
+                if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     boolean isModified = properties.contains(VariableProperty.ASSIGNED);
-                    methodAnalysis.fieldModifications.put(fieldInfo, isModified);
+                    methodAnalysis.fieldAssignments.put(fieldInfo, isModified);
                     log(ANALYSER, "Mark that {} is modified? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
                 Value currentValue = entry.getValue().getCurrentValue();
                 if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.ASSIGNED) &&
                         !properties.contains(VariableProperty.ASSIGNED_MULTIPLE_TIMES) &&
-                        !methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
+                        !methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
                     log(ANALYSER, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
-                    methodAnalysis.fieldAssignments.put(fieldInfo, currentValue);
+                    methodAnalysis.fieldAssignmentValues.put(fieldInfo, currentValue);
                     changes = true;
                 }
                 if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
@@ -669,8 +664,8 @@ public class MethodAnalyser {
         }
 
         for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields) {
-            if (!methodAnalysis.fieldModifications.isSet(fieldInfo)) {
-                methodAnalysis.fieldModifications.put(fieldInfo, false);
+            if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
+                methodAnalysis.fieldAssignments.put(fieldInfo, false);
                 changes = true;
                 log(ANALYSER, "Mark field {} not modified in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
             }

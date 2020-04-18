@@ -43,6 +43,9 @@ public class FieldAnalyser {
 
     public boolean analyse(FieldInfo fieldInfo, Variable thisVariable, VariableProperties fieldProperties) {
         boolean changes = false;
+        TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
+
+        // STEP 1: THE INITIALISER
 
         Value value;
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
@@ -62,7 +65,7 @@ public class FieldAnalyser {
             value = UnknownValue.NO_VALUE;
         }
 
-        TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
+        // STEP 2: EFFECTIVELY FINAL: @Final
 
         if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.effectivelyFinal.get())) {
             log(ANALYSER, "Analysing field {}, value {}", fieldInfo.fullyQualifiedName(), value);
@@ -74,7 +77,7 @@ public class FieldAnalyser {
                 changes = true;
             } else {
                 Boolean isModifiedOutsideConstructors = typeInspection.methods.stream()
-                        .map(m -> m.methodAnalysis.fieldModifications.getOtherwiseNull(fieldInfo))
+                        .map(m -> m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo))
                         .reduce(false, TypeAnalyser.TERNARY_OR);
 
                 if (isModifiedOutsideConstructors == null) {
@@ -84,67 +87,81 @@ public class FieldAnalyser {
                     log(ANALYSER, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;
-                    if (!isModifiedOutsideConstructors && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                        // find the constructors where the value is set; if they're all set to the same value,
-                        // we can set the initial value
-                        Value consistentValue = null;
-                        for (MethodInfo constructor : typeInspection.constructors) {
-                            if (constructor.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
-                                Value assignment = constructor.methodAnalysis.fieldAssignments.get(fieldInfo);
-                                if (consistentValue == null) consistentValue = assignment;
-                                else if (!consistentValue.equals(assignment)) {
-                                    log(ANALYSER, "Cannot set consistent value for {}, have {} and {}", fieldInfo.fullyQualifiedName(),
-                                            consistentValue, assignment);
-                                    consistentValue = null;
-                                    break;
-                                }
-                            }
-                        }
-                        if (consistentValue != null) {
-                            Value valueToSet;
-                            if (!(consistentValue instanceof org.e2immu.analyser.model.Constant)) {
-                                valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
-                            } else {
-                                valueToSet = consistentValue;
-                            }
-                            fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                            log(ANALYSER, "Setting initial value of effectively final {} to {}",
-                                    fieldInfo.fullyQualifiedName(), consistentValue);
+                }
+            }
+        }
 
-                            if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                                Boolean nonNull = consistentValue.isNotNull(fieldProperties);
-                                if (nonNull != null) {
-                                    log(ANALYSER, "Set non-null of effectively final {} to {}", fieldInfo.fullyQualifiedName(), nonNull);
-                                    fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), nonNull);
-                                    changes = true;
-                                }
-                            }
+        // STEP 3: EFFECTIVELY FINAL VALUE: prep for @Constant
+
+        if (fieldInfo.isFinal(typeContext) == Boolean.TRUE) {
+
+            // STEP 3A: explicitly final
+
+            if (fieldInfo.isExplicitlyFinal()) {
+                if (value != UnknownValue.NO_VALUE && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                    Value valueToSet;
+                    if (!(value instanceof org.e2immu.analyser.model.Constant)) {
+                        valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
+                    } else {
+                        valueToSet = value;
+                    }
+                    log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), valueToSet);
+                    fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+                    changes = true;
+                }
+                if (value.isNotNull(fieldProperties) == Boolean.TRUE &&
+                        !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                    log(ANALYSER, "Mark field {} as not null, given that it is final and the value initializes to not null",
+                            fieldInfo.fullyQualifiedName());
+                    fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), true);
+                    changes = true;
+                }
+            }
+
+            // STEP 3B: computed effectively final, no value set yet
+
+            else if (!fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                // find the constructors where the value is set; if they're all set to the same value,
+                // we can set the initial value; also take into account the value of the initialiser, if it is there
+                Value consistentValue = value;
+                for (MethodInfo constructor : typeInspection.constructors) {
+                    if (constructor.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
+                        Value assignment = constructor.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
+                        if (consistentValue == UnknownValue.NO_VALUE) consistentValue = assignment;
+                        else if (!consistentValue.equals(assignment)) {
+                            log(ANALYSER, "Cannot set consistent value for {}, have {} and {}", fieldInfo.fullyQualifiedName(),
+                                    consistentValue, assignment);
+                            consistentValue = UnknownValue.NO_VALUE;
+                            break;
+                        }
+                    }
+                }
+                if (consistentValue != UnknownValue.NO_VALUE) {
+                    Value valueToSet;
+                    if (!(consistentValue instanceof org.e2immu.analyser.model.Constant)) {
+                        valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
+                    } else {
+                        valueToSet = consistentValue;
+                    }
+                    fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+                    log(ANALYSER, "Setting initial value of effectively final {} to {}",
+                            fieldInfo.fullyQualifiedName(), consistentValue);
+
+                    if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
+                        Boolean nonNull = consistentValue.isNotNull(fieldProperties);
+                        if (nonNull != null) {
+                            log(ANALYSER, "Set non-null of effectively final {} to {}", fieldInfo.fullyQualifiedName(), nonNull);
+                            fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), nonNull);
+                            changes = true;
                         }
                     }
                 }
             }
         }
 
-        if (fieldInfo.isExplicitlyFinal() && value != UnknownValue.NO_VALUE) {
-            if (!fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                Value valueToSet;
-                if (!(value instanceof org.e2immu.analyser.model.Constant)) {
-                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
-                } else {
-                    valueToSet = value;
-                }
-                log(ANALYSER, "Setting initial value of {} to {}", fieldInfo.fullyQualifiedName(), valueToSet);
-                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                changes = true;
-            }
-            if (value.isNotNull(fieldProperties) == Boolean.TRUE &&
-                    !fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                log(ANALYSER, "Mark field {} as not null, given that it is final and the value initializes to not null",
-                        fieldInfo.fullyQualifiedName());
-                fieldInfo.fieldAnalysis.annotations.put(typeContext.notNull.get(), true);
-                changes = true;
-            }
-        }
+        // STEP 4: CHECK LINKS
+        // if @Final, but not yet @NotNull, and there are variables linked to me...
+
         if (!fieldInfo.fieldAnalysis.annotations.isSet(typeContext.notNull.get()) &&
                 fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.effectivelyFinal.get()) == Boolean.TRUE &&
                 fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
@@ -172,6 +189,8 @@ public class FieldAnalyser {
                 log(ANALYSER, "Cannot yet conclude @NotNull on {}", fieldInfo.fullyQualifiedName());
             }
         }
+
+        // STEP 5: @NotModified
 
         // read == null -> not read, does not count ==> FALSE
         // read & cm == null -> don't know ==> NULL
@@ -209,11 +228,13 @@ public class FieldAnalyser {
             }
         }
 
+        // STEP 6: @Linked, variablesLinkedToMe
+
         if (!fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
             boolean allDefined = typeInspection.constructorAndMethodStream()
                     .allMatch(m ->
-                            m.methodAnalysis.fieldModifications.getOtherwiseNull(fieldInfo) == Boolean.FALSE ||
-                                    m.methodAnalysis.fieldModifications.getOtherwiseNull(fieldInfo) == Boolean.TRUE &&
+                            m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.FALSE ||
+                                    m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE &&
                                             m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference));
             if (allDefined) {
                 Set<Variable> links = new HashSet<>();

@@ -87,7 +87,7 @@ public class Input {
                 if (name.endsWith(".java")) {
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
-                    if (acceptSource(packageName)) {
+                    if (acceptSource(packageName, typeName)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         sourceTypeStore.add(typeInfo);
                         globalTypeContext.typeStore.add(typeInfo);
@@ -103,12 +103,13 @@ public class Input {
         return sourceURLs;
     }
 
-    private boolean acceptSource(String packageName) {
+    private boolean acceptSource(String packageName, String typeName) {
         if (configuration.inputConfiguration.restrictSourceToPackages.isEmpty()) return true;
         for (String packageString : configuration.inputConfiguration.restrictSourceToPackages) {
             if (packageString.endsWith(".")) {
                 if (packageName.startsWith(packageString)) return true;
-            } else if (packageName.equals(packageString)) return true;
+            } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
+                return true;
         }
         return false;
     }

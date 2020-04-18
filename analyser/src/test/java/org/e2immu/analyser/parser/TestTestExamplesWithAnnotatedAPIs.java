@@ -53,6 +53,8 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 STATIC_METHOD_CALLS,
 
                 ANALYSER,
+                CONSTANT,
+                NOT_NULL,
                 VARIABLE_PROPERTIES,
                 LINKED_VARIABLES,
                 INDEPENDENT,
@@ -77,7 +79,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi.SimpleNotModifiedChecks")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -92,7 +94,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
         BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
-        Assert.assertTrue(10 <= types.size());
+        //Assert.assertTrue(10 <= types.size());
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }

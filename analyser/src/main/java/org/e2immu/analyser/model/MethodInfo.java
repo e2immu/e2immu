@@ -449,9 +449,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return true;
     }
 
-    public Boolean isAllFieldsNotModified(TypeContext typeContext) {
-        if (methodAnalysis.fieldModifications.isEmpty()) return true;
-        return methodAnalysis.fieldModifications.stream().noneMatch(e -> e.getValue() == Boolean.TRUE);
+    public Boolean isNoFieldsAssigned(TypeContext typeContext) {
+        if (methodAnalysis.fieldAssignments.isEmpty()) return true;
+        return methodAnalysis.fieldAssignments.stream().noneMatch(e -> e.getValue() == Boolean.TRUE);
     }
 
     public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {

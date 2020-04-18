@@ -45,12 +45,11 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Boolean> complainedAboutMissingStaticStatement = new SetOnce<>();
 
     // produces an error
-    public final SetOnceMap<ParameterInfo, Boolean> parameterModifications = new SetOnceMap<>();
+    public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();
 
     // used in the computation of essentially final fields
-    public final SetOnceMap<FieldInfo, Boolean> fieldModifications = new SetOnceMap<>();
-
-    public final SetOnceMap<FieldInfo, Value> fieldAssignments = new SetOnceMap<>();
+    public final SetOnceMap<FieldInfo, Boolean> fieldAssignments = new SetOnceMap<>();
+    public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>();
 
     // used in the computation of content modification of fields
     public final SetOnceMap<Variable, Boolean> directContentModifications = new SetOnceMap<>();

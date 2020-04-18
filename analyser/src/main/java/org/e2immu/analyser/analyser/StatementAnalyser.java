@@ -173,7 +173,7 @@ public class StatementAnalyser {
             variableProperties.create(lvr, value, VariableProperty.CREATED);
         }
 
-        // PART 5: computing linking between local variables and fields, parameters
+        // PART 3: computing linking between local variables and fields, parameters
 
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
             Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
@@ -187,7 +187,7 @@ public class StatementAnalyser {
             variableProperties.linkVariables(lvr, linkTo);
         }
 
-        // PART 6: evaluation of the core expression of the statement (if the statement has such a thing)
+        // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
 
         Value value;
         if (codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
@@ -205,7 +205,7 @@ public class StatementAnalyser {
         }
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
-        // PART 7: checks for ReturnStatement
+        // PART 5: checks for ReturnStatement
 
         if (statement.statement instanceof ReturnStatement) {
             if (value != null) {
@@ -230,7 +230,7 @@ public class StatementAnalyser {
             }
         }
 
-        // PART 8: checks for IfElse
+        // PART 6: checks for IfElse
 
         Runnable uponUsingConditional;
         if (statement.statement instanceof IfElseStatement) {
@@ -248,7 +248,7 @@ public class StatementAnalyser {
             uponUsingConditional = null;
         }
 
-        // PART 9: the primary block, if it's there
+        // PART 7: the primary block, if it's there
         // we'll treat it as a conditional on 'value', even if there is no if() statement
 
         List<NumberedStatement> startOfBlocks = statement.blocks.get();
@@ -258,19 +258,19 @@ public class StatementAnalyser {
             EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
 
-            // PART 10: other conditions, including the else, switch entries, catch clauses
+            // PART 8: other conditions, including the else, switch entries, catch clauses
             List<Value> conditions = new ArrayList<>();
             for (int count = 1; count < startOfBlocks.size(); count++) {
                 CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
 
-                // PART 11: add parameters of sub statements
+                // PART 9: add parameters of sub statements
 
                 if (subStatements.localVariableCreation != null) {
                     LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
                     variableProperties.create(lvr, new VariableValue(lvr));
                 }
 
-                // PART 12: evaluate the sub-expression
+                // PART 10: evaluate the sub-expression
 
                 Value valueForSubStatement;
                 if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
@@ -307,7 +307,8 @@ public class StatementAnalyser {
             }
         }
 
-        // finally there are the updaters
+        // PART 11: finally there are the updaters
+        
         for (Expression updater : codeOrganization.updaters) {
             Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
             if (pair.v) changes = true;
@@ -334,10 +335,6 @@ public class StatementAnalyser {
                             statementForErrorReporting.errorValue.set(true);
                             changes.set(true);
                         }
-                    } else if (intermediateValue == UnknownValue.NO_VALUE) {
-                        log(ANALYSER, "Delaying analysis of expression {} in {}",
-                                localExpression.getClass(),
-                                methodInfo.fullyQualifiedName());
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
                     doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
