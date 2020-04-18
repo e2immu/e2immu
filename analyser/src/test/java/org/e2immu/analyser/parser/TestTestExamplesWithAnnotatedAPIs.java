@@ -65,8 +65,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 VALUE_CLASS,
                 SIDE_EFFECT,
                 UTILITY_CLASS,
-                CONTEXT_ANNOTATIONS,
-                PURE_ANNOTATIONS,
                 NULL_NOT_ALLOWED,
                 NOT_MODIFIED
         );

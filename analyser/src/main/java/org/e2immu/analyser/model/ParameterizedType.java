@@ -601,4 +601,8 @@ public class ParameterizedType {
         return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 
+    public boolean isEnum() {
+        return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
+    }
+
 }

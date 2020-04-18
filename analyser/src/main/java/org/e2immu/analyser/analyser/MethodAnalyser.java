@@ -197,21 +197,6 @@ public class MethodAnalyser {
         try {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
 
-            // pretty trivial, but no need to do computations for primitives
-            AnnotationExpression nullNotAllowed = typeContext.nullNotAllowed.get();
-            AnnotationExpression notModified = typeContext.notModified.get();
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                if (parameterInfo.parameterizedType.isPrimitive() && !parameterInfo.parameterAnalysis.annotations.isSet(nullNotAllowed)) {
-                    log(NULL_NOT_ALLOWED, "Set @NullNotAllowed for {}", parameterInfo.detailedString());
-                    parameterInfo.parameterAnalysis.annotations.put(nullNotAllowed, true);
-                }
-                if ((parameterInfo.parameterizedType.isPrimitive() || parameterInfo.parameterizedType.isFunctionalInterface(typeContext))
-                        && !parameterInfo.parameterAnalysis.annotations.isSet(notModified)) {
-                    log(NOT_MODIFIED, "Set @NotModified for {}", parameterInfo.detailedString());
-                    parameterInfo.parameterAnalysis.annotations.put(notModified, true);
-                }
-            }
-
             boolean changes = false;
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
             LOGGER.debug("Analysing {} statements", numberedStatements.size());
@@ -325,7 +310,7 @@ public class MethodAnalyser {
                         changes = true;
                     }
                 }
-                if (detectNotModified(methodInfo, methodAnalysis)) changes = true;
+                if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
             }
             return changes;
         } catch (RuntimeException rte) {
@@ -340,7 +325,7 @@ public class MethodAnalyser {
     }
 
     // depending on the nature of the static method, try to ensure if it is @PureFunction, @PureSupplier, @PureConsumer
-    private boolean detectNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         // already done the work?
         if (methodAnalysis.annotations.isSet(typeContext.notModified.get())) return false;
 
@@ -362,17 +347,6 @@ public class MethodAnalyser {
             methodAnalysis.complainedAboutMissingStaticStatement.set(false);
         }
 
-        Boolean noFieldsAssigned = methodInfo.isNoFieldsAssigned(typeContext);
-        if (noFieldsAssigned == null) {
-            log(NOT_MODIFIED, "Method {} delaying @NotModified: fields assignments", methodInfo.fullyQualifiedName());
-            return false;
-        }
-        if (!noFieldsAssigned) {
-            log(NOT_MODIFIED, "Method {} cannot be @NotModified: it assigns its fields", methodInfo.fullyQualifiedName());
-            methodAnalysis.annotations.put(typeContext.notModified.get(), false);
-            return true;
-        }
-
         // second step
 
         Boolean isNotModified = methodInfo.isAllParametersNotModified(typeContext);
@@ -382,7 +356,7 @@ public class MethodAnalyser {
             return false;
         }
         if (!isNotModified) {
-            log(PURE_ANNOTATIONS, "Method {} cannot be @NotModified: some parameters are not @NotModified",
+            log(NOT_MODIFIED, "Method {} cannot be @NotModified: some parameters are not @NotModified",
                     methodInfo.fullyQualifiedName());
         } else {
             log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
@@ -529,16 +503,18 @@ public class MethodAnalyser {
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
                     ParameterInfo parameterInfo = (ParameterInfo) linkedVariable;
-                    if (directContentModification != null) {
-                        boolean notModified = !directContentModification;
-                        if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
-                            log(MODIFY_CONTENT, "MA: Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
-                            parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
-                            changes = true;
+                    if (!parameterInfo.isNotModifiedByDefinition(typeContext)) {
+                        if (directContentModification != null) {
+                            boolean notModified = !directContentModification;
+                            if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
+                                log(MODIFY_CONTENT, "MA: Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
+                                parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
+                                changes = true;
+                            }
+                        } else {
+                            log(MODIFY_CONTENT, "Delaying setting parameter not modified on {}",
+                                    Variable.detailedString(linkedVariables));
                         }
-                    } else {
-                        log(MODIFY_CONTENT, "Delaying setting parameter not modified on {}",
-                                Variable.detailedString(linkedVariables));
                     }
                 }
             }

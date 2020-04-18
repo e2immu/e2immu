@@ -172,10 +172,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     public Boolean isNotModified(TypeContext typeContext) {
-        if (parameterizedType.isPrimitive()) return true;
-        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
+        if (isNotModifiedByDefinition(typeContext)) return true;
         if (Boolean.TRUE == parameterizedType.isEffectivelyImmutable(typeContext)) return true;
-        if (parameterizedType.isUnboundParameterType()) return true;
         if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isE2Immutable(typeContext)) return true;
         if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isContainer(typeContext)) return true;
         return annotatedWith(typeContext.notModified.get());
@@ -184,5 +182,12 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.NONE_PURE;
+    }
+
+    public boolean isNotModifiedByDefinition(TypeContext typeContext) {
+        if (parameterizedType.isPrimitive()) return true;
+        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
+        if (parameterizedType.isEnum()) return true;
+        return parameterizedType.isUnboundParameterType();
     }
 }
