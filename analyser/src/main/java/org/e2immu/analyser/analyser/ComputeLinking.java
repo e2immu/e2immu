@@ -1,7 +1,5 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.VariableProperties;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -44,6 +42,17 @@ public class ComputeLinking {
             StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
             if (statementAnalyser.computeVariablePropertiesOfBlock(statements.get(0), methodProperties)) changes = true;
 
+            // this method computes, unless delayed, the values for
+            // - fieldAssignments
+            // - fieldAssignmentValues
+            // - fieldsRead
+            if (computeFieldAssignmentsFieldsRead(methodInfo, methodProperties)) changes = true;
+
+            // this method computes, unless delayed, the values for
+            // - variablesLinkedToFieldsAndParameters
+            // - fieldsLinkedToFieldsAndVariables
+            // TODO 1: one of these 2 is not needed??
+            // TODO 2: what about delaying? visits the dependency graph
             if (establishLinks(methodInfo, methodProperties)) changes = true;
 
             if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodProperties))
@@ -51,7 +60,6 @@ public class ComputeLinking {
 
             if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
             if (updateParameterAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
-            if (updateFieldAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
 
             return changes;
         } catch (RuntimeException rte) {
@@ -59,6 +67,17 @@ public class ComputeLinking {
             throw rte;
         }
     }
+
+    /*
+     Relies on
+     - numberedStatement.linkedVariables, which should return us all the variables involved in the return statement
+            it does so by computing the linkedVariables of the evaluation of the expression in the return statement
+     - for fields among the linkedVariables: fieldAnalysis.variablesLinkedToMe,
+       which in turn depends on fieldAssignments and fieldsLinkedToFieldsAndVariables of ALL OTHER methods
+     - for local variables: variablesLinkedToFieldsAndParameters for this method
+
+     sets variablesLinkedToMethodResult, and @Linked on or off dependent on whether the set is empty or not
+    */
 
     private boolean updateVariablesLinkedToMethodResult(List<NumberedStatement> numberedStatements,
                                                         MethodInfo methodInfo,
@@ -82,13 +101,13 @@ public class ComputeLinking {
                         } else if (variable instanceof LocalVariableReference) {
                             dependencies = methodProperties.variablesLinkedToFieldsAndParameters.getOrDefault(variable, Set.of());
                         } else {
-                            dependencies = Set.of(); // TODO This...
+                            dependencies = Set.of();
                         }
                         log(LINKED_VARIABLES, "Dependencies of {} are [{}]", variable.detailedString(), Variable.detailedString(dependencies));
                         variables.addAll(dependencies);
                     }
                 } else {
-                    log(LINKED_VARIABLES, "Not yet ready to compute linked variables of method {}", methodInfo.fullyQualifiedName());
+                    log(LINKED_VARIABLES, "Not yet ready to compute linked variables of result of method {}", methodInfo.fullyQualifiedName());
                     return false;
                 }
             }
@@ -209,7 +228,7 @@ public class ComputeLinking {
         return changes;
     }
 
-    private static boolean updateFieldAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private static boolean computeFieldAssignmentsFieldsRead(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
         for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {

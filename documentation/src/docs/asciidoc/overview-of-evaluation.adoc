@@ -77,7 +77,7 @@ This should not occur too often, as we already analyse all methods within a type
 However, should a method linking return `NO_VALUE`, we can delay writing the final results.
 We will use `variablesLinkedToMethodResult` as a marker, setting an empty set for methods that do not return a result.
 . during the evaluation of a assignments, links are computed in the `Value` classes `Instance` (constructors) and `MethodValue` #TODO#.
-Both make use of `variablesLinkedToMethodResult` and `variableAssignedToMethodResult`.
+Both make use of `variablesLinkedToMethodResult`.
 . exposing a variable as a argument to a method may cause a link to a field to be formed, but not to our local variables, nor to the other arguments.
 +
 [source]
@@ -102,10 +102,21 @@ It is responsible for setting up the evaluation context for each analysis of fie
 
 The statement analyser builds the linkage dependency graphs.
 
-The method analyser will complete the linking step once `variablesLinkedToMethodResult` and `variableAssignedToMethodResult` and `fieldsLinkedToFieldsAndVariables` have been written, by writing the `linksComputed` boolean.
-It can only delay this step if the evaluation context has recorded some delay because of a method call to an as yet un-analysed method.
+The method analyser will complete the linking step once `variablesLinkedToMethodResult` and `fieldsLinkedToFieldsAndVariables` have been written, by writing the `linksComputed` boolean.
+It will do so when all values of fields and local variables have a definite value (different from `NO_VALUE`).
+This will happen once all `fieldAssignmentValues` are known.
+
 As soon as linkage has been completed, the next iteration of the statement analyser will actively detect parameter annotations.
 It will then trigger analysis in the field analyser as soon as `fieldAssignments` and `fieldRead` are filled for all fields.
+
+. <<nullnotallowed-annotation>> on parameters, once evaluations defined
+. `fieldAssignments`, `fieldsRead`
+. <<final-annotation>> on fields
+. fieldAssignmentValues, once evaluations defined
+. <<constant-annotation>> and <<notnull-annotation>> on fields, once relevant fieldAssignmentValues defined
+. go back to 3 until all fields have a defined value
+. `contentModifications`
+. <<notmodified-annotation>> for parameters
 
 ==== Annotations on fields
 
@@ -114,6 +125,7 @@ In this section we first detail how each we compute each of the annotations on f
 @Constant::
 This annotation only makes sense when the field also has the annotation <<final-annotation>>.
 The field analyser will set it when the initialiser or computed value for the field can be evaluated to a constant.
+It can do so when all `methodAnalysis.fieldAssignmentValues` are valid.
 
 @Final::
 The annotation follows automatically when the field is explicitly final, i.e., when it has the `final` modifier.
@@ -130,7 +142,6 @@ This implies that all linking should have been computed before `fieldRead` can b
 @NotNull::
 The computation consists of checking the not null property of the all assignments to the field, in the initialiser, and all the methods.
 It uses the `methodAnalysis.fieldAssignments` booleans as a precondition to check that all `methodAnalysis.fieldAssignmentValues` are valid.
-This implies that all linking should have been computed before `fieldAssignments` can be set to true.
 
 ==== Annotations on parameters
 

@@ -114,12 +114,18 @@ public class FieldAnalyser {
             // we can set the initial value; also take into account the value of the initialiser, if it is there
             Value consistentValue = value;
             for (MethodInfo method : typeInspection.methodsAndConstructors()) {
-                if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
-                    Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
-                    if (consistentValue == NO_VALUE) consistentValue = assignment;
-                    else if (!consistentValue.equals(assignment)) {
-                        log(ANALYSER, "Cannot set consistent value for {}, have {} and {}", fieldInfo.fullyQualifiedName(),
-                                consistentValue, assignment);
+                if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
+                    if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
+                        Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
+                        if (consistentValue == NO_VALUE) consistentValue = assignment;
+                        else if (!consistentValue.equals(assignment)) {
+                            log(CONSTANT, "Cannot set consistent value for {}, have {} and {}", fieldInfo.fullyQualifiedName(),
+                                    consistentValue, assignment);
+                            consistentValue = NO_VALUE;
+                            break;
+                        }
+                    } else {
+                        log(CONSTANT, "Delay consistent value for {}", fieldInfo.fullyQualifiedName());
                         consistentValue = NO_VALUE;
                         break;
                     }
@@ -138,7 +144,7 @@ public class FieldAnalyser {
                     log(CONSTANT, "Marked that {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }
                 fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                log(ANALYSER, "Setting initial value of effectively final {} to {}",
+                log(CONSTANT, "Setting initial value of effectively final {} to {}",
                         fieldInfo.fullyQualifiedName(), consistentValue);
                 changes = true;
             }

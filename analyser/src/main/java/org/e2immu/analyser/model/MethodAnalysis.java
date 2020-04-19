@@ -48,7 +48,7 @@ public class MethodAnalysis extends Analysis {
     // produces an error
     public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();
 
-    // used in the computation of essentially final fields
+    // used in the computation of effectively final fields
     public final SetOnceMap<FieldInfo, Boolean> fieldAssignments = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>();
 
@@ -68,7 +68,6 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
-    public final SetOnce<Optional<Variable>> variableAssignedToMethodResult = new SetOnce<>();
 
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 

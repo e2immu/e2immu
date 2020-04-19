@@ -200,7 +200,7 @@ public class TypeAnalyser {
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                // most likely value here is "variable value"
+                // most likely value here is "variable value", definitely not NO_VALUE, UNKNOWN_VALUE
                 if (value instanceof UnknownValue) throw new UnsupportedOperationException();
             } else {
                 value = UnknownValue.NO_VALUE;
@@ -237,34 +237,22 @@ public class TypeAnalyser {
         if (sortedType.typeInfo.typeAnalysis.annotations.getOtherwiseNull(typeContext.e2Immutable.get()) == Boolean.TRUE)
             return false;
         if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Final.get())) return false;
-        // rule 1. all fields must be effectively final
-        boolean isValueClass = true; //sortedType.typeInfo.typeInspection.get().typeNature == TypeNature.CLASS;
+
+        // rule 1 of 1. all fields must be effectively final
+        boolean isE2Final = true;
 
         for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
             Boolean effectivelyFinal = fieldInfo.isFinal(typeContext);
             if (effectivelyFinal == null) return false; // cannot decide
             if (!effectivelyFinal) {
                 log(VALUE_CLASS, "{} is not a value class, field {} is not effectively final", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                isValueClass = false;
-                break;
-            }
-            Boolean notModified = fieldInfo.isNotModified(typeContext);
-            if (notModified == null) return false;// delay
-            if (!notModified) {
-                log(VALUE_CLASS, "{} is not a value class, field {} is not @NotModified", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                isValueClass = false;
+                isE2Final = false;
                 break;
             }
         }
 
-        // rule 2. all publicly exposed methods (not private) must have @NotModified parameters
-        if (isValueClass) {
-            Boolean methods = noMethodsThatModifyContent(sortedType, VALUE_CLASS, "value class");
-            if (methods == null) return false;
-            isValueClass = methods;
-        }
-        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Final.get(), isValueClass);
-        log(VALUE_CLASS, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isValueClass ? "" : "not ")
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Final.get(), isE2Final);
+        log(VALUE_CLASS, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Final ? "" : "not ")
                 + "@ValueClass");
         return true;
     }

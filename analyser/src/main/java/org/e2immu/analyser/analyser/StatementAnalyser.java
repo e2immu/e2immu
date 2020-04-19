@@ -38,9 +38,13 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
+
+// the statement analyser does not add annotations, but it does raise errors
+// output of the only public method is in changes to the properties of the variables in the evaluation context
 
 public class StatementAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
@@ -92,42 +96,13 @@ public class StatementAnalyser {
                         if (isNull.isPresent()) {
                             Variable variable = isNull.get();
                             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
-                            if (variable instanceof ParameterInfo) {
-                                ParameterInfo parameterInfo = (ParameterInfo) variable;
-                                if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                                    parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                                    if (null != variableProperties.uponUsingConditional)
-                                        variableProperties.uponUsingConditional.run();
-                                    log(NULL_NOT_ALLOWED, "Mark parameter {} as @NullNotAllowed", variable.detailedString());
-                                    changes = true;
-                                }
-                            } else if (variable instanceof FieldReference) {
-                                // NOTE: because of multi-threading, fields that are not effectively final
-                                // cannot be marked @NotNull. See notes in documentation.
-                                //FieldInfo fieldInfo = ((FieldReference)variable).fieldInfo;
-                                // take action, but only when during the construction phase of the method
-                                // (which can be more than the constructor)
-                                // TODO
-                            }
+                            variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
                         }
                     }
                 }
             }
+            if (unusedLocalVariablesCheck(variableProperties)) changes = true;
 
-            for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
-                Variable variable = entry.getKey();
-                Set<VariableProperty> properties = entry.getValue().properties;
-                if (properties.contains(VariableProperty.CREATED) &&
-                        !properties.contains(VariableProperty.READ)) {
-                    if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
-                    LocalVariable localVariable = ((LocalVariableReference) variable).variable;
-                    if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
-                        methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                        log(ANALYSER, "Mark local variable {} as unused", localVariable.name);
-                        changes = true;
-                    }
-                }
-            }
             if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
                 log(LINKED_VARIABLES, "Dependency graph of linked variables:");
                 variableProperties.dependencyGraph.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
@@ -139,6 +114,26 @@ public class StatementAnalyser {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
             throw rte;
         }
+    }
+
+    private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
+        boolean changes = false;
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
+            Variable variable = entry.getKey();
+            Set<VariableProperty> properties = entry.getValue().properties;
+            if (properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
+                if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
+                LocalVariable localVariable = ((LocalVariableReference) variable).variable;
+                if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
+                    methodAnalysis.unusedLocalVariables.put(localVariable, true);
+                    log(ANALYSER, "Mark local variable {} as unused", localVariable.name);
+                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                            ", local variable " + localVariable.name + " is not used");
+                    changes = true;
+                }
+            }
+        }
+        return changes;
     }
 
     private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
@@ -168,7 +163,7 @@ public class StatementAnalyser {
                 if (pair.v) changes = true;
                 value = pair.k;
             } else {
-                value = UnknownValue.NO_VALUE;
+                value = NO_VALUE;
             }
             variableProperties.create(lvr, value, VariableProperty.CREATED);
         }
@@ -208,7 +203,14 @@ public class StatementAnalyser {
         // PART 5: checks for ReturnStatement
 
         if (statement.statement instanceof ReturnStatement) {
-            if (value != null) {
+            if (value == null) {
+                if (!statement.linkedVariables.isSet()) {
+                    statement.linkedVariables.set(Set.of());
+                }
+                if (!statement.returnValue.isSet()) {
+                    statement.returnValue.set(NO_VALUE);
+                }
+            } else if (value != NO_VALUE) {
                 Set<Variable> vars = value.linkedVariables(variableProperties);
                 if (!statement.linkedVariables.isSet()) {
                     statement.linkedVariables.set(vars);
@@ -219,16 +221,16 @@ public class StatementAnalyser {
                     log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
                     changes = true;
                 }
-            }
-            if (!statement.returnValue.isSet()) {
-                if (value != UnknownValue.NO_VALUE) {
-                    statement.returnValue.set(value == null ? UnknownValue.NO_VALUE : value);
-                } else {
-                    log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
-                            methodInfo.fullyQualifiedName(), statement.streamIndices());
+                if (!statement.returnValue.isSet()) {
+                    statement.returnValue.set(value);
                 }
+            } else {
+                log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
+                        methodInfo.fullyQualifiedName(), statement.streamIndices());
             }
         }
+
+        // PART XX: TODO code for sub-blocks which change local variables (int i=0; while(...) { i= i+1; }  after while i is probably not == 0!
 
         // PART 6: checks for IfElse
 
@@ -308,7 +310,7 @@ public class StatementAnalyser {
         }
 
         // PART 11: finally there are the updaters
-        
+
         for (Expression updater : codeOrganization.updaters) {
             Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
             if (pair.v) changes = true;
@@ -361,7 +363,7 @@ public class StatementAnalyser {
                 if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
                     variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
                 }
-                if (value != UnknownValue.NO_VALUE) {
+                if (value != NO_VALUE) {
                     variableProperties.setValue(at, value);
                     Set<Variable> linkTo = value.linkedVariables(variableProperties);
                     log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
@@ -383,23 +385,19 @@ public class StatementAnalyser {
         for (Variable variable : expression.variablesInScopeSide()) {
             if (!(variable instanceof This)) {
                 if (variableProperties.isNotNull(variable)) {
-                    log(VARIABLE_PROPERTIES, "Null has been excluded for {}", variable.detailedString());
+                    log(VARIABLE_PROPERTIES, "Null has already been excluded for {}", variable.detailedString());
                 } else {
-                    if (variable instanceof ParameterInfo) {
-                        ParameterInfo parameterInfo = (ParameterInfo) variable;
-                        if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                            parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                            log(NULL_NOT_ALLOWED, "Variable {} can be null, we add @NullNotAllowed", variable.detailedString());
-                            changes = true;
-                        }
-                    }
                     variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+                    log(VARIABLE_PROPERTIES, "Set {} to PERMANENTLY NOT NULL", variable.detailedString());
+                    changes = true;
                 }
             }
         }
         return changes;
     }
 
+    // the rest of the code deals with the effect of a method call on the variable properties
+    // no annotations are set here, only variable properties
 
     private boolean analyseCallsWithParameters(Expression expression, VariableProperties variableProperties) {
         boolean changes = false;
@@ -453,11 +451,6 @@ public class StatementAnalyser {
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
             if (parameterInDefinition.isNullNotAllowed(typeContext) == Boolean.TRUE) {
-                if (v instanceof ParameterInfo && !((ParameterInfo) v).parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
-                    log(NULL_NOT_ALLOWED, "Adding implicit null not allowed on {}", v.detailedString());
-                    ((ParameterInfo) v).parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
-                    changes = true;
-                }
                 variableProperties.addProperty(v, VariableProperty.PERMANENTLY_NOT_NULL);
             }
         }

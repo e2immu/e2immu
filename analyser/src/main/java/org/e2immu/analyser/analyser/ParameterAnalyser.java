@@ -18,16 +18,21 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NullNotAllowed;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.MODIFY_CONTENT;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
@@ -67,5 +72,48 @@ public class ParameterAnalyser {
             }
         }
         return false;
+    }
+
+    /*
+     computation is based on the premise that if a parameter ends up with the property PERMANENTLY NOT NULL, then
+     it should get a @NullNotAllowed annotation
+     the code is more complex because there may have been indirect assignments
+
+     String method(String s) {
+       String t = s;
+       return t.trim();
+     }
+
+     Here `t` will get the PERMANENTLY_NOT_NULL, but the value of `t` will be the VariableValue `s`
+    */
+
+    public boolean isNullNotAllowed(VariableProperties methodProperties) {
+        boolean changes = false;
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
+            Variable variable = entry.getKey();
+            ParameterInfo parameterInfo = null;
+            boolean isPermanentlyNotNull = false;
+            if (variable instanceof ParameterInfo) {
+                parameterInfo = (ParameterInfo) variable;
+                isPermanentlyNotNull = entry.getValue().properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
+            } else {
+                Value value = entry.getValue().getCurrentValue();
+                if (value instanceof VariableValue) {
+                    Variable assignedVariable = ((VariableValue) value).value;
+                    if (assignedVariable instanceof ParameterInfo) {
+                        parameterInfo = (ParameterInfo) assignedVariable;
+                        VariableProperties.AboutVariable aboutVariable = methodProperties.variableProperties.get(parameterInfo);
+                        Objects.requireNonNull(aboutVariable);
+                        isPermanentlyNotNull = entry.getValue().properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
+                    }
+                }
+            }
+            if (parameterInfo != null && isPermanentlyNotNull && !parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
+                log(NULL_NOT_ALLOWED, "Adding implicit null not allowed on {}", parameterInfo.detailedString());
+                parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
+                changes = true;
+            }
+        }
+        return changes;
     }
 }
