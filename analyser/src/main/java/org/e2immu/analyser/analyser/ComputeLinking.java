@@ -59,7 +59,7 @@ public class ComputeLinking {
                 changes = true;
 
             if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
-            if (updateParameterAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
+            if (checkParameterAssignmentError(methodInfo, methodProperties)) changes = true;
 
             return changes;
         } catch (RuntimeException rte) {
@@ -124,6 +124,8 @@ public class ComputeLinking {
 
     // in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
     // gets rid of local vars and transitive links
+    // TODO: answer how this method deals with unevaluated links (links that can do better when one of their components are != NO_VALUE)
+
     private static boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
         log(LINKED_VARIABLES, "Establishing links, copying from dependency graph of size {}",
                 methodProperties.dependencyGraph.size());
@@ -210,7 +212,7 @@ public class ComputeLinking {
         reverse.forEach(v -> recursivelyAddLinkedVariables(methodProperties, v, result));
     }
 
-    private boolean updateParameterAnnotationsFromMethodProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
             Set<VariableProperty> properties = entry.getValue().properties;
