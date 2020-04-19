@@ -248,9 +248,8 @@ public class Resolver {
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo) {
                 MethodInfo methodInfo = ((MethodInfo) from);
-                Set<MethodInfo> methodsCalled = toList == null ? Set.of() :
-                        toList.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
-                methodInfo.methodAnalysis.methodsOfOwnClassCalled.set(methodsCalled);
+                //Set<MethodInfo> methodsCalled = toList == null ? Set.of() :
+                //        toList.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependencies(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
                 methodInfo.methodAnalysis.methodsOfOwnClassReached.set(methodsReached);

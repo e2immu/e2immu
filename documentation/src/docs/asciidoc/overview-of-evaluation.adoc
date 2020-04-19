@@ -65,6 +65,7 @@ This typically occurs once in a constructor, but in theory it can occur multiple
 An example of a indirect assignment link is a method call like `field = object.method(p1, p2)` which links `field` to `object`, `p1` and `p2` unless there is an <<independent-annotation>> annotation on the method.
 In absence of this annotation, the method can either return `object`, `p1` or `p2` directly, or some new intermediary composed of all three.
 Modifications to `p1` or `p2`, or other method calls on `object`, then have the potential to be modifications to `field`.
+If any is primitive or effectively immutable, say `p2`, then `field` will not be linked this variable.
 
 The evaluation properties hold two dependency graphs, one for links and one for direct assignments, during each evaluation of a method body.
 The transitive closure of dependencies can be evaluated after each evaluation phase.
@@ -93,6 +94,18 @@ class Test {
 ----
 +
 This link can be read from the method's `fieldsLinkedToFieldsAndVariables` map.
+
+==== Overall flow
+
+The type analyser controls the iterations, and cycles through the sorted list of fields and methods.
+It is responsible for setting up the evaluation context for each analysis of field or method.
+
+The statement analyser builds the linkage dependency graphs.
+
+The method analyser will complete the linking step once `variablesLinkedToMethodResult` and `variableAssignedToMethodResult` and `fieldsLinkedToFieldsAndVariables` have been written, by writing the `linksComputed` boolean.
+It can only delay this step if the evaluation context has recorded some delay because of a method call to an as yet un-analysed method.
+As soon as linkage has been completed, the next iteration of the statement analyser will actively detect parameter annotations.
+It will then trigger analysis in the field analyser as soon as `fieldAssignments` and `fieldRead` are filled for all fields.
 
 ==== Annotations on fields
 
@@ -124,19 +137,17 @@ This implies that all linking should have been computed before `fieldAssignments
 @NotModified for parameters::
 The method analyser potentially sets this annotation directly from the variable properties at the end of each expression evaluation, for all linked variables at the same time.
 The equivalent for fields is to set the `methodAnalysis.contentModifications` boolean.
-+
-#TODO:# this is problematic, because its either too early or too late, and no links are taken into account.
+The method analyser activates this code by setting `linksComputed` to true.
 
 @NullNotAllowed for parameters::
-When, implicitly or explicitly, passing a `null` value to a parameter would result in an exception, the <<nullnotallowed-annotation>> will be added to the parameter.
-The statement analyser makes this assessment in three locations in the statement analyser.
+When, implicitly or explicitly, passing a `null` value to a parameter would result in an exception, the <<nullnotallowed-annotation>> will be added to the parameter The statement analyser makes this assessment in three locations in the statement analyser.
 +
 It first does this in the `doImplicitNullCheck` method, which detects if a variable, appearing in the scope side of an expression, has a `isNotNull` property.
-If it does not have this property, then the implicit null check is present, and the annotation should be added.
+If it does not have this property, then the implicit null check is present, and the annotation should be added to the parameter assignment-linked to the variable.
 Once added, the code adds the `PERMANENTLY_NOT_NULL` property for the rest of the cycle.
 +
 Secondly, it looks at arguments to method calls which already have the <<nullnotallowed-annotation>> annotation.
-If the argument is a parameter, then it inherits the annotation.
+If the argument is a variable assignment-linked to a parameter, then the parameter inherits the annotation.
 +
 Finally, the statement analyser looks at _escapes_ associated with _null conditionals_.
 An escape is the termination of a block caused by explicitly throwing an exception.
@@ -144,11 +155,11 @@ A null conditional is a `Value` object added to the blocks of an _if-then-else_ 
 This value, in the case of _if-then-else_, is not a constant but generally an `EqualsValue` object optionally enclosed in a `NegatedValue` or `AndValue`.
 The inline conditional operator returns a `ConditionalValue` object which also can act as a null conditional.
 +
-#TODO:# when the parameter is directly assigned (stronger than linked) to another variable, which undergoes said conditions, the parameter should get the annotation as well.
+The method analyser activates this code by setting `linksComputed` to true.
 
 ==== Annotations on methods
 
-@Constant for methods::
+@Constant::
 Immediately after evaluating the main expression of a statement, the statement analyser looks at return statements.
 If the evaluation renders a definite value (different from `NO_VALUE`), then it writes this value in `numberedStatement.returnValue`.
 At the end of the method analysis, it counts the number of return statements in the method.
@@ -158,22 +169,25 @@ In the case of multiple return statements, it writes an `Instance` value.
 The method analysis `check` method validates if the annotation corresponds to this value.
 Note that evaluation of the `MethodCall` and `MethodReference` expressions makes use of `methodAnalysis.singleReturnValue`.
 
-@Fluent for methods::
+@Fluent::
 At the end of the method analysis, the code computes whether all return statements return `this`, or the result of another fluent call.
 If this is the case, it directly writes a <<fluent-annotation>>.
 If the method call has no annotation or negative marker yet, the code delays a decision.
 If there is one example of a non-fluent statement, the code writes a negative marker.
 The method analysis `check` method validates source code annotations against the presence of computed <<fluent-annotation>> annotations.
 
-@Identity for methods::
+@Identity::
 Similarly to the <<fluent-annotation>> computation, the method analyser computes whether all return statements return the value of the first parameter, or the result of a method call which has been assigned <<identity-annotation>> already.
 If that method call has no annotation yet, the code delays a decision.
 If all return statements are identity, the code writes the annotation.
 As soon as one return statement is not fluent, the code writes a negative marker to indicate that the method is not identity.
 The method analysis `check` method validates source code annotations against the presence of computed <<identity-annotation>> annotations.
 
+@NotModified::
+The method analyser computes this annotation in its `methodIsNotModified` method by combining the presence or absence of <<notmodified-annotation>> annotations on each of its parameters, with the `contentModifications` values for each of the fields read.
+The code is only activated after linking has been computed. #TODO#
 
-@NotNull for methods::
+@NotNull::
 In the method analyser, the code for <<notnull-annotation>> behaves identically to that of <<fluent-annotation>> and <<identity-annotation>>, basing its decision on the `numberedStatement.returnsNotNull` boolean.
 The statement analyser potentially writes this boolean immediately after having evaluated the main expression of the statement, based on the `isNotNull` property of the evaluation result.
 The most interesting implementations of this property are in `VariableValue` and `MethodValue`.
@@ -184,16 +198,19 @@ Others are mostly trivial: constants are not null unless they are the `null` con
 Now we explain how we determine the errors:
 
 Unused local variable::
-Finally, based on `methodAnalysis.unusedLocalVariables`, we emit errors during method analysis checking.
+Based on `methodAnalysis.unusedLocalVariables`, we emit errors during method analysis checking.
 
 Unused assignment:: It makes no sense to assign a value to a variable, and then assign another value before reading the former.
+#TODO#
 
 Missing static modifier:: Methods that do not touch instance variables, directly, or indirectly, should be marked `static`.
-The `detectNotModified` method in the method analyser starts by issuing this error if necessary.
+The `detectMissingStaticStatement` method in the method analyser issues this error if necessary.
 It is based on the `methodAnalysis.fieldRead` and `methodAnalysis.fieldModifications` maps, the `methodAnalysis.thisRead` and `methodAnalysis.staticMethodCallsOnly` booleans, and obviously also on properties of the class structure such as the possibility of overriding the method
 
 Condition in if-statement evaluates to constant::
 The condition in an `if` statement should not be a constant.
+Note that adding a <<nullnotallowed-annotation>> to a parameter because of an `if` statement, forces this parameter to be `PERMANENTLY_NOT_NULL` in the next generation.
+To avoid raising this error (`p == null` will always evaluate to `false`), the error flag for this error `numberedStatement.errorValue` is set without raising the error.
 
 Assignment of a parameter::
 Intentionally we raise an error when the user assigns a value to a parameter in the method body.

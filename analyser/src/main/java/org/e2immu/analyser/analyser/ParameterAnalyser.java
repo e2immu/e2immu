@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
@@ -26,6 +27,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NullNotAllowed;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
@@ -49,5 +51,21 @@ public class ParameterAnalyser {
         parameterInfo.error(NullNotAllowed.class, typeContext.nullNotAllowed.get()).ifPresent(mustBeAbsent ->
                 typeContext.addMessage(Message.Severity.ERROR, where.get() +
                         ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NullNotAllowed"));
+    }
+
+    public boolean notModified(ParameterInfo parameterInfo, Boolean directContentModification) {
+        if (!parameterInfo.isNotModifiedByDefinition(typeContext)) {
+            if (directContentModification != null) {
+                boolean notModified = !directContentModification;
+                if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
+                    log(MODIFY_CONTENT, "MA: Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
+                    parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
+                    return true;
+                }
+            } else {
+                log(MODIFY_CONTENT, "Delaying setting parameter not modified on {}", parameterInfo.detailedString());
+            }
+        }
+        return false;
     }
 }

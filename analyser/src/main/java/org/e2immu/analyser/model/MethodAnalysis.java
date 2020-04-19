@@ -65,7 +65,6 @@ public class MethodAnalysis extends Analysis {
     // In other words, if A->B, then B cannot be @NotModified unless A is too
 
     // valid as soon as fieldAssignments is set, and currently only used to compute @Linked annotations
-    // THIS IS NOT A CRITICAL TRANSFER MAP
     public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
@@ -73,9 +72,15 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 
-    public final SetOnce<Set<MethodInfo>> methodsOfOwnClassCalled = new SetOnce<>();
     /**
-     * this one contains all methods called, and the transitive closure
+     * marker boolean to indicate that all links are available after analysing all statements.
+     *
+     */
+    public final SetOnce<Boolean> linksComputed = new SetOnce<>();
+    /**
+     * this one contains all own methods called from this method, and the transitive closure.
+     * we use this to compute effective finality: some methods are only called from constructors,
+     * they form part of the construction aspect of the class
      */
     public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
 

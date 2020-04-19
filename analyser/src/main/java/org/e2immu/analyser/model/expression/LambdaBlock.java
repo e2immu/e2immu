@@ -36,6 +36,8 @@ import org.e2immu.annotation.NullNotAllowed;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements.recursivelyCreateNumberedStatements;
+
 @E2Immutable
 public class LambdaBlock implements Expression {
     public final Block block;
@@ -103,7 +105,7 @@ public class LambdaBlock implements Expression {
         if (!numberedStatements.isSet()) {
             List<NumberedStatement> numberedStatements = new LinkedList<>();
             Stack<Integer> indices = new Stack<>();
-            MethodAnalyser.recursivelyCreateNumberedStatements(block.statements,
+            recursivelyCreateNumberedStatements(block.statements,
                     indices,
                     numberedStatements,
                     new SideEffectContext(child.getTypeContext(), child.getCurrentMethod()));

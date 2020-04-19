@@ -1,14 +1,12 @@
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.Constant;
 
@@ -110,5 +108,18 @@ public class CheckConstant {
         }
         List<Expression> expressions = test == null ? List.of(computed) : List.of(computed, test, valueExpression);
         return AnnotationExpression.fromAnalyserExpressions(typeContext.constant.get().typeInfo, expressions);
+    }
+
+    public static void checkConstantForMethods(TypeContext typeContext, MethodInfo methodInfo) {
+        // NOTE: the reason we do not check @Constant in the same way is that there can be many types
+        // of constants, and we have not yet provided them all in @Constant. At the same time,
+        // singleReturnValue is used in expressions; this is faster and more reliable
+        Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
+        boolean haveConstantAnnotation = checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
+                (valueToTest, typeMsg) -> typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
+                        ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue));
+        if (haveConstantAnnotation && singleReturnValue == UnknownValue.NO_VALUE) {
+            typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() + " has no single return value");
+        }
     }
 }
