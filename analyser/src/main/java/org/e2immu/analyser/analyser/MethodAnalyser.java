@@ -115,99 +115,25 @@ public class MethodAnalyser {
 
             boolean changes = false;
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
-            LOGGER.debug("Analysing {} statements", numberedStatements.size());
 
             // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties))
                 changes = true;
-            if (methodIsIndependent(methodInfo)) changes = true;
-
+            if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;
 
             long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
             if (returnStatements > 0) {
-
-                //@Identity
-                boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                        e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
-                        .count() == returnStatements;
-                if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                    methodAnalysis.annotations.put(typeContext.identity.get(), true);
-                    log(ANALYSER, "Set @Identity");
-                    changes = true;
-                }
-                boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                        e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
-                if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
-                    methodAnalysis.annotations.put(typeContext.identity.get(), false);
-                    log(ANALYSER, "Set NOT @Identity");
-                    changes = true;
-                }
-
-                //@Fluent
-                boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                        e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
-                        .count() == returnStatements;
-                if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                    methodAnalysis.annotations.put(typeContext.fluent.get(), true);
-                    changes = true;
-                    log(ANALYSER, "Set @Fluent");
-                }
-                boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                        e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
-                if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-                    methodAnalysis.annotations.put(typeContext.fluent.get(), false);
-                    log(ANALYSER, "Set NOT @Fluent");
-                    changes = true;
-                }
-
-                // @NotNull
-                boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
-                        .count() == returnStatements;
-                if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                    methodAnalysis.annotations.put(typeContext.notNull.get(), true);
-                    log(NOT_NULL, "Set @NotNull on {}", methodInfo.fullyQualifiedName());
-                    changes = true;
-                }
-                boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
-                if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                    methodAnalysis.annotations.put(typeContext.notNull.get(), false);
-                    log(NOT_NULL, "Set NOT @NotNull on {}", methodInfo.fullyQualifiedName());
-                    changes = true;
-                }
-
-                // @Constant,
-                // this runs in the first pass
-                if (!methodAnalysis.singleReturnValue.isSet()) {
-                    Value value;
-                    if (returnStatements == 1) {
-                        value = numberedStatements.stream()
-                                .filter(ns -> ns.returnValue.isSet())
-                                .map(ns -> ns.returnValue.get())
-                                .findAny().orElse(UnknownValue.NO_VALUE);
-                    } else {
-                        value = new Instance(methodInfo.returnType());
-                    }
-                    if (value != UnknownValue.NO_VALUE) {
-                        methodAnalysis.singleReturnValue.set(value);
-                        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-                        methodAnalysis.annotations.put(constantAnnotation, true);
-                        log(CONSTANT, "Added @Constant annotation on {}", methodInfo.fullyQualifiedName());
-                        changes = true;
-                    }
-                }
+                if (methodIsIdentity(returnStatements, numberedStatements, methodAnalysis)) changes = true;
+                if (methodIsFluent(returnStatements, numberedStatements, methodAnalysis)) changes = true;
+                if (methodIsNotNull(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodIsConstant(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
             }
 
             if (!methodInfo.isConstructor) {
                 if (methodInfo.isStatic) {
-                    if (!methodAnalysis.createObjectOfSelf.isSet()) {
-                        boolean createSelf = numberedStatements.stream().flatMap(ns -> Statement.findExpressionRecursivelyInStatements(ns.statement, NewObject.class))
-                                .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
-                        log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
-                        methodAnalysis.createObjectOfSelf.set(createSelf);
-                        changes = true;
-                    }
+                    if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
                 StaticModifier.detectMissingStaticStatement(typeContext, methodInfo, methodAnalysis);
                 if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
@@ -219,19 +145,124 @@ public class MethodAnalyser {
         }
     }
 
+    // part of @UtilityClass computation in the type analyser
+    private boolean methodCreatesObjectOfSelf(List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (!methodAnalysis.createObjectOfSelf.isSet()) {
+            boolean createSelf = numberedStatements.stream().flatMap(ns -> Statement.findExpressionRecursivelyInStatements(ns.statement, NewObject.class))
+                    .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
+            log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
+            methodAnalysis.createObjectOfSelf.set(createSelf);
+            return true;
+        }
+        return false;
+    }
+
+    // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
+    private boolean methodIsConstant(long returnStatements, List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (!methodAnalysis.singleReturnValue.isSet()) {
+            Value value;
+            if (returnStatements == 1) {
+                value = numberedStatements.stream()
+                        .filter(ns -> ns.returnValue.isSet())
+                        .map(ns -> ns.returnValue.get())
+                        .findAny().orElse(UnknownValue.NO_VALUE);
+            } else {
+                value = new Instance(methodInfo.returnType());
+            }
+            if (value != UnknownValue.NO_VALUE) {
+                methodAnalysis.singleReturnValue.set(value);
+                AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+                methodAnalysis.annotations.put(constantAnnotation, true);
+                log(CONSTANT, "Added @Constant annotation on {}", methodInfo.fullyQualifiedName());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean methodIsNotNull(long returnStatements, List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
+                .count() == returnStatements;
+        if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+            methodAnalysis.annotations.put(typeContext.notNull.get(), true);
+            log(NOT_NULL, "Set @NotNull on {}", methodInfo.fullyQualifiedName());
+            return true;
+        }
+        boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
+        if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
+            methodAnalysis.annotations.put(typeContext.notNull.get(), false);
+            log(NOT_NULL, "Set NOT @NotNull on {}", methodInfo.fullyQualifiedName());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean methodIsFluent(long returnStatements, List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+        boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
+                .count() == returnStatements;
+        if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+            methodAnalysis.annotations.put(typeContext.fluent.get(), true);
+            log(ANALYSER, "Set @Fluent");
+            return true;
+        }
+        boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
+        if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
+            methodAnalysis.annotations.put(typeContext.fluent.get(), false);
+            log(ANALYSER, "Set NOT @Fluent");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean methodIsIdentity(long returnStatements, List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+        boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
+                e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
+                .count() == returnStatements;
+        if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+            methodAnalysis.annotations.put(typeContext.identity.get(), true);
+            log(ANALYSER, "Set @Identity");
+            return true;
+        }
+        boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
+                e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
+        if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+            methodAnalysis.annotations.put(typeContext.identity.get(), false);
+            log(ANALYSER, "Set NOT @Identity");
+            return true;
+        }
+        return false;
+    }
+
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
-            Boolean isNotModified = methodInfo.isAllParametersNotModified(typeContext);
-            if (isNotModified == null) {
+            Boolean isAllParametersNotModified = methodInfo.isAllParametersNotModified(typeContext);
+            if (isAllParametersNotModified == null) {
                 log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because of parameters",
                         methodInfo.fullyQualifiedName());
                 return false;
             }
-            if (!isNotModified) {
+            boolean isNotModified;
+            if (!isAllParametersNotModified) {
                 log(NOT_MODIFIED, "Method {} cannot be @NotModified: some parameters are not @NotModified",
                         methodInfo.fullyQualifiedName());
+                isNotModified = false;
             } else {
-                log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
+                // second step, check that no fields are modified
+                if (!methodAnalysis.linksComputed.isSet()) {
+                    log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
+                }
+                isNotModified = methodAnalysis.contentModifications
+                        .stream()
+                        .filter(e -> e.getKey() instanceof FieldReference)
+                        .noneMatch(Map.Entry::getValue);
+                if (isNotModified) {
+                    log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
+                } else {
+                    log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications",
+                            methodInfo.fullyQualifiedName());
+                }
             }
             methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
             return true;
@@ -239,31 +270,33 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean methodIsIndependent(MethodInfo methodInfo) {
-        if (methodInfo.methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
+    // relies on the @Linked annotation for non-constructors, does a useful computation on constructors
+    private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
         Boolean mark = null;
         if (methodInfo.isConstructor) {
             List<FieldInfo> fields = methodInfo.typeInfo.typeInspection.get().fields;
-            boolean allDefined = fields.stream().allMatch(f -> f.fieldAnalysis.variablesLinkedToMe.isSet());
-            if (allDefined) {
+            if (methodAnalysis.linksComputed.isSet()) {
                 mark = fields.stream().allMatch(f -> Collections.disjoint(f.fieldAnalysis.variablesLinkedToMe.get(),
                         methodInfo.methodInspection.get().parameters));
             }
         } else {
             if (methodInfo.returnType().isPrimitiveOrStringNotVoid()) mark = true;
             if (methodInfo.returnType().isEffectivelyImmutable(typeContext) == Boolean.TRUE) mark = true;
-            Boolean linked = methodInfo.methodAnalysis.annotations.getOtherwiseNull(typeContext.linked.get());
+            Boolean linked = methodAnalysis.annotations.getOtherwiseNull(typeContext.linked.get());
             if (linked != null) mark = !linked;
         }
         if (mark != null) {
-            methodInfo.methodAnalysis.annotations.put(typeContext.independent.get(), mark);
+            methodAnalysis.annotations.put(typeContext.independent.get(), mark);
             log(INDEPENDENT, "Mark method {} " + (mark ? "" : "not ") + "independent",
                     methodInfo.fullyQualifiedName());
+        } else {
+            log(INDEPENDENT, "Delaying @Independent on {}", methodInfo.fullyQualifiedName());
         }
         return mark != null;
     }
 
-
+    // helper
     private static Boolean onReturnStatement(NumberedStatement ns, Predicate<Expression> predicate) {
         if (ns.statement instanceof ReturnStatement) {
             ReturnStatement ret = (ReturnStatement) ns.statement;

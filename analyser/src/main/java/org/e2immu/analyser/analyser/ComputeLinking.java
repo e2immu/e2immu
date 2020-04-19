@@ -7,6 +7,8 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +22,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputeLinking {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinking.class);
+
     public final ParameterAnalyser parameterAnalyser;
     public final TypeContext typeContext;
 
@@ -33,22 +37,27 @@ public class ComputeLinking {
     // properties disappear when that level disappears
 
     public boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements, MethodInfo methodInfo,
-                                                      VariableProperties methodProperties) {
+                                                     VariableProperties methodProperties) {
         boolean changes = false;
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
-        StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
-        if (statementAnalyser.computeVariablePropertiesOfBlock(statements.get(0), methodProperties)) changes = true;
+        try {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+            StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
+            if (statementAnalyser.computeVariablePropertiesOfBlock(statements.get(0), methodProperties)) changes = true;
 
-        if (establishLinks(methodInfo, methodProperties)) changes = true;
+            if (establishLinks(methodInfo, methodProperties)) changes = true;
 
-        if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodProperties))
-            changes = true;
+            if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodProperties))
+                changes = true;
 
-        if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
-        if (updateParameterAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
-        if (updateFieldAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
+            if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
+            if (updateParameterAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
+            if (updateFieldAnnotationsFromMethodProperties(methodInfo, methodProperties)) changes = true;
 
-        return changes;
+            return changes;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception in linking computation, method {}", methodInfo.fullyQualifiedName());
+            throw rte;
+        }
     }
 
     private boolean updateVariablesLinkedToMethodResult(List<NumberedStatement> numberedStatements,

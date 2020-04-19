@@ -183,9 +183,13 @@ If all return statements are identity, the code writes the annotation.
 As soon as one return statement is not fluent, the code writes a negative marker to indicate that the method is not identity.
 The method analysis `check` method validates source code annotations against the presence of computed <<identity-annotation>> annotations.
 
+@Independent::
+As soon as linking has been computed, the method analyser declares non-constructors to be independent when they return primitives or effectively immutable objects, or when the <<linked-annotation>> has been determined to be absent.
+It declares constructors independent when none of the fields are linked to the constructor.
+
 @NotModified::
 The method analyser computes this annotation in its `methodIsNotModified` method by combining the presence or absence of <<notmodified-annotation>> annotations on each of its parameters, with the `contentModifications` values for each of the fields read.
-The code is only activated after linking has been computed. #TODO#
+The code is only activated after linking has been computed.
 
 @NotNull::
 In the method analyser, the code for <<notnull-annotation>> behaves identically to that of <<fluent-annotation>> and <<identity-annotation>>, basing its decision on the `numberedStatement.returnsNotNull` boolean.
