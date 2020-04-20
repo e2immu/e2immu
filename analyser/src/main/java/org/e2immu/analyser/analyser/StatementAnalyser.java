@@ -103,9 +103,12 @@ public class StatementAnalyser {
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
 
-            if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
-                log(LINKED_VARIABLES, "Dependency graph of linked variables:");
-                variableProperties.dependencyGraph.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+            if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
+                log(LINKED_VARIABLES, "Dependency graph of linked variables best case:");
+                variableProperties.dependencyGraphBestCase.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+                        list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
+                log(LINKED_VARIABLES, "Dependency graph of linked variables worst case:");
+                variableProperties.dependencyGraphWorstCase.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
             }
 
@@ -175,11 +178,14 @@ public class StatementAnalyser {
                     variableProperties, statement);
             Value value = pair.k;
             if (pair.v) changes = true;
-            Set<Variable> linkTo = value.linkedVariables(variableProperties);
-            log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}]", localVariableCreation.localVariable.name,
-                    Variable.detailedString(linkTo));
+            Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
+            Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
+
+            log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}] best case, [{}] worst case",
+                    localVariableCreation.localVariable.name,
+                    Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
-            variableProperties.linkVariables(lvr, linkTo);
+            variableProperties.linkVariables(lvr, linkToBestCase, linkToWorstCase);
         }
 
         // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
@@ -365,10 +371,11 @@ public class StatementAnalyser {
                 }
                 if (value != NO_VALUE) {
                     variableProperties.setValue(at, value);
-                    Set<Variable> linkTo = value.linkedVariables(variableProperties);
-                    log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
-                            Variable.detailedString(linkTo));
-                    variableProperties.linkVariables(at, linkTo);
+                    Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
+                    Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
+                    log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
+                            Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
+                    variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
                 }
                 log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
             }

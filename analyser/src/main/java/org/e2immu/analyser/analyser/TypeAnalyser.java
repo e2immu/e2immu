@@ -192,6 +192,8 @@ public class TypeAnalyser {
         return fieldProperties;
     }
 
+    // this method is responsible for one of the big feed-back loops in the evaluation chain
+
     private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         Value value;
@@ -203,12 +205,12 @@ public class TypeAnalyser {
                 // most likely value here is "variable value", definitely not NO_VALUE, UNKNOWN_VALUE
                 if (value instanceof UnknownValue) throw new UnsupportedOperationException();
             } else {
-                value = UnknownValue.NO_VALUE;
+                value = new VariableValue(fieldReference, true);
             }
         } else if (Boolean.FALSE == isFinal) {
             value = new VariableValue(fieldReference);
         } else {
-            value = UnknownValue.NO_VALUE;
+            value = new VariableValue(fieldReference, true);
         }
 
         VariableProperty[] properties;

@@ -118,17 +118,32 @@ public class ComputeLinking {
         return true;
     }
 
-    // goal: we need to establish that in this method, recursively, a given field is linked to one or more fields or parameters
-    // we need to find out if a parameter is linked, recursively, to another field or parameter
-    // local variables need to be taken out of the loop
+    /*
+      goal: we need to establish that in this method, recursively, a given field is linked to one or more fields or parameters
+      we need to find out if a parameter is linked, recursively, to another field or parameter
+      local variables need to be taken out of the loop
 
-    // in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
-    // gets rid of local vars and transitive links
-    // TODO: answer how this method deals with unevaluated links (links that can do better when one of their components are != NO_VALUE)
+      in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
+      gets rid of local vars and transitive links
+
+      To answer how this method deals with unevaluated links (links that can do better when one of their components are != NO_VALUE)
+      two dependency graphs have been created: a best-case one where some annotations on the current type have been discovered
+      already, and a worst-case one where we do not take them into account.
+
+      Why? if a method is called, as part of the value, and we do not yet know anything about @Independent of that method,
+      the outcome of linkedVariables() can be seriously different. If there is a difference between the transitive
+      closures of best and worst, we should delay.
+
+      On top of this, fields whose @Final status has not been set yet, are represented (as currentValues in the evaluation context)
+      by VariableValues with a special boolean flag, instead of NO_VALUES.
+      This allows us to delay computations without completely losing the dependency structure as constructed up by method calls.
+      It is that dependency structure that we need to be able to distinguish between best and worst case.
+
+    */
 
     private static boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
-        log(LINKED_VARIABLES, "Establishing links, copying from dependency graph of size {}",
-                methodProperties.dependencyGraph.size());
+        log(LINKED_VARIABLES, "Establishing links, copying from dependency graphs of size {} best case, {} worst case",
+                methodProperties.dependencyGraphBestCase.size(), methodProperties.dependencyGraphWorstCase.size());
         AtomicBoolean changes = new AtomicBoolean();
         methodProperties.dependencyGraph.visit((variable, dependencies) -> {
             Set<Variable> terminals = new HashSet<>(methodProperties.dependencyGraph.dependencies(variable));

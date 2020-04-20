@@ -108,16 +108,18 @@ public class MethodValue implements Value {
     }
 
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
-     * to. There is NO need to consider linking between `b`, `c` and `d` because that linking takes place in the method's
-     * definition itself.
+     * to. There is no need to consider linking between `b`, `c` and `d` here because that linking takes place in the method's
+     * definition itself. We consider 4 cases:
      *
-     * Primitives and context classes break the chain: they cannot be modified. So if `b` is a context class, then
-     * `a` is independent of `b`, `c`, `d` because no method in a context class can return a modifiable object TODO based on fields.
-     * More generally, any primitive or context class return type breaks the chain.
-     * If the method is marked independent, then by definition there is no dependence.
-     * If `c` is a primitive or context class instance, `c` does not need to be added.
+     * 1. a is primitive or e2immutable: independent
+     * 2. method is @Independent: independent (the very definition)
+     * 3. b is @E2Immutable: only dependent on c, d
+     * 4. method is @NotModified: only dependent on c, d
      *
-     * But unless we know better, we need to make a dependent on b, c, and d.
+     * Note that a dependence on a parameter is only possible when it is not primitive or @E2Immutable (see VariableValue).
+     * On top of that comes the situation where the analyser has more detailed information than is in the annotations.
+     * For now, we decide to ignore such information.
+     *
      */
 
     private static final Set<Variable> INDEPENDENT = Set.of();
@@ -125,15 +127,8 @@ public class MethodValue implements Value {
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         TypeContext typeContext = evaluationContext.getTypeContext();
-        // if the method is one of an effectively immutable class, then we are guaranteed that we cannot modify the result...
-        // so no need to dig...
 
-        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
-        if ((bestCase || methodInfoDifferentType) && methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE)
-            return INDEPENDENT;
-        if ((bestCase || methodInfoDifferentType) && methodInfo.isIndependent(typeContext) == Boolean.TRUE)
-            return INDEPENDENT;
-
+        // RULE 1
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT; // no assignment
         if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
@@ -143,11 +138,24 @@ public class MethodValue implements Value {
             return INDEPENDENT;
         }
 
+        // RULE 2
+        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        if ((bestCase || methodInfoDifferentType) && methodInfo.isIndependent(typeContext) == Boolean.TRUE) {
+            return INDEPENDENT;
+        }
+
+        // some prep.
+
         Set<Variable> result = new HashSet<>();
-        // unless we know better, we need to link to the parameters of the method
-        // the VariableValue class will deal with parameters that are context classes
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
+        // RULE 3 & 4
+        if ((bestCase || methodInfoDifferentType) &&
+                (methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE || // RULE 3
+                        methodInfo.isNotModified(typeContext) == Boolean.TRUE)) // RULE 4
+            return result;
+
+        // default case, add b
         if (object != null) {
             result.addAll(object.linkedVariables(bestCase, evaluationContext));
         }

@@ -19,11 +19,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
@@ -77,36 +75,38 @@ public class Instance implements Value {
                 .collect(Collectors.joining(", ")) + ")" : "");
     }
 
+    private static final Set<Variable> INDEPENDENT = Set.of();
+
+    /*
+     * Rules, assuming the notation b = new B(c, d)
+     *
+     * 1. no explicit constructor, no parameters on a static type: independent
+     * 2. constructor is @Independent: independent
+     * 3. B is @E2Immutable: independent
+     *
+     * the default case is a dependence on c and d
+     */
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        if (constructorParameterValues == null || constructor == null) return Set.of();
+        // RULE 1
+        if (constructorParameterValues == null || constructor == null) return INDEPENDENT;
         if (constructorParameterValues.isEmpty() && constructor.typeInfo.isStatic()) {
-            return Set.of(); // independent!
+            return INDEPENDENT;
         }
-        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
-        if ((bestCase || differentType) && constructor.isIndependent(evaluationContext.getTypeContext()) == Boolean.TRUE) {
-            return Set.of();
-        }
-        Set<Variable> result = new HashSet<>();
-        constructorParameterValues.stream().map(v -> v.linkedVariables(bestCase, evaluationContext)).forEach(result::addAll);
 
-        // TODO  not modified, but should be on methods! constructors don't return values
-        if (constructor.methodAnalysis.variablesLinkedToMethodResult.isSet()) {
-            Set<Variable> links = constructor.methodAnalysis.variablesLinkedToMethodResult.get();
-            for (Variable link : links) {
-                if (link instanceof ParameterInfo) {
-                    MethodInfo owner = ((ParameterInfo) link).parameterInspection.get().owner;
-                    if (owner.isConstructor) {
-                        // TODO add restriction on @Final for the fields that do the transfer, OR somehow clear 'constructorParameterValues' on instance
-                        Value value = constructorParameterValues.get(((ParameterInfo) link).index);
-                        Set<Variable> toAdd = value.linkedVariables(bestCase, evaluationContext);
-                        log(LINKED_VARIABLES, "Via constructor, add {} for result of {}", Variable.detailedString(toAdd), constructor.fullyQualifiedName());
-                        result.addAll(toAdd);
-                    }
-                }
-            }
+        // RULE 2, 3
+        TypeContext typeContext = evaluationContext.getTypeContext();
+        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        if ((bestCase || differentType) &&
+                (constructor.isIndependent(typeContext) == Boolean.TRUE // RULE 2
+                        || constructor.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE)) { // RULE 3
+            return INDEPENDENT;
         }
-        return result;
+
+        // default case
+        return constructorParameterValues.stream()
+                .flatMap(v -> v.linkedVariables(bestCase, evaluationContext).stream())
+                .collect(Collectors.toSet());
     }
 
     @Override

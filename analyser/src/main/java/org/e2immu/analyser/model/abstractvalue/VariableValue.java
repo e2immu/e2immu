@@ -26,9 +26,15 @@ import java.util.Set;
 
 public class VariableValue implements Value {
     public final Variable value;
+    public final boolean effectivelyFinalUnevaluated;
 
     public VariableValue(Variable value) {
+        this(value, false);
+    }
+
+    public VariableValue(Variable value, boolean effectivelyFinalUnevaluated) {
         this.value = value;
+        this.effectivelyFinalUnevaluated = effectivelyFinalUnevaluated;
     }
 
     @Override
@@ -46,7 +52,7 @@ public class VariableValue implements Value {
 
     @Override
     public String toString() {
-        return value.detailedString();
+        return value.detailedString() + (effectivelyFinalUnevaluated ? " ??@Final??" : "");
     }
 
     @Override
