@@ -138,4 +138,14 @@ public class DependencyGraph<T> extends Freezable {
         }
         return result;
     }
+
+    public boolean equalTransitiveTerminals(DependencyGraph<T> other) {
+        if (nodeMap.size() != other.nodeMap.size()) return false;
+        for (T node : nodeMap.keySet()) {
+            Set<T> dependencies = dependencies(node);
+            Set<T> otherDependencies = other.dependencies(node);
+            if (!dependencies.equals(otherDependencies)) return false;
+        }
+        return true;
+    }
 }

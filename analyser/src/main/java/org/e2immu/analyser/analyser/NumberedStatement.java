@@ -44,7 +44,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Value> returnValue = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
 
-    public SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
+    public SetOnce<Set<Variable>> variablesLinkedToReturnValue = new SetOnce<>();
 
     public final int[] indices;
     public final SideEffect sideEffect;

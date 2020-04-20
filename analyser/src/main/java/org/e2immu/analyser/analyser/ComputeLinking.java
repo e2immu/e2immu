@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
@@ -8,10 +9,7 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -49,16 +47,14 @@ public class ComputeLinking {
             if (computeFieldAssignmentsFieldsRead(methodInfo, methodProperties)) changes = true;
 
             // this method computes, unless delayed, the values for
+            // - linksComputed
             // - variablesLinkedToFieldsAndParameters
             // - fieldsLinkedToFieldsAndVariables
-            // TODO 1: one of these 2 is not needed??
-            // TODO 2: what about delaying? visits the dependency graph
-            if (establishLinks(methodInfo, methodProperties)) changes = true;
-
-            if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodProperties))
+            if (establishLinks(methodInfo, methodAnalysis, methodProperties)) changes = true;
+            if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodAnalysis))
                 changes = true;
 
-            if (updateAnnotationsFromMethodProperties(methodAnalysis, methodProperties)) changes = true;
+            if (computeContentModifications(methodAnalysis, methodProperties)) changes = true;
             if (checkParameterAssignmentError(methodInfo, methodProperties)) changes = true;
 
             return changes;
@@ -80,15 +76,15 @@ public class ComputeLinking {
     */
 
     private boolean updateVariablesLinkedToMethodResult(List<NumberedStatement> numberedStatements,
-                                                        MethodInfo methodInfo,
-                                                        VariableProperties methodProperties) {
-        if (methodInfo.methodAnalysis.variablesLinkedToMethodResult.isSet()) return false;
+                                                        MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+
+        if (methodAnalysis.variablesLinkedToMethodResult.isSet()) return false;
 
         Set<Variable> variables = new HashSet<>();
         for (NumberedStatement numberedStatement : numberedStatements) {
             if (numberedStatement.statement instanceof ReturnStatement) {
-                if (numberedStatement.linkedVariables.isSet()) { // this implies the statement is a return statement
-                    for (Variable variable : numberedStatement.linkedVariables.get()) {
+                if (numberedStatement.variablesLinkedToReturnValue.isSet()) { // this implies the statement is a return statement
+                    for (Variable variable : numberedStatement.variablesLinkedToReturnValue.get()) {
                         Set<Variable> dependencies;
                         if (variable instanceof FieldReference) {
                             if (!((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
@@ -99,7 +95,7 @@ public class ComputeLinking {
                         } else if (variable instanceof ParameterInfo) {
                             dependencies = Set.of(variable);
                         } else if (variable instanceof LocalVariableReference) {
-                            dependencies = methodProperties.variablesLinkedToFieldsAndParameters.getOrDefault(variable, Set.of());
+                            dependencies = methodAnalysis.variablesLinkedToFieldsAndParameters.get().getOrDefault(variable, Set.of());
                         } else {
                             dependencies = Set.of();
                         }
@@ -112,8 +108,8 @@ public class ComputeLinking {
                 }
             }
         }
-        methodInfo.methodAnalysis.variablesLinkedToMethodResult.set(variables);
-        methodInfo.methodAnalysis.annotations.put(typeContext.linked.get(), !variables.isEmpty());
+        methodAnalysis.variablesLinkedToMethodResult.set(variables);
+        methodAnalysis.annotations.put(typeContext.linked.get(), !variables.isEmpty());
         log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", methodInfo.fullyQualifiedName(), Variable.detailedString(variables));
         return true;
     }
@@ -124,13 +120,13 @@ public class ComputeLinking {
       local variables need to be taken out of the loop
 
       in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
-      gets rid of local vars and transitive links
+      gets rid of local vars and follows links transitively
 
       To answer how this method deals with unevaluated links (links that can do better when one of their components are != NO_VALUE)
       two dependency graphs have been created: a best-case one where some annotations on the current type have been discovered
       already, and a worst-case one where we do not take them into account.
 
-      Why? if a method is called, as part of the value, and we do not yet know anything about @Independent of that method,
+      Why? if a method is called, as part of the value, and we do not yet know anything about the independence (@Independent) of that method,
       the outcome of linkedVariables() can be seriously different. If there is a difference between the transitive
       closures of best and worst, we should delay.
 
@@ -141,36 +137,56 @@ public class ComputeLinking {
 
     */
 
-    private static boolean establishLinks(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private static boolean establishLinks(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+        if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
+
         log(LINKED_VARIABLES, "Establishing links, copying from dependency graphs of size {} best case, {} worst case",
                 methodProperties.dependencyGraphBestCase.size(), methodProperties.dependencyGraphWorstCase.size());
+
+        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties.entrySet().stream()
+                .filter(e -> (e.getKey() instanceof FieldReference) && (e.getValue().properties.contains(VariableProperty.READ) ||
+                        e.getValue().properties.contains(VariableProperty.ASSIGNED)))
+                .anyMatch(e -> e.getValue().getCurrentValue() instanceof VariableValue &&
+                        ((VariableValue) e.getValue().getCurrentValue()).effectivelyFinalUnevaluated);
+        if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
+            log(LINKED_VARIABLES, "Some fields have not yet been evaluated -- delaying establishing links");
+            return false;
+        }
+        if (!methodProperties.dependencyGraphBestCase.equalTransitiveTerminals(methodProperties.dependencyGraphWorstCase)) {
+            log(LINKED_VARIABLES, "Best and worst case dependency graph transitive terminal sets differ -- delaying establishing links");
+            return false;
+        }
         AtomicBoolean changes = new AtomicBoolean();
-        methodProperties.dependencyGraph.visit((variable, dependencies) -> {
-            Set<Variable> terminals = new HashSet<>(methodProperties.dependencyGraph.dependencies(variable));
+        Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
+
+        methodProperties.dependencyGraphBestCase.visit((variable, dependencies) -> {
+            Set<Variable> terminals = new HashSet<>(methodProperties.dependencyGraphBestCase.dependencies(variable));
             if (dependencies != null) {
                 dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(terminals::add);
             }
             terminals.remove(variable); // removing myself
-            methodProperties.variablesLinkedToFieldsAndParameters.put(variable, terminals);
+            variablesLinkedToFieldsAndParameters.put(variable, terminals);
             log(LINKED_VARIABLES, "MA: Set terminals of {} in {} to {}", variable.detailedString(),
                     methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
 
             if (variable instanceof FieldReference) {
-                if (!methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(variable)) {
-                    methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, terminals);
-                    changes.set(true);
-                    log(LINKED_VARIABLES, "MA: Decide on links of {} in {} to {}", variable.detailedString(),
-                            methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
-                }
+                methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, terminals);
+                changes.set(true);
+                log(LINKED_VARIABLES, "MA: Decide on links of {} in {} to {}", variable.detailedString(),
+                        methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
             }
         });
-        return changes.get();
+        log(LINKED_VARIABLES, "Set linksComputed to true for {}", methodInfo.fullyQualifiedName());
+        methodAnalysis.variablesLinkedToFieldsAndParameters.set(variablesLinkedToFieldsAndParameters);
+        return true;
     }
 
-    private boolean updateAnnotationsFromMethodProperties(MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+    private boolean computeContentModifications(MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+        if(!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
+
         boolean changes = false;
         for (Variable variable : methodProperties.variableProperties.keySet()) {
-            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodProperties, variable);
+            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
             Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
             log(MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
                     Variable.detailedString(linkedVariables), directContentModification);
@@ -208,23 +224,26 @@ public class ComputeLinking {
     }
 
 
-    private Set<Variable> allVariablesLinkedToIncludingMyself(VariableProperties methodProperties, Variable variable) {
+    private static Set<Variable> allVariablesLinkedToIncludingMyself(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,
+                                                                     Variable variable) {
         Set<Variable> result = new HashSet<>();
-        recursivelyAddLinkedVariables(methodProperties, variable, result);
+        recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, variable, result);
         return result;
     }
 
-    private void recursivelyAddLinkedVariables(VariableProperties methodProperties, Variable variable, Set<Variable> result) {
+    private static void recursivelyAddLinkedVariables(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,
+                                                      Variable variable,
+                                                      Set<Variable> result) {
         if (result.contains(variable)) return;
         result.add(variable);
-        Set<Variable> linked = methodProperties.variablesLinkedToFieldsAndParameters.get(variable);
+        Set<Variable> linked = variablesLinkedToFieldsAndParameters.get(variable);
         if (linked != null) {
-            for (Variable v : linked) recursivelyAddLinkedVariables(methodProperties, v, result);
+            for (Variable v : linked) recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result);
         }
         // reverse linking
-        List<Variable> reverse = methodProperties.variablesLinkedToFieldsAndParameters.entrySet()
+        List<Variable> reverse = variablesLinkedToFieldsAndParameters.entrySet()
                 .stream().filter(e -> e.getValue().contains(variable)).map(Map.Entry::getKey).collect(Collectors.toList());
-        reverse.forEach(v -> recursivelyAddLinkedVariables(methodProperties, v, result));
+        reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
     }
 
     private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {

@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -67,15 +68,13 @@ public class MethodAnalysis extends Analysis {
     // valid as soon as fieldAssignments is set, and currently only used to compute @Linked annotations
     public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
 
+    // this one is the marker that says that links have been established
+    public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
+
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 
-    /**
-     * marker boolean to indicate that all links are available after analysing all statements.
-     *
-     */
-    public final SetOnce<Boolean> linksComputed = new SetOnce<>();
     /**
      * this one contains all own methods called from this method, and the transitive closure.
      * we use this to compute effective finality: some methods are only called from constructors,

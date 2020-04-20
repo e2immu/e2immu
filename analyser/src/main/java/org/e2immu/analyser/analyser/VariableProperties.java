@@ -71,7 +71,6 @@ class VariableProperties implements EvaluationContext {
     final TypeContext typeContext;
     final MethodInfo currentMethod;
     final This thisVariable;
-    final Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
 
     public VariableProperties(TypeContext typeContext, This thisVariable, MethodInfo currentMethod) {
         this.parent = null;

@@ -161,10 +161,10 @@ public class StatementAnalyser {
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
             Value value;
             if (localVariableCreation.expression != EmptyExpression.EMPTY_EXPRESSION) {
-                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
+                EvaluationResult result = computeVariablePropertiesOfExpression(localVariableCreation.expression,
                         variableProperties, statement);
-                if (pair.v) changes = true;
-                value = pair.k;
+                if (result.changes) changes = true;
+                value = result.value;
             } else {
                 value = NO_VALUE;
             }
@@ -174,12 +174,12 @@ public class StatementAnalyser {
         // PART 3: computing linking between local variables and fields, parameters
 
         for (LocalVariableCreation localVariableCreation : localVariableCreations) {
-            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(localVariableCreation.expression,
+            EvaluationResult result = computeVariablePropertiesOfExpression(localVariableCreation.expression,
                     variableProperties, statement);
-            Value value = pair.k;
-            if (pair.v) changes = true;
-            Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
-            Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
+            if (result.changes) changes = true;
+            Set<Variable> linkToBestCase = result.encounteredUnevaluatedVariables ? Set.of() :
+                    result.value.linkedVariables(true, variableProperties);
+            Set<Variable> linkToWorstCase = result.value.linkedVariables(false, variableProperties);
 
             log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}] best case, [{}] worst case",
                     localVariableCreation.localVariable.name,
@@ -195,10 +195,10 @@ public class StatementAnalyser {
             value = null;
         } else {
             try {
-                Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(codeOrganization.expression,
+                EvaluationResult result = computeVariablePropertiesOfExpression(codeOrganization.expression,
                         variableProperties, statement);
-                if (pair.v) changes = true;
-                value = pair.k;
+                if (result.changes) changes = true;
+                value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
             } catch (RuntimeException rte) {
                 log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
                 throw rte;
@@ -210,16 +210,13 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof ReturnStatement) {
             if (value == null) {
-                if (!statement.linkedVariables.isSet()) {
-                    statement.linkedVariables.set(Set.of());
-                }
-                if (!statement.returnValue.isSet()) {
-                    statement.returnValue.set(NO_VALUE);
-                }
+                if (!statement.variablesLinkedToReturnValue.isSet())
+                    statement.variablesLinkedToReturnValue.set(Set.of());
+                if (!statement.returnValue.isSet()) statement.returnValue.set(NO_VALUE);
             } else if (value != NO_VALUE) {
-                Set<Variable> vars = value.linkedVariables(variableProperties);
-                if (!statement.linkedVariables.isSet()) {
-                    statement.linkedVariables.set(vars);
+                Set<Variable> vars = value.linkedVariables(true, variableProperties);
+                if (!statement.variablesLinkedToReturnValue.isSet()) {
+                    statement.variablesLinkedToReturnValue.set(vars);
                 }
                 Boolean notNull = value.isNotNull(variableProperties);
                 if (notNull != null && !statement.returnsNotNull.isSet()) {
@@ -292,10 +289,10 @@ public class StatementAnalyser {
                     valueForSubStatement = null;
                 } else {
                     // real expression
-                    Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(subStatements.expression,
+                    EvaluationResult result = computeVariablePropertiesOfExpression(subStatements.expression,
                             variableProperties, statement);
-                    valueForSubStatement = pair.k;
-                    if (pair.v) changes = true;
+                    valueForSubStatement = result.value;
+                    if (result.changes) changes = true;
                     conditions.add(valueForSubStatement);
                 }
                 EvaluationContext copyForElse = valueForSubStatement == null ?
@@ -318,8 +315,8 @@ public class StatementAnalyser {
         // PART 11: finally there are the updaters
 
         for (Expression updater : codeOrganization.updaters) {
-            Pair<Value, Boolean> pair = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
-            if (pair.v) changes = true;
+            EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
+            if (result.changes) changes = true;
         }
 
         return changes;
@@ -327,10 +324,23 @@ public class StatementAnalyser {
 
     // recursive evaluation of an Expression
 
-    private Pair<Value, Boolean> computeVariablePropertiesOfExpression(Expression expression,
-                                                                       VariableProperties variableProperties,
-                                                                       NumberedStatement statementForErrorReporting) {
+    private static class EvaluationResult {
+        final boolean changes;
+        final boolean encounteredUnevaluatedVariables;
+        final Value value;
+
+        EvaluationResult(boolean changes, boolean encounteredUnevaluatedVariables, Value value) {
+            this.value = value;
+            this.encounteredUnevaluatedVariables = encounteredUnevaluatedVariables;
+            this.changes = changes;
+        }
+    }
+
+    private EvaluationResult computeVariablePropertiesOfExpression(Expression expression,
+                                                                   VariableProperties variableProperties,
+                                                                   NumberedStatement statementForErrorReporting) {
         AtomicBoolean changes = new AtomicBoolean();
+        AtomicBoolean encounterUnevaluated = new AtomicBoolean();
         Value value = expression.evaluate(variableProperties,
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     if (localChanges) changes.set(true);
@@ -349,7 +359,7 @@ public class StatementAnalyser {
                     if (doImplicitNullCheck(localExpression, lvp)) changes.set(true);
                     if (analyseCallsWithParameters(localExpression, lvp)) changes.set(true);
                 });
-        return new Pair<>(value, changes.get());
+        return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
 
     private static void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {

@@ -234,7 +234,7 @@ public class MethodAnalyser {
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
             // second step, check that no fields are modified
-            if (!methodAnalysis.linksComputed.isSet()) {
+            if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
                 log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
                 return false;
             }
@@ -256,7 +256,7 @@ public class MethodAnalyser {
 
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
-        if (!methodAnalysis.linksComputed.isSet()) {
+        if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
             log(INDEPENDENT, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
             return false;
         }
