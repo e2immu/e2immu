@@ -38,5 +38,5 @@ public interface EvaluationContext {
 
     TypeContext getTypeContext();
 
-    void linkVariables(Variable variableFromExpression, Set<Variable> linkedVariables);
+    void linkVariables(Variable variableFromExpression, Set<Variable> toBestCase, Set<Variable> toWorstCase);
 }

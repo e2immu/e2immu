@@ -56,7 +56,8 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return SetUtil.immutableUnion(ifTrue.linkedVariables(evaluationContext), ifFalse.linkedVariables(evaluationContext));
+    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+        return SetUtil.immutableUnion(ifTrue.linkedVariables(bestCase, evaluationContext),
+                ifFalse.linkedVariables(bestCase, evaluationContext));
     }
 }

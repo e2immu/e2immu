@@ -70,17 +70,24 @@ public class VariableValue implements Value {
             return fieldInfo.isNotNull(evaluationContext.getTypeContext());
         }
         if (value instanceof ParameterInfo) {
-            ParameterInfo parameterInfo  = ((ParameterInfo) value);
+            ParameterInfo parameterInfo = ((ParameterInfo) value);
             // quite possibly the field is final and has been annotated...
             return parameterInfo.isNullNotAllowed(evaluationContext.getTypeContext());
         }
         return null; // we don't know yet
     }
 
+    /*
+    The difference between worst and best case here is that the worst case is guaranteed to be stable wrt. this evaluation.
+    (Independent of whether the value's type has been analysed or not; the critical point is that it is not being evaluated.)
+     */
+
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        if (value.parameterizedType().isEffectivelyImmutable(evaluationContext.getTypeContext()) == Boolean.TRUE ||
-                value.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
+    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != value.parameterizedType().typeInfo;
+        boolean e2Immu = (bestCase || differentType) &&
+                value.parameterizedType().isEffectivelyImmutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
+        if (e2Immu || value.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
         return Set.of(value);
     }
 

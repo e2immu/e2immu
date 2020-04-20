@@ -95,6 +95,38 @@ class Test {
 +
 This link can be read from the method's `fieldsLinkedToFieldsAndVariables` map.
 
+==== Detail of MethodValue
+
+Studying `a = b.method(c, d)`, we want to find out how and when `a` becomes linked to `b`, `c` or `d`.
+
+. if `a` is primitive, or <<e2immutable-annotation>>, then `a` is completely independent of `b`, `c` and `d`, because there cannot be changes to `a` 's content.
+. if the method has been marked <<independent-annotation>>, the object returned cannot be linked to the fields of `b`, nor the parameters `c` and `d`, by definition of the annotation.
+. if `b` is <<e2immutable-annotation>>, it is impossible for `a` to be linked to `b`, but `a` can still be linked to `c` and or `d`.
+The following example shows such a link in the `append` method:
++
+[source]
+----
+@E2Immutable
+class Append {
+  @E2Immutable
+  public final Set<String> strings;
+
+  public Append(Set<String> input) {
+    strings = ImmutableSet.copyOf(input);
+  }
+
+  @Identity // and @NotModified but not @Independent
+  public Set<String> append(Set<String> input) {
+    input.addAll(strings);
+    return input;
+  }
+}
+----
+. if the method has been marked <<notmodified-annotation>>, the same situation applies.
+There cannot be a link between `b` 's content, and that of `c` and `d`, because `b` 's content will not be modified.
+Content changes on `b` can therefore have no influence on `a` because of this method call.
+However, the return value of `method` can still be linked to its parameters.
+
 ==== Overall flow
 
 The type analyser controls the iterations, and cycles through the sorted list of fields and methods.

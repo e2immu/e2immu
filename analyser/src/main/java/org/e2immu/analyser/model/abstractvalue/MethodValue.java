@@ -112,7 +112,7 @@ public class MethodValue implements Value {
      * definition itself.
      *
      * Primitives and context classes break the chain: they cannot be modified. So if `b` is a context class, then
-     * `a` is independent of `b`, `c`, `d` because no method in a context class can return a modifiable object.
+     * `a` is independent of `b`, `c`, `d` because no method in a context class can return a modifiable object TODO based on fields.
      * More generally, any primitive or context class return type breaks the chain.
      * If the method is marked independent, then by definition there is no dependence.
      * If `c` is a primitive or context class instance, `c` does not need to be added.
@@ -123,26 +123,34 @@ public class MethodValue implements Value {
     private static final Set<Variable> INDEPENDENT = Set.of();
 
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         TypeContext typeContext = evaluationContext.getTypeContext();
-        // if the method is one of a context class, then we are guaranteed that we cannot modify the result...
+        // if the method is one of an effectively immutable class, then we are guaranteed that we cannot modify the result...
         // so no need to dig...
-        if (methodInfo.typeInfo.isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE) return INDEPENDENT;
+
+        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        if ((bestCase || methodInfoDifferentType) && methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE)
+            return INDEPENDENT;
+        if ((bestCase || methodInfoDifferentType) && methodInfo.isIndependent(typeContext) == Boolean.TRUE)
+            return INDEPENDENT;
+
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT;
+        if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT; // no assignment
         if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
-        if (returnType.isEffectivelyImmutable(typeContext) == Boolean.TRUE) return INDEPENDENT;
-        if (methodInfo.isIndependent(typeContext) == Boolean.TRUE) return INDEPENDENT;
+
+        boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        if ((bestCase || returnTypeDifferent) && returnType.isEffectivelyImmutable(typeContext) == Boolean.TRUE) {
+            return INDEPENDENT;
+        }
 
         Set<Variable> result = new HashSet<>();
         // unless we know better, we need to link to the parameters of the method
         // the VariableValue class will deal with parameters that are context classes
-        parameters.forEach(p -> result.addAll(p.linkedVariables(evaluationContext)));
+        parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
         if (object != null) {
-            result.addAll(object.linkedVariables(evaluationContext));
+            result.addAll(object.linkedVariables(bestCase, evaluationContext));
         }
         return result;
     }
-
 }

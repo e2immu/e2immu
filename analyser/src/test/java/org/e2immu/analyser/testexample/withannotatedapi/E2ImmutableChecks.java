@@ -19,10 +19,7 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.Linked;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -95,5 +92,26 @@ public class E2ImmutableChecks {
 
     static int getSize(int i) {
         return 10+i;
+    }
+
+    @E2Immutable
+    static class WithSet {
+        @E2Immutable
+        public final Set<String> strings;
+
+        public WithSet(Set<String> input) {
+            strings = ImmutableSet.copyOf(input);
+        }
+
+        @E2Immutable
+        public Set<String> getStrings() {
+            return strings;
+        }
+
+        @Identity
+        public Set<String> mingle(Set<String> input) {
+            input.addAll(strings);
+            return input;
+        }
     }
 }

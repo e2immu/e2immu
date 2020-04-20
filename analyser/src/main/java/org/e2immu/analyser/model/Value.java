@@ -54,8 +54,7 @@ public interface Value extends Comparable<Value> {
     }
 
     @NotModified
-    default Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    default Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return Set.of();
     }
-
 }

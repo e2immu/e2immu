@@ -233,32 +233,20 @@ public class MethodAnalyser {
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
-            Boolean isAllParametersNotModified = methodInfo.isAllParametersNotModified(typeContext);
-            if (isAllParametersNotModified == null) {
-                log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because of parameters",
-                        methodInfo.fullyQualifiedName());
+            // second step, check that no fields are modified
+            if (!methodAnalysis.linksComputed.isSet()) {
+                log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
                 return false;
             }
-            boolean isNotModified;
-            if (!isAllParametersNotModified) {
-                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some parameters are not @NotModified",
-                        methodInfo.fullyQualifiedName());
-                isNotModified = false;
+            boolean isNotModified = methodAnalysis.contentModifications
+                    .stream()
+                    .filter(e -> e.getKey() instanceof FieldReference)
+                    .noneMatch(Map.Entry::getValue);
+            if (isNotModified) {
+                log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
             } else {
-                // second step, check that no fields are modified
-                if (!methodAnalysis.linksComputed.isSet()) {
-                    log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
-                }
-                isNotModified = methodAnalysis.contentModifications
-                        .stream()
-                        .filter(e -> e.getKey() instanceof FieldReference)
-                        .noneMatch(Map.Entry::getValue);
-                if (isNotModified) {
-                    log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
-                } else {
-                    log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications",
-                            methodInfo.fullyQualifiedName());
-                }
+                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications",
+                        methodInfo.fullyQualifiedName());
             }
             methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
             return true;
@@ -266,30 +254,32 @@ public class MethodAnalyser {
         return false;
     }
 
-    // relies on the @Linked annotation for non-constructors, does a useful computation on constructors
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
-        Boolean mark = null;
+        if (!methodAnalysis.linksComputed.isSet()) {
+            log(INDEPENDENT, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
+            return false;
+        }
+
         if (methodInfo.isConstructor) {
-            List<FieldInfo> fields = methodInfo.typeInfo.typeInspection.get().fields;
-            if (methodAnalysis.linksComputed.isSet()) {
-                mark = fields.stream().allMatch(f -> Collections.disjoint(f.fieldAnalysis.variablesLinkedToMe.get(),
-                        methodInfo.methodInspection.get().parameters));
-            }
-        } else {
-            if (methodInfo.returnType().isPrimitiveOrStringNotVoid()) mark = true;
-            if (methodInfo.returnType().isEffectivelyImmutable(typeContext) == Boolean.TRUE) mark = true;
-            Boolean linked = methodAnalysis.annotations.getOtherwiseNull(typeContext.linked.get());
-            if (linked != null) mark = !linked;
-        }
-        if (mark != null) {
-            methodAnalysis.annotations.put(typeContext.independent.get(), mark);
-            log(INDEPENDENT, "Mark method {} " + (mark ? "" : "not ") + "independent",
+            boolean parametersIndependentOfFields = methodAnalysis.fieldsLinkedToFieldsAndVariables.stream()
+                    .allMatch(e -> Collections.disjoint(e.getValue(), methodInfo.methodInspection.get().parameters));
+            methodAnalysis.annotations.put(typeContext.independent.get(), parametersIndependentOfFields);
+            log(INDEPENDENT, "Mark constructor {} " + (parametersIndependentOfFields ? "" : "not ") + "independent",
                     methodInfo.fullyQualifiedName());
-        } else {
-            log(INDEPENDENT, "Delaying @Independent on {}", methodInfo.fullyQualifiedName());
+            return true;
         }
-        return mark != null;
+
+        if (methodAnalysis.variablesLinkedToMethodResult.isSet()) {
+            Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
+            boolean independent = variables.stream().noneMatch(v -> v instanceof FieldReference || v instanceof ParameterInfo);
+            methodAnalysis.annotations.put(typeContext.independent.get(), independent);
+            log(INDEPENDENT, "Mark method {} " + (independent ? "" : "not ") + "independent",
+                    methodInfo.fullyQualifiedName());
+        }
+        log(INDEPENDENT, "Delaying @Independent on {}, variables linked to method result not computed",
+                methodInfo.fullyQualifiedName());
+        return false;
     }
 
     // helper

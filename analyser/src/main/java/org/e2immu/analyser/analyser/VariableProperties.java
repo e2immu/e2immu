@@ -61,7 +61,9 @@ class VariableProperties implements EvaluationContext {
 
     final Map<Variable, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
-    final DependencyGraph<Variable> dependencyGraph;
+    final DependencyGraph<Variable> dependencyGraphBestCase;
+    final DependencyGraph<Variable> dependencyGraphWorstCase;
+
     final VariableProperties parent;
     final VariableProperties root;
     Value conditional; // any conditional added to this block
@@ -79,7 +81,8 @@ class VariableProperties implements EvaluationContext {
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
         this.thisVariable = thisVariable;
-        this.dependencyGraph = new DependencyGraph<>();
+        this.dependencyGraphBestCase = new DependencyGraph<>();
+        this.dependencyGraphWorstCase = new DependencyGraph<>();
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
@@ -94,12 +97,14 @@ class VariableProperties implements EvaluationContext {
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
         thisVariable = parent.thisVariable;
-        dependencyGraph = parent.dependencyGraph;
+        dependencyGraphBestCase = parent.dependencyGraphBestCase;
+        dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
     }
 
     @Override
-    public void linkVariables(Variable from, Set<Variable> to) {
-        dependencyGraph.addNode(from, ImmutableList.copyOf(to));
+    public void linkVariables(Variable from, Set<Variable> toBestCase, Set<Variable> toWorstCase) {
+        dependencyGraphBestCase.addNode(from, ImmutableList.copyOf(toBestCase));
+        dependencyGraphWorstCase.addNode(from, ImmutableList.copyOf(toWorstCase));
     }
 
     @Override

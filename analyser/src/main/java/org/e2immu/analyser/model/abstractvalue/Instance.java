@@ -78,16 +78,19 @@ public class Instance implements Value {
     }
 
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         if (constructorParameterValues == null || constructor == null) return Set.of();
-        if (constructor.isIndependent(evaluationContext.getTypeContext()) == Boolean.TRUE) {
-            return Set.of();
-        }
         if (constructorParameterValues.isEmpty() && constructor.typeInfo.isStatic()) {
             return Set.of(); // independent!
         }
+        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        if ((bestCase || differentType) && constructor.isIndependent(evaluationContext.getTypeContext()) == Boolean.TRUE) {
+            return Set.of();
+        }
         Set<Variable> result = new HashSet<>();
-        constructorParameterValues.stream().map(v -> v.linkedVariables(evaluationContext)).forEach(result::addAll);
+        constructorParameterValues.stream().map(v -> v.linkedVariables(bestCase, evaluationContext)).forEach(result::addAll);
+
+        // TODO  not modified, but should be on methods! constructors don't return values
         if (constructor.methodAnalysis.variablesLinkedToMethodResult.isSet()) {
             Set<Variable> links = constructor.methodAnalysis.variablesLinkedToMethodResult.get();
             for (Variable link : links) {
@@ -96,7 +99,7 @@ public class Instance implements Value {
                     if (owner.isConstructor) {
                         // TODO add restriction on @Final for the fields that do the transfer, OR somehow clear 'constructorParameterValues' on instance
                         Value value = constructorParameterValues.get(((ParameterInfo) link).index);
-                        Set<Variable> toAdd = value.linkedVariables(evaluationContext);
+                        Set<Variable> toAdd = value.linkedVariables(bestCase, evaluationContext);
                         log(LINKED_VARIABLES, "Via constructor, add {} for result of {}", Variable.detailedString(toAdd), constructor.fullyQualifiedName());
                         result.addAll(toAdd);
                     }

@@ -463,12 +463,12 @@ They also count as special return values, rather than 'real' return values, for 
 [#independent-annotation]
 === `@Independent`
 
-When added to a method, this annotation implies that the object returned is not linked to any of the parameters or fields of the class.
+When added to a method, this annotation implies that the object returned is not linked to any of the fields of the class, or parameters of the method.
 When added to a constructor, the annotation implies that the resulting instance is not linked to the parameters of the constructor.
-If a method does not return a real value (it is `void`, <<identity-annotation>> or <<fluent-annotation>>), and it has consumer parameters, the annotation indicates that the objects linked to the consumers are not linked to the fields or parameters of the class.
+If a method does not return a value (it is `void`), and it has consumer parameters, the annotation indicates that the objects linked to the consumers are not linked to the fields of the class or other parameters of the method.
 The annotation is then added to the consumer, typically together with <<nullnotallowed2-annotation>>.
 
-Linking means that if a given object is modified, the linked object is modified too.
+Linking means that modifying a given object implies potentially modifying the linked object as well.
 Remember that as explained in <<linked-annotation>>, primitives, unbound type parameters, and classes marked <<e2immutable-annotation>> break the chain because of their content immutability.
 
 It follows that:

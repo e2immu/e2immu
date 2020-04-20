@@ -35,6 +35,7 @@ import org.e2immu.analyser.util.SetOnceSupply;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
