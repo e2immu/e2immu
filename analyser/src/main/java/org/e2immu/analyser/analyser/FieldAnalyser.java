@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -36,6 +37,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.value.UnknownValue.UNKNOWN_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -121,8 +123,9 @@ public class FieldAnalyser {
                         else if (!consistentValue.equals(assignment)) {
                             log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
                                     fieldInfo.fullyQualifiedName(), consistentValue, assignment);
-                            consistentValue = NO_VALUE;
-                            break;
+                            fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
+                            annotations.put(typeContext.constant.get(), false);
+                            return true;
                         }
                     } else {
                         log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());

@@ -203,8 +203,6 @@ public class TypeAnalyser {
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                // most likely value here is "variable value", definitely not NO_VALUE, UNKNOWN_VALUE
-                if (value instanceof UnknownValue) throw new UnsupportedOperationException();
             } else {
                 value = new VariableValue(fieldReference, true);
             }

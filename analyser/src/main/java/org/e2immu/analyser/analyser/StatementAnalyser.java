@@ -82,12 +82,10 @@ public class StatementAnalyser {
             if (!startStatement.neverContinues.isSet()) {
                 log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
                 startStatement.neverContinues.set(neverContinues);
-                changes = true;
             }
             if (!startStatement.escapes.isSet()) {
                 log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapes);
                 startStatement.escapes.set(escapes);
-                changes = true;
 
                 if (escapes) {
                     List<Value> conditionals = variableProperties.getNullConditionals();
@@ -221,7 +219,6 @@ public class StatementAnalyser {
                 if (notNull != null && !statement.returnsNotNull.isSet()) {
                     statement.returnsNotNull.set(notNull);
                     log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
-                    changes = true;
                 }
                 if (!statement.returnValue.isSet()) {
                     statement.returnValue.set(value);
@@ -341,19 +338,19 @@ public class StatementAnalyser {
         AtomicBoolean encounterUnevaluated = new AtomicBoolean();
         Value value = expression.evaluate(variableProperties,
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
+                    // local changes come from analysing lambda blocks as methods
                     if (localChanges) changes.set(true);
                     if (intermediateValue instanceof ErrorValue) {
                         if (!statementForErrorReporting.errorValue.isSet()) {
                             typeContext.addMessage(Message.Severity.ERROR,
                                     "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
                             statementForErrorReporting.errorValue.set(true);
-                            changes.set(true);
                         }
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
                     doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
-                    if (doImplicitNullCheck(localExpression, lvp)) changes.set(true);
-                    if (analyseCallsWithParameters(localExpression, lvp)) changes.set(true);
+                    doImplicitNullCheck(localExpression, lvp);
+                    analyseCallsWithParameters(localExpression, lvp);
                 });
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
@@ -393,8 +390,7 @@ public class StatementAnalyser {
         }
     }
 
-    private boolean doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {
-        boolean changes = false;
+    private void doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {
         for (Variable variable : expression.variablesInScopeSide()) {
             if (!(variable instanceof This)) {
                 if (variableProperties.isNotNull(variable)) {
@@ -402,28 +398,24 @@ public class StatementAnalyser {
                 } else {
                     variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
                     log(VARIABLE_PROPERTIES, "Set {} to PERMANENTLY NOT NULL", variable.detailedString());
-                    changes = true;
                 }
             }
         }
-        return changes;
     }
 
     // the rest of the code deals with the effect of a method call on the variable properties
     // no annotations are set here, only variable properties
 
-    private boolean analyseCallsWithParameters(Expression expression, VariableProperties variableProperties) {
-        boolean changes = false;
+    private void analyseCallsWithParameters(Expression expression, VariableProperties variableProperties) {
         if (expression instanceof HasParameterExpressions) {
             HasParameterExpressions call = (HasParameterExpressions) expression;
-            if (call.getMethodInfo() != null && // otherwise, nothing to show for; anonymous constructor
-                    analyseCallWithParameters(call, variableProperties)) changes = true;
+            if (call.getMethodInfo() != null) {
+                analyseCallWithParameters(call, variableProperties);
+            }
         }
-        return changes;
     }
 
-    private boolean analyseCallWithParameters(HasParameterExpressions call, VariableProperties variableProperties) {
-        boolean changes = false;
+    private void analyseCallWithParameters(HasParameterExpressions call, VariableProperties variableProperties) {
         if (call instanceof MethodCall) analyseMethodCallObject((MethodCall) call, variableProperties);
         int parameterIndex = 0;
         List<ParameterInfo> params = call.getMethodInfo().methodInspection.get().parameters;
@@ -443,23 +435,19 @@ public class StatementAnalyser {
             } else {
                 parameterInDefinition = params.get(parameterIndex);
             }
-            if (analyseCallParameter(parameterInDefinition, e, variableProperties)) changes = true;
+            analyseCallParameter(parameterInDefinition, e, variableProperties);
             parameterIndex++;
         }
-        return changes;
     }
 
-    private boolean analyseCallParameter(ParameterInfo parameterInDefinition,
-                                         Expression parameterExpression,
-                                         VariableProperties variableProperties) {
-        boolean changes = false;
-
+    private void analyseCallParameter(ParameterInfo parameterInDefinition,
+                                      Expression parameterExpression,
+                                      VariableProperties variableProperties) {
         // not modified
         boolean safeParameter = parameterInDefinition.isNotModified(typeContext) == Boolean.TRUE;
         if (!safeParameter) {
             recursivelyMarkVariables(parameterExpression, variableProperties);
         }
-
         // null not allowed
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
@@ -467,7 +455,6 @@ public class StatementAnalyser {
                 variableProperties.addProperty(v, VariableProperty.PERMANENTLY_NOT_NULL);
             }
         }
-        return changes;
     }
 
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
