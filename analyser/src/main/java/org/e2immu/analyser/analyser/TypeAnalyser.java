@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
@@ -49,6 +48,8 @@ public class TypeAnalyser {
     }
 
     public void check(SortedType sortedType) {
+        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", sortedType.typeInfo.fullyQualifiedName);
+
         for (WithInspectionAndAnalysis m : sortedType.methodsAndFields) {
             if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
             else if (m instanceof FieldInfo) {
@@ -81,7 +82,7 @@ public class TypeAnalyser {
         int cnt = 0;
         while (changes) {
             cnt++;
-            log(ANALYSER, "Starting iteration {} of the type analyser on {}", cnt, sortedType.typeInfo.fullyQualifiedName);
+            log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, sortedType.typeInfo.fullyQualifiedName);
             changes = false;
 
             This thisVariable = new This(sortedType.typeInfo);
@@ -226,12 +227,42 @@ public class TypeAnalyser {
     private boolean detectContainer(SortedType sortedType) {
         if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
 
-        Boolean isContainer = noMethodsThatModifyContent(sortedType, CONTAINER, "container");
+        Boolean isContainer = noMethodsThatModifyContent(sortedType);
         if (isContainer == null) return false;
 
         sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.container.get(), isContainer);
         log(CONTAINER, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isContainer ? "" : "not ")
                 + "@Container");
+        return true;
+    }
+
+
+    private Boolean noMethodsThatModifyContent(SortedType sortedType) {
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().constructors) {
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                Boolean isNotModified = parameterInfo.isNotModified(typeContext);
+                if (isNotModified == null) return null; // cannot yet decide
+                if (!isNotModified) {
+                    log(CONTAINER, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
+                            parameterInfo.detailedString());
+                    return false;
+                }
+            }
+        }
+        // rule 3. all non-private methods must not modify their parameters
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
+            if (!methodInfo.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
+                for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                    Boolean isNotModified = parameterInfo.isNotModified(typeContext);
+                    if (isNotModified == null) return null; // cannot yet decide
+                    if (!isNotModified) {
+                        log(CONTAINER, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
+                                parameterInfo.detailedString());
+                        return false;
+                    }
+                }
+            }
+        }
         return true;
     }
 
@@ -247,14 +278,14 @@ public class TypeAnalyser {
             Boolean effectivelyFinal = fieldInfo.isFinal(typeContext);
             if (effectivelyFinal == null) return false; // cannot decide
             if (!effectivelyFinal) {
-                log(VALUE_CLASS, "{} is not a value class, field {} is not effectively final", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                log(E2FINAL, "{} is not a value class, field {} is not effectively final", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
                 isE2Final = false;
                 break;
             }
         }
 
         sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Final.get(), isE2Final);
-        log(VALUE_CLASS, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Final ? "" : "not ")
+        log(E2FINAL, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Final ? "" : "not ")
                 + "@ValueClass");
         return true;
     }
@@ -381,35 +412,6 @@ public class TypeAnalyser {
         sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Immutable.get(), isEffectivelyImmutable);
         log(E2IMMUTABLE, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isEffectivelyImmutable ? "" : "not ")
                 + "@E2Immutable");
-        return true;
-    }
-
-    private Boolean noMethodsThatModifyContent(SortedType sortedType, Logger.LogTarget logTarget, String message) {
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().constructors) {
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                if (isNotModified == null) return null; // cannot yet decide
-                if (!isNotModified) {
-                    log(logTarget, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
-                            parameterInfo.detailedString());
-                    return false;
-                }
-            }
-        }
-        // rule 3. all non-private methods must not modify their parameters
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
-            if (!methodInfo.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
-                for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                    if (isNotModified == null) return null; // cannot yet decide
-                    if (!isNotModified) {
-                        log(logTarget, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
-                                parameterInfo.detailedString());
-                        return false;
-                    }
-                }
-            }
-        }
         return true;
     }
 }

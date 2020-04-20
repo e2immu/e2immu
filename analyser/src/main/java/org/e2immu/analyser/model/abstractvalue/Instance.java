@@ -21,11 +21,10 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
-import static org.e2immu.analyser.util.Logger.log;
 
 // an object, instance of a certain class, potentially after casting
 public class Instance implements Value {

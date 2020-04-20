@@ -18,12 +18,12 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.model.Constant;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.annotation.NullNotAllowed;
 
-import java.util.List;
 import java.util.Objects;
 
 public class ClazzValue implements Value, Constant<ParameterizedType> {

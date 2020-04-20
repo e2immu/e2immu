@@ -3,9 +3,6 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariableReference;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;

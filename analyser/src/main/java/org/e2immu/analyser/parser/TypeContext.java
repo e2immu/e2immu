@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +40,8 @@ import static org.e2immu.analyser.util.Logger.log;
  * This context is inherently recursive, dependent on the container.
  */
 public class TypeContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeContext.class);
+
     private final TypeContext parentContext;
 
     public final TypeStore typeStore;
@@ -375,6 +379,7 @@ public class TypeContext {
         TypeContext parent = this;
         while (parent.parentContext != null) parent = parent.parentContext;
         parent.messages.add(message);
+        LOGGER.info("Add message of severity {}: {}", severity, text);
     }
 
     public List<Message> getMessages() {

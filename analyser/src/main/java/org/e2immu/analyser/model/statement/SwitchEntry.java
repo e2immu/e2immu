@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;

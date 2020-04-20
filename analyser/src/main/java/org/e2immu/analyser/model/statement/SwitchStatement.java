@@ -8,7 +8,6 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SwitchStatement extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;

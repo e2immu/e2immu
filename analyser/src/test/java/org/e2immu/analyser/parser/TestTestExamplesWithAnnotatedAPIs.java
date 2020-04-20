@@ -23,15 +23,12 @@ import ch.qos.logback.classic.BasicConfigurator;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.util.Resources;
-import org.e2immu.annotation.NotModified;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -62,7 +59,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 E2IMMUTABLE,
                 ANNOTATION_EXPRESSION,
                 CONTAINER,
-                VALUE_CLASS,
+                E2FINAL,
                 SIDE_EFFECT,
                 UTILITY_CLASS,
                 NULL_NOT_ALLOWED,

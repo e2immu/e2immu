@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;

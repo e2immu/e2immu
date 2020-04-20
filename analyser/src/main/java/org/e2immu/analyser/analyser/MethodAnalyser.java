@@ -121,8 +121,8 @@ public class MethodAnalyser {
 
             long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
             if (returnStatements > 0) {
-                if (methodIsIdentity(returnStatements, numberedStatements, methodAnalysis)) changes = true;
-                if (methodIsFluent(returnStatements, numberedStatements, methodAnalysis)) changes = true;
+                if (methodIsIdentity(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodIsFluent(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsNotNull(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsConstant(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
             }
@@ -169,7 +169,7 @@ public class MethodAnalyser {
                 methodAnalysis.singleReturnValue.set(value);
                 AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
                 methodAnalysis.annotations.put(constantAnnotation, true);
-                log(CONSTANT, "Added @Constant annotation on {}", methodInfo.fullyQualifiedName());
+                log(CONSTANT, "Added @Constant annotation on method {}", methodInfo.fullyQualifiedName());
                 return true;
             }
         }
@@ -181,51 +181,55 @@ public class MethodAnalyser {
                 .count() == returnStatements;
         if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
             methodAnalysis.annotations.put(typeContext.notNull.get(), true);
-            log(NOT_NULL, "Set @NotNull on {}", methodInfo.fullyQualifiedName());
+            log(NOT_NULL, "Set @NotNull on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
         if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
             methodAnalysis.annotations.put(typeContext.notNull.get(), false);
-            log(NOT_NULL, "Set NOT @NotNull on {}", methodInfo.fullyQualifiedName());
+            log(NOT_NULL, "Set NOT @NotNull on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         return false;
     }
 
-    private boolean methodIsFluent(long returnStatements, List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+    private boolean methodIsFluent(long returnStatements, List<NumberedStatement> numberedStatements,
+                                   MethodInfo methodInfo,
+                                   MethodAnalysis methodAnalysis) {
         boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
                 e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
                 .count() == returnStatements;
         if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
             methodAnalysis.annotations.put(typeContext.fluent.get(), true);
-            log(ANALYSER, "Set @Fluent");
+            log(FLUENT, "Set @Fluent on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
                 e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
         if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
             methodAnalysis.annotations.put(typeContext.fluent.get(), false);
-            log(ANALYSER, "Set NOT @Fluent");
+            log(FLUENT, "Set NOT @Fluent on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         return false;
     }
 
-    private boolean methodIsIdentity(long returnStatements, List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+    private boolean methodIsIdentity(long returnStatements, List<NumberedStatement> numberedStatements,
+                                     MethodInfo methodInfo,
+                                     MethodAnalysis methodAnalysis) {
         boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
                 e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
                 .count() == returnStatements;
         if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
             methodAnalysis.annotations.put(typeContext.identity.get(), true);
-            log(ANALYSER, "Set @Identity");
+            log(IDENTITY, "Set @Identity on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
                 e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
         if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
             methodAnalysis.annotations.put(typeContext.identity.get(), false);
-            log(ANALYSER, "Set NOT @Identity");
+            log(IDENTITY, "Set NOT @Identity on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
         return false;
@@ -235,7 +239,7 @@ public class MethodAnalyser {
         if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
             // second step, check that no fields are modified
             if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-                log(NOT_MODIFIED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
+                log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
                 return false;
             }
             boolean isNotModified = methodAnalysis.contentModifications
@@ -257,7 +261,7 @@ public class MethodAnalyser {
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-            log(INDEPENDENT, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
+            log(DELAYED, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
             return false;
         }
 
@@ -265,7 +269,7 @@ public class MethodAnalyser {
             boolean parametersIndependentOfFields = methodAnalysis.fieldsLinkedToFieldsAndVariables.stream()
                     .allMatch(e -> Collections.disjoint(e.getValue(), methodInfo.methodInspection.get().parameters));
             methodAnalysis.annotations.put(typeContext.independent.get(), parametersIndependentOfFields);
-            log(INDEPENDENT, "Mark constructor {} " + (parametersIndependentOfFields ? "" : "not ") + "independent",
+            log(INDEPENDENT, "Mark constructor {} " + (parametersIndependentOfFields ? "" : "not ") + "@Independent",
                     methodInfo.fullyQualifiedName());
             return true;
         }
@@ -274,10 +278,11 @@ public class MethodAnalyser {
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
             boolean independent = variables.stream().noneMatch(v -> v instanceof FieldReference || v instanceof ParameterInfo);
             methodAnalysis.annotations.put(typeContext.independent.get(), independent);
-            log(INDEPENDENT, "Mark method {} " + (independent ? "" : "not ") + "independent",
+            log(INDEPENDENT, "Mark method {} " + (independent ? "" : "not ") + "@Independent",
                     methodInfo.fullyQualifiedName());
+            return true;
         }
-        log(INDEPENDENT, "Delaying @Independent on {}, variables linked to method result not computed",
+        log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
                 methodInfo.fullyQualifiedName());
         return false;
     }

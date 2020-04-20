@@ -42,11 +42,25 @@ public class TestTestExamples {
     @BeforeClass
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
-                METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
-                E2IMMUTABLE, ANNOTATION_EXPRESSION, CONSTANT,
-                CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS,
-                NULL_NOT_ALLOWED, NOT_NULL, NOT_MODIFIED);
+        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE,
+
+                //LAMBDA,
+                //METHOD_CALL,
+
+                //VARIABLE_PROPERTIES,
+                LINKED_VARIABLES,
+                INDEPENDENT,
+                MODIFY_CONTENT,
+                E2IMMUTABLE,
+                ANNOTATION_EXPRESSION,
+                CONSTANT,
+                CONTAINER,
+                E2FINAL,
+                SIDE_EFFECT,
+                UTILITY_CLASS,
+                NULL_NOT_ALLOWED,
+                NOT_NULL,
+                NOT_MODIFIED);
     }
 
     @Test

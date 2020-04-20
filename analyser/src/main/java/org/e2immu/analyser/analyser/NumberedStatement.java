@@ -18,23 +18,21 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NullNotAllowed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @E2Immutable(after = "") // TODO
 public class NumberedStatement implements Comparable<NumberedStatement> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NumberedStatement.class);
-
     public final Statement statement;
     public SetOnce<Optional<NumberedStatement>> next = new SetOnce<>();
     public SetOnce<List<NumberedStatement>> blocks = new SetOnce<>();

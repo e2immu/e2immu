@@ -4,9 +4,7 @@ import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.util.Pair;
 
-import java.util.List;
 import java.util.Objects;
 
 public abstract class LoopStatement extends StatementWithExpression {

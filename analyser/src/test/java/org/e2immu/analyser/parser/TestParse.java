@@ -44,7 +44,7 @@ public class TestParse {
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
                 METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
                 E2IMMUTABLE,
-                CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS,
+                CONTAINER, E2FINAL, SIDE_EFFECT, UTILITY_CLASS,
                 NULL_NOT_ALLOWED);
     }
 

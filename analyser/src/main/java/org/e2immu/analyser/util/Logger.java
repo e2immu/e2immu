@@ -48,10 +48,12 @@ public class Logger {
         CONTEXT,     // expression context
         VARIABLE_PROPERTIES,
 
-        LINKED_VARIABLES,
+        DELAYED,
+
+        LINKED_VARIABLES, DEBUG_LINKED_VARIABLES,
         INDEPENDENT,
-        MODIFY_CONTENT,
-        VALUE_CLASS,
+        MODIFY_CONTENT, DEBUG_MODIFY_CONTENT,
+        E2FINAL,
         CONTAINER,
         E2IMMUTABLE,
         UTILITY_CLASS,
@@ -59,7 +61,10 @@ public class Logger {
         NOT_MODIFIED,
         CONSTANT,
         NOT_NULL,
-
+        FLUENT,
+        IDENTITY,
+        FINAL,
+        ASSIGNMENT,
         SIDE_EFFECT,
 
         INSPECT,

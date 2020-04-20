@@ -25,7 +25,6 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 

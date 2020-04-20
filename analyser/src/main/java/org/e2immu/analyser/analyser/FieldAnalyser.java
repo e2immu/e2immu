@@ -48,6 +48,8 @@ public class FieldAnalyser {
     }
 
     public boolean analyse(FieldInfo fieldInfo, Variable thisVariable, VariableProperties fieldProperties) {
+        log(ANALYSER, "Analysing field {}", fieldInfo.fullyQualifiedName());
+
         boolean changes = false;
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
         SetOnceMap<AnnotationExpression, Boolean> annotations = fieldInfo.fieldAnalysis.annotations;
@@ -57,7 +59,6 @@ public class FieldAnalyser {
         Value value;
         boolean haveInitialiser;
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
-            log(ANALYSER, "Evaluating field {}", fieldInfo.fullyQualifiedName());
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
                 FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
@@ -68,8 +69,8 @@ public class FieldAnalyser {
                     localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
                 }
                 value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
+                log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
                 fieldProperties.setValue(fieldReference, value);
-                log(ANALYSER, "Evaluation of field {}: {}", fieldInfo.fullyQualifiedName(), value);
                 haveInitialiser = true;
             } else {
                 value = NO_VALUE; // initialiser set, but to empty expression
@@ -83,12 +84,11 @@ public class FieldAnalyser {
         // STEP 2: EFFECTIVELY FINAL: @Final
 
         if (!annotations.isSet(typeContext.effectivelyFinal.get())) {
-            log(ANALYSER, "Analysing field {}, value {}", fieldInfo.fullyQualifiedName(), value);
-
             boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
             if (isExplicitlyFinal) {
                 annotations.put(typeContext.effectivelyFinal.get(), true);
-                log(ANALYSER, "Mark field {} as effectively final, because explicitly so", fieldInfo.fullyQualifiedName());
+                log(FINAL, "Mark field {} as effectively final, because explicitly so, value {}",
+                        fieldInfo.fullyQualifiedName(), value);
                 changes = true;
             } else {
                 Boolean isModifiedOutsideConstructors = typeInspection.methods.stream()
@@ -97,10 +97,10 @@ public class FieldAnalyser {
                         .reduce(false, TypeAnalyser.TERNARY_OR);
 
                 if (isModifiedOutsideConstructors == null) {
-                    log(ANALYSER, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
+                    log(DELAYED, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
                 } else {
                     annotations.put(typeContext.effectivelyFinal.get(), !isModifiedOutsideConstructors);
-                    log(ANALYSER, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
+                    log(FINAL, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;
                 }
@@ -119,13 +119,13 @@ public class FieldAnalyser {
                         Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
                         if (consistentValue == NO_VALUE) consistentValue = assignment;
                         else if (!consistentValue.equals(assignment)) {
-                            log(CONSTANT, "Cannot set consistent value for {}, have {} and {}", fieldInfo.fullyQualifiedName(),
-                                    consistentValue, assignment);
+                            log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
+                                    fieldInfo.fullyQualifiedName(), consistentValue, assignment);
                             consistentValue = NO_VALUE;
                             break;
                         }
                     } else {
-                        log(CONSTANT, "Delay consistent value for {}", fieldInfo.fullyQualifiedName());
+                        log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
                         consistentValue = NO_VALUE;
                         break;
                     }
@@ -137,14 +137,14 @@ public class FieldAnalyser {
                     valueToSet = consistentValue;
                     AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
                     annotations.put(constantAnnotation, true);
-                    log(CONSTANT, "Added @Constant annotation on {}", fieldInfo.fullyQualifiedName());
+                    log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                 } else {
                     valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
                     annotations.put(typeContext.constant.get(), false);
-                    log(CONSTANT, "Marked that {} cannot be @Constant", fieldInfo.fullyQualifiedName());
+                    log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }
                 fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                log(CONSTANT, "Setting initial value of effectively final {} to {}",
+                log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
                         fieldInfo.fullyQualifiedName(), consistentValue);
                 changes = true;
             }
@@ -165,16 +165,17 @@ public class FieldAnalyser {
                     boolean initialiserNotNull = value == NO_VALUE || value.isNotNull(fieldProperties);
                     boolean notNull = allAssignmentValuesNotNull && initialiserNotNull;
                     annotations.put(typeContext.notNull.get(), notNull);
-                    log(NOT_NULL, "Set non-null of non-final {} to {}", fieldInfo.fullyQualifiedName(), notNull);
+                    log(NOT_NULL, "Mark non-final field {} as " + (notNull ? "" : "NOT ") + "@NotNull",
+                            fieldInfo.fullyQualifiedName(), notNull);
                     changes = true;
                 } else {
-                    log(NOT_NULL, "Delaying @NotNull on field {} because not all isNotNull computations known", fieldInfo.fullyQualifiedName());
+                    log(DELAYED, "Delaying @NotNull on field {} because not all isNotNull computations known", fieldInfo.fullyQualifiedName());
                 }
             } else {
                 if (!allAssignmentValuesDefined)
-                    log(NOT_NULL, "Delaying @NotNull on field {} because not all assignment values known", fieldInfo.fullyQualifiedName());
+                    log(DELAYED, "Delaying @NotNull on field {} because not all assignment values known", fieldInfo.fullyQualifiedName());
                 if (haveInitialiser && value == NO_VALUE)
-                    log(NOT_NULL, "Delaying @NotNull on field {} because initialiser not yet known", fieldInfo.fullyQualifiedName());
+                    log(DELAYED, "Delaying @NotNull on field {} because initialiser not yet known", fieldInfo.fullyQualifiedName());
             }
         }
 
@@ -186,11 +187,11 @@ public class FieldAnalyser {
             // first check if we're dealing with fields of ENUM's; they're not modifiable at all
             if (fieldInfo.owner.typeInspection.get().typeNature == TypeNature.ENUM) {
                 annotations.put(typeContext.notModified.get(), true);
-                log(MODIFY_CONTENT, "FA: Mark field {} of enum as @NotModified", fieldInfo.fullyQualifiedName());
+                log(MODIFY_CONTENT, "Mark field {} of enum as @NotModified", fieldInfo.fullyQualifiedName());
                 changes = true;
             } else if (fieldInfo.isFinal(typeContext) == Boolean.FALSE) {
                 annotations.put(typeContext.notModified.get(), false);
-                log(MODIFY_CONTENT, "FA: Mark field {} as NOT @NotModified, because it is not @Final", fieldInfo.fullyQualifiedName());
+                log(MODIFY_CONTENT, "Mark field {} as NOT @NotModified, because it is not @Final", fieldInfo.fullyQualifiedName());
                 changes = true;
             } else if (fieldInfo.isFinal(typeContext) == Boolean.TRUE) {
                 boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
@@ -201,11 +202,11 @@ public class FieldAnalyser {
                             .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
                             .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
                     annotations.put(typeContext.notModified.get(), notModified);
-                    log(MODIFY_CONTENT, "FA: Mark field {} as " + (notModified ? "" : "not ") +
+                    log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
                             "@NotModified", fieldInfo.fullyQualifiedName());
                     changes = true;
                 } else {
-                    log(MODIFY_CONTENT, "Cannot yet conclude if {}'s contents have been modified, not all read or defined",
+                    log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
                             fieldInfo.fullyQualifiedName());
                 }
             }

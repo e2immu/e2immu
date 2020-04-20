@@ -86,7 +86,7 @@ public class TestDependencyGraph {
         Assert.assertEquals("[a, c, b]", sorted.toString());
 
         Set<Character> elements = new TreeSet<>();
-        graph.visit((c, list )-> elements.add(c));
+        graph.visit((c, list) -> elements.add(c));
         Assert.assertEquals("[a, b, c]", elements.toString());
 
         Assert.assertEquals(3, graph.size());
@@ -128,5 +128,49 @@ public class TestDependencyGraph {
         } catch (UnsupportedOperationException e) {
             // normal behaviour
         }
+    }
+
+    @Test
+    public void test6() {
+        DependencyGraph<Character> graph = new DependencyGraph<>();
+
+        // c -> b -> a
+        graph.addNode('a', List.of());
+        graph.addNode('b', List.of('a'));
+        graph.addNode('c', List.of('b'));
+
+        Assert.assertEquals("[a]", graph.dependencies('c').toString());
+        Assert.assertEquals("[a]", graph.dependencies('b').toString());
+
+        DependencyGraph<Character> graph2 = new DependencyGraph<>();
+
+        // c -> b -> a
+        graph2.addNode('a', List.of());
+        graph2.addNode('b', List.of('a'));
+
+        Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
+        graph2.addNode('c', List.of('b'));
+        Assert.assertTrue(graph.equalTransitiveTerminals(graph2));
+
+        graph.addNode('d', List.of('b'));
+        Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
+        graph2.addNode('d', List.of('b'));
+        Assert.assertTrue(graph.equalTransitiveTerminals(graph2));
+
+        graph.addNode('e', List.of('b'));
+        Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
+        System.out.println("Deps of 'e': " + graph.dependencies('e'));
+        graph2.addNode('e', List.of('a'));
+        System.out.println("Deps of 'e': " + graph2.dependencies('e'));
+        Assert.assertTrue(graph.equalTransitiveTerminals(graph2));
+
+        graph.addNode('f', List.of('e'));
+        graph.addNode('f', List.of());
+        Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
+        System.out.println("Deps of 'f': " + graph.dependencies('f'));
+        graph2.addNode('g', List.of());
+        graph2.addNode('f', List.of('g'));
+        System.out.println("Deps of 'f': " + graph2.dependencies('f'));
+        Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
     }
 }

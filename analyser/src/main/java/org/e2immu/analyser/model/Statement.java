@@ -19,17 +19,12 @@
 package org.e2immu.analyser.model;
 
 
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @E2Immutable

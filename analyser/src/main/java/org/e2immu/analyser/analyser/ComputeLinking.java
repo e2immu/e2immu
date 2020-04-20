@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ComputeLinking {
@@ -54,7 +53,7 @@ public class ComputeLinking {
             if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodAnalysis))
                 changes = true;
 
-            if (computeContentModifications(methodAnalysis, methodProperties)) changes = true;
+            if (computeContentModifications(methodInfo, methodAnalysis, methodProperties)) changes = true;
             if (checkParameterAssignmentError(methodInfo, methodProperties)) changes = true;
 
             return changes;
@@ -88,7 +87,7 @@ public class ComputeLinking {
                         Set<Variable> dependencies;
                         if (variable instanceof FieldReference) {
                             if (!((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
-                                log(LINKED_VARIABLES, "Dependencies of {} have not yet been established", variable.detailedString());
+                                log(DELAYED, "Dependencies of {} have not yet been established", variable.detailedString());
                                 return false;
                             }
                             dependencies = ((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.get();
@@ -103,7 +102,7 @@ public class ComputeLinking {
                         variables.addAll(dependencies);
                     }
                 } else {
-                    log(LINKED_VARIABLES, "Not yet ready to compute linked variables of result of method {}", methodInfo.fullyQualifiedName());
+                    log(DELAYED, "Not yet ready to compute linked variables of result of method {}", methodInfo.fullyQualifiedName());
                     return false;
                 }
             }
@@ -140,20 +139,17 @@ public class ComputeLinking {
     private static boolean establishLinks(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
         if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
-        log(LINKED_VARIABLES, "Establishing links, copying from dependency graphs of size {} best case, {} worst case",
-                methodProperties.dependencyGraphBestCase.size(), methodProperties.dependencyGraphWorstCase.size());
-
         boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties.entrySet().stream()
                 .filter(e -> (e.getKey() instanceof FieldReference) && (e.getValue().properties.contains(VariableProperty.READ) ||
                         e.getValue().properties.contains(VariableProperty.ASSIGNED)))
                 .anyMatch(e -> e.getValue().getCurrentValue() instanceof VariableValue &&
                         ((VariableValue) e.getValue().getCurrentValue()).effectivelyFinalUnevaluated);
         if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
-            log(LINKED_VARIABLES, "Some fields have not yet been evaluated -- delaying establishing links");
+            log(DELAYED, "Some fields have not yet been evaluated -- delaying establishing links");
             return false;
         }
         if (!methodProperties.dependencyGraphBestCase.equalTransitiveTerminals(methodProperties.dependencyGraphWorstCase)) {
-            log(LINKED_VARIABLES, "Best and worst case dependency graph transitive terminal sets differ -- delaying establishing links");
+            log(DELAYED, "Best and worst case dependency graph transitive terminal sets differ -- delaying establishing links");
             return false;
         }
         AtomicBoolean changes = new AtomicBoolean();
@@ -166,13 +162,13 @@ public class ComputeLinking {
             }
             terminals.remove(variable); // removing myself
             variablesLinkedToFieldsAndParameters.put(variable, terminals);
-            log(LINKED_VARIABLES, "MA: Set terminals of {} in {} to {}", variable.detailedString(),
+            log(DEBUG_LINKED_VARIABLES, "Set terminals of {} in {} to [{}]", variable.detailedString(),
                     methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
 
             if (variable instanceof FieldReference) {
                 methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, terminals);
                 changes.set(true);
-                log(LINKED_VARIABLES, "MA: Decide on links of {} in {} to {}", variable.detailedString(),
+                log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.detailedString(),
                         methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
             }
         });
@@ -181,21 +177,24 @@ public class ComputeLinking {
         return true;
     }
 
-    private boolean computeContentModifications(MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
-        if(!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
+    private boolean computeContentModifications(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+        if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
         for (Variable variable : methodProperties.variableProperties.keySet()) {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
             Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
-            log(MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
+            log(DEBUG_MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
                     Variable.detailedString(linkedVariables), directContentModification);
             for (Variable linkedVariable : linkedVariables) {
                 if ((linkedVariable instanceof FieldReference)) {
                     if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
                         boolean directlyModifiedField = directContentModification == Boolean.TRUE;
-                        log(MODIFY_CONTENT, "MA: Mark that the content of {} has " + (directlyModifiedField ? "" : "not ") +
-                                "been modified", linkedVariable.detailedString());
+                        if (directlyModifiedField) {
+                            log(MODIFY_CONTENT, "Mark that the content of {} has been modified in {}", linkedVariable.detailedString(), methodInfo.fullyQualifiedName());
+                        } else {
+                            log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has not been modified in {}", linkedVariable.detailedString(), methodInfo.fullyQualifiedName());
+                        }
                         methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
                         changes = true;
                     }
@@ -275,25 +274,25 @@ public class ComputeLinking {
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     boolean isModified = properties.contains(VariableProperty.ASSIGNED);
                     methodAnalysis.fieldAssignments.put(fieldInfo, isModified);
-                    log(ANALYSER, "Mark that {} is modified? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
+                    log(ASSIGNMENT, "Mark that {} is assigned to? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
                 Value currentValue = entry.getValue().getCurrentValue();
                 if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.ASSIGNED) &&
                         !properties.contains(VariableProperty.ASSIGNED_MULTIPLE_TIMES) &&
                         !methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
-                    log(ANALYSER, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
+                    log(ASSIGNMENT, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
                     methodAnalysis.fieldAssignmentValues.put(fieldInfo, currentValue);
                     changes = true;
                 }
                 if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
-                    log(ANALYSER, "Mark that the content of field {} has been read", variable.detailedString());
+                    log(ASSIGNMENT, "Mark that the content of field {} has been read", variable.detailedString());
                     methodAnalysis.fieldRead.put(fieldInfo, true);
                     changes = true;
                 }
             } else if (variable instanceof This && properties.contains(VariableProperty.READ)) {
                 if (!methodAnalysis.thisRead.isSet()) {
-                    log(ANALYSER, "Mark that 'this' has been read in {}", variable.detailedString());
+                    log(ASSIGNMENT, "Mark that 'this' has been read in {}", variable.detailedString());
                     methodAnalysis.thisRead.set(true);
                     changes = true;
                 }
@@ -304,7 +303,7 @@ public class ComputeLinking {
             if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                 methodAnalysis.fieldAssignments.put(fieldInfo, false);
                 changes = true;
-                log(ANALYSER, "Mark field {} not modified in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
+                log(ASSIGNMENT, "Mark field {} not assigned in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
             }
             //FieldReference fieldReference = new FieldReference(fieldInfo, methodProperties.thisVariable);
             //if (!methodAnalysis.directContentModifications.isSet(fieldReference)) {
@@ -315,7 +314,7 @@ public class ComputeLinking {
             //}
             if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
                 methodAnalysis.fieldRead.put(fieldInfo, false);
-                log(ANALYSER, "Mark field {} as ignore in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
+                log(ASSIGNMENT, "Mark field {} as ignore/not read in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
                 changes = true;
             }
         }

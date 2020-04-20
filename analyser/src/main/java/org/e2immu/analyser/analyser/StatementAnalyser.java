@@ -23,13 +23,13 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.statement.IfElseStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,12 +103,12 @@ public class StatementAnalyser {
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
 
-            if (isLogEnabled(LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
-                log(LINKED_VARIABLES, "Dependency graph of linked variables best case:");
-                variableProperties.dependencyGraphBestCase.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+            if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
+                log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
+                variableProperties.dependencyGraphBestCase.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
-                log(LINKED_VARIABLES, "Dependency graph of linked variables worst case:");
-                variableProperties.dependencyGraphWorstCase.visit((n, list) -> log(LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+                log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables worst case:");
+                variableProperties.dependencyGraphWorstCase.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
             }
 
@@ -129,7 +129,6 @@ public class StatementAnalyser {
                 LocalVariable localVariable = ((LocalVariableReference) variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
                     methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                    log(ANALYSER, "Mark local variable {} as unused", localVariable.name);
                     typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                             ", local variable " + localVariable.name + " is not used");
                     changes = true;
@@ -181,7 +180,7 @@ public class StatementAnalyser {
                     result.value.linkedVariables(true, variableProperties);
             Set<Variable> linkToWorstCase = result.value.linkedVariables(false, variableProperties);
 
-            log(LINKED_VARIABLES, "In creation with assignment, link {} to [{}] best case, [{}] worst case",
+            log(DEBUG_LINKED_VARIABLES, "In creation with assignment, link {} to [{}] best case, [{}] worst case",
                     localVariableCreation.localVariable.name,
                     Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
             LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
@@ -200,7 +199,7 @@ public class StatementAnalyser {
                 if (result.changes) changes = true;
                 value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
             } catch (RuntimeException rte) {
-                log(ANALYSER, "Failed to evaluate expression in statement {}", statement);
+                LOGGER.warn("Failed to evaluate expression in statement {}", statement);
                 throw rte;
             }
         }
@@ -240,13 +239,12 @@ public class StatementAnalyser {
         Runnable uponUsingConditional;
         if (statement.statement instanceof IfElseStatement) {
             if ((value == BoolValue.FALSE || value == BoolValue.TRUE) && !statement.errorValue.isSet()) {
-                log(ANALYSER, "condition in if statement is constant {}", value);
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                         ", if statement evaluates to constant");
                 statement.errorValue.set(true);
             }
             uponUsingConditional = () -> {
-                log(ANALYSER, "Triggering errorValue true on if-else-statement");
+                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
                 statement.errorValue.set(true);
             };
         } else {
@@ -345,8 +343,6 @@ public class StatementAnalyser {
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     if (localChanges) changes.set(true);
                     if (intermediateValue instanceof ErrorValue) {
-                        log(ANALYSER, "Encountered error in expression {} in {}",
-                                localExpression.getClass(), methodInfo.fullyQualifiedName());
                         if (!statementForErrorReporting.errorValue.isSet()) {
                             typeContext.addMessage(Message.Severity.ERROR,
                                     "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
@@ -371,9 +367,9 @@ public class StatementAnalyser {
                 Boolean isNotNull = value.isNotNull(variableProperties);
                 if (isNotNull == Boolean.TRUE) {
                     variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
-                    log(ANALYSER, "Added check-null property of {}", at.detailedString());
+                    log(VARIABLE_PROPERTIES, "Added check-null property of {}", at.detailedString());
                 } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
-                    log(ANALYSER, "Cleared check-null property of {}", at.detailedString());
+                    log(VARIABLE_PROPERTIES, "Cleared check-null property of {}", at.detailedString());
                 }
 
                 if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
@@ -387,7 +383,7 @@ public class StatementAnalyser {
                             Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
                     variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
                 }
-                log(ANALYSER, "Set value of {} to {}", at.detailedString(), value);
+                log(VARIABLE_PROPERTIES, "Set value of {} to {}", at.detailedString(), value);
             }
         }
         for (Variable variable : expression.variables()) {
@@ -487,12 +483,12 @@ public class StatementAnalyser {
     private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties) {
         if (expression instanceof VariableExpression) {
             Variable variable = expression.variables().get(0);
-            log(MODIFY_CONTENT, "SA: mark method object as content modified: {}", variable.detailedString());
+            log(DEBUG_MODIFY_CONTENT, "SA: mark method object as content modified: {}", variable.detailedString());
             variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED);
         } else if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
             recursivelyMarkVariables(fieldAccess.expression, variableProperties);
-            log(MODIFY_CONTENT, "SA: mark method object, field access as content modified: {}",
+            log(DEBUG_MODIFY_CONTENT, "SA: mark method object, field access as content modified: {}",
                     fieldAccess.variable.detailedString());
             variableProperties.addProperty(fieldAccess.variable, VariableProperty.CONTENT_MODIFIED);
         }

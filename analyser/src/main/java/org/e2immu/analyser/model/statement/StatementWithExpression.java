@@ -20,13 +20,10 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
-import org.e2immu.analyser.util.Pair;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 

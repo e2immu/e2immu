@@ -49,7 +49,7 @@ public class TestParseUtilPackage {
                 VARIABLE_PROPERTIES,
                 LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
                 E2IMMUTABLE, ANNOTATION_EXPRESSION,
-                CONTAINER, VALUE_CLASS, SIDE_EFFECT, UTILITY_CLASS,
+                CONTAINER, E2FINAL, SIDE_EFFECT, UTILITY_CLASS,
                 NULL_NOT_ALLOWED, NOT_MODIFIED
         );
     }

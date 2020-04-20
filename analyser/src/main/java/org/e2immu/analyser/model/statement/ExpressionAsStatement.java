@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;

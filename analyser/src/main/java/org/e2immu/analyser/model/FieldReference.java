@@ -18,11 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
-
-import java.util.Map;
-import java.util.Objects;
 
 public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;

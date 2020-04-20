@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
 
 // used in MethodAnalyser
@@ -172,7 +173,7 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.currentValue = Objects.requireNonNull(initialValue);
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
         if (variableProperties.put(variable, aboutVariable) != null) throw new UnsupportedOperationException();
-        log(Logger.LogTarget.ANALYSER, "Created variable {}", variable.detailedString());
+        log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
     }
 
     public void setValue(Variable variable, @NullNotAllowed Value value) {

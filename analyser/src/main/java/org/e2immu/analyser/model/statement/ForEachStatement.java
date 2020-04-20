@@ -22,10 +22,8 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.List;
 import java.util.Set;
 
 // @ContextClass

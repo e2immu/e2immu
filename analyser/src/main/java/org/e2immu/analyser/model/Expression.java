@@ -19,21 +19,18 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // we cannot set @E2Immutable here... as 2 implementations are @Container s
 // we will guarantee though that no expression changes its parameters

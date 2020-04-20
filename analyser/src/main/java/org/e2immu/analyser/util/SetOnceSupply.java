@@ -20,8 +20,6 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
-import java.util.function.Supplier;
-
 @E2Final(after = "set", type = AnnotationType.CONTRACT)
 public class SetOnceSupply<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -63,12 +62,12 @@ public class ParameterAnalyser {
             if (directContentModification != null) {
                 boolean notModified = !directContentModification;
                 if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
-                    log(MODIFY_CONTENT, "MA: Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
+                    log(MODIFY_CONTENT, "Mark {} not modified? {}", parameterInfo.detailedString(), notModified);
                     parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
                     return true;
                 }
             } else {
-                log(MODIFY_CONTENT, "Delaying setting parameter not modified on {}", parameterInfo.detailedString());
+                log(DELAYED, "Delaying setting parameter not modified on {}", parameterInfo.detailedString());
             }
         }
         return false;

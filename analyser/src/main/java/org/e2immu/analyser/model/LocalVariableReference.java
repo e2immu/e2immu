@@ -19,12 +19,10 @@
 package org.e2immu.analyser.model;
 
 
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 // NOTE that equality is on the variable ONLY
 

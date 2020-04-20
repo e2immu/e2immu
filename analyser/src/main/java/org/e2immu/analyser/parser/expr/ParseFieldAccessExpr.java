@@ -23,7 +23,6 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayLengthExpression;
 import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 

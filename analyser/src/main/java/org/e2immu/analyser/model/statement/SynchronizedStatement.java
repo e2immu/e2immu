@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.List;
 import java.util.Objects;
 
 // @ContextClass

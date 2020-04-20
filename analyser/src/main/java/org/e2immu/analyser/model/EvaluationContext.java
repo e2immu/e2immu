@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.Optional;
 import java.util.Set;
 
 public interface EvaluationContext {
