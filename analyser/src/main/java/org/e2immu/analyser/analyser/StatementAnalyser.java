@@ -95,6 +95,10 @@ public class StatementAnalyser {
                             Variable variable = isNull.get();
                             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                             variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+                            if (variableProperties.uponUsingConditional != null) {
+                                log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                                variableProperties.uponUsingConditional.run();
+                            }
                         }
                     }
                 }
