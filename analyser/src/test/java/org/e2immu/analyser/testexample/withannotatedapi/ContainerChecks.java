@@ -120,6 +120,7 @@ public class ContainerChecks {
     }
 
     @Container
+    @NullNotAllowed
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
         @Linked(type = VERIFY_ABSENT)
@@ -136,13 +137,12 @@ public class ContainerChecks {
             addAll(collection);
         }
 
-        @Independent
-        public void addAll(@NullNotAllowed @NotModified Collection<String> collection) {
+        public void addAll(@NotModified Collection<String> collection) {
             list.addAll(collection);
         }
 
         @NotModified
-        public void visit(@NullNotAllowed Consumer<String> consumer) {
+        public void visit(Consumer<String> consumer) {
             list.forEach(consumer);
         }
     }

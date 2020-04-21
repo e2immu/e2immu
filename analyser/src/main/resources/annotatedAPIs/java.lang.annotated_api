@@ -333,6 +333,8 @@ public @interface FunctionalInterface {
 }
 
 public interface Iterable<T> {
+    // looping over the collection does not change it...
+    @NotModified
     void forEach(@NullNotAllowed Consumer<? super T> action);
 
     @NotNull

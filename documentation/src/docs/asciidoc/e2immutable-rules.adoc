@@ -1,25 +1,84 @@
+=== New discussion 20200421
 
-=== Discussion of E2Immutable rules
+Slightly simplified definitions.
 
-Rule 1 (fields <<e2final-annotation>>)::  all fields are effectively final
+content modification::
+We define content modification as the calling of methods on an object that cause changes in the fields of the object.
 
-Rule 2 (fields <<notmodified-annotation>>)::  all fields can be annotated <<notmodified-annotation>> (explicitly, or by implication,
-because they are primitive or effectively immutable themselves):
-no method of the class calls modification methods on these fields
+link:: A link between two variables occurs when modifications in one object, cause modifications in the other as well.
+This typically occurs when object has been embedded in the other.
 
-Rule 3 (no link to parameters)::  to guarantee that no content modification takes place outside the class via parameters, we require that
-that fields of types that are not effectively immutable, cannot be <<linked-annotation>> to parameters of non-private methods or constructors.
+@NotModified on parameters::
+No code _in the class_ can make content modifications to such parameters or variables linked to such parameters.
+Implicit for primitives and @E2Immutable types.
 
-Rule 4 (no unsafe exposure)::  to guarantee that no content modification takes place outside the class via direct exposure, we restrict
-fields of types that are not effectively immutable to have the `private` modifier
+@NotModified on methods::
+No code in the method makes any content modification to any of the fields.
 
-Rule 5 (no unsafe returns):: to guarantee that no content modification takes place outside the class via return statements,
-we require that objects returned are either effectively immutable, not <<linked-annotation>> to the fields, or
-restricted to interfaces with methods marked <<notmodified-annotation>> only.
+@NotModified on fields::
+No code _in the class_ can make content modifications to the field.
+Implicit for primitives and @E2Immutable types.
+We will allow assignments to fields (i.e., not @E2Final) while guaranteeing @NotModified.
 
+@Independent on methods:: There is no link between this method's parameters and any of the fields of the method.
+Neither is there a link between the return value, if present, and the parameters.
 
-Rule 3 covers exposure via consumers, as detailed in <<linking-discussions>>.
-In the same way it protects fields from outside objects via suppliers and functions.
+@E1Immutable on fields:: expensive way of saying that the field is effectively or eventually final: it is not assigned to outside construction time.
 
-#TODO: Rule 5# do we need an explanation on interfaces?
-These interfaces should be marked effectively immutable.
+@Container on type:: a container is a type where all parameters of non-private methods and constructors are <<notmodified-annotation>>, unless they are explicitly marked @Output.
++
+This definition means that inside the class, there is no code that modifies the objects to the class.
+Other objects can, internally, be constructed, modified, etc., at will.
+At the same time, outside the class, these objects can be modified as well.
+A @Container is a 'safe place' to store objects, allowing you complete freedom to modify the objects knowing that the storage code will no touch them.
+
+@E1Immutable on type:: a class is effectively or eventually (level 1 or assignment) immutable when all its fields are @E1Immutable.
+
+@E1Container on type:: @E1Immutable and @Container type; maybe not that important a type, but we'll see it often. `Pair` is the archetypal example.
+
+@E2Immutable on type:: a type is effectively or eventually (level 2 or content) immutable when
+. all its fields are @E1Immutable
+. all its fields are <<notmodified-annotation>>
+. all its fields are either private, or <<e2immutable-annotation>> themselves
+. all its constructors and non-private methods are <<independent-annotation>>.
+
+@E2Immutable, @E1Immutable, ... on a field or parameter:: the code analyser should be able to deduce from the flow of the code that this object, even though its formal type does not have this property.
+
+@E2Container:: a type is an effectively or eventually immutable container when, on top of the definitions of @E2Immutable, all methods and constructor parameters are @NotModified.
+As far as we can see now, many @E2Immutable types will have this additional property.
+Borderline situations would be like
+
+[source]
+----
+@E2Immutable
+class SomeClass<T> {
+
+  @E2Immutable
+  public final Set<T> immutableSet;
+
+  ...
+
+  public void enrich(Set<T> input) {
+    input.addAll(immutableSet); // <1>
+  }
+}
+----
+<1> This action ensures that the `input` parameter is not @NotModified.
+It generally would make more sense, though, to move this method to the place where it is used:
+
+[source]
+----
+class CanBeEnriched {
+  Set<T> ts = ...;
+
+  void enrich(SomeClass<T> someClass) {
+    ts.addAll(someClass.immutableSet);
+  }
+}
+----
+
+The class `java.lang.String` is an @E2Container. `List` is not a container, because of the `toArray` method.
+We provide an exception with the @Output annotation.
+
+The topics of <<notnull-annotation>> and <<nullnotallowed-annotation>> are only of indirect importance.
+<<fluent-annotation>> and <<identity-annotation>> are marginally important to #TODO#.

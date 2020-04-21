@@ -286,7 +286,7 @@ public class ComputeLinking {
                     changes = true;
                 }
                 if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
-                    log(ASSIGNMENT, "Mark that the content of field {} has been read", variable.detailedString());
+                    log(ASSIGNMENT, "Mark that field {} has been read", variable.detailedString());
                     methodAnalysis.fieldRead.put(fieldInfo, true);
                     changes = true;
                 }

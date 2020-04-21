@@ -234,15 +234,16 @@ public class TypeAnalyser {
         return true;
     }
 
-
     private Boolean noMethodsThatModifyContent(SortedType sortedType) {
         for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().constructors) {
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                 Boolean isNotModified = parameterInfo.isNotModified(typeContext);
                 if (isNotModified == null) return null; // cannot yet decide
                 if (!isNotModified) {
-                    log(CONTAINER, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
-                            parameterInfo.detailedString());
+                    log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
+                            sortedType.typeInfo.fullyQualifiedName,
+                            parameterInfo.detailedString(),
+                            methodInfo.distinguishingName());
                     return false;
                 }
             }
@@ -254,8 +255,10 @@ public class TypeAnalyser {
                     Boolean isNotModified = parameterInfo.isNotModified(typeContext);
                     if (isNotModified == null) return null; // cannot yet decide
                     if (!isNotModified) {
-                        log(CONTAINER, "{} is not a {}: {} does not have a @NotModified annotation", sortedType.typeInfo.fullyQualifiedName,
-                                parameterInfo.detailedString());
+                        log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
+                                sortedType.typeInfo.fullyQualifiedName,
+                                parameterInfo.detailedString(),
+                                methodInfo.distinguishingName());
                         return false;
                     }
                 }
