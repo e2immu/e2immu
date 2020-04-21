@@ -168,7 +168,7 @@ public class FieldAnalyser {
                     boolean initialiserNotNull = value == NO_VALUE || value.isNotNull(fieldProperties);
                     boolean notNull = allAssignmentValuesNotNull && initialiserNotNull;
                     annotations.put(typeContext.notNull.get(), notNull);
-                    log(NOT_NULL, "Mark non-final field {} as " + (notNull ? "" : "NOT ") + "@NotNull",
+                    log(NOT_NULL, "Mark field {} as " + (notNull ? "" : "NOT ") + "@NotNull",
                             fieldInfo.fullyQualifiedName(), notNull);
                     changes = true;
                 } else {

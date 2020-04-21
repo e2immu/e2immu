@@ -116,7 +116,7 @@ public class CheckConstant {
         Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
         boolean haveConstantAnnotation = checkConstant(singleReturnValue, methodInfo.returnType(), methodInfo.methodInspection.get().annotations,
                 (valueToTest, typeMsg) -> typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                        ": expected constant value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue));
+                        ": expected constant return value " + valueToTest + " of type " + typeMsg + ", got " + singleReturnValue));
         if (haveConstantAnnotation && singleReturnValue == UnknownValue.NO_VALUE) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() + " has no single return value");
         }

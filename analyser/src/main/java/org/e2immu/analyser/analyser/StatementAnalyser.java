@@ -347,6 +347,9 @@ public class StatementAnalyser {
                             statementForErrorReporting.errorValue.set(true);
                         }
                     }
+                    if (intermediateValue instanceof VariableValue && ((VariableValue) intermediateValue).effectivelyFinalUnevaluated) {
+                        encounterUnevaluated.set(true);
+                    }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
                     doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
                     doImplicitNullCheck(localExpression, lvp);

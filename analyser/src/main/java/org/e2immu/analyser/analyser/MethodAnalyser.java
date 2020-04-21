@@ -154,8 +154,9 @@ public class MethodAnalyser {
     }
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
+    // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private boolean methodIsConstant(long returnStatements, List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (!methodAnalysis.singleReturnValue.isSet()) {
+        if (!methodAnalysis.singleReturnValue.isSet() && methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
             Value value;
             if (returnStatements == 1) {
                 value = numberedStatements.stream()
@@ -165,13 +166,11 @@ public class MethodAnalyser {
             } else {
                 value = new Instance(methodInfo.returnType());
             }
-            if (value != UnknownValue.NO_VALUE) {
-                methodAnalysis.singleReturnValue.set(value);
-                AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-                methodAnalysis.annotations.put(constantAnnotation, true);
-                log(CONSTANT, "Added @Constant annotation on method {}", methodInfo.fullyQualifiedName());
-                return true;
-            }
+            methodAnalysis.singleReturnValue.set(value);
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+            methodAnalysis.annotations.put(constantAnnotation, true);
+            log(CONSTANT, "Added @Constant annotation on method {}", methodInfo.fullyQualifiedName());
+            return true;
         }
         return false;
     }

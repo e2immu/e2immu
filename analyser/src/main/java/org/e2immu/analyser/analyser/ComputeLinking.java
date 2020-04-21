@@ -172,7 +172,7 @@ public class ComputeLinking {
                         methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
             }
         });
-        log(LINKED_VARIABLES, "Set linksComputed to true for {}", methodInfo.fullyQualifiedName());
+        log(LINKED_VARIABLES, "Set variablesLinkedToFieldsAndParameters to true for {}", methodInfo.fullyQualifiedName());
         methodAnalysis.variablesLinkedToFieldsAndParameters.set(variablesLinkedToFieldsAndParameters);
         return true;
     }
