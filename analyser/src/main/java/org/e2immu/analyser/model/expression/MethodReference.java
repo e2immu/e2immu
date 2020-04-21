@@ -104,7 +104,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             } else if (methodInfo.hasBeenDefined()) {
                 result = UnknownValue.NO_VALUE;
             } else {
-                result = new Instance(methodInfo.returnType());
+                result = new MethodValue(methodInfo, value, List.of());
             }
         }
         visitor.visit(this, evaluationContext, result);

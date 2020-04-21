@@ -63,13 +63,72 @@ public class TestTestExamplesWithAnnotatedAPIs {
     }
 
     @Test
-    public void test() throws IOException {
+    public void testAnnotationsOnLambdas() throws IOException {
+        testClass("AnnotationsOnLambdas", 0);
+    }
+
+    @Test
+    public void testContainerChecks() throws IOException {
+        testClass("ContainerChecks", 0);
+    }
+
+    @Test
+    public void testCyclicReferences() throws IOException {
+        testClass("CyclicReferences", 0);
+    }
+
+    @Test
+    public void testE2ImmutableChecks() throws IOException {
+        testClass("E2ImmutableChecks", 0);
+    }
+
+    @Test
+    public void testIdentityChecks() throws IOException {
+        testClass("IdentityChecks", 0);
+    }
+
+    @Test
+    public void testNotModifiedChecks() throws IOException {
+        testClass("NotModifiedChecks", 0);
+    }
+
+    @Test
+    public void testNotModifiedChecks2() throws IOException {
+        testClass("NotModifiedChecks2", 0);
+    }
+
+    @Test
+    public void testNullParameterChecks() throws IOException {
+        testClass("NullParameterChecks", 0);
+    }
+
+    @Test
+    public void testSimpleNotModifiedChecks() throws IOException {
+        testClass("SimpleNotModifiedChecks", 0);
+    }
+
+    @Test
+    public void testStaticImports() throws IOException {
+        testClass("StaticImports", 0);
+    }
+
+    @Test
+    public void testSubTypes() throws IOException {
+        testClass("SubTypes", 0);
+    }
+
+    @Test
+    public void testUnusedLocalVariableChecks() throws IOException {
+        testClass("UnusedLocalVariableChecks", 7);
+    }
+
+    private void testClass(String className, int errorsToExpect) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi.NotModifiedChecks")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi." + className)
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -77,21 +136,17 @@ public class TestTestExamplesWithAnnotatedAPIs {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                         .build())
                 .build();
-        // important: we do not need to include
-        //                       //  .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/hamcrest")
-        // in the classpath; as no actual methods of hamcrest are being parsed!
 
         BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
-        //Assert.assertTrue(10 <= types.size());
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());
         }
-        Assert.assertTrue(parser.getMessages().stream().noneMatch(m -> m.severity == Message.Severity.ERROR));
+        Assert.assertEquals(errorsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
     }
 
 }

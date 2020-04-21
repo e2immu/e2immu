@@ -26,7 +26,7 @@ import java.util.*;
 
 public class NotModifiedChecks {
     @NotModified
-    @Linked(to = {"NotModifiedChecks.list"})
+    @Linked(to = {"list"})
     final Collection<String> c0;
 
     @NotModified

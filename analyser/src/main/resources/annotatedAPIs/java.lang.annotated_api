@@ -222,6 +222,7 @@ public interface CharSequence {
 }
 
 @E2Immutable
+@NotNull
 public class String implements CharSequence {
     public String() {
     }

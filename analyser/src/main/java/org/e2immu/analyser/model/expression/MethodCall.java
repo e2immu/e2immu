@@ -82,7 +82,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // we will never analyse this method
                 // TODO if the method is @Constant, return the constant value
                 // TODO if the method is operating on a constant, simply apply the method if it is part of java.* JDK
-                result = new Instance(methodInfo.returnType());
+                result = new MethodValue(methodInfo, objectValue, parameters);
             }
         }
         visitor.visit(this, evaluationContext, result);

@@ -110,11 +110,6 @@ public class TestTestExamples {
     }
 
     @Test
-    public void testUnusedLocalVariableChecks() throws IOException {
-        goTest("UnusedLocalVariableChecks", 7);
-    }
-
-    @Test
     public void testUtilityClassChecks() throws IOException {
         goTest("UtilityClassChecks");
     }
