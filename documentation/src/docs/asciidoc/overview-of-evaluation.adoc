@@ -122,10 +122,9 @@ class Append {
   }
 }
 ----
-. if the method has been marked <<notmodified-annotation>>, the same situation applies.
-There cannot be a link between `b` 's content, and that of `c` and `d`, because `b` 's content will not be modified.
-Content changes on `b` can therefore have no influence on `a` because of this method call.
-However, the return value of `method` can still be linked to its parameters.
+. if the method has been marked <<notmodified-annotation>>, the same situation _does not apply_.
+Not modified means that here cannot be a link between `b` 's content, and that of `c` and `d`, because `b` 's content will not be modified.
+However, the return value of the method can still be linked to `b` (as in `java.util.List.subList`) or `c` or `d`.
 
 ==== Overall flow
 

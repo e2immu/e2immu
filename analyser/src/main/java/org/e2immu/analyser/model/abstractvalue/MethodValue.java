@@ -114,7 +114,6 @@ public class MethodValue implements Value {
      * 1. a is primitive or e2immutable: independent
      * 2. method is @Independent: independent (the very definition)
      * 3. b is @E2Immutable: only dependent on c, d
-     * 4. method is @NotModified: only dependent on c, d
      *
      * Note that a dependence on a parameter is only possible when it is not primitive or @E2Immutable (see VariableValue).
      * On top of that comes the situation where the analyser has more detailed information than is in the annotations.
@@ -149,10 +148,9 @@ public class MethodValue implements Value {
         Set<Variable> result = new HashSet<>();
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
-        // RULE 3 & 4
+        // RULE 3
         if ((bestCase || methodInfoDifferentType) &&
-                (methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE || // RULE 3
-                        methodInfo.isNotModified(typeContext) == Boolean.TRUE)) // RULE 4
+                methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE) // RULE 3
             return result;
 
         // default case, add b
