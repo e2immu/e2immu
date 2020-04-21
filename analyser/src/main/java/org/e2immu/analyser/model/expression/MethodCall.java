@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -74,8 +75,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else {
                     result = new MethodValue(methodInfo, objectValue, parameters);
                 }
-            } else {
+            } else if (methodInfo.hasBeenDefined()) {
+                // we will, at some point, analyse this method
                 result = UnknownValue.NO_VALUE;
+            } else {
+                // we will never analyse this method
+                // TODO if the method is @Constant, return the constant value
+                // TODO if the method is operating on a constant, simply apply the method if it is part of java.* JDK
+                result = new Instance(methodInfo.returnType());
             }
         }
         visitor.visit(this, evaluationContext, result);

@@ -25,6 +25,7 @@
  */
 package org.slf4j;
 
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NullNotAllowed;
 
@@ -40,7 +41,12 @@ public interface Logger {
     public void error(@NullNotAllowed String s, Object... objects) {
     }
 
+    @NotModified
     public void debug(@NullNotAllowed String s, Object... objects) {
+    }
+
+    @NotModified
+    public void debug(@NullNotAllowed String s) {
     }
 }
 

@@ -68,9 +68,11 @@ public class UnusedLocalVariableChecks {
 
     private static String checkDoubleMethod(String param) {
         String b = someMethod(param);
+        // ERROR: if statement evaluates to constant
         if (b == null) {
             if (param.contains("a")) {
                 String a = someMethod("xzy").toString();
+                // ERROR: if statement evaluates to constant
                 if (a == null) {
                     return b + "c";
                 }

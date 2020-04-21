@@ -48,6 +48,7 @@ public class TestTestExamples {
                 //METHOD_CALL,
 
                 //VARIABLE_PROPERTIES,
+                FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,
                 MODIFY_CONTENT,
@@ -110,7 +111,7 @@ public class TestTestExamples {
 
     @Test
     public void testUnusedLocalVariableChecks() throws IOException {
-        goTest("UnusedLocalVariableChecks", 5);
+        goTest("UnusedLocalVariableChecks", 7);
     }
 
     @Test

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -100,8 +101,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     // TODO we have no idea about the parameters here
                     result = new MethodValue(methodInfo, value, List.of());
                 }
-            } else {
+            } else if (methodInfo.hasBeenDefined()) {
                 result = UnknownValue.NO_VALUE;
+            } else {
+                result = new Instance(methodInfo.returnType());
             }
         }
         visitor.visit(this, evaluationContext, result);

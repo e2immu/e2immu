@@ -394,16 +394,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public SideEffect sideEffect(TypeContext typeContext) {
-        Boolean sseo = isStaticSideEffectsOnly(typeContext);
-        if (Boolean.TRUE == sseo) return SideEffect.STATIC_ONLY;
-
-        Boolean context = isNotModified(typeContext);
-        if (Boolean.TRUE == context) return SideEffect.NONE_CONTEXT;
-
-        Boolean pure = isNotModified(typeContext);
-        if (Boolean.TRUE == pure) return SideEffect.NONE_PURE;
-
-        if (sseo == null && pure == null && context == null) return SideEffect.DELAYED;
+        Boolean notModified = isNotModified(typeContext);
+        if (notModified == null) return SideEffect.DELAYED;
+        if (notModified) {
+            if (isStatic) {
+                if (isVoid()) {
+                    return SideEffect.STATIC_ONLY;
+                }
+                return SideEffect.NONE_PURE;
+            }
+            return SideEffect.NONE_CONTEXT;
+        }
         return SideEffect.SIDE_EFFECT;
     }
 
@@ -426,18 +427,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public String name() {
         return name;
-    }
-
-    public Boolean isStaticSideEffectsOnly(TypeContext typeContext) {
-        if (!isStatic) return false;
-        Boolean notModified = annotatedWith(typeContext.notModified.get());
-        if (notModified == null) return null;
-        if (!notModified) return false;
-        if (methodInspection.get().returnType.isVoid()) {
-            return true;
-        }
-        Boolean isFluent = annotatedWith(typeContext.fluent.get());
-        return isFluent == Boolean.TRUE;
     }
 
     public Boolean isAllParametersNotModified(TypeContext typeContext) {

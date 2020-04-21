@@ -24,7 +24,6 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -156,31 +155,49 @@ public class FieldAnalyser {
         // STEP 4: @NotNull
 
         if (!annotations.isSet(typeContext.notNull.get())) {
+            Boolean isNotNullValue;
+            // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
+            // the real value with a generic VariableValue, relying on @NotNull
             boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                     m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
                             (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-            if (allAssignmentValuesDefined && (!haveInitialiser || value != NO_VALUE)) {
+            if (allAssignmentValuesDefined) {
                 Boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
                         .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
                         .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties))
                         .reduce(true, TypeAnalyser.TERNARY_AND);
-                if (allAssignmentValuesNotNull != null) {
-                    boolean initialiserNotNull = value == NO_VALUE || value.isNotNull(fieldProperties);
-                    boolean notNull = allAssignmentValuesNotNull && initialiserNotNull;
-                    annotations.put(typeContext.notNull.get(), notNull);
-                    log(NOT_NULL, "Mark field {} as " + (notNull ? "" : "NOT ") + "@NotNull",
-                            fieldInfo.fullyQualifiedName(), notNull);
-                    changes = true;
+                if (allAssignmentValuesNotNull == null) {
+                    isNotNullValue = null; // delay
                 } else {
-                    log(DELAYED, "Delaying @NotNull on field {} because not all isNotNull computations known", fieldInfo.fullyQualifiedName());
+                    if(!haveInitialiser) {
+                        isNotNullValue = allAssignmentValuesNotNull;
+                    } else {
+                        if (value == NO_VALUE) {
+                            isNotNullValue = null; // delay
+                        } else {
+                            Boolean initialiserIsNotNull = value.isNotNull(fieldProperties);
+                            if (initialiserIsNotNull == null) {
+                                isNotNullValue = null; // delay
+                            } else {
+                                // this is the real one!
+                                isNotNullValue = initialiserIsNotNull && allAssignmentValuesNotNull;
+                            }
+                        }
+                    }
                 }
             } else {
-                if (!allAssignmentValuesDefined)
-                    log(DELAYED, "Delaying @NotNull on field {} because not all assignment values known", fieldInfo.fullyQualifiedName());
-                if (haveInitialiser && value == NO_VALUE)
-                    log(DELAYED, "Delaying @NotNull on field {} because initialiser not yet known", fieldInfo.fullyQualifiedName());
+                isNotNullValue = null; // delay
+            }
+            if (isNotNullValue == null) {
+                log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
+            } else {
+                annotations.put(typeContext.notNull.get(), isNotNullValue);
+                log(NOT_NULL, "Mark field {} as " + (isNotNullValue ? "" : "NOT ") + "@NotNull",
+                        fieldInfo.fullyQualifiedName(), isNotNullValue);
+                changes = true;
             }
         }
+
 
         // STEP 5: @NotModified
 
