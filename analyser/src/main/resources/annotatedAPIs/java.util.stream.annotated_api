@@ -25,9 +25,15 @@
  */
 package java.util.stream;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.UtilityClass;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.*;
 
 public interface Collector<T, A, R> {
@@ -50,7 +56,7 @@ public class Collectors {
     static Collector<CharSequence, ?, String> joining();
 
     @NotNull1
-    static Collector<CharSequence, ?, String> joining(@NullNotAllowed CharSequence delimiter);
+    static Collector<CharSequence, ?, String> joining(@NotNull CharSequence delimiter);
 
     @NotNull1
     static <T> Collector<T, ?, Set<T>> toSet();
@@ -67,7 +73,6 @@ public interface IntStream {
     IntStream sorted();
 }
 
-@NullNotAllowed
 @NotNull
 @E2Immutable
 public interface Stream<T> {

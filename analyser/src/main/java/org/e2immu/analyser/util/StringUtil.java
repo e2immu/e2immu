@@ -20,7 +20,6 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.e2immu.annotation.UtilityClass;
 
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @UtilityClass
-@NullNotAllowed
 public class StringUtil {
 
     private StringUtil() {
@@ -41,8 +39,8 @@ public class StringUtil {
 
     @NotNull
     @NotModified
-    public static String[] concat(String[] s1,
-                                  String[] s2) {
+    public static String[] concat(@NotNull String[] s1,
+                                  @NotNull String[] s2) {
         String[] res = new String[s1.length + s2.length];
         System.arraycopy(s1, 0, res, 0, s1.length);
         System.arraycopy(s2, 0, res, s1.length, s2.length);
@@ -51,7 +49,7 @@ public class StringUtil {
 
     //@NotNull TODO very hard to prove
     @NotModified
-    public static <E> String join(Collection<E> es, Function<E, ?> f) {
+    public static <E> String join(@NotNull Collection<E> es, @NotNull Function<E, ?> f) {
         return es.stream().map(f).map(Object::toString).collect(Collectors.joining(", "));
     }
 }

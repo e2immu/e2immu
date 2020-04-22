@@ -34,7 +34,6 @@ import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnceSupply;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +46,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
-@Container
-//@ContextClass(after="TypeAnalyser.analyse()")
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInfo.class);
 
@@ -72,14 +69,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return simpleName;
     }
 
-    public TypeInfo(String packageName, String simpleName) {
+    public TypeInfo(@NotNull String packageName, @NotNull String simpleName) {
         if (Objects.requireNonNull(packageName).isEmpty())
             throw new UnsupportedOperationException("Expect a non-empty package name for " + simpleName);
         this.fullyQualifiedName = packageName + "." + simpleName;
-        this.simpleName = simpleName;
+        this.simpleName = Objects.requireNonNull(simpleName);
     }
 
-    public TypeInfo(String fullyQualifiedName) {
+    public TypeInfo(@NotNull String fullyQualifiedName) {
         this.fullyQualifiedName = fullyQualifiedName;
         int dot = fullyQualifiedName.lastIndexOf('.');
         if (dot >= 0) {
@@ -218,7 +215,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 Primitives.PRIMITIVES.stringParameterizedType, true);
         ParameterInfo valueOfP0 = new ParameterInfo(Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
-                .addAnnotation(expressionContext.typeContext.nullNotAllowed.get())
+                .addAnnotation(expressionContext.typeContext.notNull.get())
                 .build(valueOfMethodInfo));
         valueOfMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notModified.get())
@@ -759,11 +756,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // we need the AnnotationType enum, which needs java.lang.String in its name() method, before our
         // own annotations, before the full java.lang package which obviously is annotated with our own annotations...
         if ("java.lang.Object".equals(fullyQualifiedName) || "java.lang.String".equals(fullyQualifiedName)) return true;
-        return annotatedWith(typeContext.e2Immutable.get());
+        return annotatedWith(typeContext.e2Immutable.get()) || annotatedWith(typeContext.e2Container.get());
     }
 
     public Boolean isContainer(TypeContext typeContext) {
-        return annotatedWith(typeContext.container.get());
+        return annotatedWith(typeContext.container.get()) ||
+                annotatedWith(typeContext.e1Container.get()) ||
+                annotatedWith(typeContext.e2Container.get());
     }
 
     public Boolean isNotNull(TypeContext typeContext) {

@@ -18,14 +18,12 @@
 
 package org.e2immu.analyser.util;
 
-import com.sun.source.tree.Tree;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestDependencyGraph {
 

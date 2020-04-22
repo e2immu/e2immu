@@ -24,9 +24,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-@E2Immutable(after = "freeze")
-@NullNotAllowed
-@Container
+@E2Container(after = "freeze")
 public class Trie<T> extends Freezable {
 
     @NotModified(type = AnnotationType.VERIFY_ABSENT)

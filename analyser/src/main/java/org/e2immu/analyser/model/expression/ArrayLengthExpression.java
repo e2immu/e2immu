@@ -23,8 +23,6 @@ import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;

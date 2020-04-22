@@ -18,7 +18,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Final;
+import org.e2immu.annotation.E1Container;
 
 /**
  * Classic key-value object, typical example of value class
@@ -26,7 +26,7 @@ import org.e2immu.annotation.E2Final;
  * @param <K> type of key
  * @param <V> type of value
  */
-@E2Final
+@E1Container
 public class Pair<K, V> {
     public final K k;
     public final V v;

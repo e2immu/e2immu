@@ -18,15 +18,14 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import static org.e2immu.annotation.AnnotationType.*;
+import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class SimpleNotModifiedChecks {
 
@@ -56,7 +55,7 @@ public class SimpleNotModifiedChecks {
 
     static class Example3 {
         @NotNull
-        @Final
+        @E1Immutable
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set3 = new HashSet<>();
 
@@ -106,7 +105,7 @@ public class SimpleNotModifiedChecks {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set6 = new HashSet<>();
 
-        public static void copyIn(@NullNotAllowed Example6 example6, @NullNotAllowed @NotModified Set<String> values) {
+        public static void copyIn(@NotNull Example6 example6, @NotNull @NotModified Set<String> values) {
             example6.set6.addAll(values);
         }
     }

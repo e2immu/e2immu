@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -37,7 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 
 public class TestInspectAnnotatedAPIs {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInspectAnnotatedAPIs.class);

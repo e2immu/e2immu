@@ -22,16 +22,16 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Container
-@E2Immutable(after = "com.wrc.equivalent.parse.Resolver.sortTypes")
-@NullNotAllowed
 @NotNull
 public class MethodInspection extends Inspection {
 
@@ -91,6 +91,7 @@ public class MethodInspection extends Inspection {
                 ImmutableList.copyOf(alternativeAnnotations), typeParameters, exceptionTypes, implementationOf, methodBody);
     }
 
+    @Container(builds = MethodInspection.class)
     public static class MethodInspectionBuilder implements BuilderWithAnnotations<MethodInspectionBuilder> {
         private final List<ParameterInfo> parameters = new ArrayList<>();
         private final List<MethodModifier> modifiers = new ArrayList<>();
@@ -109,50 +110,43 @@ public class MethodInspection extends Inspection {
         }
 
         @Fluent
-        public MethodInspectionBuilder setReturnType(TypeInfo returnType) {
+        public MethodInspectionBuilder setReturnType(@NotNull TypeInfo returnType) {
             this.returnType = returnType.asParameterizedType();
             return this;
         }
 
         @Fluent
-        public MethodInspectionBuilder setBlock(@NullNotAllowed BlockStmt block) {
+        public MethodInspectionBuilder setBlock(BlockStmt block) {
             this.block = block;
             return this;
         }
 
         @Fluent
-        public MethodInspectionBuilder setBlock(@NullNotAllowed Block alreadyKnown) {
+        public MethodInspectionBuilder setBlock(Block alreadyKnown) {
             this.alreadyKnown = alreadyKnown;
             return this;
         }
 
         @Fluent
-        public MethodInspectionBuilder addParameter(ParameterInfo parameterInfo) {
+        public MethodInspectionBuilder addParameter(@NotNull ParameterInfo parameterInfo) {
             parameters.add(parameterInfo);
             return this;
         }
 
         @Fluent
-        public MethodInspectionBuilder addModifier(MethodModifier methodModifier) {
+        public MethodInspectionBuilder addModifier(@NotNull MethodModifier methodModifier) {
             modifiers.add(methodModifier);
             return this;
         }
 
         @Fluent
-        public MethodInspectionBuilder addExceptionType(ParameterizedType exceptionType) {
+        public MethodInspectionBuilder addExceptionType(@NotNull ParameterizedType exceptionType) {
             exceptionTypes.add(exceptionType);
             return this;
         }
 
-        // TODO we need to fill this in, but we may have to do it in a resolved way
         @Fluent
-        public MethodInspectionBuilder addImplementationOf(MethodInfo methodInfo) {
-            implementationsOf.add(methodInfo);
-            return this;
-        }
-
-        @Fluent
-        public MethodInspectionBuilder addTypeParameter(TypeParameter typeParameter) {
+        public MethodInspectionBuilder addTypeParameter(@NotNull TypeParameter typeParameter) {
             typeParameters.add(typeParameter);
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
             return this;
@@ -160,14 +154,14 @@ public class MethodInspection extends Inspection {
 
         @Fluent
         @Override
-        public MethodInspectionBuilder addAnnotation(AnnotationExpression annotation) {
+        public MethodInspectionBuilder addAnnotation(@NotNull AnnotationExpression annotation) {
             annotations.add(annotation);
             return this;
         }
 
         @NotModified
         @NotNull
-        public MethodInspection build(@NullNotAllowed MethodInfo methodInfo) {
+        public MethodInspection build(MethodInfo methodInfo) {
             if (methodInfo.isConstructor) {
                 returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
             } else {

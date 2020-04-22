@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 
@@ -34,7 +33,7 @@ public class ListUtil {
 
     @SafeVarargs
     @NotNull
-    public static <T> List<T> immutableConcat(@NotModified @NullNotAllowed Iterable<? extends T>... lists) {
+    public static <T> List<T> immutableConcat(@NotNull @NotModified Iterable<? extends T>... lists) {
         ImmutableList.Builder<T> builder = new ImmutableList.Builder<T>();
         for (Iterable<? extends T> list : lists) {
             builder.addAll(list);

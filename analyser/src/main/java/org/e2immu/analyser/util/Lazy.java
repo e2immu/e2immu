@@ -23,24 +23,20 @@ import org.e2immu.annotation.*;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
 /**
  * Implementation of a lazy value, where <code>null</code> is used to indicate that the value has not been
  * evaluated yet.
  * <p>
- * Typical {@link Container}, eventually a {@link E2Final}.
+ * Typical {@link Container}, eventually a {@link E1Immutable}.
  *
  * @param <T> the container's content
  */
 
-@E2Final(after = "get")
-@Container
+@E1Container(after = "get")
 public class Lazy<T> {
     @NotModified
     private final Supplier<T> supplier;
 
-    @Final(type = VERIFY_ABSENT)
     @Linked // for now, we link t to supplier (nothing that rules it out)
     private volatile T t;
 
@@ -50,7 +46,7 @@ public class Lazy<T> {
      * @param supplier the supplier that will compute the value
      * @throws NullPointerException when the argument is <code>null</code>
      */
-    public Lazy(@NullNotAllowed @NotModified Supplier<T> supplier) {
+    public Lazy(@NotNull @NotModified Supplier<T> supplier) {
         if (supplier == null) throw new NullPointerException("Null not allowed");
         this.supplier = supplier;
     }

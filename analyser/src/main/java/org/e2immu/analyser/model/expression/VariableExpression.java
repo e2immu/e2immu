@@ -20,20 +20,16 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@E2Immutable
 public class VariableExpression implements Expression {
     public final Variable variable;
 
-    public VariableExpression(@NullNotAllowed Variable variable) {
+    public VariableExpression(@NotNull Variable variable) {
         this.variable = Objects.requireNonNull(variable);
     }
 
@@ -50,7 +46,6 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return variable.name();
     }
@@ -61,20 +56,17 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    @NotNull
-    @Independent
     public List<Variable> variables() {
         return List.of(variable);
     }
 
     @Override
-    @NotNull
     public Optional<Variable> assignmentTarget() {
         return Optional.of(variable);
     }
 
     @Override
-    public SideEffect sideEffect(@NullNotAllowed SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return variable.sideEffect(Objects.requireNonNull(sideEffectContext));
     }
 }

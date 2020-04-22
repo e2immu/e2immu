@@ -24,10 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashSet;
 import java.util.List;
@@ -35,28 +32,25 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@E2Immutable
 public class LocalVariableCreation implements Expression {
 
     public final LocalVariable localVariable;
     public final LocalVariableReference localVariableReference;
     public final Expression expression;
 
-    public LocalVariableCreation(@NullNotAllowed LocalVariable localVariable,
-                                 @NullNotAllowed Expression expression) {
+    public LocalVariableCreation(@NotNull LocalVariable localVariable,
+                                 @NotNull Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
         localVariableReference = new LocalVariableReference(localVariable, subExpressions());
     }
 
     @Override
-    @NotNull
     public ParameterizedType returnType() {
         return Primitives.PRIMITIVES.voidParameterizedType;
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         StringBuilder sb = new StringBuilder();
         sb.append(localVariable.annotations.stream().map(ann -> ann.stream() + " ").collect(Collectors.joining()))
@@ -76,8 +70,6 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    @NotNull
-    @Independent
     public Set<String> imports() {
         Set<String> imports = new HashSet<>(expression.imports());
         ParameterizedType pt = localVariable.parameterizedType;
@@ -86,22 +78,17 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    @Independent
-    @NotNull
     public List<Expression> subExpressions() {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) return List.of();
         return List.of(expression);
     }
 
     @Override
-    @Independent
-    @NotNull
     public List<LocalVariableReference> newLocalVariables() {
         return List.of(localVariableReference);
     }
 
     @Override
-    @NotNull
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         // the creation itself is local; the assignment references in LocalVariableReference are what matters
         return SideEffect.LOCAL;

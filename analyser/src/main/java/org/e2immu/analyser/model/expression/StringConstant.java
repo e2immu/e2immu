@@ -22,20 +22,17 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 
-@E2Immutable
 public class StringConstant implements Expression, Constant<String> {
     @Override
-    @NotNull
     public ParameterizedType returnType() {
         return Primitives.PRIMITIVES.stringParameterizedType;
     }
 
+    @NotNull
     public final StringValue constant;
 
     @Override
@@ -43,12 +40,11 @@ public class StringConstant implements Expression, Constant<String> {
         return constant;
     }
 
-    public StringConstant(@NullNotAllowed String constant) {
+    public StringConstant(@NotNull String constant) {
         this.constant = new StringValue(Objects.requireNonNull(constant));
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return "\"" + constant.value.replace("\"", "\\\"") + "\"";
     }

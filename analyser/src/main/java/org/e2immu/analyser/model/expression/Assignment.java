@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;

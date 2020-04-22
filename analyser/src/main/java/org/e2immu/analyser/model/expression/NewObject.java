@@ -22,10 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,23 +30,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@E2Immutable
 public class NewObject implements HasParameterExpressions {
     public final ParameterizedType parameterizedType;
     public final List<Expression> parameterExpressions;
     public final TypeInfo anonymousClass;
     public final MethodInfo constructor;
 
-    public NewObject(@NullNotAllowed MethodInfo constructor,
-                     @NullNotAllowed ParameterizedType parameterizedType,
-                     @NullNotAllowed List<Expression> parameterExpressions) {
+    public NewObject(@NotNull MethodInfo constructor,
+                     @NotNull ParameterizedType parameterizedType,
+                     @NotNull List<Expression> parameterExpressions) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.constructor = Objects.requireNonNull(constructor);
         this.anonymousClass = null;
     }
 
-    public NewObject(@NullNotAllowed ParameterizedType parameterizedType, @NullNotAllowed TypeInfo anonymousClass) {
+    public NewObject(@NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
         this.anonymousClass = Objects.requireNonNull(anonymousClass);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = List.of();
@@ -72,7 +68,6 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         String expressionString;
         if (parameterizedType.arrays > 0) {
@@ -93,8 +88,6 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    @NotNull
-    @Independent
     public Set<String> imports() {
         Set<String> imports = new HashSet<>();
         if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);

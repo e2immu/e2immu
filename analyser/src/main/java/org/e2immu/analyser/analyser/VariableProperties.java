@@ -25,9 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -124,8 +122,9 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    private AboutVariable find(Variable variable, boolean complain) {
+    private AboutVariable find(@NotNull Variable variable, boolean complain) {
         Variable target;
+        Objects.requireNonNull(variable);
         if (variable instanceof FieldReference && currentMethod != null) {
             FieldReference fieldReference = (FieldReference) variable;
             if (!(fieldReference.scope instanceof This) && fieldReference.scope != null) {
@@ -168,15 +167,16 @@ class VariableProperties implements EvaluationContext {
      * @param initialProperties initial properties about this variable
      */
     @Override
-    public void create(Variable variable, @NullNotAllowed Value initialValue, VariableProperty... initialProperties) {
+    public void create(@NotNull Variable variable, @NotNull Value initialValue, VariableProperty... initialProperties) {
         AboutVariable aboutVariable = new AboutVariable();
         aboutVariable.currentValue = Objects.requireNonNull(initialValue);
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
-        if (variableProperties.put(variable, aboutVariable) != null) throw new UnsupportedOperationException();
+        if (variableProperties.put(Objects.requireNonNull(variable), aboutVariable) != null)
+            throw new UnsupportedOperationException();
         log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
     }
 
-    public void setValue(Variable variable, @NullNotAllowed Value value) {
+    public void setValue(@NotNull Variable variable, @NotNull Value value) {
         AboutVariable aboutVariable = find(variable, true);
         assert aboutVariable != null; // to keep intellij happy, because of the complain we know it cannot be null
         aboutVariable.currentValue = Objects.requireNonNull(value);

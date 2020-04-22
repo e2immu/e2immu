@@ -27,8 +27,6 @@
 
 package ch.qos.logback.classic;
 
-import org.slf4j.ILoggerFactory;
-
 public class Logger implements org.slf4j.Logger {
     public synchronized void setLevel(Level newLevel) {
     }

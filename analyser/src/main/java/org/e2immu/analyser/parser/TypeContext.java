@@ -53,9 +53,10 @@ public class TypeContext {
     // TODO at some point move the lazy's to typeStore, and use methods here to grab them
     public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));
     public final Lazy<AnnotationExpression> container = new Lazy<>(() -> create(Container.class));
-    public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
+    public final Lazy<AnnotationExpression> e1Container = new Lazy<>(() -> create(E1Container.class));
+    public final Lazy<AnnotationExpression> e2Container = new Lazy<>(() -> create(E2Container.class));
     public final Lazy<AnnotationExpression> extensionClass = new Lazy<>(() -> create(ExtensionClass.class));
-    public final Lazy<AnnotationExpression> e2Final = new Lazy<>(() -> create(E2Final.class));
+    public final Lazy<AnnotationExpression> e1Immutable = new Lazy<>(() -> create(E1Immutable.class));
     public final Lazy<AnnotationExpression> e2Immutable = new Lazy<>(() -> create(E2Immutable.class));
     public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
     public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
@@ -65,9 +66,7 @@ public class TypeContext {
     public final Lazy<AnnotationExpression> notModified = new Lazy<>(() -> create(NotModified.class));
     public final Lazy<AnnotationExpression> notNull = new Lazy<>(() -> create(NotNull.class));
     public final Lazy<AnnotationExpression> notNull1 = new Lazy<>(() -> create(NotNull1.class));
-    public final Lazy<AnnotationExpression> nullNotAllowed = new Lazy<>(() -> create(NullNotAllowed.class));
-    public final Lazy<AnnotationExpression> nullNotAllowed1 = new Lazy<>(() -> create(NullNotAllowed1.class));
-    public final Lazy<AnnotationExpression> nullNotAllowed2 = new Lazy<>(() -> create(NullNotAllowed2.class));
+    public final Lazy<AnnotationExpression> notNull2 = new Lazy<>(() -> create(NotNull2.class));
     public final Lazy<AnnotationExpression> only = new Lazy<>(() -> create(Only.class));
     public final Lazy<AnnotationExpression> output = new Lazy<>(() -> create(Output.class));
     public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
@@ -86,7 +85,7 @@ public class TypeContext {
         importStaticMemberToTypeInfo = new HashMap<>();
     }
 
-    public TypeContext(String packageName, TypeContext parentContext) {
+    public TypeContext(String packageName, @NotNull TypeContext parentContext) {
         this.parentContext = Objects.requireNonNull(parentContext);
         typeStore = parentContext.typeStore;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
@@ -95,15 +94,15 @@ public class TypeContext {
         this.packageName = packageName;
     }
 
-    public TypeContext(TypeContext parentContext) {
+    public TypeContext(@NotNull TypeContext parentContext) {
         this(parentContext, parentContext.packageName, parentContext.typeStore);
     }
 
-    public TypeContext(TypeContext parentContext, TypeStore typeStore) {
+    public TypeContext(@NotNull TypeContext parentContext, TypeStore typeStore) {
         this(parentContext, parentContext.packageName, typeStore);
     }
 
-    public TypeContext(TypeContext parentContext, String packageName, TypeStore typeStore) {
+    public TypeContext(@NotNull TypeContext parentContext, String packageName, TypeStore typeStore) {
         this.parentContext = Objects.requireNonNull(parentContext);
         this.typeStore = typeStore;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
@@ -112,7 +111,7 @@ public class TypeContext {
         this.packageName = packageName;
     }
 
-    private Map<String, NamedType> map = new HashMap<>();
+    private final Map<String, NamedType> map = new HashMap<>();
 
     /**
      * used for: Annotation types, ParameterizedTypes (general types)
@@ -121,7 +120,7 @@ public class TypeContext {
      * @param complain throw an error when the name is unknown
      * @return the NamedType with that name
      */
-    public NamedType get(String name, boolean complain) {
+    public NamedType get(@NotNull String name, boolean complain) {
         NamedType namedType = map.get(name);
         if (namedType == null && parentContext != null) {
             namedType = parentContext.get(name, false);
@@ -170,19 +169,19 @@ public class TypeContext {
         return typeInfo;
     }
 
-    public void addToContext(@NullNotAllowed NamedType namedType) {
+    public void addToContext(@NotNull NamedType namedType) {
         addToContext(namedType, true);
     }
 
-    public void addToContext(@NullNotAllowed NamedType namedType, boolean allowOverwrite) {
-        Objects.requireNonNull(namedType);
+    public void addToContext(@NotNull NamedType namedType, boolean allowOverwrite) {
         String simpleName = namedType.simpleName();
         if (allowOverwrite || !map.containsKey(simpleName)) {
             map.put(simpleName, namedType);
         }
     }
 
-    private static MethodInfo emptyConstructor(TypeInfo typeInfo) {
+    @NotNull
+    private static MethodInfo emptyConstructor(@NotNull TypeInfo typeInfo) {
         MethodInfo constructor = new MethodInfo(typeInfo, List.of());
         constructor.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addModifier(MethodModifier.PUBLIC)

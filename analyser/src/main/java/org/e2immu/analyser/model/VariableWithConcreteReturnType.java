@@ -18,7 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
@@ -28,7 +28,7 @@ public abstract class VariableWithConcreteReturnType implements Variable {
 
     public final ParameterizedType concreteReturnType;
 
-    protected VariableWithConcreteReturnType(@NullNotAllowed ParameterizedType concreteReturnType) {
+    protected VariableWithConcreteReturnType(@NotNull ParameterizedType concreteReturnType) {
         this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
     }
 

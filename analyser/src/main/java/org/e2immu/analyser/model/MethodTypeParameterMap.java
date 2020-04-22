@@ -20,7 +20,6 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +49,7 @@ public class MethodTypeParameterMap {
     @NotNull
     public final Map<NamedType, ParameterizedType> concreteTypes;
 
-    public MethodTypeParameterMap(@NullNotAllowed MethodInfo methodInfo, @NullNotAllowed Map<NamedType, ParameterizedType> concreteTypes) {
+    public MethodTypeParameterMap(MethodInfo methodInfo, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
         this.methodInfo = methodInfo;
         this.concreteTypes = ImmutableMap.copyOf(concreteTypes);
     }

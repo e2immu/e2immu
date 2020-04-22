@@ -28,9 +28,9 @@ package java.lang;
 
 import org.e2immu.annotation.*;
 
-import java.io.PrintWriter; // used in Throwable
-import java.io.PrintStream; // used in Throwable
-import java.util.Iterator; // used in Iterable
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
@@ -145,10 +145,10 @@ public class Throwable {
     public void printStackTrace(PrintWriter s) {
     }
 
-    void setStackTrace(@NullNotAllowed StackTraceElement[] stackTrace) {
+    void setStackTrace(@NotNull StackTraceElement[] stackTrace) {
     }
 
-    void addSuppressed(@NullNotAllowed Throwable exception) {
+    void addSuppressed(@NotNull Throwable exception) {
     }
 
     @Fluent
@@ -324,7 +324,7 @@ public class System {
     public static final PrintStream out;
     public static final PrintStream err;
 
-    public static void arraycopy(@NotModified @NullNotAllowed Object src, int srcPos, @NullNotAllowed Object dest, int destPos, int length) {
+    public static void arraycopy(@NotNull@NotModified Object src, int srcPos, @NotNull Object dest, int destPos, int length) {
     }
 }
 
@@ -335,7 +335,7 @@ public @interface FunctionalInterface {
 public interface Iterable<T> {
     // looping over the collection does not change it...
     @NotModified
-    void forEach(@NullNotAllowed Consumer<? super T> action);
+    void forEach(@NotNull Consumer<? super T> action);
 
     @NotNull
     Iterator<T> iterator();
@@ -346,5 +346,5 @@ public interface Iterable<T> {
 
 public interface Comparable<T> {
     @NotModified
-    int compareTo(@NullNotAllowed T t);
+    int compareTo(@NotNull T t);
 }

@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  * cannot be null. Same reasoning applies to fields.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE, ElementType.PARAMETER})
 public @interface NotNull1 {
     AnnotationType type() default AnnotationType.VERIFY;
 }

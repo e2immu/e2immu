@@ -20,7 +20,9 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;

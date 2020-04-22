@@ -24,9 +24,8 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
@@ -38,19 +37,18 @@ import java.util.Set;
  * precedence 15: ++, -- post-increment
  * precedence 14: ++, -- pre-increment, +, -, !, ~
  */
-@E2Immutable
 public class UnaryOperator implements Expression {
     public final Expression expression;
     public final int precedence;
     public final MethodInfo operator;
 
-    public UnaryOperator(@NullNotAllowed MethodInfo operator, @NullNotAllowed Expression expression, int precedence) {
+    public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, int precedence) {
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
     }
 
-    public static int precedence(@NullNotAllowed UnaryExpr.Operator operator) {
+    public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
         switch (operator) {
             case POSTFIX_DECREMENT:
             case POSTFIX_INCREMENT:
@@ -95,7 +93,7 @@ public class UnaryOperator implements Expression {
     }
 
     // TODO interesting case for null not allowed on typeInfo :-)
-    public static MethodInfo getOperator(@NullNotAllowed UnaryExpr.Operator operator, @NullNotAllowed TypeInfo typeInfo) {
+    public static MethodInfo getOperator(@NotNull @NotModified UnaryExpr.Operator operator, @NotNull @NotModified TypeInfo typeInfo) {
         if (typeInfo.isNumericPrimitive()) {
             switch (operator) {
                 case MINUS:

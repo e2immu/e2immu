@@ -26,12 +26,12 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -50,12 +50,12 @@ public class ParseAndInspect {
      * @param hasBeenDefined    true for normal Java source code that has bodies; false for annotated API files
      * @param sourceTypeStore   required, to deal with asterisk imports in the sources
      */
-    public ParseAndInspect(@NullNotAllowed ByteCodeInspector byteCodeInspector,
+    public ParseAndInspect(@NotNull ByteCodeInspector byteCodeInspector,
                            boolean hasBeenDefined,
-                           TypeStore sourceTypeStore) {
-        this.byteCodeInspector = byteCodeInspector;
+                           @NotNull TypeStore sourceTypeStore) {
+        this.byteCodeInspector = Objects.requireNonNull(byteCodeInspector);
         this.hasBeenDefined = hasBeenDefined;
-        this.sourceTypeStore = sourceTypeStore;
+        this.sourceTypeStore = Objects.requireNonNull(sourceTypeStore);
     }
 
     // NOTE: there is a bit of optimization we can do if we parse/analyse per package

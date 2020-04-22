@@ -21,28 +21,25 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-// cannot be @Context class, its parent contains a @Container field
-@Container
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
     public final Expression object;
     public final Expression computedScope;
     public final List<Expression> parameterExpressions;
 
-    public MethodCall(Expression object,
-                      @NullNotAllowed Expression computedScope,
-                      @NullNotAllowed MethodTypeParameterMap methodTypeParameterMap,
-                      @NullNotAllowed List<Expression> parameterExpressions) {
+    public MethodCall(@NotNull Expression object,
+                      @NotNull Expression computedScope,
+                      @NotNull MethodTypeParameterMap methodTypeParameterMap,
+                      @NotNull List<Expression> parameterExpressions) {
         super(methodTypeParameterMap.methodInfo, methodTypeParameterMap.getConcreteReturnType());
         this.object = object;
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
@@ -90,8 +87,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    @NotNull
-    @NotModified
     public String expressionString(int indent) {
         String scope = "";
         if (object != null) {
@@ -103,15 +98,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    @NotModified
     public int precedence() {
         return 16;
     }
 
     @Override
-    @Independent
-    @NotNull
-    @NotModified
     public Set<String> imports() {
         Set<String> imports = new HashSet<>(object == null ? Set.of() : object.imports());
         parameterExpressions.forEach(pe -> imports.addAll(pe.imports()));
@@ -119,9 +110,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    @Independent
-    @NotNull
-    @NotModified
     public List<Expression> subExpressions() {
         List<Expression> list = new ArrayList<>(parameterExpressions);
         if (object != null) {
@@ -136,9 +124,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    @NotNull
-    @NotModified
-    public SideEffect sideEffect(@NullNotAllowed SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         Objects.requireNonNull(sideEffectContext);
 
         SideEffect params = parameterExpressions.stream()

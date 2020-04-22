@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +52,7 @@ public class ParameterAnalyser {
                 typeContext.addMessage(Message.Severity.ERROR, where.get() +
                         ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NotModified"));
 
-        parameterInfo.error(NullNotAllowed.class, typeContext.nullNotAllowed.get()).ifPresent(mustBeAbsent ->
+        parameterInfo.error(NotNull.class, typeContext.notNull.get()).ifPresent(mustBeAbsent ->
                 typeContext.addMessage(Message.Severity.ERROR, where.get() +
                         ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NullNotAllowed"));
     }
@@ -109,9 +109,9 @@ public class ParameterAnalyser {
                     }
                 }
             }
-            if (parameterInfo != null && isPermanentlyNotNull && !parameterInfo.parameterAnalysis.annotations.isSet(typeContext.nullNotAllowed.get())) {
+            if (parameterInfo != null && isPermanentlyNotNull && !parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notNull.get())) {
                 log(NULL_NOT_ALLOWED, "Adding implicit null not allowed on {}", parameterInfo.detailedString());
-                parameterInfo.parameterAnalysis.annotations.put(typeContext.nullNotAllowed.get(), true);
+                parameterInfo.parameterAnalysis.annotations.put(typeContext.notNull.get(), true);
                 changes = true;
             }
         }

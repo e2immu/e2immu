@@ -19,9 +19,11 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.*;
-import static org.e2immu.annotation.AnnotationType.*;
+
 import java.util.*;
 import java.util.function.Consumer;
+
+import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class ContainerChecks {
 

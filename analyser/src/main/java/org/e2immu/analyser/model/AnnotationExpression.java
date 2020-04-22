@@ -27,7 +27,10 @@ import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.AnnotationType;
+import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;

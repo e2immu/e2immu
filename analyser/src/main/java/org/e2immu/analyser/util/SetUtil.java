@@ -19,7 +19,10 @@
 package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.UtilityClass;
 
 import java.util.Set;
 
@@ -32,7 +35,7 @@ public class SetUtil {
     @SafeVarargs
     @NotNull
     @Independent
-    public static <T> Set<T> immutableUnion(@NullNotAllowed @NotModified Set<T>... sets) {
+    public static <T> Set<T> immutableUnion(@NotNull @NotModified Set<T>... sets) {
         ImmutableSet.Builder<T> builder = new ImmutableSet.Builder<T>();
         for (Set<T> set : sets) {
             builder.addAll(set);

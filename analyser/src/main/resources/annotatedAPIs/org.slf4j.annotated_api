@@ -27,41 +27,40 @@ package org.slf4j;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 public interface Logger {
     final public String ROOT_LOGGER_NAME = "ROOT";
 
-    public void info(@NullNotAllowed String s, Object... objects) {
+    public void info(@NotNull String s, Object... objects) {
     }
 
-    public void warn(@NullNotAllowed String s, Object... objects) {
+    public void warn(@NotNull String s, Object... objects) {
     }
 
-    public void error(@NullNotAllowed String s, Object... objects) {
-    }
-
-    @NotModified
-    public void debug(@NullNotAllowed String s, Object... objects) {
+    public void error(@NotNull String s, Object... objects) {
     }
 
     @NotModified
-    public void debug(@NullNotAllowed String s) {
+    public void debug(@NotNull String s, Object... objects) {
+    }
+
+    @NotModified
+    public void debug(@NotNull String s) {
     }
 }
 
 public interface ILoggerFactory {
     @NotNull
-    public Logger getLogger(@NullNotAllowed String name);
+    public Logger getLogger(String name);
 }
 
 public class LoggerFactory {
     @NotNull
-    public static Logger getLogger(@NullNotAllowed Class<?> clazz) {
+    public static Logger getLogger(@NotNull Class<?> clazz) {
     }
 
     @NotNull
-    public static Logger getLogger(@NullNotAllowed String string) {
+    public static Logger getLogger(@NotNull String string) {
     }
 
     @NotNull

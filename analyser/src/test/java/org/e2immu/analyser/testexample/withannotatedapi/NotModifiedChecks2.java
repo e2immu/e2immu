@@ -22,7 +22,9 @@ import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class NotModifiedChecks2 {

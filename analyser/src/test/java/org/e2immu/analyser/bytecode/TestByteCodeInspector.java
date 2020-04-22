@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.bytecode;
 
+import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

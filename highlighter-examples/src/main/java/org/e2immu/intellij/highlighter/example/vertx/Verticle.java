@@ -28,7 +28,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import org.e2immu.annotation.E2Final;
+import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Mark;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ import java.util.List;
  * <p>
  * We can view the {@link #start} method as a constructor which sets up the values of the fields.
  */
-@E2Final(after = "start")
+@E1Immutable(after = "start")
 public class Verticle extends AbstractVerticle {
     private static final Logger LOGGER = LoggerFactory.getLogger(Verticle.class);
 

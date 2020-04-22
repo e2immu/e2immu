@@ -18,8 +18,8 @@
 
 package org.e2immu.analyser.annotationxml;
 
-import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.annotationxml.model.TypeItem;
+import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

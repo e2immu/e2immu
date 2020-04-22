@@ -20,7 +20,10 @@ package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-// extension class: implies @NullNotAllowed on first argument
+// extension class: implies @NotNull on first argument
 @ExtensionClass
 public class SMapSet {
 
@@ -39,7 +42,7 @@ public class SMapSet {
         return new HashMap<>();
     }
 
-    public static <A, B> boolean addAll(Map<A, Set<B>> src, @NullNotAllowed Map<A, Set<B>> dest) {
+    public static <A, B> boolean addAll(Map<A, Set<B>> src, @NotNull Map<A, Set<B>> dest) {
         boolean change = false;
         for (Entry<A, Set<B>> e : src.entrySet()) {
             Set<B> inDest = dest.get(e.getKey());
@@ -55,7 +58,7 @@ public class SMapSet {
         return change;
     }
 
-    public static <A, B> boolean add(Map<A, Set<B>> map, @NullNotAllowed A a, @NullNotAllowed B b) {
+    public static <A, B> boolean add(Map<A, Set<B>> map, @NotNull A a, @NotNull B b) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -66,7 +69,7 @@ public class SMapSet {
         return set.add(b);
     }
 
-    public static <A, B> boolean add(Map<A, Set<B>> map, @NullNotAllowed A a, @NullNotAllowed @NotModified Set<B> bs) {
+    public static <A, B> boolean add(Map<A, Set<B>> map, @NotNull A a, @NotModified @NotNull Set<B> bs) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -77,7 +80,7 @@ public class SMapSet {
         return set.addAll(bs);
     }
 
-    public static <A, B> Set<B> set(Map<A, Set<B>> map, @NullNotAllowed A a) {
+    public static <A, B> Set<B> set(Map<A, Set<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }

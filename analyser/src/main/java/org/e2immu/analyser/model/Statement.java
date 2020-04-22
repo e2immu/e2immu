@@ -20,15 +20,13 @@ package org.e2immu.analyser.model;
 
 
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E2Immutable
-@NullNotAllowed
+@E2Container
 @NotNull
 public interface Statement {
 

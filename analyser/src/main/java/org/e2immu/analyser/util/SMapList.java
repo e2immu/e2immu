@@ -20,7 +20,10 @@ package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,7 +42,7 @@ public class SMapList {
         return new HashMap<>();
     }
 
-    public static <A, B> boolean addAll(Map<A, List<B>> src, @NullNotAllowed Map<A, List<B>> dest) {
+    public static <A, B> boolean addAll(Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
             List<B> inDest = dest.get(e.getKey());
@@ -55,7 +58,7 @@ public class SMapList {
         return change;
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NullNotAllowed A a, @NullNotAllowed B b) {
+    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull B b) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -66,7 +69,7 @@ public class SMapList {
         return set.add(b);
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NullNotAllowed A a, @NullNotAllowed @NotModified List<B> bs) {
+    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull @NotModified List<B> bs) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -77,7 +80,7 @@ public class SMapList {
         return set.addAll(bs);
     }
 
-    public static <A, B> List<B> list(Map<A, List<B>> map, @NullNotAllowed A a) {
+    public static <A, B> List<B> list(Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }

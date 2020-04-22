@@ -38,6 +38,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,21 +64,21 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final MethodAnalysis methodAnalysis = new MethodAnalysis();
 
     // for constructors
-    public MethodInfo(TypeInfo typeInfo, List<ParameterInfo> parametersAsObserved) {
+    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull List<ParameterInfo> parametersAsObserved) {
         this(typeInfo, typeInfo.simpleName, parametersAsObserved, null, true, false, false);
     }
 
-    public MethodInfo(TypeInfo typeInfo, String name, List<ParameterInfo> parametersAsObserved,
+    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull String name,@NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic) {
         this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, false);
     }
 
-    public MethodInfo(TypeInfo typeInfo, String name, List<ParameterInfo> parametersAsObserved,
+    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic, boolean isDefaultImplementation) {
         this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, isDefaultImplementation);
     }
 
-    public MethodInfo(TypeInfo typeInfo, String name, boolean isStatic) {
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, boolean isStatic) {
         this(typeInfo, name, List.of(), null, false, isStatic, false);
     }
 
@@ -85,7 +86,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * it is possible to observe a method without being able to see its return type. That does not make
      * the method a constructor... we cannot use the returnTypeObserved == null as isConstructor
      */
-    private MethodInfo(TypeInfo typeInfo, String name, List<ParameterInfo> parametersAsObserved,
+    private MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                        ParameterizedType returnTypeObserved, boolean isConstructor, boolean isStatic, boolean isDefaultImplementation) {
         Objects.requireNonNull(typeInfo, "Trying to create a method " + name + " but null type");
         Objects.requireNonNull(name);

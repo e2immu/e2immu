@@ -20,14 +20,14 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
-@E2Final(after = "set", type = AnnotationType.CONTRACT)
+@E1Container(after = "set", type = AnnotationType.CONTRACT)
 public class SetOnce<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
     @Mark("set")
     @Only(before = "set")
-    public void set(@NullNotAllowed T t) { // @NotModified implied
+    public void set(@NotNull T t) { // @NotModified implied
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t != null) {
@@ -46,7 +46,7 @@ public class SetOnce<T> {
     }
 
     // TODO need special semantics for this one...
-    public void overwrite(@NullNotAllowed T t) {
+    public void overwrite(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t == null) {

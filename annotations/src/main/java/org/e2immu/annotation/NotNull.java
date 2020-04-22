@@ -26,7 +26,9 @@ import java.lang.annotation.Target;
  * Means that this method cannot return null.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE, ElementType.PARAMETER})
 public @interface NotNull {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    ElementType[] where() default {ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER};
 }

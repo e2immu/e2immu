@@ -1,9 +1,9 @@
 
 package io.vertx.core;
 
+import io.vertx.core.http.HttpClient;
 import org.e2immu.annotation.*;
 
-import io.vertx.core.http.HttpClient;
 import java.util.Set;
 
 interface Closeable {

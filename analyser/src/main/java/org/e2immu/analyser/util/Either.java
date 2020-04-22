@@ -19,7 +19,6 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 

@@ -19,26 +19,22 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 
-@E2Immutable
 public class MemberValuePair implements Expression {
 
     public final String name;
     public final Expression value;
 
-    public MemberValuePair(@NullNotAllowed String name, @NullNotAllowed Expression value) {
+    public MemberValuePair(@NotNull String name, @NotNull Expression value) {
         this.value = Objects.requireNonNull(value);
         this.name = Objects.requireNonNull(name);
     }
 
     @Override
-    @NotNull
     public List<Expression> subExpressions() {
         return List.of(value);
     }
@@ -49,7 +45,6 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return name + " = " + value.expressionString(indent);
     }

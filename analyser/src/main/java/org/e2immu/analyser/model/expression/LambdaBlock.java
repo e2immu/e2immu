@@ -27,17 +27,13 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements.recursivelyCreateNumberedStatements;
 
-@E2Immutable
 public class LambdaBlock implements Expression {
     public final Block block;
     public final List<ParameterInfo> parameters;
@@ -45,9 +41,9 @@ public class LambdaBlock implements Expression {
 
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
-    public LambdaBlock(@NullNotAllowed List<ParameterInfo> parameters,
-                       @NullNotAllowed Block block,
-                       @NullNotAllowed ParameterizedType returnType) {
+    public LambdaBlock(@NotNull List<ParameterInfo> parameters,
+                       @NotNull Block block,
+                       @NotNull ParameterizedType returnType) {
         this.block = Objects.requireNonNull(block);
         this.parameters = Objects.requireNonNull(parameters);
         this.returnType = Objects.requireNonNull(returnType);
@@ -55,13 +51,11 @@ public class LambdaBlock implements Expression {
 
     // this is a functional interface
     @Override
-    @NotNull
     public ParameterizedType returnType() {
         return returnType;
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         String blockString;
         if (block.statements.isEmpty()) blockString = "{ }";
@@ -80,8 +74,6 @@ public class LambdaBlock implements Expression {
     }
 
     @Override
-    @NotNull
-    @Independent
     public Set<String> imports() {
         Set<String> imports = new HashSet<>(block.imports());
         parameters.forEach(pe -> imports.addAll(pe.imports()));

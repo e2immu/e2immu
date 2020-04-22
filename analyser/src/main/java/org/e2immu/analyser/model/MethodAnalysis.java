@@ -22,14 +22,12 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 @NotNull
-@NullNotAllowed
 public class MethodAnalysis extends Analysis {
 
     // used to check that in a utility class, no objects of the class itself are created

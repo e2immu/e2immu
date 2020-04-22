@@ -21,9 +21,6 @@ package org.e2immu.analyser.parser;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestParseUtilPackage {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestParseUtilPackage.class);

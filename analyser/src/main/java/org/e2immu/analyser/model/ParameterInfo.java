@@ -154,11 +154,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     public Boolean isNullNotAllowed(TypeContext typeContext) {
-        Boolean directly = annotatedWith(typeContext.nullNotAllowed.get());
+        Boolean directly = annotatedWith(typeContext.notNull.get());
         if (directly != Boolean.FALSE) {
             return directly;
         }
-        return parameterInspection.get().owner.typeInfo.annotatedWith(typeContext.nullNotAllowed.get());
+        return parameterInspection.get().owner.typeInfo.annotatedWith(typeContext.notNull.get());
     }
 
     @Override

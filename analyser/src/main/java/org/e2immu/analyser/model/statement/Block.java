@@ -26,7 +26,10 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashSet;

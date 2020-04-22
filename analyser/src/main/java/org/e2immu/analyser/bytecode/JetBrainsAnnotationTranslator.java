@@ -43,7 +43,7 @@ public class JetBrainsAnnotationTranslator {
     private <T> void mapAnnotation(Annotation annotation, BuilderWithAnnotations<T> builderWithAnnotations) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name)) {
             if (builderWithAnnotations instanceof ParameterInspection.ParameterInspectionBuilder) {
-                builderWithAnnotations.addAnnotation(typeContext.nullNotAllowed.get());
+                builderWithAnnotations.addAnnotation(typeContext.notNull.get());
             }
         }
     }

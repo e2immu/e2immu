@@ -23,8 +23,8 @@ import com.google.common.collect.Iterables;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,6 @@ import java.util.stream.Stream;
  * all the fields are deeply immutable or in the case of TypeInfo, eventually immutable.
  */
 @NotNull
-@NullNotAllowed
 public class TypeInspection extends Inspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
@@ -116,6 +115,7 @@ public class TypeInspection extends Inspection {
                 ImmutableList.copyOf(alternativeAnnotations));
     }
 
+    @Container(builds = TypeInspection.class)
     public static class TypeInspectionBuilder implements BuilderWithAnnotations<TypeInspectionBuilder> {
         private String packageName;
         private TypeInfo enclosingType;

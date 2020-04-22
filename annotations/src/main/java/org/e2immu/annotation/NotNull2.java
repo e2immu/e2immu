@@ -23,11 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Means that null is not allowed for this parameter, at the 1st level:
- * if the parameter is a functional interface taking a parameter, that parameter must not be null
+ * Means that this method returns a functional interface whose return value
+ * cannot be null. Same reasoning applies to fields.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target(ElementType.PARAMETER)
-public @interface NullNotAllowed1 {
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE, ElementType.PARAMETER})
+public @interface NotNull2 {
     AnnotationType type() default AnnotationType.VERIFY;
 }

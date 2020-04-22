@@ -19,7 +19,7 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,26 +31,26 @@ public class NullParameterChecks {
 
     private String s;
 
-    public void method1(@NullNotAllowed String s) {
+    public void method1(@NotNull String s) {
         if (s == null) throw new NullPointerException();
         this.s = s;
     }
 
-    public void method2(@NullNotAllowed String s) {
+    public void method2(@NotNull String s) {
         this.s = Objects.requireNonNull(s);
     }
 
-    public void method3(@NullNotAllowed String s) {
+    public void method3(@NotNull String s) {
         this.s = s;
         if (s == null) throw new NullPointerException();
     }
 
-    public void method4(@NullNotAllowed String s) {
+    public void method4(@NotNull String s) {
         Objects.requireNonNull(s);
         this.s = s;
     }
 
-    public void method5(@NullNotAllowed String s) {
+    public void method5(@NotNull String s) {
         if (s == null) {
             LOGGER.error("Have null parameter");
             throw new NullPointerException();
@@ -58,7 +58,7 @@ public class NullParameterChecks {
         this.s = s;
     }
 
-    public void method6(@NullNotAllowed String s) {
+    public void method6(@NotNull String s) {
         if (s == null) {
             LOGGER.debug("Have null parameter");
             throw new NullPointerException();
@@ -66,11 +66,11 @@ public class NullParameterChecks {
         this.s = s;
     }
 
-    public void method7Implicit(@NullNotAllowed String s) {
+    public void method7Implicit(@NotNull String s) {
         this.s = s.strip();
     }
 
-    public void method8Implicit(@NullNotAllowed(type = AnnotationType.VERIFY_ABSENT) String s) {
+    public void method8Implicit(@NotNull(type = AnnotationType.VERIFY_ABSENT) String s) {
         if (s != null) {
             this.s = s.strip();
         } else {
@@ -78,23 +78,23 @@ public class NullParameterChecks {
         }
     }
 
-    public int method9(@NullNotAllowed String k) {
+    public int method9(@NotNull String k) {
         return s == null ? k.length() : s.length();
     }
 
-    public static int method10(@NullNotAllowed(type = AnnotationType.VERIFY_ABSENT) String t, @NullNotAllowed String k) {
+    public static int method10(@NotNull(type = AnnotationType.VERIFY_ABSENT) String t, @NotNull String k) {
         return t == null ? k.length() : t.length();
     }
 
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
-    public static String method11Lambda(@NullNotAllowed String t) {
+    public static String method11Lambda(@NotNull String t) {
         Supplier<String> supplier = () -> t.trim()+".";
         return supplier.get();
     }
 
 
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
-    public static String method12LambdaBlock(@NullNotAllowed String t) {
+    public static String method12LambdaBlock(@NotNull String t) {
         Supplier<String> supplier = () -> {
             return t.trim()+".";
         };

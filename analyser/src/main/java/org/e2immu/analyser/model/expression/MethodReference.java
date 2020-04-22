@@ -19,35 +19,27 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-// cannot be @ContextClass
-@Container
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     // either "this", a variable, or a type
     public final Expression scope;
 
-    public MethodReference(Expression scope, @NullNotAllowed MethodInfo methodInfo, ParameterizedType concreteType) {
+    public MethodReference(Expression scope, MethodInfo methodInfo, ParameterizedType concreteType) {
         super(methodInfo, concreteType);
         this.scope = scope;
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
         return scope.expressionString(0) + "::" + methodName;
@@ -59,8 +51,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    @NotNull
-    @Independent
     public Set<String> imports() {
         return methodInfo.returnType().typeInfo != null ?
                 Set.of(methodInfo.returnType().typeInfo.fullyQualifiedName)
@@ -70,8 +60,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     // if we pass on one of our own methods to some other method, we need to take into account our exposure to the
     // outside world...
     @Override
-    @NotNull
-    public SideEffect sideEffect(@NullNotAllowed SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         Objects.requireNonNull(sideEffectContext);
         // we know the method we're passing on...
         if (sideEffectContext.enclosingType.inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {

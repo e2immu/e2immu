@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.*;
-
-import static org.e2immu.annotation.AnnotationType.*;
+import org.e2immu.annotation.Linked;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+
+import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class NotModifiedChecks {
     @NotModified
@@ -58,7 +60,7 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT)
     final int l2;
 
-    public NotModifiedChecks(@NullNotAllowed @NotModified List<String> list,
+    public NotModifiedChecks(@NotModified @NotNull List<String> list,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set2,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set3,
                              @NotModified(type = VERIFY_ABSENT) Set<String> set4) {
@@ -77,7 +79,7 @@ public class NotModifiedChecks {
         @Linked(to = {"C1.set1"})
         final Set<String> set; // linked to set1
 
-        C1(@NullNotAllowed Set<String> set1) {
+        C1(@NotNull Set<String> set1) {
             this.set = Objects.requireNonNull(set1);
         }
 
@@ -96,7 +98,7 @@ public class NotModifiedChecks {
 
     @NotModified(type = VERIFY_ABSENT)
     @Linked(type = VERIFY_ABSENT) // primitive
-    public int add(@NullNotAllowed String s) {
+    public int add(@NotNull String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
         System.out.println("The set has " + theSet.size() + " elements before adding " + s);
         theSet.add(s); // this one modifies set2!
@@ -118,16 +120,16 @@ public class NotModifiedChecks {
 
     // this is an extension function on Set
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAll(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) Set<String> c,
-                                  @NullNotAllowed @NotModified Set<String> d) {
+    private static boolean addAll(@NotNull @NotModified(type = VERIFY_ABSENT) Set<String> c,
+                                  @NotNull @NotModified Set<String> d) {
         return c.addAll(d);
     }
 
     // this is an extension function on C1
     // not modified applies to sub-fields as well.
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAllOnC(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) C1 c,
-                                     @NullNotAllowed @NotModified C1 d) {
+    private static boolean addAllOnC(@NotNull @NotModified(type = VERIFY_ABSENT) C1 c,
+                                     @NotNull @NotModified C1 d) {
         return c.set.addAll(d.set);
     }
 }

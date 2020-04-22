@@ -27,7 +27,6 @@ package java.util.function;
 
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Comparator;
 
@@ -48,7 +47,7 @@ public interface Consumer<T> {
     @NotModified
     void accept(T t);
 
-    Consumer<T> andThen(@NullNotAllowed Consumer<? super T> after);
+    Consumer<T> andThen(@NotNull Consumer<? super T> after);
 }
 
 @FunctionalInterface
@@ -63,10 +62,10 @@ public interface Function<T, R> {
     R apply(T t);
 
     @NotNull
-    <V> Function<T, V> andThen(@NullNotAllowed Function<? super R, ? extends V> after);
+    <V> Function<T, V> andThen(@NotNull Function<? super R, ? extends V> after);
 
     @NotNull
-    <V> Function<V, R> compose(@NullNotAllowed Function<? super V, ? extends T> before);
+    <V> Function<V, R> compose(@NotNull Function<? super V, ? extends T> before);
 
     @NotNull
     static <T> Function<T, T> identity();
@@ -78,14 +77,14 @@ public interface BiFunction<T, U, R> {
     @NotModified
     R apply(T t, U u);
 
-    <V> BiFunction<T, U, V> andThen(Function<? super R, ? extends V> after);
+    <V> BiFunction<T, U, V> andThen(@NotNull Function<? super R, ? extends V> after);
 }
 
 @FunctionalInterface
 public interface BinaryOperator<T> extends BiFunction<T, T, T> {
 
-    static <T> BinaryOperator<T> mayBy(Comparator<? super T> comparator);
-    static <T> BinaryOperator<T> minBy(Comparator<? super T> comparator);
+    static <T> BinaryOperator<T> mayBy(@NotNull Comparator<? super T> comparator);
+    static <T> BinaryOperator<T> minBy(@NotNull Comparator<? super T> comparator);
 }
 
 @FunctionalInterface
@@ -94,7 +93,7 @@ public interface BiConsumer<T, U> {
     void accept(T t, U u);
 
     @NotNull
-    BiConsumer<T, U> andThen(@NullNotAllowed BiConsumer<? super T, ? super U> after);
+    BiConsumer<T, U> andThen(@NotNull BiConsumer<? super T, ? super U> after);
 }
 
 @FunctionalInterface

@@ -22,7 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +35,7 @@ public class MethodValue implements Value {
     public final List<Value> parameters;
     public final Value object;
 
-    public MethodValue(@NullNotAllowed MethodInfo methodInfo, Value object, @NullNotAllowed List<Value> parameters) {
+    public MethodValue(@NotNull MethodInfo methodInfo, Value object, @NotNull List<Value> parameters) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = object;

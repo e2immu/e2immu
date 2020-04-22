@@ -20,14 +20,13 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.annotation.*;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 
@@ -41,10 +40,10 @@ public class TypeAnalyser {
     public static final BinaryOperator<Boolean> TERNARY_OR = (val, acc) -> val == null || acc == null ? null : val || acc;
     public static final BinaryOperator<Boolean> TERNARY_AND = (val, acc) -> val == null || acc == null ? null : val && acc;
 
-    public TypeAnalyser(TypeContext typeContext) {
+    public TypeAnalyser(@NotNull TypeContext typeContext) {
         fieldAnalyser = new FieldAnalyser(typeContext);
         methodAnalyser = new MethodAnalyser(typeContext);
-        this.typeContext = typeContext;
+        this.typeContext = Objects.requireNonNull(typeContext);
     }
 
     public void check(SortedType sortedType) {
@@ -64,7 +63,7 @@ public class TypeAnalyser {
             }
         }
         check(sortedType, UtilityClass.class, typeContext.utilityClass.get());
-        check(sortedType, E2Final.class, typeContext.e2Final.get());
+        check(sortedType, E1Immutable.class, typeContext.e1Immutable.get());
         check(sortedType, ExtensionClass.class, typeContext.extensionClass.get());
         check(sortedType, Container.class, typeContext.container.get());
         check(sortedType, E2Immutable.class, typeContext.e2Immutable.get());
@@ -199,7 +198,7 @@ public class TypeAnalyser {
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         Value value;
 
-        Boolean isFinal = fieldInfo.isFinal(typeContext);
+        Boolean isFinal = fieldInfo.isE1Immutable(typeContext);
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
@@ -270,13 +269,13 @@ public class TypeAnalyser {
     private boolean detectE2Final(SortedType sortedType) {
         if (sortedType.typeInfo.typeAnalysis.annotations.getOtherwiseNull(typeContext.e2Immutable.get()) == Boolean.TRUE)
             return false;
-        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Final.get())) return false;
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Immutable.get())) return false;
 
         // rule 1 of 1. all fields must be effectively final
         boolean isE2Final = true;
 
         for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
-            Boolean effectivelyFinal = fieldInfo.isFinal(typeContext);
+            Boolean effectivelyFinal = fieldInfo.isE1Immutable(typeContext);
             if (effectivelyFinal == null) return false; // cannot decide
             if (!effectivelyFinal) {
                 log(E2FINAL, "{} is not a value class, field {} is not effectively final", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
@@ -285,7 +284,7 @@ public class TypeAnalyser {
             }
         }
 
-        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Final.get(), isE2Final);
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e1Immutable.get(), isE2Final);
         log(E2FINAL, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Final ? "" : "not ")
                 + "@ValueClass");
         return true;
@@ -300,7 +299,7 @@ public class TypeAnalyser {
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
 
-            Boolean effectivelyFinal = fieldInfo.isFinal(typeContext);
+            Boolean effectivelyFinal = fieldInfo.isE1Immutable(typeContext);
             if (effectivelyFinal != null && !effectivelyFinal) {
                 log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
                         sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);

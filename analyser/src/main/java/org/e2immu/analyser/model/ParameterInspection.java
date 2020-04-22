@@ -19,13 +19,15 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @NotNull
-@NullNotAllowed
 public class ParameterInspection extends Inspection {
 
     // NOTE: owner can be null, when this is a parameter of a lambda expression
@@ -38,11 +40,12 @@ public class ParameterInspection extends Inspection {
         this.varArgs = varArgs;
     }
 
-    public ParameterInspection copy(List<AnnotationExpression> alternativeAnnotations) {
+    @NotNull
+    public ParameterInspection copy(@NotNull @NotModified List<AnnotationExpression> alternativeAnnotations) {
         return new ParameterInspection(owner, ImmutableList.copyOf(alternativeAnnotations), varArgs);
     }
 
-    @Container
+    @Container(builds = ParameterInspection.class)
     public static class ParameterInspectionBuilder implements BuilderWithAnnotations<ParameterInspectionBuilder> {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private boolean varArgs;
@@ -55,14 +58,14 @@ public class ParameterInspection extends Inspection {
 
         @Override
         @Fluent
-        public ParameterInspectionBuilder addAnnotation(@NullNotAllowed AnnotationExpression annotationExpression) {
+        public ParameterInspectionBuilder addAnnotation(@NotNull AnnotationExpression annotationExpression) {
             annotations.add(annotationExpression);
             return this;
         }
 
         @NotModified
         @NotNull
-        public ParameterInspection build(@NullNotAllowed MethodInfo owner) {
+        public ParameterInspection build(MethodInfo owner) {
             return new ParameterInspection(owner, ImmutableList.copyOf(annotations), varArgs);
         }
     }

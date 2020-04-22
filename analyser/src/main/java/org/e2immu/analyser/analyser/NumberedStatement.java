@@ -24,14 +24,12 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@E2Immutable(after = "") // TODO
 public class NumberedStatement implements Comparable<NumberedStatement> {
     public final Statement statement;
     public SetOnce<Optional<NumberedStatement>> next = new SetOnce<>();
@@ -47,9 +45,9 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public final int[] indices;
     public final SideEffect sideEffect;
 
-    public NumberedStatement(SideEffectContext sideEffectContext,
-                             @NullNotAllowed Statement statement,
-                             @NotModified @NullNotAllowed int[] indices) {
+    public NumberedStatement(@NotNull SideEffectContext sideEffectContext,
+                             @NotNull Statement statement,
+                             @NotNull @NotModified int[] indices) {
         this.indices = Objects.requireNonNull(indices);
         this.statement = Objects.requireNonNull(statement);
         sideEffect = statement.sideEffect(sideEffectContext);
@@ -64,7 +62,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     }
 
     @Override
-    public int compareTo(@NullNotAllowed NumberedStatement o) {
+    public int compareTo(NumberedStatement o) {
         for (int i = 0; i < indices.length; i++) {
             if (i >= o.indices.length)
                 return 1;

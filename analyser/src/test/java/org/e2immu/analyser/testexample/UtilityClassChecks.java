@@ -19,7 +19,8 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.UtilityClass;
-import static org.e2immu.annotation.AnnotationType.*;
+
+import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class UtilityClassChecks {
 

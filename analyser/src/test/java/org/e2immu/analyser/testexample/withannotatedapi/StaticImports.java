@@ -19,7 +19,7 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import static java.util.Arrays.stream;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class StaticImports {
 

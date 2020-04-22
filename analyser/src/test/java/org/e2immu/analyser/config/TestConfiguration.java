@@ -20,15 +20,11 @@ package org.e2immu.analyser.config;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.cli.Main;
-import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import static org.e2immu.analyser.cli.Main.*;

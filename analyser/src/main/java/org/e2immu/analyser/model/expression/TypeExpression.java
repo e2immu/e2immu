@@ -21,29 +21,24 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 import java.util.Set;
 
-@E2Immutable
 public class TypeExpression implements Expression {
     public final ParameterizedType parameterizedType;
 
-    public TypeExpression(@NullNotAllowed ParameterizedType parameterizedType) {
+    public TypeExpression(@NotNull ParameterizedType parameterizedType) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
 
     @Override
-    @NotNull
     public ParameterizedType returnType() {
         return parameterizedType;
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return parameterizedType.stream(); // TODO but there could be occasions where we need the FQN
     }
@@ -54,7 +49,6 @@ public class TypeExpression implements Expression {
     }
 
     @Override
-    @NotNull
     public Set<String> imports() {
         if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
         return Set.of();
