@@ -27,24 +27,22 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-@E2Immutable
 public class Assignment implements Expression {
     public final Expression target;
     public final Expression value;
     public final MethodInfo primitiveOperator;
 
-    public Assignment(@NullNotAllowed Expression target, @NullNotAllowed Expression value) {
+    public Assignment(@NotNull Expression target, @NotNull Expression value) {
         this(target, value, null);
     }
 
-    public Assignment(@NullNotAllowed Expression target, @NullNotAllowed Expression value,
+    public Assignment(@NotNull Expression target, @NotNull Expression value,
                       MethodInfo primitiveOperator) {
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
@@ -52,8 +50,8 @@ public class Assignment implements Expression {
     }
 
     @NotNull
-    public static MethodInfo operator(@NullNotAllowed AssignExpr.Operator operator,
-                                      @NullNotAllowed TypeInfo widestType) {
+    public static MethodInfo operator(@NotNull AssignExpr.Operator operator,
+                                      @NotNull TypeInfo widestType) {
         // if (widestType == Primitives.PRIMITIVES.intTypeInfo || widestType == Primitives.PRIMITIVES.longTypeInfo) {
         switch (operator) {
             case PLUS:
@@ -81,7 +79,6 @@ public class Assignment implements Expression {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         String operator = primitiveOperator != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
         return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
@@ -93,13 +90,11 @@ public class Assignment implements Expression {
     }
 
     @Override
-    @NotNull
     public Set<String> imports() {
         return Sets.union(target.imports(), value.imports());
     }
 
     @Override
-    @NotNull
     public List<Expression> subExpressions() {
         return List.of(target, value);
     }

@@ -142,11 +142,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return annotatedWith(typeContext.notModified.get());
     }
 
-    public Boolean isFinal(TypeContext typeContext) {
+    public Boolean isE1Immutable(TypeContext typeContext) {
         Boolean cc = owner.isE2Immutable(typeContext);
         if (cc != null && cc) return true;
         if (fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.FINAL)) return true;
-        return annotatedWith(typeContext.effectivelyFinal.get());
+        return annotatedWith(typeContext.e1Immutable.get());
     }
 
     public String fullyQualifiedName() {

@@ -34,7 +34,6 @@ import org.e2immu.analyser.parser.expr.*;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,8 +64,8 @@ public class ExpressionContext {
         }
     }
 
-    public static ExpressionContext forInspectionOfPrimaryType(@NullNotAllowed @NotModified TypeInfo typeInfo,
-                                                               @NullNotAllowed @NotModified TypeContext typeContext) {
+    public static ExpressionContext forInspectionOfPrimaryType(@NotNull @NotModified TypeInfo typeInfo,
+                                                               @NotNull @NotModified TypeContext typeContext) {
         log(CONTEXT, "Creating a new expression context for {}", typeInfo.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(typeInfo), typeInfo,
                 Objects.requireNonNull(typeContext),
@@ -76,10 +75,10 @@ public class ExpressionContext {
                 null);
     }
 
-    public static ExpressionContext forBodyParsing(@NullNotAllowed @NotModified TypeInfo enclosingType,
-                                                   @NullNotAllowed @NotModified TypeInfo primaryType,
-                                                   @NullNotAllowed @NotModified TypeContext typeContext,
-                                                   @NullNotAllowed Set<TypeInfo> dependenciesOnOtherTypes) {
+    public static ExpressionContext forBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
+                                                   @NotNull @NotModified TypeInfo primaryType,
+                                                   @NotNull @NotModified TypeContext typeContext,
+                                                   @NotNull Set<TypeInfo> dependenciesOnOtherTypes) {
         Map<String, FieldReference> staticallyImportedFields = typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType),
@@ -107,20 +106,20 @@ public class ExpressionContext {
         this.dependenciesOnOtherMethodsAndFields = dependenciesOnOtherMethods;
     }
 
-    public ExpressionContext newVariableContext(String reason) {
+    public ExpressionContext newVariableContext(@NotNull String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, primaryType,
                 typeContext, VariableContext.dependentVariableContext(variableContext),
                 topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
     }
 
-    public ExpressionContext newVariableContext(@NullNotAllowed VariableContext newVariableContext, String reason) {
+    public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, primaryType, typeContext,
                 newVariableContext, topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
     }
 
-    public ExpressionContext newSubType(TypeInfo subType) {
+    public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, primaryType,
                 new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
@@ -133,13 +132,13 @@ public class ExpressionContext {
     }
 
     @NotNull
-    public Block parseBlockOrStatement(@NullNotAllowed @NotModified Statement stmt) {
+    public Block parseBlockOrStatement(@NotNull @NotModified Statement stmt) {
         return parseBlockOrStatement(stmt, null);
     }
 
     // method makes changes to variableContext
     @NotNull
-    private Block parseBlockOrStatement(@NullNotAllowed @NotModified Statement stmt, String labelOfBlock) {
+    private Block parseBlockOrStatement(@NotNull @NotModified Statement stmt, String labelOfBlock) {
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder().setLabel(labelOfBlock);
         if (stmt.isBlockStmt()) {
             for (Statement statement : stmt.asBlockStmt().getStatements()) {
@@ -152,7 +151,7 @@ public class ExpressionContext {
     }
 
     // method modifies the blockBuilder...
-    private void parseStatement(@NullNotAllowed Block.BlockBuilder blockBuilder, @NullNotAllowed @NotModified Statement statement, String labelOfStatement) {
+    private void parseStatement(@NotNull Block.BlockBuilder blockBuilder, @NotNull @NotModified Statement statement, String labelOfStatement) {
         try {
             if (statement.isLabeledStmt()) {
                 if (labelOfStatement != null) throw new UnsupportedOperationException();
@@ -219,7 +218,7 @@ public class ExpressionContext {
         }
     }
 
-    private org.e2immu.analyser.model.Statement switchStatement(SwitchStmt switchStmt) {
+    private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt) {
         Expression selector = parseExpression(switchStmt.getSelector());
         ExpressionContext newExpressionContext;
         TypeInfo enumType = selectorIsEnumType(selector);
@@ -234,7 +233,7 @@ public class ExpressionContext {
         return new SwitchStatement(selector, entries);
     }
 
-    private static TypeInfo selectorIsEnumType(Expression selector) {
+    private static TypeInfo selectorIsEnumType(@NotNull Expression selector) {
         TypeInfo typeInfo = selector.returnType().typeInfo;
         if (typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM) {
             return typeInfo;
@@ -242,7 +241,7 @@ public class ExpressionContext {
         return null;
     }
 
-    private SwitchEntry switchEntry(com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
+    private SwitchEntry switchEntry(@NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
             case EXPRESSION:
@@ -375,7 +374,7 @@ public class ExpressionContext {
     }
 
     @NotNull
-    public org.e2immu.analyser.model.Expression parseExpression(@NullNotAllowed Optional<com.github.javaparser.ast.expr.Expression> oExpression) {
+    public org.e2immu.analyser.model.Expression parseExpression(Optional<com.github.javaparser.ast.expr.Expression> oExpression) {
         if (oExpression.isPresent()) {
             return parseExpression(oExpression.get());
         }
@@ -383,11 +382,11 @@ public class ExpressionContext {
     }
 
     @NotNull
-    public org.e2immu.analyser.model.Expression parseExpression(@NullNotAllowed com.github.javaparser.ast.expr.Expression expression) {
+    public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression) {
         return parseExpression(expression, null);
     }
 
-    public org.e2immu.analyser.model.Expression parseExpression(com.github.javaparser.ast.expr.Expression expression, MethodTypeParameterMap singleAbstractMethod) {
+    public org.e2immu.analyser.model.Expression parseExpression(@NotNull com.github.javaparser.ast.expr.Expression expression, MethodTypeParameterMap singleAbstractMethod) {
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;

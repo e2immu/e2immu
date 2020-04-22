@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
-public @interface E2Final {
+public @interface E1Immutable {
     AnnotationType type() default AnnotationType.VERIFY;
 
     /**

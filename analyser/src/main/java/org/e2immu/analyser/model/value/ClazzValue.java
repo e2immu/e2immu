@@ -22,14 +22,15 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
 public class ClazzValue implements Value, Constant<ParameterizedType> {
+    @NotNull
     public final ParameterizedType value;
 
-    public ClazzValue(@NullNotAllowed ParameterizedType parameterizedType) {
+    public ClazzValue(@NotNull ParameterizedType parameterizedType) {
         this.value = Objects.requireNonNull(parameterizedType);
     }
 

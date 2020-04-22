@@ -60,14 +60,14 @@ public class DependencyGraph<T> extends Freezable {
     // return all transitive dependencies, only return terminals
     @NotModified
     @Independent
-    public Set<T> dependencies(@NullNotAllowed T t) {
+    public Set<T> dependencies(@NotNull T t) {
         Set<T> result = new HashSet<>();
         Set<T> doNotVisitDoNotAdd = new HashSet<>();
         recursivelyComputeDependencies(t, result, doNotVisitDoNotAdd);
         return result;
     }
 
-    private void recursivelyComputeDependencies(@NullNotAllowed T t, @NullNotAllowed Set<T> result, @NullNotAllowed Set<T> doNotVisitDoNotAdd) {
+    private void recursivelyComputeDependencies(@NotNull T t, @NotNull Set<T> result, @NotNull Set<T> doNotVisitDoNotAdd) {
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
         if (node == null || node.dependsOn == null || node.dependsOn.isEmpty()) {
@@ -84,7 +84,7 @@ public class DependencyGraph<T> extends Freezable {
 
     @NotNull
     @Only(before = "freeze")
-    private Node<T> getOrCreate(@NullNotAllowed T t) {
+    private Node<T> getOrCreate(@NotNull T t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
@@ -96,12 +96,12 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @NotModified
-    public void visit(@NullNotAllowed BiConsumer<T, List<T>> consumer) {
+    public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
     @Only(before = "freeze")
-    public void addNode(@NullNotAllowed T t, @NullNotAllowed @NotModified List<T> dependsOn) {
+    public void addNode(@NotNull T t, @NotNull @NotModified List<T> dependsOn) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {

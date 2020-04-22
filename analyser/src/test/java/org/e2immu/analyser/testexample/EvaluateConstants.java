@@ -25,10 +25,12 @@ public class EvaluateConstants {
     final static boolean a = true;
     final static boolean b = false;
 
+    @E1Immutable
     @Constant(boolValue = false, test = true)
     final static boolean c = !a;
     final static boolean d = a || b;
 
+    @E1Immutable
     @Constant(boolValue = false, test = true)
     final static boolean e = c && !d;
 
@@ -56,14 +58,16 @@ public class EvaluateConstants {
         return ee() ? "a" : "b";
     }
 
-    @Final
+    @E1Immutable
     @Constant(intValue = 3)
     final int i = 3;
     final int j = 233;
 
+    @E1Immutable
     @Constant(intValue = 699)
     final int k = i * j;
 
+    @E1Immutable
     @Constant(boolValue = true)
     final boolean l = k > 400;
 
@@ -74,16 +78,17 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @Final
+    @E1Immutable
     @Constant(stringValue = "hello")
     final static String s = "hello";
 
     @NotNull
-    @Final
+    @E1Immutable
     @Constant(stringValue = "world")
     final static String w = "world";
 
     @NotNull
+    @E1Immutable
     @Constant(stringValue = "hello world")
     final static String t = s + " " + w;
 
@@ -93,17 +98,17 @@ public class EvaluateConstants {
         return q - p * 2;
     }
 
-    @Final
     @NotNull
+    @E1Immutable
     @Linked(type = AnnotationType.VERIFY_ABSENT)
     private String effectivelyFinal;
 
-    @Final
     @NotNull
+    @E1Immutable
     @Constant(stringValue = "abc")
     private String constant;
 
-    public EvaluateConstants(@NullNotAllowed String in) {
+    public EvaluateConstants(@NotNull String in) {
         if (in == null) throw new UnsupportedOperationException();
         effectivelyFinal = in;
         constant = "abc";

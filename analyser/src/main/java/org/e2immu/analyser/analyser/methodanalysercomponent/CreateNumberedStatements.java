@@ -8,7 +8,7 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +17,9 @@ import java.util.Stack;
 
 public class CreateNumberedStatements {
 
-    public static NumberedStatement recursivelyCreateNumberedStatements(List<Statement> statements,
-                                                                        Stack<Integer> indices,
-                                                                        List<NumberedStatement> numberedStatements,
+    public static NumberedStatement recursivelyCreateNumberedStatements(@NotNull List<Statement> statements,
+                                                                        @NotNull Stack<Integer> indices,
+                                                                        @NotNull List<NumberedStatement> numberedStatements,
                                                                         SideEffectContext sideEffectContext) {
         int statementIndex = 0;
         NumberedStatement first = null;
@@ -53,9 +53,12 @@ public class CreateNumberedStatements {
         return first;
     }
 
-    private static int createBlock(Stack<Integer> indices, List<NumberedStatement> numberedStatements,
-                                   SideEffectContext sideEffectContext, int blockIndex,
-                                   List<NumberedStatement> blocks, HasStatements statements) {
+    private static int createBlock(@NotNull Stack<Integer> indices,
+                                   List<NumberedStatement> numberedStatements,
+                                   SideEffectContext sideEffectContext,
+                                   int blockIndex,
+                                   @NotNull List<NumberedStatement> blocks,
+                                   @NotNull HasStatements statements) {
         indices.push(blockIndex);
         NumberedStatement firstOfBlock =
                 recursivelyCreateNumberedStatements(statements.getStatements(), indices, numberedStatements, sideEffectContext);
@@ -65,7 +68,8 @@ public class CreateNumberedStatements {
     }
 
     @NotModified
-    private static int[] join(@NotModified @NullNotAllowed List<Integer> baseIndices, int index) {
+    @NotNull
+    private static int[] join(@NotNull @NotModified List<Integer> baseIndices, int index) {
         int[] res = new int[baseIndices.size() + 1];
         int i = 0;
         for (Integer bi : baseIndices) res[i++] = bi;

@@ -46,10 +46,10 @@ public abstract class ImmutableCollection<E> {
     }
 }
 
-@E2Immutable
+@E2Container
 public abstract class ImmutableList<E> extends ImmutableCollection<E> implements List<E> {
 
-    @Container
+    @Container(builds = ImmutableList.class)
     public static class Builder<E> {
         @Fluent
         public Builder<E> add(E... elements) {
@@ -60,11 +60,11 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
         }
 
         @Fluent
-        public Builder<E> addAll(@NullNotAllowed Iterable<? extends E> iterable) {
+        public Builder<E> addAll(@NotNull Iterable<? extends E> iterable) {
         }
 
         @Fluent
-        public Builder<E> addAll(@NullNotAllowed Iterator<? extends E> iterator) {
+        public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) {
         }
 
         @NotNull
@@ -75,10 +75,10 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
     }
 }
 
-@E2Immutable
+@E2Container
 public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements Set<E> {
 
-    @Container
+    @Container(builds = ImmutableSet.class)
     public static class Builder<E> {
         @Fluent
         public Builder<E> add(E... elements) {
@@ -89,11 +89,11 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
         }
 
         @Fluent
-        public Builder<E> addAll(@NullNotAllowed Iterable<? extends E> iterable) {
+        public Builder<E> addAll(@NotNull Iterable<? extends E> iterable) {
         }
 
         @Fluent
-        public Builder<E> addAll(@NullNotAllowed Iterator<? extends E> iterator) {
+        public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) {
         }
 
         @NotNull
@@ -108,17 +108,17 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
     static ImmutableSet<E> copyOf(Iterable<E> iterable);
 }
 
-@E2Immutable
+@E2Container
 public abstract class ImmutableMap<K, V> implements Map<K, V> {
 
-    @Container
+    @Container(builds = ImmutableMap.class)
     public static class Builder<K, V> {
         @Fluent
         public com.google.common.collect.ImmutableMap.Builder<K, V> put(K key, V value) {
 
         }
         @Fluent
-        public com.google.common.collect.ImmutableMap.Builder<K, V> putAll(@NullNotAllowed Map<? extends K, ? extends V> map) {
+        public com.google.common.collect.ImmutableMap.Builder<K, V> putAll(@NotNull Map<? extends K, ? extends V> map) {
 
         }
         @NotNull

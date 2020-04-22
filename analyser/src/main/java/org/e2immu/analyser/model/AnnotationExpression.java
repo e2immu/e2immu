@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
-@NullNotAllowed
 @NotNull
 public class AnnotationExpression {
 

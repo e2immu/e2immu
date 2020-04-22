@@ -23,17 +23,16 @@ import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@E2Immutable
 public class ArrayInitializer implements Expression {
     public final List<Expression> expressions;
 
-    public ArrayInitializer(@NullNotAllowed @NotModified List<Expression> expressions) {
+    public ArrayInitializer(@NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
     }
 

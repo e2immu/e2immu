@@ -26,21 +26,19 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@E2Immutable
 public class InlineConditionalOperator implements Expression {
     public final Expression conditional;
     public final Expression ifTrue;
     public final Expression ifFalse;
 
-    public InlineConditionalOperator(@NullNotAllowed Expression conditional,
-                                     @NullNotAllowed Expression ifTrue,
-                                     @NullNotAllowed Expression ifFalse) {
+    public InlineConditionalOperator(@NotNull Expression conditional,
+                                     @NotNull Expression ifTrue,
+                                     @NotNull Expression ifFalse) {
         this.conditional = Objects.requireNonNull(conditional);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);

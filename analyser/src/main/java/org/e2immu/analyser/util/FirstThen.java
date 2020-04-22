@@ -28,14 +28,13 @@ import java.util.Objects;
  * <p>
  * This class is eventually immutable: once the second stage has been reached, its fields cannot be changed anymore.
  * There is no requirement on content modifications, therefore, once the immutable phase has been reached, the class
- * becomes a {@link E2Final}.
+ * becomes a {@link E1Immutable}.
  *
  * @param <S> type of the initial stage
  * @param <T> type of the final stage
  */
 
-@E2Final(after = "set")
-@Container
+@E1Container(after = "set")
 public class FirstThen<S, T> {
     private volatile S first;
     private volatile T then;
@@ -46,7 +45,7 @@ public class FirstThen<S, T> {
      * @param first the initial value
      * @throws NullPointerException when the argument is <code>null</code>
      */
-    public FirstThen(@NullNotAllowed S first) {
+    public FirstThen(@NotNull S first) {
         this.first = Objects.requireNonNull(first);
     }
 
@@ -69,7 +68,7 @@ public class FirstThen<S, T> {
      * @throws UnsupportedOperationException when the object had already reached its final stage
      */
     @Mark("set")
-    public void set(@NullNotAllowed T then) {
+    public void set(@NotNull T then) {
         Objects.requireNonNull(then);
         synchronized (this) {
             if (first == null) throw new UnsupportedOperationException("Already set");

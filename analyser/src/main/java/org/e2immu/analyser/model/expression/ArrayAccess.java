@@ -23,22 +23,19 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-@E2Immutable
 public class ArrayAccess implements Expression {
 
     public final Expression expression;
     public final Expression index;
 
-    public ArrayAccess(@NullNotAllowed Expression expression, @NullNotAllowed Expression index) {
+    public ArrayAccess(@NotNull Expression expression, @NotNull Expression index) {
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
     }
@@ -49,7 +46,6 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return bracketedExpressionString(indent, expression) + "[" + index.expressionString(indent) + "]";
     }
@@ -60,13 +56,11 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    @NotNull
     public Set<String> imports() {
         return Sets.union(expression.imports(), index.imports());
     }
 
     @Override
-    @NotNull
     public List<Expression> subExpressions() {
         return List.of(expression, index);
     }

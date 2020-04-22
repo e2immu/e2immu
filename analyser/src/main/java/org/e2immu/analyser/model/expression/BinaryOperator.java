@@ -30,7 +30,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
@@ -69,9 +68,9 @@ public class BinaryOperator implements Expression {
     public static final int LOGICAL_AND_PRECEDENCE = 4;
     public static final int LOGICAL_OR_PRECEDENCE = 3;
 
-    public BinaryOperator(@NullNotAllowed Expression lhs,
-                          @NullNotAllowed MethodInfo operator,
-                          @NullNotAllowed Expression rhs,
+    public BinaryOperator(@NotNull Expression lhs,
+                          @NotNull MethodInfo operator,
+                          @NotNull Expression rhs,
                           int precedence) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
@@ -176,7 +175,7 @@ public class BinaryOperator implements Expression {
     }
 
     @NotNull
-    public static MethodInfo getOperator(@NullNotAllowed @NotModified BinaryExpr.Operator operator,
+    public static MethodInfo getOperator(@NotNull @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
         if (widestType == null || !widestType.isPrimitiveOrBoxed()) {
             if (operator == BinaryExpr.Operator.EQUALS) {
@@ -253,7 +252,7 @@ public class BinaryOperator implements Expression {
                 widestType.fullyQualifiedName);
     }
 
-    public static int precedence(@NullNotAllowed @NotModified BinaryExpr.Operator operator) {
+    public static int precedence(@NotNull @NotModified BinaryExpr.Operator operator) {
         switch (operator) {
             case DIVIDE:
             case REMAINDER:

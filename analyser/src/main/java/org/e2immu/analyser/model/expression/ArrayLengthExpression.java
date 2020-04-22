@@ -26,35 +26,29 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 
-@E2Immutable
 public class ArrayLengthExpression implements Expression {
 
     public final Expression scope;
 
-    public ArrayLengthExpression(@NullNotAllowed Expression scope) {
+    public ArrayLengthExpression(@NotNull Expression scope) {
         this.scope = Objects.requireNonNull(scope);
     }
 
     @Override
-    @Independent
-    @NotNull
     public List<Expression> subExpressions() {
         return List.of(scope);
     }
 
     @Override
-    @NotNull
     public ParameterizedType returnType() {
         return Primitives.PRIMITIVES.intParameterizedType;
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return "length";
     }

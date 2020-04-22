@@ -22,11 +22,22 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Means that this field is only changed in the constructor
- */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.TYPE, ElementType.FIELD})
-public @interface Final {
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
+public @interface E2Container {
     AnnotationType type() default AnnotationType.VERIFY;
+    /**
+     * @return when the type is effectively immutable, set the empty string.
+     * When it is eventually immutable, return a boolean expression of strings from <code>@Mark</code>
+     * values on some of the modifying methods of the type. After these have been called, the
+     * type will become effectively immutable.
+     */
+    String after() default "";
+
+    /**
+     * @return when true, the type is E2Immutable after the framework has made all modifications.
+     * This is a short-hand for adding <code>@Only(framework=true) @Mark("framework")</code> on all modifying methods,
+     * and setting <code>after="framework"</code> on this annotation.
+     */
+    boolean framework() default false;
 }

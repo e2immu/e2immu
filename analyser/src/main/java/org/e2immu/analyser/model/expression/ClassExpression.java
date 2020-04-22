@@ -23,18 +23,18 @@ import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@E2Immutable
 public class ClassExpression implements Expression, Constant<ParameterizedType> {
+    @NotNull
     public final ParameterizedType parameterizedType;
+    @NotNull
     public final ParameterizedType parameterizedClassType;
 
-    public ClassExpression(@NullNotAllowed ParameterizedType parameterizedType) {
+    public ClassExpression(@NotNull ParameterizedType parameterizedType) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterizedClassType = new ParameterizedType(Primitives.PRIMITIVES.classTypeInfo, List.of(parameterizedType));
     }
@@ -50,7 +50,6 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return parameterizedType.stream() + ".class";
     }
@@ -61,7 +60,6 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    @NotNull
     public Set<String> imports() {
         if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
         return Set.of();

@@ -25,7 +25,6 @@ import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.List;
 import java.util.Objects;
@@ -55,9 +54,9 @@ public class FieldInspection extends Inspection {
     @NotNull
     public final List<AnnotationExpression> annotations;
 
-    private FieldInspection(@NullNotAllowed List<FieldModifier> modifiers,
-                            @NullNotAllowed FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser,
-                            @NullNotAllowed List<AnnotationExpression> annotations) {
+    private FieldInspection(@NotNull List<FieldModifier> modifiers,
+                            @NotNull FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser,
+                            @NotNull List<AnnotationExpression> annotations) {
         super(annotations);
         Objects.requireNonNull(modifiers);
         this.annotations = annotations;

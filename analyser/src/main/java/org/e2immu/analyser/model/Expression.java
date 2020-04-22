@@ -20,10 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +29,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-// we cannot set @E2Immutable here... as 2 implementations are @Container s
-// we will guarantee though that no expression changes its parameters
-@Container // implying @NotModified on parameters
+// at the moment we're modifying evaluation context, we want to be @E2Container
 @NotNull
-@NullNotAllowed
 public interface Expression {
 
     @NotModified
@@ -51,15 +45,14 @@ public interface Expression {
     @NotModified
     Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor);
 
-    @NotNull
     @NotModified
-    // TODO immutable
+    @E2Container
     default Set<String> imports() {
         return Set.of();
     }
 
     @NotModified
-    // TODO immutable
+    // TODO later?
     default List<Expression> subExpressions() {
         return List.of();
     }

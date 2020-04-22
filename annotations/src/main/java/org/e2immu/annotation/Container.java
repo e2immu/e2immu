@@ -23,7 +23,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.CLASS)
-@Target(ElementType.TYPE)
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 public @interface Container {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    /**
+     * some containers are used as "builders" for E1 and E2 classes
+     * This parameter shows that there is a build method.
+     *
+     * @return the class for which this container is the builder
+     */
+    Class<?> builds() default Object.class;
 }

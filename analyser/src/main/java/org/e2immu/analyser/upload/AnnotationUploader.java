@@ -52,7 +52,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 // cannot be E2Immu... fields get modified
 @Container
-@E2Final
+@E1Immutable
 public class AnnotationUploader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationUploader.class);
 
@@ -73,7 +73,9 @@ public class AnnotationUploader {
 
         typePairs = List.of(
                 new Pair<>(lc(E2Immutable.class), typeContext.e2Immutable.get()),
-                new Pair<>(lc(E2Final.class), typeContext.e2Final.get()),
+                new Pair<>(lc(E1Immutable.class), typeContext.e1Immutable.get()),
+                new Pair<>(lc(E1Container.class), typeContext.e2Immutable.get()),
+                new Pair<>(lc(E2Container.class), typeContext.e1Immutable.get()),
                 new Pair<>(lc(Container.class), typeContext.container.get()),
                 new Pair<>(lc(Singleton.class), typeContext.singleton.get())
         );
@@ -93,9 +95,9 @@ public class AnnotationUploader {
         );
         parameterPairs = List.of(
                 new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
-                new Pair<>(lc(NullNotAllowed.class), typeContext.nullNotAllowed.get()),
-                new Pair<>(lc(NullNotAllowed1.class), typeContext.nullNotAllowed1.get()),
-                new Pair<>(lc(NullNotAllowed2.class), typeContext.nullNotAllowed2.get())
+                new Pair<>(lc(NotNull.class), typeContext.notNull.get()),
+                new Pair<>(lc(NotNull1.class), typeContext.notNull1.get()),
+                new Pair<>(lc(NotNull2.class), typeContext.notNull2.get())
         );
     }
 

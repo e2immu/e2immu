@@ -93,7 +93,7 @@ public class ContainerChecks {
         @Linked
         private final Set<String> strings4;
 
-        public Container4(@NullNotAllowed Set<String> strings4Param) {
+        public Container4(@NotNull Set<String> strings4Param) {
             this.strings4 = Objects.requireNonNull(strings4Param);
         }
 
@@ -120,7 +120,7 @@ public class ContainerChecks {
     }
 
     @Container
-    @NullNotAllowed
+    @NotNull
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
         @Linked(type = VERIFY_ABSENT)

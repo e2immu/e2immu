@@ -18,24 +18,23 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Final;
+import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.Objects;
 
 /**
  * An object holding either an object of type <code>A</code>, or one of type <code>B</code>; it cannot hold both or neither.
  *
- * <code>Either</code> is a typical example of a {@link ValueClass}: final fields, therefore immutable at the
- * first level. All non-static methods are either {@link ContextFunction} or {@link ContextSupplier}; the two static
- * factory methods are of type {@link PureFunction}.
+ * <code>Either</code> is a typical example of a {@link E1Container}: final fields, therefore immutable at the
+ * first level. All parameters of the methods are {@link NotModified}.
  *
  * @param <A>
  * @param <B>
  */
-@E2Final
+@E1Container
 public class Either<A, B> {
     private final A left;
     private final B right;
@@ -52,6 +51,7 @@ public class Either<A, B> {
      * @throws UnsupportedOperationException when the right value had been initialised.
      */
     @NotNull
+    @NotModified
     public A getLeft() {
         return Objects.requireNonNull(left);
     }
@@ -63,6 +63,7 @@ public class Either<A, B> {
      * @throws UnsupportedOperationException when the left value had been initialised.
      */
     @NotNull
+    @NotModified
     public B getRight() {
         return Objects.requireNonNull(right);
     }
@@ -86,7 +87,7 @@ public class Either<A, B> {
      */
     @NotModified
     @NotNull
-    public static <L, R> Either<L, R> right(@NullNotAllowed @NotModified R right) {
+    public static <L, R> Either<L, R> right(@NotNull R right) {
         return new Either<L, R>(null, Objects.requireNonNull(right));
     }
 
@@ -101,7 +102,7 @@ public class Either<A, B> {
      */
     @NotModified
     @NotNull
-    public static <L, R> Either<L, R> left(@NullNotAllowed @NotModified L left) {
+    public static <L, R> Either<L, R> left(@NotNull L left) {
         return new Either<L, R>(Objects.requireNonNull(left), null);
     }
 
@@ -113,7 +114,8 @@ public class Either<A, B> {
      * @throws NullPointerException when the <code>orElse</code> parameter is <code>null</code>.
      */
     @NotNull
-    public A getLeftOrElse(@NullNotAllowed A orElse) {
+    @NotModified
+    public A getLeftOrElse(@NotNull A orElse) {
         return left != null ? left : Objects.requireNonNull(orElse);
     }
 
@@ -125,7 +127,8 @@ public class Either<A, B> {
      * @throws NullPointerException when the <code>orElse</code> parameter is <code>null</code>.
      */
     @NotNull
-    public B getRightOrElse(@NullNotAllowed B orElse) {
+    @NotModified
+    public B getRightOrElse(@NotNull B orElse) {
         return right != null ? right : Objects.requireNonNull(orElse);
     }
 

@@ -22,19 +22,17 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NullNotAllowed;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@E2Immutable
 public class Cast implements Expression {
     public final Expression expression;
     public final ParameterizedType parameterizedType;
 
-    public Cast(@NullNotAllowed Expression expression, @NullNotAllowed ParameterizedType parameterizedType) {
+    public Cast(@NotNull Expression expression, @NotNull ParameterizedType parameterizedType) {
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
@@ -51,7 +49,6 @@ public class Cast implements Expression {
     }
 
     @Override
-    @NotNull
     public String expressionString(int indent) {
         return "(" + parameterizedType.stream() + ")" + bracketedExpressionString(indent, expression);
     }
@@ -62,7 +59,6 @@ public class Cast implements Expression {
     }
 
     @Override
-    @NotNull
     public Set<String> imports() {
         Set<String> imports = new HashSet<>(expression.imports());
         if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
@@ -70,7 +66,6 @@ public class Cast implements Expression {
     }
 
     @Override
-    @NotNull
     public List<Expression> subExpressions() {
         return List.of(expression);
     }

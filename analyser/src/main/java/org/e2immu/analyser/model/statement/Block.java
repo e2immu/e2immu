@@ -33,20 +33,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-// @ContextClass
-// @NotNull
-// @NullNotAllowed
 public class Block implements Statement, HasStatements {
     public static final Block EMPTY_BLOCK = new Block(List.of(), null);
     public final String label;
+
+    @NotNull
     public final List<Statement> statements;
 
-    private Block(List<Statement> statements, String label) {
+    private Block(@NotNull List<Statement> statements, String label) {
         this.label = label;
         this.statements = statements;
     }
 
-    @Container
+    @Container(builds = Block.class)
     public static class BlockBuilder {
         private final List<Statement> statements = new ArrayList<>();
         private String label;
@@ -58,7 +57,7 @@ public class Block implements Statement, HasStatements {
         }
 
         @Fluent
-        public BlockBuilder addStatement(@NullNotAllowed Statement statement) {
+        public BlockBuilder addStatement(@NotNull Statement statement) {
             this.statements.add(statement);
             return this;
         }
@@ -94,7 +93,6 @@ public class Block implements Statement, HasStatements {
     }
 
     @Override
-    // @Immutable
     public Set<String> imports() {
         Set<String> imports = new HashSet<>();
         for (Statement statement : statements) {

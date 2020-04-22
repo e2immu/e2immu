@@ -7,7 +7,7 @@ import io.vertx.core.http.HttpClient;
 import java.util.Set;
 
 interface Closeable {
-    void close(@NullNotAllowed Handler<AsyncResult<Void>> handler);
+    void close(@NotNull Handler<AsyncResult<Void>> handler);
 }
 
 // Container: all parameters are implicitly @NotModified
@@ -63,7 +63,7 @@ public interface Handler<E> {
     void handle(E event);
 }
 
-@E2Final
+@E1Immutable
 public interface AsyncResult<T> {
     T result();
     Throwable cause();
@@ -72,7 +72,7 @@ public interface AsyncResult<T> {
 }
 
 @Container
-@NullNotAllowed
+@NotNull
 public interface Promise<T> extends Handler<AsyncResult<T>> {
     void handle(AsyncResult<T> asyncResult);
 
@@ -109,8 +109,8 @@ public interface Future<T> extends AsyncResult<T>, Handler<AsyncResult<T>> {
 }
 
 // Verticle is not a container, as its code may want to modify the context
-@E2Final(after = "init")
-@NullNotAllowed
+@E1Immutable(after = "init")
+@NotNull
 interface Verticle {
 
     @Mark("init")

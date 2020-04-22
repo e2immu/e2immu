@@ -18,7 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
@@ -27,7 +27,7 @@ public abstract class ExpressionWithMethodReferenceResolution implements Express
     public final MethodInfo methodInfo;
     public final ParameterizedType concreteReturnType;
 
-    protected ExpressionWithMethodReferenceResolution(@NullNotAllowed MethodInfo methodInfo, @NullNotAllowed ParameterizedType concreteReturnType) {
+    protected ExpressionWithMethodReferenceResolution(@NotNull MethodInfo methodInfo, @NotNull ParameterizedType concreteReturnType) {
         this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
         this.methodInfo = Objects.requireNonNull(methodInfo);
     }

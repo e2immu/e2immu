@@ -2,7 +2,7 @@ package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NullNotAllowed;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -24,7 +24,7 @@ public class AnnotationsOnLambdas {
     @FunctionalInterface
     interface RemoveOne {
         @Fluent
-        Set<String> go(@NullNotAllowed @NotModified(type = VERIFY_ABSENT) Set<String> in);
+        Set<String> go(@NotNull @NotModified(type = VERIFY_ABSENT) Set<String> in);
     }
 
     static RemoveOne removeOne = set -> {
