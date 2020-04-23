@@ -274,7 +274,11 @@ public class TypeAnalyser {
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
 
             Boolean effectivelyFinal = fieldInfo.isEffectivelyFinal(typeContext);
-            if (effectivelyFinal != null && !effectivelyFinal) {
+            if (effectivelyFinal == null) {
+                log(DELAYED, "Field {} non known yet if effectively final, delay E2Immu", fieldInfo.fullyQualifiedName());
+                return null;
+            }
+            if (!effectivelyFinal) {
                 log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
                         sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
                 return false;
@@ -282,19 +286,25 @@ public class TypeAnalyser {
 
             // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
 
-            Boolean fieldIsEffectivelyImmutable = fieldInfo.type.isPrimitive();
-            if (!fieldIsEffectivelyImmutable)
-                fieldIsEffectivelyImmutable = fieldInfo.type.isE2Immutable(typeContext);
+            Boolean fieldIsEffectivelyImmutable = fieldInfo.isE2Immutable(typeContext);
             // field is of the type of the class being analysed... it will not make the difference.
             if (fieldIsEffectivelyImmutable == null && sortedType.typeInfo == fieldInfo.type.typeInfo)
                 fieldIsEffectivelyImmutable = true;
 
             // part of rule 2: we now need to check that @NotModified is on the field
-            if (fieldIsEffectivelyImmutable != null && !fieldIsEffectivelyImmutable) {
-
+            if (fieldIsEffectivelyImmutable == null) {
+                log(DELAYED, "Field {} not known yet if E2Immutable, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
+                return null;
+            }
+            if (!fieldIsEffectivelyImmutable) {
                 nonPrimitiveNonE2ImmutableFields.add(fieldInfo); // we'll need to do more checks later
                 Boolean notModified = fieldInfo.isNotModified(typeContext);
-                if (notModified != null && !notModified) {
+
+                if (notModified == null) {
+                    log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
+                    return null;
+                }
+                if (!notModified) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also not @NotModified",
                             sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
                     return false;
@@ -307,65 +317,39 @@ public class TypeAnalyser {
                             sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
                     return false;
                 }
-                if (notModified == null) {
-                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough on @NotModified of {}",
-                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                    return null; // cannot decide
-                }
-            }
-            if (effectivelyFinal == null || fieldIsEffectivelyImmutable == null) {
-                log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on {}",
-                        sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                return null; // cannot decide
             }
         }
 
         // RULE 3: INDEPENDENCE OF FIELDS VS PARAMETERS
 
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().constructors) {
             Boolean independent = methodInfo.isIndependent(typeContext);
-
-            for (FieldInfo fieldInfo : nonPrimitiveNonE2ImmutableFields) {
-                Boolean modified = methodInfo.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo);
-                if (modified == null) {
-                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether {} is assigned in {}",
-                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                    return null; // not decided
-                }
-                if (modified) {
-                    if (independent == null) {
-                        log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the assignment to {} is @Independent in {}",
-                                sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                        return null; //not decided
-                    }
-                    if (!independent) {
-                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is assigned in method {}, but it is not @Independent",
-                                sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                        return false;
-                    }
-                } // else safe
+            if (independent == null) {
+                log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
+                return null; //not decided
+            }
+            if (!independent) {
+                log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
+                        sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
+                return false;
             }
         }
-
 
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
-            ParameterizedType returnType = methodInfo.returnType();
-            Boolean returnTypeIsEffectivelyImmutable = returnType.isPrimitive();
-            if (!returnTypeIsEffectivelyImmutable)
-                returnTypeIsEffectivelyImmutable = returnType.isE2Immutable(typeContext);
-            // field is of the type of the class being analysed... it will not make the difference.
-            if (returnTypeIsEffectivelyImmutable == null && sortedType.typeInfo == returnType.typeInfo)
-                returnTypeIsEffectivelyImmutable = true;
-
-            if (returnTypeIsEffectivelyImmutable != null && !returnTypeIsEffectivelyImmutable) {
+            Boolean returnTypeIsEffectivelyImmutable = methodInfo.isE2Immutable(typeContext);
+            if (returnTypeIsEffectivelyImmutable == null) {
+                log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
+                return null;
+            }
+            if (!returnTypeIsEffectivelyImmutable) {
                 // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
                 Boolean independent = methodInfo.isIndependent(typeContext);
                 if (independent == null) {
-                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                    log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
                             sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
-                    return false; //not decided
+                    return null; //not decided
                 }
                 if (!independent) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
@@ -374,7 +358,6 @@ public class TypeAnalyser {
                 }
             }
         }
-
         return true;
     }
 

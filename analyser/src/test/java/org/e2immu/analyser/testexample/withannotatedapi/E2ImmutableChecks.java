@@ -92,13 +92,13 @@ public class E2ImmutableChecks {
     }
 
     static int getSize(int i) {
-        return 10+i;
+        return 10 + i;
     }
 
     @E2Immutable
     static class WithSet {
         @E2Container
-        @NotModified
+        @NotModified(type = AnnotationType.VERIFY_ABSENT) // we don't write this because it is a E2Container
         @Final
         public final Set<String> strings;
 
@@ -117,8 +117,10 @@ public class E2ImmutableChecks {
         }
 
         @Identity
-        @Linked(to = "strings")
-        @NotModified
+        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        @NotModified // we do not change the contents of the fields
+        @Independent // what we return is independent of the fields' content
+        @Constant(type = AnnotationType.VERIFY_ABSENT)
         public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input) {
             input.addAll(strings);
             return input;

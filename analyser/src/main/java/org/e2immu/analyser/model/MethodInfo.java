@@ -28,6 +28,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
@@ -554,4 +555,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return false;
     }
 
+    // the return type... is it E2Immu?
+    public Boolean isE2Immutable(TypeContext typeContext) {
+        if (isConstructor) return true;
+        if (isVoid()) return true;
+        ParameterizedType returnType = returnType();
+        if (returnType.isPrimitive()) return true;
+        Boolean staticallyE2Immutable = returnType.isE2Immutable(typeContext);
+        Boolean dynamicallyE2Immutable = TypeAnalyser.TERNARY_OR.apply(annotatedWith(typeContext.e2Container.get()),
+                annotatedWith(typeContext.e2Immutable.get()));
+        return TypeAnalyser.TERNARY_OR.apply(staticallyE2Immutable, dynamicallyE2Immutable);
+    }
 }

@@ -138,16 +138,22 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public Boolean isNotNull(TypeContext typeContext) {
+        if (type.isPrimitive()) return true;
         return annotatedWith(typeContext.notNull.get());
     }
 
     public Boolean isNotModified(TypeContext typeContext) {
+        if (type.isPrimitive()) return true;
+        Boolean isE2Immutable = isE2Immutable(typeContext);
+        if (isE2Immutable == Boolean.TRUE) return true;
+        if (isE2Immutable == null) return null; // delay
         return annotatedWith(typeContext.notModified.get());
     }
 
     public Boolean isEffectivelyFinal(TypeContext typeContext) {
-        Boolean cc = owner.isE2Immutable(typeContext);
-        if (cc != null && cc) return true;
+        Boolean isE2Immutable = owner.isE2Immutable(typeContext);
+        if (isE2Immutable == Boolean.TRUE) return true;
+        // NOTE: we're not delaying here because of not knowing the E2Immutable status of the owner
         if (fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.FINAL)) return true;
         return annotatedWith(typeContext.effectivelyFinal.get());
     }
