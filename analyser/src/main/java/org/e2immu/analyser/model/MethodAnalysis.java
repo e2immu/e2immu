@@ -79,4 +79,8 @@ public class MethodAnalysis extends Analysis {
      */
     public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
 
+
+    // once we know the dynamic type annotations, we can convert this to annotations on the fields
+    public final SetOnce<Boolean> dynamicTypeAnnotationsAdded = new SetOnce<>();
+
 }

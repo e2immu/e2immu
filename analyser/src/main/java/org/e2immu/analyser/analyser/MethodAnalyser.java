@@ -43,6 +43,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
+    private static final Set<AnnotationExpression> INITIAL = new HashSet<>();
 
     private final TypeContext typeContext;
     private final ParameterAnalyser parameterAnalyser;
@@ -125,6 +126,8 @@ public class MethodAnalyser {
                 if (methodIsFluent(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsNotNull(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsConstant(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodHasDynamicTypeAnnotations(returnStatements, numberedStatements, methodProperties, methodInfo, methodAnalysis))
+                    changes = true;
             }
 
             if (!methodInfo.isConstructor) {
@@ -170,6 +173,48 @@ public class MethodAnalyser {
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
             methodAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on method {}", methodInfo.fullyQualifiedName());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean methodHasDynamicTypeAnnotations(long numberOfReturnStatements,
+                                                    List<NumberedStatement> numberedStatements,
+                                                    VariableProperties methodProperties,
+                                                    MethodInfo methodInfo,
+                                                    MethodAnalysis methodAnalysis) {
+        if (!methodAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
+            boolean allReturnValuesDefined = numberedStatements.stream().filter(ns -> ns.returnValue.isSet()).count() == numberOfReturnStatements;
+            if (!allReturnValuesDefined) {
+                log(DELAYED, "Not all return values defined");
+                return false;
+            }
+            Set<AnnotationExpression> intersection = numberedStatements.stream()
+                    .filter(ns -> ns.returnValue.isSet())
+                    .map(ns -> ns.returnValue.get())
+                    .map(v -> v.dynamicTypeAnnotations(methodProperties))
+                    .reduce(INITIAL, (prev, curr) -> {
+                        if (prev == null || curr == null) return null;
+                        if (prev == INITIAL) return new HashSet<>(curr);
+                        prev.retainAll(curr);
+                        return prev;
+                    });
+            if (intersection == null) {
+                log(DELAYED, "Have null intersection, delaying for {}", methodInfo.distinguishingName());
+                return false;
+            }
+            boolean wroteOne = false;
+            for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
+                    typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
+                boolean dynamic = intersection.contains(ae);
+                boolean positive = !wroteOne && dynamic;
+                if (!methodAnalysis.annotations.isSet(ae)) {
+                    log(E2IMMUTABLE, "Mark method result " + methodInfo.distinguishingName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
+                    methodAnalysis.annotations.put(ae, positive);
+                    if (!wroteOne) wroteOne = true;
+                }
+            }
+            methodAnalysis.dynamicTypeAnnotationsAdded.set(true);
             return true;
         }
         return false;

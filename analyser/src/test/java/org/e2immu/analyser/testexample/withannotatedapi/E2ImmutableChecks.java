@@ -31,12 +31,12 @@ public class E2ImmutableChecks {
     // 3. there are no non-primitive non-context class
     // 4. ditto
 
-    @E2Immutable
-    static class ContextClass1 {
+    @E2Container
+    static class E2Container1 {
         public final int level1;
         public final String value1;
 
-        public ContextClass1(String value, int level1Param) {
+        public E2Container1(String value, int level1Param) {
             level1 = level1Param;
             this.value1 = value;
         }
@@ -51,19 +51,19 @@ public class E2ImmutableChecks {
     // 3. there are no non-primitive non-context class
     // 4. ditto
 
-    @E2Immutable
-    static class ContextClass2 {
-        public final ContextClass2 parent2;
+    @E2Container
+    static class E2Container2 {
+        public final E2Container2 parent2;
         public int level2;
         public final String value2;
 
-        public ContextClass2(String value) {
+        public E2Container2(String value) {
             this.parent2 = null;
             level2 = 0;
             this.value2 = value;
         }
 
-        public ContextClass2(ContextClass2 parent2Param, String valueParam2) {
+        public E2Container2(E2Container2 parent2Param, String valueParam2) {
             this.parent2 = parent2Param;
             level2 = parent2Param.level2 + 2;
             this.value2 = valueParam2;
@@ -74,17 +74,18 @@ public class E2ImmutableChecks {
     // 2. all fields are primitive, context class or: not exposed, not linked
     // 3. there are no non-primitive non-context class
     // 4. ditto
-    @E2Immutable
-    static class ContextClass3 {
+    @E2Container
+    static class E2Container3 {
         @Linked(type = AnnotationType.VERIFY_ABSENT)
         private final Set<String> set3;
 
         @Independent
-        public ContextClass3(Set<String> set3Param) {
+        public E2Container3(Set<String> set3Param) {
             set3 = new HashSet<>(set3Param); // not linked
         }
 
         @Independent
+        @E2Container
         public Set<String> getSet3() {
             return ImmutableSet.copyOf(set3);
         }
@@ -96,7 +97,7 @@ public class E2ImmutableChecks {
 
     @E2Immutable
     static class WithSet {
-        @E2Immutable
+        @E2Container
         @NotModified
         @Final
         public final Set<String> strings;
@@ -106,7 +107,7 @@ public class E2ImmutableChecks {
             strings = ImmutableSet.copyOf(input);
         }
 
-        @E2Immutable
+        @E2Container
         @NotNull
         @NotModified
         @Constant(type = AnnotationType.VERIFY_ABSENT)

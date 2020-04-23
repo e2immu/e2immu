@@ -628,7 +628,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 StringUtil.indent(sb, indent);
                 sb.append(annotation.stream());
                 sb.append("\n");
-                StringUtil.indent(sb, indent);
             }
         });
 

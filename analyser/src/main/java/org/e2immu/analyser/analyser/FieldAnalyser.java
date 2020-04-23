@@ -40,6 +40,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class FieldAnalyser {
     private final TypeContext typeContext;
+    private static final Set<AnnotationExpression> INITIAL = new HashSet<>();
 
     public FieldAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -195,23 +196,67 @@ public class FieldAnalyser {
             }
         }
 
+        // STEP 5: Dynamic type annotations
+
         // dynamic type annotations come before @NotModified, because any E2Immutable type cannot be modified anyway.
-        if (fieldInfo.fieldAnalysis.dynamicTypeAnnotations.isSet()) {
-            Set<AnnotationExpression> dynamicTypeAnnotations = fieldInfo.fieldAnalysis.dynamicTypeAnnotations.get();
-            boolean wroteOne = false;
-            for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
-                    typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
-                boolean dynamic = dynamicTypeAnnotations.contains(ae);
-                boolean positive = !wroteOne && dynamic;
-                if (!fieldInfo.fieldAnalysis.annotations.isSet(ae)) {
-                    log(E2IMMUTABLE, "Mark field " + fieldInfo.fullyQualifiedName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
-                    fieldInfo.fieldAnalysis.annotations.put(ae, positive);
-                    if (!wroteOne) wroteOne = true;
+        if (!fieldInfo.fieldAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
+
+            Set<AnnotationExpression> dynamicTypeAnnotations;
+            boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                    m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                            (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+            if (allAssignmentValuesDefined) {
+                Set<AnnotationExpression> intersection = typeInspection.constructorAndMethodStream()
+                        .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                        .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(fieldProperties))
+                        .reduce(INITIAL, (prev, curr) -> {
+                            if (prev == null || curr == null) return null;
+                            if (prev == INITIAL) return new HashSet<>(curr);
+                            prev.retainAll(curr);
+                            return prev;
+                        });
+                if (intersection == null) {
+                    dynamicTypeAnnotations = null; // delay
+                } else {
+                    if (!haveInitialiser) {
+                        dynamicTypeAnnotations = intersection;
+                    } else {
+                        if (value == NO_VALUE) {
+                            dynamicTypeAnnotations = null; // delay
+                        } else {
+                            Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(fieldProperties);
+                            if (dynamicsOfInitialiser == null) {
+                                dynamicTypeAnnotations = null; // delay
+                            } else {
+                                // this is the real one!
+                                intersection.retainAll(dynamicsOfInitialiser);
+                                dynamicTypeAnnotations = intersection;
+                            }
+                        }
+                    }
                 }
+            } else {
+                dynamicTypeAnnotations = null; // delay
+            }
+            if (dynamicTypeAnnotations == null) {
+                log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
+            } else {
+                boolean wroteOne = false;
+                for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
+                        typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
+                    boolean dynamic = dynamicTypeAnnotations.contains(ae);
+                    boolean positive = !wroteOne && dynamic;
+                    if (!fieldInfo.fieldAnalysis.annotations.isSet(ae)) {
+                        log(E2IMMUTABLE, "Mark field " + fieldInfo.fullyQualifiedName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
+                        fieldInfo.fieldAnalysis.annotations.put(ae, positive);
+                        if (!wroteOne) wroteOne = true;
+                    }
+                }
+                fieldInfo.fieldAnalysis.dynamicTypeAnnotationsAdded.set(true);
             }
         }
 
-        // STEP 5: @NotModified
+        // STEP 6: @NotModified
 
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldProperties.thisVariable);
         if (!annotations.isSet(typeContext.notModified.get())) {
@@ -249,7 +294,7 @@ public class FieldAnalyser {
             }
         }
 
-        // STEP 6: @Linked, variablesLinkedToMe
+        // STEP 7: @Linked, variablesLinkedToMe
 
         if (!fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
             boolean allDefined = typeInspection.constructorAndMethodStream()

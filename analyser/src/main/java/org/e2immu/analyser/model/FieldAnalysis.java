@@ -28,7 +28,7 @@ public class FieldAnalysis extends Analysis {
     public final SetOnce<Value> effectivelyFinalValue = new SetOnce<>();
 
     // once we know the dynamic type annotations, we can convert this to annotations on the fields
-    public final SetOnce<Set<AnnotationExpression>> dynamicTypeAnnotations = new SetOnce<>();
+    public final SetOnce<Boolean> dynamicTypeAnnotationsAdded = new SetOnce<>();
 
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
