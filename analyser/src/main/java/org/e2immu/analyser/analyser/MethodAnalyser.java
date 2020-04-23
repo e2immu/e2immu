@@ -264,26 +264,33 @@ public class MethodAnalyser {
             return false;
         }
 
-        if (methodInfo.isConstructor) {
-            boolean parametersIndependentOfFields = methodAnalysis.fieldsLinkedToFieldsAndVariables.stream()
-                    .allMatch(e -> Collections.disjoint(e.getValue(), methodInfo.methodInspection.get().parameters));
-            methodAnalysis.annotations.put(typeContext.independent.get(), parametersIndependentOfFields);
-            log(INDEPENDENT, "Mark constructor {} " + (parametersIndependentOfFields ? "" : "not ") + "@Independent",
-                    methodInfo.fullyQualifiedName());
-            return true;
+        // PART 1: check the return object, if it is there
+
+        boolean returnObjectIsIndependent;
+        if (!methodInfo.isConstructor && !methodInfo.returnType().isVoid()) {
+            if (!methodAnalysis.variablesLinkedToMethodResult.isSet()) {
+                log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
+                        methodInfo.fullyQualifiedName());
+                return false;
+            }
+            Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
+            returnObjectIsIndependent = variables.stream().noneMatch(v -> v instanceof FieldReference || v instanceof ParameterInfo);
+        } else {
+            returnObjectIsIndependent = true;
         }
 
-        if (methodAnalysis.variablesLinkedToMethodResult.isSet()) {
-            Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
-            boolean independent = variables.stream().noneMatch(v -> v instanceof FieldReference || v instanceof ParameterInfo);
-            methodAnalysis.annotations.put(typeContext.independent.get(), independent);
-            log(INDEPENDENT, "Mark method {} " + (independent ? "" : "not ") + "@Independent",
-                    methodInfo.fullyQualifiedName());
-            return true;
-        }
-        log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
+        // PART 2: check parameters
+
+        boolean parametersIndependentOfFields = methodAnalysis.fieldsLinkedToFieldsAndVariables.stream()
+                .allMatch(e -> Collections.disjoint(e.getValue(), methodInfo.methodInspection.get().parameters));
+
+        // conclusion
+
+        boolean independent = parametersIndependentOfFields && returnObjectIsIndependent;
+        methodAnalysis.annotations.put(typeContext.independent.get(), independent);
+        log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
-        return false;
+        return true;
     }
 
     // helper

@@ -390,7 +390,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // this one is both inheritable and shortcut-able
     public Boolean isNotModified(TypeContext typeContext) {
-        if (typeInfo.annotatedWith(typeContext.notNull.get()) == Boolean.TRUE) return true;
+        if (typeInfo.annotatedWith(typeContext.notModified.get()) == Boolean.TRUE) return true;
         return annotatedWithCheckOverloads(typeContext.notModified.get());
     }
 

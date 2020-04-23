@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -43,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.TypeAnalyser.TERNARY_AND;
+import static org.e2immu.analyser.analyser.TypeAnalyser.TERNARY_OR;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -756,13 +759,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // we need the AnnotationType enum, which needs java.lang.String in its name() method, before our
         // own annotations, before the full java.lang package which obviously is annotated with our own annotations...
         if ("java.lang.Object".equals(fullyQualifiedName) || "java.lang.String".equals(fullyQualifiedName)) return true;
-        return annotatedWith(typeContext.e2Immutable.get()) || annotatedWith(typeContext.e2Container.get());
+        return TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()), annotatedWith(typeContext.e2Container.get()));
     }
 
     public Boolean isContainer(TypeContext typeContext) {
-        return annotatedWith(typeContext.container.get()) ||
-                annotatedWith(typeContext.e1Container.get()) ||
-                annotatedWith(typeContext.e2Container.get());
+        return TERNARY_OR.apply(TERNARY_OR.apply(
+                annotatedWith(typeContext.container.get()),
+                annotatedWith(typeContext.e1Container.get())),
+                annotatedWith(typeContext.e2Container.get()));
     }
 
     public Boolean isNotNull(TypeContext typeContext) {

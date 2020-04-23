@@ -31,21 +31,27 @@ public class SimpleNotModifiedChecks {
 
     // first example shows direct modification
 
+    @E1Immutable
     static class Example1 {
+        @E1Immutable
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set1 = new HashSet<>();
 
-        public void add(String v) {
+        @NotModified(type = VERIFY_ABSENT)
+        public void add(@NotNull String v) {
             set1.add(v);
         }
     }
 
     // second example shows no modification
 
+    @E1Immutable
     static class Example2 {
         @NotModified
+        @E1Immutable
         public Set<String> set2 = new HashSet<>();
 
+        @NotModified
         int size() {
             return set2.size();
         }
@@ -59,7 +65,7 @@ public class SimpleNotModifiedChecks {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set3 = new HashSet<>();
 
-        public void add3(String v) {
+        public void add3(@NotNull String v) {
             Set<String> local3 = set3;
             local3.add(v);
         }
@@ -76,7 +82,8 @@ public class SimpleNotModifiedChecks {
             this.set4 = in4;
         }
 
-        public void add4(String v) {
+        @NotModified(type = VERIFY_ABSENT)
+        public void add4(@NotNull String v) {
             Set<String> local4 = set4;
             local4.add(v);
         }
@@ -93,6 +100,7 @@ public class SimpleNotModifiedChecks {
             this.set5 = new HashSet<>(in5);
         }
 
+        @NotModified(type = VERIFY_ABSENT)
         public void add5(String v) {
             Set<String> local5 = set5;
             local5.add(v);
@@ -105,6 +113,7 @@ public class SimpleNotModifiedChecks {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set6 = new HashSet<>();
 
+        @NotModified(type = VERIFY_ABSENT)
         public static void copyIn(@NotNull Example6 example6, @NotNull @NotModified Set<String> values) {
             example6.set6.addAll(values);
         }
