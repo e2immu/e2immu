@@ -762,7 +762,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // these two are there for bootstrapping reasons.
         // we need the AnnotationType enum, which needs java.lang.String in its name() method, before our
         // own annotations, before the full java.lang package which obviously is annotated with our own annotations...
+        if (isPrimitive()) return true;
         if ("java.lang.Object".equals(fullyQualifiedName) || "java.lang.String".equals(fullyQualifiedName)) return true;
+        if(typeInspection.isSet() && typeInspection.get().typeNature == TypeNature.ENUM) return true;
         return TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()), annotatedWith(typeContext.e2Container.get()));
     }
 

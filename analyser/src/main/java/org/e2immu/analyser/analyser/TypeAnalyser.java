@@ -113,14 +113,269 @@ public class TypeAnalyser {
                         changes = true;
                 }
             }
+            // TODO at some point we will have overlapping qualities
+            // this is caused by the fact that some knowledge may come later.
+            // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
             if (sortedType.typeInfo.hasBeenDefined()) {
-                if (detectE2Immutable(sortedType)) changes = true;
-                if (detectE2Final(sortedType)) changes = true;
-                if (detectContainer(sortedType)) changes = true;
+                Boolean isE2Immutable = isE2Immutable(sortedType);
+                if (isE2Immutable != null && assignE2Immutable(sortedType, isE2Immutable)) changes = true;
+                Boolean isE1Immutable = isE1Immutable(sortedType);
+                if (isE1Immutable != null && assignE1Immutable(sortedType, isE1Immutable)) changes = true;
+
+                Boolean isContainer = noMethodsWhoseParametersContentIsModified(sortedType);
+                if (isContainer != null) {
+                    if (assignContainer(sortedType, isContainer)) changes = true;
+                    if (isE1Immutable != null && assignE1Container(sortedType, isContainer, isE1Immutable))
+                        changes = true;
+                    if (isE2Immutable != null && assignE2Container(sortedType, isContainer, isE2Immutable))
+                        changes = true;
+                }
                 if (detectUtilityClass(sortedType)) changes = true;
                 if (detectNotNull(sortedType)) changes = true;
             }
         }
+    }
+
+    private VariableProperties initializeVariableProperties(SortedType sortedType, This thisVariable, MethodInfo currentMethod) {
+        VariableProperties fieldProperties = new VariableProperties(typeContext, thisVariable, currentMethod);
+        fieldProperties.create(thisVariable, new VariableValue(thisVariable));
+
+        for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
+            if (member instanceof FieldInfo) {
+                FieldInfo fieldInfo = (FieldInfo) member;
+                createFieldReference(thisVariable, fieldProperties, fieldInfo);
+            }
+        }
+        // fields from sub-types... how do they fit in? It is well possible that the subtype has already been analysed,
+        // or will be analysed later. However, we need to "know" the fields because they may transfer information
+
+        // note that only fields of sub-types should be accessible for modification; fields of other types that are
+        // accessible will be forced to be public final
+        for (TypeInfo subType : sortedType.typeInfo.typeInspection.get().subTypes) {
+            for (FieldInfo fieldInfo : subType.typeInspection.get().fields) {
+                createFieldReference(thisVariable, fieldProperties, fieldInfo);
+            }
+        }
+        return fieldProperties;
+    }
+
+    // this method is responsible for one of the big feed-back loops in the evaluation chain
+
+    private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
+        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+        Value value;
+
+        Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
+        if (Boolean.TRUE == isFinal) {
+            if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+            } else {
+                value = new VariableValue(fieldReference, Set.of(), true);
+            }
+        } else if (Boolean.FALSE == isFinal) {
+            value = new VariableValue(fieldReference);
+        } else {
+            value = new VariableValue(fieldReference, Set.of(), true);
+        }
+
+        VariableProperty[] properties;
+        if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
+            properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
+        } else {
+            properties = new VariableProperty[0];
+        }
+
+        fieldProperties.create(fieldReference, value, properties);
+    }
+
+    private boolean assignContainer(SortedType sortedType, boolean isContainer) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
+
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.container.get(), isContainer);
+        log(CONTAINER, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isContainer ? "" : "not ")
+                + "@Container");
+        return true;
+    }
+
+    private boolean assignE1Container(SortedType sortedType, boolean isContainer, boolean isE1Immutable) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Container.get())) return false;
+
+        boolean isE1Container = isContainer && isE1Immutable;
+
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e1Container.get(), isE1Container);
+        log(CONTAINER, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE1Container ? "" : "not ")
+                + "@E1Container");
+        return true;
+    }
+
+    private boolean assignE2Container(SortedType sortedType, boolean isContainer, boolean isE2Immutable) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Container.get())) return false;
+
+        boolean isE2Container = isContainer && isE2Immutable;
+
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Container.get(), isE2Container);
+        log(CONTAINER, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Container ? "" : "not ")
+                + "@E2Container");
+        return true;
+    }
+
+    private Boolean noMethodsWhoseParametersContentIsModified(SortedType sortedType) {
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                Boolean isNotModified = parameterInfo.isNotModified(typeContext);
+                if (isNotModified == null) return null; // cannot yet decide
+                if (!isNotModified) {
+                    log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
+                            sortedType.typeInfo.fullyQualifiedName,
+                            parameterInfo.detailedString(),
+                            methodInfo.distinguishingName());
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean assignE1Immutable(SortedType sortedType, boolean isE1Immutable) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.getOtherwiseNull(typeContext.e2Immutable.get()) == Boolean.TRUE)
+            return false;
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Immutable.get())) return false;
+
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e1Immutable.get(), isE1Immutable);
+        log(E1IMMUTABLE, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE1Immutable ? "" : "not ")
+                + "@E1Immutable");
+        return true;
+    }
+
+    private Boolean isE1Immutable(SortedType sortedType) {
+        for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
+            Boolean effectivelyFinal = fieldInfo.isEffectivelyFinal(typeContext);
+            if (effectivelyFinal == null) return null; // cannot decide
+            if (!effectivelyFinal) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean assignE2Immutable(SortedType sortedType, boolean isEffectivelyImmutable) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Immutable.get())) return false;
+
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Immutable.get(), isEffectivelyImmutable);
+        log(E2IMMUTABLE, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isEffectivelyImmutable ? "" : "not ")
+                + "@E2Immutable");
+        return true;
+    }
+
+    private Boolean isE2Immutable(SortedType sortedType) {
+        Set<FieldInfo> nonPrimitiveNonE2ImmutableFields = new HashSet<>();
+        for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
+
+            // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
+
+            Boolean effectivelyFinal = fieldInfo.isEffectivelyFinal(typeContext);
+            if (effectivelyFinal != null && !effectivelyFinal) {
+                log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
+                        sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                return false;
+            }
+
+            // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
+
+            Boolean fieldIsEffectivelyImmutable = fieldInfo.type.isPrimitive();
+            if (!fieldIsEffectivelyImmutable)
+                fieldIsEffectivelyImmutable = fieldInfo.type.isE2Immutable(typeContext);
+            // field is of the type of the class being analysed... it will not make the difference.
+            if (fieldIsEffectivelyImmutable == null && sortedType.typeInfo == fieldInfo.type.typeInfo)
+                fieldIsEffectivelyImmutable = true;
+
+            // part of rule 2: we now need to check that @NotModified is on the field
+            if (fieldIsEffectivelyImmutable != null && !fieldIsEffectivelyImmutable) {
+
+                nonPrimitiveNonE2ImmutableFields.add(fieldInfo); // we'll need to do more checks later
+                Boolean notModified = fieldInfo.isNotModified(typeContext);
+                if (notModified != null && !notModified) {
+                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also not @NotModified",
+                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                    return false;
+                }
+
+                // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
+
+                if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
+                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
+                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                    return false;
+                }
+                if (notModified == null) {
+                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough on @NotModified of {}",
+                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                    return null; // cannot decide
+                }
+            }
+            if (effectivelyFinal == null || fieldIsEffectivelyImmutable == null) {
+                log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on {}",
+                        sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
+                return null; // cannot decide
+            }
+        }
+
+        // RULE 3: INDEPENDENCE OF FIELDS VS PARAMETERS
+
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
+            Boolean independent = methodInfo.isIndependent(typeContext);
+
+            for (FieldInfo fieldInfo : nonPrimitiveNonE2ImmutableFields) {
+                Boolean modified = methodInfo.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo);
+                if (modified == null) {
+                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether {} is assigned in {}",
+                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
+                    return null; // not decided
+                }
+                if (modified) {
+                    if (independent == null) {
+                        log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the assignment to {} is @Independent in {}",
+                                sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
+                        return null; //not decided
+                    }
+                    if (!independent) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is assigned in method {}, but it is not @Independent",
+                                sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
+                        return false;
+                    }
+                } // else safe
+            }
+        }
+
+
+        // RULE 5: RETURN TYPES
+
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
+            ParameterizedType returnType = methodInfo.returnType();
+            Boolean returnTypeIsEffectivelyImmutable = returnType.isPrimitive();
+            if (!returnTypeIsEffectivelyImmutable)
+                returnTypeIsEffectivelyImmutable = returnType.isE2Immutable(typeContext);
+            // field is of the type of the class being analysed... it will not make the difference.
+            if (returnTypeIsEffectivelyImmutable == null && sortedType.typeInfo == returnType.typeInfo)
+                returnTypeIsEffectivelyImmutable = true;
+
+            if (returnTypeIsEffectivelyImmutable != null && !returnTypeIsEffectivelyImmutable) {
+                // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
+                Boolean independent = methodInfo.isIndependent(typeContext);
+                if (independent == null) {
+                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                            sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
+                    return false; //not decided
+                }
+                if (!independent) {
+                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
+                            sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private boolean detectNotNull(SortedType sortedType) {
@@ -212,233 +467,4 @@ public class TypeAnalyser {
         return true;
     }
 
-    private VariableProperties initializeVariableProperties(SortedType sortedType, This thisVariable, MethodInfo currentMethod) {
-        VariableProperties fieldProperties = new VariableProperties(typeContext, thisVariable, currentMethod);
-        fieldProperties.create(thisVariable, new VariableValue(thisVariable));
-
-        for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
-            if (member instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) member;
-                createFieldReference(thisVariable, fieldProperties, fieldInfo);
-            }
-        }
-        // fields from sub-types... how do they fit in? It is well possible that the subtype has already been analysed,
-        // or will be analysed later. However, we need to "know" the fields because they may transfer information
-
-        // note that only fields of sub-types should be accessible for modification; fields of other types that are
-        // accessible will be forced to be public final
-        for (TypeInfo subType : sortedType.typeInfo.typeInspection.get().subTypes) {
-            for (FieldInfo fieldInfo : subType.typeInspection.get().fields) {
-                createFieldReference(thisVariable, fieldProperties, fieldInfo);
-            }
-        }
-        return fieldProperties;
-    }
-
-    // this method is responsible for one of the big feed-back loops in the evaluation chain
-
-    private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
-        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        Value value;
-
-        Boolean isFinal = fieldInfo.isE1Immutable(typeContext);
-        if (Boolean.TRUE == isFinal) {
-            if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-            } else {
-                value = new VariableValue(fieldReference, true);
-            }
-        } else if (Boolean.FALSE == isFinal) {
-            value = new VariableValue(fieldReference);
-        } else {
-            value = new VariableValue(fieldReference, true);
-        }
-
-        VariableProperty[] properties;
-        if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
-            properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
-        } else {
-            properties = new VariableProperty[0];
-        }
-
-        fieldProperties.create(fieldReference, value, properties);
-    }
-
-    private boolean detectContainer(SortedType sortedType) {
-        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
-
-        Boolean isContainer = noMethodsWhoseParametersContentIsModified(sortedType);
-        if (isContainer == null) return false;
-
-        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.container.get(), isContainer);
-        log(CONTAINER, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isContainer ? "" : "not ")
-                + "@Container");
-        return true;
-    }
-
-    private Boolean noMethodsWhoseParametersContentIsModified(SortedType sortedType) {
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                if (isNotModified == null) return null; // cannot yet decide
-                if (!isNotModified) {
-                    log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
-                            sortedType.typeInfo.fullyQualifiedName,
-                            parameterInfo.detailedString(),
-                            methodInfo.distinguishingName());
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private boolean detectE2Final(SortedType sortedType) {
-        if (sortedType.typeInfo.typeAnalysis.annotations.getOtherwiseNull(typeContext.e2Immutable.get()) == Boolean.TRUE)
-            return false;
-        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Immutable.get())) return false;
-
-        // rule 1 of 1. all fields must be effectively final
-        boolean isE2Final = true;
-
-        for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
-            Boolean effectivelyFinal = fieldInfo.isE1Immutable(typeContext);
-            if (effectivelyFinal == null) return false; // cannot decide
-            if (!effectivelyFinal) {
-                log(E2FINAL, "{} is not a value class, field {} is not effectively final", sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                isE2Final = false;
-                break;
-            }
-        }
-
-        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e1Immutable.get(), isE2Final);
-        log(E2FINAL, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isE2Final ? "" : "not ")
-                + "@ValueClass");
-        return true;
-    }
-
-    private boolean detectE2Immutable(SortedType sortedType) {
-        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Immutable.get())) return false;
-        boolean isEffectivelyImmutable = true;
-
-        Set<FieldInfo> nonPrimitiveNonE2ImmutableFields = new HashSet<>();
-        for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
-
-            // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
-
-            Boolean effectivelyFinal = fieldInfo.isE1Immutable(typeContext);
-            if (effectivelyFinal != null && !effectivelyFinal) {
-                log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
-                        sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                isEffectivelyImmutable = false;
-                break;
-            }
-
-            // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
-
-            Boolean fieldIsEffectivelyImmutable = fieldInfo.type.isPrimitive();
-            if (!fieldIsEffectivelyImmutable)
-                fieldIsEffectivelyImmutable = fieldInfo.type.isEffectivelyImmutable(typeContext);
-            // field is of the type of the class being analysed... it will not make the difference.
-            if (fieldIsEffectivelyImmutable == null && sortedType.typeInfo == fieldInfo.type.typeInfo)
-                fieldIsEffectivelyImmutable = true;
-
-            // part of rule 2: we now need to check that @NotModified is on the field
-            if (fieldIsEffectivelyImmutable != null && !fieldIsEffectivelyImmutable) {
-
-                nonPrimitiveNonE2ImmutableFields.add(fieldInfo); // we'll need to do more checks later
-                Boolean notModified = fieldInfo.isNotModified(typeContext);
-                if (notModified != null && !notModified) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also not @NotModified",
-                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                    isEffectivelyImmutable = false;
-                    break;
-                }
-
-                // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
-
-                if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
-                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                    isEffectivelyImmutable = false;
-                    break;
-                }
-                if (notModified == null) {
-                    log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough on @NotModified of {}",
-                            sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                    return false; // cannot decide
-                }
-            }
-            if (effectivelyFinal == null || fieldIsEffectivelyImmutable == null) {
-                log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on {}",
-                        sortedType.typeInfo.fullyQualifiedName, fieldInfo.name);
-                return false; // cannot decide
-            }
-        }
-
-        // RULE 3: INDEPENDENCE OF FIELDS VS PARAMETERS
-
-        if (isEffectivelyImmutable) {
-            for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
-                Boolean independent = methodInfo.isIndependent(typeContext);
-
-                for (FieldInfo fieldInfo : nonPrimitiveNonE2ImmutableFields) {
-                    Boolean modified = methodInfo.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo);
-                    if (modified == null) {
-                        log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether {} is assigned in {}",
-                                sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                        return false; // not decided
-                    }
-                    if (modified) {
-                        if (independent == null) {
-                            log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the assignment to {} is @Independent in {}",
-                                    sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                            return false; //not decided
-                        }
-                        if (!independent) {
-                            log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is assigned in method {}, but it is not @Independent",
-                                    sortedType.typeInfo.fullyQualifiedName, fieldInfo.name, methodInfo.name);
-                            isEffectivelyImmutable = false;
-                            break;
-                        }
-                    } // else safe
-                }
-                if (!isEffectivelyImmutable) break;
-            }
-        }
-
-        // RULE 5: RETURN TYPES
-
-        if (isEffectivelyImmutable) {
-            for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
-                ParameterizedType returnType = methodInfo.returnType();
-                Boolean returnTypeIsEffectivelyImmutable = returnType.isPrimitive();
-                if (!returnTypeIsEffectivelyImmutable)
-                    returnTypeIsEffectivelyImmutable = returnType.isEffectivelyImmutable(typeContext);
-                // field is of the type of the class being analysed... it will not make the difference.
-                if (returnTypeIsEffectivelyImmutable == null && sortedType.typeInfo == returnType.typeInfo)
-                    returnTypeIsEffectivelyImmutable = true;
-
-                if (returnTypeIsEffectivelyImmutable != null && !returnTypeIsEffectivelyImmutable) {
-                    // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
-                    Boolean independent = methodInfo.isIndependent(typeContext);
-                    if (independent == null) {
-                        log(E2IMMUTABLE, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                                sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
-                        return false; //not decided
-                    }
-                    if (!independent) {
-                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                                sortedType.typeInfo.fullyQualifiedName, methodInfo.name);
-                        isEffectivelyImmutable = false;
-                        break;
-                    }
-                }
-            }
-        }
-        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.e2Immutable.get(), isEffectivelyImmutable);
-        log(E2IMMUTABLE, "Type " + sortedType.typeInfo.fullyQualifiedName + " marked " + (isEffectivelyImmutable ? "" : "not ")
-                + "@E2Immutable");
-        return true;
-    }
 }

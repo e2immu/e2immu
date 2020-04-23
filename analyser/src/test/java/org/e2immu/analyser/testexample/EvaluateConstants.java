@@ -25,12 +25,12 @@ public class EvaluateConstants {
     final static boolean a = true;
     final static boolean b = false;
 
-    @E1Immutable
+    @Final
     @Constant(boolValue = false, test = true)
     final static boolean c = !a;
     final static boolean d = a || b;
 
-    @E1Immutable
+    @Final
     @Constant(boolValue = false, test = true)
     final static boolean e = c && !d;
 
@@ -58,16 +58,16 @@ public class EvaluateConstants {
         return ee() ? "a" : "b";
     }
 
-    @E1Immutable
+    @Final
     @Constant(intValue = 3)
     final int i = 3;
     final int j = 233;
 
-    @E1Immutable
+    @Final
     @Constant(intValue = 699)
     final int k = i * j;
 
-    @E1Immutable
+    @Final
     @Constant(boolValue = true)
     final boolean l = k > 400;
 
@@ -78,17 +78,17 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @E1Immutable
+    @Final
     @Constant(stringValue = "hello")
     final static String s = "hello";
 
     @NotNull
-    @E1Immutable
+    @Final
     @Constant(stringValue = "world")
     final static String w = "world";
 
     @NotNull
-    @E1Immutable
+    @Final
     @Constant(stringValue = "hello world")
     final static String t = s + " " + w;
 
@@ -99,12 +99,12 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @E1Immutable
+    @Final
     @Linked(type = AnnotationType.VERIFY_ABSENT)
     private String effectivelyFinal;
 
     @NotNull
-    @E1Immutable
+    @Final
     @Constant(stringValue = "abc")
     private String constant;
 

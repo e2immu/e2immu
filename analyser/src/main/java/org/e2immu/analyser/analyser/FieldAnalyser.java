@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -82,12 +79,12 @@ public class FieldAnalyser {
             haveInitialiser = true;
         }
 
-        // STEP 2: EFFECTIVELY FINAL: @Final
+        // STEP 2: EFFECTIVELY FINAL: @E1Immutable
 
-        if (!annotations.isSet(typeContext.e1Immutable.get())) {
+        if (!annotations.isSet(typeContext.effectivelyFinal.get())) {
             boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
             if (isExplicitlyFinal) {
-                annotations.put(typeContext.e1Immutable.get(), true);
+                annotations.put(typeContext.effectivelyFinal.get(), true);
                 log(FINAL, "Mark field {} as effectively final, because explicitly so, value {}",
                         fieldInfo.fullyQualifiedName(), value);
                 changes = true;
@@ -100,7 +97,7 @@ public class FieldAnalyser {
                 if (isModifiedOutsideConstructors == null) {
                     log(DELAYED, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
                 } else {
-                    annotations.put(typeContext.e1Immutable.get(), !isModifiedOutsideConstructors);
+                    annotations.put(typeContext.effectivelyFinal.get(), !isModifiedOutsideConstructors);
                     log(FINAL, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;
@@ -110,7 +107,7 @@ public class FieldAnalyser {
 
         // STEP 3: EFFECTIVELY FINAL VALUE, and @Constant
 
-        if (fieldInfo.isE1Immutable(typeContext) == Boolean.TRUE && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+        if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
             // find the constructors where the value is set; if they're all set to the same value,
             // we can set the initial value; also take into account the value of the initialiser, if it is there
             Value consistentValue = value;
@@ -169,7 +166,7 @@ public class FieldAnalyser {
                 if (allAssignmentValuesNotNull == null) {
                     isNotNullValue = null; // delay
                 } else {
-                    if(!haveInitialiser) {
+                    if (!haveInitialiser) {
                         isNotNullValue = allAssignmentValuesNotNull;
                     } else {
                         if (value == NO_VALUE) {
@@ -198,36 +195,56 @@ public class FieldAnalyser {
             }
         }
 
+        // dynamic type annotations come before @NotModified, because any E2Immutable type cannot be modified anyway.
+        if (fieldInfo.fieldAnalysis.dynamicTypeAnnotations.isSet()) {
+            Set<AnnotationExpression> dynamicTypeAnnotations = fieldInfo.fieldAnalysis.dynamicTypeAnnotations.get();
+            boolean wroteOne = false;
+            for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
+                    typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
+                boolean dynamic = dynamicTypeAnnotations.contains(ae);
+                boolean positive = !wroteOne && dynamic;
+                if (!fieldInfo.fieldAnalysis.annotations.isSet(ae)) {
+                    log(E2IMMUTABLE, "Mark field " + fieldInfo.fullyQualifiedName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
+                    fieldInfo.fieldAnalysis.annotations.put(ae, positive);
+                    if (!wroteOne) wroteOne = true;
+                }
+            }
+        }
 
         // STEP 5: @NotModified
 
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldProperties.thisVariable);
         if (!annotations.isSet(typeContext.notModified.get())) {
 
-            // first check if we're dealing with fields of ENUM's; they're not modifiable at all
-            if (fieldInfo.owner.typeInspection.get().typeNature == TypeNature.ENUM) {
-                annotations.put(typeContext.notModified.get(), true);
-                log(MODIFY_CONTENT, "Mark field {} of enum as @NotModified", fieldInfo.fullyQualifiedName());
-                changes = true;
-            } else if (fieldInfo.isE1Immutable(typeContext) == Boolean.FALSE) {
+            if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.FALSE) {
                 annotations.put(typeContext.notModified.get(), false);
                 log(MODIFY_CONTENT, "Mark field {} as NOT @NotModified, because it is not @Final", fieldInfo.fullyQualifiedName());
                 changes = true;
-            } else if (fieldInfo.isE1Immutable(typeContext) == Boolean.TRUE) {
-                boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                        m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
-                                (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
-                if (allContentModificationsDefined) {
-                    boolean notModified = typeInspection.constructorAndMethodStream()
-                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
-                            .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
-                    annotations.put(typeContext.notModified.get(), notModified);
-                    log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
-                            "@NotModified", fieldInfo.fullyQualifiedName());
+            } else if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE) {
+
+                Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
+                if (isE2Immutable == null) {
+                    log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
+                } else if (isE2Immutable) {
+                    annotations.put(typeContext.notModified.get(), false);
+                    log(MODIFY_CONTENT, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
                     changes = true;
                 } else {
-                    log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
-                            fieldInfo.fullyQualifiedName());
+                    boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                            m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
+                                    (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
+                    if (allContentModificationsDefined) {
+                        boolean notModified = typeInspection.constructorAndMethodStream()
+                                .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                                .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
+                        annotations.put(typeContext.notModified.get(), notModified);
+                        log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
+                                "@NotModified", fieldInfo.fullyQualifiedName());
+                        changes = true;
+                    } else {
+                        log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
+                                fieldInfo.fullyQualifiedName());
+                    }
                 }
             }
         }
@@ -259,22 +276,18 @@ public class FieldAnalyser {
     public void check(FieldInfo fieldInfo) {
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
-        // TODO check the correct field name
-        fieldInfo.error(Linked.class, typeContext.linked.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @Linked"));
+        // TODO check the correct field name in @Linked(to="xxxx")
+        check(fieldInfo, Linked.class, typeContext.linked.get());
+        check(fieldInfo, NotModified.class, typeContext.notModified.get());
+        check(fieldInfo, NotNull.class, typeContext.notNull.get());
+        check(fieldInfo, Final.class, typeContext.effectivelyFinal.get());
 
-        fieldInfo.error(NotModified.class, typeContext.notModified.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @NotModified"));
-
-        fieldInfo.error(NotNull.class, typeContext.notNull.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @NotNull"));
-
-        fieldInfo.error(E1Immutable.class, typeContext.e1Immutable.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @E1Immutable"));
+        // dynamic type annotations
+        check(fieldInfo, E1Immutable.class, typeContext.e1Immutable.get());
+        check(fieldInfo, E2Immutable.class, typeContext.e2Immutable.get());
+        check(fieldInfo, Container.class, typeContext.container.get());
+        check(fieldInfo, E1Container.class, typeContext.e1Container.get());
+        check(fieldInfo, E2Container.class, typeContext.e2Container.get());
 
         if (fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
@@ -285,10 +298,16 @@ public class FieldAnalyser {
                             " is not read outside constructors");
                 }
             }
-        } else if (fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.e1Immutable.get()) != Boolean.TRUE) {
+        } else if (fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.effectivelyFinal.get()) != Boolean.TRUE) {
             typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
-                    " is not effectively final (@E1Immutable)");
+                    " is not effectively final (@Final)");
         }
         CheckConstant.checkConstantForFields(typeContext, fieldInfo);
+    }
+
+    private void check(FieldInfo fieldInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
+        fieldInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
+                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
+                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
     }
 }

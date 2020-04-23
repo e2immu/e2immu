@@ -354,7 +354,7 @@ public class ParameterizedType {
         return typeInfo != null && primitiveStringNotVoid.contains(typeInfo.fullyQualifiedName);
     }
 
-    public Boolean isEffectivelyImmutable(TypeContext typeContext) {
+    public Boolean isE2Immutable(TypeContext typeContext) {
         if (typeInfo != null) return typeInfo.isE2Immutable(typeContext);
         return false;
     }

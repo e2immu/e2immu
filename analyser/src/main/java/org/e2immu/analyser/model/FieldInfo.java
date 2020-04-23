@@ -18,10 +18,13 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -128,7 +131,10 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         Optional<AnnotationExpression> fromField = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromField.isPresent()) return fromField;
-        return owner.hasTestAnnotation(annotation);
+        if (annotation.equals(NotNull.class) || annotation.equals(NotModified.class))
+            return owner.hasTestAnnotation(annotation);
+        // TODO check "where" on @NotModified
+        return Optional.empty();
     }
 
     public Boolean isNotNull(TypeContext typeContext) {
@@ -139,11 +145,24 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return annotatedWith(typeContext.notModified.get());
     }
 
-    public Boolean isE1Immutable(TypeContext typeContext) {
+    public Boolean isEffectivelyFinal(TypeContext typeContext) {
         Boolean cc = owner.isE2Immutable(typeContext);
         if (cc != null && cc) return true;
         if (fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.FINAL)) return true;
-        return annotatedWith(typeContext.e1Immutable.get());
+        return annotatedWith(typeContext.effectivelyFinal.get());
+    }
+
+    public Boolean isE2Immutable(TypeContext typeContext) {
+        // we do not look at the type's annotations if we are of that type (self reference)
+        Boolean staticType;
+        if (type.typeInfo == owner) {
+            staticType = false;
+        } else {
+            staticType = type.isE2Immutable(typeContext);
+        }
+        Boolean dynamicType = TypeAnalyser.TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()),
+                annotatedWith((typeContext.e2Container.get())));
+        return TypeAnalyser.TERNARY_OR.apply(staticType, dynamicType);
     }
 
     public String fullyQualifiedName() {

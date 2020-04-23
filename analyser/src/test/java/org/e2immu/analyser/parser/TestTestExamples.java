@@ -56,7 +56,7 @@ public class TestTestExamples {
                 ANNOTATION_EXPRESSION,
                 CONSTANT,
                 CONTAINER,
-                E2FINAL,
+                E1IMMUTABLE,
                 SIDE_EFFECT,
                 UTILITY_CLASS,
                 NULL_NOT_ALLOWED,

@@ -74,10 +74,12 @@ public class AnnotationUploader {
         typePairs = List.of(
                 new Pair<>(lc(E2Immutable.class), typeContext.e2Immutable.get()),
                 new Pair<>(lc(E1Immutable.class), typeContext.e1Immutable.get()),
-                new Pair<>(lc(E1Container.class), typeContext.e2Immutable.get()),
-                new Pair<>(lc(E2Container.class), typeContext.e1Immutable.get()),
+                new Pair<>(lc(E1Container.class), typeContext.e1Container.get()),
+                new Pair<>(lc(E2Container.class), typeContext.e2Container.get()),
                 new Pair<>(lc(Container.class), typeContext.container.get()),
-                new Pair<>(lc(Singleton.class), typeContext.singleton.get())
+                new Pair<>(lc(Singleton.class), typeContext.singleton.get()),
+                new Pair<>(lc(UtilityClass.class), typeContext.utilityClass.get()),
+                new Pair<>(lc(ExtensionClass.class), typeContext.extensionClass.get())
         );
         methodPairs = List.of(
                 new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
@@ -90,8 +92,10 @@ public class AnnotationUploader {
         fieldPairs = List.of(
                 new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
                 new Pair<>(lc(Constant.class), typeContext.constant.get()),
+                new Pair<>(lc(Final.class), typeContext.effectivelyFinal.get()),
                 new Pair<>(lc(NotNull.class), typeContext.notNull.get()),
-                new Pair<>(lc(NotNull1.class), typeContext.notNull1.get())
+                new Pair<>(lc(NotNull1.class), typeContext.notNull1.get()),
+                new Pair<>(lc(NotNull1.class), typeContext.notNull2.get())
         );
         parameterPairs = List.of(
                 new Pair<>(lc(NotModified.class), typeContext.notModified.get()),

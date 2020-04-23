@@ -27,14 +27,28 @@ import java.util.Set;
 public class VariableValue implements Value {
     public final Variable value;
     public final boolean effectivelyFinalUnevaluated;
+    public final Set<AnnotationExpression> dynamicTypeAnnotations;
 
     public VariableValue(Variable value) {
-        this(value, false);
+        this(value, Set.of(), false);
     }
 
-    public VariableValue(Variable value, boolean effectivelyFinalUnevaluated) {
+    public VariableValue(Variable value,
+                         Set<AnnotationExpression> dynamicTypeAnnotations) {
+        this(value, dynamicTypeAnnotations, false);
+    }
+
+    public VariableValue(Variable value,
+                         Set<AnnotationExpression> dynamicTypeAnnotations,
+                         boolean effectivelyFinalUnevaluated) {
         this.value = value;
         this.effectivelyFinalUnevaluated = effectivelyFinalUnevaluated;
+        this.dynamicTypeAnnotations = dynamicTypeAnnotations;
+    }
+
+    @Override
+    public Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+        return dynamicTypeAnnotations;
     }
 
     @Override
@@ -52,7 +66,7 @@ public class VariableValue implements Value {
 
     @Override
     public String toString() {
-        return value.detailedString() + (effectivelyFinalUnevaluated ? " ??@Final??" : "");
+        return value.detailedString() + (effectivelyFinalUnevaluated ? " ??@E1Immutable??" : "");
     }
 
     @Override
@@ -92,7 +106,7 @@ public class VariableValue implements Value {
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         boolean differentType = evaluationContext.getCurrentMethod().typeInfo != value.parameterizedType().typeInfo;
         boolean e2Immu = (bestCase || differentType) &&
-                value.parameterizedType().isEffectivelyImmutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
+                value.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
         if (e2Immu || value.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
         return Set.of(value);
     }

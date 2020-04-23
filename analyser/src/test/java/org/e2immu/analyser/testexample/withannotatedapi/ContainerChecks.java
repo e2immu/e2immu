@@ -126,7 +126,7 @@ public class ContainerChecks {
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
         @Linked(type = VERIFY_ABSENT)
-        @E1Immutable
+        @Final
         private final List<String> list;
 
         @Independent

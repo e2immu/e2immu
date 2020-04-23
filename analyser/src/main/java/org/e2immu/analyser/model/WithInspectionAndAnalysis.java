@@ -18,7 +18,11 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.parser.TypeContext;
+
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public interface WithInspectionAndAnalysis {
     Analysis getAnalysis();
@@ -39,6 +43,23 @@ public interface WithInspectionAndAnalysis {
         }
         return getInspection().annotations.stream()
                 .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
+    }
+
+    default Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
+        Set<AnnotationExpression> result = new HashSet<>();
+        for (AnnotationExpression ae : new AnnotationExpression[]{
+                typeContext.e2Immutable.get(),
+                typeContext.e1Immutable.get(),
+                typeContext.container.get(),
+                typeContext.e2Container.get(),
+                typeContext.e1Container.get()}) {
+            Boolean isPresent = annotatedWith(ae);
+            if (isPresent == null) return null; // delay
+            if (isPresent) {
+                result.add(ae);
+            }
+        }
+        return result;
     }
 
     default Optional<Boolean> error(Class<?> annotation, AnnotationExpression expression) {

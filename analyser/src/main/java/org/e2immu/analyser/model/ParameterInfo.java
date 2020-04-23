@@ -20,12 +20,10 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Container;
 
 import java.util.HashSet;
@@ -182,7 +180,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     public Boolean isNotModified(TypeContext typeContext) {
         if (isNotModifiedByDefinition(typeContext)) return true;
-        if (Boolean.TRUE == parameterizedType.isEffectivelyImmutable(typeContext)) return true;
+        if (Boolean.TRUE == parameterizedType.isE2Immutable(typeContext)) return true;
         if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isE2Immutable(typeContext)) return true;
         if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isContainer(typeContext)) return true;
         return annotatedWith(typeContext.notModified.get());

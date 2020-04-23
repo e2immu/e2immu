@@ -64,16 +64,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final MethodAnalysis methodAnalysis = new MethodAnalysis();
 
     // for constructors
-    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull List<ParameterInfo> parametersAsObserved) {
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
         this(typeInfo, typeInfo.simpleName, parametersAsObserved, null, true, false, false);
     }
 
-    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull String name,@NotNull List<ParameterInfo> parametersAsObserved,
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic) {
         this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, false);
     }
 
-    public MethodInfo(@NotNull TypeInfo typeInfo,@NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic, boolean isDefaultImplementation) {
         this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, isDefaultImplementation);
     }
@@ -553,4 +553,5 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
         return false;
     }
+
 }

@@ -20,19 +20,20 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.Final;
 
 public class FinalChecks {
 
-    @E1Immutable
+    @Final
     private String s3 = "abc";
 
-    @E1Immutable
+    @Final
     private final String s1;
 
-    @E1Immutable
+    @Final
     private String s2;
 
-    @E1Immutable(type = AnnotationType.VERIFY_ABSENT)
+    @Final(type = AnnotationType.VERIFY_ABSENT)
     private String s4;
 
     FinalChecks(String s1, String s2) {

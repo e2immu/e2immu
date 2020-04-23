@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -107,6 +108,27 @@ public class MethodValue implements Value {
         return false;
     }
 
+    @Override
+    public Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+        TypeContext typeContext = evaluationContext.getTypeContext();
+        Set<AnnotationExpression> annotationsOfMethod = methodInfo.dynamicTypeAnnotations(typeContext);
+        if (annotationsOfMethod == null) return null; // not all known yet
+        Boolean isIdentity = methodInfo.isIdentity(typeContext);
+        Boolean isFluent = methodInfo.isFluent(typeContext);
+        if (isIdentity == null || isFluent == null) return null;
+        if (isIdentity) {
+            Set<AnnotationExpression> annotationsOfParameter = methodInfo.methodInspection.get().parameters.get(0).dynamicTypeAnnotations(typeContext);
+            if (annotationsOfParameter == null) return null;
+            return SetUtil.immutableUnion(annotationsOfMethod, annotationsOfParameter);
+        }
+        if (isFluent) {
+            Set<AnnotationExpression> annotationsOfType = methodInfo.typeInfo.dynamicTypeAnnotations(typeContext);
+            if (annotationsOfType == null) return null;
+            return SetUtil.immutableUnion(annotationsOfMethod, annotationsOfType);
+        }
+        return annotationsOfMethod;
+    }
+
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
      * to. There is no need to consider linking between `b`, `c` and `d` here because that linking takes place in the method's
      * definition itself. We consider 4 cases:
@@ -133,7 +155,7 @@ public class MethodValue implements Value {
         if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
-        if ((bestCase || returnTypeDifferent) && returnType.isEffectivelyImmutable(typeContext) == Boolean.TRUE) {
+        if ((bestCase || returnTypeDifferent) && returnType.isE2Immutable(typeContext) == Boolean.TRUE) {
             return INDEPENDENT;
         }
 

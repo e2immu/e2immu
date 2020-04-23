@@ -96,9 +96,9 @@ public class E2ImmutableChecks {
 
     @E2Immutable
     static class WithSet {
-        @E2Immutable // currently not evaluated
+        @E2Immutable
         @NotModified
-        @E1Immutable
+        @Final
         public final Set<String> strings;
 
         @Independent
@@ -106,7 +106,7 @@ public class E2ImmutableChecks {
             strings = ImmutableSet.copyOf(input);
         }
 
-        @E2Immutable // currently not evaluated
+        @E2Immutable
         @NotNull
         @NotModified
         @Constant(type = AnnotationType.VERIFY_ABSENT)

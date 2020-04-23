@@ -25,11 +25,14 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.annotation.NotModified;
 
+import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.Set;
 
 public interface Value extends Comparable<Value> {
     Boolean isNotNull(EvaluationContext evaluationContext);
+
+    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) { return Set.of(); }
 
     default IntValue toInt() {
         throw new UnsupportedOperationException(this.getClass().toString());
