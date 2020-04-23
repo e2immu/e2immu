@@ -30,10 +30,7 @@ package com.google.common.collect;
 
 import org.e2immu.annotation.*;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class ImmutableCollection<E> {
     public ImmutableList<E> asList() {
@@ -76,6 +73,10 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
         public ImmutableList<E> build() {
         }
     }
+
+    @NotNull
+    @E2Container
+    static ImmutableList<E> copyOf(@NotNull Iterable<E> iterable);
 }
 
 @E2Container
@@ -107,8 +108,12 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
     }
 
     @NotNull
-    @Independent
-    static ImmutableSet<E> copyOf(Iterable<E> iterable);
+    @E2Container
+    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Iterable<E> iterable);
+
+    @NotNull
+    @E2Container
+    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Collection<? extends E> elements);
 }
 
 @E2Container

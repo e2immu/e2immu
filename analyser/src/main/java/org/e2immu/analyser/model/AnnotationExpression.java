@@ -129,7 +129,7 @@ public class AnnotationExpression {
         return Set.of();
     }
 
-    private <T> T extract(String fieldName, T defaultValue) {
+    public <T> T extract(String fieldName, T defaultValue) {
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {
             if (expression instanceof MemberValuePair) {
@@ -176,18 +176,6 @@ public class AnnotationExpression {
 
     public boolean test() {
         return extract("test", false);
-    }
-
-    public boolean boolValue() {
-        return extract("boolValue", false);
-    }
-
-    public String stringValue() {
-        return extract("stringValue", "");
-    }
-
-    public int intValue() {
-        return extract("intValue", 0);
     }
 
     public static class AnnotationExpressionBuilder {

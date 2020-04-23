@@ -73,7 +73,7 @@ public class MethodAnalyser {
     private void check(MethodInfo methodInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
                 typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getTypeName()));
+                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
     }
 
     public boolean analyse(MethodInfo methodInfo, VariableProperties methodProperties) {

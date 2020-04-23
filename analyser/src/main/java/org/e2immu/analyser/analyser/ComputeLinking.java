@@ -217,7 +217,10 @@ public class ComputeLinking {
             // local, parameter, field... data from statement analyser
             VariableProperties.AboutVariable properties = methodProperties.variableProperties.get(variable);
             // properties can be null (variable out of scope)
-            if (properties != null && properties.properties.contains(VariableProperty.CONTENT_MODIFIED)) return true;
+            if (properties != null) {
+                if (properties.properties.contains(VariableProperty.CONTENT_MODIFIED)) return true;
+                if (properties.properties.contains(VariableProperty.CONTENT_MODIFIED_DELAYED)) hasDelays = true;
+            }
         }
         return hasDelays ? null : false;
     }

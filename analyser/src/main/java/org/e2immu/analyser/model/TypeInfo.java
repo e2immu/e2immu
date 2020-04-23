@@ -573,12 +573,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             typeModifiers = typeInspection.modifiers.stream().map(TypeModifier::toJava);
             packageName = typeInspection.packageNameOrEnclosingType.getLeftOrElse("");
             annotations.addAll(typeInspection.annotations);
-
-            typeAnalysis.annotations.visit((ae, present) -> {
-                if (present) {
-                    annotations.add(ae);
-                }
-            });
             fields = typeInspection.fields;
             constructors = typeInspection.constructors;
             methods = typeInspection.methods;
@@ -622,11 +616,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 sb.append("\n");
             }
         }
+        Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : annotations) {
             StringUtil.indent(sb, indent);
             sb.append(annotation.stream());
+            typeAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
             sb.append("\n");
         }
+        typeAnalysis.annotations.visit((annotation, present) -> {
+            if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                StringUtil.indent(sb, indent);
+                sb.append(annotation.stream());
+                sb.append("\n");
+                StringUtil.indent(sb, indent);
+            }
+        });
 
         if (doTypeDeclaration) {
             // the class name

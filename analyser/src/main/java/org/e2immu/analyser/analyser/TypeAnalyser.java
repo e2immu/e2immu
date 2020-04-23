@@ -67,12 +67,15 @@ public class TypeAnalyser {
         check(sortedType, ExtensionClass.class, typeContext.extensionClass.get());
         check(sortedType, Container.class, typeContext.container.get());
         check(sortedType, E2Immutable.class, typeContext.e2Immutable.get());
+        check(sortedType, NotNull.class, typeContext.notNull.get());
+        // TODO there's a "where" which complicates things!! check(sortedType, NotModified.class, typeContext.e2Immutable.get());
+
     }
 
     private void check(SortedType sortedType, Class<?> annotation, AnnotationExpression annotationExpression) {
         sortedType.typeInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
                 typeContext.addMessage(Message.Severity.ERROR, "Type " + sortedType.typeInfo.fullyQualifiedName +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getTypeName()));
+                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
     }
 
     public void analyse(SortedType sortedType) {
@@ -115,8 +118,48 @@ public class TypeAnalyser {
                 if (detectE2Final(sortedType)) changes = true;
                 if (detectContainer(sortedType)) changes = true;
                 if (detectUtilityClass(sortedType)) changes = true;
+                if (detectNotNull(sortedType)) changes = true;
             }
         }
+    }
+
+    private boolean detectNotNull(SortedType sortedType) {
+        if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.notNull.get())) return false;
+
+        // all fields should be @NN, all methods, and all parameters...
+        boolean isNotNull = true;
+        methodLoop:
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
+            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                Boolean notNull = methodInfo.isNotNull(typeContext);
+                if (notNull == null) return false;
+                if (notNull == Boolean.FALSE) {
+                    isNotNull = false;
+                    break;
+                }
+            }
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                Boolean notNull = parameterInfo.isNotNull(typeContext);
+                if (notNull == null) return false;
+                if (notNull == Boolean.FALSE) {
+                    isNotNull = false;
+                    break methodLoop;
+                }
+            }
+        }
+        if (isNotNull) {
+            for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
+                Boolean notNull = fieldInfo.isNotNull(typeContext);
+                if (notNull == null) return false;
+                if (notNull == Boolean.FALSE) {
+                    isNotNull = false;
+                    break;
+                }
+            }
+        }
+        sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.notNull.get(), isNotNull);
+        log(NOT_NULL, "Marked type {} as " + (isNotNull ? "" : "NOT ") + " @NotNull", sortedType.typeInfo.fullyQualifiedName);
+        return true;
     }
 
     private boolean detectUtilityClass(SortedType sortedType) {
@@ -224,7 +267,7 @@ public class TypeAnalyser {
     private boolean detectContainer(SortedType sortedType) {
         if (sortedType.typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
 
-        Boolean isContainer = noMethodsThatModifyContent(sortedType);
+        Boolean isContainer = noMethodsWhoseParametersContentIsModified(sortedType);
         if (isContainer == null) return false;
 
         sortedType.typeInfo.typeAnalysis.annotations.put(typeContext.container.get(), isContainer);
@@ -233,8 +276,8 @@ public class TypeAnalyser {
         return true;
     }
 
-    private Boolean noMethodsThatModifyContent(SortedType sortedType) {
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().constructors) {
+    private Boolean noMethodsWhoseParametersContentIsModified(SortedType sortedType) {
+        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methodsAndConstructors()) {
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                 Boolean isNotModified = parameterInfo.isNotModified(typeContext);
                 if (isNotModified == null) return null; // cannot yet decide
@@ -244,22 +287,6 @@ public class TypeAnalyser {
                             parameterInfo.detailedString(),
                             methodInfo.distinguishingName());
                     return false;
-                }
-            }
-        }
-        // rule 3. all non-private methods must not modify their parameters
-        for (MethodInfo methodInfo : sortedType.typeInfo.typeInspection.get().methods) {
-            if (!methodInfo.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
-                for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                    if (isNotModified == null) return null; // cannot yet decide
-                    if (!isNotModified) {
-                        log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
-                                sortedType.typeInfo.fullyQualifiedName,
-                                parameterInfo.detailedString(),
-                                methodInfo.distinguishingName());
-                        return false;
-                    }
                 }
             }
         }

@@ -96,20 +96,29 @@ public class E2ImmutableChecks {
 
     @E2Immutable
     static class WithSet {
-        @E2Immutable
+        @E2Immutable // currently not evaluated
+        @NotModified
+        @E1Immutable
         public final Set<String> strings;
 
-        public WithSet(Set<String> input) {
+        @Independent
+        public WithSet(@NotNull @NotModified Set<String> input) {
             strings = ImmutableSet.copyOf(input);
         }
 
-        @E2Immutable
+        @E2Immutable // currently not evaluated
+        @NotNull
+        @NotModified
+        @Constant(type = AnnotationType.VERIFY_ABSENT)
+        @Independent
         public Set<String> getStrings() {
             return strings;
         }
 
         @Identity
-        public Set<String> mingle(Set<String> input) {
+        @Linked(to = "strings")
+        @NotModified
+        public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input) {
             input.addAll(strings);
             return input;
         }

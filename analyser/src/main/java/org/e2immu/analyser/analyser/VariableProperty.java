@@ -20,19 +20,20 @@ package org.e2immu.analyser.analyser;
 
 public enum VariableProperty {
 
-    // we know this variable can never be null (effectively final)
+    // we know this variable can never be null
     PERMANENTLY_NOT_NULL("permanently not null"),
 
     CHECK_NOT_NULL("check not null"),
     READ("read"),
-    // read multiple times will be used in Flow partitioning
     READ_MULTIPLE_TIMES("read+"),
 
     ASSIGNED("modified"),
     ASSIGNED_MULTIPLE_TIMES("modified+"),
 
     CREATED("created"),
-    CONTENT_MODIFIED("content modified");
+    CONTENT_MODIFIED("content modified"),
+    // we don't know yet
+    CONTENT_MODIFIED_DELAYED("content modified delayed");
 
     public final String name;
 

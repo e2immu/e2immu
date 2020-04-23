@@ -20,10 +20,12 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Container;
 
 import java.util.HashSet;
@@ -116,10 +118,17 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public String stream() {
         StringBuilder sb = new StringBuilder();
         ParameterInspection parameterInspection = this.parameterInspection.get();
+        Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.annotations) {
             sb.append(annotation.stream());
+            parameterAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
             sb.append(" ");
         }
+        parameterAnalysis.annotations.visit((annotation, present) -> {
+            if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                sb.append(annotation.stream()).append(" ");
+            }
+        });
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
             sb.append(parameterizedType.stream(parameterInspection.varArgs));
             sb.append(" ");
@@ -189,5 +198,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         if (parameterizedType.isFunctionalInterface(typeContext)) return true;
         if (parameterizedType.isEnum()) return true;
         return parameterizedType.isUnboundParameterType();
+    }
+
+    public Boolean isNotNull(TypeContext typeContext) {
+        return annotatedWith(typeContext.notNull.get());
     }
 }

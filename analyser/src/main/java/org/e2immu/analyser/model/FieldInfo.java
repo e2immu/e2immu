@@ -23,10 +23,7 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -89,15 +86,15 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         if (fieldInspection.isSet()) {
-            if (!fieldInspection.get().annotations.isEmpty()) {
-                fieldInspection.get().annotations.forEach(ae -> {
-                    sb.append(ae.stream());
-                    sb.append("\n");
-                    StringUtil.indent(sb, indent);
-                });
-            }
+            Set<TypeInfo> annotationsSeen = new HashSet<>();
+            fieldInspection.get().annotations.forEach(ae -> {
+                sb.append(ae.stream());
+                fieldAnalysis.peekIntoAnnotations(ae, annotationsSeen, sb);
+                sb.append("\n");
+                StringUtil.indent(sb, indent);
+            });
             fieldAnalysis.annotations.visit((annotation, present) -> {
-                if (present != null && present) {
+                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                     sb.append(annotation.stream());
                     sb.append("\n");
                     StringUtil.indent(sb, indent);

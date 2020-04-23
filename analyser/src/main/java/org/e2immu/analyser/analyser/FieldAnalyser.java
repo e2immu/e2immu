@@ -289,12 +289,6 @@ public class FieldAnalyser {
             typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
                     " is not effectively final (@E1Immutable)");
         }
-
-        if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-            Value fieldValue = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-            CheckConstant.checkConstant(fieldValue, fieldInfo.type, fieldInfo.fieldInspection.get().annotations,
-                    (valueToTest, typeMsg) -> typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                            ": expected @Constant value " + valueToTest + " of type " + typeMsg + ", got " + fieldValue));
-        }
+        CheckConstant.checkConstantForFields(typeContext, fieldInfo);
     }
 }

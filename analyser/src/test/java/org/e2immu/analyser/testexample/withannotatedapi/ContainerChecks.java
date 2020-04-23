@@ -61,8 +61,8 @@ public class ContainerChecks {
         }
 
         // this method breaks the contract!
-        public void add(String string) {
-            strings.add(string);
+        public void add(@NotNull String string2) {
+            strings.add(string2);
         }
     }
 
@@ -126,6 +126,7 @@ public class ContainerChecks {
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
         @Linked(type = VERIFY_ABSENT)
+        @E1Immutable
         private final List<String> list;
 
         @Independent
@@ -134,16 +135,19 @@ public class ContainerChecks {
         }
 
         @Independent
-        public Container5(Collection<String> collection) {
+        public Container5(@NotModified Collection<String> coll5) {
             this();
-            addAll(collection);
+            addAll(coll5);
         }
 
+        @NotModified(type = VERIFY_ABSENT)
         public void addAll(@NotModified Collection<String> collection) {
             list.addAll(collection);
         }
 
         @NotModified
+        @Independent
+        // note: a t m we do not want @NotModified on consumer, because it is @NotModified by default (functional interface)
         public void visit(Consumer<String> consumer) {
             list.forEach(consumer);
         }

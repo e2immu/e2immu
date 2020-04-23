@@ -451,9 +451,11 @@ public class StatementAnalyser {
                                       Expression parameterExpression,
                                       VariableProperties variableProperties) {
         // not modified
-        boolean safeParameter = parameterInDefinition.isNotModified(typeContext) == Boolean.TRUE;
-        if (!safeParameter) {
-            recursivelyMarkVariables(parameterExpression, variableProperties);
+        Boolean safeParameter = parameterInDefinition.isNotModified(typeContext);
+        if (safeParameter == Boolean.FALSE) {
+            recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED);
+        } else if (safeParameter == null) {
+            recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED_DELAYED);
         }
         // null not allowed
         if (parameterExpression instanceof VariableExpression) {
@@ -466,25 +468,28 @@ public class StatementAnalyser {
 
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
         // not modified
-
-        boolean safeMethod = methodCall.methodInfo.sideEffect(typeContext).lessThan(SideEffect.SIDE_EFFECT);
-        //boolean haveParameters = !methodCall.methodInfo().methodInspection.get().parameters.isEmpty();
+        SideEffect sideEffect = methodCall.methodInfo.sideEffect(typeContext);
+        if (sideEffect == SideEffect.DELAYED) {
+            recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED_DELAYED);
+            return;
+        }
+        boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
         if (!safeMethod) {
-            recursivelyMarkVariables(methodCall.object, variableProperties);
+            recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED);
         }
     }
 
-    private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties) {
+    private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties, VariableProperty propertyToSet) {
         if (expression instanceof VariableExpression) {
             Variable variable = expression.variables().get(0);
             log(DEBUG_MODIFY_CONTENT, "SA: mark method object as content modified: {}", variable.detailedString());
-            variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED);
+            variableProperties.addProperty(variable, propertyToSet);
         } else if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
-            recursivelyMarkVariables(fieldAccess.expression, variableProperties);
+            recursivelyMarkVariables(fieldAccess.expression, variableProperties, propertyToSet);
             log(DEBUG_MODIFY_CONTENT, "SA: mark method object, field access as content modified: {}",
                     fieldAccess.variable.detailedString());
-            variableProperties.addProperty(fieldAccess.variable, VariableProperty.CONTENT_MODIFIED);
+            variableProperties.addProperty(fieldAccess.variable, propertyToSet);
         }
     }
 

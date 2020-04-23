@@ -269,13 +269,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             methodModifiers = List.of(MethodModifier.PUBLIC);
         }
         if (hasBeenInspected()) {
+            Set<TypeInfo> annotationsSeen = new HashSet<>();
             for (AnnotationExpression annotation : methodInspection.get().annotations) {
                 StringUtil.indent(sb, indent);
                 sb.append(annotation.stream());
+                methodAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
                 sb.append("\n");
             }
             methodAnalysis.annotations.visit((annotation, present) -> {
-                if (present) {
+                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                     StringUtil.indent(sb, indent);
                     sb.append(annotation.stream());
                     sb.append("\n");
