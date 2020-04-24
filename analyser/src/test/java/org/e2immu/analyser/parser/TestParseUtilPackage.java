@@ -45,11 +45,19 @@ public class TestParseUtilPackage {
 
                 ANALYSER,
 
-                VARIABLE_PROPERTIES,
-                LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
-                E2IMMUTABLE, ANNOTATION_EXPRESSION,
-                CONTAINER, E1IMMUTABLE, SIDE_EFFECT, UTILITY_CLASS,
-                NULL_NOT_ALLOWED, NOT_MODIFIED
+                //VARIABLE_PROPERTIES,
+                LINKED_VARIABLES,
+                INDEPENDENT,
+                MODIFY_CONTENT,
+                E2IMMUTABLE,
+                ANNOTATION_EXPRESSION,
+                CONTAINER,
+                E1IMMUTABLE,
+                SIDE_EFFECT,
+                UTILITY_CLASS,
+                NULL_NOT_ALLOWED,
+                NOT_MODIFIED,
+                EXTENSION_CLASS
         );
     }
 
@@ -60,7 +68,7 @@ public class TestParseUtilPackage {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.util.SMapList")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -77,7 +85,7 @@ public class TestParseUtilPackage {
                 .build();
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
-        Assert.assertTrue(15 <= types.size());
+        //Assert.assertTrue(15 <= types.size());
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }

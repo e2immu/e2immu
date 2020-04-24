@@ -32,7 +32,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 // extension class: implies @NotNull on first argument
-@ExtensionClass
+@ExtensionClass(of = Map.class)
 public class SMapSet {
 
     private static final String NULL_KEY = "Adding null key to map-set";

@@ -25,7 +25,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 
-@ExtensionClass
+@ExtensionClass(of = List.class)
 public class ListUtil {
 
     private ListUtil() {

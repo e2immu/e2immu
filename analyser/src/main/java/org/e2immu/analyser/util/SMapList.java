@@ -20,10 +20,7 @@ package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.annotation.ExtensionClass;
-import org.e2immu.annotation.Independent;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -31,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-// extension class: implies @NullNotAllowed on first argument
-@ExtensionClass
+// extension class: implies @NotNull on first argument
+@ExtensionClass(of = Map.class)
 public class SMapList {
 
     private static final String NULL_KEY = "Adding null key to map-list";
@@ -42,6 +39,10 @@ public class SMapList {
         return new HashMap<>();
     }
 
+    @NotNull
+    @Independent
+    @NotModified
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static <A, B> boolean addAll(Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
@@ -80,7 +81,11 @@ public class SMapList {
         return set.addAll(bs);
     }
 
-    public static <A, B> List<B> list(Map<A, List<B>> map, @NotNull A a) {
+    @NotNull
+    @Independent
+    @NotModified
+    @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
+    public static <A, B> List<B> list(@NotNull Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }

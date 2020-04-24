@@ -330,6 +330,22 @@ public class ParameterizedType {
                 Objects.equals(typeParameter, that.typeParameter);
     }
 
+    public static boolean equalsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {
+        if (pt1.typeInfo == null && pt2.typeInfo != null) return false;
+        if (pt1.typeInfo != null && pt2.typeInfo == null) return false;
+        if (pt1.typeInfo != null && !pt1.typeInfo.equals(pt2.typeInfo)) return false;
+        if (pt1.parameters.size() != pt2.parameters.size()) return false;
+        int i = 0;
+        for (ParameterizedType parameter1 : pt1.parameters) {
+            ParameterizedType parameter2 = pt2.parameters.get(i++);
+            if (!equalsTypeParametersOnlyIndex(parameter1, parameter2)) return false;
+        }
+        if (pt1.typeParameter == null && pt2.typeParameter != null) return false;
+        if (pt1.typeParameter != null && pt2.typeParameter == null) return false;
+        if (pt1.typeParameter == null) return true;
+        return pt1.typeParameter.index == pt2.typeParameter.index;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(typeInfo, parameters, typeParameter);

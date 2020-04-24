@@ -26,4 +26,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface ExtensionClass {
     AnnotationType type() default AnnotationType.VERIFY;
+    Class<?> of();
 }

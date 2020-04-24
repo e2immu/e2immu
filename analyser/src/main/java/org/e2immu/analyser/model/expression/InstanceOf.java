@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -53,6 +54,8 @@ public class InstanceOf implements Expression {
             result = BoolValue.FALSE;
         } else if (value instanceof VariableValue) {
             result = new InstanceOfValue(((VariableValue) value).value, parameterizedType);
+        } else if (value instanceof Instance) {
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {
             result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
         } else if (value instanceof ClazzValue) {

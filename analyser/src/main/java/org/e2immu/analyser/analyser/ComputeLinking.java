@@ -97,6 +97,10 @@ public class ComputeLinking {
                         } else if (variable instanceof ParameterInfo) {
                             dependencies = Set.of(variable);
                         } else if (variable instanceof LocalVariableReference) {
+                            if(!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
+                                log(DELAYED, "Delaying variables linked to method result, local variable's linkage not yet known");
+                                return false;
+                            }
                             dependencies = methodAnalysis.variablesLinkedToFieldsAndParameters.get().getOrDefault(variable, Set.of());
                         } else {
                             dependencies = Set.of();

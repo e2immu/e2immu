@@ -32,9 +32,9 @@ public abstract class StatementWithExpression implements Statement {
 
     protected StatementWithExpression(Expression expression) {
         this.expression = Objects.requireNonNull(expression);
-        if (expression instanceof UnevaluatedMethodCall || expression instanceof UnevaluatedLambdaExpression) {
-            throw new UnsupportedOperationException("?");
-        }
+        //if (expression instanceof UnevaluatedMethodCall || expression instanceof UnevaluatedLambdaExpression) {
+        //    throw new UnsupportedOperationException("?");
+        //}
     }
 
     @Override

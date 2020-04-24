@@ -7,6 +7,7 @@ We define content modification as the calling of methods on an object that cause
 
 link:: A link between two variables occurs when modifications in one object, cause modifications in the other as well.
 This typically occurs when object has been embedded in the other.
+Links cannot occur between variables of primitive or @E2Immutable types.
 
 @NotModified on parameters::
 No code _in the class_ can make content modifications to such parameters or variables linked to such parameters.
@@ -20,8 +21,11 @@ No code _in the class_ can make content modifications to the field.
 Implicit for primitives and @E2Immutable types.
 We will allow assignments to fields (i.e., not @Final) while guaranteeing @NotModified.
 
+It is important to realise that `@NotModified` works on static and on instance fields.
+
 @Independent on methods:: There is no link between this method's parameters and any of the fields of the method.
 Neither is there a link between the return value, if present, and the parameters.
+Because cannot occur between variables of primitive or @E2Immutable types, there's no need to require @Independent when parameters and return type are of these types.
 
 @E1Immutable on fields:: expensive way of saying that the field is effectively or eventually final: it is not assigned to outside construction time.
 
@@ -82,3 +86,11 @@ We provide an exception with the @Output annotation.
 
 The topics of <<notnull-annotation>> and <<nullnotallowed-annotation>> are only of indirect importance.
 <<fluent-annotation>> and <<identity-annotation>> are marginally important to #TODO#.
+
+@UtilityClass:: an @E2Immutable class with only static methods and static fields, private constructors only, and no means of creating instance objects.
+
+@ExtensionClass:: an @E2Immutable class (can be @UtilityClass, but doesn't have to be, it can have instance variables) where all non-private static methods have an instance of the same type as their first parameter.
+If they do not have parameters, the return type of the method is considered.
+Extension classes are often not @E2Container, as the static methods are likely to modify the content of the first parameter based on the value of other parameters.
+
+@Singleton:: private constructors only, exactly one public static field containing an object.
