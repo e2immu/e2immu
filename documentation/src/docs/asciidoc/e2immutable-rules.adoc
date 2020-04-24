@@ -18,7 +18,7 @@ No code in the method makes any content modification to any of the fields.
 @NotModified on fields::
 No code _in the class_ can make content modifications to the field.
 Implicit for primitives and @E2Immutable types.
-We will allow assignments to fields (i.e., not @E2Final) while guaranteeing @NotModified.
+We will allow assignments to fields (i.e., not @Final) while guaranteeing @NotModified.
 
 @Independent on methods:: There is no link between this method's parameters and any of the fields of the method.
 Neither is there a link between the return value, if present, and the parameters.

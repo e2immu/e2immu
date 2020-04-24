@@ -260,36 +260,28 @@ public class FieldAnalyser {
 
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldProperties.thisVariable);
         if (!annotations.isSet(typeContext.notModified.get())) {
-
-            if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.FALSE) {
+            Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
+            if (isE2Immutable == null) {
+                log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
+            } else if (isE2Immutable) {
                 annotations.put(typeContext.notModified.get(), false);
-                log(MODIFY_CONTENT, "Mark field {} as NOT @NotModified, because it is not @Final", fieldInfo.fullyQualifiedName());
+                log(MODIFY_CONTENT, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
                 changes = true;
-            } else if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE) {
-
-                Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
-                if (isE2Immutable == null) {
-                    log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
-                } else if (isE2Immutable) {
-                    annotations.put(typeContext.notModified.get(), false);
-                    log(MODIFY_CONTENT, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
+            } else {
+                boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                        m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
+                                (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
+                if (allContentModificationsDefined) {
+                    boolean notModified = typeInspection.constructorAndMethodStream()
+                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                            .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
+                    annotations.put(typeContext.notModified.get(), notModified);
+                    log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
+                            "@NotModified", fieldInfo.fullyQualifiedName());
                     changes = true;
                 } else {
-                    boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                            m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
-                                    (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
-                    if (allContentModificationsDefined) {
-                        boolean notModified = typeInspection.constructorAndMethodStream()
-                                .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
-                                .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
-                        annotations.put(typeContext.notModified.get(), notModified);
-                        log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
-                                "@NotModified", fieldInfo.fullyQualifiedName());
-                        changes = true;
-                    } else {
-                        log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
-                                fieldInfo.fullyQualifiedName());
-                    }
+                    log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
+                            fieldInfo.fullyQualifiedName());
                 }
             }
         }

@@ -30,45 +30,54 @@ public class TestDependencyGraph {
     @Test
     public void test() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
-
+        // c -> a, c -> b
         graph.addNode('a', List.of());
         graph.addNode('b', List.of());
         graph.addNode('c', List.of('a', 'b'));
         List<Character> sorted = graph.sorted();
         Assert.assertEquals("[a, b, c]", sorted.toString());
 
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('a').toString());
+        Assert.assertEquals("[b]", graph.dependenciesOnlyTerminals('b').toString());
+        Assert.assertEquals("[a, b]", graph.dependenciesOnlyTerminals('c').toString());
         Assert.assertEquals("[a]", graph.dependencies('a').toString());
         Assert.assertEquals("[b]", graph.dependencies('b').toString());
-        Assert.assertEquals("[a, b]", graph.dependencies('c').toString());
+        Assert.assertEquals("[a, b, c]", graph.dependencies('c').toString());
     }
 
     @Test
     public void test2() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
-
+        // b -> c -> a
         graph.addNode('a', List.of());
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of('a'));
         List<Character> sorted = graph.sorted();
         Assert.assertEquals("[a, c, b]", sorted.toString());
 
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('a').toString());
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('b').toString());
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('c').toString());
         Assert.assertEquals("[a]", graph.dependencies('a').toString());
-        Assert.assertEquals("[a]", graph.dependencies('b').toString());
-        Assert.assertEquals("[a]", graph.dependencies('c').toString());
+        Assert.assertEquals("[a, b, c]", graph.dependencies('b').toString());
+        Assert.assertEquals("[a, c]", graph.dependencies('c').toString());
     }
 
     @Test
     public void test3() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
-
+        // a -> c, b -> c
         graph.addNode('a', List.of('c'));
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of());
         List<Character> sorted = graph.sorted();
         Assert.assertEquals("[c, a, b]", sorted.toString());
 
-        Assert.assertEquals("[c]", graph.dependencies('a').toString());
-        Assert.assertEquals("[c]", graph.dependencies('b').toString());
+        Assert.assertEquals("[c]", graph.dependenciesOnlyTerminals('a').toString());
+        Assert.assertEquals("[c]", graph.dependenciesOnlyTerminals('b').toString());
+        Assert.assertEquals("[c]", graph.dependenciesOnlyTerminals('c').toString());
+        Assert.assertEquals("[a, c]", graph.dependencies('a').toString());
+        Assert.assertEquals("[b, c]", graph.dependencies('b').toString());
         Assert.assertEquals("[c]", graph.dependencies('c').toString());
     }
 
@@ -137,8 +146,8 @@ public class TestDependencyGraph {
         graph.addNode('b', List.of('a'));
         graph.addNode('c', List.of('b'));
 
-        Assert.assertEquals("[a]", graph.dependencies('c').toString());
-        Assert.assertEquals("[a]", graph.dependencies('b').toString());
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('c').toString());
+        Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('b').toString());
 
         DependencyGraph<Character> graph2 = new DependencyGraph<>();
 
@@ -157,18 +166,18 @@ public class TestDependencyGraph {
 
         graph.addNode('e', List.of('b'));
         Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
-        System.out.println("Deps of 'e': " + graph.dependencies('e'));
+        System.out.println("Deps of 'e': " + graph.dependenciesOnlyTerminals('e'));
         graph2.addNode('e', List.of('a'));
-        System.out.println("Deps of 'e': " + graph2.dependencies('e'));
+        System.out.println("Deps of 'e': " + graph2.dependenciesOnlyTerminals('e'));
         Assert.assertTrue(graph.equalTransitiveTerminals(graph2));
 
         graph.addNode('f', List.of('e'));
         graph.addNode('f', List.of());
         Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
-        System.out.println("Deps of 'f': " + graph.dependencies('f'));
+        System.out.println("Deps of 'f': " + graph.dependenciesOnlyTerminals('f'));
         graph2.addNode('g', List.of());
         graph2.addNode('f', List.of('g'));
-        System.out.println("Deps of 'f': " + graph2.dependencies('f'));
+        System.out.println("Deps of 'f': " + graph2.dependenciesOnlyTerminals('f'));
         Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
     }
 }

@@ -1,11 +1,13 @@
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +92,8 @@ public class ComputeLinking {
                                 log(DELAYED, "Dependencies of {} have not yet been established", variable.detailedString());
                                 return false;
                             }
-                            dependencies = ((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.get();
+                            dependencies = SetUtil.immutableUnion(((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.get(),
+                                    Set.of(variable));
                         } else if (variable instanceof ParameterInfo) {
                             dependencies = Set.of(variable);
                         } else if (variable instanceof LocalVariableReference) {
@@ -156,20 +159,21 @@ public class ComputeLinking {
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
 
         methodProperties.dependencyGraphBestCase.visit((variable, dependencies) -> {
-            Set<Variable> terminals = new HashSet<>(methodProperties.dependencyGraphBestCase.dependencies(variable));
+            Set<Variable> fieldAndParameterDependencies = new HashSet<>(methodProperties.dependencyGraphBestCase.dependencies(variable));
+            fieldAndParameterDependencies.removeIf(v -> !(v instanceof FieldReference) && !(v instanceof ParameterInfo));
             if (dependencies != null) {
-                dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(terminals::add);
+                dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(fieldAndParameterDependencies::add);
             }
-            terminals.remove(variable); // removing myself
-            variablesLinkedToFieldsAndParameters.put(variable, terminals);
+            fieldAndParameterDependencies.remove(variable); // removing myself
+            variablesLinkedToFieldsAndParameters.put(variable, fieldAndParameterDependencies);
             log(DEBUG_LINKED_VARIABLES, "Set terminals of {} in {} to [{}]", variable.detailedString(),
-                    methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
+                    methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));
 
             if (variable instanceof FieldReference) {
-                methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, terminals);
+                methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, fieldAndParameterDependencies);
                 changes.set(true);
                 log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.detailedString(),
-                        methodInfo.fullyQualifiedName(), Variable.detailedString(terminals));
+                        methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));
             }
         });
         log(LINKED_VARIABLES, "Set variablesLinkedToFieldsAndParameters to true for {}", methodInfo.fullyQualifiedName());

@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.Linked;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.*;
 
@@ -75,6 +73,7 @@ public class NotModifiedChecks {
         l2 = l0 + l1;
     }
 
+    @E1Container // final fields, all parameters @NotModified
     static class C1 {
         @Linked(to = {"C1.set1"})
         final Set<String> set; // linked to set1
@@ -84,7 +83,9 @@ public class NotModifiedChecks {
         }
 
         @NotNull
+        @NotModified // do not change the fields
         @Linked(to = {"C1.set1"})
+        @Independent(type = VERIFY_ABSENT)
         Set<String> getSet() {
             return set;
         }

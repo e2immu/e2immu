@@ -321,7 +321,14 @@ public class MethodAnalyser {
                 return false;
             }
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
-            returnObjectIsIndependent = variables.stream().noneMatch(v -> v instanceof FieldReference || v instanceof ParameterInfo);
+            boolean e2ImmutableStatusOfFieldRefsIsKnown = variables.stream()
+                    .allMatch(v -> !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.isE2Immutable(typeContext) != null);
+            if (!e2ImmutableStatusOfFieldRefsIsKnown) {
+                log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known");
+                return false;
+            }
+            returnObjectIsIndependent = variables.stream().allMatch(v -> !(v instanceof FieldReference) ||
+                    ((FieldReference) v).fieldInfo.isE2Immutable(typeContext));
         } else {
             returnObjectIsIndependent = true;
         }

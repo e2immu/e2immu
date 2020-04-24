@@ -27,9 +27,6 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import java.util.Objects;
 import java.util.Set;
 
-// @ContextClass inherited
-// @NullNotAllowed inherited
-// @NotNull inherited
 public abstract class StatementWithExpression implements Statement {
     public final Expression expression;
 
