@@ -26,9 +26,11 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -170,12 +172,21 @@ public class TypeAnalyser {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
             } else {
-                value = new VariableValue(fieldReference, Set.of(), true);
+                Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
+                Set<AnnotationExpression> dynamicAnnotationExpressions;
+                if (isE2Immutable == null) {
+                    dynamicAnnotationExpressions = null;
+                } else {
+                    dynamicAnnotationExpressions = fieldInfo.fieldAnalysis.annotations.stream().filter(Map.Entry::getValue)
+                            .map(Map.Entry::getKey).collect(Collectors.toSet());
+                }
+                value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true);
             }
         } else if (Boolean.FALSE == isFinal) {
             value = new VariableValue(fieldReference);
         } else {
-            value = new VariableValue(fieldReference, Set.of(), true);
+            // no idea about @Final, @E2Immutable
+            value = new VariableValue(fieldReference, null, true);
         }
 
         VariableProperty[] properties;

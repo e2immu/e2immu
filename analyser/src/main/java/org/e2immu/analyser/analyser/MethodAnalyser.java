@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -170,9 +171,10 @@ public class MethodAnalyser {
                 value = new Instance(methodInfo.returnType());
             }
             methodAnalysis.singleReturnValue.set(value);
+            boolean isConstant = value instanceof Constant;
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-            methodAnalysis.annotations.put(constantAnnotation, true);
-            log(CONSTANT, "Added @Constant annotation on method {}", methodInfo.fullyQualifiedName());
+            methodAnalysis.annotations.put(constantAnnotation, isConstant);
+            log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
             return true;
         }
         return false;

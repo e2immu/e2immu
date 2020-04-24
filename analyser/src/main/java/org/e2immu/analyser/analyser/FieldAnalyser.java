@@ -139,7 +139,7 @@ public class FieldAnalyser {
                     annotations.put(constantAnnotation, true);
                     log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                 } else {
-                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable));
+                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), false);
                     annotations.put(typeContext.constant.get(), false);
                     log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }
