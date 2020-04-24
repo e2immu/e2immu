@@ -85,6 +85,7 @@ public class SMapList {
     @Independent
     @NotModified
     @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static <A, B> List<B> list(@NotNull Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);

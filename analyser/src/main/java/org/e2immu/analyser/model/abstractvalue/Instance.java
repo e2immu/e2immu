@@ -31,15 +31,17 @@ public class Instance implements Value {
     public final ParameterizedType parameterizedType;
     public final List<Value> constructorParameterValues;
     public final MethodInfo constructor;
+    public final boolean isNotNull;
 
     public Instance(ParameterizedType parameterizedType) {
-        this(parameterizedType, null, null);
+        this(parameterizedType, null, null, true);
     }
 
-    public Instance(ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues) {
+    public Instance(ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull) {
         this.parameterizedType = parameterizedType;
         this.constructor = constructor;
         this.constructorParameterValues = parameterValues;
+        this.isNotNull = isNotNull;
     }
 
     @Override
@@ -110,6 +112,6 @@ public class Instance implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
+        return isNotNull;
     }
 }

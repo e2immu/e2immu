@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -126,6 +127,7 @@ public class MethodAnalyser {
                 if (methodIsIdentity(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsFluent(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodIsNotNull(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
+                // methodIsConstant makes use of methodIsNotNull, so order is important
                 if (methodIsConstant(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 if (methodHasDynamicTypeAnnotations(returnStatements, numberedStatements, methodProperties, methodInfo, methodAnalysis))
                     changes = true;
@@ -168,7 +170,13 @@ public class MethodAnalyser {
                         .map(ns -> ns.returnValue.get())
                         .findAny().orElse(UnknownValue.NO_VALUE);
             } else {
-                value = new Instance(methodInfo.returnType());
+                Boolean isNotNull = methodInfo.isNotNull(typeContext);
+                if (isNotNull == null) {
+                    log(DELAYED, "Have multiple return values, going to insert an Instance value, but waiting for @NotNull on {}",
+                            methodInfo.distinguishingName());
+                    return false;
+                }
+                value = new Instance(methodInfo.returnType(), null, null, isNotNull);
             }
             methodAnalysis.singleReturnValue.set(value);
             boolean isConstant = value instanceof Constant;

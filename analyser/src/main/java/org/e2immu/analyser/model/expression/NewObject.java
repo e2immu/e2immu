@@ -105,7 +105,7 @@ public class NewObject implements HasParameterExpressions {
         List<Value> parameterValues = parameterExpressions.stream()
                 .map(pe -> pe.evaluate(evaluationContext, visitor))
                 .collect(Collectors.toList());
-        Value value = new Instance(parameterizedType, constructor, parameterValues);
+        Value value = new Instance(parameterizedType, constructor, parameterValues, true);
         visitor.visit(this, evaluationContext, value);
         return value;
     }
