@@ -44,9 +44,9 @@ public class AndValue implements Value {
         // some trivial reductions
         if (l.equals(r)) return l; // A && A == A, !A && !A == !A
 
-        // the following 2 if statements allow for a reduction to TRUE if l or r is unknown, variable, etc.
-        if (l instanceof BoolValue && ((BoolValue) l).value) return BoolValue.FALSE;
-        if (r instanceof BoolValue && ((BoolValue) r).value) return BoolValue.FALSE;
+        // the following 2 if statements allow for a reduction to FALSE
+        if (l instanceof BoolValue && !((BoolValue) l).value) return BoolValue.FALSE;
+        if (r instanceof BoolValue && !((BoolValue) r).value) return BoolValue.FALSE;
 
         // normal: 2x bool
         if (l instanceof BoolValue && r instanceof BoolValue) {
@@ -58,6 +58,9 @@ public class AndValue implements Value {
 
         if (l instanceof NegatedValue && ((NegatedValue) l).value.equals(r)) return BoolValue.FALSE; // !A && A
         if (r instanceof NegatedValue && ((NegatedValue) r).value.equals(l)) return BoolValue.FALSE; // A && !A
+
+        // TODO more complicated evaluation...
+        
         // otherwise... do sorting
         if (l instanceof AndValue && r instanceof AndValue) {
             // TODO make this recursive, for multiple AND combinations

@@ -34,20 +34,31 @@ import java.util.stream.Collectors;
 public abstract class SwitchEntry implements Statement {
 
     public final List<Expression> labels;
+    private final Expression switchVariableAsExpression;
+    private final MethodInfo operator;
 
-    private SwitchEntry(List<Expression> labels) {
+    private SwitchEntry(Expression switchVariableAsExpression, List<Expression> labels) {
         this.labels = labels;
+        this.switchVariableAsExpression = switchVariableAsExpression;
+        boolean primitive = switchVariableAsExpression.variables().get(0).concreteReturnType().isPrimitive();
+        operator = primitive ? Primitives.PRIMITIVES.equalsOperatorInt : Primitives.PRIMITIVES.equalsOperatorObject;
     }
 
     protected void appendLabels(StringBuilder sb, int indent, boolean java12Style, boolean newLine) {
-        if (java12Style) {
+        if (labels.isEmpty()) {
+            StringUtil.indent(sb, indent);
+            sb.append("default:");
+            if (newLine) sb.append("\n");
+        } else if (java12Style) {
             sb.append(labels.stream().map(l -> l.expressionString(0)).collect(Collectors.joining(", ")));
             sb.append(" ->");
             if (newLine) sb.append("\n");
         } else {
             boolean multiLine = labels.size() > 1 || newLine;
             for (Expression label : labels) {
-                sb.append(label.expressionString(indent));
+                StringUtil.indent(sb, indent);
+                sb.append("case ");
+                sb.append(label.expressionString(0));
                 sb.append(":");
                 if (multiLine) sb.append("\n");
             }
@@ -58,12 +69,16 @@ public abstract class SwitchEntry implements Statement {
         if (labels.isEmpty()) {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
-        Expression or = labels.get(0);
+        Expression or = equality(labels.get(0));
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, labels.get(i), BinaryOperator.LOGICAL_OR_PRECEDENCE);
+            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, equality(labels.get(i)), BinaryOperator.LOGICAL_OR_PRECEDENCE);
         }
         return or;
+    }
+
+    private Expression equality(Expression label) {
+        return new BinaryOperator(switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
     }
 
     public abstract CodeOrganization codeOrganization();
@@ -72,8 +87,11 @@ public abstract class SwitchEntry implements Statement {
         public final List<Statement> statements;
         public final boolean java12Style;
 
-        public StatementsEntry(boolean java12Style, List<Expression> labels, List<Statement> statements) {
-            super(labels);
+        public StatementsEntry(Expression switchVariableAsExpression,
+                               boolean java12Style,
+                               List<Expression> labels,
+                               List<Statement> statements) {
+            super(switchVariableAsExpression, labels);
             this.java12Style = java12Style;
             this.statements = statements;
         }
@@ -93,12 +111,9 @@ public abstract class SwitchEntry implements Statement {
             if (statements.size() == 1) {
                 sb.append(" ");
                 sb.append(statements.get(0).statementString(0));
-                sb.append("\n");
             } else {
                 for (Statement statement : statements) {
-                    StringUtil.indent(sb, indent + 4);
                     sb.append(statement.statementString(indent + 4));
-                    sb.append("\n");
                 }
             }
             return sb.toString();
@@ -128,8 +143,8 @@ public abstract class SwitchEntry implements Statement {
     public static class BlockEntry extends SwitchEntry {
         public final Block block;
 
-        public BlockEntry(List<Expression> labels, Block block) {
-            super(labels);
+        public BlockEntry(Expression switchVariableAsExpression, List<Expression> labels, Block block) {
+            super(switchVariableAsExpression, labels);
             this.block = block;
         }
 
@@ -156,8 +171,7 @@ public abstract class SwitchEntry implements Statement {
 
         @Override
         public CodeOrganization codeOrganization() {
-            Expression or = generateConditionExpression();
-            return new CodeOrganization.Builder().setExpression(or).setStatements(block).build();
+            return new CodeOrganization.Builder().setExpression(generateConditionExpression()).setStatements(block).build();
         }
     }
 }

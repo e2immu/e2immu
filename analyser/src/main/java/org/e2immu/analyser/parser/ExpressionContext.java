@@ -229,7 +229,10 @@ public class ExpressionContext {
         } else {
             newExpressionContext = this;
         }
-        List<SwitchEntry> entries = switchStmt.getEntries().stream().map(newExpressionContext::switchEntry).collect(Collectors.toList());
+        List<SwitchEntry> entries = switchStmt.getEntries()
+                .stream()
+                .map(entry -> newExpressionContext.switchEntry(selector, entry))
+                .collect(Collectors.toList());
         return new SwitchStatement(selector, entries);
     }
 
@@ -241,7 +244,7 @@ public class ExpressionContext {
         return null;
     }
 
-    private SwitchEntry switchEntry(@NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
+    private SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
             case EXPRESSION:
@@ -252,10 +255,10 @@ public class ExpressionContext {
                     parseStatement(blockBuilder, statement, null);
                 }
                 boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
-                return new SwitchEntry.StatementsEntry(java12Style, labels, blockBuilder.build().statements);
+                return new SwitchEntry.StatementsEntry(switchVariableAsExpression, java12Style, labels, blockBuilder.build().statements);
             case BLOCK:
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
-                return new SwitchEntry.BlockEntry(labels, block);
+                return new SwitchEntry.BlockEntry(switchVariableAsExpression, labels, block);
             default:
                 throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
         }

@@ -241,7 +241,8 @@ public class StatementAnalyser {
 
         Runnable uponUsingConditional;
         if (statement.statement instanceof IfElseStatement) {
-            if ((value == BoolValue.FALSE || value == BoolValue.TRUE) && !statement.errorValue.isSet()) {
+            Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
+            if (combinedWithConditional instanceof BoolValue && !statement.errorValue.isSet()) {
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                         ", if statement evaluates to constant");
                 statement.errorValue.set(true);
@@ -261,6 +262,7 @@ public class StatementAnalyser {
         boolean allButLastSubStatementsEscape = true;
         Value defaultCondition = NO_VALUE;
         List<Value> conditions = new ArrayList<>();
+        int start;
 
         if (codeOrganization.statements != Block.EMPTY_BLOCK) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
@@ -271,12 +273,15 @@ public class StatementAnalyser {
             if (value != NO_VALUE) {
                 defaultCondition = NegatedValue.negate(value);
             }
+            start = 1;
+        } else {
+            start = 0;
         }
 
         // PART 8: other conditions, including the else, switch entries, catch clauses
 
-        for (int count = 1; count < startOfBlocks.size(); count++) {
-            CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
+        for (int count = start; count < startOfBlocks.size(); count++) {
+            CodeOrganization subStatements = codeOrganization.subStatements.get(count - start);
 
             // PART 9: add parameters of sub statements
 
@@ -289,9 +294,17 @@ public class StatementAnalyser {
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                Value or = value;
-                for (Value condition : conditions) {
-                    or = new OrValue(or, condition);
+                Value or;
+                if (start == 1) or = value;
+                else {
+                    if (conditions.isEmpty()) {
+                        or = BoolValue.TRUE;
+                    } else {
+                        or = conditions.get(0);
+                        for (int i = 1; i < conditions.size(); i++) {
+                            or = new OrValue(or, conditions.get(i));
+                        }
+                    }
                 }
                 valueForSubStatement = NegatedValue.negate(or);
                 defaultCondition = valueForSubStatement;

@@ -266,4 +266,11 @@ class VariableProperties implements EvaluationContext {
     public TypeContext getTypeContext() {
         return typeContext;
     }
+
+    public Value evaluateWithConditional(Value value) {
+        if (conditional != UnknownValue.NO_VALUE) {
+            return  AndValue.and(conditional, value);
+        }
+        return value;
+    }
 }
