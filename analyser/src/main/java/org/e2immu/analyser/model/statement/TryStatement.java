@@ -38,13 +38,19 @@ public class TryStatement implements Statement {
         }
 
         @Override
+        public Set<String> imports() {
+            return unionOfTypes.stream().map(type -> type.typeInfo.fullyQualifiedName).collect(Collectors.toSet());
+        }
+
+        @Override
         public ParameterizedType returnType() {
             return null;
         }
 
         @Override
         public String expressionString(int indent) {
-            return null;
+            return unionOfTypes.stream().map(type -> type.typeInfo.simpleName).collect(Collectors.joining(" | "))
+                    + " " + localVariable.name;
         }
 
         @Override
@@ -75,10 +81,11 @@ public class TryStatement implements Statement {
             sb.append(")");
             sb.append(pair.v.statementString(indent));
         }
-        if (tryBlock != Block.EMPTY_BLOCK) {
+        if (finallyBlock != Block.EMPTY_BLOCK) {
             sb.append(" finally");
             sb.append(finallyBlock.statementString(indent));
         }
+        sb.append("\n");
         return sb.toString();
     }
 

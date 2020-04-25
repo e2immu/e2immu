@@ -126,7 +126,7 @@ public class AnnotationExpression {
 
     public <T> T extract(String fieldName, T defaultValue) {
         // TODO we could cache this is a SetOnce if necessary; I'd imagine java.util.Map etc. will  have this queried quite often
-        
+
         if (!expressions.isSet()) throw new UnsupportedOperationException("??");
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {

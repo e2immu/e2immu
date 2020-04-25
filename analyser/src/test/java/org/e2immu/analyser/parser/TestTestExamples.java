@@ -85,6 +85,11 @@ public class TestTestExamples {
     }
 
     @Test
+    public void testIfStatementNotNullChecks() throws IOException {
+        goTest("IfStatementNotNullChecks");
+    }
+
+    @Test
     public void testMethodMustBeStatic() throws IOException {
         goTest("MethodMustBeStatic");
     }
@@ -102,6 +107,16 @@ public class TestTestExamples {
     @Test
     public void testStaticSideEffectsOnlyChecks() throws IOException {
         goTest("StaticSideEffectsOnlyChecks");
+    }
+
+    @Test
+    public void testSwitchStatementChecks() throws IOException {
+        goTest("SwitchStatementChecks");
+    }
+
+    @Test
+    public void testTryStatementChecks() throws IOException {
+        goTest("TryStatementChecks");
     }
 
     @Test
