@@ -387,7 +387,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // this one is not "inheritable" but a shorthand to allow us not to have to write...
     public Boolean isNotNull(TypeContext typeContext) {
-        if (typeInfo.annotatedWith(typeContext.notNull.get()) == Boolean.TRUE) return true;
+        if (typeInfo.isNotNullForMethods(typeContext) == Boolean.TRUE) return true;
         return annotatedWith(typeContext.notNull.get());
     }
 

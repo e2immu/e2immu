@@ -139,6 +139,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public Boolean isNotNull(TypeContext typeContext) {
         if (type.isPrimitive()) return true;
+        if (owner.isNotNullForFields(typeContext) == Boolean.TRUE) return true;
         return annotatedWith(typeContext.notNull.get());
     }
 

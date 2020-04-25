@@ -21,10 +21,7 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.AnnotationType;
@@ -32,10 +29,8 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.lang.reflect.Array;
+import java.util.*;
 
 @E2Immutable
 @NotNull
@@ -130,43 +125,92 @@ public class AnnotationExpression {
     }
 
     public <T> T extract(String fieldName, T defaultValue) {
+        // TODO we could cache this is a SetOnce if necessary; I'd imagine java.util.Map etc. will  have this queried quite often
+        
+        if (!expressions.isSet()) throw new UnsupportedOperationException("??");
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {
+            ParameterizedType returnType = typeInfo.typeInspection.get().methods.stream()
+                    .filter(m -> m.name.equals(fieldName))
+                    .findFirst()
+                    .map(MethodInfo::returnType).orElseThrow();
             if (expression instanceof MemberValuePair) {
                 MemberValuePair mvp = (MemberValuePair) expression;
                 if (mvp.name.equals(fieldName)) {
-                    return (T) returnValueOfAnnotationExpression(mvp.value);
+                    return (T) returnValueOfAnnotationExpression(returnType, mvp.value);
                 }
             } else if ("value".equals(fieldName)) {
-                return (T) returnValueOfAnnotationExpression(expression);
+                return (T) returnValueOfAnnotationExpression(returnType, expression);
             }
         }
         return defaultValue;
     }
 
-    private static Object returnValueOfAnnotationExpression(Expression expression) {
+    private static Object returnValueOfAnnotationExpression(ParameterizedType returnType, Expression expression) {
+        // it is always possible that the return type is an array, but only one value is present...
+
+        if (expression instanceof ArrayInitializer) {
+            ArrayInitializer arrayInitializer = (ArrayInitializer) expression;
+            Object[] array = createArray(arrayInitializer.returnType(), arrayInitializer.expressions.size());
+            int i = 0;
+            for (Expression element : arrayInitializer.expressions) {
+                array[i++] = returnValueOfNonArrayExpression(arrayInitializer.returnType(), element);
+            }
+            return array;
+        }
+
+        Object value = returnValueOfNonArrayExpression(returnType, expression);
+        if (returnType.arrays == 0) return value;
+        Object[] array = createArray(returnType, 1);
+        array[0] = value;
+        return array;
+
+    }
+
+    private static Object returnValueOfNonArrayExpression(ParameterizedType returnType, Expression expression) {
+
         // normal "constant" or 123
-        if (expression instanceof Constant) return ((Constant) expression).getValue();
+        if (expression instanceof Constant) {
+            return ((Constant<?>) expression).getValue();
+        }
 
         // VERIFY_ABSENT -> direct reference with import static AnnotationType.VERIFY_ABSENT
         if (expression instanceof VariableExpression && ((VariableExpression) expression).variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) (((VariableExpression) expression).variable)).fieldInfo;
-            if (AnnotationType.class.getCanonicalName().equals(fieldInfo.owner.fullyQualifiedName)) {
-                return AnnotationType.valueOf(fieldInfo.name);
-            }
+            return enumInstance(returnType, fieldInfo.owner, fieldInfo.name);
         }
+
         // AnnotationType.VERIFY_ABSENT
         if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
             if (fieldAccess.expression instanceof TypeExpression) {
                 TypeExpression typeExpression = (TypeExpression) fieldAccess.expression;
-                if (AnnotationType.class.getCanonicalName().equals(typeExpression.parameterizedType.typeInfo.fullyQualifiedName)) {
-                    return AnnotationType.valueOf(fieldAccess.variable.name());
-                }
-            }
+                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.name());
+            } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
         }
-        // or...?
         throw new UnsupportedOperationException("Not implemented: " + expression.getClass());
+    }
+
+    private static Object enumInstance(ParameterizedType type, TypeInfo observedType, String name) {
+        if (type.typeInfo.typeInspection.get().typeNature != TypeNature.ENUM) {
+            throw new UnsupportedOperationException();
+        }
+        if (observedType != type.typeInfo) throw new UnsupportedOperationException("??");
+        try {
+            return Arrays.stream(Class.forName(observedType.fullyQualifiedName).getEnumConstants())
+                    .filter(e -> e.toString().equals(name)).findFirst()
+                    .orElseThrow(() -> new UnsupportedOperationException("Cannot find enum value " + name + " in type " + observedType.fullyQualifiedName));
+        } catch (ClassNotFoundException e) {
+            throw new UnsupportedOperationException("Cannot instantiate class " + observedType.fullyQualifiedName);
+        }
+    }
+
+    private static Object[] createArray(ParameterizedType type, int size) {
+        try {
+            return (Object[]) Array.newInstance(Class.forName(type.typeInfo.fullyQualifiedName), size);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Cannot instantiate class " + type.typeInfo.fullyQualifiedName);
+        }
     }
 
     public boolean isVerifyAbsent() {

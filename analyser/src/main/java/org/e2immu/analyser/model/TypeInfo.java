@@ -22,10 +22,12 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -39,6 +41,8 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.text.Element;
+import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -51,6 +55,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInfo.class);
+    private static final ElementType[] NOT_NULL_WHERE = new ElementType[]{ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD};
 
     @NotNull
     public final String simpleName;
@@ -167,6 +172,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             AnnotationExpression ae = AnnotationExpression.from(annotationExpr, expressionContext);
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo.fullyQualifiedName);
             builder.addAnnotation(ae);
+            if(!hasBeenDefined) {
+                ae.resolve(expressionContext);
+            } // we'll do it later during the resolution phase
         }
         for (Modifier modifier : typeDeclaration.getModifiers()) {
             builder.addTypeModifier(TypeModifier.from(modifier));
@@ -763,7 +771,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // own annotations, before the full java.lang package which obviously is annotated with our own annotations...
         if (isPrimitive()) return true;
         if ("java.lang.Object".equals(fullyQualifiedName) || "java.lang.String".equals(fullyQualifiedName)) return true;
-        if(typeInspection.isSet() && typeInspection.get().typeNature == TypeNature.ENUM) return true;
+        if (typeInspection.isSet() && typeInspection.get().typeNature == TypeNature.ENUM) return true;
         return TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()), annotatedWith(typeContext.e2Container.get()));
     }
 
@@ -774,8 +782,39 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 annotatedWith(typeContext.e2Container.get()));
     }
 
-    public Boolean isNotNull(TypeContext typeContext) {
-        return annotatedWith(typeContext.notNull.get());
+    private Set<ElementType> isNotNull(TypeContext typeContext) {
+        AnnotationExpression isNotNull = typeContext.notNull.get();
+        AnnotationExpression found;
+        if (hasBeenDefined()) {
+            Optional<Map.Entry<AnnotationExpression, Boolean>> o = typeAnalysis.annotations.stream()
+                    .filter(e -> e.getKey().typeInfo.equals(isNotNull.typeInfo)).findFirst();
+            if (o.isEmpty()) return null; // don't know yet
+            if (!o.get().getValue()) return Set.of(); // it's not isNotNull
+            found = o.get().getKey();
+        } else {
+            Optional<AnnotationExpression> opt = typeInspection.get().annotations.stream()
+                    .filter(e -> e.typeInfo.equals(isNotNull.typeInfo)).findFirst();
+            if (opt.isEmpty()) return Set.of();
+            found = opt.get();
+        }
+        ElementType[] elements = found.extract("where", NOT_NULL_WHERE);
+        return Arrays.stream(elements).collect(Collectors.toSet());
+    }
+
+    // only looks at analysis result
+    public Boolean isNotNullForParameters(TypeContext typeContext) {
+        Set<ElementType> types = isNotNull(typeContext);
+        return types == null ? null : types.contains(ElementType.PARAMETER);
+    }
+
+    public Boolean isNotNullForFields(TypeContext typeContext) {
+        Set<ElementType> types = isNotNull(typeContext);
+        return types == null ? null : types.contains(ElementType.FIELD);
+    }
+
+    public Boolean isNotNullForMethods(TypeContext typeContext) {
+        Set<ElementType> types = isNotNull(typeContext);
+        return types == null ? null : types.contains(ElementType.METHOD);
     }
 
     @Override

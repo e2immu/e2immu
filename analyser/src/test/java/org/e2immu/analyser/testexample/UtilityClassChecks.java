@@ -32,6 +32,7 @@ public class UtilityClassChecks {
 
         private UtilityClass1() {
             // nothing here
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -50,6 +51,7 @@ public class UtilityClassChecks {
 
         private NotAUtilityClass2() {
             // nothing here
+            System.out.println("?");
         }
 
         static void createInstance() {

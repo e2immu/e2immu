@@ -199,6 +199,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     public Boolean isNotNull(TypeContext typeContext) {
+        if (parameterInspection.get().owner.typeInfo.isNotNullForParameters(typeContext) == Boolean.TRUE) return true;
         return annotatedWith(typeContext.notNull.get());
     }
 }
