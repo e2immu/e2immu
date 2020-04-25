@@ -23,11 +23,13 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -256,63 +258,73 @@ public class StatementAnalyser {
         // we'll treat it as a conditional on 'value', even if there is no if() statement
 
         List<NumberedStatement> startOfBlocks = statement.blocks.get();
-        if (!startOfBlocks.isEmpty()) {
+        boolean allButLastSubStatementsEscape = true;
+        Value defaultCondition = NO_VALUE;
+        List<Value> conditions = new ArrayList<>();
 
+        if (codeOrganization.statements != Block.EMPTY_BLOCK) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
             EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
 
-            // PART 8: other conditions, including the else, switch entries, catch clauses
-            List<Value> conditions = new ArrayList<>();
-            for (int count = 1; count < startOfBlocks.size(); count++) {
-                CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
-
-                // PART 9: add parameters of sub statements
-
-                if (subStatements.localVariableCreation != null) {
-                    LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                    variableProperties.create(lvr, new VariableValue(lvr));
-                }
-
-                // PART 10: evaluate the sub-expression
-
-                Value valueForSubStatement;
-                if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                    Value or = value;
-                    for (Value condition : conditions) {
-                        or = new OrValue(or, condition);
-                    }
-                    valueForSubStatement = NegatedValue.negate(or);
-                } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression ||
-                        EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {
-                    valueForSubStatement = null;
-                } else {
-                    // real expression
-                    EvaluationResult result = computeVariablePropertiesOfExpression(subStatements.expression,
-                            variableProperties, statement);
-                    valueForSubStatement = result.value;
-                    if (result.changes) changes = true;
-                    conditions.add(valueForSubStatement);
-                }
-                EvaluationContext copyForElse = valueForSubStatement == null ?
-                        variableProperties :
-                        variableProperties.child(valueForSubStatement, uponUsingConditional);
-                computeVariablePropertiesOfBlock(statement.blocks.get().get(count), copyForElse);
-
-                // if the "then" block ends in return or throw (we recursively need to know)
-                // then we need to copy the check of the "else" continue (regardless if we
-                // have an else or not, or if that else returns or not.
-                if (startOfFirstBlock.neverContinues.get() && startOfBlocks.size() == 2) {
-                    variableProperties.addToConditional(valueForSubStatement);
-                    log(VARIABLE_PROPERTIES, "Then-part of If-Then-Else never continues, " +
-                            "added Else-part to variable properties, now {}", variableProperties);
-                }
-
+            allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
+            if (value != NO_VALUE) {
+                defaultCondition = NegatedValue.negate(value);
             }
         }
 
-        // PART 11: finally there are the updaters
+        // PART 8: other conditions, including the else, switch entries, catch clauses
 
+        for (int count = 1; count < startOfBlocks.size(); count++) {
+            CodeOrganization subStatements = codeOrganization.subStatements.get(count - 1);
+
+            // PART 9: add parameters of sub statements
+
+            if (subStatements.localVariableCreation != null) {
+                LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
+                variableProperties.create(lvr, new VariableValue(lvr));
+            }
+
+            // PART 10: evaluate the sub-expression
+
+            Value valueForSubStatement;
+            if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
+                Value or = value;
+                for (Value condition : conditions) {
+                    or = new OrValue(or, condition);
+                }
+                valueForSubStatement = NegatedValue.negate(or);
+                defaultCondition = valueForSubStatement;
+            } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression ||
+                    EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {
+                valueForSubStatement = null;
+            } else {
+                // real expression
+                EvaluationResult result = computeVariablePropertiesOfExpression(subStatements.expression,
+                        variableProperties, statement);
+                valueForSubStatement = result.value;
+                if (result.changes) changes = true;
+                conditions.add(valueForSubStatement);
+            }
+
+            EvaluationContext copyForElse = valueForSubStatement == null ?
+                    variableProperties :
+                    variableProperties.child(valueForSubStatement, uponUsingConditional);
+            NumberedStatement subStatementStart = statement.blocks.get().get(count);
+            computeVariablePropertiesOfBlock(subStatementStart, copyForElse);
+
+            if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
+                allButLastSubStatementsEscape = false;
+            }
+        }
+
+        if (allButLastSubStatementsEscape && defaultCondition != NO_VALUE) {
+            variableProperties.addToConditional(defaultCondition);
+            log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
+        }
+
+        // PART 11: finally there are the updaters
+        // used in for-statement, and the parameters of an explicit constructor invocation this(...)
         for (Expression updater : codeOrganization.updaters) {
             EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
             if (result.changes) changes = true;

@@ -229,18 +229,18 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public boolean isNotNull(Variable variable) {
-        // step 1. is the variable defined at this level? look at the properties
-        AboutVariable aboutVariable = variableProperties.get(variable);
-        if (aboutVariable != null) {
-            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL)
-                    || aboutVariable.properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
-        }
-        // step 2. check the conditional
+        // step 1. check the conditional
         if (conditional != null) {
             Optional<Variable> isNotNull = conditional.variableIsNotNull();
             if (isNotNull.isPresent() && isNotNull.get() == variable) {
                 return true;
             }
+        }
+        // step 2. is the variable defined at this level? look at the properties
+        AboutVariable aboutVariable = variableProperties.get(variable);
+        if (aboutVariable != null) {
+            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL)
+                    || aboutVariable.properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
         }
         return parent != null && parent.isNotNull(variable);
     }
