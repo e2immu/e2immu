@@ -295,17 +295,15 @@ public class StatementAnalyser {
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                Value and;
-                if (start == 1) and = value;
+                if (start == 1) valueForSubStatement = NegatedValue.negate(value);
                 else {
                     if (conditions.isEmpty()) {
-                        and = BoolValue.TRUE;
+                        valueForSubStatement = BoolValue.TRUE;
                     } else {
                         Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
-                        and = new AndValue().append(negated);
+                        valueForSubStatement = new AndValue().append(negated);
                     }
                 }
-                valueForSubStatement = and;
                 defaultCondition = valueForSubStatement;
             } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression ||
                     EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {

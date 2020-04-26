@@ -41,7 +41,8 @@ public class SwitchStatementChecks {
             case 'b':
                 return "b";
             default:
-                // this should raise an error (if statement expression always evaluates to false)
+                // Errors 1 && 2: this should raise an error (if statement expression always evaluates to false)
+                // as a consequence, the @NotNull does not work...
                 if (c == 'a' || c == 'b') return b;
                 return "c";
         }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
@@ -192,6 +193,24 @@ public class TestAbstractValue {
         Assert.assertEquals(EXPECTED2, or.toString());
         or = new OrValue().append(new AndValue().append(d, notC), new AndValue().append(notB, a));
         Assert.assertEquals(EXPECTED2, or.toString());
+    }
+
+    // (not ('a' == c (parameter 0)) and not ('b' == c (parameter 0)) and ('a' == c (parameter 0) or 'b' == c (parameter 0)))
+    // not a and not b and (a or b)
+
+    @Test
+    public void testForSwitchStatement() {
+        Value v = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b), new OrValue().append(a, b));
+        Assert.assertEquals(BoolValue.FALSE, v);
+
+        Value cIsA = EqualsValue.equals(new CharValue('a'), c);
+        Value cIsABis = EqualsValue.equals(new CharValue('a'), c);
+        Assert.assertEquals(cIsA, cIsABis);
+
+        Value cIsB = EqualsValue.equals(new CharValue('b'), c);
+
+        Value v2 = new AndValue().append(NegatedValue.negate(cIsA), NegatedValue.negate(cIsB), new OrValue().append(cIsA, cIsB));
+        Assert.assertEquals(BoolValue.FALSE, v2);
     }
 
     @Test

@@ -253,7 +253,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     public List<Value> getNullConditionals() {
-        if(conditional != null) {
+        if (conditional != null) {
             return conditional.individualNullClauses();
         }
         return List.of();
@@ -265,6 +265,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     public Value evaluateWithConditional(Value value) {
+        if (conditional == null) return value;
         if (!(conditional instanceof UnknownValue)) {
             return new AndValue().append(conditional, value);
         }

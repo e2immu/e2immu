@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Objects;
 
 public class EqualsValue implements Value {
     public final Value lhs;
@@ -69,5 +70,19 @@ public class EqualsValue implements Value {
     @Override
     public List<Value> individualNullClauses() {
         return lhs instanceof NullValue && rhs instanceof VariableValue ? List.of(this) : List.of();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EqualsValue that = (EqualsValue) o;
+        return lhs.equals(that.lhs) &&
+                rhs.equals(that.rhs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lhs, rhs);
     }
 }
