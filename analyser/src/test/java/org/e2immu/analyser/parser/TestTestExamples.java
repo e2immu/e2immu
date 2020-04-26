@@ -85,8 +85,8 @@ public class TestTestExamples {
     }
 
     @Test
-    public void testIfStatementNotNullChecks() throws IOException {
-        goTest("IfStatementNotNullChecks");
+    public void testIfStatementChecks() throws IOException {
+        goTest("IfStatementChecks");
     }
 
     @Test

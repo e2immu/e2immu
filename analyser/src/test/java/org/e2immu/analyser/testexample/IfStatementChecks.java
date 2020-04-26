@@ -1,8 +1,10 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.AnnotationType;
+import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
-public class IfStatementNotNullChecks {
+public class IfStatementChecks {
 
     @NotNull
     public static String method1(String a) {
@@ -20,6 +22,18 @@ public class IfStatementNotNullChecks {
     public static String method3(String c) {
         if (c != null) return c;
         return "abc";
+    }
+
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull
+    public static String method4(String c) {
+        String res;
+        if(c == null) {
+            res = "abc";
+        } else {
+            res = "cef";
+        }
+        return res;
     }
 }
 

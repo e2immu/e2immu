@@ -56,5 +56,21 @@ public class SwitchStatementChecks {
         }
         return b;
     }
+
+    @NotNull
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    public static String method3(char c) {
+        String res;
+        switch (c) {
+            case 'a':
+                res = "a";
+            case 'b':
+                res = "b";
+            default:
+                res = "c";
+        }
+        return res;
+    }
+
 }
 

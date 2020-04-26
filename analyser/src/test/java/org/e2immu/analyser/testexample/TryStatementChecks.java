@@ -32,9 +32,26 @@ public class TryStatementChecks {
         return res;
     }
 
+    @NotNull
+    @Constant(stringValue = "Hi")
+    public static String method3(String s) {
+        String res;
+        try {
+            System.out.println(Integer.parseInt(s));
+            res = "Hi";
+        } catch (NullPointerException npe) {
+            res = "Null";
+            throw npe;
+        } catch (NumberFormatException nfe) {
+            res = "Not a number";
+            throw nfe;
+        }
+        return res;
+    }
+
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
     @Constant
-    public static String method3(String s) {
+    public static String method4(String s) {
         String res;
         try {
             res = "Hi" + Integer.parseInt(s);
@@ -50,7 +67,7 @@ public class TryStatementChecks {
 
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
     @Constant
-    public static String method4(String s) {
+    public static String method5(String s) {
         String res;
         try {
             res = "Hi" + Integer.parseInt(s);
