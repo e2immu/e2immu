@@ -118,10 +118,10 @@ public class BinaryOperator implements Expression {
         }
 
         if (operator == Primitives.PRIMITIVES.orOperatorBool) {
-            return OrValue.or(l, r);
+            return new OrValue().append(List.of(l, r));
         }
         if (operator == Primitives.PRIMITIVES.andOperatorBool) {
-            return AndValue.and(l, r);
+            return new AndValue().append(l, r);
         }
 
         if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE) return UnknownValue.UNKNOWN_VALUE;

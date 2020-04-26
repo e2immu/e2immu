@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -294,19 +295,17 @@ public class StatementAnalyser {
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                Value or;
-                if (start == 1) or = value;
+                Value and;
+                if (start == 1) and = value;
                 else {
                     if (conditions.isEmpty()) {
-                        or = BoolValue.TRUE;
+                        and = BoolValue.TRUE;
                     } else {
-                        or = conditions.get(0);
-                        for (int i = 1; i < conditions.size(); i++) {
-                            or = new OrValue(or, conditions.get(i));
-                        }
+                        Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
+                        and = new AndValue().append(negated);
                     }
                 }
-                valueForSubStatement = NegatedValue.negate(or);
+                valueForSubStatement = and;
                 defaultCondition = valueForSubStatement;
             } else if (EmptyExpression.FINALLY_EXPRESSION == subStatements.expression ||
                     EmptyExpression.EMPTY_EXPRESSION == subStatements.expression) {

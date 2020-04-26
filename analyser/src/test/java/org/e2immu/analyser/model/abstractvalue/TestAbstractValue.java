@@ -27,10 +27,19 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.List;
+
 public class TestAbstractValue {
+
+    @BeforeClass
+    public static void beforeClass() {
+        Logger.activate(Logger.LogTarget.CNF);
+    }
 
     static Variable createVariable(String name) {
         return new Variable() {
@@ -83,20 +92,44 @@ public class TestAbstractValue {
     @Test
     public void test() {
         Value notA = NegatedValue.negate(a);
-        Assert.assertEquals("not a", notA.toString());
+        Assert.assertEquals("not (a)", notA.toString());
         Value notA2 = NegatedValue.negate(a);
         Assert.assertEquals(notA, notA2);
         Assert.assertEquals(a, NegatedValue.negate(notA));
 
-        Assert.assertEquals(a, AndValue.and(a, a));
-        Assert.assertEquals(notA, AndValue.and(notA, notA));
-        Assert.assertEquals(BoolValue.FALSE, AndValue.and(a, notA));
+        Assert.assertEquals(a, new AndValue().append(a, a));
+        Assert.assertEquals(notA, new AndValue().append(notA, notA));
+        Assert.assertEquals(BoolValue.FALSE, new AndValue().append(a, notA));
 
-        Assert.assertEquals(a, AndValue.and(a, a));
-        Assert.assertEquals(notA, AndValue.and(notA, notA));
-        Assert.assertEquals(BoolValue.FALSE, AndValue.and(a, notA));
+        // A && A, !A && !A
+        Assert.assertEquals(a, new AndValue().append(a, a));
+        Assert.assertEquals(notA, new AndValue().append(notA, notA));
+        // A && !A, !A && A
+        Assert.assertEquals(BoolValue.FALSE, new AndValue().append(a, notA));
+        Assert.assertEquals(BoolValue.FALSE, new AndValue().append(notA, a));
 
-        Assert.assertEquals(BoolValue.TRUE, OrValue.or(BoolValue.FALSE, BoolValue.TRUE));
+        // F || T
+        Assert.assertEquals(BoolValue.TRUE, new OrValue().append(BoolValue.FALSE, BoolValue.TRUE));
+        // A || A, !A || !A
+        Assert.assertEquals(a, new OrValue().append(a, a));
+        Assert.assertEquals(notA, new OrValue().append(notA, notA));
+        // A || !A, !A || A
+        Assert.assertEquals(BoolValue.TRUE, new OrValue().append(a, notA));
+        Assert.assertEquals(BoolValue.TRUE, new OrValue().append(notA, a));
+    }
+
+    @Test
+    public void testMoreComplicatedAnd() {
+        //D && A && !B && (!A || B) && C (the && C, D is there just for show)
+        Value v = new AndValue().append(d, a, NegatedValue.negate(b), new OrValue().append(NegatedValue.negate(a), b), c);
+        Assert.assertEquals(BoolValue.FALSE, v);
+    }
+
+    @Test
+    public void testExpandAndInOr() {
+        // A || (B && C)
+        Value v = new OrValue().append(a, new AndValue().append(b, c));
+        Assert.assertEquals("((a or b) and (a or c))", v.toString());
     }
 
     @Test
@@ -104,10 +137,10 @@ public class TestAbstractValue {
         Value iva = new InstanceOfValue(va, Primitives.PRIMITIVES.stringParameterizedType);
         Assert.assertEquals("a instanceof java.lang.String", iva.toString());
         Value ivb = new InstanceOfValue(vb, Primitives.PRIMITIVES.stringParameterizedType);
-        Value or = OrValue.or(ivb, iva);
+        Value or = new OrValue().append(ivb, iva);
         Assert.assertEquals("(a instanceof java.lang.String or b instanceof java.lang.String)", or.toString());
         Value iva2 = new InstanceOfValue(va, Primitives.PRIMITIVES.objectParameterizedType);
-        Value or2 = OrValue.or(iva, iva2);
+        Value or2 = new OrValue().append(iva, iva2);
         Assert.assertEquals("(a instanceof java.lang.Object or a instanceof java.lang.String)", or2.toString());
     }
 
@@ -116,25 +149,36 @@ public class TestAbstractValue {
         Value v = new EqualsValue(a, NullValue.NULL_VALUE);
         Assert.assertEquals("null == a", v.toString());
         Assert.assertEquals(va, v.variableIsNull().orElseThrow());
+
+        Value v2 = new EqualsValue(b, NullValue.NULL_VALUE);
+        Assert.assertEquals("null == b", v2.toString());
+        Assert.assertEquals(vb, v2.variableIsNull().orElseThrow());
+
+        Value andValue = new AndValue().append(v, NegatedValue.negate(v2));
+        Assert.assertEquals("(null == a and not (null == b))", andValue.toString());
+        List<Value> nullClauses = ((AndValue) andValue).individualNullClauses();
+        Assert.assertEquals(2, nullClauses.size());
+        Assert.assertSame(v, nullClauses.get(0));
     }
 
     @Test
     public void testIsNotNull() {
         Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a));
-        Assert.assertEquals("null != a", v.toString());
+        Assert.assertEquals("not (null == a)", v.toString());
         Assert.assertEquals(va, v.variableIsNotNull().orElseThrow());
     }
 
-    public static final String EXPECTED = "(((a or c) and (a or d)) and ((b or c) and (b or d)))";
-    public static final String EXPECTED2 = "(((a or not c) and (a or d)) and ((not b or not c) and (not b or d)))";
+    public static final String EXPECTED = "((a or c) and (a or d) and (b or c) and (b or d))";
+    public static final String EXPECTED2 = "((a or not (c)) and (a or d) and (not (b) or not (c)) and (not (b) or d))";
 
     @Test
     public void testCNF() {
-        Value or = OrValue.or(AndValue.and(a, b), AndValue.and(c, d));
+        // (a && b) || (c && d)
+        Value or = new OrValue().append(new AndValue().append(a, b), new AndValue().append(c, d));
         Assert.assertEquals(EXPECTED, or.toString());
-        or = OrValue.or(AndValue.and(b, a), AndValue.and(d, c));
+        or = new OrValue().append(new AndValue().append(b, a), new AndValue().append(d, c));
         Assert.assertEquals(EXPECTED, or.toString());
-        or = OrValue.or(AndValue.and(d, c), AndValue.and(b, a));
+        or = new OrValue().append(new AndValue().append(d, c), new AndValue().append(b, a));
         Assert.assertEquals(EXPECTED, or.toString());
     }
 
@@ -142,11 +186,11 @@ public class TestAbstractValue {
     public void testCNFWithNot() {
         Value notB = NegatedValue.negate(b);
         Value notC = NegatedValue.negate(c);
-        Value or = OrValue.or(AndValue.and(a, notB), AndValue.and(notC, d));
+        Value or = new OrValue().append(new AndValue().append(a, notB), new AndValue().append(notC, d));
         Assert.assertEquals(EXPECTED2, or.toString());
-        or = OrValue.or(AndValue.and(notB, a), AndValue.and(d, notC));
+        or = new OrValue().append(new AndValue().append(notB, a), new AndValue().append(d, notC));
         Assert.assertEquals(EXPECTED2, or.toString());
-        or = OrValue.or(AndValue.and(d, notC), AndValue.and(notB, a));
+        or = new OrValue().append(new AndValue().append(d, notC), new AndValue().append(notB, a));
         Assert.assertEquals(EXPECTED2, or.toString());
     }
 

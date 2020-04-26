@@ -75,6 +75,7 @@ public class VariableValue implements Value {
         if (o instanceof VariableValue) return value.name().compareTo(((VariableValue) o).value.name());
         if (o instanceof NegatedValue) {
             NegatedValue negatedValue = (NegatedValue) o;
+            if (equals(((NegatedValue) o).value)) return -1; // I'm always BEFORE my negation
             return compareTo(negatedValue.value);
         }
         return 1;

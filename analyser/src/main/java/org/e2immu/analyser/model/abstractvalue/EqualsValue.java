@@ -21,8 +21,11 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+
+import java.util.List;
 
 public class EqualsValue implements Value {
     public final Value lhs;
@@ -61,5 +64,10 @@ public class EqualsValue implements Value {
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         return true;
+    }
+
+    @Override
+    public List<Value> individualNullClauses() {
+        return lhs instanceof NullValue && rhs instanceof VariableValue ? List.of(this) : List.of();
     }
 }

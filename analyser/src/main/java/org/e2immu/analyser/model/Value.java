@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.annotation.NotModified;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -60,4 +61,6 @@ public interface Value extends Comparable<Value> {
     default Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return Set.of();
     }
+
+    default List<Value> individualNullClauses() { return List.of(); }
 }

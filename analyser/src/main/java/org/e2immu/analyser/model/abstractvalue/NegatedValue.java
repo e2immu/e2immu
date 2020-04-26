@@ -26,14 +26,16 @@ import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class NegatedValue implements Value {
     public static NegatedValue NOT_NULL = new NegatedValue(NullValue.NULL_VALUE);
 
     public final Value value;
 
-    public NegatedValue(Value value) {
+    private NegatedValue(Value value) {
         this.value = value;
     }
 
@@ -46,17 +48,19 @@ public class NegatedValue implements Value {
             return ((NumericValue) v).negate();
         }
         if (v == UnknownValue.UNKNOWN_VALUE)
-            return OrValue.or(new Instance(Primitives.PRIMITIVES.intParameterizedType),
+            return new OrValue(new Instance(Primitives.PRIMITIVES.intParameterizedType),
                     new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
 
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {
             OrValue or = (OrValue) v;
-            return new AndValue(negate(or.lhs), negate(or.rhs));
+            Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
+            return new AndValue().append(negated);
         }
         if (v instanceof AndValue) {
             AndValue and = (AndValue) v;
-            return new OrValue(negate(and.lhs), negate(and.rhs));
+            List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
+            return new OrValue().append(negated);
         }
         return new NegatedValue(v);
     }
@@ -76,19 +80,22 @@ public class NegatedValue implements Value {
 
     @Override
     public String toString() {
-        if (value instanceof EqualsValue) {
-            return ((EqualsValue) value).lhs + " != " + ((EqualsValue) value).rhs;
-        }
-        return "not " + value;
+        return "not (" + value + ")";
     }
 
     @Override
     public int compareTo(Value o) {
+        if (value.equals(o)) return 1; // I'm always AFTER my negated counterpart
         return value.compareTo(o);
     }
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         return true;
+    }
+
+    @Override
+    public List<Value> individualNullClauses() {
+        return value.individualNullClauses().stream().map(NegatedValue::negate).collect(Collectors.toList());
     }
 }

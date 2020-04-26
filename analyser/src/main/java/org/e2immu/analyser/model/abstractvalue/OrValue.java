@@ -23,46 +23,134 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class OrValue implements Value {
-    public final Value lhs;
-    public final Value rhs;
+    public final List<Value> values;
 
-    public OrValue(Value lhs, Value rhs) {
-        this.lhs = lhs;
-        this.rhs = rhs;
+    public OrValue() {
+        values = List.of();
+    }
+
+    OrValue(Value... values) {
+        this.values = List.of(values);
+    }
+
+    private OrValue(List<Value> values) {
+        this.values = values;
+    }
+
+    public Value append(Value... values) {
+        return append(Arrays.asList(values));
     }
 
     // we try to maintain a CNF
-    public static Value or(Value l, Value r) {
-        if (l.equals(r)) return l; // A || A == A, !A || !A == !A
+    public Value append(List<Value> values) {
 
-        // the following 2 if statements allow for a reduction to TRUE if l or r is unknown, variable, etc.
-        if (l instanceof BoolValue && ((BoolValue) l).value) return BoolValue.TRUE;
-        if (r instanceof BoolValue && ((BoolValue) r).value) return BoolValue.TRUE;
+        // STEP 1: trivial reductions
 
-        // normal: 2x bool
-        if (l instanceof BoolValue && r instanceof BoolValue) {
-            return ((BoolValue) l).value || ((BoolValue) r).value ? BoolValue.TRUE : BoolValue.FALSE;
+        if (this.values.isEmpty() && values.size() == 1) {
+            if (values.get(0) instanceof OrValue || values.get(0) instanceof AndValue) {
+                log(CNF, "Return immediately in Or: {}", values.get(0));
+                return values.get(0);
+            }
         }
-        // any unknown lingering
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
+
+        // STEP 2: concat everything
+
+        ArrayList<Value> concat = new ArrayList<>(values.size() + this.values.size());
+        concat.addAll(this.values);
+        recursivelyAdd(concat, values);
+
+        // STEP 3: one-off observations
+
+        if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
+            log(CNF, "Return Instance in Or, found unknown value");
             return new Instance(Primitives.PRIMITIVES.booleanParameterizedType);
-
-        if (l instanceof NegatedValue && ((NegatedValue) l).value.equals(r)) return BoolValue.TRUE; // !A || A
-        if (r instanceof NegatedValue && ((NegatedValue) r).value.equals(l)) return BoolValue.TRUE; // A || !A
-
-        if (r instanceof AndValue) {
-            AndValue and = (AndValue) r;
-            return AndValue.and(or(l, and.lhs), or(l, and.rhs));
         }
-        if (l instanceof AndValue) {
-            AndValue and = (AndValue) l;
-            return AndValue.and(or(and.lhs, r), or(and.rhs, r));
+        // STEP 4: loop
+
+        AndValue firstAnd = null;
+        boolean changes = true;
+        while (changes) {
+            changes = false;
+
+            // STEP 4a: sort
+
+            Collections.sort(concat);
+
+            // STEP 4b: observations
+
+            for (Value value : concat) {
+                if (value instanceof BoolValue && ((BoolValue) value).value) {
+                    log(CNF, "Return TRUE in Or, found TRUE");
+                    return BoolValue.TRUE;
+                }
+            }
+            concat.removeIf(value -> value instanceof BoolValue); // FALSE can go
+
+            // STEP 4c: reductions
+
+            ArrayList<Value> newConcat = new ArrayList<>(concat.size());
+            Value prev = null;
+            int pos = 0;
+            for (Value value : concat) {
+
+                // this works because of sorting
+                // A || !A will always sit next to each other
+                if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
+                    log(CNF, "Return TRUE in Or, found opposites {}", value);
+                    return BoolValue.TRUE;
+                }
+
+                // A || A
+                if (value.equals(prev)) {
+                    changes = true;
+                } else if (value instanceof AndValue) {
+                    AndValue andValue = (AndValue) value;
+                    if (andValue.values.size() == 1) {
+                        newConcat.add(andValue.values.get(0));
+                        changes = true;
+                    } else if (firstAnd == null) {
+                        firstAnd = andValue;
+                        changes = true;
+                    } else {
+                        newConcat.add(andValue); // for later
+                    }
+                } else {
+                    newConcat.add(value);
+                }
+                prev = value;
+                pos++;
+            }
+            concat = newConcat;
         }
-        return l.compareTo(r) < 0 ? new OrValue(l, r) : new OrValue(r, l);
+        ArrayList<Value> finalValues = concat;
+        if (firstAnd != null) {
+            Value[] components = firstAnd.values.stream()
+                    .map(v -> append(ListUtil.immutableConcat(finalValues, List.of(v))))
+                    .toArray(Value[]::new);
+            log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
+            return new AndValue().append(components);
+        }
+        if (finalValues.size() == 1) return finalValues.get(0);
+        return new OrValue(finalValues);
+    }
+
+    private void recursivelyAdd(ArrayList<Value> concat, List<Value> collect) {
+        for (Value value : collect) {
+            if (value instanceof OrValue) {
+                concat.addAll(((OrValue) value).values);
+            } else {
+                concat.add(value);
+            }
+        }
     }
 
     @Override
@@ -70,29 +158,30 @@ public class OrValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OrValue orValue = (OrValue) o;
-        return lhs.equals(orValue.lhs) &&
-                rhs.equals(orValue.rhs);
+        return values.equals(orValue.values);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(lhs, rhs);
+        return Objects.hash(values);
     }
 
     @Override
     public String toString() {
-        return "(" + lhs + " or " + rhs + ")";
+        return "(" + values.stream().map(Value::toString).collect(Collectors.joining(" or ")) + ")";
     }
 
     @Override
     public int compareTo(Value o) {
         if (o instanceof OrValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((OrValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((OrValue) o).rhs);
+            OrValue orValue = (OrValue) o;
+            int c = values.size() - orValue.values.size();
+            if (c != 0) return c;
+            for (int i = 0; i < values.size(); i++) {
+                c = values.get(i).compareTo(orValue.values.get(i));
+                if (c != 0) return c;
             }
-            return c;
+            return 0; // the same! will be removed in And...
         }
         if (o instanceof UnknownValue) return -1;
         return 1; // go to the back

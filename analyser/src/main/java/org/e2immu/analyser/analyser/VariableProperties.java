@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -118,7 +119,13 @@ class VariableProperties implements EvaluationContext {
     public void addToConditional(Value value) {
         if (value != UnknownValue.UNKNOWN_VALUE) {
             if (conditional == UnknownValue.UNKNOWN_VALUE || conditional == null) conditional = value;
-            else conditional = AndValue.and(conditional, value);
+            else {
+                if (conditional instanceof AndValue) {
+                    conditional = ((AndValue) conditional).append(value);
+                } else {
+                    conditional = new AndValue().append(conditional, value);
+                }
+            }
         }
     }
 
@@ -246,20 +253,10 @@ class VariableProperties implements EvaluationContext {
     }
 
     public List<Value> getNullConditionals() {
-        List<Value> list = new ArrayList<>();
-        recursiveNullConditionals(list, conditional);
-        return list;
-    }
-
-    private void recursiveNullConditionals(List<Value> list, Value value) {
-        if (value instanceof AndValue) {
-            recursiveNullConditionals(list, ((AndValue) value).lhs);
-            recursiveNullConditionals(list, ((AndValue) value).rhs);
+        if(conditional != null) {
+            return conditional.individualNullClauses();
         }
-        if (value != null) {
-            if (value.variableIsNull().isPresent()) list.add(value);
-            if (value.variableIsNotNull().isPresent()) list.add(value);
-        }
+        return List.of();
     }
 
     @Override
@@ -268,8 +265,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     public Value evaluateWithConditional(Value value) {
-        if (conditional != UnknownValue.NO_VALUE) {
-            return  AndValue.and(conditional, value);
+        if (!(conditional instanceof UnknownValue)) {
+            return new AndValue().append(conditional, value);
         }
         return value;
     }
