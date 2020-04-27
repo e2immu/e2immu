@@ -293,7 +293,7 @@ class VariableProperties implements EvaluationContext {
             return true; // this is the level where we are defined
         }
         if (!guaranteedToBeReachedByParentStatement) return false;
-        if (parent != null) return recursivelyCheckGuaranteedToBeReachedByParent(variable);
+        if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(variable);
         return true;
     }
 

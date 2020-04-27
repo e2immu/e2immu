@@ -47,7 +47,9 @@ public class TestTestExamples {
                 //LAMBDA,
                 //METHOD_CALL,
 
-                //VARIABLE_PROPERTIES,
+                VARIABLE_PROPERTIES,
+                DELAYED,
+
                 FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,

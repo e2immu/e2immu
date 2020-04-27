@@ -129,7 +129,8 @@ public class StatementAnalyser {
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
             }
 
-            startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
+            if (!startStatement.breakAndContinueStatements.isSet())
+                startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
 
             return changes;
         } catch (RuntimeException rte) {
@@ -382,7 +383,8 @@ public class StatementAnalyser {
         for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
             Variable variable = entry.getKey();
             VariableProperties.AboutVariable aboutVariable = entry.getValue();
-            if ((variable instanceof LocalVariableReference || variable instanceof FieldReference) && aboutVariable.properties.contains(VariableProperty.ASSIGNED)) {
+            if ((variable instanceof LocalVariableReference || variable instanceof FieldReference) &&
+                    aboutVariable.properties.contains(VariableProperty.ASSIGNED)) {
                 boolean erase;
                 if (eraseLocalVariableValuesOnly && aboutVariable.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
                     Value currentValue = aboutVariable.getCurrentValue();
@@ -391,7 +393,8 @@ public class StatementAnalyser {
                     erase = true;
                 }
                 if (erase) {
-                    aboutVariable.setCurrentValue(UnknownValue.UNKNOWN_VALUE);
+                    aboutVariable.setCurrentValue(new VariableValue(variable));
+                    log(VARIABLE_PROPERTIES, "Erasing the value of {}", variable.detailedString());
                 }
             }
         }

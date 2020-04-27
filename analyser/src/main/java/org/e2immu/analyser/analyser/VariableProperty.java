@@ -27,8 +27,8 @@ public enum VariableProperty {
     READ("read"),
     READ_MULTIPLE_TIMES("read+"),
 
-    ASSIGNED("modified"),
-    ASSIGNED_MULTIPLE_TIMES("modified+"),
+    ASSIGNED("assigned"),
+    ASSIGNED_MULTIPLE_TIMES("assigned+"),
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
     LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),

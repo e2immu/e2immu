@@ -244,6 +244,7 @@ public class MethodAnalyser {
             log(NOT_NULL, "Set NOT @NotNull on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
+        log(DELAYED, "Not deciding on @NotNull yet for method {}", methodInfo.distinguishingName());
         return false;
     }
 
