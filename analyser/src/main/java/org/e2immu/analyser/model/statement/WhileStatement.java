@@ -19,17 +19,15 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
 
-// @ContextClass
-// @NotNull
-// @NullNotAllowed
 public class WhileStatement extends LoopStatement {
 
     public WhileStatement(String label,
                           Expression expression,
                           Block block) {
-        super(label, expression, block);
+        super(label, expression, block, v -> v == BoolValue.TRUE);
     }
 
     @Override

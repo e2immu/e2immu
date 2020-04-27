@@ -22,13 +22,11 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Set;
 
-// @ContextClass
-// @NullNotAllowed
-// @NotNull
 public class ForEachStatement extends LoopStatement {
     public final LocalVariable localVariable;
 
@@ -36,7 +34,7 @@ public class ForEachStatement extends LoopStatement {
                             LocalVariable localVariable,
                             Expression expression,
                             Block block) {
-        super(label, expression, block);
+        super(label, expression, block, v -> v instanceof ArrayValue && !((ArrayValue) v).values.isEmpty());
         this.localVariable = localVariable;
     }
 

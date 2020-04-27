@@ -7,11 +7,10 @@ import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Set;
 
-public class BreakStatement implements Statement {
-    public final String label;
+public class BreakStatement extends BreakOrContinueStatement {
 
     public BreakStatement(String label) {
-        this.label = label;
+        super(label);
     }
 
     @Override

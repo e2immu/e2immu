@@ -3,23 +3,29 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public abstract class LoopStatement extends StatementWithExpression {
     public final Block block;
     public final String label;
+    public final Predicate<Value> statementsExecutedAtLeastOnce;
 
-    protected LoopStatement(String label, Expression condition, Block block) {
+    protected LoopStatement(String label, Expression condition, Block block, Predicate<Value> statementsExecutedAtLeastOnce) {
         super(condition);
         this.label = label;
         this.block = Objects.requireNonNull(block);
+        this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
     }
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setExpression(expression).setStatements(block).build();
+        return new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(statementsExecutedAtLeastOnce)
+                .setExpression(expression).setStatements(block).build();
     }
 
     @Override

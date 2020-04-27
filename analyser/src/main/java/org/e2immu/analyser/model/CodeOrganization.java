@@ -8,6 +8,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -29,19 +30,28 @@ public class CodeOrganization {
     public final List<Expression> updaters; // for, explicit constructor invocation
 
     public final HasStatements statements;  // block in loops, statements or block in switch statement
+    @NotNull
+    public final Predicate<Value> statementsExecutedAtLeastOnce;
+
     public final List<CodeOrganization> subStatements; // catches, finally, switch entries
 
-    private CodeOrganization(List<Expression> initialisers, LocalVariable localVariableCreation,
-                             Expression expression, List<Expression> updaters, HasStatements statements, List<CodeOrganization> subStatements) {
+    private CodeOrganization(List<Expression> initialisers,
+                             LocalVariable localVariableCreation,
+                             Expression expression,
+                             List<Expression> updaters,
+                             HasStatements statements,
+                             @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
+                             List<CodeOrganization> subStatements) {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
         this.updaters = Objects.requireNonNull(updaters);
         this.statements = Objects.requireNonNull(statements);
-        if(this.statements.getStatements().isEmpty() && this.statements != Block.EMPTY_BLOCK) {
+        if (this.statements.getStatements().isEmpty() && this.statements != Block.EMPTY_BLOCK) {
             throw new UnsupportedOperationException();
         }
         this.subStatements = Objects.requireNonNull(subStatements);
+        this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
     }
 
     public Stream<Expression> expressionsWithAssignmentTargets() {
@@ -65,7 +75,7 @@ public class CodeOrganization {
         private LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
         private final List<Expression> updaters = new ArrayList<>(); // for
-
+        private Predicate<Value> statementsExecutedAtLeastOnce;
         private HasStatements statements;  // block in loops, statements or block in switch statement
         private final List<CodeOrganization> subStatements = new ArrayList<>(); // catches, finally, switch entries
 
@@ -99,6 +109,11 @@ public class CodeOrganization {
             return this;
         }
 
+        public Builder setStatementsExecutedAtLeastOnce(Predicate<Value> predicate) {
+            this.statementsExecutedAtLeastOnce = predicate;
+            return this;
+        }
+
         @NotNull
         public CodeOrganization build() {
             return new CodeOrganization(ImmutableList.copyOf(initialisers),
@@ -106,6 +121,7 @@ public class CodeOrganization {
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     ImmutableList.copyOf(updaters),
                     statements == null ? Block.EMPTY_BLOCK : statements,
+                    statementsExecutedAtLeastOnce == null ? v -> false : statementsExecutedAtLeastOnce,
                     ImmutableList.copyOf(subStatements));
         }
     }

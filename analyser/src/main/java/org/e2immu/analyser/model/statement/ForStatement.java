@@ -18,7 +18,8 @@ public class ForStatement extends LoopStatement {
      * @param block     cannot be null, but can be EmptyBlock
      */
     public ForStatement(String label, List<Expression> initialisers, Expression condition, List<Expression> updaters, Block block) {
-        super(label, condition, block);
+        super(label, condition, block, v -> false);
+        // TODO we can go really far here in analysing the initialiser, condition, and updaters. We should. This will provide a better executedAtLeastOnce predicate.
         this.initialisers = ImmutableList.copyOf(initialisers);
         this.updaters = ImmutableList.copyOf(updaters);
     }

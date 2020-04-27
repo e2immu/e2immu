@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotModified;
@@ -40,6 +41,8 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Value> returnValue = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
 
+    // a set of break and continue statements in sub-blocks of this statement
+    public SetOnce<List<BreakOrContinueStatement>> breakAndContinueStatements = new SetOnce<>();
     public SetOnce<Set<Variable>> variablesLinkedToReturnValue = new SetOnce<>();
 
     public final int[] indices;

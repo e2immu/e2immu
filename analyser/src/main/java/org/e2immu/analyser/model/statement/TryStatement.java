@@ -99,14 +99,20 @@ public class TryStatement implements Statement {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources).setStatements(tryBlock);
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setStatements(tryBlock);
         for (Pair<CatchParameter, Block> pair : catchClauses) {
-            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable).setStatements(pair.v).build());
+            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable)
+                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setStatements(pair.v).build());
         }
         if (finallyBlock != null) {
             builder.addSubStatement(new CodeOrganization.Builder()
                     .setExpression(EmptyExpression.FINALLY_EXPRESSION)
-                    .setStatements(finallyBlock).build());
+                    .setStatements(finallyBlock)
+                    .setStatementsExecutedAtLeastOnce(v -> true)
+                    .build());
         }
         return builder.build();
     }

@@ -7,12 +7,10 @@ import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Set;
 
-public class ContinueStatement implements Statement {
-
-    public final String label;
+public class ContinueStatement extends BreakOrContinueStatement {
 
     public ContinueStatement(String label) {
-        this.label = label;
+        super(label);
     }
 
     @Override

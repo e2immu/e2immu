@@ -31,7 +31,7 @@ public interface EvaluationContext {
 
     MethodInfo getCurrentMethod();
 
-    EvaluationContext child(Value conditional, Runnable uponUsingConditional);
+    EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement);
 
     void create(Variable variable, Value initialValue, VariableProperty... initialProperties);
 

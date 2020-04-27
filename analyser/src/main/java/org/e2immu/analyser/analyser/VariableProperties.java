@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -57,6 +56,10 @@ class VariableProperties implements EvaluationContext {
         public Value getCurrentValue() {
             return currentValue;
         }
+
+        void setCurrentValue(Value value) {
+            this.currentValue = value;
+        }
     }
 
     final Map<Variable, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
@@ -67,6 +70,8 @@ class VariableProperties implements EvaluationContext {
     final VariableProperties parent;
     final VariableProperties root;
     Value conditional; // any conditional added to this block
+    private boolean guaranteedToBeReachedInCurrentBlock = true;
+    final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
     final TypeContext typeContext;
     final MethodInfo currentMethod;
@@ -82,13 +87,14 @@ class VariableProperties implements EvaluationContext {
         this.thisVariable = thisVariable;
         this.dependencyGraphBestCase = new DependencyGraph<>();
         this.dependencyGraphWorstCase = new DependencyGraph<>();
+        guaranteedToBeReachedByParentStatement = true;
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional);
+        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional, guaranteedToBeReachedByParentStatement);
     }
 
-    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional) {
+    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
         this.parent = parent;
         this.root = parent.root;
         this.uponUsingConditional = uponUsingConditional;
@@ -98,6 +104,7 @@ class VariableProperties implements EvaluationContext {
         thisVariable = parent.thisVariable;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
+        this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
     }
 
     @Override
@@ -112,8 +119,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public EvaluationContext child(Value conditional, Runnable uponUsingConditional) {
-        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional);
+    public EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional, guaranteedToBeReachedByParentStatement);
     }
 
     public void addToConditional(Value value) {
@@ -271,4 +278,24 @@ class VariableProperties implements EvaluationContext {
         }
         return value;
     }
+
+    public void setGuaranteedToBeReachedInCurrentBlock(boolean guaranteedToBeReachedInCurrentBlock) {
+        this.guaranteedToBeReachedInCurrentBlock = guaranteedToBeReachedInCurrentBlock;
+    }
+
+    public boolean guaranteedToBeReached(Variable variable) {
+        if (!guaranteedToBeReachedInCurrentBlock) return false;
+        return recursivelyCheckGuaranteedToBeReachedByParent(variable);
+    }
+
+    private boolean recursivelyCheckGuaranteedToBeReachedByParent(Variable variable) {
+        if (variableProperties.containsKey(variable)) {
+            return true; // this is the level where we are defined
+        }
+        if (!guaranteedToBeReachedByParentStatement) return false;
+        if (parent != null) return recursivelyCheckGuaranteedToBeReachedByParent(variable);
+        return true;
+    }
+
+
 }

@@ -50,8 +50,8 @@ public class ConditionalValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
-        Boolean t = ifTrue.isNotNull(evaluationContext.child(condition, null));
-        Boolean f = ifFalse.isNotNull(evaluationContext.child(NegatedValue.negate(condition), null));
+        Boolean t = ifTrue.isNotNull(evaluationContext.child(condition, null, false));
+        Boolean f = ifFalse.isNotNull(evaluationContext.child(NegatedValue.negate(condition), null, false));
         return TypeAnalyser.TERNARY_AND.apply(t, f);
     }
 

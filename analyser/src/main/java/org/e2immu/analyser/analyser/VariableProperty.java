@@ -29,6 +29,9 @@ public enum VariableProperty {
 
     ASSIGNED("modified"),
     ASSIGNED_MULTIPLE_TIMES("modified+"),
+    // in a block, are we guaranteed to reach the last assignment?
+    // we focus on last assignment because that is what the 'currentValue' holds
+    LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
 
     CREATED("created"),
     CONTENT_MODIFIED("content modified"),

@@ -29,7 +29,7 @@ public class DoStatement extends LoopStatement {
     public DoStatement(String label,
                        Expression expression,
                        Block block) {
-        super(label, expression, block);
+        super(label, expression, block, v -> true);
     }
 
     @Override

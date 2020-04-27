@@ -59,9 +59,25 @@ public class SwitchStatementChecks {
 
     @NotNull
     @Constant(type = AnnotationType.VERIFY_ABSENT)
-    public static String method3(char c) {
+    public static String method5(char c) {
         String res;
         switch (c) {
+            case 'a':
+                res = "a";
+            case 'b':
+                res = "b";
+            default:
+                res = "c";
+        }
+        return res;
+    }
+
+    @NotNull
+    @Constant(stringValue = "a")
+    public static String method6(char c) {
+        String res;
+        char d = 'a';
+        switch (d) { // ERROR 3: evaluates to constant
             case 'a':
                 res = "a";
             case 'b':

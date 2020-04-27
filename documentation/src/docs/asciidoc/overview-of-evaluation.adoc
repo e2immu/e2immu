@@ -21,6 +21,29 @@ Until a field is declared effectively final, or not, its current value starts wi
 Method calls can potentially return constant values.
 Until it has been established that there is not a single return statement, `NO_VALUE` is returned.
 
+Statements with conditional blocks (_if_then_else_, _switch_, _try_catch_) force us to go more complicated than a sequential approach to variable values in a method.
+This even applies to any sub-block: local variables may not exist outside of this sub-block, the sequential value outside this sub-block cannot point to a local variable that does not exist anymore.
+Some rules:
+
+* universal and pretty trivial rule: if the value is not read in any of the blocks of a statement, it can keep its current value
+* unimportant rule: if a value is assigned the same constant (or @E1Immutable field value) in all the blocks, that could become its current value if we have some guarantee that at least one of the blocks is executed.
+This seems like a borderline case, we may even have to issue an error if this occurs when we're considering more than one block.
+* all assignments count for the @NotNull computation, and for the method's return value, regardless of which block they're in
+* it is important to know which blocks are executed at least once
+
+** _if_then_else_ statements have at least one block; similarly does a _switch_ with a default section
+** _do_while_ does too, and _while(true)_ does as well; a bit of analysis can help for many loop statements
+** _try_catch_ have one, and potentially two (the _finally_ block)
+** _synchronized_ has one
+** finally, we have the unconditional sub-block: simply starting _{ ... }_
+
+keep in mind that the ‘current value’ of a field may not be worth much
+
+- at least with our restrictions, it will be `private` (we block non-private non-E1Immutable fields
+- but still, _unless we’re in construction phase_, other methods within the same class may concurrently set other values!
+- should we forbid the use of fields where local variables will do the trick? (No repeated assignments, no field assignments in loops unless there’s an escape (break, return)?
+
+
 === Overview of analysis
 
 The analyser produces and validates annotations.
@@ -122,6 +145,7 @@ class Append {
   }
 }
 ----
+
 . if the method has been marked <<notmodified-annotation>>, the same situation _does not apply_.
 Not modified means that here cannot be a link between `b` 's content, and that of `c` and `d`, because `b` 's content will not be modified.
 However, the return value of the method can still be linked to `b` (as in `java.util.List.subList`) or `c` or `d`.

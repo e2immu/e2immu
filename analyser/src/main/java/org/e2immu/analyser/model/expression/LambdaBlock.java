@@ -89,7 +89,7 @@ public class LambdaBlock implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         if (block == Block.EMPTY_BLOCK) return UnknownValue.UNKNOWN_VALUE;
 
-        EvaluationContext child = evaluationContext.child(null, null);
+        EvaluationContext child = evaluationContext.child(null, null, true);
         parameters.forEach(pi -> child.create(pi, new VariableValue(pi)));
 
         boolean changes = false;

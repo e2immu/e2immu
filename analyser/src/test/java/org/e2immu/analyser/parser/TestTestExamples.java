@@ -89,6 +89,13 @@ public class TestTestExamples {
         goTest("IfStatementChecks");
     }
 
+
+    @Test
+    public void testLoopStatementChecks() throws IOException {
+        goTest("LoopStatementChecks");
+    }
+
+
     @Test
     public void testMethodMustBeStatic() throws IOException {
         goTest("MethodMustBeStatic");

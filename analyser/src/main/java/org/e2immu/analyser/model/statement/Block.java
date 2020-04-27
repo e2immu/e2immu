@@ -113,7 +113,7 @@ public class Block implements Statement, HasStatements {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setStatements(this).build();
+        return new CodeOrganization.Builder().setStatementsExecutedAtLeastOnce(v -> true).setStatements(this).build();
     }
 
     @Override

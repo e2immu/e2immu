@@ -61,9 +61,11 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression).setStatements(ifBlock);
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression).setStatements(ifBlock).setStatementsExecutedAtLeastOnce(v -> false);
         if (elseBlock != Block.EMPTY_BLOCK) {
-            builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION).setStatements(elseBlock).build());
+            builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
+                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setStatements(elseBlock).build());
         }
         return builder.build();
     }

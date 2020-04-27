@@ -18,22 +18,21 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.OrValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.IfElseStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.statement.ThrowStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,19 +66,32 @@ public class StatementAnalyser {
         boolean changes = false;
         NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
         boolean neverContinues = false;
-        boolean escapes = false;
+        boolean escapesViaException = false;
+        List<BreakOrContinueStatement> breakAndContinueStatementsInBlocks = new ArrayList<>();
+
         try {
             while (statement != null) {
                 if (computeVariablePropertiesOfStatement(statement, variableProperties))
                     changes = true;
 
-                if (statement.statement instanceof ReturnStatement ||
-                        statement.statement instanceof ThrowStatement) neverContinues = true;
-                if (statement.statement instanceof ThrowStatement) {
-                    escapes = true;
+                if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {
+                    neverContinues = true;
                 }
+                if (statement.statement instanceof ThrowStatement) {
+                    escapesViaException = true;
+                }
+                if (statement.statement instanceof BreakOrContinueStatement) {
+                    breakAndContinueStatementsInBlocks.add((BreakOrContinueStatement) statement.statement);
+                }
+                // it is here that we'll inherit from blocks inside the statement
                 if (statement.neverContinues.isSet() && statement.neverContinues.get()) neverContinues = true;
-                if (statement.escapes.isSet() && statement.escapes.get()) escapes = true;
+                if (statement.breakAndContinueStatements.isSet()) {
+                    breakAndContinueStatementsInBlocks.addAll(filterBreakAndContinue(statement, statement.breakAndContinueStatements.get()));
+                    if (!breakAndContinueStatementsInBlocks.isEmpty()) {
+                        variableProperties.setGuaranteedToBeReachedInCurrentBlock(false);
+                    }
+                }
+                if (statement.escapes.isSet() && statement.escapes.get()) escapesViaException = true;
                 statement = statement.next.get().orElse(null);
             }
             if (!startStatement.neverContinues.isSet()) {
@@ -87,10 +99,10 @@ public class StatementAnalyser {
                 startStatement.neverContinues.set(neverContinues);
             }
             if (!startStatement.escapes.isSet()) {
-                log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapes);
-                startStatement.escapes.set(escapes);
+                log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
+                startStatement.escapes.set(escapesViaException);
 
-                if (escapes) {
+                if (escapesViaException) {
                     List<Value> conditionals = variableProperties.getNullConditionals();
                     for (Value value : conditionals) {
                         Optional<Variable> isNull = value.variableIsNull();
@@ -117,11 +129,26 @@ public class StatementAnalyser {
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
             }
 
+            startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
+
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
             throw rte;
         }
+    }
+
+    private Collection<? extends BreakOrContinueStatement> filterBreakAndContinue(NumberedStatement statement,
+                                                                                  List<BreakOrContinueStatement> statements) {
+        if (statement.statement instanceof LoopStatement) {
+            String label = ((LoopStatement) statement.statement).label;
+            // we only retain those break and continue statements for ANOTHER labelled statement
+            // (the break statement has a label, and it does not equal the one of this loop)
+            return statements.stream().filter(s -> s.label != null && !s.label.equals(label)).collect(Collectors.toList());
+        } else if (statement.statement instanceof SwitchStatement) {
+            // continue statements cannot be for a switch; must have a labelled statement to break from a loop outside the switch
+            return statements.stream().filter(s -> s instanceof ContinueStatement || s.label != null).collect(Collectors.toList());
+        } else return statements;
     }
 
     private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
@@ -236,12 +263,11 @@ public class StatementAnalyser {
             }
         }
 
-        // PART XX: TODO code for sub-blocks which change local variables (int i=0; while(...) { i= i+1; }  after while i is probably not == 0!
-
         // PART 6: checks for IfElse
 
         Runnable uponUsingConditional;
-        if (statement.statement instanceof IfElseStatement) {
+
+        if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional instanceof BoolValue && !statement.errorValue.isSet()) {
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
@@ -267,13 +293,18 @@ public class StatementAnalyser {
 
         if (codeOrganization.statements != Block.EMPTY_BLOCK) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional);
+            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
+
+            EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional, statementsExecutedAtLeastOnce);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
             if (value != NO_VALUE) {
                 defaultCondition = NegatedValue.negate(value);
             }
+
+            clearCurrentValues(variableProperties, statementsExecutedAtLeastOnce);
+
             start = 1;
         } else {
             start = 0;
@@ -317,11 +348,14 @@ public class StatementAnalyser {
                 conditions.add(valueForSubStatement);
             }
 
+            boolean statementsExecutedAtLeastOnce = subStatements.statementsExecutedAtLeastOnce.test(value);
             EvaluationContext copyForElse = valueForSubStatement == null ?
                     variableProperties :
-                    variableProperties.child(valueForSubStatement, uponUsingConditional);
+                    variableProperties.child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
             computeVariablePropertiesOfBlock(subStatementStart, copyForElse);
+
+            clearCurrentValues(variableProperties, statementsExecutedAtLeastOnce);
 
             if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
@@ -333,7 +367,7 @@ public class StatementAnalyser {
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
         }
 
-        // PART 11: finally there are the updaters
+        // PART 12: finally there are the updaters
         // used in for-statement, and the parameters of an explicit constructor invocation this(...)
         for (Expression updater : codeOrganization.updaters) {
             EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
@@ -341,6 +375,26 @@ public class StatementAnalyser {
         }
 
         return changes;
+    }
+
+
+    private static void clearCurrentValues(@NotNull VariableProperties variableProperties, boolean eraseLocalVariableValuesOnly) {
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
+            Variable variable = entry.getKey();
+            VariableProperties.AboutVariable aboutVariable = entry.getValue();
+            if ((variable instanceof LocalVariableReference || variable instanceof FieldReference) && aboutVariable.properties.contains(VariableProperty.ASSIGNED)) {
+                boolean erase;
+                if (eraseLocalVariableValuesOnly && aboutVariable.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
+                    Value currentValue = aboutVariable.getCurrentValue();
+                    erase = currentValue instanceof LocalVariableReference && !variableProperties.variableProperties.containsKey(variable);
+                } else {
+                    erase = true;
+                }
+                if (erase) {
+                    aboutVariable.setCurrentValue(UnknownValue.UNKNOWN_VALUE);
+                }
+            }
+        }
     }
 
     // recursive evaluation of an Expression
@@ -359,7 +413,7 @@ public class StatementAnalyser {
 
     private EvaluationResult computeVariablePropertiesOfExpression(Expression expression,
                                                                    VariableProperties variableProperties,
-                                                                   NumberedStatement statementForErrorReporting) {
+                                                                   NumberedStatement statement) {
         AtomicBoolean changes = new AtomicBoolean();
         AtomicBoolean encounterUnevaluated = new AtomicBoolean();
         Value value = expression.evaluate(variableProperties,
@@ -367,10 +421,10 @@ public class StatementAnalyser {
                     // local changes come from analysing lambda blocks as methods
                     if (localChanges) changes.set(true);
                     if (intermediateValue instanceof ErrorValue) {
-                        if (!statementForErrorReporting.errorValue.isSet()) {
+                        if (!statement.errorValue.isSet()) {
                             typeContext.addMessage(Message.Severity.ERROR,
                                     "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
-                            statementForErrorReporting.errorValue.set(true);
+                            statement.errorValue.set(true);
                         }
                     }
                     if (intermediateValue instanceof VariableValue && ((VariableValue) intermediateValue).effectivelyFinalUnevaluated) {
@@ -400,6 +454,11 @@ public class StatementAnalyser {
 
                 if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
                     variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
+                }
+                if (variableProperties.guaranteedToBeReached(at)) {
+                    variableProperties.addProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
+                } else {
+                    variableProperties.removeProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
                 }
                 if (value != NO_VALUE) {
                     variableProperties.setValue(at, value);

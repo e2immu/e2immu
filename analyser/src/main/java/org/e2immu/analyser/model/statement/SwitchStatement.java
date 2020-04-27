@@ -42,7 +42,7 @@ public class SwitchStatement extends StatementWithExpression {
     @Override
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression);
-        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()));
+        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
         return builder.build();
     }
 }

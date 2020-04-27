@@ -54,7 +54,9 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setExpression(expression).setStatements(block).build();
+        return new CodeOrganization.Builder().setExpression(expression)
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setStatements(block).build();
     }
 
     @Override
