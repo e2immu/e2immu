@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
@@ -28,7 +27,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -119,6 +117,7 @@ public class StatementAnalyser {
                 }
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
+            if (uselessAssignments(variableProperties, escapesViaException)) changes = true;
 
             if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
                 log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
@@ -131,6 +130,9 @@ public class StatementAnalyser {
 
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
+
+            // copy back all local copies to the first higher level
+            variableProperties.copyBackLocalCopies();
 
             return changes;
         } catch (RuntimeException rte) {
@@ -154,9 +156,11 @@ public class StatementAnalyser {
 
     private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
         boolean changes = false;
+        // we run at the local level
         for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
             Variable variable = entry.getKey();
-            Set<VariableProperty> properties = entry.getValue().properties;
+            VariableProperties.AboutVariable aboutVariable = entry.getValue();
+            Set<VariableProperty> properties = aboutVariable.properties;
             if (properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
                 if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
                 LocalVariable localVariable = ((LocalVariableReference) variable).variable;
@@ -170,6 +174,37 @@ public class StatementAnalyser {
         }
         return changes;
     }
+
+    private boolean uselessAssignments(VariableProperties variableProperties, boolean escapesViaException) {
+        boolean changes = false;
+        // we run at the local level
+        List<Variable> toRemove = new ArrayList<>();
+        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
+            Variable variable = entry.getKey();
+            if (variable instanceof LocalVariableReference) {
+                VariableProperties.AboutVariable aboutVariable = entry.getValue();
+                Set<VariableProperty> properties = aboutVariable.properties;
+                LocalVariable localVariable = ((LocalVariableReference) variable).variable;
+
+                if ((properties.contains(VariableProperty.CREATED) && !aboutVariable.isLocalCopy() || escapesViaException) &&
+                        properties.contains(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)) {
+                    if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
+                        methodAnalysis.unusedLocalVariables.put(localVariable, true);
+                        typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                                ", assignment to local variable " + localVariable.name + " is not used");
+                        changes = true;
+                    }
+                    toRemove.add(variable);
+                }
+            }// ignoring This etc.
+        }
+        if (!toRemove.isEmpty()) {
+            log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
+            variableProperties.variableProperties.keySet().removeAll(toRemove);
+        }
+        return changes;
+    }
+
 
     private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
                                                          VariableProperties variableProperties) {
@@ -316,14 +351,8 @@ public class StatementAnalyser {
         for (int count = start; count < startOfBlocks.size(); count++) {
             CodeOrganization subStatements = codeOrganization.subStatements.get(count - start);
 
-            // PART 9: add parameters of sub statements
-
-            if (subStatements.localVariableCreation != null) {
-                LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                variableProperties.create(lvr, new VariableValue(lvr));
-            }
-
-            // PART 10: evaluate the sub-expression
+            // PART 9: evaluate the sub-expression; this can be done in the CURRENT variable properties
+            // (only real evaluation for Java 14 conditionals in switch)
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
@@ -349,12 +378,20 @@ public class StatementAnalyser {
                 conditions.add(valueForSubStatement);
             }
 
+            // PART 10: create subcontext, add parameters of sub statements, execute
+
             boolean statementsExecutedAtLeastOnce = subStatements.statementsExecutedAtLeastOnce.test(value);
-            EvaluationContext copyForElse = valueForSubStatement == null ?
-                    variableProperties :
-                    variableProperties.child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
+            VariableProperties subContext = (VariableProperties) variableProperties.child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
+
+            if (subStatements.localVariableCreation != null) {
+                LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
+                subContext.create(lvr, new VariableValue(lvr));
+            }
+
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
-            computeVariablePropertiesOfBlock(subStatementStart, copyForElse);
+            computeVariablePropertiesOfBlock(subStatementStart, subContext);
+
+            // PART 11 post process
 
             clearCurrentValues(variableProperties, statementsExecutedAtLeastOnce);
 
@@ -442,11 +479,15 @@ public class StatementAnalyser {
     }
 
     private static void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+        Variable at;
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
-            Variable at = assignment.target.assignmentTarget().orElseThrow();
+            at = assignment.target.assignmentTarget().orElseThrow();
             // PART 4: more filling up of the variable properties, this time for assignments
             if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
+                // assignment to local variable; could be that we're in the block where it was created, then nothing happens
+                // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
+                variableProperties.ensureLocalCopy(at);
                 Boolean isNotNull = value.isNotNull(variableProperties);
                 if (isNotNull == Boolean.TRUE) {
                     variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
@@ -454,7 +495,7 @@ public class StatementAnalyser {
                 } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
                     log(VARIABLE_PROPERTIES, "Cleared check-null property of {}", at.detailedString());
                 }
-
+                variableProperties.addProperty(at, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
                 if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
                     variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
                 }
@@ -473,8 +514,13 @@ public class StatementAnalyser {
                 }
                 log(VARIABLE_PROPERTIES, "Set value of {} to {}", at.detailedString(), value);
             }
+        } else {
+            at = null;
         }
         for (Variable variable : expression.variables()) {
+            if (!variable.equals(at)) {
+                variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+            }
             if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
                 variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
             }

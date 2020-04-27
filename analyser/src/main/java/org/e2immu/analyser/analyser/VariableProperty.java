@@ -26,6 +26,7 @@ public enum VariableProperty {
     CHECK_NOT_NULL("check not null"),
     READ("read"),
     READ_MULTIPLE_TIMES("read+"),
+    NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
     ASSIGNED("assigned"),
     ASSIGNED_MULTIPLE_TIMES("assigned+"),

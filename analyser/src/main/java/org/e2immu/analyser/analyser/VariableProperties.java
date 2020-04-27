@@ -43,6 +43,8 @@ class VariableProperties implements EvaluationContext {
         @NotNull
         private Value currentValue = UnknownValue.NO_VALUE;
 
+        private AboutVariable localCopyOf;
+
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder();
@@ -59,6 +61,18 @@ class VariableProperties implements EvaluationContext {
 
         void setCurrentValue(Value value) {
             this.currentValue = value;
+        }
+
+        AboutVariable localCopy() {
+            AboutVariable av = new AboutVariable();
+            av.localCopyOf = this;
+            av.properties.addAll(properties);
+            av.currentValue = currentValue;
+            return av;
+        }
+
+        public boolean isLocalCopy() {
+            return localCopyOf != null;
         }
     }
 
@@ -203,8 +217,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean removeProperty(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = find(variable, true);
-        assert aboutVariable != null; // to keep intellij happy
+        AboutVariable aboutVariable = find(variable, false);
+        if (aboutVariable == null) return true; //not known to us, ignoring! (symmetric to add)
         return aboutVariable.properties.remove(variableProperty);
     }
 
@@ -297,5 +311,31 @@ class VariableProperties implements EvaluationContext {
         return true;
     }
 
+
+    public void ensureLocalCopy(Variable variable) {
+        AboutVariable aboutVariable = variableProperties.get(variable);
+        if (aboutVariable == null) {
+            // we'll make a local copy
+            AboutVariable master = find(variable, true);
+            assert master != null;
+            AboutVariable copy = master.localCopy();
+            variableProperties.put(variable, copy);
+        }
+    }
+
+    public void copyBackLocalCopies() {
+        for (Map.Entry<Variable, AboutVariable> entry : variableProperties.entrySet()) {
+            AboutVariable av = entry.getValue();
+            if (av.localCopyOf != null) {
+                av.localCopyOf.currentValue = av.currentValue;
+                av.properties.clear();
+                av.properties.addAll(av.localCopyOf.properties);
+                log(VARIABLE_PROPERTIES, "Copied back value {} and local properties {} of {}",
+                        av.currentValue,
+                        av.properties,
+                        entry.getKey().detailedString());
+            }
+        }
+    }
 
 }
