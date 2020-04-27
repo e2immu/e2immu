@@ -77,7 +77,7 @@ public class SwitchStatementChecks {
     public static String method6(char c) {
         String res;
         char d = 'a';
-        switch (d) { // ERROR 3: evaluates to constant
+        switch (d) { // ERROR 3 & 4: evaluates to constant
             case 'a':
                 res = "a";
             case 'b':

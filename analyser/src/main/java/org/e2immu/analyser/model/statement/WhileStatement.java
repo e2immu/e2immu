@@ -27,7 +27,7 @@ public class WhileStatement extends LoopStatement {
     public WhileStatement(String label,
                           Expression expression,
                           Block block) {
-        super(label, expression, block, v -> v == BoolValue.TRUE);
+        super(label, expression, block, BoolValue.TRUE::equals);
     }
 
     @Override

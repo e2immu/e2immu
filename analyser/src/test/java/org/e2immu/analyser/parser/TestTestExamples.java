@@ -120,7 +120,7 @@ public class TestTestExamples {
 
     @Test
     public void testSwitchStatementChecks() throws IOException {
-        goTest("SwitchStatementChecks", 2);
+        goTest("SwitchStatementChecks", 4);
     }
 
     @Test

@@ -6,8 +6,8 @@ import org.e2immu.annotation.NotNull;
 
 public class TryStatementChecks {
 
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
     @NotNull
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static String method1(String s) {
         try {
             return "Hi" + Integer.parseInt(s);
