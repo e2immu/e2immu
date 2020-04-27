@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.*;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
@@ -208,12 +210,16 @@ public class StatementAnalyser {
         boolean changes = false;
         CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
-        // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 11
+        // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
+        // but then for variables in catch clauses)
 
+        LocalVariableReference theLocalVariableRefence;
         if (codeOrganization.localVariableCreation != null) {
-            LocalVariableReference lvr = new LocalVariableReference(codeOrganization.localVariableCreation,
+            theLocalVariableRefence = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.create(lvr, new VariableValue(lvr), VariableProperty.CREATED);
+            variableProperties.create(theLocalVariableRefence, new VariableValue(theLocalVariableRefence), VariableProperty.CREATED);
+        } else {
+            theLocalVariableRefence = null;
         }
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
@@ -269,6 +275,11 @@ public class StatementAnalyser {
             }
         }
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
+
+        if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
+                ((ArrayValue) value).values.stream().allMatch(element -> element.isNotNull(variableProperties))) {
+            variableProperties.addProperty(theLocalVariableRefence, VariableProperty.CHECK_NOT_NULL);
+        }
 
         // PART 5: checks for ReturnStatement
 
@@ -381,7 +392,7 @@ public class StatementAnalyser {
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                subContext.create(lvr, new VariableValue(lvr));
+                subContext.create(lvr, new VariableValue(lvr), VariableProperty.CHECK_NOT_NULL);
             }
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);

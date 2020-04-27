@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +35,8 @@ import java.util.Optional;
 import java.util.Set;
 
 public class Assignment implements Expression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Assignment.class);
+
     public final Expression target;
     public final Expression value;
     public final MethodInfo primitiveOperator;
@@ -118,13 +122,8 @@ public class Assignment implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value t = target.evaluate(evaluationContext, visitor);
-        Value result;
-        if(t instanceof NullValue) {
-            result = ErrorValue.NULL_POINTER_EXCEPTION;
-        } else {
-            result = value.evaluate(evaluationContext, visitor);
-        }
+        target.evaluate(evaluationContext, visitor);
+        Value result = value.evaluate(evaluationContext, visitor);
         visitor.visit(this, evaluationContext, result);
         return result;
     }
