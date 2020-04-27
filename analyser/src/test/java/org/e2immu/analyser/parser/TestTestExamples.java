@@ -125,7 +125,7 @@ public class TestTestExamples {
 
     @Test
     public void testTryStatementChecks() throws IOException {
-        goTest("TryStatementChecks");
+        goTest("TryStatementChecks", 1);
     }
 
     @Test

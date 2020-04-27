@@ -40,6 +40,7 @@ public class TryStatementChecks {
             System.out.println(Integer.parseInt(s));
             res = "Hi";
         } catch (NullPointerException npe) {
+            // ERROR 1: assignment is not used
             res = "Null";
             throw npe;
         } catch (NumberFormatException nfe) {

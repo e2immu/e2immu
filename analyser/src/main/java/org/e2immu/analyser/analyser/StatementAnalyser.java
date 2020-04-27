@@ -131,9 +131,6 @@ public class StatementAnalyser {
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
 
-            // copy back all local copies to the first higher level
-            variableProperties.copyBackLocalCopies();
-
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
@@ -331,15 +328,14 @@ public class StatementAnalyser {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
             boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
 
-            EvaluationContext variablePropertiesWithValue = variableProperties.child(value, uponUsingConditional, statementsExecutedAtLeastOnce);
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.child(value, uponUsingConditional, statementsExecutedAtLeastOnce);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
+            variablePropertiesWithValue.copyBackLocalCopies(statementsExecutedAtLeastOnce);
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
             if (value != NO_VALUE) {
                 defaultCondition = NegatedValue.negate(value);
             }
-
-            clearCurrentValues(variableProperties, statementsExecutedAtLeastOnce);
 
             start = 1;
         } else {
@@ -378,7 +374,7 @@ public class StatementAnalyser {
                 conditions.add(valueForSubStatement);
             }
 
-            // PART 10: create subcontext, add parameters of sub statements, execute
+            // PART 10: create subContext, add parameters of sub statements, execute
 
             boolean statementsExecutedAtLeastOnce = subStatements.statementsExecutedAtLeastOnce.test(value);
             VariableProperties subContext = (VariableProperties) variableProperties.child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
@@ -390,10 +386,9 @@ public class StatementAnalyser {
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
             computeVariablePropertiesOfBlock(subStatementStart, subContext);
+            subContext.copyBackLocalCopies(statementsExecutedAtLeastOnce);
 
             // PART 11 post process
-
-            clearCurrentValues(variableProperties, statementsExecutedAtLeastOnce);
 
             if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
@@ -413,28 +408,6 @@ public class StatementAnalyser {
         }
 
         return changes;
-    }
-
-
-    private static void clearCurrentValues(@NotNull VariableProperties variableProperties, boolean eraseLocalVariableValuesOnly) {
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            VariableProperties.AboutVariable aboutVariable = entry.getValue();
-            if ((variable instanceof LocalVariableReference || variable instanceof FieldReference) &&
-                    aboutVariable.properties.contains(VariableProperty.ASSIGNED)) {
-                boolean erase;
-                if (eraseLocalVariableValuesOnly && aboutVariable.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
-                    Value currentValue = aboutVariable.getCurrentValue();
-                    erase = currentValue instanceof LocalVariableReference && !variableProperties.variableProperties.containsKey(variable);
-                } else {
-                    erase = true;
-                }
-                if (erase) {
-                    aboutVariable.setCurrentValue(new VariableValue(variable));
-                    log(VARIABLE_PROPERTIES, "Erasing the value of {}", variable.detailedString());
-                }
-            }
-        }
     }
 
     // recursive evaluation of an Expression

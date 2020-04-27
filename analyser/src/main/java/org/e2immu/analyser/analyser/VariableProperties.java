@@ -30,8 +30,8 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 // used in MethodAnalyser
@@ -57,10 +57,6 @@ class VariableProperties implements EvaluationContext {
 
         public Value getCurrentValue() {
             return currentValue;
-        }
-
-        void setCurrentValue(Value value) {
-            this.currentValue = value;
         }
 
         AboutVariable localCopy() {
@@ -323,18 +319,46 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    public void copyBackLocalCopies() {
+    public void copyBackLocalCopies(boolean statementsExecutedAtLeastOnce) {
         for (Map.Entry<Variable, AboutVariable> entry : variableProperties.entrySet()) {
             AboutVariable av = entry.getValue();
+            Variable variable = entry.getKey();
             if (av.localCopyOf != null) {
-                av.localCopyOf.currentValue = av.currentValue;
-                av.properties.clear();
-                av.properties.addAll(av.localCopyOf.properties);
-                log(VARIABLE_PROPERTIES, "Copied back value {} and local properties {} of {}",
-                        av.currentValue,
-                        av.properties,
-                        entry.getKey().detailedString());
+                av.localCopyOf.properties.clear();
+
+                boolean erase;
+                // if: the block is executed for sure, and the assignment which contains current value, is executed for sure,
+                if (statementsExecutedAtLeastOnce && av.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
+                    // erase when the result is a local variable, at this level
+                    erase = av.currentValue instanceof LocalVariableReference && variableProperties.containsKey(variable);
+                } else {
+                    erase = true; // block was executed conditionally, or the assignment was executed conditionally
+                }
+                copyConditionally(av.properties, av.localCopyOf.properties, READ, READ_MULTIPLE_TIMES, ASSIGNED,
+                        ASSIGNED_MULTIPLE_TIMES, PERMANENTLY_NOT_NULL, CONTENT_MODIFIED);
+                if (erase) {
+                    av.localCopyOf.currentValue = new VariableValue(variable);
+                    boolean notNullHere = av.properties.contains(CHECK_NOT_NULL);
+                    boolean notNullAtOrigin = av.localCopyOf.properties.contains(CHECK_NOT_NULL);
+                    if(notNullHere && !notNullAtOrigin) {
+                        av.localCopyOf.properties.add(CHECK_NOT_NULL);
+                    } else if(!notNullHere && notNullAtOrigin) {
+                        av.localCopyOf.properties.remove(CHECK_NOT_NULL);
+                    }
+                    log(VARIABLE_PROPERTIES, "Erasing the value of {}, merge properties to {}", variable.detailedString());
+                } else {
+                    av.localCopyOf.currentValue = av.currentValue;
+                    log(VARIABLE_PROPERTIES, "Copied back value {} of {}, merge properties to {}",
+                            av.currentValue,
+                            variable.detailedString(), av.properties);
+                }
             }
+        }
+    }
+
+    private void copyConditionally(Set<VariableProperty> from, Set<VariableProperty> to, VariableProperty... properties) {
+        for (VariableProperty property : properties) {
+            if (from.contains(property)) to.add(property);
         }
     }
 
