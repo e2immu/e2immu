@@ -66,7 +66,7 @@ public class TryStatementChecks {
     }
 
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
-    @Constant
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static String method5(String s) {
         String res;
         try {

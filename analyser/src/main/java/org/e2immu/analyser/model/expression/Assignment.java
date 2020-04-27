@@ -113,7 +113,7 @@ public class Assignment implements Expression {
 
     @Override
     public List<Variable> variablesInScopeSide() {
-        return target.variables();
+        return target.variablesInScopeSide();
     }
 
     @Override
