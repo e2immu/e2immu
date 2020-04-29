@@ -238,15 +238,15 @@ public class ParameterizedType {
     @Override
     public String toString() {
         return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") +
-                stream(true, false, false);
+                stream(true, false, false, false);
     }
 
     public String stream() {
-        return stream(false, false, false);
+        return stream(false, false, false, false);
     }
 
     public String stream(boolean varargs) {
-        return stream(false, false, varargs);
+        return stream(false, false, varargs, false);
     }
 
     /**
@@ -257,14 +257,18 @@ public class ParameterizedType {
      * Tn or Mn, with n the index, and T for type, M for method
      */
     public String distinguishingStream(boolean varArgs) {
-        return stream(true, true, varArgs);
+        return stream(true, true, varArgs, false);
     }
 
     public String detailedString() {
-        return stream(true, false, false);
+        return stream(true, false, false, false);
     }
 
-    private String stream(boolean fullyQualified, boolean numericTypeParameters, boolean varargs) {
+    public String streamWithoutArrays() {
+        return stream(false, false, false, true);
+    }
+
+    private String stream(boolean fullyQualified, boolean numericTypeParameters, boolean varargs, boolean withoutArrays) {
         StringBuilder sb = new StringBuilder();
         switch (wildCard) {
             case UNBOUND:
@@ -293,18 +297,20 @@ public class ParameterizedType {
             if (!parameters.isEmpty()) {
                 sb.append("<");
                 sb.append(parameters.stream()
-                        .map(pt -> pt.stream(fullyQualified, numericTypeParameters, false))
+                        .map(pt -> pt.stream(fullyQualified, numericTypeParameters, false, false))
                         .collect(Collectors.joining(", ")));
                 sb.append(">");
             }
         }
-        if (varargs) {
-            if (arrays == 0) {
-                throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
+        if(!withoutArrays) {
+            if (varargs) {
+                if (arrays == 0) {
+                    throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
+                }
+                sb.append("[]".repeat(arrays - 1)).append("...");
+            } else {
+                sb.append("[]".repeat(arrays));
             }
-            sb.append("[]".repeat(arrays - 1)).append("...");
-        } else {
-            sb.append("[]".repeat(arrays));
         }
         return sb.toString();
     }

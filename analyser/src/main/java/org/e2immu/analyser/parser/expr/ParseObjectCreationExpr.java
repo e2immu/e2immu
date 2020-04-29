@@ -53,6 +53,6 @@ public class ParseObjectCreationExpr {
                 newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                 parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
-        return new NewObject(method.methodInfo, parameterizedType, newParameterExpressions);
+        return new NewObject(method.methodInfo, parameterizedType, newParameterExpressions, null);
     }
 }

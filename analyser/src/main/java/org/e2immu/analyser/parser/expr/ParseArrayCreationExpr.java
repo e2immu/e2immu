@@ -20,6 +20,7 @@ package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
@@ -33,10 +34,12 @@ public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
         ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, arrayCreationExpr.createdType());
         expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
+        ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i -> new ArrayInitializer(i.getValues().stream()
+                .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(EmptyExpression.EMPTY_EXPRESSION)).collect(Collectors.toList());
-        return new NewObject(createArrayCreationConstructor(parameterizedType), parameterizedType, indexExpressions);
+        return new NewObject(createArrayCreationConstructor(parameterizedType), parameterizedType, indexExpressions, arrayInitializer);
     }
 
     static MethodInfo createArrayCreationConstructor(ParameterizedType parameterizedType) {

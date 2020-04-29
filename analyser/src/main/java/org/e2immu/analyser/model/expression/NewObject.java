@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
@@ -35,14 +36,17 @@ public class NewObject implements HasParameterExpressions {
     public final List<Expression> parameterExpressions;
     public final TypeInfo anonymousClass;
     public final MethodInfo constructor;
+    public final ArrayInitializer arrayInitializer;
 
     public NewObject(@NotNull MethodInfo constructor,
                      @NotNull ParameterizedType parameterizedType,
-                     @NotNull List<Expression> parameterExpressions) {
+                     @NotNull List<Expression> parameterExpressions,
+                     ArrayInitializer arrayInitializer) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.constructor = Objects.requireNonNull(constructor);
         this.anonymousClass = null;
+        this.arrayInitializer = arrayInitializer;
     }
 
     public NewObject(@NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
@@ -50,6 +54,7 @@ public class NewObject implements HasParameterExpressions {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = List.of();
         this.constructor = null;
+        this.arrayInitializer = null;
     }
 
     @Override
@@ -79,7 +84,8 @@ public class NewObject implements HasParameterExpressions {
                     ")";
         }
         String anon = (anonymousClass == null ? "" : anonymousClass.stream(indent, false)).stripTrailing();
-        return "new " + parameterizedType.stream() + expressionString + anon;
+        String arrayInit = arrayInitializer == null ? null : arrayInitializer.expressionString(0);
+        return "new " + parameterizedType.streamWithoutArrays() + expressionString + anon + arrayInit;
     }
 
     @Override
@@ -102,10 +108,18 @@ public class NewObject implements HasParameterExpressions {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        List<Value> parameterValues = parameterExpressions.stream()
-                .map(pe -> pe.evaluate(evaluationContext, visitor))
-                .collect(Collectors.toList());
-        Value value = new Instance(parameterizedType, constructor, parameterValues, true);
+        Value value;
+        if (arrayInitializer != null) {
+            List<Value> values = arrayInitializer.expressions.stream()
+                    .map(e -> e.evaluate(evaluationContext, visitor))
+                    .collect(Collectors.toList());
+            value = new ArrayValue(values);
+        } else {
+            List<Value> parameterValues = parameterExpressions.stream()
+                    .map(pe -> pe.evaluate(evaluationContext, visitor))
+                    .collect(Collectors.toList());
+            value = new Instance(parameterizedType, constructor, parameterValues, true);
+        }
         visitor.visit(this, evaluationContext, value);
         return value;
     }

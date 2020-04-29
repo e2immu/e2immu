@@ -77,7 +77,7 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(Primitives.PRIMITIVES.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
-        Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of());
+        Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
         ParameterInfo p0 = new ParameterInfo(typeT, "value", 0);
         p0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(genericContainerPutMethod));
         genericContainerPutMethod.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
