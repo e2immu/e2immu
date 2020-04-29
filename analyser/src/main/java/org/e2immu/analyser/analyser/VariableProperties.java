@@ -200,6 +200,7 @@ class VariableProperties implements EvaluationContext {
         log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
     }
 
+    @Override
     public void setValue(@NotNull Variable variable, @NotNull Value value) {
         AboutVariable aboutVariable = find(variable, true);
         assert aboutVariable != null; // to keep intellij happy, because of the complain we know it cannot be null
@@ -255,8 +256,8 @@ class VariableProperties implements EvaluationContext {
     public boolean isNotNull(Variable variable) {
         // step 1. check the conditional
         if (conditional != null) {
-            Optional<Variable> isNotNull = conditional.variableIsNotNull();
-            if (isNotNull.isPresent() && isNotNull.get() == variable) {
+            Map<Variable, Boolean> isNotNull = conditional.individualNullClauses();
+            if (isNotNull.get(variable) == Boolean.FALSE) {
                 return true;
             }
         }
@@ -269,9 +270,11 @@ class VariableProperties implements EvaluationContext {
         return parent != null && parent.isNotNull(variable);
     }
 
-    public List<Value> getNullConditionals() {
+    public List<Variable> getNullConditionals() {
         if (conditional != null) {
-            return conditional.individualNullClauses();
+            return conditional.individualNullClauses().entrySet()
+                    .stream().filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey).collect(Collectors.toList());
         }
         return List.of();
     }
@@ -340,9 +343,9 @@ class VariableProperties implements EvaluationContext {
                     av.localCopyOf.currentValue = new VariableValue(variable);
                     boolean notNullHere = av.properties.contains(CHECK_NOT_NULL);
                     boolean notNullAtOrigin = av.localCopyOf.properties.contains(CHECK_NOT_NULL);
-                    if(notNullHere && !notNullAtOrigin) {
+                    if (notNullHere && !notNullAtOrigin) {
                         av.localCopyOf.properties.add(CHECK_NOT_NULL);
-                    } else if(!notNullHere && notNullAtOrigin) {
+                    } else if (!notNullHere && notNullAtOrigin) {
                         av.localCopyOf.properties.remove(CHECK_NOT_NULL);
                     }
                     log(VARIABLE_PROPERTIES, "Erasing the value of {}, merge properties to {}", variable.detailedString());
@@ -362,4 +365,8 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
+    @Override
+    public void setNotNull(Variable variable) {
+        addProperty(variable, CHECK_NOT_NULL);
+    }
 }

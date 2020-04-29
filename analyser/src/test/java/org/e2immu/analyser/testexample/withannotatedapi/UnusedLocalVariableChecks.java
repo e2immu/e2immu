@@ -19,6 +19,7 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.NotNull;
 
 // NOTE: this one relies on String.toLowerCase() being annotated @NotNull
 
@@ -65,6 +66,7 @@ public class UnusedLocalVariableChecks {
         }
     }
 
+    @NotNull
     private static String someMethod(String a) {
         return a.toLowerCase();
     }

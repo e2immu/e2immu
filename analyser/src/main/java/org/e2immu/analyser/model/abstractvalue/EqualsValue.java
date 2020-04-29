@@ -21,12 +21,14 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class EqualsValue implements Value {
@@ -69,8 +71,9 @@ public class EqualsValue implements Value {
     }
 
     @Override
-    public List<Value> individualNullClauses() {
-        return lhs instanceof NullValue && rhs instanceof VariableValue ? List.of(this) : List.of();
+    public Map<Variable, Boolean> individualNullClauses() {
+        return lhs instanceof NullValue && rhs instanceof VariableValue ? Map.of(((VariableValue) rhs).value, true) :
+                Map.of();
     }
 
     @Override
@@ -92,4 +95,6 @@ public class EqualsValue implements Value {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
+
+
 }

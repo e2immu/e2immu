@@ -22,14 +22,24 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 
 public class ErrorValue implements Value {
-    public static final ErrorValue DIVISION_BY_ZERO = new ErrorValue("division by zero");
-    public static final ErrorValue NULL_POINTER_EXCEPTION = new ErrorValue("null pointer exception");
-    public static final ErrorValue UNNECESSARY_METHOD_CALL = new ErrorValue("Unnecessary method call");
+    public static ErrorValue divisionByZero(Value alternative) {
+        return new ErrorValue("division by zero", alternative);
+    }
 
-    private final String msg;
+    public static ErrorValue nullPointerException(Value alternative) {
+        return new ErrorValue("null pointer exception", alternative);
+    }
 
-    private ErrorValue(String msg) {
+    public static ErrorValue unnecessaryMethodCall(Value alternative) {
+        return new ErrorValue("Unnecessary method call", alternative);
+    }
+
+    public final String msg;
+    public final Value alternative;
+
+    private ErrorValue(String msg, Value alternative) {
         this.msg = msg;
+        this.alternative = alternative;
     }
 
     @Override

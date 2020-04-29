@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -28,6 +29,7 @@ import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -96,8 +98,9 @@ public class NegatedValue implements Value {
     }
 
     @Override
-    public List<Value> individualNullClauses() {
-        return value.individualNullClauses().stream().map(NegatedValue::negate).collect(Collectors.toList());
+    public Map<Variable, Boolean> individualNullClauses() {
+        return value.individualNullClauses().entrySet()
+                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
     }
 
     @Override

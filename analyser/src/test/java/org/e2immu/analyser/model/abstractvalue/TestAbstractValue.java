@@ -34,6 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 public class TestAbstractValue {
 
@@ -149,24 +150,31 @@ public class TestAbstractValue {
     public void testIsNull() {
         Value v = new EqualsValue(a, NullValue.NULL_VALUE);
         Assert.assertEquals("null == a", v.toString());
-        Assert.assertEquals(va, v.variableIsNull().orElseThrow());
+        Map<Variable,Boolean> nullClauses = v.individualNullClauses();
+        Assert.assertEquals(1, nullClauses.size());
+        Assert.assertEquals(true, nullClauses.get(va));
 
         Value v2 = new EqualsValue(b, NullValue.NULL_VALUE);
         Assert.assertEquals("null == b", v2.toString());
-        Assert.assertEquals(vb, v2.variableIsNull().orElseThrow());
+        Map<Variable,Boolean> nullClauses2 = v2.individualNullClauses();
+        Assert.assertEquals(1, nullClauses2.size());
+        Assert.assertEquals(true, nullClauses2.get(vb));
 
         Value andValue = new AndValue().append(v, NegatedValue.negate(v2));
         Assert.assertEquals("(null == a and not (null == b))", andValue.toString());
-        List<Value> nullClauses = ((AndValue) andValue).individualNullClauses();
-        Assert.assertEquals(2, nullClauses.size());
-        Assert.assertSame(v, nullClauses.get(0));
+        Map<Variable,Boolean> nullClausesAnd = andValue.individualNullClauses();
+        Assert.assertEquals(2, nullClausesAnd.size());
+        Assert.assertEquals(true, nullClausesAnd.get(va));
+        Assert.assertEquals(false, nullClausesAnd.get(vb));
     }
 
     @Test
     public void testIsNotNull() {
         Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a));
         Assert.assertEquals("not (null == a)", v.toString());
-        Assert.assertEquals(va, v.variableIsNotNull().orElseThrow());
+        Map<Variable,Boolean> nullClauses = v.individualNullClauses();
+        Assert.assertEquals(1, nullClauses.size());
+        Assert.assertEquals(false, nullClauses.get(va));
     }
 
     public static final String EXPECTED = "((a or c) and (a or d) and (b or c) and (b or d))";

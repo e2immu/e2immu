@@ -79,23 +79,30 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value value = scope.evaluate(evaluationContext, visitor);
         Value result;
-        if (value instanceof NullValue) {
-            result = ErrorValue.NULL_POINTER_EXCEPTION;
-        } else {
-            if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
-                Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
-                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                    result = singleValue;
-                } else {
-                    // TODO we have no idea about the parameters here
-                    result = new MethodValue(methodInfo, value, List.of());
-                }
-            } else if (methodInfo.hasBeenDefined()) {
-                result = UnknownValue.NO_VALUE;
+
+        if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
+            Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
+            if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                result = singleValue;
             } else {
-                result = new MethodValue(methodInfo, value, List.of());
+                Value method = new MethodValue(methodInfo, value, List.of());
+                if (value instanceof NullValue) {
+                    result = ErrorValue.nullPointerException(method);
+                } else {
+                    result = method;
+                }
+            }
+        } else if (methodInfo.hasBeenDefined()) {
+            result = UnknownValue.NO_VALUE;
+        } else {
+            Value method = new MethodValue(methodInfo, value, List.of());
+            if (value instanceof NullValue) {
+                result = ErrorValue.nullPointerException(method);
+            } else {
+                result = method;
             }
         }
+
         visitor.visit(this, evaluationContext, result);
         return result;
     }

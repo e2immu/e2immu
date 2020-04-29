@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 
@@ -38,4 +39,8 @@ public interface EvaluationContext {
     TypeContext getTypeContext();
 
     void linkVariables(Variable variableFromExpression, Set<Variable> toBestCase, Set<Variable> toWorstCase);
+
+    void setNotNull(Variable variable);
+
+    void setValue(@NotNull Variable variable, @NotNull Value value);
 }

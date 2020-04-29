@@ -41,7 +41,7 @@ public class DivideValue implements Value {
     public static Value divide(Value l, Value r) {
 
         if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
-        if (r instanceof NumericValue && r.toInt().value == 0) return ErrorValue.DIVISION_BY_ZERO;
+        if (r instanceof NumericValue && r.toInt().value == 0) return ErrorValue.divisionByZero(l);
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof IntValue && r instanceof IntValue)
             return new IntValue(l.toInt().value / r.toInt().value);

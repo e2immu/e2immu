@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.ClazzValue;
+import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
@@ -58,8 +58,8 @@ public class InstanceOf implements Expression {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {
             result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
-        } else if (value instanceof ClazzValue) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClazzValue) value).value));
+        } else if (value instanceof ClassValue) {
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value));
         } else {
             // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
             // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is

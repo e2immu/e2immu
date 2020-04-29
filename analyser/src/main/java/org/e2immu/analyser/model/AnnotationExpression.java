@@ -28,6 +28,8 @@ import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -35,6 +37,7 @@ import java.util.*;
 @E2Immutable
 @NotNull
 public class AnnotationExpression {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationExpression.class);
 
     public final TypeInfo typeInfo;
     public final FirstThen<com.github.javaparser.ast.expr.Expression, List<Expression>> expressions;
@@ -130,17 +133,21 @@ public class AnnotationExpression {
         if (!expressions.isSet()) throw new UnsupportedOperationException("??");
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {
-            ParameterizedType returnType = typeInfo.typeInspection.get().methods.stream()
-                    .filter(m -> m.name.equals(fieldName))
-                    .findFirst()
-                    .map(MethodInfo::returnType).orElseThrow();
-            if (expression instanceof MemberValuePair) {
-                MemberValuePair mvp = (MemberValuePair) expression;
-                if (mvp.name.equals(fieldName)) {
-                    return (T) returnValueOfAnnotationExpression(returnType, mvp.value);
+            if (typeInfo.typeInspection.isSet()) {
+                ParameterizedType returnType = typeInfo.typeInspection.get().methods.stream()
+                        .filter(m -> m.name.equals(fieldName))
+                        .findFirst()
+                        .map(MethodInfo::returnType).orElseThrow();
+                if (expression instanceof MemberValuePair) {
+                    MemberValuePair mvp = (MemberValuePair) expression;
+                    if (mvp.name.equals(fieldName)) {
+                        return (T) returnValueOfAnnotationExpression(returnType, mvp.value);
+                    }
+                } else if ("value".equals(fieldName)) {
+                    return (T) returnValueOfAnnotationExpression(returnType, expression);
                 }
-            } else if ("value".equals(fieldName)) {
-                return (T) returnValueOfAnnotationExpression(returnType, expression);
+            } else {
+                LOGGER.warn("Type has not been inspected yet: " + typeInfo.fullyQualifiedName);
             }
         }
         return defaultValue;

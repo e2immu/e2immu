@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -222,10 +223,10 @@ public class AndValue implements Value {
     }
 
     @Override
-    public List<Value> individualNullClauses() {
-        return values.stream().flatMap(v -> v.individualNullClauses().stream()).collect(Collectors.toList());
+    public Map<Variable, Boolean> individualNullClauses() {
+        return values.stream().flatMap(v -> v.individualNullClauses().entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
-
 
     @Override
     public ParameterizedType type() {

@@ -21,12 +21,13 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public class Assignment implements Expression {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Assignment.class);
 
     public final Expression target;
     public final Expression value;
@@ -65,7 +65,7 @@ public class Assignment implements Expression {
             case PLUS:
                 return Primitives.PRIMITIVES.assignPlusOperatorInt;
             case MINUS:
-                 return Primitives.PRIMITIVES.assignMinusOperatorInt;
+                return Primitives.PRIMITIVES.assignMinusOperatorInt;
             case MULTIPLY:
                 return Primitives.PRIMITIVES.assignMultiplyOperatorInt;
             case DIVIDE:
@@ -136,8 +136,33 @@ public class Assignment implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        target.evaluate(evaluationContext, visitor);
-        Value result = value.evaluate(evaluationContext, visitor);
+        if (!(target instanceof VariableExpression)) {
+            // we evaluate if there is a more complex expression, like a.b.c (FieldAccess) or so
+            // otherwise, we want to avoid a visit on the variable
+            target.evaluate(evaluationContext, visitor);
+        }
+        Value resultOfExpression = value.evaluate(evaluationContext, visitor);
+        Value result;
+
+        if (resultOfExpression instanceof MethodValue) {
+            // NOTE: this piece of code is almost replicated in LocalVariableCreation
+            Boolean isNotNull = resultOfExpression.isNotNull(evaluationContext);
+            if (isNotNull == null) {
+                result = UnknownValue.NO_VALUE; // delay
+            } else {
+                Optional<Variable> assignmentTarget = target.assignmentTarget();
+                if (assignmentTarget.isEmpty()) {
+                    throw new UnsupportedOperationException("Have " + target.getClass());// ?
+                }
+                result = new VariableValue(assignmentTarget.get());
+                if (isNotNull) {
+                    evaluationContext.setNotNull(((VariableValue) result).value);
+                }
+            }
+        } else {
+            result = resultOfExpression;
+        }
+
         visitor.visit(this, evaluationContext, result);
         return result;
     }

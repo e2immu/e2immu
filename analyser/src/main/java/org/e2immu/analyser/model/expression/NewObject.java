@@ -84,7 +84,7 @@ public class NewObject implements HasParameterExpressions {
                     ")";
         }
         String anon = (anonymousClass == null ? "" : anonymousClass.stream(indent, false)).stripTrailing();
-        String arrayInit = arrayInitializer == null ? null : arrayInitializer.expressionString(0);
+        String arrayInit = arrayInitializer == null ? "" : arrayInitializer.expressionString(0);
         return "new " + parameterizedType.streamWithoutArrays() + expressionString + anon + arrayInit;
     }
 

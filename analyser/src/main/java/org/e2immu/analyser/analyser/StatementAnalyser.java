@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -103,17 +104,13 @@ public class StatementAnalyser {
                 startStatement.escapes.set(escapesViaException);
 
                 if (escapesViaException) {
-                    List<Value> conditionals = variableProperties.getNullConditionals();
-                    for (Value value : conditionals) {
-                        Optional<Variable> isNull = value.variableIsNull();
-                        if (isNull.isPresent()) {
-                            Variable variable = isNull.get();
-                            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
-                            variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
-                            if (variableProperties.uponUsingConditional != null) {
-                                log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
-                                variableProperties.uponUsingConditional.run();
-                            }
+                    List<Variable> nullVariables = variableProperties.getNullConditionals();
+                    for (Variable variable : nullVariables) {
+                        log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
+                        variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+                        if (variableProperties.uponUsingConditional != null) {
+                            log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                            variableProperties.uponUsingConditional.run();
                         }
                     }
                 }
@@ -160,7 +157,7 @@ public class StatementAnalyser {
             Variable variable = entry.getKey();
             VariableProperties.AboutVariable aboutVariable = entry.getValue();
             Set<VariableProperty> properties = aboutVariable.properties;
-            if (properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
+            if (!aboutVariable.isLocalCopy() && properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
                 if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
                 LocalVariable localVariable = ((LocalVariableReference) variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
@@ -213,49 +210,29 @@ public class StatementAnalyser {
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
         // but then for variables in catch clauses)
 
-        LocalVariableReference theLocalVariableRefence;
+        LocalVariableReference theLocalVariableReference;
         if (codeOrganization.localVariableCreation != null) {
-            theLocalVariableRefence = new LocalVariableReference(codeOrganization.localVariableCreation,
+            theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.create(theLocalVariableRefence, new VariableValue(theLocalVariableRefence), VariableProperty.CREATED);
+            variableProperties.create(theLocalVariableReference, new VariableValue(theLocalVariableReference), VariableProperty.CREATED);
         } else {
-            theLocalVariableRefence = null;
+            theLocalVariableReference = null;
         }
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
 
-        List<LocalVariableCreation> localVariableCreations = codeOrganization.initialisers.stream()
-                .map(expr -> (LocalVariableCreation) expr)
-                .collect(Collectors.toList());
-        for (LocalVariableCreation localVariableCreation : localVariableCreations) {
-            LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
-            Value value;
-            if (localVariableCreation.expression != EmptyExpression.EMPTY_EXPRESSION) {
-                EvaluationResult result = computeVariablePropertiesOfExpression(localVariableCreation.expression,
-                        variableProperties, statement);
-                if (result.changes) changes = true;
-                value = result.value;
-            } else {
-                value = NO_VALUE;
+        for (Expression initialiser : codeOrganization.initialisers) {
+            if (initialiser instanceof LocalVariableCreation) {
+                LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
+                variableProperties.create(lvr, NO_VALUE, VariableProperty.CREATED);
             }
-            variableProperties.create(lvr, value, VariableProperty.CREATED);
-        }
-
-        // PART 3: computing linking between local variables and fields, parameters
-
-        for (LocalVariableCreation localVariableCreation : localVariableCreations) {
-            EvaluationResult result = computeVariablePropertiesOfExpression(localVariableCreation.expression,
-                    variableProperties, statement);
-            if (result.changes) changes = true;
-            Set<Variable> linkToBestCase = result.encounteredUnevaluatedVariables ? Set.of() :
-                    result.value.linkedVariables(true, variableProperties);
-            Set<Variable> linkToWorstCase = result.value.linkedVariables(false, variableProperties);
-
-            log(DEBUG_LINKED_VARIABLES, "In creation with assignment, link {} to [{}] best case, [{}] worst case",
-                    localVariableCreation.localVariable.name,
-                    Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
-            LocalVariableReference lvr = new LocalVariableReference(localVariableCreation.localVariable, List.of());
-            variableProperties.linkVariables(lvr, linkToBestCase, linkToWorstCase);
+            try {
+                EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement);
+                if (result.changes) changes = true;
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statement);
+                throw rte;
+            }
         }
 
         // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
@@ -278,7 +255,7 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
                 ((ArrayValue) value).values.stream().allMatch(element -> element.isNotNull(variableProperties))) {
-            variableProperties.addProperty(theLocalVariableRefence, VariableProperty.CHECK_NOT_NULL);
+            variableProperties.addProperty(theLocalVariableReference, VariableProperty.CHECK_NOT_NULL);
         }
 
         // PART 5: checks for ReturnStatement
@@ -311,12 +288,18 @@ public class StatementAnalyser {
 
         Runnable uponUsingConditional;
 
+        Value valueAfterCheckingForConstant;
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
-            if (combinedWithConditional instanceof Constant && !statement.errorValue.isSet()) {
-                typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                        ", if/switch conditional in "+statement.streamIndices()+" evaluates to constant");
-                statement.errorValue.set(true);
+            if (combinedWithConditional instanceof Constant) {
+                if (!statement.errorValue.isSet()) {
+                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                            ", if/switch conditional in " + statement.streamIndices() + " evaluates to constant");
+                    statement.errorValue.set(true);
+                }
+                valueAfterCheckingForConstant = UnknownValue.UNKNOWN_VALUE; // this should mess up most conditions
+            } else {
+                valueAfterCheckingForConstant = value;
             }
             uponUsingConditional = () -> {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
@@ -324,6 +307,7 @@ public class StatementAnalyser {
             };
         } else {
             uponUsingConditional = null;
+            valueAfterCheckingForConstant = value;
         }
 
         // PART 7: the primary block, if it's there
@@ -339,17 +323,17 @@ public class StatementAnalyser {
 
         if (codeOrganization.statements != Block.EMPTY_BLOCK) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
+            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(valueAfterCheckingForConstant);
 
-            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.child(value, uponUsingConditional, statementsExecutedAtLeastOnce);
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.child(valueAfterCheckingForConstant, uponUsingConditional, statementsExecutedAtLeastOnce);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
             variablePropertiesWithValue.copyBackLocalCopies(statementsExecutedAtLeastOnce);
             breakOrContinueStatementsInChildren.addAll(startOfFirstBlock.breakAndContinueStatements.isSet() ?
                     startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
-            if (value != NO_VALUE) {
-                defaultCondition = NegatedValue.negate(value);
+            if (valueAfterCheckingForConstant != NO_VALUE) {
+                defaultCondition = NegatedValue.negate(valueAfterCheckingForConstant);
             }
 
             start = 1;
@@ -455,18 +439,22 @@ public class StatementAnalyser {
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     // local changes come from analysing lambda blocks as methods
                     if (localChanges) changes.set(true);
+                    Value continueAfterError;
                     if (intermediateValue instanceof ErrorValue) {
                         if (!statement.errorValue.isSet()) {
                             typeContext.addMessage(Message.Severity.ERROR,
-                                    "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName());
+                                    "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName() + " statement " + statement.streamIndices());
                             statement.errorValue.set(true);
                         }
+                        continueAfterError = ((ErrorValue) intermediateValue).alternative;
+                    } else {
+                        continueAfterError = intermediateValue;
                     }
-                    if (intermediateValue instanceof VariableValue && ((VariableValue) intermediateValue).effectivelyFinalUnevaluated) {
+                    if (continueAfterError instanceof VariableValue && ((VariableValue) continueAfterError).effectivelyFinalUnevaluated) {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
-                    doAssignmentTargetsAndInputVariables(localExpression, lvp, intermediateValue);
+                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError);
                     doImplicitNullCheck(localExpression, lvp);
                     analyseCallsWithParameters(localExpression, lvp);
                 });
@@ -474,10 +462,9 @@ public class StatementAnalyser {
     }
 
     private static void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
-        Variable at;
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
-            at = assignment.target.assignmentTarget().orElseThrow();
+            Variable at = assignment.target.assignmentTarget().orElseThrow();
             // PART 4: more filling up of the variable properties, this time for assignments
 
             if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
@@ -511,14 +498,11 @@ public class StatementAnalyser {
                 log(VARIABLE_PROPERTIES, "Set value of {} to {}", at.detailedString(), value);
             }
         } else {
-            at = null;
-        }
-        for (Variable variable : expression.variables()) {
-            if (!variable.equals(at)) {
+            for (Variable variable : expression.variables()) {
                 variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-            }
-            if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
-                variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
+                    variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                }
             }
         }
     }

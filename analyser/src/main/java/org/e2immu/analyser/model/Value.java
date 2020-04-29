@@ -27,6 +27,7 @@ import org.e2immu.annotation.NotModified;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -43,26 +44,15 @@ public interface Value extends Comparable<Value> {
         throw new UnsupportedOperationException(this.getClass().toString());
     }
 
-    default Optional<Variable> variableIsNull() {
-        if (this instanceof EqualsValue &&
-                ((EqualsValue) this).lhs == NullValue.NULL_VALUE &&
-                ((EqualsValue) this).rhs instanceof VariableValue) {
-            return Optional.of(((VariableValue) ((EqualsValue) this).rhs).value);
-        }
-        return Optional.empty();
-    }
-
-    default Optional<Variable> variableIsNotNull() {
-        if (this instanceof NegatedValue) return ((NegatedValue) this).value.variableIsNull();
-        return Optional.empty();
-    }
-
     @NotModified
     default Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return Set.of();
     }
 
-    default List<Value> individualNullClauses() { return List.of(); }
+    /**
+     * @return a map with all clauses, true for V == null, false for V != null
+     */
+    default Map<Variable, Boolean> individualNullClauses() { return Map.of(); }
 
     /**
      * @return the type, if we are certain

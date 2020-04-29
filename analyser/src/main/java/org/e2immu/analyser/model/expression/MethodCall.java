@@ -62,7 +62,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Value objectValue = computedScope.evaluate(evaluationContext, visitor);
         Value result;
         if (objectValue instanceof NullValue) {
-            result = ErrorValue.NULL_POINTER_EXCEPTION;
+            result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);
         } else {
             List<Value> parameters = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
@@ -79,13 +79,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 // we will never analyse this method
                 // simple example of a frequently recurring issue...
+                result = new MethodValue(methodInfo, objectValue, parameters);
+
                 if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
                     ParameterizedType type = objectValue.type();
                     if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                        return ErrorValue.UNNECESSARY_METHOD_CALL;
+                        return ErrorValue.unnecessaryMethodCall(result);
                     }
                 }
-                result = new MethodValue(methodInfo, objectValue, parameters);
             }
         }
         visitor.visit(this, evaluationContext, result);

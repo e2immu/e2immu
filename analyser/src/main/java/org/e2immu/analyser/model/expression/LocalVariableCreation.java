@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -96,17 +97,9 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value value;
-        if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            value = expression.evaluate(evaluationContext, visitor);
-            if (value == UnknownValue.UNKNOWN_VALUE) {
-                value = new VariableValue(localVariableReference);
-            }
-        } else {
-            value = UnknownValue.UNKNOWN_VALUE; // no assignment yet
-        }
-        visitor.visit(this, evaluationContext, value);
-        return value;
+        evaluationContext.setValue(localVariableReference, new VariableValue(localVariableReference));
+        Assignment assignment = new Assignment(new VariableExpression(localVariableReference), expression);
+        return assignment.evaluate(evaluationContext, visitor);
     }
 
     @Override

@@ -41,8 +41,8 @@ keep in mind that the ‘current value’ of a field may not be worth much
 
 - at least with our restrictions, it will be `private` (we block non-private non-E1Immutable fields
 - but still, _unless we’re in construction phase_, other methods within the same class may concurrently set other values!
-- should we forbid the use of fields where local variables will do the trick? (No repeated assignments, no field assignments in loops unless there’s an escape (break, return)?
-
+- should we forbid the use of fields where local variables will do the trick?
+(No repeated assignments, no field assignments in loops unless there’s an escape (break, return)?
 
 === Overview of analysis
 
@@ -285,3 +285,28 @@ To avoid raising this error (`p == null` will always evaluate to `false`), the e
 Assignment of a parameter::
 Intentionally we raise an error when the user assigns a value to a parameter in the method body.
 The method analyser determines this straightforwardly, in `updateParameterAnnotationsFromMethodProperties`, by looking at the `ASSIGNED` property in the evaluation context.
+
+=== Evaluation trail
+
+We need the concept of a _safe expression_, which is an expression that can be repeatedly evaluated, each time rendering identical results.
+Rather than computing on expression level, we compute at value level (a method can return a constant, for example).
+Which ones are safe?
+
+* `Constant` expressions
+* `VariableValues`, if the variable is either @E1Immutable, local and not assigned to, and not modified in between evaluations.
+This applies to all `VariableValues` occurring in the value.
+* `MethodValue` expressions, if the method is @E2Immutable and no parameter values are modified
+* `Instance`?
+
+#TODO:# does this equate to the SIDE EFFECT computation? Anything that has side effect NONE is safe
+
+#TODO:# check that higher level immutability is not required
+
+Then,
+
+* the `singleResult` of a method, if it exists, is either a `Constant`, or an `Instance` object with a `notNull` variable set
+* the result of an assignment to a variable is either
+** a `Constant`
+** an `Instance` object, as a result of a new object creation, or the single result of a method
+** the method call itself, if the method is <<e2immutable-annotation>> and the parameters made no modifications
+** a `VariableValue` if the assignment is the result has a non-safe method call somewhere in the structure
