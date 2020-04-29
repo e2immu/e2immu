@@ -181,4 +181,9 @@ public class MethodValue implements Value {
         }
         return result;
     }
+
+    @Override
+    public ParameterizedType type() {
+        return methodInfo.returnType();
+    }
 }

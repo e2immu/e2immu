@@ -54,6 +54,7 @@ public class UnusedLocalVariableChecks {
         int[] integers = {1, 2, 3};
         int i = 0;
         integers[i] = 3;
+        // ERROR: assignment is not used
     }
 
     private static void checkForEach() {
@@ -72,12 +73,24 @@ public class UnusedLocalVariableChecks {
         String b = someMethod(param);
         // ERROR: if statement evaluates to constant
         if (b == null) {
-            if (param.contains("a")) {
+            if (param.contains("a")) { // the fact that this one evaluates to constant is caused by the previous error
                 String a = someMethod("xzy").toString();
-                // ERROR: if statement evaluates to constant
+                // ERROR: if statement evaluates to constant; error hidden by unnecessary method call toString()
                 if (a == null) {
                     return b + "c";
                 }
+            }
+        }
+        return "c";
+    }
+
+    private static String checkDoubleMethod2(String param) {
+        String b = someMethod(param);
+        if (param.contains("a")) {
+            String a = someMethod("xzy");
+            // ERROR: if statement evaluates to constant
+            if (a == null) {
+                return b + "c";
             }
         }
         return "c";

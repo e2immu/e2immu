@@ -63,4 +63,9 @@ public interface Value extends Comparable<Value> {
     }
 
     default List<Value> individualNullClauses() { return List.of(); }
+
+    /**
+     * @return the type, if we are certain
+     */
+    default ParameterizedType type() { return null; }
 }

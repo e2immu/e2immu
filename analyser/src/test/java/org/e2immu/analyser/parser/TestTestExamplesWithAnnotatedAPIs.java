@@ -119,7 +119,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
 
     @Test
     public void testUnusedLocalVariableChecks() throws IOException {
-        testClass("UnusedLocalVariableChecks", 7);
+        testClass("UnusedLocalVariableChecks", 10);
     }
 
     private void testClass(String className, int errorsToExpect) throws IOException {

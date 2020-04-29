@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -97,5 +98,10 @@ public class NegatedValue implements Value {
     @Override
     public List<Value> individualNullClauses() {
         return value.individualNullClauses().stream().map(NegatedValue::negate).collect(Collectors.toList());
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return value.type();
     }
 }

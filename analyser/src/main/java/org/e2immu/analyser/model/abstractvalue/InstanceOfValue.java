@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
@@ -75,5 +76,10 @@ public class InstanceOfValue implements Value {
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return Set.of(variable);
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.booleanParameterizedType;
     }
 }

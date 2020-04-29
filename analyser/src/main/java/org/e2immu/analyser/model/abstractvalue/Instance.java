@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.List;
@@ -113,5 +114,10 @@ public class Instance implements Value {
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         return isNotNull;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return parameterizedType;
     }
 }

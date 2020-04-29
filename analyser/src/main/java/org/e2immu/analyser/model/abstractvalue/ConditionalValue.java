@@ -60,4 +60,5 @@ public class ConditionalValue implements Value {
         return SetUtil.immutableUnion(ifTrue.linkedVariables(bestCase, evaluationContext),
                 ifFalse.linkedVariables(bestCase, evaluationContext));
     }
+
 }

@@ -20,7 +20,9 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
@@ -80,5 +82,10 @@ public class ByteValue implements Value, Constant<Byte>, NumericValue {
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         return true;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.byteParameterizedType;
     }
 }

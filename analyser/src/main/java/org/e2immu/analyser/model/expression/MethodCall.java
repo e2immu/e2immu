@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -77,8 +78,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 result = UnknownValue.NO_VALUE;
             } else {
                 // we will never analyse this method
-                // TODO if the method is @Constant, return the constant value
-                // TODO if the method is operating on a constant, simply apply the method if it is part of java.* JDK
+                // simple example of a frequently recurring issue...
+                if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+                    ParameterizedType type = objectValue.type();
+                    if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
+                        return ErrorValue.UNNECESSARY_METHOD_CALL;
+                    }
+                }
                 result = new MethodValue(methodInfo, objectValue, parameters);
             }
         }

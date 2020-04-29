@@ -315,7 +315,7 @@ public class StatementAnalyser {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional instanceof Constant && !statement.errorValue.isSet()) {
                 typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                        ", if/switch conditional evaluates to constant");
+                        ", if/switch conditional in "+statement.streamIndices()+" evaluates to constant");
                 statement.errorValue.set(true);
             }
             uponUsingConditional = () -> {

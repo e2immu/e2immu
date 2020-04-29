@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Value;
 public class ErrorValue implements Value {
     public static final ErrorValue DIVISION_BY_ZERO = new ErrorValue("division by zero");
     public static final ErrorValue NULL_POINTER_EXCEPTION = new ErrorValue("null pointer exception");
+    public static final ErrorValue UNNECESSARY_METHOD_CALL = new ErrorValue("Unnecessary method call");
 
     private final String msg;
 

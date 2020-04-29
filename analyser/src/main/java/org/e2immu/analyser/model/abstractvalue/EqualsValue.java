@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -84,5 +85,11 @@ public class EqualsValue implements Value {
     @Override
     public int hashCode() {
         return Objects.hash(lhs, rhs);
+    }
+
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.booleanParameterizedType;
     }
 }

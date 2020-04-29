@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -225,4 +226,9 @@ public class AndValue implements Value {
         return values.stream().flatMap(v -> v.individualNullClauses().stream()).collect(Collectors.toList());
     }
 
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.booleanParameterizedType;
+    }
 }

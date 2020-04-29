@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
@@ -112,4 +113,8 @@ public class VariableValue implements Value {
         return Set.of(value);
     }
 
+    @Override
+    public ParameterizedType type() {
+        return value.concreteReturnType();
+    }
 }

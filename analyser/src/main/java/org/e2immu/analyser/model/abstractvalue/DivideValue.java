@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.IntValue;
@@ -89,5 +90,10 @@ public class DivideValue implements Value {
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         return true;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
     }
 }
