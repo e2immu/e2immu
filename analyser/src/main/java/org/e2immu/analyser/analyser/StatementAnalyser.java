@@ -333,6 +333,8 @@ public class StatementAnalyser {
         boolean allButLastSubStatementsEscape = true;
         Value defaultCondition = NO_VALUE;
         List<Value> conditions = new ArrayList<>();
+        List<BreakOrContinueStatement> breakOrContinueStatementsInChildren = new ArrayList<>();
+
         int start;
 
         if (codeOrganization.statements != Block.EMPTY_BLOCK) {
@@ -342,6 +344,8 @@ public class StatementAnalyser {
             VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.child(value, uponUsingConditional, statementsExecutedAtLeastOnce);
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
             variablePropertiesWithValue.copyBackLocalCopies(statementsExecutedAtLeastOnce);
+            breakOrContinueStatementsInChildren.addAll(startOfFirstBlock.breakAndContinueStatements.isSet() ?
+                    startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
             if (value != NO_VALUE) {
@@ -398,12 +402,19 @@ public class StatementAnalyser {
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
             computeVariablePropertiesOfBlock(subStatementStart, subContext);
             subContext.copyBackLocalCopies(statementsExecutedAtLeastOnce);
+            breakOrContinueStatementsInChildren.addAll(subStatementStart.breakAndContinueStatements.isSet() ?
+                    subStatementStart.breakAndContinueStatements.get() : List.of());
 
             // PART 11 post process
 
             if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
             }
+        }
+
+        // we don't want to set the value for break statements themselves; that happens higher up
+        if (codeOrganization.haveSubBlocks() && !statement.breakAndContinueStatements.isSet()) {
+            statement.breakAndContinueStatements.set(breakOrContinueStatementsInChildren);
         }
 
         if (allButLastSubStatementsEscape && defaultCondition != NO_VALUE) {

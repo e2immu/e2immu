@@ -54,10 +54,6 @@ public class CodeOrganization {
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
     }
 
-    public Stream<Expression> expressionsWithAssignmentTargets() {
-        return Stream.concat(initialisers.stream(), Stream.of(expression));
-    }
-
     public <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Class<E> clazz) {
         Stream<E> s1 = initialisers.stream().flatMap(e -> e.find(clazz).stream());
         Stream<E> s2 = Stream.concat(s1, expression.find(clazz).stream());
@@ -68,6 +64,10 @@ public class CodeOrganization {
 
     public Stream<Expression> expressionsForInputVariables() {
         return Stream.concat(Stream.concat(initialisers.stream(), Stream.of(expression)), updaters.stream());
+    }
+
+    public boolean haveSubBlocks() {
+        return statements != Block.EMPTY_BLOCK || !subStatements.isEmpty();
     }
 
     public static class Builder {
