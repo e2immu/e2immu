@@ -21,10 +21,9 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ErrorValue;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,37 +40,41 @@ public class Assignment implements Expression {
     public final Expression value;
     public final MethodInfo primitiveOperator;
 
+    // if null, and primitive operator not null, then the primitive operator counts (i += value)
+    // if true, we have ++i
+    // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
+    public final Boolean prefixPrimitiveOperator;
+
     public Assignment(@NotNull Expression target, @NotNull Expression value) {
-        this(target, value, null);
+        this(target, value, null, null);
     }
 
     public Assignment(@NotNull Expression target, @NotNull Expression value,
-                      MethodInfo primitiveOperator) {
+                      MethodInfo primitiveOperator,
+                      Boolean prefixPrimitiveOperator) {
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
-        this.primitiveOperator = primitiveOperator;
+        this.primitiveOperator = primitiveOperator; // as in i+=1;
+        this.prefixPrimitiveOperator = prefixPrimitiveOperator;
     }
 
     @NotNull
     public static MethodInfo operator(@NotNull AssignExpr.Operator operator,
                                       @NotNull TypeInfo widestType) {
-        // if (widestType == Primitives.PRIMITIVES.intTypeInfo || widestType == Primitives.PRIMITIVES.longTypeInfo) {
         switch (operator) {
             case PLUS:
                 return Primitives.PRIMITIVES.assignPlusOperatorInt;
+            case MINUS:
+                 return Primitives.PRIMITIVES.assignMinusOperatorInt;
+            case MULTIPLY:
+                return Primitives.PRIMITIVES.assignMultiplyOperatorInt;
+            case DIVIDE:
+                return Primitives.PRIMITIVES.assignDivideOperatorInt;
             case BINARY_OR:
                 return Primitives.PRIMITIVES.assignOrOperatorBoolean;
             case ASSIGN:
                 return Primitives.PRIMITIVES.assignOperatorInt;
         }
-        /// }
-        /*if (widestType == Primitives.PRIMITIVES.booleanTypeInfo) {
-            switch (operator) {
-                case ASSIGN:
-                    return Primitives.PRIMITIVES.assignOperatorInt;
-                    // TODO
-            }
-        }*/
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);
     }
@@ -83,6 +86,17 @@ public class Assignment implements Expression {
 
     @Override
     public String expressionString(int indent) {
+        if (prefixPrimitiveOperator != null) {
+            String operator = primitiveOperator == Primitives.PRIMITIVES.assignPlusOperatorInt ? "++" : "--";
+            if (prefixPrimitiveOperator) {
+                StringBuilder sb = new StringBuilder();
+                StringUtil.indent(sb, indent);
+                sb.append(operator);
+                sb.append(target.expressionString(0));
+                return sb.toString();
+            }
+            return target.expressionString(indent) + operator;
+        }
         String operator = primitiveOperator != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
         return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
     }

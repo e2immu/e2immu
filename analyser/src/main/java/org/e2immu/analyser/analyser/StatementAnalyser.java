@@ -468,6 +468,7 @@ public class StatementAnalyser {
             Assignment assignment = (Assignment) expression;
             at = assignment.target.assignmentTarget().orElseThrow();
             // PART 4: more filling up of the variable properties, this time for assignments
+
             if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
                 // assignment to local variable; could be that we're in the block where it was created, then nothing happens
                 // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)

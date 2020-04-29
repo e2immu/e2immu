@@ -119,6 +119,12 @@ public class Primitives {
 
     public final MethodInfo assignPlusOperatorInt = new MethodInfo(intTypeInfo, "+=",
             List.of(), intParameterizedType, true);
+    public final MethodInfo assignMinusOperatorInt = new MethodInfo(intTypeInfo, "-=",
+            List.of(), intParameterizedType, true);
+    public final MethodInfo assignMultiplyOperatorInt = new MethodInfo(intTypeInfo, "*=",
+            List.of(), intParameterizedType, true);
+    public final MethodInfo assignDivideOperatorInt = new MethodInfo(intTypeInfo, "/=",
+            List.of(), intParameterizedType, true);
 
     public final MethodInfo assignOrOperatorBoolean = new MethodInfo(intTypeInfo, "|=",
             List.of(), booleanParameterizedType, true);
@@ -239,5 +245,26 @@ public class Primitives {
         if (toOrder <= 1 || toOrder >= 9) return NOT_ASSIGNABLE;
         int diff = toOrder - fromOrder;
         return diff < 0 ? NOT_ASSIGNABLE : diff;
+    }
+
+    public boolean isPreOrPostFixOperator(MethodInfo operator) {
+        return operator == postfixDecrementOperatorInt || // i--;
+                operator == postfixIncrementOperatorInt || // i++;
+                operator == prefixDecrementOperatorInt || // --i;
+                operator == prefixIncrementOperatorInt; // ++i;
+    }
+
+    public boolean isPrefixOperator(MethodInfo operator) {
+        return operator == prefixDecrementOperatorInt || operator == prefixIncrementOperatorInt;
+    }
+
+    public MethodInfo prePostFixToAssignment(MethodInfo operator) {
+        if (operator == postfixDecrementOperatorInt || operator == prefixDecrementOperatorInt) {
+            return assignMinusOperatorInt;
+        }
+        if (operator == postfixIncrementOperatorInt || operator == prefixIncrementOperatorInt) {
+            return assignPlusOperatorInt;
+        }
+        throw new UnsupportedOperationException();
     }
 }

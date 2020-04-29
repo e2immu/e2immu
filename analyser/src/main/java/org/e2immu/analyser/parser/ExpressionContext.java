@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.expr.*;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotModified;
@@ -439,9 +440,15 @@ public class ExpressionContext {
                 UnaryExpr unaryExpr = (UnaryExpr) expression;
                 org.e2immu.analyser.model.Expression exp = parseExpression(unaryExpr.getExpression());
                 ParameterizedType pt = exp.returnType();
-                if (!pt.isType()) throw new UnsupportedOperationException("??");
+                if (pt.typeInfo == null) throw new UnsupportedOperationException("??");
+                MethodInfo operator = UnaryOperator.getOperator(unaryExpr.getOperator(), pt.typeInfo);
+                if (Primitives.PRIMITIVES.isPreOrPostFixOperator(operator)) {
+                    boolean isPrefix = Primitives.PRIMITIVES.isPrefixOperator(operator);
+                    MethodInfo associatedAssignment = Primitives.PRIMITIVES.prePostFixToAssignment(operator);
+                    return new Assignment(exp, new IntConstant(1), associatedAssignment, isPrefix);
+                }
                 return new UnaryOperator(
-                        UnaryOperator.getOperator(unaryExpr.getOperator(), pt.typeInfo),
+                        operator,
                         exp,
                         UnaryOperator.precedence(unaryExpr.getOperator())
                 );
@@ -522,7 +529,7 @@ public class ExpressionContext {
                         target.returnType().isType() && target.returnType().typeInfo.isPrimitive()) {
                     ParameterizedType widestType = Primitives.PRIMITIVES.widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(assignExpr.getOperator(), widestType.typeInfo);
-                    return new Assignment(target, value, primitiveOperator);
+                    return new Assignment(target, value, primitiveOperator, null);
                 }
                 return new Assignment(target, value);
             }
