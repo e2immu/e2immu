@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -155,6 +156,7 @@ public class Assignment implements Expression {
                 }
                 // here we set the valueForLinkAnalysis to be the method value rather than the variable value
                 // which we will return
+                //result = new Instance(assignmentTarget.get().parameterizedType(), null, null, isNotNull);
                 result = new VariableValue(assignmentTarget.get(), Set.of(), false, resultOfExpression);
                 if (isNotNull) {
                     evaluationContext.setNotNull(((VariableValue) result).value);

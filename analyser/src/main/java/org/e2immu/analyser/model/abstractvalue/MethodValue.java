@@ -36,10 +36,10 @@ public class MethodValue implements Value {
     public final List<Value> parameters;
     public final Value object;
 
-    public MethodValue(@NotNull MethodInfo methodInfo, Value object, @NotNull List<Value> parameters) {
+    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
-        this.object = object;
+        this.object = Objects.requireNonNull(object);
     }
 
     @Override
@@ -48,7 +48,8 @@ public class MethodValue implements Value {
         if (o == null || getClass() != o.getClass()) return false;
         MethodValue that = (MethodValue) o;
         return methodInfo.equals(that.methodInfo) &&
-                parameters.equals(that.parameters);
+                parameters.equals(that.parameters) &&
+                object.equals(that.object);
     }
 
     @Override

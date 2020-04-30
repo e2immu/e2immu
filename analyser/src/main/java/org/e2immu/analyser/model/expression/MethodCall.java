@@ -77,14 +77,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // we will, at some point, analyse this method
                 result = UnknownValue.NO_VALUE;
             } else {
-                // we will never analyse this method
-                // simple example of a frequently recurring issue...
-                result = new MethodValue(methodInfo, objectValue, parameters);
+                Boolean isIdentity = methodInfo.isIdentity(evaluationContext.getTypeContext());
+                if (isIdentity == null) {
+                    result = UnknownValue.NO_VALUE; // delaying
+                } else if (isIdentity) {
+                    result = parameters.get(0);
+                } else {
+                    // we will never analyse this method
+                    // simple example of a frequently recurring issue...
+                    result = new MethodValue(methodInfo, objectValue, parameters);
 
-                if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
-                    ParameterizedType type = objectValue.type();
-                    if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                        return ErrorValue.unnecessaryMethodCall(result);
+                    if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+                        ParameterizedType type = objectValue.type();
+                        if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
+                            return ErrorValue.unnecessaryMethodCall(result);
+                        }
                     }
                 }
             }

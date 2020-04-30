@@ -288,19 +288,6 @@ The method analyser determines this straightforwardly, in `updateParameterAnnota
 
 === Evaluation trail
 
-We need the concept of a _safe expression_, which is an expression that can be repeatedly evaluated, each time rendering identical results.
-Rather than computing on expression level, we compute at value level (a method can return a constant, for example).
-Which ones are safe?
-
-* `Constant` expressions
-* `VariableValues`, if the variable is either @E1Immutable, local and not assigned to, and not modified in between evaluations.
-This applies to all `VariableValues` occurring in the value.
-* `MethodValue` expressions, if the method is @E2Immutable and no parameter values are modified
-* `Instance`?
-
-#TODO:# does this equate to the SIDE EFFECT computation? Anything that has side effect NONE is safe
-
-#TODO:# check that higher level immutability is not required
 
 Then,
 
