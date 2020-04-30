@@ -46,6 +46,12 @@ public class Instance implements Value {
     }
 
     @Override
+    public Value notNullCopy() {
+        if (isNotNull) return this;
+        return new Instance(parameterizedType, constructor, constructorParameterValues, true);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

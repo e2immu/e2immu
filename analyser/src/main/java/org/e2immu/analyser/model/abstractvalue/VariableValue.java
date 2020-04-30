@@ -30,24 +30,33 @@ public class VariableValue implements Value {
     public final boolean effectivelyFinalUnevaluated;
     public final Set<AnnotationExpression> dynamicTypeAnnotations;
     public final Value valueForLinkAnalysis;
+    public final Boolean isNotNull;
 
     public VariableValue(Variable value) {
-        this(value, Set.of(), false, null);
+        this(value, Set.of(), false, null, null);
     }
 
     public VariableValue(Variable value,
                          Set<AnnotationExpression> dynamicTypeAnnotations) {
-        this(value, dynamicTypeAnnotations, false, null);
+        this(value, dynamicTypeAnnotations, false, null, null);
     }
 
     public VariableValue(Variable value,
                          Set<AnnotationExpression> dynamicTypeAnnotations,
                          boolean effectivelyFinalUnevaluated,
-                         Value valueForLinkAnalysis) {
+                         Value valueForLinkAnalysis,
+                         Boolean isNotNull) {
         this.value = value;
         this.effectivelyFinalUnevaluated = effectivelyFinalUnevaluated;
         this.dynamicTypeAnnotations = dynamicTypeAnnotations;
         this.valueForLinkAnalysis = valueForLinkAnalysis;
+        this.isNotNull = isNotNull;
+    }
+
+    @Override
+    public Value notNullCopy() {
+        if (isNotNull == Boolean.TRUE) return this;
+        return new VariableValue(value, dynamicTypeAnnotations, effectivelyFinalUnevaluated, valueForLinkAnalysis, true);
     }
 
     @Override
@@ -87,6 +96,7 @@ public class VariableValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
+        if (isNotNull != null) return isNotNull;
         if (value.parameterizedType().isPrimitive()) return true;
         if (evaluationContext.isNotNull(value)) return true;
         if (value instanceof FieldReference) {

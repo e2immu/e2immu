@@ -156,11 +156,7 @@ public class Assignment implements Expression {
                 }
                 // here we set the valueForLinkAnalysis to be the method value rather than the variable value
                 // which we will return
-                //result = new Instance(assignmentTarget.get().parameterizedType(), null, null, isNotNull);
-                result = new VariableValue(assignmentTarget.get(), Set.of(), false, resultOfExpression);
-                if (isNotNull) {
-                    evaluationContext.setNotNull(((VariableValue) result).value);
-                }
+                result = new VariableValue(assignmentTarget.get(), Set.of(), false, resultOfExpression, isNotNull);
             }
         } else {
             result = resultOfExpression;

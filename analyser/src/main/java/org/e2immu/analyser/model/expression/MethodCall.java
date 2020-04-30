@@ -66,12 +66,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             List<Value> parameters = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+            Boolean isNotNull = methodInfo.isNotNull(evaluationContext.getTypeContext());
+
             if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
                 Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {
-                    result = new MethodValue(methodInfo, objectValue, parameters);
+                    result = new MethodValue(methodInfo, objectValue, parameters, isNotNull);
                 }
             } else if (methodInfo.hasBeenDefined()) {
                 // we will, at some point, analyse this method
@@ -81,11 +83,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (isIdentity == null) {
                     result = UnknownValue.NO_VALUE; // delaying
                 } else if (isIdentity) {
-                    result = parameters.get(0);
+                    if (isNotNull == Boolean.TRUE) {
+                        result = parameters.get(0).notNullCopy();
+                    } else {
+                        result = parameters.get(0);
+                    }
                 } else {
                     // we will never analyse this method
                     // simple example of a frequently recurring issue...
-                    result = new MethodValue(methodInfo, objectValue, parameters);
+                    result = new MethodValue(methodInfo, objectValue, parameters, isNotNull);
 
                     if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
                         ParameterizedType type = objectValue.type();

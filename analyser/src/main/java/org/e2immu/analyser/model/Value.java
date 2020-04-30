@@ -66,6 +66,14 @@ public interface Value extends Comparable<Value> {
     }
 
     /**
+     * return a value, but with the guarantee that isNotNull will evaluate to true
+     * @return
+     */
+    default Value notNullCopy() {
+        return this;
+    }
+
+    /**
      * will be overridden by VariableValue
      *
      * @return the object that we need to compute the links in an assignment,

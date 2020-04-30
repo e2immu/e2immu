@@ -80,12 +80,13 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         Value value = scope.evaluate(evaluationContext, visitor);
         Value result;
 
+        Boolean isNotNull = methodInfo.isNotNull(evaluationContext.getTypeContext());
         if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
             Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
             if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                 result = singleValue;
             } else {
-                Value method = new MethodValue(methodInfo, value, List.of());
+                Value method = new MethodValue(methodInfo, value, List.of(), isNotNull);
                 if (value instanceof NullValue) {
                     result = ErrorValue.nullPointerException(method);
                 } else {
@@ -95,7 +96,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         } else if (methodInfo.hasBeenDefined()) {
             result = UnknownValue.NO_VALUE;
         } else {
-            Value method = new MethodValue(methodInfo, value, List.of());
+            Value method = new MethodValue(methodInfo, value, List.of(), isNotNull);
             if (value instanceof NullValue) {
                 result = ErrorValue.nullPointerException(method);
             } else {

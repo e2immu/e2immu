@@ -35,11 +35,19 @@ public class MethodValue implements Value {
     public final MethodInfo methodInfo;
     public final List<Value> parameters;
     public final Value object;
+    public final Boolean isNotNull;
 
-    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters) {
+    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, Boolean isNotNull) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
+        this.isNotNull = isNotNull;
+    }
+
+    @Override
+    public Value notNullCopy() {
+        if (isNotNull == Boolean.TRUE) return this;
+        return new MethodValue(methodInfo, object, parameters, true);
     }
 
     @Override
@@ -88,6 +96,7 @@ public class MethodValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
+        if (isNotNull != null) return true;
         TypeContext typeContext = evaluationContext.getTypeContext();
         Boolean isNotNull = methodInfo.isNotNull(typeContext);
         if (isNotNull == Boolean.TRUE) {
@@ -177,9 +186,8 @@ public class MethodValue implements Value {
             return result;
 
         // default case, add b
-        if (object != null) {
-            result.addAll(object.linkedVariables(bestCase, evaluationContext));
-        }
+        result.addAll(object.linkedVariables(bestCase, evaluationContext));
+
         return result;
     }
 

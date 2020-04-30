@@ -181,13 +181,13 @@ public class TypeAnalyser {
                     dynamicAnnotationExpressions = fieldInfo.fieldAnalysis.annotations.stream().filter(Map.Entry::getValue)
                             .map(Map.Entry::getKey).collect(Collectors.toSet());
                 }
-                value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null);
+                value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
             }
         } else if (Boolean.FALSE == isFinal) {
             value = new VariableValue(fieldReference);
         } else {
             // no idea about @Final, @E2Immutable
-            value = new VariableValue(fieldReference, null, true, null);
+            value = new VariableValue(fieldReference, null, true, null, null);
         }
 
         VariableProperty[] properties;
