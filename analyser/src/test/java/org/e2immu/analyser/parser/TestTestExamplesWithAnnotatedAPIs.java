@@ -57,7 +57,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 E1IMMUTABLE,
                 SIDE_EFFECT,
                 UTILITY_CLASS,
-                NULL_NOT_ALLOWED,
                 NOT_NULL,
                 NOT_MODIFIED);
     }

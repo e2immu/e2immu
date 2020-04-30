@@ -145,7 +145,6 @@ public class Assignment implements Expression {
         Value result;
 
         if (resultOfExpression instanceof MethodValue) {
-            // NOTE: this piece of code is almost replicated in LocalVariableCreation
             Boolean isNotNull = resultOfExpression.isNotNull(evaluationContext);
             if (isNotNull == null) {
                 result = UnknownValue.NO_VALUE; // delay
@@ -154,7 +153,9 @@ public class Assignment implements Expression {
                 if (assignmentTarget.isEmpty()) {
                     throw new UnsupportedOperationException("Have " + target.getClass());// ?
                 }
-                result = new VariableValue(assignmentTarget.get());
+                // here we set the valueForLinkAnalysis to be the method value rather than the variable value
+                // which we will return
+                result = new VariableValue(assignmentTarget.get(), Set.of(), false, resultOfExpression);
                 if (isNotNull) {
                     evaluationContext.setNotNull(((VariableValue) result).value);
                 }

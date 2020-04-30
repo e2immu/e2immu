@@ -467,10 +467,20 @@ public class StatementAnalyser {
             Variable at = assignment.target.assignmentTarget().orElseThrow();
             // PART 4: more filling up of the variable properties, this time for assignments
 
-            if (!(at instanceof FieldReference) || ((FieldReference) at).scope instanceof This) {
-                // assignment to local variable; could be that we're in the block where it was created, then nothing happens
+            // only change fields of "our" class
+            if (!(at instanceof FieldReference) ||
+                    ((FieldReference) at).fieldInfo.owner.primaryType() == variableProperties.currentMethod.typeInfo.primaryType()) {
+                log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
+
+                // assignment to local variable: could be that we're in the block where it was created, then nothing happens
                 // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-                variableProperties.ensureLocalCopy(at);
+                if (at instanceof LocalVariableReference) {
+                    variableProperties.ensureLocalCopy(at);
+                }
+                variableProperties.setValue(at, value);
+
+                // the following block is there in case the value, instead of the expected complicated one, turns
+                // out to be a constant.
                 Boolean isNotNull = value.isNotNull(variableProperties);
                 if (isNotNull == Boolean.TRUE) {
                     variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
@@ -487,15 +497,17 @@ public class StatementAnalyser {
                 } else {
                     variableProperties.removeProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
                 }
-                if (value != NO_VALUE) {
-                    variableProperties.setValue(at, value);
-                    Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
-                    Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
+                Value valueForLinkAnalysis = value.valueForLinkAnalysis();
+                if (valueForLinkAnalysis != NO_VALUE) {
+                    Set<Variable> linkToBestCase = valueForLinkAnalysis.linkedVariables(true, variableProperties);
+                    Set<Variable> linkToWorstCase = valueForLinkAnalysis.linkedVariables(false, variableProperties);
                     log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
                             Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
                     variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
                 }
-                log(VARIABLE_PROPERTIES, "Set value of {} to {}", at.detailedString(), value);
+            } else {
+                LOGGER.warn("Ignoring assignment to field in outside primary type: {}, while in {}",
+                        at.detailedString(), variableProperties.currentMethod.distinguishingName());
             }
         } else {
             for (Variable variable : expression.variables()) {

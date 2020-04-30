@@ -34,7 +34,9 @@ import java.util.Set;
 public interface Value extends Comparable<Value> {
     Boolean isNotNull(EvaluationContext evaluationContext);
 
-    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) { return Set.of(); }
+    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+        return Set.of();
+    }
 
     default IntValue toInt() {
         throw new UnsupportedOperationException(this.getClass().toString());
@@ -52,10 +54,24 @@ public interface Value extends Comparable<Value> {
     /**
      * @return a map with all clauses, true for V == null, false for V != null
      */
-    default Map<Variable, Boolean> individualNullClauses() { return Map.of(); }
+    default Map<Variable, Boolean> individualNullClauses() {
+        return Map.of();
+    }
 
     /**
      * @return the type, if we are certain
      */
-    default ParameterizedType type() { return null; }
+    default ParameterizedType type() {
+        return null;
+    }
+
+    /**
+     * will be overridden by VariableValue
+     *
+     * @return the object that we need to compute the links in an assignment,
+     * as compared to the object with which we continue
+     */
+    default Value valueForLinkAnalysis() {
+        return this;
+    }
 }

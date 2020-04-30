@@ -110,7 +110,7 @@ public class ParameterAnalyser {
                 }
             }
             if (parameterInfo != null && isPermanentlyNotNull && !parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                log(NULL_NOT_ALLOWED, "Adding implicit null not allowed on {}", parameterInfo.detailedString());
+                log(NOT_NULL, "Adding implicit null not allowed on {}", parameterInfo.detailedString());
                 parameterInfo.parameterAnalysis.annotations.put(typeContext.notNull.get(), true);
                 changes = true;
             }

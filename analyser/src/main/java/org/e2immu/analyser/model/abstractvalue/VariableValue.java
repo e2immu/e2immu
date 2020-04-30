@@ -29,22 +29,25 @@ public class VariableValue implements Value {
     public final Variable value;
     public final boolean effectivelyFinalUnevaluated;
     public final Set<AnnotationExpression> dynamicTypeAnnotations;
+    public final Value valueForLinkAnalysis;
 
     public VariableValue(Variable value) {
-        this(value, Set.of(), false);
+        this(value, Set.of(), false, null);
     }
 
     public VariableValue(Variable value,
                          Set<AnnotationExpression> dynamicTypeAnnotations) {
-        this(value, dynamicTypeAnnotations, false);
+        this(value, dynamicTypeAnnotations, false, null);
     }
 
     public VariableValue(Variable value,
                          Set<AnnotationExpression> dynamicTypeAnnotations,
-                         boolean effectivelyFinalUnevaluated) {
+                         boolean effectivelyFinalUnevaluated,
+                         Value valueForLinkAnalysis) {
         this.value = value;
         this.effectivelyFinalUnevaluated = effectivelyFinalUnevaluated;
         this.dynamicTypeAnnotations = dynamicTypeAnnotations;
+        this.valueForLinkAnalysis = valueForLinkAnalysis;
     }
 
     @Override
@@ -116,5 +119,10 @@ public class VariableValue implements Value {
     @Override
     public ParameterizedType type() {
         return value.concreteReturnType();
+    }
+
+    @Override
+    public Value valueForLinkAnalysis() {
+        return valueForLinkAnalysis != null ? valueForLinkAnalysis : this;
     }
 }

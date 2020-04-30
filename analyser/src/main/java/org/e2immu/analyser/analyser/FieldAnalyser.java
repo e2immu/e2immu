@@ -139,7 +139,7 @@ public class FieldAnalyser {
                     annotations.put(constantAnnotation, true);
                     log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                 } else {
-                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), false);
+                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), false, null);
                     annotations.put(typeContext.constant.get(), false);
                     log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }
@@ -154,37 +154,62 @@ public class FieldAnalyser {
 
         if (!annotations.isSet(typeContext.notNull.get())) {
             Boolean isNotNullValue;
-            // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
-            // the real value with a generic VariableValue, relying on @NotNull
-            boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                    m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                            (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-            if (allAssignmentValuesDefined) {
-                Boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
-                        .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                        .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties))
-                        .reduce(true, TypeAnalyser.TERNARY_AND);
-                if (allAssignmentValuesNotNull == null) {
-                    isNotNullValue = null; // delay
-                } else {
-                    if (!haveInitialiser) {
-                        isNotNullValue = allAssignmentValuesNotNull;
+            Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
+            if (isFinal == null) {
+                log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
+                isNotNullValue = null;
+            } else {
+                Boolean finalCriteria;
+                if (isFinal == Boolean.FALSE) {
+                    if (!fieldInfo.isPrivate() || !haveInitialiser) {
+                        log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser",
+                                fieldInfo.fullyQualifiedName());
+                        finalCriteria = false;
                     } else {
-                        if (value == NO_VALUE) {
+                        finalCriteria = value.isNotNull(fieldProperties);
+                    }
+                } else {
+                    finalCriteria = true;
+                }
+                if (finalCriteria == null) {
+                    log(DELAYED, "Delaying @NotNull on {} until we know @NotNull of initialiser", fieldInfo.fullyQualifiedName());
+                    isNotNullValue = null;
+                } else if (finalCriteria) {
+                    // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
+                    // the real value with a generic VariableValue, relying on @NotNull
+                    boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                            m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                                    (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+                    if (allAssignmentValuesDefined) {
+                        Boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
+                                .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                                .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties))
+                                .reduce(true, TypeAnalyser.TERNARY_AND);
+                        if (allAssignmentValuesNotNull == null) {
                             isNotNullValue = null; // delay
                         } else {
-                            Boolean initialiserIsNotNull = value.isNotNull(fieldProperties);
-                            if (initialiserIsNotNull == null) {
-                                isNotNullValue = null; // delay
+                            if (!haveInitialiser) {
+                                isNotNullValue = allAssignmentValuesNotNull;
                             } else {
-                                // this is the real one!
-                                isNotNullValue = initialiserIsNotNull && allAssignmentValuesNotNull;
+                                if (value == NO_VALUE) {
+                                    isNotNullValue = null; // delay
+                                } else {
+                                    Boolean initialiserIsNotNull = value.isNotNull(fieldProperties);
+                                    if (initialiserIsNotNull == null) {
+                                        isNotNullValue = null; // delay
+                                    } else {
+                                        // this is the real one!
+                                        isNotNullValue = initialiserIsNotNull && allAssignmentValuesNotNull;
+                                    }
+                                }
                             }
                         }
+                    } else {
+                        isNotNullValue = null; // delay
                     }
+                } else {
+                    isNotNullValue = false;
                 }
-            } else {
-                isNotNullValue = null; // delay
             }
             if (isNotNullValue == null) {
                 log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());

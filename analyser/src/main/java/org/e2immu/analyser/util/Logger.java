@@ -58,7 +58,6 @@ public class Logger {
         E2IMMUTABLE,
         UTILITY_CLASS,
         EXTENSION_CLASS,
-        NULL_NOT_ALLOWED,
         NOT_MODIFIED,
         CONSTANT,
         NOT_NULL,

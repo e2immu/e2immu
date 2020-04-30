@@ -12,9 +12,10 @@ Links cannot occur between variables of primitive or @E2Immutable types.
 @NotModified on parameters::
 No code _in the class_ can make content modifications to such parameters or variables linked to such parameters.
 Implicit for primitives and @E2Immutable types.
+Note that we do not allow assignments to parameters.
 
 @NotModified on methods::
-No code in the method makes any content modification to any of the fields.
+No code in the method makes any assignment or content modification to any of the fields.
 
 @NotModified on fields::
 No code _in the class_ can make content modifications to the field.
@@ -27,7 +28,9 @@ It is important to realise that `@NotModified` works on static and on instance f
 Neither is there a link between the return value, if present, and the parameters.
 Because cannot occur between variables of primitive or @E2Immutable types, there's no need to require @Independent when parameters and return type are of these types.
 
-@E1Immutable on fields:: expensive way of saying that the field is effectively or eventually final: it is not assigned to outside construction time.
+@Final on fields::  field is effectively or eventually final: it is not assigned to outside construction time.
+
+@E1Immutable on fields:: dynamic type annotation (the concrete type is @E1Immutable, even if the formal type is not)
 
 @Container on type:: a container is a type where all parameters of non-private methods and constructors are <<notmodified-annotation>>, unless they are explicitly marked @Output.
 +
@@ -84,8 +87,15 @@ class CanBeEnriched {
 The class `java.lang.String` is an @E2Container. `List` is not a container, because of the `toArray` method.
 We provide an exception with the @Output annotation.
 
-The topics of <<notnull-annotation>> and <<nullnotallowed-annotation>> are only of indirect importance.
-<<fluent-annotation>> and <<identity-annotation>> are marginally important to #TODO#.
+@NotNull on parameters:: an exception will be thrown when null value is passed to this parameter
+
+@NotNull on methods:: the method never returns null
+
+@NotNull on fields:: the field's value cannot be null.
+This is only relevant when either
++
+. the field is @Final
+. the field is `private`, it has an initialiser, and both the initialiser and all assignments in all methods are guaranteed not to render a null value
 
 @UtilityClass:: an @E2Immutable class with only static methods and static fields, private constructors only, and no means of creating instance objects.
 

@@ -292,6 +292,13 @@ public class MethodAnalyser {
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
+            // first step, check that no fields are being assigned
+            boolean fieldAssignments = methodAnalysis.fieldAssignments.stream().anyMatch(Map.Entry::getValue);
+            if (fieldAssignments) {
+                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields are being assigned", methodInfo.distinguishingName());
+                methodAnalysis.annotations.put(typeContext.notModified.get(), false);
+                return true;
+            }
             // second step, check that no fields are modified
             if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
                 log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");

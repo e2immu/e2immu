@@ -43,7 +43,7 @@ public class Lazy<T> {
     private final Supplier<T> supplier;
 
     @Linked(to = "supplier")// for now, we link t to supplier (nothing that rules it out)
-    @E1Immutable(type = AnnotationType.VERIFY_ABSENT) // later after mark
+    @Final(type = AnnotationType.VERIFY_ABSENT) // later after mark
     private volatile T t;
 
     /**

@@ -20,13 +20,19 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
-@E1Container(after = "set", type = AnnotationType.CONTRACT)
+//@E1Container(after = "set", type = AnnotationType.CONTRACT)
+@E1Container(type = AnnotationType.VERIFY_ABSENT)
+@E1Immutable(type = AnnotationType.VERIFY_ABSENT)
+@Container
 public class SetOnce<T> {
+
+    @Final(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(type = AnnotationType.VERIFY_ABSENT)
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
-    @Mark("set")
-    @Only(before = "set")
+    //@Mark("set")
+    //@Only(before = "set")
     public void set(@NotNull T t) { // @NotModified implied
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -37,7 +43,10 @@ public class SetOnce<T> {
         }
     }
 
-    @Only(after = "set")
+    //@Only(after = "set")
+    @NotNull
+    @NotModified
+    @Independent(type = AnnotationType.VERIFY_ABSENT)
     public T get() {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
@@ -57,6 +66,7 @@ public class SetOnce<T> {
     }
 
     @NotModified
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public boolean isSet() {
         return t != null;
     }

@@ -185,4 +185,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.FINAL);
     }
 
+    public boolean isPrivate() {
+        return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
+    }
 }

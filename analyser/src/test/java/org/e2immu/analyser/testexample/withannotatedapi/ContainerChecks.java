@@ -93,6 +93,7 @@ public class ContainerChecks {
 
         @NotNull
         @Linked
+        @Final
         private final Set<String> strings4;
 
         public Container4(@NotNull Set<String> strings4Param) {
@@ -104,19 +105,19 @@ public class ContainerChecks {
         }
 
         // there should be a link from the field (or the source link, the input parameter 'strings', to 'modified'
-        public void m1(@NotModified(type = VERIFY_ABSENT) Set<String> modified) {
+        public void m1(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> modified) {
             Set<String> sourceM1 = strings4;
             modified.addAll(sourceM1);
         }
 
         // there should be a link from modified2 to strings
-        public void m2(@NotModified(type = VERIFY_ABSENT) Set<String> modified2) {
+        public void m2(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> modified2) {
             Set<String> toModifyM2 = modified2;
             toModifyM2.addAll(strings4);
         }
 
         // we link the set 'out' to the set 'in', but who cares about this? how can we use this linkage later?
-        public static void crossModify(@NotModified Set<String> in, @NotModified(type = VERIFY_ABSENT) Set<String> out) {
+        public static void crossModify(@NotNull @NotModified Set<String> in, @NotNull @NotModified(type = VERIFY_ABSENT) Set<String> out) {
             out.addAll(in);
         }
     }
