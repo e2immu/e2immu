@@ -41,6 +41,12 @@ public abstract class Analysis {
                 } else {
                     sb.append("/*FAIL*/");
                 }
+            } else {
+                if (annotationType == AnnotationType.VERIFY) {
+                    sb.append("/*FAIL:DELAYED*/");
+                } else if (annotationType == AnnotationType.VERIFY_ABSENT) {
+                    sb.append("/*OK:DELAYED*/");
+                }
             }
         });
     }

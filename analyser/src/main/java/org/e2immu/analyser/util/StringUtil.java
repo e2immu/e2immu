@@ -31,6 +31,7 @@ public class StringUtil {
 
     private StringUtil() {
         // nothing here, cannot be instantiated
+        throw new UnsupportedOperationException();
     }
 
     public static void indent(StringBuilder sb, int num) {

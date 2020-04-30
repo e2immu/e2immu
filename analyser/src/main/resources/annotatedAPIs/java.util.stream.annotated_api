@@ -25,10 +25,7 @@
  */
 package java.util.stream;
 
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
-import org.e2immu.annotation.UtilityClass;
+import org.e2immu.annotation.*;
 
 import java.util.Comparator;
 import java.util.List;
@@ -66,7 +63,7 @@ public class Collectors {
 }
 
 @NotNull
-@E2Immutable
+@E2Container
 public interface IntStream {
     long count();
     int sum();
@@ -74,7 +71,7 @@ public interface IntStream {
 }
 
 @NotNull
-@E2Immutable
+@E2Container
 public interface Stream<T> {
 
     <R> Stream<R> map(Function<? super T, ? super R> mapper);

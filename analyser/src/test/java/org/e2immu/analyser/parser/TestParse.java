@@ -19,8 +19,11 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.annotation.NotModified;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -50,65 +53,81 @@ public class TestParse {
 
     @Test
     public void testDependencyGraph() throws IOException {
-        goTest("DependencyGraph");
+        goTest("DependencyGraph", 0);
     }
 
     @Test
     public void testEither() throws IOException {
-        goTest("Either");
+        goTest("Either", 0);
     }
 
     @Test
     public void testFirstThen() throws IOException {
-        goTest("FirstThen");
+        goTest("FirstThen", 0);
     }
 
     @Test
     public void testLazy() throws IOException {
-        goTest("Lazy");
+        goTest("Lazy", 0);
     }
 
     @Test
     public void testPair() throws IOException {
-        goTest("Pair");
+        goTest("Pair", 0);
     }
 
     @Test
     public void testSetOnce() throws IOException {
-        goTest("SetOnce");
+        goTest("SetOnce", 0);
     }
 
     @Test
     public void testSetOnceMap() throws IOException {
-        goTest("SetOnceMap");
+        goTest("SetOnceMap", 0);
     }
 
     @Test
     public void testStringUtil() throws IOException {
-        goTest("StringUtil");
+        goTest("StringUtil", 0);
     }
 
     @Test
     public void testTrie() throws IOException {
-        goTest("Trie");
+        goTest("Trie", 0);
     }
 
     @NotModified
-    private void goTest(String typeName) throws IOException {
-        Parser parser = new Parser();
-        String path = "src/main/java/org/e2immu/analyser/util/";
-        TypeInfo freezable = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.util.Freezable");
-        TypeInfo other = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.util." + typeName);
-        URL urlFreezable = new File(path + "Freezable.java").toURI().toURL();
-        URL urlOther = new File(path + typeName + ".java").toURI().toURL();
-
-        List<SortedType> types = parser.parseJavaFiles(Map.of(freezable, urlFreezable, other, urlOther));
+    private void goTest(String typeName, long countError) throws IOException {
+        // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
+        // test runner's classpath to ours
+        Configuration configuration = new Configuration.Builder()
+                .setInputConfiguration(new InputConfiguration.Builder()
+                        .addSources("src/main/java")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.util."+typeName)
+                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
+                        .addClassPath("jmods/java.xml.jmod")
+                        .build())
+                .build();
+        Parser parser = new Parser(configuration);
+        List<SortedType> types = parser.run();
+        //Assert.assertTrue(15 <= types.size());
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());
         }
+        Assert.assertTrue(parser.getMessages().stream().noneMatch(m -> m.severity == Message.Severity.ERROR));
     }
 
 }

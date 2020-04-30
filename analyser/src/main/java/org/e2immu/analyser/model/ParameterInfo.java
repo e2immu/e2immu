@@ -165,7 +165,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         if (directly != Boolean.FALSE) {
             return directly;
         }
-        return parameterInspection.get().owner.typeInfo.annotatedWith(typeContext.notNull.get());
+        return parameterInspection.get().owner.typeInfo.isNotNullForParameters(typeContext);
     }
 
     @Override

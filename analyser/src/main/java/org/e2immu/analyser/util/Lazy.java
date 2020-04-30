@@ -32,12 +32,18 @@ import java.util.function.Supplier;
  * @param <T> the container's content
  */
 
-@E1Container(after = "get")
+@E1Container(type = AnnotationType.VERIFY_ABSENT) //(after = "get")
+@E1Immutable(type = AnnotationType.VERIFY_ABSENT) // remove me later
+@Container // this one is safe
 public class Lazy<T> {
     @NotModified
+    @NotNull
+    @Final
+    @Linked(to = "supplier") // the parameter
     private final Supplier<T> supplier;
 
-    @Linked // for now, we link t to supplier (nothing that rules it out)
+    @Linked(to = "supplier")// for now, we link t to supplier (nothing that rules it out)
+    @E1Immutable(type = AnnotationType.VERIFY_ABSENT) // later after mark
     private volatile T t;
 
     /**
@@ -58,7 +64,8 @@ public class Lazy<T> {
      * @throws NullPointerException if the evaluation returns <code>null</code>
      */
     @NotNull
-    @Mark("get")
+    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    //@Mark("get")
     public T get() {
         if (t == null) {
             synchronized (this) {
