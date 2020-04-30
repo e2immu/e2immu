@@ -24,7 +24,8 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-@E2Container(after = "freeze")
+//@E2Container(after = "freeze")
+@E1Immutable
 public class Trie<T> extends Freezable {
 
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
@@ -69,7 +70,7 @@ public class Trie<T> extends Freezable {
         return node == null ? null : node.data == null ? List.of() : node.data;
     }
 
-    @Only(before = "freeze")
+    //@Only(before = "freeze")
     public List<T> getOrCompute(String[] strings, Function<String[], T> action) {
         TrieNode<T> node = goTo(strings);
         if (node == null) {
@@ -121,7 +122,7 @@ public class Trie<T> extends Freezable {
     }
 
     @NotNull
-    @Only(before = "freeze")
+    //@Only(before = "freeze")
     public TrieNode<T> add(String[] strings,
                            T data) {
         TrieNode<T> node = root;

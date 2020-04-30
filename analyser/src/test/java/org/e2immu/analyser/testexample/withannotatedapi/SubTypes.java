@@ -22,6 +22,8 @@ import java.util.Iterator;
 
 public class SubTypes {
 
+    private static String staticField;
+
     String field;
 
     static Iterator<Integer> newIt() {
@@ -68,7 +70,12 @@ public class SubTypes {
     static class StaticSubType {
         @Override
         public String toString() {
-            return "hello";
+            staticField = "abc";
+            return "hello" + staticField;
+        }
+
+        public void add() {
+            staticField += "a";
         }
 
         static class SubTypeOfStaticSubType {
@@ -79,4 +86,6 @@ public class SubTypes {
             }
         }
     }
+
+
 }

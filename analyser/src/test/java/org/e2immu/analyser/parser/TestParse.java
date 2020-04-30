@@ -46,7 +46,7 @@ public class TestParse {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, LAMBDA,
                 METHOD_CALL, VARIABLE_PROPERTIES, LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
-                E2IMMUTABLE, NOT_NULL,
+                E2IMMUTABLE, NOT_NULL, DELAYED,
                 CONTAINER, E1IMMUTABLE, SIDE_EFFECT, UTILITY_CLASS);
     }
 

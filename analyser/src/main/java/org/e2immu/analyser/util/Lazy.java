@@ -39,7 +39,7 @@ public class Lazy<T> {
     @NotModified
     @NotNull
     @Final
-    @Linked(to = "supplier") // the parameter
+    @Linked(to = "supplierParam") // the parameter
     private final Supplier<T> supplier;
 
     @Linked(to = "supplier")// for now, we link t to supplier (nothing that rules it out)
@@ -49,12 +49,12 @@ public class Lazy<T> {
     /**
      * Construct the lazy object by storing a supplier.
      *
-     * @param supplier the supplier that will compute the value
+     * @param supplierParam the supplier that will compute the value
      * @throws NullPointerException when the argument is <code>null</code>
      */
-    public Lazy(@NotNull @NotModified Supplier<T> supplier) {
-        if (supplier == null) throw new NullPointerException("Null not allowed");
-        this.supplier = supplier;
+    public Lazy(@NotNull Supplier<T> supplierParam) {
+        if (supplierParam == null) throw new NullPointerException("Null not allowed");
+        this.supplier = supplierParam;
     }
 
     /**
