@@ -30,6 +30,7 @@ import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
@@ -352,7 +353,9 @@ public class FieldAnalyser {
 
         if (fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
-                boolean readInMethods = fieldInfo.owner.typeInspection.get().methods.stream()
+                List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
+                boolean readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
+                        .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
                         .anyMatch(m -> m.methodAnalysis.fieldRead.getOtherwiseNull(fieldInfo) == Boolean.TRUE);
                 if (!readInMethods) {
                     typeContext.addMessage(Message.Severity.ERROR, "Private field " + fieldInfo.fullyQualifiedName() +

@@ -47,6 +47,8 @@ import static org.e2immu.analyser.util.Logger.log;
  * Therefore, at the end of an enclosing type's analysis, we should have decisions on @NotModified of the methods of the
  * enclosing type, and it should be possible to establish whether a nested type only reads fields (does NOT assign) and
  * calls @NotModified private methods.
+ * <p>
+ * Errors related to those constraints are added to the type making the violation.
  */
 
 public class TypeAnalyser {
@@ -173,7 +175,7 @@ public class TypeAnalyser {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
             analyse(sortedType);
-            check(sortedType);
+            check(sortedType); // we're not checking at top level!
         }
         log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",
                 typeInfo.fullyQualifiedName);

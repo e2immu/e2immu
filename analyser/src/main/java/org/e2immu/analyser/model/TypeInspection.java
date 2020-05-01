@@ -59,11 +59,15 @@ public class TypeInspection extends Inspection {
 
     public final SetOnceMap<MethodInfo, Set<MethodInfo>> overrides = new SetOnceMap<>();
     public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
+
+    // only valid for types that have been defined, and empty when not the primary type
+    public final List<TypeInfo> allTypesInPrimaryType;
     public final TypeModifier access;
 
     private TypeInspection(boolean hasBeenDefined,
                            TypeInfo typeInfo,
                            Either<String, TypeInfo> packageNameOrEnclosingType,
+                           List<TypeInfo> allTypesInPrimaryType,
                            TypeNature typeNature,
                            List<TypeParameter> typeParameters,
                            ParameterizedType parentClass,
@@ -75,6 +79,7 @@ public class TypeInspection extends Inspection {
                            List<TypeInfo> subTypes,
                            List<AnnotationExpression> annotations) {
         super(annotations);
+        this.allTypesInPrimaryType = allTypesInPrimaryType;
         this.packageNameOrEnclosingType = packageNameOrEnclosingType;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -110,7 +115,8 @@ public class TypeInspection extends Inspection {
     }
 
     public TypeInspection copy(List<AnnotationExpression> alternativeAnnotations) {
-        return new TypeInspection(hasBeenDefined, typeInfo, packageNameOrEnclosingType, typeNature, typeParameters,
+        return new TypeInspection(hasBeenDefined, typeInfo, packageNameOrEnclosingType, allTypesInPrimaryType,
+                typeNature, typeParameters,
                 parentClass, interfacesImplemented, constructors, methods, fields, modifiers, subTypes,
                 ImmutableList.copyOf(alternativeAnnotations));
     }
@@ -203,10 +209,13 @@ public class TypeInspection extends Inspection {
                 Objects.requireNonNull(parentClass);
             }
             Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);
+            List<TypeInfo> allTypesInPrimaryType = hasBeenDefined && packageName != null ? allTypes(typeInfo) : List.of();
+
             return new TypeInspection(
                     hasBeenDefined,
                     typeInfo,
                     packageNameOrEnclosingType,
+                    allTypesInPrimaryType,
                     typeNature,
                     ImmutableList.copyOf(typeParameters),
                     parentClass,
@@ -217,6 +226,22 @@ public class TypeInspection extends Inspection {
                     ImmutableList.copyOf(modifiers),
                     ImmutableList.copyOf(subTypes),
                     ImmutableList.copyOf(annotations));
+        }
+
+        private List<TypeInfo> allTypes(TypeInfo typeInfo) {
+            List<TypeInfo> result = new ArrayList<>();
+            result.add(typeInfo);
+            for (TypeInfo sub : subTypes) {
+                recursivelyCollectSubTypes(sub, result);
+            }
+            return ImmutableList.copyOf(result);
+        }
+
+        private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
+            result.add(typeInfo);
+            for (TypeInfo sub : typeInfo.typeInspection.get().subTypes) {
+                recursivelyCollectSubTypes(sub, result);
+            }
         }
     }
 

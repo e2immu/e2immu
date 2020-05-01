@@ -121,7 +121,9 @@ public class Parser {
                 throw rte;
             }
             try {
-                typeAnalyser.check(sortedType);
+                if (!sortedType.typeInfo.isNestedType()) {
+                    typeAnalyser.check(sortedType);
+                } // else: nested types get checked after we've analysed their enclosing type
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while checking type {}", sortedType.typeInfo.fullyQualifiedName);
                 throw rte;

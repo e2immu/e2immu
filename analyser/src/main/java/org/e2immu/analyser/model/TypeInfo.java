@@ -986,10 +986,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
     }
 
+    // TODO @Only(after="inspection")
     public TypeInfo primaryType() {
-        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
-        if (packageNameOrEnclosingType.isLeft()) return this;
-        return packageNameOrEnclosingType.getRight().primaryType();
+        if (typeInspection.isSet()) {
+            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
+            if (packageNameOrEnclosingType.isLeft()) return this;
+            return packageNameOrEnclosingType.getRight().primaryType();
+        }
+        throw new UnsupportedOperationException("Type inspection on " + fullyQualifiedName + " not yet set");
     }
 
     /*
@@ -1037,5 +1041,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isNestedType() {
         return typeInspection.get().packageNameOrEnclosingType.isRight();
+    }
+
+    public List<TypeInfo> allTypesInPrimaryType() {
+        return primaryType().typeInspection.get().allTypesInPrimaryType;
     }
 }
