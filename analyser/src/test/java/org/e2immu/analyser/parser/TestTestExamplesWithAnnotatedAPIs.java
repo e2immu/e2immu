@@ -113,7 +113,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
 
     @Test
     public void testSubTypes() throws IOException {
-        testClass("SubTypes", 0);
+        testClass("SubTypes", 2);
     }
 
     @Test

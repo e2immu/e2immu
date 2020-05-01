@@ -449,16 +449,14 @@ public class StatementAnalyser {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
-                    if (doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError))
-                        changes.set(true);
+                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError);
                     doImplicitNullCheck(localExpression, lvp);
                     analyseCallsWithParameters(localExpression, lvp);
                 });
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
 
-    private boolean doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
-        boolean changes = false;
+    private void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
             Variable at = assignment.target.assignmentTarget().orElseThrow();
@@ -469,10 +467,10 @@ public class StatementAnalyser {
                     ((FieldReference) at).fieldInfo.owner.primaryType() == variableProperties.currentMethod.typeInfo.primaryType()) {
                 log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
 
-                if (at instanceof FieldReference) {
-                    if (checkForIllegalAssignmentIntoNestedOrEnclosingType(((FieldReference) at).fieldInfo, variableProperties.currentMethod)) {
-                        changes = true;
-                    }
+                if (at instanceof FieldReference &&
+                        checkForIllegalAssignmentIntoNestedOrEnclosingType(((FieldReference) at).fieldInfo, variableProperties.currentMethod)) {
+                    return; // there's no point actually doing something, an error has been raised.
+                    // it will trigger a problem with variableProperties.setValue
                 }
 
                 // assignment to local variable: could be that we're in the block where it was created, then nothing happens
@@ -520,46 +518,62 @@ public class StatementAnalyser {
                 }
             }
         }
-        if (expression instanceof MethodCall &&
-                checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
-                        variableProperties.currentMethod)) changes = true;
-        else if (expression instanceof MethodReference &&
-                checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
-                        variableProperties.currentMethod)) changes = true;
-        return changes;
+        if (expression instanceof MethodCall)
+            checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
+                    variableProperties.currentMethod);
+        else if (expression instanceof MethodReference)
+            checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
+                    variableProperties.currentMethod);
     }
 
-    private boolean checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, MethodInfo currentMethod) {
-        if (methodCalled.typeInfo == currentMethod.typeInfo) return false;
-        if (methodCalled.typeInfo.primaryType() != currentMethod.typeInfo.primaryType()) return false; // outside
+    /**
+     * @param methodCalled  the method that is being called
+     * @param currentMethod the method where the call takes place
+     * @return true if the call is illegal
+     */
+    private void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, MethodInfo currentMethod) {
+        if (methodCalled.isConstructor) return;
+        if (methodCalled.typeInfo == currentMethod.typeInfo) return;
+        if (methodCalled.typeInfo.primaryType() != currentMethod.typeInfo.primaryType()) return; // outside
         if (methodCalled.typeInfo.isNestedType() && methodCalled.typeInfo.isPrivate() &&
                 currentMethod.typeInfo.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
-            return false;
+            return;
         }
-        if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) return false;
+        if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
+            return;
+        }
         Boolean isNotModified = methodCalled.isNotModified(typeContext);
         boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet();
-        if (allowDelays && isNotModified == null) return false; // delaying
+        if (allowDelays && isNotModified == null) return; // delaying
         boolean error = isNotModified == null || isNotModified == Boolean.FALSE;
         currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
                     " is not allowed to call non-@NotModified method " + methodCalled.distinguishingName());
         }
-        return true;
     }
 
+    /**
+     * @param assignmentTarget the field being assigned to
+     * @param currentMethod    the method where the assignment takes place
+     * @return true if the assignment is illegal
+     */
     private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldInfo assignmentTarget, MethodInfo currentMethod) {
-        if (assignmentTarget.owner == currentMethod.typeInfo) return false;
-        if (assignmentTarget.owner.isNestedType() && assignmentTarget.owner.isPrivate() &&
-                currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner)) {
-            return false;
+        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(assignmentTarget)) {
+            return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(assignmentTarget);
         }
-        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(assignmentTarget)) return false;
-        typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
-                " is not allowed to access field " + assignmentTarget.fullyQualifiedName());
-        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(assignmentTarget, true);
-        return true;
+        boolean error;
+        if (assignmentTarget.owner == currentMethod.typeInfo) error = false;
+        else {
+            error = !(assignmentTarget.owner.isNestedType() && assignmentTarget.owner.isPrivate() &&
+                    currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner));
+        }
+        if (error) {
+            typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
+                    " is not allowed to assign to field " + assignmentTarget.fullyQualifiedName());
+        }
+        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(assignmentTarget, error);
+        return error;
     }
 
     private void doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {

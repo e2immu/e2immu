@@ -155,10 +155,13 @@ public class TypeAnalyser {
                 if (detectExtensionClass(typeInfo)) changes = true;
                 if (detectNotNull(typeInfo)) changes = true;
             }
+            if (cnt > 10) {
+                throw new UnsupportedOperationException("?10 iterations needed?");
+            }
         }
 
         // from now on, even if we come back here, all @NotModifieds have been set, no delays allowed anymore
-        if(!typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
+        if (!typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
             typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
         }
 

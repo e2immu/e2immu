@@ -70,12 +70,12 @@ public class SubTypes {
     static class StaticSubType {
         @Override
         public String toString() {
-            staticField = "abc";
+            staticField = "abc"; // ERROR
             return "hello" + staticField;
         }
 
-        public void add() {
-            staticField += "a";
+        public static void add() {
+            staticField += "a"; // error
         }
 
         static class SubTypeOfStaticSubType {

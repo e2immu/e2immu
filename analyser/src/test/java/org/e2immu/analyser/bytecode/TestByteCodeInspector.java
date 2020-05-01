@@ -84,7 +84,7 @@ public class TestByteCodeInspector {
     public void testSubTypes() throws IOException {
         TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/withannotatedapi/SubTypes");
         Assert.assertEquals("org.e2immu.analyser.testexample.withannotatedapi.SubTypes", typeInfo.fullyQualifiedName);
-        Assert.assertEquals(2, typeInfo.typeInspection.get().subTypes.size());
+        Assert.assertEquals(3, typeInfo.typeInspection.get().subTypes.size());
 
         TypeInfo staticSubType = typeInfo.typeInspection.get().subTypes.stream()
                 .filter(st -> st.simpleName.equals("StaticSubType")).findFirst().orElseThrow();
