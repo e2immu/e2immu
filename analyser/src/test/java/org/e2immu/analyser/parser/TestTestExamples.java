@@ -92,7 +92,7 @@ public class TestTestExamples {
 
     @Test
     public void testInnerClass() throws IOException {
-        goTest("InnerClass");
+        goTest("InnerClass", 3);
     }
 
 

@@ -363,8 +363,11 @@ public class FieldAnalyser {
                 }
             }
         } else if (fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.effectivelyFinal.get()) != Boolean.TRUE) {
-            typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
-                    " is not effectively final (@Final)");
+            // error, unless we're in a private subtype
+            if(!(fieldInfo.owner.isNestedType() && fieldInfo.owner.isPrivate())) {
+                typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
+                        " is not effectively final (@Final)");
+            } // else: nested private types can have fields the way they like it
         }
         CheckConstant.checkConstantForFields(typeContext, fieldInfo);
     }

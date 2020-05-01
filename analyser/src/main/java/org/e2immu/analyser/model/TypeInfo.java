@@ -1046,4 +1046,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public List<TypeInfo> allTypesInPrimaryType() {
         return primaryType().typeInspection.get().allTypesInPrimaryType;
     }
+
+    public boolean isPrivate() {
+        return typeInspection.get().modifiers.contains(TypeModifier.PRIVATE);
+    }
+
+    public boolean isAnEnclosingTypeOf(TypeInfo typeInfo) {
+        if (typeInfo == this) return true;
+        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) return false;
+        return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight());
+    }
 }

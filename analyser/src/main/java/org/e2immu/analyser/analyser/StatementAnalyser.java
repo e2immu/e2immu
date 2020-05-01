@@ -20,10 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.ArrayValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -452,14 +449,16 @@ public class StatementAnalyser {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
-                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError);
+                    if (doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError))
+                        changes.set(true);
                     doImplicitNullCheck(localExpression, lvp);
                     analyseCallsWithParameters(localExpression, lvp);
                 });
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
 
-    private static void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+    private boolean doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+        boolean changes = false;
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
             Variable at = assignment.target.assignmentTarget().orElseThrow();
@@ -469,6 +468,12 @@ public class StatementAnalyser {
             if (!(at instanceof FieldReference) ||
                     ((FieldReference) at).fieldInfo.owner.primaryType() == variableProperties.currentMethod.typeInfo.primaryType()) {
                 log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
+
+                if (at instanceof FieldReference) {
+                    if (checkForIllegalAssignmentIntoNestedOrEnclosingType(((FieldReference) at).fieldInfo, variableProperties.currentMethod)) {
+                        changes = true;
+                    }
+                }
 
                 // assignment to local variable: could be that we're in the block where it was created, then nothing happens
                 // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
@@ -515,6 +520,46 @@ public class StatementAnalyser {
                 }
             }
         }
+        if (expression instanceof MethodCall &&
+                checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
+                        variableProperties.currentMethod)) changes = true;
+        else if (expression instanceof MethodReference &&
+                checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
+                        variableProperties.currentMethod)) changes = true;
+        return changes;
+    }
+
+    private boolean checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, MethodInfo currentMethod) {
+        if (methodCalled.typeInfo == currentMethod.typeInfo) return false;
+        if (methodCalled.typeInfo.primaryType() != currentMethod.typeInfo.primaryType()) return false; // outside
+        if (methodCalled.typeInfo.isNestedType() && methodCalled.typeInfo.isPrivate() &&
+                currentMethod.typeInfo.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
+            return false;
+        }
+        if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) return false;
+        Boolean isNotModified = methodCalled.isNotModified(typeContext);
+        boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet();
+        if (allowDelays && isNotModified == null) return false; // delaying
+        boolean error = isNotModified == null || isNotModified == Boolean.FALSE;
+        currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.put(methodCalled, error);
+        if (error) {
+            typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
+                    " is not allowed to call non-@NotModified method " + methodCalled.distinguishingName());
+        }
+        return true;
+    }
+
+    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldInfo assignmentTarget, MethodInfo currentMethod) {
+        if (assignmentTarget.owner == currentMethod.typeInfo) return false;
+        if (assignmentTarget.owner.isNestedType() && assignmentTarget.owner.isPrivate() &&
+                currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner)) {
+            return false;
+        }
+        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(assignmentTarget)) return false;
+        typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
+                " is not allowed to access field " + assignmentTarget.fullyQualifiedName());
+        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(assignmentTarget, true);
+        return true;
     }
 
     private void doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {

@@ -83,4 +83,7 @@ public class MethodAnalysis extends Analysis {
     // once we know the dynamic type annotations, we can convert this to annotations on the fields
     public final SetOnce<Boolean> dynamicTypeAnnotationsAdded = new SetOnce<>();
 
+    // when an assignment to a field is blocked
+    public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
+    public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 }

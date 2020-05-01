@@ -37,9 +37,9 @@ import static org.e2immu.analyser.util.Logger.log;
  * Nested types will be allowed in two forms:
  * (1) non-private nested types, where (a) all non-private fields must be @E1Immutable,
  * and (b) access to private methods and fields from enclosing to nested and nested to enclosing is restricted
- * to reading fields and calling @NotModified methods
+ * to reading fields and calling @NotModified methods in a direct hierarchical line
  * (2) private subtypes, which do not need to satisfy (1a), and which have the one additional freedom compared to (1b) that
- * the enclosing type can access private fields and methods at will.
+ * the enclosing type can access private fields and methods at will as long as the types are in hierarchical line
  * <p>
  * The analyse and check methods are called independently for types and nested types, in an order of dependence determined
  * by the resolver, but guaranteed such that a nested type will always come before its enclosing type.
@@ -157,6 +157,11 @@ public class TypeAnalyser {
             }
         }
 
+        // from now on, even if we come back here, all @NotModifieds have been set, no delays allowed anymore
+        if(!typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
+            typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
+        }
+
         if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
             postAnalysisIntoNestedTypes(typeInfo);
             typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
@@ -174,6 +179,7 @@ public class TypeAnalyser {
         for (TypeInfo nestedType : typeInfo.typeInspection.get().subTypes) {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
+
             analyse(sortedType);
             check(sortedType); // we're not checking at top level!
         }
