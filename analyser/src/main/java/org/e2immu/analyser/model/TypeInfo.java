@@ -1029,9 +1029,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public List<This> thisVariables() {
         This thisVariable = new This(this);
-        if (typeInspection.get().packageNameOrEnclosingType.isRight()) {
+        if (isNestedType()) {
             return ListUtil.immutableConcat(List.of(thisVariable), typeInspection.get().packageNameOrEnclosingType.getRight().thisVariables());
         }
         return List.of(thisVariable);
+    }
+
+    public boolean isNestedType() {
+        return typeInspection.get().packageNameOrEnclosingType.isRight();
     }
 }

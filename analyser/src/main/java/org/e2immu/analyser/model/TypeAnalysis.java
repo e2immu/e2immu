@@ -18,7 +18,20 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
+
+
 // ...
 public class TypeAnalysis extends Analysis {
+
+    // to avoid repetitions
+    public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
+
+    // the keys here are all the nested types of an enclosing type
+    public final SetOnceMap<TypeInfo, Boolean> accessFromEnclosingToNestedTypesVerified = new SetOnceMap<>();
+
+    // the keys here are all the enclosing types of a nested type
+    public final SetOnceMap<TypeInfo, Boolean> accessFromNestedToEnclosingTypesVerified = new SetOnceMap<>();
 
 }

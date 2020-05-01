@@ -25,13 +25,29 @@ import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
+
+/**
+ * In the type analysis record we state whether this type has "free fields" or not.
+ * Nested types will be allowed in two forms:
+ * (1) non-private nested types, where (a) all non-private fields must be @E1Immutable,
+ * and (b) access to private methods and fields from enclosing to nested and nested to enclosing is restricted
+ * to reading fields and calling @NotModified methods
+ * (2) private subtypes, which do not need to satisfy (1a), and which have the one additional freedom compared to (1b) that
+ * the enclosing type can access private fields and methods at will.
+ * <p>
+ * The analyse and check methods are called independently for types and nested types, in an order of dependence determined
+ * by the resolver, but guaranteed such that a nested type will always come before its enclosing type.
+ * <p>
+ * Therefore, at the end of an enclosing type's analysis, we should have decisions on @NotModified of the methods of the
+ * enclosing type, and it should be possible to establish whether a nested type only reads fields (does NOT assign) and
+ * calls @NotModified private methods.
+ */
 
 public class TypeAnalyser {
     private final MethodAnalyser methodAnalyser;
@@ -70,7 +86,7 @@ public class TypeAnalyser {
         check(typeInfo, E2Immutable.class, typeContext.e2Immutable.get());
         check(typeInfo, NotNull.class, typeContext.notNull.get());
         // TODO there's a "where" which complicates things!! check(typeInfo, NotModified.class, typeContext.e2Immutable.get());
-
+        // already implemented for "reading", but not yet for checking
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
@@ -82,6 +98,7 @@ public class TypeAnalyser {
     public void analyse(SortedType sortedType) {
         TypeInfo typeInfo = sortedType.typeInfo;
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
+
         boolean changes = true;
         int cnt = 0;
         while (changes) {
@@ -137,6 +154,29 @@ public class TypeAnalyser {
                 if (detectNotNull(typeInfo)) changes = true;
             }
         }
+
+        if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
+            postAnalysisIntoNestedTypes(typeInfo);
+            typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
+        }
+    }
+
+    /**
+     * Lets analyse the sub-types again, so that we're guaranteed that @NotModified on the enclosing type's methods have been computed.
+     *
+     * @param typeInfo the enclosing type
+     */
+    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo) {
+        log(ANALYSER, "\n--------\nStarting post-analysis into method calls from nested types to {}\n--------",
+                typeInfo.fullyQualifiedName);
+        for (TypeInfo nestedType : typeInfo.typeInspection.get().subTypes) {
+            SortedType sortedType = new SortedType(nestedType);
+            // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
+            analyse(sortedType);
+            check(sortedType);
+        }
+        log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",
+                typeInfo.fullyQualifiedName);
     }
 
     private VariableProperties initializeVariableProperties(SortedType sortedType, List<This> thisVariables, MethodInfo currentMethod) {
@@ -281,7 +321,6 @@ public class TypeAnalyser {
     }
 
     private Boolean isE2Immutable(TypeInfo typeInfo) {
-        Set<FieldInfo> nonPrimitiveNonE2ImmutableFields = new HashSet<>();
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
@@ -310,7 +349,6 @@ public class TypeAnalyser {
                 return null;
             }
             if (!fieldIsEffectivelyImmutable) {
-                nonPrimitiveNonE2ImmutableFields.add(fieldInfo); // we'll need to do more checks later
                 Boolean notModified = fieldInfo.isNotModified(typeContext);
 
                 if (notModified == null) {
