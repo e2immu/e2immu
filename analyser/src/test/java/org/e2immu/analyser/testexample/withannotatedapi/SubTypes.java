@@ -88,4 +88,21 @@ public class SubTypes {
     }
 
 
+    private static class PrivateSubType {
+        private String field;
+
+        PrivateSubType(String field) {
+            this.field = field;
+        }
+
+        public String getField() {
+            return field;
+        }
+    }
+
+    String doSomething() {
+        PrivateSubType pst = new PrivateSubType("Hello");
+        pst.field = "help";
+        return pst.field;
+    }
 }

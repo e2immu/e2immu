@@ -32,13 +32,11 @@ import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
@@ -157,7 +155,7 @@ public class StatementAnalyser {
             Variable variable = entry.getKey();
             VariableProperties.AboutVariable aboutVariable = entry.getValue();
             Set<VariableProperty> properties = aboutVariable.properties;
-            if (!aboutVariable.isLocalCopy() && properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
+            if (aboutVariable.isNotLocalCopy() && properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
                 if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
                 LocalVariable localVariable = ((LocalVariableReference) variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
@@ -182,7 +180,7 @@ public class StatementAnalyser {
                 Set<VariableProperty> properties = aboutVariable.properties;
                 LocalVariable localVariable = ((LocalVariableReference) variable).variable;
 
-                if ((properties.contains(VariableProperty.CREATED) && !aboutVariable.isLocalCopy() || escapesViaException) &&
+                if ((properties.contains(VariableProperty.CREATED) && aboutVariable.isNotLocalCopy() || escapesViaException) &&
                         properties.contains(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)) {
                     if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
                         methodAnalysis.unusedLocalVariables.put(localVariable, true);

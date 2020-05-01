@@ -89,12 +89,12 @@ public class TypeAnalyser {
             log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
             changes = false;
 
-            This thisVariable = new This(typeInfo);
-            VariableProperties fieldProperties = initializeVariableProperties(sortedType, thisVariable, null);
+            List<This> thisVariables = typeInfo.thisVariables();
+            VariableProperties fieldProperties = initializeVariableProperties(sortedType, thisVariables, null);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariable, (MethodInfo) member);
+                    VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariables, (MethodInfo) member);
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
@@ -104,14 +104,14 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariable, fieldInitialiser.implementationOfSingleAbstractMethod);
+                            VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariables, fieldInitialiser.implementationOfSingleAbstractMethod);
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
                             }
                         }
                     }
 
-                    if (fieldAnalyser.analyse(fieldInfo, thisVariable, fieldProperties))
+                    if (fieldAnalyser.analyse(fieldInfo, thisVariables.get(0), fieldProperties))
                         changes = true;
                 }
             }
@@ -139,9 +139,10 @@ public class TypeAnalyser {
         }
     }
 
-    private VariableProperties initializeVariableProperties(SortedType sortedType, This thisVariable, MethodInfo currentMethod) {
-        VariableProperties fieldProperties = new VariableProperties(typeContext, thisVariable, currentMethod);
-        fieldProperties.create(thisVariable, new VariableValue(thisVariable));
+    private VariableProperties initializeVariableProperties(SortedType sortedType, List<This> thisVariables, MethodInfo currentMethod) {
+        VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
+        thisVariables.forEach(thisVariable -> fieldProperties.create(thisVariable, new VariableValue(thisVariable)));
+        This thisVariable = thisVariables.get(0);
 
         for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
             if (member instanceof FieldInfo) {

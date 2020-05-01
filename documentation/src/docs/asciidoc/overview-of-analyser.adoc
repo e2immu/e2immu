@@ -5,13 +5,28 @@
 In top-level types, we restrict non-private fields to be @Final.
 In nested types,
 
-* we do not want any causality from the nested class to the enclosing class, or to sibling nested classes.
-This amounts to blocking assignments to fields of the enclosing class, and calling methods of the enclosing class that are not @NotModified.
-* only in private nested classes are fields allowed to be non-private and non-final at the same time.
+* we do not want any modifications from the nested class to the enclosing class, or to sibling nested classes.
+In our view, nested types are helper types to their enclosing type(s), hierarchically viewed.
+This amounts to blocking assignments to fields of the enclosing or sibling class, and calling methods of the enclosing or sibling class that are not @NotModified.
+* only in private nested classes are fields allowed to be non-private and non-final at the same time (free variables).
 In non-private nested classes, like in top-level types, non-private fields must be @Final.
-* assignments to fields in nested classes from the enclosing type are only allowed when the nested type is private.
-The reason for this restriction is that we want the methods to be the only way of modifying state; without this rule, methods of the enclosing type would be able to make modifications as well.
+The reason for this restriction is that we want the methods of an independent type to be the only way of modifying its state; without this rule, methods of the enclosing type would be able to make modifications as well.
 * whether the nested class is static or not, is not material here.
+* because the `private` modifier to fields does not shield a nested type's field from its enclosing type, assignments must be looked at in the context of the enclosing type.
+
+How to analyse?
+
+* if the nested class is private and static, we either have @E1Immutable fields, or fields accessible from the enclosing type.
+The enclosing type either assigns to them, or does not.
+** if they are @E1Immutable (it does not assign to them), the situation is equivalent to two completely separate types, independently analysed.
+** if the enclosing type assigns to the fields, it is as if these fields are "free variables" for the enclosing type.
+We've up to now resisted this (non-private means final!).
+For nested classes at least the scope is limited.
+From the point of view of the nested class, @E1Immutable is unreachable, @Container is still possible.
+* if the nested type is static, but not private, it is reachable from the outside world; we must treat it as a separate type.
+* if the nested type is private, but not static,
+** if the fields of the nested type are @E1Immutable, and we remember that a subtype cannot change
+** otherwise, apart from a scope needed to assign to free variables, the situation is not very different from the static one
 
 ==== Order
 

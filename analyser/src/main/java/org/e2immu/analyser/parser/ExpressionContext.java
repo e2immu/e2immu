@@ -454,7 +454,12 @@ public class ExpressionContext {
                 );
             }
             if (expression.isThisExpr()) {
-                Variable variable = new This(enclosingType);
+                ThisExpr thisExpr = expression.asThisExpr();
+                Variable variable = thisExpr.getTypeName().map(typeName -> {
+                    NamedType superType = typeContext.get(typeName.asString(), true);
+                    if(!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
+                    return new This((TypeInfo)superType, true);
+                }).orElse(new This(enclosingType));
                 return new VariableExpression(variable);
             }
             if (expression.isSuperExpr()) {

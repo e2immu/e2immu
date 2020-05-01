@@ -71,15 +71,11 @@ public class Resolver {
             typeDependencies.add(ti.packageNameOrEnclosingType.getRight());
 
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
-        // add static sub-types to the type graph
         ti.subTypes.forEach(typeContextOfType::addToContext);
-        ti.subTypes.stream()
-                .filter(subType -> subType.typeInspection.get().modifiers.contains(TypeModifier.STATIC))
-                .forEach(subType -> {
-                    stayWithin.add(subType);
-                    recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType);
-                });
-        // TODO add non-static sub-types to the methodGraph
+        ti.subTypes.forEach(subType -> {
+            stayWithin.add(subType);
+            recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType);
+        });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
         fillInternalMethodCalls(typeInfo, methodGraph);
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));

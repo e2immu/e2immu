@@ -34,6 +34,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeStore;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnceSupply;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.AnnotationType;
@@ -172,7 +173,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             AnnotationExpression ae = AnnotationExpression.from(annotationExpr, expressionContext);
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo.fullyQualifiedName);
             builder.addAnnotation(ae);
-            if(!hasBeenDefined) {
+            if (!hasBeenDefined) {
                 ae.resolve(expressionContext);
             } // we'll do it later during the resolution phase
         }
@@ -1024,5 +1025,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // and done.
 
         return methodInfo;
+    }
+
+    public List<This> thisVariables() {
+        This thisVariable = new This(this);
+        if (typeInspection.get().packageNameOrEnclosingType.isRight()) {
+            return ListUtil.immutableConcat(List.of(thisVariable), typeInspection.get().packageNameOrEnclosingType.getRight().thisVariables());
+        }
+        return List.of(thisVariable);
     }
 }

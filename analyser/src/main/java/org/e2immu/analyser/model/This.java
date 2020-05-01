@@ -27,9 +27,15 @@ import java.util.Objects;
  */
 public class This implements Variable {
     public final TypeInfo typeInfo;
+    public final boolean explicitlyWriteType;
 
     public This(TypeInfo typeInfo) {
+        this(typeInfo, false);
+    }
+
+    public This(TypeInfo typeInfo, boolean explicitlyWriteType) {
         this.typeInfo = Objects.requireNonNull(typeInfo);
+        this.explicitlyWriteType = explicitlyWriteType;
     }
 
     @Override
@@ -57,7 +63,8 @@ public class This implements Variable {
 
     @Override
     public String name() {
-        return "this"; // TODO could also be typeInfo.name()+".this"
+        if (explicitlyWriteType) return typeInfo.simpleName + ".this";
+        return "this";
     }
 
     @Override

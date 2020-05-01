@@ -90,6 +90,11 @@ public class TestTestExamples {
         goTest("IfStatementChecks");
     }
 
+    @Test
+    public void testInnerClass() throws IOException {
+        goTest("InnerClass");
+    }
+
 
     @Test
     public void testLoopStatementChecks() throws IOException {
@@ -149,7 +154,9 @@ public class TestTestExamples {
         TypeInfo typeInfo = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample." + typeName);
         List<SortedType> types = parser.parseJavaFiles(Map.of(typeInfo, url));
         for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
+            if (sortedType.typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) {
+                LOGGER.info("\n\nStream:\n{}", sortedType.typeInfo.stream());
+            }
         }
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());

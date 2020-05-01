@@ -67,8 +67,8 @@ class VariableProperties implements EvaluationContext {
             return av;
         }
 
-        public boolean isLocalCopy() {
-            return localCopyOf != null;
+        public boolean isNotLocalCopy() {
+            return localCopyOf == null;
         }
     }
 
@@ -85,16 +85,14 @@ class VariableProperties implements EvaluationContext {
     final Runnable uponUsingConditional;
     final TypeContext typeContext;
     final MethodInfo currentMethod;
-    final This thisVariable;
 
-    public VariableProperties(TypeContext typeContext, This thisVariable, MethodInfo currentMethod) {
+    public VariableProperties(TypeContext typeContext, MethodInfo currentMethod) {
         this.parent = null;
         this.root = this;
         conditional = null;
         uponUsingConditional = null;
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
-        this.thisVariable = thisVariable;
         this.dependencyGraphBestCase = new DependencyGraph<>();
         this.dependencyGraphWorstCase = new DependencyGraph<>();
         guaranteedToBeReachedByParentStatement = true;
@@ -111,7 +109,6 @@ class VariableProperties implements EvaluationContext {
         this.conditional = conditional;
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
-        thisVariable = parent.thisVariable;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;

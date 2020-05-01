@@ -52,6 +52,7 @@ public class FieldAnalyser {
         boolean changes = false;
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
         SetOnceMap<AnnotationExpression, Boolean> annotations = fieldInfo.fieldAnalysis.annotations;
+        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
 
         // STEP 1: THE INITIALISER
 
@@ -60,7 +61,6 @@ public class FieldAnalyser {
         if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
-                FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
                 VariableProperties localVariableProperties;
                 if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
                     localVariableProperties = fieldProperties;
@@ -283,7 +283,6 @@ public class FieldAnalyser {
 
         // STEP 6: @NotModified
 
-        FieldReference fieldReference = new FieldReference(fieldInfo, fieldProperties.thisVariable);
         if (!annotations.isSet(typeContext.notModified.get())) {
             Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
             if (isE2Immutable == null) {
