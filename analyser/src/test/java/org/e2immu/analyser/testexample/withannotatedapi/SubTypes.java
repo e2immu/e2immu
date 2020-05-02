@@ -100,7 +100,7 @@ public class SubTypes {
         }
     }
 
-    String doSomething() {
+    static String doSomething() {
         PrivateSubType pst = new PrivateSubType("Hello");
         pst.field = "help";
         return pst.field;

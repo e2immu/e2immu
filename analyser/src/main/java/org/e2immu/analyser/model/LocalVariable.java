@@ -19,22 +19,44 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.LocalVariableModifier;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class LocalVariable {
     public final List<AnnotationExpression> annotations;
     public final List<LocalVariableModifier> modifiers;
     public final ParameterizedType parameterizedType;
+    @NotNull
     public final String name;
 
-    private LocalVariable(List<LocalVariableModifier> modifiers, String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
+    // purely for lookups
+    public LocalVariable(String name) {
+        this(List.of(), name, Primitives.PRIMITIVES.voidParameterizedType, List.of());
+    }
+
+    LocalVariable(List<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
         this.parameterizedType = parameterizedType;
-        this.name = name;
+        this.name = Objects.requireNonNull(name);
         this.modifiers = modifiers;
         this.annotations = annotations;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LocalVariable that = (LocalVariable) o;
+        return name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     public Set<String> imports() {

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -96,6 +97,6 @@ public class ArrayAccess implements Expression {
 
     @Override
     public List<Variable> variables() {
-        return expression.variables();
+        return ListUtil.immutableConcat(expression.variables(), index.variables());
     }
 }

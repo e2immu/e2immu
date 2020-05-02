@@ -302,7 +302,7 @@ public class FieldAnalyser {
                 log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
             } else if (isE2Immutable) {
                 annotations.put(typeContext.notModified.get(), false);
-                log(MODIFY_CONTENT, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
+                log(NOT_MODIFIED, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
                 changes = true;
             } else {
                 boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
@@ -315,7 +315,7 @@ public class FieldAnalyser {
                                             .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
                                             .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
                     annotations.put(typeContext.notModified.get(), notModified);
-                    log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
+                    log(NOT_MODIFIED, "Mark field {} as " + (notModified ? "" : "not ") +
                             "@NotModified", fieldInfo.fullyQualifiedName());
                     changes = true;
                 } else {

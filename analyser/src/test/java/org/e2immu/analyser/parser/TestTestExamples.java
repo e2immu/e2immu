@@ -53,7 +53,6 @@ public class TestTestExamples {
                 FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,
-                MODIFY_CONTENT,
                 E2IMMUTABLE,
                 ANNOTATION_EXPRESSION,
                 CONSTANT,

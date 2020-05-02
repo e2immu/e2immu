@@ -49,7 +49,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,
-                MODIFY_CONTENT,
                 E2IMMUTABLE,
                 ANNOTATION_EXPRESSION,
                 CONSTANT,

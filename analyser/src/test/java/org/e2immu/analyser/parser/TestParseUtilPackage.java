@@ -48,7 +48,6 @@ public class TestParseUtilPackage {
                 //VARIABLE_PROPERTIES,
                 LINKED_VARIABLES,
                 INDEPENDENT,
-                MODIFY_CONTENT,
                 E2IMMUTABLE,
                 ANNOTATION_EXPRESSION,
                 CONTAINER,

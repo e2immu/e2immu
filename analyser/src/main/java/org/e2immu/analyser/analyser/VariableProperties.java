@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.LocalVariableModifier;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.ListUtil;
@@ -154,13 +155,27 @@ class VariableProperties implements EvaluationContext {
             FieldReference fieldReference = (FieldReference) variable;
             if (!(fieldReference.scope instanceof This) && fieldReference.scope != null) {
                 if (fieldReference.scope.parameterizedType().typeInfo != null) {
+                    // node.data..., either we redirect into a field reference on the type of 'node', or ...
                     TypeInfo typeInfo = fieldReference.scope.parameterizedType().typeInfo;
-                    Optional<TypeInfo> theType = currentMethod.typeInfo.inTypeInnerOuterHierarchy(typeInfo);
-                    if (theType.isPresent()) {
-                        target = new FieldReference(fieldReference.fieldInfo, new This(theType.get()));
+                    if (typeInfo.isRecord()) { // by definition in the innerOuter Type hierarchy
+                        String name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
+                        if (fieldReference.scope instanceof ParameterInfo || fieldReference.scope instanceof LocalVariableReference) {
+                            target = new LocalVariableReference(new LocalVariable(name), List.of());
+                            log(VARIABLE_PROPERTIES, "Replace {} with local variable {}", variable.detailedString(), name);
+                        } else { // field reference itself
+                            TypeInfo owner = ((FieldReference) fieldReference.scope).fieldInfo.owner;
+                            target = new FieldReference(new FieldInfo(Primitives.PRIMITIVES.voidParameterizedType, name, owner), null);
+                            log(VARIABLE_PROPERTIES, "Replace {} with local field {} in {}", variable.detailedString(), name, owner.fullyQualifiedName);
+                        }
                     } else {
-                        if (!complain) return null;
-                        throw new UnsupportedOperationException("Ignoring " + variable.detailedString() + " -- not in type hierarchy");
+                        Optional<TypeInfo> theType = currentMethod.typeInfo.inTypeInnerOuterHierarchy(typeInfo);
+                        if (theType.isPresent()) {
+                            target = new FieldReference(fieldReference.fieldInfo, null);
+                            log(VARIABLE_PROPERTIES, "Replace {} with actual field {}", variable.detailedString(), fieldReference.fieldInfo.fullyQualifiedName());
+                        } else {
+                            if (!complain) return null;
+                            throw new UnsupportedOperationException("Ignoring " + variable.detailedString() + " -- not in type hierarchy");
+                        }
                     }
                 } else {
                     if (!complain) return null;
@@ -220,16 +235,16 @@ class VariableProperties implements EvaluationContext {
                         localVariableBuilder.addModifier(LocalVariableModifier.FINAL);
                     }
                     List<Expression> initialisers;
-                    if (recordFieldInspection.initialiser.isSet()) {
-                        initialisers = List.of(initialiser);
-                    } else {
+                    if (initialiser instanceof EmptyExpression) {
                         initialisers = List.of();
+                    } else {
+                        initialisers = List.of(initialiser);
                     }
                     newVariable = new LocalVariableReference(localVariableBuilder.build(), initialisers);
                 } else {
                     FieldInfo newField = new FieldInfo(recordField.type, name, ((FieldReference) variable).fieldInfo.owner);
                     FieldInspection.FieldInspectionBuilder builder = new FieldInspection.FieldInspectionBuilder();
-                    if (recordFieldInspection.initialiser.isSet()) {
+                    if (!(initialiser instanceof EmptyExpression)) {
                         builder.setInitializer(initialiser);
                     }
                     if (recordFieldInspection.modifiers.contains(FieldModifier.FINAL)) {

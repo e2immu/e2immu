@@ -97,7 +97,7 @@ public class ComputeLinking {
                         } else if (variable instanceof ParameterInfo) {
                             dependencies = Set.of(variable);
                         } else if (variable instanceof LocalVariableReference) {
-                            if(!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
+                            if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
                                 log(DELAYED, "Delaying variables linked to method result, local variable's linkage not yet known");
                                 return false;
                             }
@@ -190,24 +190,29 @@ public class ComputeLinking {
 
         boolean changes = false;
         for (Variable variable : methodProperties.variableProperties.keySet()) {
-            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
-            Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
-            log(DEBUG_MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
-                    Variable.detailedString(linkedVariables), directContentModification);
-            for (Variable linkedVariable : linkedVariables) {
-                if ((linkedVariable instanceof FieldReference)) {
-                    if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
-                        boolean directlyModifiedField = directContentModification == Boolean.TRUE;
-                        if (directlyModifiedField) {
-                            log(MODIFY_CONTENT, "Mark that the content of {} has been modified in {}", linkedVariable.detailedString(), methodInfo.fullyQualifiedName());
-                        } else {
-                            log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has not been modified in {}", linkedVariable.detailedString(), methodInfo.fullyQualifiedName());
+            if (!(variable instanceof This)) {
+                Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
+                Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
+                log(DEBUG_MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
+                        Variable.detailedString(linkedVariables), directContentModification);
+                for (Variable linkedVariable : linkedVariables) {
+                    if (linkedVariable instanceof FieldReference) {
+                        if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
+                            FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
+                            boolean directlyModifiedField = directContentModification == Boolean.TRUE
+                                    && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
+                                    && methodAnalysis.fieldRead.get(fieldInfo); // if local, it will be set, but it has to be true
+                            log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has {}been modified in {}",
+                                    linkedVariable.detailedString(),
+                                    directContentModification == null ? "?? " :
+                                            directContentModification ? "" : "NOT ",
+                                    methodInfo.fullyQualifiedName());
+                            methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
+                            changes = true;
                         }
-                        methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
-                        changes = true;
+                    } else if (linkedVariable instanceof ParameterInfo) {
+                        parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
                     }
-                } else if (linkedVariable instanceof ParameterInfo) {
-                    parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
                 }
             }
         }

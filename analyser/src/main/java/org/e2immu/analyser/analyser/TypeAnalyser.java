@@ -109,11 +109,11 @@ public class TypeAnalyser {
             changes = false;
 
             List<This> thisVariables = typeInfo.thisVariables();
-            VariableProperties fieldProperties = initializeVariableProperties(thisVariables, null);
+            VariableProperties fieldProperties = initializeVariableProperties(typeInfo, thisVariables, null);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = initializeVariableProperties(thisVariables, (MethodInfo) member);
+                    VariableProperties methodProperties = initializeVariableProperties(typeInfo, thisVariables, (MethodInfo) member);
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
@@ -123,7 +123,7 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = initializeVariableProperties(thisVariables,
+                            VariableProperties methodProperties = initializeVariableProperties(typeInfo, thisVariables,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
@@ -191,13 +191,15 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    private VariableProperties initializeVariableProperties(List<This> thisVariables, MethodInfo currentMethod) {
+    private VariableProperties initializeVariableProperties(TypeInfo typeBeingAnalysed, List<This> thisVariables, MethodInfo currentMethod) {
         VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
         for (This thisVariable : thisVariables) {
-            fieldProperties.create(thisVariable, new VariableValue(thisVariable));
-            for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
-                createFieldReference(thisVariable, fieldProperties, fieldInfo);
-            }
+            if (!thisVariable.typeInfo.isRecord() || thisVariable.typeInfo == typeBeingAnalysed) {
+                fieldProperties.create(thisVariable, new VariableValue(thisVariable));
+                for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
+                    createFieldReference(thisVariable, fieldProperties, fieldInfo);
+                }
+            } // for records, we will make fields in the "create" method
         }
         return fieldProperties;
     }

@@ -48,7 +48,7 @@ public class TestParse {
                 //LAMBDA,
                 //METHOD_CALL,
                 VARIABLE_PROPERTIES,
-                LINKED_VARIABLES, INDEPENDENT, MODIFY_CONTENT,
+                LINKED_VARIABLES, INDEPENDENT,
                 E2IMMUTABLE, NOT_NULL, DELAYED, E1IMMUTABLE, FINAL, NOT_MODIFIED,
                 CONTAINER, E1IMMUTABLE, SIDE_EFFECT, UTILITY_CLASS);
     }

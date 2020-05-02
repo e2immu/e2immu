@@ -62,7 +62,7 @@ public class ParameterAnalyser {
             if (directContentModification != null) {
                 boolean notModified = !directContentModification;
                 if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
-                    log(MODIFY_CONTENT, "Mark {} of {} " + (notModified ? "" : "NOT") + " @NotModified",
+                    log(NOT_MODIFIED, "Mark {} of {} " + (notModified ? "" : "NOT") + " @NotModified",
                             parameterInfo.detailedString(),
                             parameterInfo.parameterInspection.get().owner.distinguishingName());
                     parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
