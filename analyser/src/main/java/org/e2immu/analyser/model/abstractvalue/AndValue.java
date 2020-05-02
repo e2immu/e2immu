@@ -157,6 +157,10 @@ public class AndValue implements Value {
             }
             concat = newConcat;
         }
+        if (concat.isEmpty()) {
+            log(CNF, "And reduced to 0 components, return true");
+            return BoolValue.TRUE;
+        }
         if (concat.size() == 1) {
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);

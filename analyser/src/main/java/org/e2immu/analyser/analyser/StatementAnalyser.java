@@ -202,6 +202,13 @@ public class StatementAnalyser {
         boolean changes = false;
         CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
+        VariableProperty[] newLocalVariableProperties;
+        if (statement.statement instanceof LoopStatement) {
+            newLocalVariableProperties = new VariableProperty[]{VariableProperty.CREATED, VariableProperty.ASSIGNED_IN_LOOP};
+        } else {
+            newLocalVariableProperties = new VariableProperty[]{VariableProperty.CREATED};
+        }
+
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
         // but then for variables in catch clauses)
 
@@ -209,7 +216,7 @@ public class StatementAnalyser {
         if (codeOrganization.localVariableCreation != null) {
             theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.create(theLocalVariableReference, new VariableValue(theLocalVariableReference), VariableProperty.CREATED);
+            variableProperties.create(theLocalVariableReference, new VariableValue(theLocalVariableReference), newLocalVariableProperties);
         } else {
             theLocalVariableReference = null;
         }
@@ -220,7 +227,7 @@ public class StatementAnalyser {
         for (Expression initialiser : codeOrganization.initialisers) {
             if (initialiser instanceof LocalVariableCreation) {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
-                variableProperties.create(lvr, NO_VALUE, VariableProperty.CREATED);
+                variableProperties.create(lvr, NO_VALUE, newLocalVariableProperties);
             }
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement);
@@ -229,6 +236,16 @@ public class StatementAnalyser {
                 LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statement);
                 throw rte;
             }
+        }
+
+        if (statement.statement instanceof LoopStatement) {
+            if (!statement.existingVariablesAssignedInLoop.isSet()) {
+                Set<Variable> set = computeExistingVariablesAssignedInLoop(statement, variableProperties);
+                log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.streamIndices(),
+                        Variable.detailedString(set));
+                statement.existingVariablesAssignedInLoop.set(set);
+            }
+            statement.existingVariablesAssignedInLoop.get().forEach(variable -> variableProperties.addProperty(variable, VariableProperty.ASSIGNED_IN_LOOP));
         }
 
         // PART 12: finally there are the updaters
@@ -412,6 +429,13 @@ public class StatementAnalyser {
         }
 
         return changes;
+    }
+
+    private Set<Variable> computeExistingVariablesAssignedInLoop(NumberedStatement statement, VariableProperties variableProperties) {
+        return statement.statement.codeOrganization().findExpressionRecursivelyInStatements(Assignment.class)
+                .flatMap(a -> a.assignmentTarget().stream())
+                .filter(variableProperties::isKnown)
+                .collect(Collectors.toSet());
     }
 
     // recursive evaluation of an Expression

@@ -39,4 +39,21 @@ public class LoopStatementChecks {
         // we should have kept the assignment, knowing it is not null
         return res;
     }
+
+    // important here is that i==0 is not a constant expression, because i is a loop variable
+    // the interesting value to check here is 1, because the i++ is evaluated BEFORE the i<10 and the i++
+    // at the moment
+    public static void method4() {
+        for(int i=0; i<10; i++) {
+            if(i == 1) System.out.println("1!");
+        }
+    }
+
+    // same as in 4
+    public static void method5() {
+        int i=0;
+        for(; i<10; i++) {
+            if(i == 1) System.out.println("0!");
+        }
+    }
 }

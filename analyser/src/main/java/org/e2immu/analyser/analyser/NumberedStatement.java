@@ -45,6 +45,8 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<List<BreakOrContinueStatement>> breakAndContinueStatements = new SetOnce<>();
     public SetOnce<Set<Variable>> variablesLinkedToReturnValue = new SetOnce<>();
 
+    public SetOnce<Set<Variable>> existingVariablesAssignedInLoop = new SetOnce<>();
+
     public final int[] indices;
     public final SideEffect sideEffect;
 

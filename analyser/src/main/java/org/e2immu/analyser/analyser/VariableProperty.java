@@ -37,7 +37,11 @@ public enum VariableProperty {
     CREATED("created"),
     CONTENT_MODIFIED("content modified"),
     // we don't know yet
-    CONTENT_MODIFIED_DELAYED("content modified delayed");
+    CONTENT_MODIFIED_DELAYED("content modified delayed"),
+
+    // this variable is changing inside a loop; do not read its value
+    ASSIGNED_IN_LOOP("in loop")
+    ;
 
     public final String name;
 

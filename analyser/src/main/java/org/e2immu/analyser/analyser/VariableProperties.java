@@ -331,6 +331,9 @@ class VariableProperties implements EvaluationContext {
                         variable.detailedString());
             }
         }
+        if (aboutVariable.properties.contains(ASSIGNED_IN_LOOP)) {
+            return new VariableValue(variable);
+        }
         return aboutVariable.currentValue;
     }
 
@@ -451,4 +454,9 @@ class VariableProperties implements EvaluationContext {
     public void setNotNull(Variable variable) {
         addProperty(variable, CHECK_NOT_NULL);
     }
+
+    public boolean isKnown(Variable variable) {
+        return find(variable, false) != null;
+    }
+
 }

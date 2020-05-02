@@ -121,6 +121,12 @@ public class TestAbstractValue {
     }
 
     @Test
+    public void testAndOfTrues() {
+        Value v = new AndValue().append(BoolValue.TRUE, BoolValue.TRUE);
+        Assert.assertEquals(BoolValue.TRUE, v);
+    }
+
+    @Test
     public void testMoreComplicatedAnd() {
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
         Value v = new AndValue().append(d, a, NegatedValue.negate(b), new OrValue().append(NegatedValue.negate(a), b), c);
