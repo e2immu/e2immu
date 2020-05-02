@@ -33,11 +33,13 @@ public class ForStatement extends LoopStatement {
         }
         sb.append("for(");
         sb.append(initialisers.stream().map(i -> i.expressionString(0)).collect(Collectors.joining(", ")));
-        sb.append(";");
+        sb.append("; ");
         sb.append(expression.expressionString(0));
-        sb.append(";");
+        sb.append("; ");
         sb.append(updaters.stream().map(u -> u.expressionString(0)).collect(Collectors.joining(", ")));
         sb.append(")");
+        sb.append(block.statementString(indent));
+        sb.append("\n");
         return sb.toString();
     }
 

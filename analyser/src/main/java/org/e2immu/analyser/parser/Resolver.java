@@ -67,10 +67,9 @@ public class Resolver {
         ti.interfacesImplemented.forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
         if (ti.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT)
             typeDependencies.addAll(ti.parentClass.typeInfoSet());
-        if (ti.packageNameOrEnclosingType.isRight())
-            typeDependencies.add(ti.packageNameOrEnclosingType.getRight());
 
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
+        typeDependencies.addAll(ti.subTypes); // dependencies for subtypes go from enclosing to sub
         ti.subTypes.forEach(typeContextOfType::addToContext);
         ti.subTypes.forEach(subType -> {
             stayWithin.add(subType);
@@ -80,8 +79,8 @@ public class Resolver {
         fillInternalMethodCalls(typeInfo, methodGraph);
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
 
-        // remove myself, and stay within the set of inspectedTypes
-        typeDependencies.remove(typeInfo);
+        // remove myself and all my enclosing types, and stay within the set of inspectedTypes
+        typeDependencies.removeAll(typeInfo.myselfAndMyEnclosingTypes());
         typeDependencies.retainAll(stayWithin);
 
         ImmutableList<WithInspectionAndAnalysis> methodOrder = ImmutableList.copyOf(methodGraph.sorted());

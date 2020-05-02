@@ -31,8 +31,15 @@ public class Trie<T> extends Freezable {
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
     private final TrieNode<T> root = new TrieNode<>();
 
+    @Container // by definition, has no methods
     private static class TrieNode<T> {
+        @NotNull(type = AnnotationType.VERIFY_ABSENT)
+        @NotModified(type = AnnotationType.VERIFY_ABSENT)
+        @Final(type = AnnotationType.VERIFY_ABSENT)
         List<T> data;
+        @NotNull(type = AnnotationType.VERIFY_ABSENT)
+        @NotModified(type = AnnotationType.VERIFY_ABSENT)
+        @Final(type = AnnotationType.VERIFY_ABSENT)
         Map<String, TrieNode<T>> map;
     }
 

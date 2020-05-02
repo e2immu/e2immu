@@ -22,9 +22,13 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.expression.LocalVariableModifier;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -154,7 +158,6 @@ class VariableProperties implements EvaluationContext {
                     Optional<TypeInfo> theType = currentMethod.typeInfo.inTypeInnerOuterHierarchy(typeInfo);
                     if (theType.isPresent()) {
                         target = new FieldReference(fieldReference.fieldInfo, new This(theType.get()));
-                        log(ANALYSER, "In VP: replacing {} by {}", variable.detailedString(), target.detailedString());
                     } else {
                         if (!complain) return null;
                         throw new UnsupportedOperationException("Ignoring " + variable.detailedString() + " -- not in type hierarchy");
@@ -195,6 +198,70 @@ class VariableProperties implements EvaluationContext {
         if (variableProperties.put(Objects.requireNonNull(variable), aboutVariable) != null)
             throw new UnsupportedOperationException();
         log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
+
+        // regardless of whether we're a field, a parameter or a local variable...
+        if (!(variable instanceof This) && variable.parameterizedType().typeInfo != null && variable.parameterizedType().typeInfo.isRecord()) {
+            // we will create local variables (if variable is parameter or local variable) or extra fields (if field) for each of the fields of the record
+            // they'll need their initialisation as well
+            TypeInfo recordType = variable.parameterizedType().typeInfo;
+            boolean createLocalVariable = variable instanceof LocalVariableReference || variable instanceof ParameterInfo;
+            for (FieldInfo recordField : recordType.typeInspection.get().fields) {
+                Variable newVariable;
+
+                String name = variable.name() + "." + recordField.name;
+                FieldInspection recordFieldInspection = recordField.fieldInspection.get();
+                Expression initialiser = computeInitialiser(recordField);
+
+                if (createLocalVariable) {
+                    LocalVariable.LocalVariableBuilder localVariableBuilder = new LocalVariable.LocalVariableBuilder()
+                            .setName(name)
+                            .setParameterizedType(recordField.type);
+                    if (recordFieldInspection.modifiers.contains(FieldModifier.FINAL)) {
+                        localVariableBuilder.addModifier(LocalVariableModifier.FINAL);
+                    }
+                    List<Expression> initialisers;
+                    if (recordFieldInspection.initialiser.isSet()) {
+                        initialisers = List.of(initialiser);
+                    } else {
+                        initialisers = List.of();
+                    }
+                    newVariable = new LocalVariableReference(localVariableBuilder.build(), initialisers);
+                } else {
+                    FieldInfo newField = new FieldInfo(recordField.type, name, ((FieldReference) variable).fieldInfo.owner);
+                    FieldInspection.FieldInspectionBuilder builder = new FieldInspection.FieldInspectionBuilder();
+                    if (recordFieldInspection.initialiser.isSet()) {
+                        builder.setInitializer(initialiser);
+                    }
+                    if (recordFieldInspection.modifiers.contains(FieldModifier.FINAL)) {
+                        builder.addModifier(FieldModifier.FINAL);
+                    }
+                    builder.addModifier(FieldModifier.PRIVATE);
+                    // TODO copy some more annotations?
+                    newField.fieldInspection.set(builder.build());
+                    Variable scope = ((FieldReference) variable).scope;
+                    newVariable = new FieldReference(newField, scope);
+                }
+                Value newInitialValue = computeInitialValue(recordField, initialiser);
+                VariableProperty[] newInitialProperties = {};
+                create(newVariable, newInitialValue, newInitialProperties);
+            }
+        }
+    }
+
+    private Value computeInitialValue(FieldInfo recordField, Expression initialiser) {
+        if (recordField.fieldAnalysis.effectivelyFinalValue.isSet()) {
+            return recordField.fieldAnalysis.effectivelyFinalValue.get();
+        }
+        return initialiser.evaluate(this, (p1, p2, p3, p4) -> {
+        });// completely outside the context, but we should try
+    }
+
+    private Expression computeInitialiser(FieldInfo recordField) {
+        FieldInspection recordFieldInspection = recordField.fieldInspection.get();
+        if (recordFieldInspection.initialiser.isSet()) {
+            return recordFieldInspection.initialiser.get().initialiser;
+        }
+        return EmptyExpression.EMPTY_EXPRESSION;
     }
 
     @Override

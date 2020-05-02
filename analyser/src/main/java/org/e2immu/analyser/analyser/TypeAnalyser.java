@@ -109,11 +109,11 @@ public class TypeAnalyser {
             changes = false;
 
             List<This> thisVariables = typeInfo.thisVariables();
-            VariableProperties fieldProperties = initializeVariableProperties(sortedType, thisVariables, null);
+            VariableProperties fieldProperties = initializeVariableProperties(thisVariables, null);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariables, (MethodInfo) member);
+                    VariableProperties methodProperties = initializeVariableProperties(thisVariables, (MethodInfo) member);
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
@@ -123,7 +123,8 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = initializeVariableProperties(sortedType, thisVariables, fieldInitialiser.implementationOfSingleAbstractMethod);
+                            VariableProperties methodProperties = initializeVariableProperties(thisVariables,
+                                    fieldInitialiser.implementationOfSingleAbstractMethod);
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
                             }
@@ -190,24 +191,11 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    private VariableProperties initializeVariableProperties(SortedType sortedType, List<This> thisVariables, MethodInfo currentMethod) {
+    private VariableProperties initializeVariableProperties(List<This> thisVariables, MethodInfo currentMethod) {
         VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
-        thisVariables.forEach(thisVariable -> fieldProperties.create(thisVariable, new VariableValue(thisVariable)));
-        This thisVariable = thisVariables.get(0);
-
-        for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
-            if (member instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) member;
-                createFieldReference(thisVariable, fieldProperties, fieldInfo);
-            }
-        }
-        // fields from sub-types... how do they fit in? It is well possible that the subtype has already been analysed,
-        // or will be analysed later. However, we need to "know" the fields because they may transfer information
-
-        // note that only fields of sub-types should be accessible for modification; fields of other types that are
-        // accessible will be forced to be public final
-        for (TypeInfo subType : sortedType.typeInfo.typeInspection.get().subTypes) {
-            for (FieldInfo fieldInfo : subType.typeInspection.get().fields) {
+        for (This thisVariable : thisVariables) {
+            fieldProperties.create(thisVariable, new VariableValue(thisVariable));
+            for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
                 createFieldReference(thisVariable, fieldProperties, fieldInfo);
             }
         }
@@ -236,7 +224,8 @@ public class TypeAnalyser {
                 value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
             }
         } else if (Boolean.FALSE == isFinal) {
-            value = new VariableValue(fieldReference);
+            // we know here that the field will never be effectively immutable, so no point in delaying links
+            value = new VariableValue(fieldReference, null, false, null, null);
         } else {
             // no idea about @Final, @E2Immutable
             value = new VariableValue(fieldReference, null, true, null, null);

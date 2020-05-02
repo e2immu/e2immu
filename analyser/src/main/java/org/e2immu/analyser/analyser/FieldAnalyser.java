@@ -54,6 +54,7 @@ public class FieldAnalyser {
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
         SetOnceMap<AnnotationExpression, Boolean> annotations = fieldInfo.fieldAnalysis.annotations;
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+        boolean fieldCanBeAccessedFromOutsideThisType = fieldInfo.owner.isRecord();
 
         // STEP 1: THE INITIALISER
 
@@ -99,8 +100,15 @@ public class FieldAnalyser {
                 if (isModifiedOutsideConstructors == null) {
                     log(DELAYED, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
                 } else {
-                    annotations.put(typeContext.effectivelyFinal.get(), !isModifiedOutsideConstructors);
-                    log(FINAL, "Mark field {} as " + (isModifiedOutsideConstructors ? "not " : "") +
+                    boolean isFinal;
+                    if (fieldCanBeAccessedFromOutsideThisType) {
+                        // this means other types can write to the field... not final by definition
+                        isFinal = false;
+                    } else {
+                        isFinal = !isModifiedOutsideConstructors;
+                    }
+                    annotations.put(typeContext.effectivelyFinal.get(), isFinal);
+                    log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;
                 }
@@ -162,9 +170,9 @@ public class FieldAnalyser {
             } else {
                 Boolean finalCriteria;
                 if (isFinal == Boolean.FALSE) {
-                    if (!fieldInfo.isPrivate() || !haveInitialiser) {
-                        log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser",
-                                fieldInfo.fullyQualifiedName());
+                    if (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeAccessedFromOutsideThisType) {
+                        log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser,"
+                                + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
                         finalCriteria = false;
                     } else {
                         finalCriteria = value.isNotNull(fieldProperties);
@@ -228,41 +236,45 @@ public class FieldAnalyser {
         if (!fieldInfo.fieldAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
 
             Set<AnnotationExpression> dynamicTypeAnnotations;
-            boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                    m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                            (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-            if (allAssignmentValuesDefined) {
-                Set<AnnotationExpression> intersection = typeInspection.constructorAndMethodStream()
-                        .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                        .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(fieldProperties))
-                        .reduce(INITIAL, (prev, curr) -> {
-                            if (prev == null || curr == null) return null;
-                            if (prev == INITIAL) return new HashSet<>(curr);
-                            prev.retainAll(curr);
-                            return prev;
-                        });
-                if (intersection == null) {
-                    dynamicTypeAnnotations = null; // delay
-                } else {
-                    if (!haveInitialiser) {
-                        dynamicTypeAnnotations = intersection;
+            if (fieldCanBeAccessedFromOutsideThisType) {
+                dynamicTypeAnnotations = Set.of(); // we don't control
+            } else {
+                boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                        m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                                (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+                if (allAssignmentValuesDefined) {
+                    Set<AnnotationExpression> intersection = typeInspection.constructorAndMethodStream()
+                            .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                            .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(fieldProperties))
+                            .reduce(INITIAL, (prev, curr) -> {
+                                if (prev == null || curr == null) return null;
+                                if (prev == INITIAL) return new HashSet<>(curr);
+                                prev.retainAll(curr);
+                                return prev;
+                            });
+                    if (intersection == null) {
+                        dynamicTypeAnnotations = null; // delay
                     } else {
-                        if (value == NO_VALUE) {
-                            dynamicTypeAnnotations = null; // delay
+                        if (!haveInitialiser) {
+                            dynamicTypeAnnotations = intersection;
                         } else {
-                            Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(fieldProperties);
-                            if (dynamicsOfInitialiser == null) {
+                            if (value == NO_VALUE) {
                                 dynamicTypeAnnotations = null; // delay
                             } else {
-                                // this is the real one!
-                                intersection.retainAll(dynamicsOfInitialiser);
-                                dynamicTypeAnnotations = intersection;
+                                Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(fieldProperties);
+                                if (dynamicsOfInitialiser == null) {
+                                    dynamicTypeAnnotations = null; // delay
+                                } else {
+                                    // this is the real one!
+                                    intersection.retainAll(dynamicsOfInitialiser);
+                                    dynamicTypeAnnotations = intersection;
+                                }
                             }
                         }
                     }
+                } else {
+                    dynamicTypeAnnotations = null; // delay
                 }
-            } else {
-                dynamicTypeAnnotations = null; // delay
             }
             if (dynamicTypeAnnotations == null) {
                 log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
@@ -297,9 +309,11 @@ public class FieldAnalyser {
                         m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
                                 (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
                 if (allContentModificationsDefined) {
-                    boolean notModified = typeInspection.constructorAndMethodStream()
-                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
-                            .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
+                    boolean notModified =
+                            !fieldCanBeAccessedFromOutsideThisType &&
+                                    typeInspection.constructorAndMethodStream()
+                                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                                            .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
                     annotations.put(typeContext.notModified.get(), notModified);
                     log(MODIFY_CONTENT, "Mark field {} as " + (notModified ? "" : "not ") +
                             "@NotModified", fieldInfo.fullyQualifiedName());
@@ -363,8 +377,8 @@ public class FieldAnalyser {
                 }
             }
         } else if (fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.effectivelyFinal.get()) != Boolean.TRUE) {
-            // error, unless we're in a private subtype
-            if(!(fieldInfo.owner.isNestedType() && fieldInfo.owner.isPrivate())) {
+            // error, unless we're in a record
+            if (!fieldInfo.owner.isRecord()) {
                 typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
                         " is not effectively final (@Final)");
             } // else: nested private types can have fields the way they like it

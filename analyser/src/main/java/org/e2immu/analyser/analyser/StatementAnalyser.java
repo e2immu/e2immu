@@ -215,6 +215,7 @@ public class StatementAnalyser {
         }
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
+        // (normal local variables)
 
         for (Expression initialiser : codeOrganization.initialisers) {
             if (initialiser instanceof LocalVariableCreation) {
@@ -529,14 +530,12 @@ public class StatementAnalyser {
     /**
      * @param methodCalled  the method that is being called
      * @param currentMethod the method where the call takes place
-     * @return true if the call is illegal
      */
     private void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, MethodInfo currentMethod) {
         if (methodCalled.isConstructor) return;
         if (methodCalled.typeInfo == currentMethod.typeInfo) return;
         if (methodCalled.typeInfo.primaryType() != currentMethod.typeInfo.primaryType()) return; // outside
-        if (methodCalled.typeInfo.isNestedType() && methodCalled.typeInfo.isPrivate() &&
-                currentMethod.typeInfo.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
+        if (methodCalled.typeInfo.isRecord() && currentMethod.typeInfo.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
             return;
         }
         if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
@@ -563,10 +562,10 @@ public class StatementAnalyser {
             return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(assignmentTarget);
         }
         boolean error;
-        if (assignmentTarget.owner == currentMethod.typeInfo) error = false;
-        else {
-            error = !(assignmentTarget.owner.isNestedType() && assignmentTarget.owner.isPrivate() &&
-                    currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner));
+        if (assignmentTarget.owner == currentMethod.typeInfo) {
+            error = false;
+        } else {
+            error = !(assignmentTarget.owner.isRecord() && currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner));
         }
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +

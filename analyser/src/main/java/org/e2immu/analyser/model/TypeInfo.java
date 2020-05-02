@@ -1032,11 +1032,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public List<This> thisVariables() {
-        This thisVariable = new This(this);
-        if (isNestedType()) {
-            return ListUtil.immutableConcat(List.of(thisVariable), typeInspection.get().packageNameOrEnclosingType.getRight().thisVariables());
-        }
-        return List.of(thisVariable);
+        return allTypesInPrimaryType().stream().map(t -> new This(t, t != this)).collect(Collectors.toList());
     }
 
     public boolean isNestedType() {
@@ -1055,5 +1051,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInfo == this) return true;
         if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) return false;
         return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight());
+    }
+
+    public List<TypeInfo> myselfAndMyEnclosingTypes() {
+        if (isNestedType()) {
+            return ListUtil.immutableConcat(List.of(this), typeInspection.get().packageNameOrEnclosingType.getRight().myselfAndMyEnclosingTypes());
+        }
+        return List.of(this);
+    }
+
+    public boolean isRecord() {
+        return isNestedType() && isPrivate();
     }
 }
