@@ -319,9 +319,10 @@ public class Math {
     }
 }
 
-@UtilityClass
 public class System {
+    @IgnoreModifications
     public static final PrintStream out;
+    @IgnoreModifications
     public static final PrintStream err;
 
     public static void arraycopy(@NotNull@NotModified Object src, int srcPos, @NotNull Object dest, int destPos, int length) {

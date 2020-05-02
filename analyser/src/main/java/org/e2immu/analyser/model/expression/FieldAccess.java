@@ -94,7 +94,7 @@ public class FieldAccess implements Expression {
         if (scope instanceof NullValue) {
             value = ErrorValue.nullPointerException(new VariableValue(variable));
         } else {
-            value = new VariableValue(variable);
+            value = evaluationContext.currentValue(variable);
         }
         visitor.visit(this, evaluationContext, value);
         return value;

@@ -24,6 +24,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
@@ -627,4 +628,15 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
     }
 
+
+    public Value defaultValue() {
+        if(isPrimitive()) {
+            if(typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) return BoolValue.FALSE;
+            if(typeInfo == Primitives.PRIMITIVES.intTypeInfo) return IntValue.ZERO_VALUE;
+            if(typeInfo == Primitives.PRIMITIVES.longTypeInfo) return new LongValue(0L);
+            if(typeInfo == Primitives.PRIMITIVES.charTypeInfo) return new CharValue('\0');
+            throw new UnsupportedOperationException();
+        }
+        return NullValue.NULL_VALUE;
+    }
 }

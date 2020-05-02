@@ -111,6 +111,11 @@ public class TestTestExamplesWithAnnotatedAPIs {
     }
 
     @Test
+    public void testStaticSideEffectsOnlyChecks() throws IOException {
+        testClass("StaticSideEffectsOnlyChecks", 0);
+    }
+
+    @Test
     public void testSubTypes() throws IOException {
         testClass("SubTypes", 2);
     }

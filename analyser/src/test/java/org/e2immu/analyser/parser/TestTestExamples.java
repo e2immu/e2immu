@@ -117,11 +117,6 @@ public class TestTestExamples {
     }
 
     @Test
-    public void testStaticSideEffectsOnlyChecks() throws IOException {
-        goTest("StaticSideEffectsOnlyChecks");
-    }
-
-    @Test
     public void testSwitchStatementChecks() throws IOException {
         goTest("SwitchStatementChecks", 4);
     }

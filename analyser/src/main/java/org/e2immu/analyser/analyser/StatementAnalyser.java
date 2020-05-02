@@ -231,6 +231,15 @@ public class StatementAnalyser {
             }
         }
 
+        // PART 12: finally there are the updaters
+        // used in for-statement, and the parameters of an explicit constructor invocation this(...)
+
+        // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
+        for (Expression updater : codeOrganization.updaters) {
+            EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
+            if (result.changes) changes = true;
+        }
+
         // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
 
         Value value;
@@ -400,13 +409,6 @@ public class StatementAnalyser {
         if (allButLastSubStatementsEscape && defaultCondition != NO_VALUE) {
             variableProperties.addToConditional(defaultCondition);
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
-        }
-
-        // PART 12: finally there are the updaters
-        // used in for-statement, and the parameters of an explicit constructor invocation this(...)
-        for (Expression updater : codeOrganization.updaters) {
-            EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
-            if (result.changes) changes = true;
         }
 
         return changes;

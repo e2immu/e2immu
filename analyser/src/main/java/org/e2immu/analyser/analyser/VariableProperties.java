@@ -267,6 +267,9 @@ class VariableProperties implements EvaluationContext {
         if (recordField.fieldAnalysis.effectivelyFinalValue.isSet()) {
             return recordField.fieldAnalysis.effectivelyFinalValue.get();
         }
+        if (initialiser instanceof EmptyExpression) {
+            return recordField.type.defaultValue();
+        }
         return initialiser.evaluate(this, (p1, p2, p3, p4) -> {
         });// completely outside the context, but we should try
     }

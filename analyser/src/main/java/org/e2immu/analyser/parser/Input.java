@@ -123,7 +123,7 @@ public class Input {
             globalTypeContext.addToContext(typeInfo);
         }
         int entriesAdded = classPath.addJarFromClassPath("org/e2immu/annotation");
-        if (entriesAdded < 10 || entriesAdded > 50) throw new RuntimeException("? expected at least 10 entries");
+        if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
     }
 
     /**

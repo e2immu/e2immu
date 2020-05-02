@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.IgnoreModifications;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -118,6 +119,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         }
         sb.append(";");
         return sb.toString();
+    }
+
+    public boolean isIgnoreModifications() {
+        return getInspection().annotations.stream()
+                .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(IgnoreModifications.class.getCanonicalName()));
     }
 
     public boolean isStatic() {

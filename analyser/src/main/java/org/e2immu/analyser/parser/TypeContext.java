@@ -61,6 +61,7 @@ public class TypeContext {
     public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
     public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
     public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
+    public final Lazy<AnnotationExpression> ignoreModifications = new Lazy<>(() -> create(IgnoreModifications.class));
     public final Lazy<AnnotationExpression> independent = new Lazy<>(() -> create(Independent.class));
     public final Lazy<AnnotationExpression> linked = new Lazy<>(() -> create(Linked.class));
     public final Lazy<AnnotationExpression> mark = new Lazy<>(() -> create(Mark.class));
