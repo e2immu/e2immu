@@ -68,6 +68,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
     public Analysis getAnalysis() {
         return fieldAnalysis;
     }

@@ -26,10 +26,7 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Parameter info objects must be included in the context of a method info object... whence
@@ -55,6 +52,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
+    }
+
+    @Override
+    public String toString() {
+        return index + ":" + name;
     }
 
     @Override

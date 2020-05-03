@@ -97,7 +97,7 @@ public class TestTestExamples {
 
     @Test
     public void testLoopStatementChecks() throws IOException {
-        goTest("LoopStatementChecks");
+        goTest("LoopStatementChecks", 1);
     }
 
 

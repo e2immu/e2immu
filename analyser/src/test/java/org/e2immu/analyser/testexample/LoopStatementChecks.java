@@ -56,4 +56,11 @@ public class LoopStatementChecks {
             if(i == 1) System.out.println("0!");
         }
     }
+
+    public static void method6() {
+        int i=0;
+        for(; i<10; i++) {
+            int j=3; // ERROR: variable is not used
+        }
+    }
 }

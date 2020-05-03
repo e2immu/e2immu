@@ -227,6 +227,8 @@ public class StatementAnalyser {
         for (Expression initialiser : codeOrganization.initialisers) {
             if (initialiser instanceof LocalVariableCreation) {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
+                // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
+                // introduced here should not become "reset" to an initial value; they'll always be assigned one
                 variableProperties.create(lvr, NO_VALUE, newLocalVariableProperties);
             }
             try {
@@ -245,7 +247,7 @@ public class StatementAnalyser {
                         Variable.detailedString(set));
                 statement.existingVariablesAssignedInLoop.set(set);
             }
-            statement.existingVariablesAssignedInLoop.get().forEach(variable -> variableProperties.addProperty(variable, VariableProperty.ASSIGNED_IN_LOOP));
+            statement.existingVariablesAssignedInLoop.get().forEach(variable -> variableProperties.addPropertyAlsoRecords(variable, VariableProperty.ASSIGNED_IN_LOOP));
         }
 
         // PART 12: finally there are the updaters
@@ -500,11 +502,15 @@ public class StatementAnalyser {
                     // it will trigger a problem with variableProperties.setValue
                 }
 
+
                 // assignment to local variable: could be that we're in the block where it was created, then nothing happens
                 // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
                 if (at instanceof LocalVariableReference) {
                     variableProperties.ensureLocalCopy(at);
                 }
+
+                // remove Permanently not null, check not null; clear record fields
+                variableProperties.reset(at);
                 variableProperties.setValue(at, value);
 
                 // the following block is there in case the value, instead of the expected complicated one, turns

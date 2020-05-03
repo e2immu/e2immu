@@ -145,7 +145,7 @@ public class Assignment implements Expression {
         Value resultOfExpression = value.evaluate(evaluationContext, visitor);
         Value result;
 
-        if (resultOfExpression instanceof MethodValue) {
+        if (resultOfExpression instanceof MethodValue || resultOfExpression instanceof Instance) {
             Boolean isNotNull = resultOfExpression.isNotNull(evaluationContext);
             if (isNotNull == null) {
                 result = UnknownValue.NO_VALUE; // delay

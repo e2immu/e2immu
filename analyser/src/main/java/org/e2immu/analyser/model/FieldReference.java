@@ -20,6 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.SideEffectContext;
 
+import java.util.StringJoiner;
+
 public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
@@ -44,6 +46,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public int hashCode() {
         return fieldInfo.hashCode();
        // return Objects.hash(fieldInfo, scope);
+    }
+
+    @Override
+    public String toString() {
+        return fieldInfo.toString();
     }
 
     public FieldReference(FieldInfo fieldInfo, Variable scope) {

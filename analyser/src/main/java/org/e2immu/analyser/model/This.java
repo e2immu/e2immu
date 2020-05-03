@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * Variable representing the "this" keyword
@@ -65,6 +66,11 @@ public class This implements Variable {
     public String name() {
         if (explicitlyWriteType) return typeInfo.simpleName + ".this";
         return "this";
+    }
+
+    @Override
+    public String toString() {
+        return typeInfo.simpleName+".this";
     }
 
     @Override

@@ -96,7 +96,7 @@ public class MethodValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
-        if (isNotNull != null) return true;
+        if (isNotNull != null) return isNotNull;
         TypeContext typeContext = evaluationContext.getTypeContext();
         Boolean isNotNull = methodInfo.isNotNull(typeContext);
         if (isNotNull == Boolean.TRUE) {

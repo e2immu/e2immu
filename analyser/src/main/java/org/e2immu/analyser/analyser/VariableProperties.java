@@ -48,7 +48,14 @@ class VariableProperties implements EvaluationContext {
         @NotNull
         private Value currentValue = UnknownValue.NO_VALUE;
 
-        private AboutVariable localCopyOf;
+        private final AboutVariable localCopyOf;
+        private final Value initialValue;
+
+        private AboutVariable(AboutVariable localCopyOf, Value initialValue) {
+            this.localCopyOf = localCopyOf;
+            this.initialValue = initialValue;
+            this.currentValue = initialValue;
+        }
 
         @Override
         public String toString() {
@@ -65,8 +72,7 @@ class VariableProperties implements EvaluationContext {
         }
 
         AboutVariable localCopy() {
-            AboutVariable av = new AboutVariable();
-            av.localCopyOf = this;
+            AboutVariable av = new AboutVariable(this, initialValue);
             av.properties.addAll(properties);
             av.currentValue = currentValue;
             return av;
@@ -207,15 +213,14 @@ class VariableProperties implements EvaluationContext {
      */
     @Override
     public void create(@NotNull Variable variable, @NotNull Value initialValue, VariableProperty... initialProperties) {
-        AboutVariable aboutVariable = new AboutVariable();
-        aboutVariable.currentValue = Objects.requireNonNull(initialValue);
+        AboutVariable aboutVariable = new AboutVariable(null,  Objects.requireNonNull(initialValue));
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
         if (variableProperties.put(Objects.requireNonNull(variable), aboutVariable) != null)
             throw new UnsupportedOperationException();
         log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
 
         // regardless of whether we're a field, a parameter or a local variable...
-        if (!(variable instanceof This) && variable.parameterizedType().typeInfo != null && variable.parameterizedType().typeInfo.isRecord()) {
+        if (isRecordType(variable)) {
             // we will create local variables (if variable is parameter or local variable) or extra fields (if field) for each of the fields of the record
             // they'll need their initialisation as well
             TypeInfo recordType = variable.parameterizedType().typeInfo;
@@ -263,6 +268,10 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
+    private static boolean isRecordType(Variable variable) {
+        return !(variable instanceof This) && variable.parameterizedType().typeInfo != null && variable.parameterizedType().typeInfo.isRecord();
+    }
+
     private Value computeInitialValue(FieldInfo recordField, Expression initialiser) {
         if (recordField.fieldAnalysis.effectivelyFinalValue.isSet()) {
             return recordField.fieldAnalysis.effectivelyFinalValue.get();
@@ -293,6 +302,48 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) return true; //not known to us, ignoring!
         return aboutVariable.properties.add(variableProperty);
+    }
+
+    // same as addProperty, but "descend" into fields of records as well
+    public boolean addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
+        AboutVariable aboutVariable = find(variable, false);
+        if (aboutVariable == null) return true; //not known to us, ignoring!
+        boolean added = aboutVariable.properties.add(variableProperty);
+        if (isRecordType(variable)) {
+            List<Variable> recordFields = superficialLocalVariableObjects(variable);
+            return recordFields.stream().map(v -> addPropertyAlsoRecords(v, variableProperty)).reduce(added, (b1, b2) -> b1 || b2);
+        }
+        return added;
+    }
+
+    // superficial here means: just enough for the equality operators to work, to find the variable
+    private List<Variable> superficialLocalVariableObjects(Variable variable) {
+        TypeInfo recordType = variable.parameterizedType().typeInfo;
+        List<Variable> list = new ArrayList<>();
+        boolean createLocalVariable = variable instanceof LocalVariableReference || variable instanceof ParameterInfo;
+        for (FieldInfo recordField : recordType.typeInspection.get().fields) {
+            String name = variable.name() + "." + recordField.name;
+            Variable newVariable;
+            if (createLocalVariable) {
+                newVariable = new LocalVariableReference(new LocalVariable(name), List.of());
+            } else {
+                TypeInfo owner = ((FieldReference) variable).fieldInfo.owner;
+                newVariable = new FieldReference(new FieldInfo(Primitives.PRIMITIVES.voidParameterizedType, name, owner), null);
+            }
+            list.add(newVariable);
+        }
+        return list;
+    }
+
+    public void reset(Variable variable) {
+        AboutVariable aboutVariable = find(variable, false);
+        if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
+        aboutVariable.properties.removeAll(List.of(PERMANENTLY_NOT_NULL, CHECK_NOT_NULL));
+        aboutVariable.currentValue = aboutVariable.initialValue;
+        if(isRecordType(variable)) {
+            List<Variable> recordFields = superficialLocalVariableObjects(variable);
+            recordFields.forEach(this::reset);
+        }
     }
 
     public boolean removeProperty(Variable variable, VariableProperty variableProperty) {
