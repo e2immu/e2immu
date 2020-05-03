@@ -39,8 +39,12 @@ public class ComputeLinking {
         try {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
             StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
-            if (statementAnalyser.computeVariablePropertiesOfBlock(statements.get(0), methodProperties)) changes = true;
+            NumberedStatement startStatement = statements.get(0);
+            if (statementAnalyser.computeVariablePropertiesOfBlock(startStatement, methodProperties)) changes = true;
 
+            if (!methodAnalysis.localMethodsCalled.isSet()) {
+                methodAnalysis.localMethodsCalled.set(startStatement.localMethodsCalled.get());
+            }
             // this method computes, unless delayed, the values for
             // - fieldAssignments
             // - fieldAssignmentValues
@@ -223,11 +227,11 @@ public class ComputeLinking {
     private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
-            if (variable instanceof FieldReference) {
+            /*if (variable instanceof FieldReference) {
                 Boolean notModified = ((FieldReference) variable).fieldInfo.isNotModified(typeContext);
                 if (notModified == null) hasDelays = true;
                 else if (!notModified) return true;
-            }
+            }*/
             // local, parameter, field... data from statement analyser
             VariableProperties.AboutVariable properties = methodProperties.variableProperties.get(variable);
             // properties can be null (variable out of scope)

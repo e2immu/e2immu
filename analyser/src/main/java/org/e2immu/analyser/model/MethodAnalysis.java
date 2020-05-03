@@ -86,4 +86,6 @@ public class MethodAnalysis extends Analysis {
     // when an assignment to a field is blocked
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
+
+    public final SetOnce<Set<MethodInfo>> localMethodsCalled = new SetOnce<>();
 }

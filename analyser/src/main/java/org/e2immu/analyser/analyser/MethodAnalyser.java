@@ -312,18 +312,36 @@ public class MethodAnalyser {
                     .stream()
                     .filter(e -> e.getKey() instanceof FieldReference)
                     .noneMatch(Map.Entry::getValue);
-            if (isNotModified) {
-                log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
-            } else {
-                if (isLogEnabled(NOT_MODIFIED)) {
-                    List<String> fieldsWithContentModifications =
-                            methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
-                                    .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
-                    log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
-                            methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
-                }
+            if (!isNotModified && isLogEnabled(NOT_MODIFIED)) {
+                List<String> fieldsWithContentModifications =
+                        methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
+                                .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
+                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
+                        methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
             }
-            // TODO 3rd step: no methods are called that are not @NotModified themselves
+            if (isNotModified) {
+                Boolean allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
+                        .map(mi -> mi.isNotModified(typeContext))
+                        .reduce(true, TypeAnalyser.TERNARY_AND);
+                if (allMethodCallsNotModified == null) {
+                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                            methodInfo.distinguishingName());
+                    return false;
+                }
+                isNotModified = allMethodCallsNotModified;
+                if (isLogEnabled(NOT_MODIFIED)) {
+                    log(NOT_MODIFIED, "Mark method {} as {}@NotModified", methodInfo.distinguishingName(),
+                            isNotModified ? "" : "NOT ");
+                    if (!isNotModified) {
+                        List<String> offendingCalls = methodAnalysis.localMethodsCalled.get().stream()
+                                .filter(mi -> !mi.isNotModified(typeContext))
+                                .map(MethodInfo::distinguishingName)
+                                .collect(Collectors.toList());
+                        log(NOT_MODIFIED, "Offending method calls are to: {}", offendingCalls);
+                    }
+                }
+            } // else: already false, why should we analyse this?
+            // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
             methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
             return true;
         }

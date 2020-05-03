@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
@@ -46,6 +43,9 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Set<Variable>> variablesLinkedToReturnValue = new SetOnce<>();
 
     public SetOnce<Set<Variable>> existingVariablesAssignedInLoop = new SetOnce<>();
+
+    // only set at the begin statement of the block
+    public SetOnce<Set<MethodInfo>> localMethodsCalled = new SetOnce<>();
 
     public final int[] indices;
     public final SideEffect sideEffect;

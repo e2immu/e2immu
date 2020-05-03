@@ -28,12 +28,14 @@ import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
@@ -64,9 +66,18 @@ public class StatementAnalyser {
         boolean neverContinues = false;
         boolean escapesViaException = false;
         List<BreakOrContinueStatement> breakAndContinueStatementsInBlocks = new ArrayList<>();
+        Set<MethodInfo> localMethodsCalled;
+        if (startStatement.localMethodsCalled.isSet()) {
+            localMethodsCalled = null; // no need to compute this time
+        } else {
+            localMethodsCalled = new HashSet<>(); // we will compute...
+        }
 
         try {
             while (statement != null) {
+                if (localMethodsCalled != null) {
+                    localMethodsCalled.addAll(computeLocalMethodsCalled(statement.statement));
+                }
                 if (computeVariablePropertiesOfStatement(statement, variableProperties))
                     changes = true;
 
@@ -125,6 +136,9 @@ public class StatementAnalyser {
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
 
+            if (localMethodsCalled != null) {
+                startStatement.localMethodsCalled.set(localMethodsCalled);
+            }
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
@@ -242,7 +256,7 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof LoopStatement) {
             if (!statement.existingVariablesAssignedInLoop.isSet()) {
-                Set<Variable> set = computeExistingVariablesAssignedInLoop(statement, variableProperties);
+                Set<Variable> set = computeExistingVariablesAssignedInLoop(codeOrganization, variableProperties);
                 log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.streamIndices(),
                         Variable.detailedString(set));
                 statement.existingVariablesAssignedInLoop.set(set);
@@ -433,11 +447,25 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private Set<Variable> computeExistingVariablesAssignedInLoop(NumberedStatement statement, VariableProperties variableProperties) {
-        return statement.statement.codeOrganization().findExpressionRecursivelyInStatements(Assignment.class)
+    private Set<Variable> computeExistingVariablesAssignedInLoop(CodeOrganization codeOrganization, VariableProperties variableProperties) {
+        return codeOrganization.findExpressionRecursivelyInStatements(Assignment.class)
                 .flatMap(a -> a.assignmentTarget().stream())
                 .filter(variableProperties::isKnown)
                 .collect(Collectors.toSet());
+    }
+
+    private Set<MethodInfo> computeLocalMethodsCalled(Statement statement) {
+        CodeOrganization codeOrganization = statement.codeOrganization();
+        Predicate<MethodInfo> accept = mi -> mi != methodInfo && mi.typeInfo == methodInfo.typeInfo && !mi.isConstructor;
+        Set<MethodInfo> calls = codeOrganization.findExpressionRecursivelyInStatements(MethodCall.class)
+                .filter(mc -> accept.test(mc.methodInfo))
+                .map(mc -> mc.methodInfo)
+                .collect(Collectors.toSet());
+        Set<MethodInfo> refs = codeOrganization.findExpressionRecursivelyInStatements(MethodReference.class)
+                .filter(mc -> accept.test(mc.methodInfo))
+                .map(mc -> mc.methodInfo)
+                .collect(Collectors.toSet());
+        return SetUtil.immutableUnion(calls, refs);
     }
 
     // recursive evaluation of an Expression

@@ -77,6 +77,7 @@ public class DependencyGraph<T> extends Freezable {
         return result;
     }
 
+    @NotModified
     private void recursivelyComputeDependencies(@NotNull T t, @NotNull Set<T> result, @NotNull Set<T> doNotVisitDoNotAdd, boolean onlyTerminals) {
         Objects.requireNonNull(t);
         Node<T> node = nodeMap.get(t);
