@@ -276,15 +276,17 @@ public class TypeAnalyser {
 
     private Boolean noMethodsWhoseParametersContentIsModified(TypeInfo typeInfo) {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                if (isNotModified == null) return null; // cannot yet decide
-                if (!isNotModified) {
-                    log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
-                            typeInfo.fullyQualifiedName,
-                            parameterInfo.detailedString(),
-                            methodInfo.distinguishingName());
-                    return false;
+            if(!methodInfo.isPrivate()) {
+                for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                    Boolean isNotModified = parameterInfo.isNotModified(typeContext);
+                    if (isNotModified == null) return null; // cannot yet decide
+                    if (!isNotModified) {
+                        log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
+                                typeInfo.fullyQualifiedName,
+                                parameterInfo.detailedString(),
+                                methodInfo.distinguishingName());
+                        return false;
+                    }
                 }
             }
         }

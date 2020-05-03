@@ -62,7 +62,7 @@ public class MethodValue implements Value {
 
     @Override
     public int hashCode() {
-        return Objects.hash(methodInfo, parameters);
+        return Objects.hash(object, methodInfo, parameters);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class MethodValue implements Value {
                 if (c != 0) return c;
                 i++;
             }
-            return -1;
+            return object.compareTo(mv.object);
         }
         if (o instanceof NegatedValue) {
             NegatedValue negatedValue = (NegatedValue) o;

@@ -28,7 +28,8 @@ import java.util.function.BiConsumer;
  *
  * @param <T>
  */
-@E2Immutable(after = "freeze")
+//@E2Immutable(after = "freeze")
+@E1Container
 public class DependencyGraph<T> extends Freezable {
     private static class Node<T> {
         List<T> dependsOn;

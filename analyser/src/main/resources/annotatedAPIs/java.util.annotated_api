@@ -182,12 +182,20 @@ public interface Set<E> extends Collection<E> {
 public interface Map<K, V> {
 
     static interface Entry<K, V> {
-        @NotModified
-        K getKey();
 
         @NotModified
+        K getKey();
+        @NotModified
         V getValue();
+
     }
+    void clear();
+
+    @NotModified
+    boolean containsKey(Object key);
+
+    @NotModified
+    boolean containsValue(Object value);
 
     @NotNull
     V computeIfAbsent(K key, @NotNull Function<? super K, ? extends V> mappingFunction);
@@ -203,7 +211,7 @@ public interface Map<K, V> {
     boolean isEmpty();
 
     @NotModified
-    V get(K k);
+    V get(Object key);
 
     V put(K k, V v);
 
@@ -398,6 +406,7 @@ public class Stack<E> extends Vector<E> {
 @UtilityClass
 public class Objects {
     @NotNull
+    @NotModified
     @Identity
     public static <T> T requireNonNull(@NotNull T t) {
         if (t == null) throw new NullPointerException();
@@ -405,6 +414,7 @@ public class Objects {
     }
 
     @NotNull
+    @NotModified
     @Identity
     public static <T> T requireNonNull(@NotNull T t, String message) {
         if (t == null) throw new NullPointerException(message);
