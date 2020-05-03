@@ -196,13 +196,11 @@ public class ComputeLinking {
         for (Variable variable : methodProperties.variableProperties.keySet()) {
             if (!(variable instanceof This)) {
                 Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
-                Boolean directContentModification = summarizeModification(methodProperties, linkedVariables);
-                log(DEBUG_MODIFY_CONTENT, "Starting at {}, we loop over {} to set direct modification {}", variable.detailedString(),
-                        Variable.detailedString(linkedVariables), directContentModification);
                 for (Variable linkedVariable : linkedVariables) {
                     if (linkedVariable instanceof FieldReference) {
                         if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
                             FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
+                            Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
                             boolean directlyModifiedField = directContentModification == Boolean.TRUE
                                     && !fieldInfo.isIgnoreModifications()
                                     && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
@@ -216,6 +214,7 @@ public class ComputeLinking {
                             changes = true;
                         }
                     } else if (linkedVariable instanceof ParameterInfo) {
+                        Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, true);
                         parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
                     }
                 }
@@ -224,14 +223,19 @@ public class ComputeLinking {
         return changes;
     }
 
-    private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables) {
+    private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables, boolean lookAtFields) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
-            /*if (variable instanceof FieldReference) {
+
+            // This piece of code is really required for parameters that are linked to fields,
+            // which end up not @NotModified, so that the parameter should also not be @NotModified
+            // This piece of code is in the way of correct method @NotModified computation
+            // (it's not because the field is @NotModified, that the method has to be...)
+            if (lookAtFields && variable instanceof FieldReference) {
                 Boolean notModified = ((FieldReference) variable).fieldInfo.isNotModified(typeContext);
                 if (notModified == null) hasDelays = true;
                 else if (!notModified) return true;
-            }*/
+            }
             // local, parameter, field... data from statement analyser
             VariableProperties.AboutVariable properties = methodProperties.variableProperties.get(variable);
             // properties can be null (variable out of scope)

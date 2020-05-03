@@ -211,9 +211,11 @@ public class TypeAnalyser {
         Value value;
 
         Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
+        boolean haveConstantValue;
         if (Boolean.TRUE == isFinal) {
             if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                 value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+                haveConstantValue = true;
             } else {
                 Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
                 Set<AnnotationExpression> dynamicAnnotationExpressions;
@@ -224,13 +226,16 @@ public class TypeAnalyser {
                             .map(Map.Entry::getKey).collect(Collectors.toSet());
                 }
                 value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
+                haveConstantValue = false;
             }
         } else if (Boolean.FALSE == isFinal) {
             // we know here that the field will never be effectively immutable, so no point in delaying links
             value = new VariableValue(fieldReference, null, false, null, null);
+            haveConstantValue = false;
         } else {
             // no idea about @Final, @E2Immutable
             value = new VariableValue(fieldReference, null, true, null, null);
+            haveConstantValue = false;
         }
 
         VariableProperty[] properties;
@@ -241,6 +246,7 @@ public class TypeAnalyser {
         }
 
         fieldProperties.create(fieldReference, value, properties);
+        if (haveConstantValue) fieldProperties.setValue(fieldReference, value);
     }
 
     private boolean assignContainer(TypeInfo typeInfo, boolean isContainer) {
@@ -276,7 +282,7 @@ public class TypeAnalyser {
 
     private Boolean noMethodsWhoseParametersContentIsModified(TypeInfo typeInfo) {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
-            if(!methodInfo.isPrivate()) {
+            if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                     Boolean isNotModified = parameterInfo.isNotModified(typeContext);
                     if (isNotModified == null) return null; // cannot yet decide

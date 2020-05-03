@@ -121,22 +121,24 @@ public class FieldAnalyser {
             // find the constructors where the value is set; if they're all set to the same value,
             // we can set the initial value; also take into account the value of the initialiser, if it is there
             Value consistentValue = value;
-            for (MethodInfo method : typeInspection.methodsAndConstructors()) {
-                if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
-                    if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
-                        Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
-                        if (consistentValue == NO_VALUE) consistentValue = assignment;
-                        else if (!consistentValue.equals(assignment)) {
-                            log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
-                                    fieldInfo.fullyQualifiedName(), consistentValue, assignment);
-                            fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
-                            annotations.put(typeContext.constant.get(), false);
-                            return true;
+            if (!fieldInfo.isExplicitlyFinal()) {
+                for (MethodInfo method : typeInspection.methodsAndConstructors()) {
+                    if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
+                        if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
+                            Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
+                            if (consistentValue == NO_VALUE) consistentValue = assignment;
+                            else if (!consistentValue.equals(assignment)) {
+                                log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
+                                        fieldInfo.fullyQualifiedName(), consistentValue, assignment);
+                                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
+                                annotations.put(typeContext.constant.get(), false);
+                                return true;
+                            }
+                        } else {
+                            log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
+                            consistentValue = NO_VALUE;
+                            break;
                         }
-                    } else {
-                        log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
-                        consistentValue = NO_VALUE;
-                        break;
                     }
                 }
             }
