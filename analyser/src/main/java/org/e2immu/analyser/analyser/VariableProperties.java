@@ -23,13 +23,11 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.LocalVariableModifier;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -50,11 +48,13 @@ class VariableProperties implements EvaluationContext {
 
         private final AboutVariable localCopyOf;
         private final Value initialValue;
+        private final Value resetValue;
 
-        private AboutVariable(AboutVariable localCopyOf, Value initialValue) {
+        private AboutVariable(AboutVariable localCopyOf, Value initialValue, Value currentValue) {
             this.localCopyOf = localCopyOf;
             this.initialValue = initialValue;
-            this.currentValue = initialValue;
+            this.currentValue = currentValue;
+            this.resetValue = currentValue;
         }
 
         @Override
@@ -72,9 +72,8 @@ class VariableProperties implements EvaluationContext {
         }
 
         AboutVariable localCopy() {
-            AboutVariable av = new AboutVariable(this, initialValue);
+            AboutVariable av = new AboutVariable(this, initialValue, currentValue);
             av.properties.addAll(properties);
-            av.currentValue = currentValue;
             return av;
         }
 
@@ -213,7 +212,8 @@ class VariableProperties implements EvaluationContext {
      */
     @Override
     public void create(@NotNull Variable variable, @NotNull Value initialValue, VariableProperty... initialProperties) {
-        AboutVariable aboutVariable = new AboutVariable(null,  Objects.requireNonNull(initialValue));
+        AboutVariable aboutVariable = new AboutVariable(null, Objects.requireNonNull(initialValue),
+                new VariableValue(variable));
         aboutVariable.properties.addAll(Arrays.asList(initialProperties));
         if (variableProperties.put(Objects.requireNonNull(variable), aboutVariable) != null)
             throw new UnsupportedOperationException();
@@ -305,6 +305,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     // same as addProperty, but "descend" into fields of records as well
+    // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
     public boolean addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) return true; //not known to us, ignoring!
@@ -335,14 +336,15 @@ class VariableProperties implements EvaluationContext {
         return list;
     }
 
-    public void reset(Variable variable) {
+    // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
+    public void reset(Variable variable, boolean toInitialValue) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
         aboutVariable.properties.removeAll(List.of(PERMANENTLY_NOT_NULL, CHECK_NOT_NULL));
-        aboutVariable.currentValue = aboutVariable.initialValue;
-        if(isRecordType(variable)) {
+        aboutVariable.currentValue = toInitialValue ? aboutVariable.initialValue : aboutVariable.resetValue;
+        if (isRecordType(variable)) {
             List<Variable> recordFields = superficialLocalVariableObjects(variable);
-            recordFields.forEach(this::reset);
+            recordFields.forEach(v -> reset(v, toInitialValue));
         }
     }
 

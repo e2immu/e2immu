@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -172,11 +173,12 @@ public class MethodAnalyser {
             } else {
                 Boolean isNotNull = methodInfo.isNotNull(typeContext);
                 if (isNotNull == null) {
-                    log(DELAYED, "Have multiple return values, going to insert an Instance value, but waiting for @NotNull on {}",
+                    log(DELAYED, "Have multiple return values, going to insert an MethodValue, but waiting for @NotNull on {}",
                             methodInfo.distinguishingName());
                     return false;
                 }
-                value = new Instance(methodInfo.returnType(), null, null, isNotNull);
+                value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of(), isNotNull);
+                //value = new Instance(methodInfo.returnType(), null, null, isNotNull);
             }
             methodAnalysis.singleReturnValue.set(value);
             boolean isConstant = value instanceof Constant;

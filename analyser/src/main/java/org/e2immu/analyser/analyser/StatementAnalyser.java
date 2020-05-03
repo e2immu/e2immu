@@ -510,7 +510,7 @@ public class StatementAnalyser {
                 }
 
                 // remove Permanently not null, check not null; clear record fields
-                variableProperties.reset(at);
+                variableProperties.reset(at, value instanceof Instance);
                 variableProperties.setValue(at, value);
 
                 // the following block is there in case the value, instead of the expected complicated one, turns

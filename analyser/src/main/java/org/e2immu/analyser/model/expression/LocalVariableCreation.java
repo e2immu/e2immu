@@ -97,6 +97,7 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+        // TODO this in dodgy; explain why we need this?? in "Trie.getOrCompute" it is not needed
         evaluationContext.setValue(localVariableReference, new VariableValue(localVariableReference));
         Assignment assignment = new Assignment(new VariableExpression(localVariableReference), expression);
         return assignment.evaluate(evaluationContext, visitor);
