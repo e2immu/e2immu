@@ -40,8 +40,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodAnalyser {
@@ -313,9 +315,15 @@ public class MethodAnalyser {
             if (isNotModified) {
                 log(NOT_MODIFIED, "Mark method {} as @NotModified", methodInfo.fullyQualifiedName());
             } else {
-                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications",
-                        methodInfo.fullyQualifiedName());
+                if (isLogEnabled(NOT_MODIFIED)) {
+                    List<String> fieldsWithContentModifications =
+                            methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
+                                    .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
+                    log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
+                            methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
+                }
             }
+            // TODO 3rd step: no methods are called that are not @NotModified themselves
             methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
             return true;
         }

@@ -482,6 +482,12 @@ public class StatementAnalyser {
                     doImplicitNullCheck(localExpression, lvp);
                     analyseCallsWithParameters(localExpression, lvp);
                 });
+        if (statement.statement instanceof ForEachStatement) {
+            for (Variable variable : expression.variables()) {
+                log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
+                variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+            }
+        }
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
 
