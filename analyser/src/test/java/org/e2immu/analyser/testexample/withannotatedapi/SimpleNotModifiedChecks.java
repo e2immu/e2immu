@@ -75,18 +75,21 @@ public class SimpleNotModifiedChecks {
     // fourth example shows the same indirect modification, with a set now linked to a
     // parameter which also becomes not modified
 
+    @E1Immutable
     static class Example4 {
         @NotModified(type = VERIFY_ABSENT)
+        @NotNull(type = VERIFY_ABSENT)
+        @Final
         public Set<String> set4;
 
-        public Example4(@NotModified(type = VERIFY_ABSENT) Set<String> in4) {
+        public Example4(@NotModified(type = VERIFY_ABSENT) @NotNull(type = VERIFY_ABSENT) Set<String> in4) {
             this.set4 = in4;
         }
 
         @NotModified(type = VERIFY_ABSENT)
         public void add4(@NotNull String v) {
             Set<String> local4 = set4;
-            local4.add(v);
+            local4.add(v); // expect a null-pointer exception here, set4 is final but not null
         }
     }
 

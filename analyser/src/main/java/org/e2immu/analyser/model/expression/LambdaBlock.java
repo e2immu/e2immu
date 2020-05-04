@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -38,7 +39,7 @@ public class LambdaBlock implements Expression {
     public final Block block;
     public final List<ParameterInfo> parameters;
     public final ParameterizedType returnType;
-
+    public final ParameterizedType functionalType;
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
     public LambdaBlock(@NotNull List<ParameterInfo> parameters,
@@ -47,6 +48,7 @@ public class LambdaBlock implements Expression {
         this.block = Objects.requireNonNull(block);
         this.parameters = Objects.requireNonNull(parameters);
         this.returnType = Objects.requireNonNull(returnType);
+        functionalType = createFunctionalType(parameters, returnType);
     }
 
     // this is a functional interface
@@ -86,27 +88,33 @@ public class LambdaBlock implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        if (block == Block.EMPTY_BLOCK) return UnknownValue.UNKNOWN_VALUE;
+        if (block != Block.EMPTY_BLOCK) {
+            EvaluationContext child = evaluationContext.child(null, null, true);
+            parameters.forEach(pi -> child.create(pi, new VariableValue(pi)));
 
-        EvaluationContext child = evaluationContext.child(null, null, true);
-        parameters.forEach(pi -> child.create(pi, new VariableValue(pi)));
+            boolean changes = false;
+            if (!numberedStatements.isSet()) {
+                List<NumberedStatement> numberedStatements = new LinkedList<>();
+                Stack<Integer> indices = new Stack<>();
+                recursivelyCreateNumberedStatements(block.statements,
+                        indices,
+                        numberedStatements,
+                        new SideEffectContext(child.getTypeContext(), child.getCurrentMethod()));
+                this.numberedStatements.set(numberedStatements);
+                changes = true;
+            }
+            StatementAnalyser statementAnalyser = new StatementAnalyser(child.getTypeContext(), child.getCurrentMethod());
+            if (!this.numberedStatements.get().isEmpty() && statementAnalyser.computeVariablePropertiesOfBlock(this.numberedStatements.get().get(0), child)) {
+                changes = true;
+            }
+            visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
+        }
+        return new Instance(functionalType);
+    }
 
-        boolean changes = false;
-        if (!numberedStatements.isSet()) {
-            List<NumberedStatement> numberedStatements = new LinkedList<>();
-            Stack<Integer> indices = new Stack<>();
-            recursivelyCreateNumberedStatements(block.statements,
-                    indices,
-                    numberedStatements,
-                    new SideEffectContext(child.getTypeContext(), child.getCurrentMethod()));
-            this.numberedStatements.set(numberedStatements);
-            changes = true;
-        }
-        StatementAnalyser statementAnalyser = new StatementAnalyser(child.getTypeContext(), child.getCurrentMethod());
-        if (!this.numberedStatements.get().isEmpty() && statementAnalyser.computeVariablePropertiesOfBlock(this.numberedStatements.get().get(0), child)) {
-            changes = true;
-        }
-        visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
-        return UnknownValue.UNKNOWN_VALUE;
+    private ParameterizedType createFunctionalType(List<ParameterInfo> parameters, ParameterizedType returnType) {
+        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
+        return typeInfo.asParameterizedType();
+        // TODO this should be expanded greatly to be correct, but for now we only need the unicity
     }
 }

@@ -48,10 +48,11 @@ public class SetOnce<T> {
     @NotModified
     @Independent(type = AnnotationType.VERIFY_ABSENT)
     public T get() {
-        if (t == null) {
+        T localT = t;
+        if (localT == null) {
             throw new UnsupportedOperationException("Not yet set");
         }
-        return t;
+        return localT;
     }
 
     // TODO need special semantics for this one...

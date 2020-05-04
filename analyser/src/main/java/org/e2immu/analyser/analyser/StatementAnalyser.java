@@ -105,7 +105,10 @@ public class StatementAnalyser {
                     List<Variable> nullVariables = variableProperties.getNullConditionals();
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
-                        variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+                        if (variable instanceof ParameterInfo) {
+                            ParameterInfo parameterInfo = (ParameterInfo) variable;
+                            if (parameterInfo.markNotNull(typeContext)) changes = true;
+                        }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                             variableProperties.uponUsingConditional.run();
@@ -517,14 +520,16 @@ public class StatementAnalyser {
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
                     doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError);
-                    doImplicitNullCheck(localExpression, lvp);
-                    analyseCallsWithParameters(localExpression, lvp);
+                    doImplicitNullCheck(statement, localExpression, lvp);
+                    if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
                 });
         if (statement.statement instanceof ForEachStatement) {
+            // TODO: should be part of the evaluation, somehow
             for (Variable variable : expression.variables()) {
                 log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
-                variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
+                variableOccursInNotNullContext(statement, variable, variableProperties);
             }
+            // TODO: this can evaluate to method call rather than a variable, which also should be @NotNull !!!!
         }
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
@@ -651,32 +656,31 @@ public class StatementAnalyser {
         return error;
     }
 
-    private void doImplicitNullCheck(Expression expression, VariableProperties variableProperties) {
+    private void doImplicitNullCheck(NumberedStatement currentStatement,
+                                     Expression expression,
+                                     VariableProperties variableProperties) {
         for (Variable variable : expression.variablesInScopeSide()) {
-            if (!(variable instanceof This)) {
-                if (variableProperties.isNotNull(variable)) {
-                    log(VARIABLE_PROPERTIES, "Null has already been excluded for {}", variable.detailedString());
-                } else {
-                    variableProperties.addProperty(variable, VariableProperty.PERMANENTLY_NOT_NULL);
-                    log(VARIABLE_PROPERTIES, "Set {} to PERMANENTLY NOT NULL", variable.detailedString());
-                }
-            }
+            variableOccursInNotNullContext(currentStatement, variable, variableProperties);
         }
     }
 
     // the rest of the code deals with the effect of a method call on the variable properties
     // no annotations are set here, only variable properties
 
-    private void analyseCallsWithParameters(Expression expression, VariableProperties variableProperties) {
+    private boolean analyseCallsWithParameters(NumberedStatement currentStatement, Expression expression, VariableProperties variableProperties) {
         if (expression instanceof HasParameterExpressions) {
             HasParameterExpressions call = (HasParameterExpressions) expression;
             if (call.getMethodInfo() != null) {
-                analyseCallWithParameters(call, variableProperties);
+                return analyseCallWithParameters(currentStatement, call, variableProperties);
             }
         }
+        return false;
     }
 
-    private void analyseCallWithParameters(HasParameterExpressions call, VariableProperties variableProperties) {
+    private boolean analyseCallWithParameters(NumberedStatement currentStatement,
+                                              HasParameterExpressions call,
+                                              VariableProperties variableProperties) {
+        boolean changes = false;
         if (call instanceof MethodCall) analyseMethodCallObject((MethodCall) call, variableProperties);
         int parameterIndex = 0;
         List<ParameterInfo> params = call.getMethodInfo().methodInspection.get().parameters;
@@ -696,14 +700,16 @@ public class StatementAnalyser {
             } else {
                 parameterInDefinition = params.get(parameterIndex);
             }
-            analyseCallParameter(parameterInDefinition, e, variableProperties);
+            if (analyseCallParameter(currentStatement, parameterInDefinition, e, variableProperties)) changes = true;
             parameterIndex++;
         }
+        return changes;
     }
 
-    private void analyseCallParameter(ParameterInfo parameterInDefinition,
-                                      Expression parameterExpression,
-                                      VariableProperties variableProperties) {
+    private boolean analyseCallParameter(NumberedStatement currentStatement,
+                                         ParameterInfo parameterInDefinition,
+                                         Expression parameterExpression,
+                                         VariableProperties variableProperties) {
         // not modified
         Boolean safeParameter = parameterInDefinition.isNotModified(typeContext);
         if (safeParameter == Boolean.FALSE) {
@@ -714,10 +720,35 @@ public class StatementAnalyser {
         // null not allowed
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
-            if (parameterInDefinition.isNullNotAllowed(typeContext) == Boolean.TRUE) {
-                variableProperties.addProperty(v, VariableProperty.PERMANENTLY_NOT_NULL);
+            if (parameterInDefinition.isNotNull(typeContext) == Boolean.TRUE) {
+                return variableOccursInNotNullContext(currentStatement, v, variableProperties);
             }
         }
+        return false;
+    }
+
+    private boolean variableOccursInNotNullContext(NumberedStatement currentStatement, Variable variable, VariableProperties variableProperties) {
+        if (variable instanceof This) return false; // nothing to be done here
+        if (variableProperties.isNotNull(variable))
+            return false; // ok there is a check on the variable, or we don't know yet
+        Variable valueVar = variableProperties.switchToValueVariable(variable);
+        if (valueVar instanceof ParameterInfo) {
+            ParameterInfo parameterInfo = (ParameterInfo) valueVar;
+            return parameterInfo.markNotNull(typeContext);
+        }
+        if (valueVar instanceof FieldReference) {
+            FieldInfo fieldInfo = ((FieldReference) valueVar).fieldInfo;
+            if (fieldInfo.isNotNull(typeContext) != Boolean.FALSE) return false;
+            // now we know that we don't know, and there is no explicit check
+        }
+        if (!currentStatement.errorValue.isSet()) {
+            typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
+                    + variable.detailedString() + " in statement "
+                    + currentStatement.streamIndices() + " of " + methodInfo.name);
+            currentStatement.errorValue.set(true);
+            return true;
+        }
+        return false;
     }
 
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {

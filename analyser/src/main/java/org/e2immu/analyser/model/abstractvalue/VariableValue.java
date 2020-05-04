@@ -20,33 +20,32 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
 
 public class VariableValue implements Value {
-    public final Variable value;
+    public final Variable variable;
     public final boolean effectivelyFinalUnevaluated;
     public final Set<AnnotationExpression> dynamicTypeAnnotations;
     public final Value valueForLinkAnalysis;
     public final Boolean isNotNull;
 
-    public VariableValue(Variable value) {
-        this(value, Set.of(), false, null, null);
+    public VariableValue(Variable variable) {
+        this(variable, Set.of(), false, null, null);
     }
 
-    public VariableValue(Variable value,
+    public VariableValue(Variable variable,
                          Set<AnnotationExpression> dynamicTypeAnnotations) {
-        this(value, dynamicTypeAnnotations, false, null, null);
+        this(variable, dynamicTypeAnnotations, false, null, null);
     }
 
-    public VariableValue(Variable value,
+    public VariableValue(Variable variable,
                          Set<AnnotationExpression> dynamicTypeAnnotations,
                          boolean effectivelyFinalUnevaluated,
                          Value valueForLinkAnalysis,
                          Boolean isNotNull) {
-        this.value = value;
+        this.variable = variable;
         this.effectivelyFinalUnevaluated = effectivelyFinalUnevaluated;
         this.dynamicTypeAnnotations = dynamicTypeAnnotations;
         this.valueForLinkAnalysis = valueForLinkAnalysis;
@@ -56,7 +55,7 @@ public class VariableValue implements Value {
     @Override
     public Value notNullCopy() {
         if (isNotNull == Boolean.TRUE) return this;
-        return new VariableValue(value, dynamicTypeAnnotations, effectivelyFinalUnevaluated, valueForLinkAnalysis, true);
+        return new VariableValue(variable, dynamicTypeAnnotations, effectivelyFinalUnevaluated, valueForLinkAnalysis, true);
     }
 
     @Override
@@ -69,23 +68,23 @@ public class VariableValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VariableValue that = (VariableValue) o;
-        return value.equals(that.value);
+        return variable.equals(that.variable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value);
+        return Objects.hash(variable);
     }
 
     @Override
     public String toString() {
-        return value.detailedString() + (effectivelyFinalUnevaluated ? " ??@E1Immutable??" : "");
+        return variable.detailedString() + (effectivelyFinalUnevaluated ? " ??@E1Immutable??" : "");
     }
 
     @Override
     public int compareTo(Value o) {
         if (o == UnknownValue.UNKNOWN_VALUE) return -1;
-        if (o instanceof VariableValue) return value.name().compareTo(((VariableValue) o).value.name());
+        if (o instanceof VariableValue) return variable.name().compareTo(((VariableValue) o).variable.name());
         if (o instanceof NegatedValue) {
             NegatedValue negatedValue = (NegatedValue) o;
             if (equals(((NegatedValue) o).value)) return -1; // I'm always BEFORE my negation
@@ -97,17 +96,17 @@ public class VariableValue implements Value {
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         if (isNotNull == Boolean.TRUE) return true;
-        if (value.parameterizedType().isPrimitive()) return true;
-        if (evaluationContext.isNotNull(value)) return true;
-        if (value instanceof FieldReference) {
-            FieldInfo fieldInfo = ((FieldReference) value).fieldInfo;
+        if (variable.parameterizedType().isPrimitive()) return true;
+        if (variable instanceof FieldReference) {
+            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // quite possibly the field is final and has been annotated...
             return fieldInfo.isNotNull(evaluationContext.getTypeContext());
+        } else {
+            if (evaluationContext.isNotNull(variable)) return true;
         }
-        if (value instanceof ParameterInfo) {
-            ParameterInfo parameterInfo = ((ParameterInfo) value);
-            // quite possibly the field is final and has been annotated...
-            return parameterInfo.isNullNotAllowed(evaluationContext.getTypeContext());
+        if (variable instanceof ParameterInfo) {
+            ParameterInfo parameterInfo = ((ParameterInfo) variable);
+            return parameterInfo.isNotNull(evaluationContext.getTypeContext());
         }
         return null; // we don't know yet
     }
@@ -119,16 +118,16 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != value.parameterizedType().typeInfo;
+        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != variable.parameterizedType().typeInfo;
         boolean e2Immu = (bestCase || differentType) &&
-                value.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
-        if (e2Immu || value.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
-        return Set.of(value);
+                variable.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
+        if (e2Immu || variable.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
+        return Set.of(variable);
     }
 
     @Override
     public ParameterizedType type() {
-        return value.concreteReturnType();
+        return variable.concreteReturnType();
     }
 
     @Override

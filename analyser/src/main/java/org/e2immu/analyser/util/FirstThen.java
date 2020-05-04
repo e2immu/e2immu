@@ -87,8 +87,9 @@ public class FirstThen<S, T> {
     @NotModified
     @Only(after = "set")
     public S getFirst() {
-        if (first == null) throw new UnsupportedOperationException("Then has already been set");
-        return first;
+        S local = first;
+        if (local == null) throw new UnsupportedOperationException("Then has already been set");
+        return local;
     }
 
     /**
@@ -101,8 +102,9 @@ public class FirstThen<S, T> {
     @NotModified
     @Only(before = "set")
     public T get() {
-        if (then == null) throw new UnsupportedOperationException("Not yet set");
-        return then;
+        T local = then;
+        if (local == null) throw new UnsupportedOperationException("Not yet set");
+        return local;
     }
 
     /**

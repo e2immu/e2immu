@@ -63,7 +63,7 @@ public class ContainerChecks {
         // this method breaks the contract!
         public void add(@NotNull String string2) {
             strings.add(string2);
-        }
+        } // ERROR
     }
 
     // third example: independent, so this one works
@@ -84,7 +84,7 @@ public class ContainerChecks {
 
         // String is @NotModified because it is a context class
         public void add(String string) {
-            strings.add(string);
+            if (strings != null) strings.add(string);
         }
     }
 

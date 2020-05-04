@@ -340,7 +340,7 @@ class VariableProperties implements EvaluationContext {
     public void reset(Variable variable, boolean toInitialValue) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
-        aboutVariable.properties.removeAll(List.of(PERMANENTLY_NOT_NULL, CHECK_NOT_NULL));
+        aboutVariable.properties.removeAll(List.of(CHECK_NOT_NULL));
         aboutVariable.currentValue = toInitialValue ? aboutVariable.initialValue : aboutVariable.resetValue;
         if (isRecordType(variable)) {
             List<Variable> recordFields = superficialLocalVariableObjects(variable);
@@ -402,11 +402,21 @@ class VariableProperties implements EvaluationContext {
         // step 2. is the variable defined at this level? look at the properties
         AboutVariable aboutVariable = variableProperties.get(variable);
         if (aboutVariable != null) {
-            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL)
-                    || aboutVariable.properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
+            if (!(aboutVariable.currentValue instanceof VariableValue) &&
+                    aboutVariable.currentValue.isNotNull(this)) return true;
+            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
         }
         return parent != null && parent.isNotNull(variable);
     }
+
+    public Variable switchToValueVariable(Variable variable) {
+        AboutVariable aboutVariable = find(variable, false);
+        if (aboutVariable == null) return variable;
+        if (aboutVariable.currentValue instanceof VariableValue)
+            return ((VariableValue) aboutVariable.currentValue).variable;
+        return variable;
+    }
+
 
     public List<Variable> getNullConditionals() {
         if (conditional != null) {
@@ -476,7 +486,7 @@ class VariableProperties implements EvaluationContext {
                     erase = true; // block was executed conditionally, or the assignment was executed conditionally
                 }
                 copyConditionally(av.properties, av.localCopyOf.properties, READ, READ_MULTIPLE_TIMES, ASSIGNED,
-                        ASSIGNED_MULTIPLE_TIMES, PERMANENTLY_NOT_NULL, CONTENT_MODIFIED);
+                        ASSIGNED_MULTIPLE_TIMES, CONTENT_MODIFIED);
                 if (erase) {
                     av.localCopyOf.currentValue = new VariableValue(variable);
                     boolean notNullHere = av.properties.contains(CHECK_NOT_NULL);

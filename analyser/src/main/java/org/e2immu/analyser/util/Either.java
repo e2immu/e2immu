@@ -115,7 +115,8 @@ public class Either<A, B> {
     @NotNull
     @NotModified
     public A getLeftOrElse(@NotNull A orElse) {
-        return left != null ? left : Objects.requireNonNull(orElse);
+        A local = left;
+        return local != null ? local : Objects.requireNonNull(orElse);
     }
 
     /**
@@ -128,7 +129,8 @@ public class Either<A, B> {
     @NotNull
     @NotModified
     public B getRightOrElse(@NotNull B orElse) {
-        return right != null ? right : Objects.requireNonNull(orElse);
+        B local = right;
+        return local != null ? local : Objects.requireNonNull(orElse);
     }
 
     /**

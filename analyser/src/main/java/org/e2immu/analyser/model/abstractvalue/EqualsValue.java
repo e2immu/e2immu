@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -72,7 +71,7 @@ public class EqualsValue implements Value {
 
     @Override
     public Map<Variable, Boolean> individualNullClauses() {
-        return lhs instanceof NullValue && rhs instanceof VariableValue ? Map.of(((VariableValue) rhs).value, true) :
+        return lhs instanceof NullValue && rhs instanceof VariableValue ? Map.of(((VariableValue) rhs).variable, true) :
                 Map.of();
     }
 

@@ -107,6 +107,9 @@ public interface List<E> extends Collection<E> {
     @NotModified
     boolean isEmpty();
 
+    @NotNull
+    Iterator<E> iterator();
+
     @NotModified
     E get(int index);
 
@@ -150,6 +153,9 @@ public interface List<E> extends Collection<E> {
 @NotNull(where = ElementType.PARAMETER)
 // this is not in line with the JDK, but we will block null keys!
 public interface Set<E> extends Collection<E> {
+
+    @NotNull
+    Iterator<E> iterator();
 
     @NotNull
     @NotModified
@@ -281,6 +287,9 @@ public class ArrayList<E> implements List<E> {
 
     public ArrayList(int size) {
     }
+
+    @NotNull
+    Iterator<E> iterator();
 }
 
 @Container

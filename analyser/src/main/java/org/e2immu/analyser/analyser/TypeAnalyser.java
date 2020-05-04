@@ -238,14 +238,7 @@ public class TypeAnalyser {
             haveConstantValue = false;
         }
 
-        VariableProperty[] properties;
-        if (fieldInfo.isNotNull(typeContext) == Boolean.TRUE) {
-            properties = new VariableProperty[]{VariableProperty.PERMANENTLY_NOT_NULL};
-        } else {
-            properties = new VariableProperty[0];
-        }
-
-        fieldProperties.create(fieldReference, value, properties);
+        fieldProperties.create(fieldReference, value);
         if (haveConstantValue) fieldProperties.setValue(fieldReference, value);
     }
 

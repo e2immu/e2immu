@@ -16,8 +16,8 @@ public class AnnotationsOnLambdas {
 
     // somehow we should add the @NotModified(absent=true)
     static Function<Set<String>, Set<String>> removeElement = set -> {
-        Iterator<String> it = set.iterator();
-        if (it.hasNext()) it.remove();
+        Iterator<String> it1 = set.iterator();
+        if (it1.hasNext()) it1.remove();
         return set;
     };
 
@@ -28,8 +28,8 @@ public class AnnotationsOnLambdas {
     }
 
     static RemoveOne removeOne = set -> {
-        Iterator<String> it = set.iterator();
-        if (it.hasNext()) it.remove();
+        Iterator<String> it2 = set.iterator();
+        if (it2.hasNext()) it2.remove();
         return set;
     };
 

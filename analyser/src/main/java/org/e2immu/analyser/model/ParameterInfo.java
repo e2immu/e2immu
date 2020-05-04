@@ -162,14 +162,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return false;
     }
 
-    public Boolean isNullNotAllowed(TypeContext typeContext) {
-        Boolean directly = annotatedWith(typeContext.notNull.get());
-        if (directly != Boolean.FALSE) {
-            return directly;
-        }
-        return parameterInspection.get().owner.typeInfo.isNotNullForParameters(typeContext);
-    }
-
     @Override
     public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
         if (!hasBeenDefined()) return Optional.empty();
@@ -201,7 +193,18 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     public Boolean isNotNull(TypeContext typeContext) {
-        if (parameterInspection.get().owner.typeInfo.isNotNullForParameters(typeContext) == Boolean.TRUE) return true;
+        MethodInfo methodOfParameter = parameterInspection.get().owner;
+        if (methodOfParameter != null && methodOfParameter.typeInfo.isNotNullForParameters(typeContext) == Boolean.TRUE)
+            return true;
         return annotatedWith(typeContext.notNull.get());
+    }
+
+    public boolean markNotNull(TypeContext typeContext) {
+        AnnotationExpression notNull = typeContext.notNull.get();
+        if (!parameterAnalysis.annotations.isSet(notNull)) {
+            parameterAnalysis.annotations.put(notNull, true);
+            return true;
+        }
+        return false;
     }
 }

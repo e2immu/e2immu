@@ -120,7 +120,6 @@ public class MethodAnalyser {
             // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties))
                 changes = true;
-            if (parameterAnalyser.isNullNotAllowed(methodProperties)) changes = true;
             if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;

@@ -53,7 +53,7 @@ public class InstanceOf implements Expression {
         } else if (value instanceof NullValue) {
             result = BoolValue.FALSE;
         } else if (value instanceof VariableValue) {
-            result = new InstanceOfValue(((VariableValue) value).value, parameterizedType);
+            result = new InstanceOfValue(((VariableValue) value).variable, parameterizedType);
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {

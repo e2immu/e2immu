@@ -19,10 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 public enum VariableProperty {
-
-    // we know this variable can never be null
-    PERMANENTLY_NOT_NULL("permanently not null"),
-
     CHECK_NOT_NULL("check not null"),
     READ("read"),
     READ_MULTIPLE_TIMES("read+"),

@@ -75,46 +75,4 @@ public class ParameterAnalyser {
         return false;
     }
 
-    /*
-     computation is based on the premise that if a parameter ends up with the property PERMANENTLY NOT NULL, then
-     it should get a @NullNotAllowed annotation
-     the code is more complex because there may have been indirect assignments
-
-     String method(String s) {
-       String t = s;
-       return t.trim();
-     }
-
-     Here `t` will get the PERMANENTLY_NOT_NULL, but the value of `t` will be the VariableValue `s`
-    */
-
-    public boolean isNullNotAllowed(VariableProperties methodProperties) {
-        boolean changes = false;
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            ParameterInfo parameterInfo = null;
-            boolean isPermanentlyNotNull = false;
-            if (variable instanceof ParameterInfo) {
-                parameterInfo = (ParameterInfo) variable;
-                isPermanentlyNotNull = entry.getValue().properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
-            } else {
-                Value value = entry.getValue().getCurrentValue();
-                if (value instanceof VariableValue) {
-                    Variable assignedVariable = ((VariableValue) value).value;
-                    if (assignedVariable instanceof ParameterInfo) {
-                        parameterInfo = (ParameterInfo) assignedVariable;
-                        VariableProperties.AboutVariable aboutVariable = methodProperties.variableProperties.get(parameterInfo);
-                        Objects.requireNonNull(aboutVariable);
-                        isPermanentlyNotNull = entry.getValue().properties.contains(VariableProperty.PERMANENTLY_NOT_NULL);
-                    }
-                }
-            }
-            if (parameterInfo != null && isPermanentlyNotNull && !parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notNull.get())) {
-                log(NOT_NULL, "Adding implicit null not allowed on {}", parameterInfo.detailedString());
-                parameterInfo.parameterAnalysis.annotations.put(typeContext.notNull.get(), true);
-                changes = true;
-            }
-        }
-        return changes;
-    }
 }

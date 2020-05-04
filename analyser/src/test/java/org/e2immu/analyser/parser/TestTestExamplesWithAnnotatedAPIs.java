@@ -67,7 +67,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
 
     @Test
     public void testContainerChecks() throws IOException {
-        testClass("ContainerChecks", 0);
+        testClass("ContainerChecks", 1);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
 
     @Test
     public void testSimpleNotModifiedChecks() throws IOException {
-        testClass("SimpleNotModifiedChecks", 0);
+        testClass("SimpleNotModifiedChecks", 1);
     }
 
     @Test
