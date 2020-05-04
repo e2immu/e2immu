@@ -96,7 +96,7 @@ public class VariableValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
-        if (isNotNull != null) return isNotNull;
+        if (isNotNull == Boolean.TRUE) return true;
         if (value.parameterizedType().isPrimitive()) return true;
         if (evaluationContext.isNotNull(value)) return true;
         if (value instanceof FieldReference) {
