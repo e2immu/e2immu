@@ -62,10 +62,6 @@ public class CodeOrganization {
         return Stream.concat(s4, subStatements.stream().flatMap(s -> s.findExpressionRecursivelyInStatements(clazz)));
     }
 
-    public Stream<Expression> expressionsForInputVariables() {
-        return Stream.concat(Stream.concat(initialisers.stream(), Stream.of(expression)), updaters.stream());
-    }
-
     public boolean haveSubBlocks() {
         return statements != Block.EMPTY_BLOCK || !subStatements.isEmpty();
     }

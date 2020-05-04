@@ -44,9 +44,6 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
 
     public SetOnce<Set<Variable>> existingVariablesAssignedInLoop = new SetOnce<>();
 
-    // only set at the begin statement of the block
-    public SetOnce<Set<MethodInfo>> localMethodsCalled = new SetOnce<>();
-
     public final int[] indices;
     public final SideEffect sideEffect;
 

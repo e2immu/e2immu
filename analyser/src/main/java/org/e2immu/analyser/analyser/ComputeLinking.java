@@ -1,6 +1,5 @@
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -43,8 +42,12 @@ public class ComputeLinking {
             if (statementAnalyser.computeVariablePropertiesOfBlock(startStatement, methodProperties)) changes = true;
 
             if (!methodAnalysis.localMethodsCalled.isSet()) {
-                methodAnalysis.localMethodsCalled.set(startStatement.localMethodsCalled.get());
+                methodAnalysis.localMethodsCalled.set(statementAnalyser.computeLocalMethodsCalled(statements));
             }
+            if (!methodAnalysis.returnStatements.isSet()) {
+                methodAnalysis.returnStatements.set(statementAnalyser.extractReturnStatements(startStatement));
+            }
+
             // this method computes, unless delayed, the values for
             // - fieldAssignments
             // - fieldAssignmentValues

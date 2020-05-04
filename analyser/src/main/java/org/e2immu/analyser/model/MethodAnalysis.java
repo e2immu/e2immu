@@ -88,4 +88,5 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 
     public final SetOnce<Set<MethodInfo>> localMethodsCalled = new SetOnce<>();
+    public final SetOnce<List<NumberedStatement>> returnStatements = new SetOnce<>();
 }

@@ -125,14 +125,14 @@ public class MethodAnalyser {
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;
 
-            long returnStatements = numberedStatements.stream().filter(ns -> ns.statement instanceof ReturnStatement).count();
-            if (returnStatements > 0) {
-                if (methodIsIdentity(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodIsFluent(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodIsNotNull(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
+            List<NumberedStatement> returnStatements = methodAnalysis.returnStatements.get();
+            if (!returnStatements.isEmpty()) {
+                if (methodIsIdentity(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodIsFluent(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodIsNotNull(returnStatements, methodInfo, methodAnalysis)) changes = true;
                 // methodIsConstant makes use of methodIsNotNull, so order is important
-                if (methodIsConstant(returnStatements, numberedStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodHasDynamicTypeAnnotations(returnStatements, numberedStatements, methodProperties, methodInfo, methodAnalysis))
+                if (methodIsConstant(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                if (methodHasDynamicTypeAnnotations(returnStatements, methodProperties, methodInfo, methodAnalysis))
                     changes = true;
             }
 
@@ -164,14 +164,16 @@ public class MethodAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private boolean methodIsConstant(long returnStatements, List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (!methodAnalysis.singleReturnValue.isSet() && methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
+    private boolean methodIsConstant(List<NumberedStatement> returnStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (!methodAnalysis.singleReturnValue.isSet()) {
+            boolean allReturnValuesSet = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
+            if (!allReturnValuesSet) {
+                log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
+                return false;
+            }
             Value value;
-            if (returnStatements == 1) {
-                value = numberedStatements.stream()
-                        .filter(ns -> ns.returnValue.isSet())
-                        .map(ns -> ns.returnValue.get())
-                        .findAny().orElse(UnknownValue.NO_VALUE);
+            if (returnStatements.size() == 1) {
+                value = returnStatements.get(0).returnValue.get();
             } else {
                 Boolean isNotNull = methodInfo.isNotNull(typeContext);
                 if (isNotNull == null) {
@@ -180,7 +182,6 @@ public class MethodAnalyser {
                     return false;
                 }
                 value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of(), isNotNull);
-                //value = new Instance(methodInfo.returnType(), null, null, isNotNull);
             }
             methodAnalysis.singleReturnValue.set(value);
             boolean isConstant = value instanceof Constant;
@@ -192,19 +193,17 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean methodHasDynamicTypeAnnotations(long numberOfReturnStatements,
-                                                    List<NumberedStatement> numberedStatements,
+    private boolean methodHasDynamicTypeAnnotations(List<NumberedStatement> returnStatements,
                                                     VariableProperties methodProperties,
                                                     MethodInfo methodInfo,
                                                     MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
-            boolean allReturnValuesDefined = numberedStatements.stream().filter(ns -> ns.returnValue.isSet()).count() == numberOfReturnStatements;
+            boolean allReturnValuesDefined = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
             if (!allReturnValuesDefined) {
                 log(DELAYED, "Not all return values defined");
                 return false;
             }
-            Set<AnnotationExpression> intersection = numberedStatements.stream()
-                    .filter(ns -> ns.returnValue.isSet())
+            Set<AnnotationExpression> intersection = returnStatements.stream()
                     .map(ns -> ns.returnValue.get())
                     .map(v -> v.dynamicTypeAnnotations(methodProperties))
                     .reduce(INITIAL, (prev, curr) -> {
@@ -234,15 +233,14 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean methodIsNotNull(long returnStatements, List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        boolean notNull = numberedStatements.stream().filter(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE)
-                .count() == returnStatements;
+    private boolean methodIsNotNull(List<NumberedStatement> returnStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        boolean notNull = returnStatements.stream().allMatch(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE);
         if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
             methodAnalysis.annotations.put(typeContext.notNull.get(), true);
             log(NOT_NULL, "Set @NotNull on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
-        boolean notNullFalse = numberedStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
+        boolean notNullFalse = returnStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
         if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
             methodAnalysis.annotations.put(typeContext.notNull.get(), false);
             log(NOT_NULL, "Set NOT @NotNull on method {}", methodInfo.fullyQualifiedName());
@@ -252,19 +250,17 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean methodIsFluent(long returnStatements, List<NumberedStatement> numberedStatements,
+    private boolean methodIsFluent(List<NumberedStatement> returnStatements,
                                    MethodInfo methodInfo,
                                    MethodAnalysis methodAnalysis) {
-        boolean fluent = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                e -> ReturnStatement.isFluent(typeContext, e) == Boolean.TRUE))
-                .count() == returnStatements;
+        boolean fluent = returnStatements.stream().allMatch(ns -> ((ReturnStatement) ns.statement).isFluent(typeContext) == Boolean.TRUE);
+
         if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
             methodAnalysis.annotations.put(typeContext.fluent.get(), true);
             log(FLUENT, "Set @Fluent on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
-        boolean fluentFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                e -> ReturnStatement.isFluent(typeContext, e) == Boolean.FALSE));
+        boolean fluentFalse = returnStatements.stream().anyMatch(ns -> ((ReturnStatement) ns.statement).isFluent(typeContext) == Boolean.FALSE);
         if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
             methodAnalysis.annotations.put(typeContext.fluent.get(), false);
             log(FLUENT, "Set NOT @Fluent on method {}", methodInfo.fullyQualifiedName());
@@ -273,20 +269,20 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean methodIsIdentity(long returnStatements, List<NumberedStatement> numberedStatements,
+    private boolean methodIsIdentity(List<NumberedStatement> returnStatements,
                                      MethodInfo methodInfo,
                                      MethodAnalysis methodAnalysis) {
-        boolean identity = numberedStatements.stream().filter(ns -> onReturnStatement(ns,
-                e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.TRUE))
-                .count() == returnStatements;
-        if (identity && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+        if (methodAnalysis.annotations.isSet(typeContext.identity.get())) return false;
+        boolean identity = returnStatements.stream().allMatch(ns ->
+                ReturnStatement.isIdentity(typeContext, ((ReturnStatement) ns.statement).expression) == Boolean.TRUE);
+        if (identity) {
             methodAnalysis.annotations.put(typeContext.identity.get(), true);
             log(IDENTITY, "Set @Identity on method {}", methodInfo.fullyQualifiedName());
             return true;
         }
-        boolean identityFalse = numberedStatements.stream().anyMatch(ns -> onReturnStatement(ns,
-                e -> ReturnStatement.isIdentity(typeContext, e) == Boolean.FALSE));
-        if (identityFalse && !methodAnalysis.annotations.isSet(typeContext.identity.get())) {
+        boolean identityFalse = returnStatements.stream().anyMatch(ns ->
+                ReturnStatement.isIdentity(typeContext, ((ReturnStatement) ns.statement).expression) == Boolean.FALSE);
+        if (identityFalse) {
             methodAnalysis.annotations.put(typeContext.identity.get(), false);
             log(IDENTITY, "Set NOT @Identity on method {}", methodInfo.fullyQualifiedName());
             return true;

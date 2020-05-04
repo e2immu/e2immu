@@ -118,7 +118,7 @@ public class TestTestExamples {
 
     @Test
     public void testSwitchStatementChecks() throws IOException {
-        goTest("SwitchStatementChecks", 4);
+        goTest("SwitchStatementChecks", 3);
     }
 
     @Test

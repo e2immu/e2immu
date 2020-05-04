@@ -63,9 +63,7 @@ public class ReturnStatement extends StatementWithExpression {
         return base.combine(expression.sideEffect(sideEffectContext));
     }
 
-    // TODO this should probably be replaced by an isFluent method on expression...
-    // used in method analyser
-    public static Boolean isFluent(TypeContext typeContext, Expression expression) {
+    public Boolean isFluent(TypeContext typeContext) {
         if (expression instanceof VariableExpression) {
             VariableExpression variableExpression = (VariableExpression) expression;
             if (variableExpression.variable instanceof This) return true;

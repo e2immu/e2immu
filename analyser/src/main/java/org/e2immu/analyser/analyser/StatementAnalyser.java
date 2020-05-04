@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
@@ -66,18 +67,9 @@ public class StatementAnalyser {
         boolean neverContinues = false;
         boolean escapesViaException = false;
         List<BreakOrContinueStatement> breakAndContinueStatementsInBlocks = new ArrayList<>();
-        Set<MethodInfo> localMethodsCalled;
-        if (startStatement.localMethodsCalled.isSet()) {
-            localMethodsCalled = null; // no need to compute this time
-        } else {
-            localMethodsCalled = new HashSet<>(); // we will compute...
-        }
 
         try {
             while (statement != null) {
-                if (localMethodsCalled != null) {
-                    localMethodsCalled.addAll(computeLocalMethodsCalled(statement.statement));
-                }
                 if (computeVariablePropertiesOfStatement(statement, variableProperties))
                     changes = true;
 
@@ -136,9 +128,6 @@ public class StatementAnalyser {
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
 
-            if (localMethodsCalled != null) {
-                startStatement.localMethodsCalled.set(localMethodsCalled);
-            }
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
@@ -314,7 +303,11 @@ public class StatementAnalyser {
                     log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
                 }
                 if (!statement.returnValue.isSet()) {
-                    statement.returnValue.set(value);
+                    if (value.isEffectivelyFinalUnevaluated()) {
+                        log(DELAYED, "Not yet setting value of return statement {} in {}", statement.streamIndices(), methodInfo.distinguishingName());
+                    } else {
+                        statement.returnValue.set(value);
+                    }
                 }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
@@ -454,18 +447,35 @@ public class StatementAnalyser {
                 .collect(Collectors.toSet());
     }
 
-    private Set<MethodInfo> computeLocalMethodsCalled(Statement statement) {
-        CodeOrganization codeOrganization = statement.codeOrganization();
-        Predicate<MethodInfo> accept = mi -> mi != methodInfo && mi.typeInfo == methodInfo.typeInfo && !mi.isConstructor;
-        Set<MethodInfo> calls = codeOrganization.findExpressionRecursivelyInStatements(MethodCall.class)
-                .filter(mc -> accept.test(mc.methodInfo))
-                .map(mc -> mc.methodInfo)
-                .collect(Collectors.toSet());
-        Set<MethodInfo> refs = codeOrganization.findExpressionRecursivelyInStatements(MethodReference.class)
-                .filter(mc -> accept.test(mc.methodInfo))
-                .map(mc -> mc.methodInfo)
-                .collect(Collectors.toSet());
-        return SetUtil.immutableUnion(calls, refs);
+    Set<MethodInfo> computeLocalMethodsCalled(List<NumberedStatement> statements) {
+        Set<MethodInfo> result = new HashSet<>();
+        for (NumberedStatement statement : statements) {
+            CodeOrganization codeOrganization = statement.statement.codeOrganization();
+            Predicate<MethodInfo> accept = mi -> mi != methodInfo && mi.typeInfo == methodInfo.typeInfo && !mi.isConstructor;
+            result.addAll(codeOrganization.findExpressionRecursivelyInStatements(MethodCall.class)
+                    .filter(mc -> accept.test(mc.methodInfo))
+                    .map(mc -> mc.methodInfo)
+                    .collect(Collectors.toSet()));
+            result.addAll(codeOrganization.findExpressionRecursivelyInStatements(MethodReference.class)
+                    .filter(mc -> accept.test(mc.methodInfo))
+                    .map(mc -> mc.methodInfo)
+                    .collect(Collectors.toSet()));
+        }
+        return ImmutableSet.copyOf(result);
+    }
+
+    public List<NumberedStatement> extractReturnStatements(NumberedStatement startStatement) {
+        List<NumberedStatement> result = new ArrayList<>();
+        NumberedStatement statement = startStatement;
+        while (true) {
+            if (statement.statement instanceof ReturnStatement) return List.of(statement);
+            for (NumberedStatement block : statement.blocks.get()) {
+                result.addAll(extractReturnStatements(block));
+            }
+            if (statement.next.get().isEmpty()) break;
+            statement = statement.next.get().get();
+        }
+        return result;
     }
 
     // recursive evaluation of an Expression

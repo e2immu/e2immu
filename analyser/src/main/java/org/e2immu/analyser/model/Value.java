@@ -82,4 +82,6 @@ public interface Value extends Comparable<Value> {
     default Value valueForLinkAnalysis() {
         return this;
     }
+
+    default boolean isEffectivelyFinalUnevaluated() { return false; }
 }

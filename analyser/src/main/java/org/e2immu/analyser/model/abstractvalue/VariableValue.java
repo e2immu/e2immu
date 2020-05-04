@@ -135,4 +135,9 @@ public class VariableValue implements Value {
     public Value valueForLinkAnalysis() {
         return valueForLinkAnalysis != null ? valueForLinkAnalysis : this;
     }
+
+    @Override
+    public boolean isEffectivelyFinalUnevaluated() {
+        return effectivelyFinalUnevaluated;
+    }
 }
