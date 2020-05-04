@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableModifier;
@@ -44,17 +45,21 @@ class VariableProperties implements EvaluationContext {
     static class AboutVariable {
         final Set<VariableProperty> properties = new HashSet<>();
         @NotNull
-        private Value currentValue = UnknownValue.NO_VALUE;
+        private Value currentValue;
 
         private final AboutVariable localCopyOf;
         private final Value initialValue;
         private final Value resetValue;
+        private final Variable variable;
+        private final String name;
 
-        private AboutVariable(AboutVariable localCopyOf, Value initialValue, Value currentValue) {
+        private AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value currentValue) {
             this.localCopyOf = localCopyOf;
             this.initialValue = initialValue;
             this.currentValue = currentValue;
             this.resetValue = currentValue;
+            this.variable = variable;
+            this.name = name; // the value used to put it in the map
         }
 
         @Override
@@ -72,7 +77,7 @@ class VariableProperties implements EvaluationContext {
         }
 
         AboutVariable localCopy() {
-            AboutVariable av = new AboutVariable(this, initialValue, currentValue);
+            AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue);
             av.properties.addAll(properties);
             return av;
         }
@@ -82,13 +87,12 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    final Map<Variable, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
+    final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
     final DependencyGraph<Variable> dependencyGraphBestCase;
     final DependencyGraph<Variable> dependencyGraphWorstCase;
 
     final VariableProperties parent;
-    final VariableProperties root;
     Value conditional; // any conditional added to this block
     private boolean guaranteedToBeReachedInCurrentBlock = true;
     final boolean guaranteedToBeReachedByParentStatement;
@@ -98,7 +102,6 @@ class VariableProperties implements EvaluationContext {
 
     public VariableProperties(TypeContext typeContext, MethodInfo currentMethod) {
         this.parent = null;
-        this.root = this;
         conditional = null;
         uponUsingConditional = null;
         this.typeContext = typeContext;
@@ -114,7 +117,6 @@ class VariableProperties implements EvaluationContext {
 
     private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
         this.parent = parent;
-        this.root = parent.root;
         this.uponUsingConditional = uponUsingConditional;
         this.conditional = conditional;
         this.typeContext = parent.typeContext;
@@ -151,6 +153,10 @@ class VariableProperties implements EvaluationContext {
                 }
             }
         }
+    }
+
+    private AboutVariable findComplain(@NotNull Variable variable) {
+        return Objects.requireNonNull(find(variable, true));
     }
 
     private AboutVariable find(@NotNull Variable variable, boolean complain) {
@@ -283,7 +289,7 @@ class VariableProperties implements EvaluationContext {
         });// completely outside the context, but we should try
     }
 
-    private Expression computeInitialiser(FieldInfo recordField) {
+    private static Expression computeInitialiser(FieldInfo recordField) {
         FieldInspection recordFieldInspection = recordField.fieldInspection.get();
         if (recordFieldInspection.initialiser.isSet()) {
             return recordFieldInspection.initialiser.get().initialiser;
@@ -293,8 +299,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void setValue(@NotNull Variable variable, @NotNull Value value) {
-        AboutVariable aboutVariable = find(variable, true);
-        assert aboutVariable != null; // to keep intellij happy, because of the complain we know it cannot be null
+        AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.currentValue = Objects.requireNonNull(value);
     }
 
@@ -304,47 +309,42 @@ class VariableProperties implements EvaluationContext {
         return aboutVariable.properties.add(variableProperty);
     }
 
+    private static List<String> variableNamesOfLocalRecordVariables(AboutVariable aboutVariable) {
+        TypeInfo recordType = aboutVariable.variable.parameterizedType().typeInfo;
+        return recordType.typeInspection.get().fields.stream()
+                .map(fieldInfo -> aboutVariable.name + "." + fieldInfo.name).collect(Collectors.toList());
+    }
+
     // same as addProperty, but "descend" into fields of records as well
     // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
-    public boolean addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
+
+    public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = find(variable, false);
-        if (aboutVariable == null) return true; //not known to us, ignoring!
-        boolean added = aboutVariable.properties.add(variableProperty);
-        if (isRecordType(variable)) {
-            List<Variable> recordFields = superficialLocalVariableObjects(variable);
-            return recordFields.stream().map(v -> addPropertyAlsoRecords(v, variableProperty)).reduce(added, (b1, b2) -> b1 || b2);
-        }
-        return added;
+        if (aboutVariable == null) return; //not known to us, ignoring!
+        recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty);
     }
 
-    // superficial here means: just enough for the equality operators to work, to find the variable
-    private List<Variable> superficialLocalVariableObjects(Variable variable) {
-        TypeInfo recordType = variable.parameterizedType().typeInfo;
-        List<Variable> list = new ArrayList<>();
-        boolean createLocalVariable = variable instanceof LocalVariableReference || variable instanceof ParameterInfo;
-        for (FieldInfo recordField : recordType.typeInspection.get().fields) {
-            String name = variable.name() + "." + recordField.name;
-            Variable newVariable;
-            if (createLocalVariable) {
-                newVariable = new LocalVariableReference(new LocalVariable(name), List.of());
-            } else {
-                TypeInfo owner = ((FieldReference) variable).fieldInfo.owner;
-                newVariable = new FieldReference(new FieldInfo(Primitives.PRIMITIVES.voidParameterizedType, name, owner), null);
+    private void recursivelyAddPropertyAlsoRecords(AboutVariable aboutVariable, VariableProperty variableProperty) {
+        aboutVariable.properties.add(variableProperty);
+        if (isRecordType(aboutVariable.variable)) {
+            for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
+                recursivelyAddPropertyAlsoRecords(variableProperties.get(name), variableProperty);
             }
-            list.add(newVariable);
         }
-        return list;
     }
 
-    // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
     public void reset(Variable variable, boolean toInitialValue) {
         AboutVariable aboutVariable = find(variable, false);
         if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
+        recursivelyReset(aboutVariable, toInitialValue);
+    }
+
+    private void recursivelyReset(AboutVariable aboutVariable, boolean toInitialValue) {
         aboutVariable.properties.removeAll(List.of(CHECK_NOT_NULL));
         aboutVariable.currentValue = toInitialValue ? aboutVariable.initialValue : aboutVariable.resetValue;
-        if (isRecordType(variable)) {
-            List<Variable> recordFields = superficialLocalVariableObjects(variable);
-            recordFields.forEach(v -> reset(v, toInitialValue));
+        if (isRecordType(aboutVariable.variable)) {
+            List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
+            recordNames.forEach(name -> recursivelyReset(variableProperties.get(name), toInitialValue));
         }
     }
 
@@ -360,7 +360,7 @@ class VariableProperties implements EvaluationContext {
         if (parent == null) sb.append("@Root: ");
         else sb.append(parent.toString()).append("; ");
         sb.append(variableProperties.entrySet().stream()
-                .map(e -> e.getKey().detailedString() + ": " + e.getValue())
+                .map(e -> e.getKey() + ": " + e.getValue())
                 .collect(Collectors.joining(", ")));
         return sb.toString();
     }
@@ -368,24 +368,9 @@ class VariableProperties implements EvaluationContext {
     @Override
     @NotNull
     public Value currentValue(Variable variable) {
-        AboutVariable aboutVariable = find(variable, false);
-        if (aboutVariable == null) {
-            if (variable instanceof FieldReference) {
-                FieldReference fieldReference = (FieldReference) variable;
-                ParameterizedType type = fieldReference.fieldInfo.type;
-                if (type.typeInfo != null && type.typeInfo.primaryType().equals(currentMethod.typeInfo.primaryType())) {
-                    throw new UnsupportedOperationException("Coming across reference to field of my own primary type?" +
-                            " should have been declared: " + variable.detailedString());
-                }
-                root.create(variable, new VariableValue(variable));
-                aboutVariable = Objects.requireNonNull(find(variable, true));
-            } else {
-                throw new UnsupportedOperationException("Coming across variable that should have been declared: " +
-                        variable.detailedString());
-            }
-        }
+        AboutVariable aboutVariable = findComplain(variable);
         if (aboutVariable.properties.contains(ASSIGNED_IN_LOOP)) {
-            return new VariableValue(variable);
+            return aboutVariable.resetValue;
         }
         return aboutVariable.currentValue;
     }
@@ -400,13 +385,10 @@ class VariableProperties implements EvaluationContext {
             }
         }
         // step 2. is the variable defined at this level? look at the properties
-        AboutVariable aboutVariable = variableProperties.get(variable);
-        if (aboutVariable != null) {
-            if (!(aboutVariable.currentValue instanceof VariableValue) &&
-                    aboutVariable.currentValue.isNotNull(this)) return true;
-            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
-        }
-        return parent != null && parent.isNotNull(variable);
+        AboutVariable aboutVariable = findComplain(variable);
+        if (!(aboutVariable.currentValue instanceof VariableValue) &&
+                aboutVariable.currentValue.isNotNull(this)) return true;
+        return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
     }
 
     public Variable switchToValueVariable(Variable variable) {
@@ -416,7 +398,6 @@ class VariableProperties implements EvaluationContext {
             return ((VariableValue) aboutVariable.currentValue).variable;
         return variable;
     }
-
 
     public List<Variable> getNullConditionals() {
         if (conditional != null) {
@@ -445,35 +426,33 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean guaranteedToBeReached(Variable variable) {
+        AboutVariable aboutVariable = findComplain(variable);
         if (!guaranteedToBeReachedInCurrentBlock) return false;
-        return recursivelyCheckGuaranteedToBeReachedByParent(variable);
+        return recursivelyCheckGuaranteedToBeReachedByParent(aboutVariable.name);
     }
 
-    private boolean recursivelyCheckGuaranteedToBeReachedByParent(Variable variable) {
-        if (variableProperties.containsKey(variable)) {
+    private boolean recursivelyCheckGuaranteedToBeReachedByParent(String name) {
+        if (variableProperties.containsKey(name)) {
             return true; // this is the level where we are defined
         }
         if (!guaranteedToBeReachedByParentStatement) return false;
-        if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(variable);
+        if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(name);
         return true;
     }
 
-
     public void ensureLocalCopy(Variable variable) {
-        AboutVariable aboutVariable = variableProperties.get(variable);
-        if (aboutVariable == null) {
+        AboutVariable master = findComplain(variable);
+        if (!variableProperties.containsKey(master.name)) {
             // we'll make a local copy
-            AboutVariable master = find(variable, true);
-            assert master != null;
             AboutVariable copy = master.localCopy();
-            variableProperties.put(variable, copy);
+            variableProperties.put(copy.name, copy);
         }
     }
 
     public void copyBackLocalCopies(boolean statementsExecutedAtLeastOnce) {
-        for (Map.Entry<Variable, AboutVariable> entry : variableProperties.entrySet()) {
+        for (Map.Entry<String, AboutVariable> entry : variableProperties.entrySet()) {
             AboutVariable av = entry.getValue();
-            Variable variable = entry.getKey();
+            String name = entry.getKey();
             if (av.localCopyOf != null) {
                 av.localCopyOf.properties.clear();
 
@@ -481,14 +460,14 @@ class VariableProperties implements EvaluationContext {
                 // if: the block is executed for sure, and the assignment which contains current value, is executed for sure,
                 if (statementsExecutedAtLeastOnce && av.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
                     // erase when the result is a local variable, at this level
-                    erase = av.currentValue instanceof LocalVariableReference && variableProperties.containsKey(variable);
+                    erase = av.currentValue instanceof LocalVariableReference && variableProperties.containsKey(name);
                 } else {
                     erase = true; // block was executed conditionally, or the assignment was executed conditionally
                 }
                 copyConditionally(av.properties, av.localCopyOf.properties, READ, READ_MULTIPLE_TIMES, ASSIGNED,
                         ASSIGNED_MULTIPLE_TIMES, CONTENT_MODIFIED);
                 if (erase) {
-                    av.localCopyOf.currentValue = new VariableValue(variable);
+                    av.localCopyOf.currentValue = av.localCopyOf.resetValue;
                     boolean notNullHere = av.properties.contains(CHECK_NOT_NULL);
                     boolean notNullAtOrigin = av.localCopyOf.properties.contains(CHECK_NOT_NULL);
                     if (notNullHere && !notNullAtOrigin) {
@@ -496,12 +475,11 @@ class VariableProperties implements EvaluationContext {
                     } else if (!notNullHere && notNullAtOrigin) {
                         av.localCopyOf.properties.remove(CHECK_NOT_NULL);
                     }
-                    log(VARIABLE_PROPERTIES, "Erasing the value of {}, merge properties to {}", variable.detailedString());
+                    log(VARIABLE_PROPERTIES, "Erasing the value of {}, merge properties to {}", name);
                 } else {
                     av.localCopyOf.currentValue = av.currentValue;
                     log(VARIABLE_PROPERTIES, "Copied back value {} of {}, merge properties to {}",
-                            av.currentValue,
-                            variable.detailedString(), av.properties);
+                            av.currentValue, name, av.properties);
                 }
             }
         }

@@ -25,43 +25,20 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 import java.util.Set;
 
-public class VariableValue implements Value {
+public class FinalFieldValue implements Value {
     @NotNull
-    public final Variable variable; // the variable of the inspection, as correct/large as possible
-
-    @NotNull
-    public final String name; // the name in the variable properties
+    public final FieldReference fieldReference; // the variable of the inspection, as correct/large as possible
 
     @NotNull
     public final Set<AnnotationExpression> dynamicTypeAnnotations;
     public final Value valueForLinkAnalysis;
-    public final Boolean isNotNull;
 
-    public VariableValue(Variable variable, String name) {
-        this(variable, name, Set.of(), null, null);
-    }
-
-    public VariableValue(Variable variable, String name,
-                         Set<AnnotationExpression> dynamicTypeAnnotations) {
-        this(variable, name, dynamicTypeAnnotations, null, null);
-    }
-
-    public VariableValue(Variable variable,
-                         String name,
-                         Set<AnnotationExpression> dynamicTypeAnnotations,
-                         Value valueForLinkAnalysis,
-                         Boolean isNotNull) {
-        this.variable = variable;
-        this.name = name;
+    public FinalFieldValue(FieldReference fieldReference,
+                           Set<AnnotationExpression> dynamicTypeAnnotations,
+                           Value valueForLinkAnalysis) {
+        this.fieldReference = fieldReference;
         this.dynamicTypeAnnotations = dynamicTypeAnnotations;
         this.valueForLinkAnalysis = valueForLinkAnalysis;
-        this.isNotNull = isNotNull;
-    }
-
-    @Override
-    public Value notNullCopy() {
-        if (isNotNull == Boolean.TRUE) return this;
-        return new VariableValue(variable, name, dynamicTypeAnnotations, valueForLinkAnalysis, true);
     }
 
     @Override
@@ -73,24 +50,25 @@ public class VariableValue implements Value {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        VariableValue that = (VariableValue) o;
-        return variable.equals(that.variable);
+        FinalFieldValue that = (FinalFieldValue) o;
+        return fieldReference.equals(that.fieldReference);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variable);
+        return Objects.hash(fieldReference);
     }
 
     @Override
     public String toString() {
-        return variable.detailedString();
+        return "@E1Immutable " + fieldReference.detailedString();
     }
 
     @Override
     public int compareTo(Value o) {
         if (o == UnknownValue.UNKNOWN_VALUE) return -1;
-        if (o instanceof VariableValue) return variable.name().compareTo(((VariableValue) o).variable.name());
+        if (o instanceof FinalFieldValue)
+            return fieldReference.name().compareTo(((FinalFieldValue) o).fieldReference.name());
         if (o instanceof NegatedValue) {
             NegatedValue negatedValue = (NegatedValue) o;
             if (equals(((NegatedValue) o).value)) return -1; // I'm always BEFORE my negation
@@ -101,11 +79,7 @@ public class VariableValue implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
-        // easy cases
-        if (isNotNull == Boolean.TRUE) return true;
-        if (variable.parameterizedType().isPrimitive()) return true;
-        // look up in the map
-        return evaluationContext.isNotNull(variable); // look up
+        return fieldReference.fieldInfo.isNotNull(evaluationContext.getTypeContext());
     }
 
     /*
@@ -115,16 +89,16 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != variable.parameterizedType().typeInfo;
+        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != fieldReference.parameterizedType().typeInfo;
         boolean e2Immu = (bestCase || differentType) &&
-                variable.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
-        if (e2Immu || variable.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
-        return Set.of(variable);
+                fieldReference.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
+        if (e2Immu || fieldReference.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
+        return Set.of(fieldReference);
     }
 
     @Override
     public ParameterizedType type() {
-        return variable.concreteReturnType();
+        return fieldReference.concreteReturnType();
     }
 
     @Override

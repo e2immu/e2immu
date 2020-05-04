@@ -76,7 +76,7 @@ public class Resolver {
             recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType);
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
-        fillInternalMethodCalls(typeInfo, methodGraph);
+        fillInternalMethodCalls(methodGraph);
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
@@ -239,15 +239,19 @@ public class Resolver {
     }
 
 
-    private static void fillInternalMethodCalls(TypeInfo typeInfo, DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    private static void fillInternalMethodCalls(DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo) {
                 MethodInfo methodInfo = ((MethodInfo) from);
-                //Set<MethodInfo> methodsCalled = toList == null ? Set.of() :
-                //        toList.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
                 methodInfo.methodAnalysis.methodsOfOwnClassReached.set(methodsReached);
+            }
+        });
+        methodGraph.visit((from, toList) -> {
+            if (from instanceof MethodInfo) {
+                MethodInfo methodInfo = ((MethodInfo) from);
+                methodInfo.methodAnalysis.partOfConstruction.set(methodInfo.isConstructor || methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
             }
         });
     }

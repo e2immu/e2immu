@@ -109,11 +109,11 @@ public class TypeAnalyser {
             changes = false;
 
             List<This> thisVariables = typeInfo.thisVariables();
-            VariableProperties fieldProperties = initializeVariableProperties(typeInfo, thisVariables, null);
+            VariableProperties fieldProperties = new VariableProperties(typeContext, null);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = initializeVariableProperties(typeInfo, thisVariables, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(typeContext, (MethodInfo) member);
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                 } else {
@@ -123,7 +123,7 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = initializeVariableProperties(typeInfo, thisVariables,
+                            VariableProperties methodProperties = new VariableProperties(typeContext,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
@@ -191,57 +191,58 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    private VariableProperties initializeVariableProperties(TypeInfo typeBeingAnalysed, List<This> thisVariables, MethodInfo currentMethod) {
-        VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
-        for (This thisVariable : thisVariables) {
-            if (!thisVariable.typeInfo.isRecord() || thisVariable.typeInfo == typeBeingAnalysed) {
-                fieldProperties.create(thisVariable, new VariableValue(thisVariable));
-                for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
-                    createFieldReference(thisVariable, fieldProperties, fieldInfo);
-                }
-            } // for records, we will make fields in the "create" method
+    /*
+        private VariableProperties initializeVariableProperties(TypeInfo typeBeingAnalysed, List<This> thisVariables, MethodInfo currentMethod) {
+            VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
+            for (This thisVariable : thisVariables) {
+                if (!thisVariable.typeInfo.isRecord() || thisVariable.typeInfo == typeBeingAnalysed) {
+                    fieldProperties.create(thisVariable, new VariableValue(thisVariable));
+                    for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
+                        createFieldReference(thisVariable, fieldProperties, fieldInfo);
+                    }
+                } // for records, we will make fields in the "create" method
+            }
+            return fieldProperties;
         }
-        return fieldProperties;
-    }
 
-    // this method is responsible for one of the big feed-back loops in the evaluation chain
+        // this method is responsible for one of the big feed-back loops in the evaluation chain
 
-    private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
-        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        Value value;
+        private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
+            FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+            Value value;
 
-        Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
-        boolean haveConstantValue;
-        if (Boolean.TRUE == isFinal) {
-            if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                haveConstantValue = true;
-            } else {
-                Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
-                Set<AnnotationExpression> dynamicAnnotationExpressions;
-                if (isE2Immutable == null) {
-                    dynamicAnnotationExpressions = null;
+            Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
+            boolean haveConstantValue;
+            if (Boolean.TRUE == isFinal) {
+                if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                    value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+                    haveConstantValue = true;
                 } else {
-                    dynamicAnnotationExpressions = fieldInfo.fieldAnalysis.annotations.stream().filter(Map.Entry::getValue)
-                            .map(Map.Entry::getKey).collect(Collectors.toSet());
+                    Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
+                    Set<AnnotationExpression> dynamicAnnotationExpressions;
+                    if (isE2Immutable == null) {
+                        dynamicAnnotationExpressions = null;
+                    } else {
+                        dynamicAnnotationExpressions = fieldInfo.fieldAnalysis.annotations.stream().filter(Map.Entry::getValue)
+                                .map(Map.Entry::getKey).collect(Collectors.toSet());
+                    }
+                    value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
+                    haveConstantValue = false;
                 }
-                value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
+            } else if (Boolean.FALSE == isFinal) {
+                // we know here that the field will never be effectively immutable, so no point in delaying links
+                value = new VariableValue(fieldReference, null, false, null, null);
+                haveConstantValue = false;
+            } else {
+                // no idea about @Final, @E2Immutable
+                value = new VariableValue(fieldReference, null, true, null, null);
                 haveConstantValue = false;
             }
-        } else if (Boolean.FALSE == isFinal) {
-            // we know here that the field will never be effectively immutable, so no point in delaying links
-            value = new VariableValue(fieldReference, null, false, null, null);
-            haveConstantValue = false;
-        } else {
-            // no idea about @Final, @E2Immutable
-            value = new VariableValue(fieldReference, null, true, null, null);
-            haveConstantValue = false;
+
+            fieldProperties.create(fieldReference, value);
+            if (haveConstantValue) fieldProperties.setValue(fieldReference, value);
         }
-
-        fieldProperties.create(fieldReference, value);
-        if (haveConstantValue) fieldProperties.setValue(fieldReference, value);
-    }
-
+    */
     private boolean assignContainer(TypeInfo typeInfo, boolean isContainer) {
         if (typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
 

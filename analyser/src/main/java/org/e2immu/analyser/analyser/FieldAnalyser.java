@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -150,7 +150,7 @@ public class FieldAnalyser {
                     annotations.put(constantAnnotation, true);
                     log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                 } else {
-                    valueToSet = new VariableValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), false, null, null);
+                    valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), null);
                     annotations.put(typeContext.constant.get(), false);
                     log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }

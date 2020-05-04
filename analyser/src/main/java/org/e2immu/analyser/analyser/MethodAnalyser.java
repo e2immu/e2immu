@@ -104,7 +104,7 @@ public class MethodAnalyser {
             changes = true;
         }
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            methodProperties.create(parameterInfo, new VariableValue(parameterInfo));
+            methodProperties.create(parameterInfo, new VariableValue(parameterInfo, parameterInfo.name));
         }
         if (analyseFlow(methodInfo, methodProperties)) changes = true;
         return changes;

@@ -90,7 +90,7 @@ public class LambdaBlock implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         if (block != Block.EMPTY_BLOCK) {
             EvaluationContext child = evaluationContext.child(null, null, true);
-            parameters.forEach(pi -> child.create(pi, new VariableValue(pi)));
+            parameters.forEach(pi -> child.create(pi, new VariableValue(pi, pi.name)));
 
             boolean changes = false;
             if (!numberedStatements.isSet()) {

@@ -67,7 +67,8 @@ public interface Value extends Comparable<Value> {
 
     /**
      * return a value, but with the guarantee that isNotNull will evaluate to true
-     * @return
+     *
+     * @return a copy, equal to this, but with the isNotNull flag set to true
      */
     default Value notNullCopy() {
         return this;
@@ -83,5 +84,4 @@ public interface Value extends Comparable<Value> {
         return this;
     }
 
-    default boolean isEffectivelyFinalUnevaluated() { return false; }
 }

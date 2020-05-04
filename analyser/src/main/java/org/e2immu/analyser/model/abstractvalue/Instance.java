@@ -18,37 +18,58 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-// an object, instance of a certain class, potentially after casting
+/**
+ * An object of a given type. Can even be not @NotNull.
+ * It can be explicitly constructed, in which case linking can be investigated.
+ * All Instance objects are different.
+ * <p>
+ * Note that we could make things more complicated by assuming that the creation of two
+ * objects from identical parameters will yield an object that equals... but we would
+ * have to study the equals method. That's for later.
+ */
+
 public class Instance implements Value {
+    @NotNull
     public final ParameterizedType parameterizedType;
     public final List<Value> constructorParameterValues;
     public final MethodInfo constructor;
     public final boolean isNotNull;
+    public final int uniqueNumber;
+    private final static AtomicInteger uniqueNumberGenerator = new AtomicInteger();
 
-    public Instance(ParameterizedType parameterizedType) {
-        this(parameterizedType, null, null, true);
+    public Instance(@NotNull ParameterizedType parameterizedType) {
+        this(parameterizedType, null, null, true, uniqueNumberGenerator.incrementAndGet());
     }
 
-    public Instance(ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull) {
-        this.parameterizedType = parameterizedType;
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull) {
+        this(parameterizedType, constructor, parameterValues, isNotNull, uniqueNumberGenerator.incrementAndGet());
+    }
+
+    private Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull, int uniqueNumber) {
+        this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor;
-        this.constructorParameterValues = parameterValues;
+        this.constructorParameterValues = parameterValues == null ? null : ImmutableList.copyOf(parameterValues);
         this.isNotNull = isNotNull;
+        this.uniqueNumber = uniqueNumber;
     }
 
     @Override
     public Value notNullCopy() {
         if (isNotNull) return this;
-        return new Instance(parameterizedType, constructor, constructorParameterValues, true);
+        return new Instance(parameterizedType, constructor, constructorParameterValues, true, uniqueNumber);
     }
 
     @Override
@@ -56,7 +77,7 @@ public class Instance implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Instance that = (Instance) o;
-        return parameterizedType.equals(that.parameterizedType);
+        return uniqueNumber == that.uniqueNumber;
     }
 
     @Override
@@ -77,7 +98,7 @@ public class Instance implements Value {
 
     @Override
     public String toString() {
-        return "instanceof " + parameterizedType.detailedString()
+        return "instance " + uniqueNumber + ": " + parameterizedType.detailedString()
                 + (constructorParameterValues != null ? "(" + constructorParameterValues.stream()
                 .map(Value::toString)
                 .collect(Collectors.joining(", ")) + ")" : "");
