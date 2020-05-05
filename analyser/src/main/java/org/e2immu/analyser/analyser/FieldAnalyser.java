@@ -108,6 +108,11 @@ public class FieldAnalyser {
                         isFinal = !isModifiedOutsideConstructors;
                     }
                     annotations.put(typeContext.effectivelyFinal.get(), isFinal);
+                    if (isFinal && fieldInfo.type.isRecordType()) {
+                        typeContext.addMessage(Message.Severity.ERROR,
+                                "Effectively final field " + fieldInfo.fullyQualifiedName() +
+                                        " is not allowed to be of a record type " + fieldInfo.type.detailedString());
+                    }
                     log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                             "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
                     changes = true;

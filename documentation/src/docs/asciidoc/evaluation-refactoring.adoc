@@ -33,6 +33,7 @@ Final fields:: Final fields have a value, which is either an `Instance`, `Method
 These fields will not appear in the property map.
 Fields during construction that become final (or are explicitly final) are treated as final fields.
 Content modifications are reported.
+Final fields of record type end up as having non-final fields outside construction: we simply forbid this.
 
 Record fields in local variables:: act as local variables, initialised at creation of the record.
 They will be reset when the record variable is reassigned.

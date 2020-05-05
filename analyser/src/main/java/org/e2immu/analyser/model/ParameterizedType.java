@@ -303,7 +303,7 @@ public class ParameterizedType {
                 sb.append(">");
             }
         }
-        if(!withoutArrays) {
+        if (!withoutArrays) {
             if (varargs) {
                 if (arrays == 0) {
                     throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
@@ -628,13 +628,22 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
     }
 
+    public boolean isRecordType() {
+        if (typeInfo != null) {
+            return typeInfo.isRecord();
+        }
+        if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
+            return parameters.get(0).isRecordType();
+        }
+        return false;
+    }
 
     public Value defaultValue() {
-        if(isPrimitive()) {
-            if(typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) return BoolValue.FALSE;
-            if(typeInfo == Primitives.PRIMITIVES.intTypeInfo) return IntValue.ZERO_VALUE;
-            if(typeInfo == Primitives.PRIMITIVES.longTypeInfo) return new LongValue(0L);
-            if(typeInfo == Primitives.PRIMITIVES.charTypeInfo) return new CharValue('\0');
+        if (isPrimitive()) {
+            if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) return BoolValue.FALSE;
+            if (typeInfo == Primitives.PRIMITIVES.intTypeInfo) return IntValue.ZERO_VALUE;
+            if (typeInfo == Primitives.PRIMITIVES.longTypeInfo) return new LongValue(0L);
+            if (typeInfo == Primitives.PRIMITIVES.charTypeInfo) return new CharValue('\0');
             throw new UnsupportedOperationException();
         }
         return NullValue.NULL_VALUE;

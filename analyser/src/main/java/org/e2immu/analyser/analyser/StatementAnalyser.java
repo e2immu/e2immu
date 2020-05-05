@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Var;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
@@ -346,7 +347,10 @@ public class StatementAnalyser {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
             boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(valueAfterCheckingForConstant);
 
-            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.child(valueAfterCheckingForConstant, uponUsingConditional, statementsExecutedAtLeastOnce);
+            boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childInSyncBlock(valueAfterCheckingForConstant, uponUsingConditional,
+                    inSyncBlock, statementsExecutedAtLeastOnce);
+
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
             variablePropertiesWithValue.copyBackLocalCopies(statementsExecutedAtLeastOnce);
             breakOrContinueStatementsInChildren.addAll(startOfFirstBlock.breakAndContinueStatements.isSet() ?
@@ -565,6 +569,7 @@ public class StatementAnalyser {
                     }
                     return;
                 }
+                variableProperties.createVariableIfRelevant(at);
             }
 
             // assignment to local variable: could be that we're in the block where it was created, then nothing happens
@@ -610,7 +615,7 @@ public class StatementAnalyser {
                         log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
                         methodAnalysis.thisRead.set(true);
                     }
-                } else if (variable instanceof FieldReference && variableProperties.inConstructionPhase()) {
+                } else if (variable instanceof FieldReference && !variableProperties.inConstructionPhase()) {
                     // we're outside the construction phase with a field (so we're not keeping tabs on it in the variable properties
                     FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                     if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
@@ -618,9 +623,12 @@ public class StatementAnalyser {
                         log(ASSIGNMENT, "Mark field {} as read outside construction phase", fieldInfo.fullyQualifiedName(), methodInfo.name);
                     }
                 } else {
-                    variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                    if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
-                        variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                    variableProperties.createVariableIfRelevant(variable);
+                    if (variableProperties.isKnown(variable)) {
+                        variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+                        if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
+                            variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                        }
                     }
                 }
             }
@@ -754,6 +762,7 @@ public class StatementAnalyser {
 
     private boolean variableOccursInNotNullContext(NumberedStatement currentStatement, Variable variable, VariableProperties variableProperties) {
         if (variable instanceof This) return false; // nothing to be done here
+        variableProperties.createVariableIfRelevant(variable);
         if (variableProperties.isNotNull(variable))
             return false; // ok there is a check on the variable, or we don't know yet
         Variable valueVar = variableProperties.switchToValueVariable(variable);
@@ -790,17 +799,19 @@ public class StatementAnalyser {
     }
 
     private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties, VariableProperty propertyToSet) {
+        Variable variable;
         if (expression instanceof VariableExpression) {
-            Variable variable = expression.variables().get(0);
-            log(DEBUG_MODIFY_CONTENT, "SA: mark method object as content modified: {}", variable.detailedString());
-            variableProperties.addProperty(variable, propertyToSet);
+            variable = expression.variables().get(0);
         } else if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
             recursivelyMarkVariables(fieldAccess.expression, variableProperties, propertyToSet);
-            log(DEBUG_MODIFY_CONTENT, "SA: mark method object, field access as content modified: {}",
-                    fieldAccess.variable.detailedString());
-            variableProperties.addProperty(fieldAccess.variable, propertyToSet);
+            variable = fieldAccess.variable;
+        } else {
+            return;
         }
+        log(DEBUG_MODIFY_CONTENT, "SA: mark method object as {}: {}", propertyToSet, variable.detailedString());
+        variableProperties.createVariableIfRelevant(variable);
+        variableProperties.addProperty(variable, propertyToSet);
     }
 
 }

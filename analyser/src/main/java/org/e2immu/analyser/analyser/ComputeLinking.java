@@ -153,13 +153,13 @@ public class ComputeLinking {
     private static boolean establishLinks(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
         if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
-        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties.entrySet().stream()
-                .filter(e -> (e.getKey() instanceof FieldReference) && (e.getValue().properties.contains(VariableProperty.READ) ||
-                        e.getValue().properties.contains(VariableProperty.ASSIGNED)))
-                .anyMatch(e -> e.getValue().getCurrentValue() instanceof VariableValue &&
-                        ((VariableValue) e.getValue().getCurrentValue()).effectivelyFinalUnevaluated);
+        // final fields need to have a value set; all the others act as local variables
+        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties.values().stream()
+                .anyMatch(av -> av.variable instanceof FieldReference &&
+                        ((FieldReference) av.variable).fieldInfo.isEffectivelyFinal(methodProperties.getTypeContext()) == Boolean.TRUE &&
+                        !((FieldReference) av.variable).fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet());
         if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
-            log(DELAYED, "Some fields have not yet been evaluated -- delaying establishing links");
+            log(DELAYED, "Some effectively final fields have not yet been evaluated -- delaying establishing links");
             return false;
         }
         if (!methodProperties.dependencyGraphBestCase.equalTransitiveTerminals(methodProperties.dependencyGraphWorstCase)) {
@@ -196,30 +196,28 @@ public class ComputeLinking {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
-        for (Variable variable : methodProperties.variableProperties.keySet()) {
-            if (!(variable instanceof This)) {
-                Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), variable);
-                for (Variable linkedVariable : linkedVariables) {
-                    if (linkedVariable instanceof FieldReference) {
-                        if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
-                            FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
-                            Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
-                            boolean directlyModifiedField = directContentModification == Boolean.TRUE
-                                    && !fieldInfo.isIgnoreModifications()
-                                    && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
-                                    && methodAnalysis.fieldRead.get(fieldInfo); // if local, it will be set, but it has to be true
-                            log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has {}been modified in {}",
-                                    linkedVariable.detailedString(),
-                                    directContentModification == null ? "?? " :
-                                            directContentModification ? "" : "NOT ",
-                                    methodInfo.fullyQualifiedName());
-                            methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
-                            changes = true;
-                        }
-                    } else if (linkedVariable instanceof ParameterInfo) {
-                        Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, true);
-                        parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), aboutVariable.variable);
+            for (Variable linkedVariable : linkedVariables) {
+                if (linkedVariable instanceof FieldReference) {
+                    if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
+                        FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
+                        Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
+                        boolean directlyModifiedField = directContentModification == Boolean.TRUE
+                                && !fieldInfo.isIgnoreModifications()
+                                && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
+                                && methodAnalysis.fieldRead.get(fieldInfo); // if local, it will be set, but it has to be true
+                        log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has {}been modified in {}",
+                                linkedVariable.detailedString(),
+                                directContentModification == null ? "?? " :
+                                        directContentModification ? "" : "NOT ",
+                                methodInfo.fullyQualifiedName());
+                        methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
+                        changes = true;
                     }
+                } else if (linkedVariable instanceof ParameterInfo) {
+                    Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, true);
+                    parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
                 }
             }
         }
@@ -298,7 +296,7 @@ public class ComputeLinking {
             Set<VariableProperty> properties = aboutVariable.properties;
             if (variable instanceof FieldReference) {
                 // internal consistency check that we're in the construction phase!!
-                if(!methodInfo.methodAnalysis.partOfConstruction.get()) throw new UnsupportedOperationException();
+                if (!methodInfo.methodAnalysis.partOfConstruction.get()) throw new UnsupportedOperationException();
 
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {

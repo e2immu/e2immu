@@ -86,10 +86,10 @@ public class TestAbstractValue {
     static final Variable vb = createVariable("b");
     static final Variable vc = createVariable("c");
     static final Variable vd = createVariable("d");
-    static final VariableValue a = new VariableValue(va);
-    static final VariableValue b = new VariableValue(vb);
-    static final VariableValue c = new VariableValue(vc);
-    static final VariableValue d = new VariableValue(vd);
+    static final VariableValue a = new VariableValue(va, "a");
+    static final VariableValue b = new VariableValue(vb, "b");
+    static final VariableValue c = new VariableValue(vc, "c");
+    static final VariableValue d = new VariableValue(vd, "d");
 
     @Test
     public void test() {

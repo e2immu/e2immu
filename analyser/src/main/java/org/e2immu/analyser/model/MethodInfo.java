@@ -566,4 +566,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 annotatedWith(typeContext.e2Immutable.get()));
         return TypeAnalyser.TERNARY_OR.apply(staticallyE2Immutable, dynamicallyE2Immutable);
     }
+
+    public boolean isSynchronized() {
+        return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
+    }
 }

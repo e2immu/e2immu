@@ -100,6 +100,7 @@ class VariableProperties implements EvaluationContext {
     final Runnable uponUsingConditional;
     final TypeContext typeContext;
     final MethodInfo currentMethod;
+    final boolean inSyncBlock;
 
     public VariableProperties(TypeContext typeContext, MethodInfo currentMethod) {
         this.parent = null;
@@ -110,13 +111,18 @@ class VariableProperties implements EvaluationContext {
         this.dependencyGraphBestCase = new DependencyGraph<>();
         this.dependencyGraphWorstCase = new DependencyGraph<>();
         guaranteedToBeReachedByParentStatement = true;
+        inSyncBlock = currentMethod.isSynchronized();
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional, guaranteedToBeReachedByParentStatement);
+        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional,
+                methodInfo.isSynchronized(),
+                guaranteedToBeReachedByParentStatement);
     }
 
-    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional,
+                               boolean inSyncBlock,
+                               boolean guaranteedToBeReachedByParentStatement) {
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
         this.conditional = conditional;
@@ -124,6 +130,7 @@ class VariableProperties implements EvaluationContext {
         this.currentMethod = currentMethod;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
+        this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
     }
 
@@ -139,8 +146,20 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional, guaranteedToBeReachedByParentStatement);
+    public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
+                                              boolean inSyncBlock,
+                                              boolean guaranteedToBeReachedByParentStatement) {
+        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional,
+                inSyncBlock,
+                guaranteedToBeReachedByParentStatement);
+    }
+
+    @Override
+    public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
+                                   boolean guaranteedToBeReachedByParentStatement) {
+        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional,
+                inSyncBlock,
+                guaranteedToBeReachedByParentStatement);
     }
 
     public void addToConditional(Value value) {
@@ -186,14 +205,29 @@ class VariableProperties implements EvaluationContext {
         return null;
     }
 
+    public void createVariableIfRelevant(Variable variable) {
+        if (isKnown(variable)) return;
+        if (variable instanceof FieldReference) {
+            FieldReference fieldReference = (FieldReference) variable;
+            if (fieldReference.fieldInfo.owner != currentMethod.typeInfo) return; // outside my type... no need
+            boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
+            if (effectivelyFinal || inSyncBlock || inConstructionPhase()) {
+                String name = nameOfFieldDuringConstruction(fieldReference);
+                Value resetValue = new VariableValue(fieldReference, name);
+                internalCreate(variable, nameOfFieldDuringConstruction(fieldReference), resetValue, resetValue, Set.of());
+            }
+        }
+    }
+
     public String variableName(@NotNull Variable variable) {
         Objects.requireNonNull(variable);
         String name;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
-            // there are only 2 cases: a field during construction phase, and a field of a record
+            // there are 3 cases: a field during construction phase, an effectively final field of the type we're analysing, and a field of a record
             if (fieldReference.scope == null || fieldReference.scope instanceof This) {
-                if (!inConstructionPhase()) {
+                boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
+                if (!effectivelyFinal && !inConstructionPhase()) {
                     throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
                             + fieldReference.detailedString());
                 }
@@ -223,13 +257,14 @@ class VariableProperties implements EvaluationContext {
         } else if (variable instanceof This) {
             throw new UnsupportedOperationException("Not allowed to add This to the variable properties map");
         } else {
-            // field; only two cases allowed:
+            // field; only three cases allowed:
             // (1) a normal field during construction phase; acts like a local variable
             // (2) a non-final field inside a synchronisation block; acts like a local variable temporarily
-            boolean inSyncBlock = initialPropertiesAsSet.contains(NON_FINAL_FIELD_IN_SYNC_BLOCK);
+            // (3) an effectively final field
             FieldReference fieldReference = (FieldReference) variable;
-            if (inSyncBlock || fieldReference.scope == null || fieldReference.scope instanceof This) {
-                if (!inSyncBlock && !inConstructionPhase()) {
+            boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
+            if (effectivelyFinal || inSyncBlock || fieldReference.scope == null || fieldReference.scope instanceof This) {
+                if (!effectivelyFinal && !inSyncBlock && !inConstructionPhase()) {
                     throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
                             + fieldReference.detailedString());
                 }

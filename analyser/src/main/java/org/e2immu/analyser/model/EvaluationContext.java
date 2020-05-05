@@ -32,7 +32,13 @@ public interface EvaluationContext {
 
     MethodInfo getCurrentMethod();
 
-    EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement);
+
+    EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
+                            boolean inSyncBlock,
+                            boolean guaranteedToBeReachedByParentStatement);
+
+    EvaluationContext child(Value conditional, Runnable uponUsingConditional,
+                            boolean guaranteedToBeReachedByParentStatement);
 
     void create(Variable variable, VariableProperty... initialProperties);
 
