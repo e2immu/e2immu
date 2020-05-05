@@ -34,6 +34,10 @@ public class ErrorValue implements Value {
         return new ErrorValue("Unnecessary method call", alternative);
     }
 
+    public static ErrorValue inlineConditionalEvaluatesToConstant(Value alternative) {
+        return new ErrorValue("Inline conditional evaluates to constant", alternative);
+    }
+
     public final String msg;
     public final Value alternative;
 

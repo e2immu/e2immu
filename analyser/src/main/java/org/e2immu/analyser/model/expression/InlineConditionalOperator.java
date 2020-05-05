@@ -21,8 +21,12 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.ErrorValue;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
@@ -47,15 +51,9 @@ public class InlineConditionalOperator implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor) {
         Value c = conditional.evaluate(evaluationContext, evaluationVisitor);
 
-        if (c == BoolValue.TRUE) {
-            Value v = ifTrue.evaluate(evaluationContext, evaluationVisitor);
-            evaluationVisitor.visit(this, evaluationContext, v);
-            return v;
-        }
-        if (c == BoolValue.FALSE) {
-            Value v = ifFalse.evaluate(evaluationContext, evaluationVisitor);
-            evaluationVisitor.visit(this, evaluationContext, v);
-            return v;
+        if (c instanceof BoolValue) {
+            evaluationContext.getTypeContext().addMessage(Message.Severity.ERROR, "Conditional always evaluates to constant");
+            return ErrorValue.inlineConditionalEvaluatesToConstant(new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
         }
 
         // we'll want to evaluate in a different context
