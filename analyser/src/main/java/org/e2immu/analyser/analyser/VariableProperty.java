@@ -36,7 +36,9 @@ public enum VariableProperty {
     CONTENT_MODIFIED_DELAYED("content modified delayed"),
 
     // this variable is changing inside a loop; do not read its value
-    ASSIGNED_IN_LOOP("in loop")
+    ASSIGNED_IN_LOOP("in loop"),
+
+    NON_FINAL_FIELD_IN_SYNC_BLOCK("sync")
     ;
 
     public final String name;

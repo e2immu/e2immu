@@ -117,7 +117,7 @@ public class StatementAnalyser {
                 }
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
-            if (uselessAssignments(variableProperties, escapesViaException)) changes = true;
+            if (escapesViaException && uselessAssignments(variableProperties)) changes = true;
 
             if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
                 log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
@@ -154,13 +154,13 @@ public class StatementAnalyser {
     private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
         boolean changes = false;
         // we run at the local level
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            VariableProperties.AboutVariable aboutVariable = entry.getValue();
-            Set<VariableProperty> properties = aboutVariable.properties;
-            if (aboutVariable.isNotLocalCopy() && properties.contains(VariableProperty.CREATED) && !properties.contains(VariableProperty.READ)) {
-                if (!(variable instanceof LocalVariableReference)) throw new UnsupportedOperationException("??");
-                LocalVariable localVariable = ((LocalVariableReference) variable).variable;
+        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties.values()) {
+            if (aboutVariable.isNotLocalCopy() && aboutVariable.properties.contains(VariableProperty.CREATED)
+                    && !aboutVariable.properties.contains(VariableProperty.READ)) {
+                if (!(aboutVariable.variable instanceof LocalVariableReference)) {
+                    throw new UnsupportedOperationException("?? CREATED only added to local variables");
+                }
+                LocalVariable localVariable = ((LocalVariableReference) aboutVariable.variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
                     methodAnalysis.unusedLocalVariables.put(localVariable, true);
                     typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
@@ -172,28 +172,20 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private boolean uselessAssignments(VariableProperties variableProperties, boolean escapesViaException) {
+    private boolean uselessAssignments(VariableProperties variableProperties) {
         boolean changes = false;
         // we run at the local level
-        List<Variable> toRemove = new ArrayList<>();
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : variableProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            if (variable instanceof LocalVariableReference) {
-                VariableProperties.AboutVariable aboutVariable = entry.getValue();
-                Set<VariableProperty> properties = aboutVariable.properties;
-                LocalVariable localVariable = ((LocalVariableReference) variable).variable;
-
-                if ((properties.contains(VariableProperty.CREATED) && aboutVariable.isNotLocalCopy() || escapesViaException) &&
-                        properties.contains(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)) {
-                    if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
-                        methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                        typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                                ", assignment to local variable " + localVariable.name + " is not used");
-                        changes = true;
-                    }
-                    toRemove.add(variable);
+        List<String> toRemove = new ArrayList<>();
+        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties.values()) {
+            if (aboutVariable.properties.contains(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)) {
+                if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
+                    methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
+                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                            ", assignment to variable " + aboutVariable.name + " is not used");
+                    changes = true;
                 }
-            }// ignoring This etc.
+                if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
+            }
         }
         if (!toRemove.isEmpty()) {
             log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
@@ -201,7 +193,6 @@ public class StatementAnalyser {
         }
         return changes;
     }
-
 
     private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
                                                          VariableProperties variableProperties) {
@@ -222,7 +213,7 @@ public class StatementAnalyser {
         if (codeOrganization.localVariableCreation != null) {
             theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.create(theLocalVariableReference, new VariableValue(theLocalVariableReference), newLocalVariableProperties);
+            variableProperties.create(theLocalVariableReference, newLocalVariableProperties);
         } else {
             theLocalVariableReference = null;
         }
@@ -235,7 +226,7 @@ public class StatementAnalyser {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                variableProperties.create(lvr, NO_VALUE, newLocalVariableProperties);
+                variableProperties.create(lvr, newLocalVariableProperties);
             }
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement);
@@ -306,11 +297,7 @@ public class StatementAnalyser {
                     log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
                 }
                 if (!statement.returnValue.isSet()) {
-                    if (value.isEffectivelyFinalUnevaluated()) {
-                        log(DELAYED, "Not yet setting value of return statement {} in {}", statement.streamIndices(), methodInfo.distinguishingName());
-                    } else {
-                        statement.returnValue.set(value);
-                    }
+                    statement.returnValue.set(value);
                 }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
@@ -414,7 +401,7 @@ public class StatementAnalyser {
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                subContext.create(lvr, new VariableValue(lvr), VariableProperty.CHECK_NOT_NULL);
+                subContext.create(lvr, VariableProperty.CHECK_NOT_NULL);
             }
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
@@ -515,7 +502,7 @@ public class StatementAnalyser {
                     } else {
                         continueAfterError = intermediateValue;
                     }
-                    if (continueAfterError instanceof VariableValue && ((VariableValue) continueAfterError).effectivelyFinalUnevaluated) {
+                    if (continueAfterError == NO_VALUE) {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
@@ -534,69 +521,107 @@ public class StatementAnalyser {
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
 
+    /**
+     * We need to directly set "READ" for fields outside the construction phase
+     *
+     * @param expression         the current expression evaluated. Note that sub-expressions may have been analysed before
+     * @param variableProperties the evaluation context
+     * @param value              the result of the evaluation
+     */
     private void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
             Variable at = assignment.target.assignmentTarget().orElseThrow();
-            // PART 4: more filling up of the variable properties, this time for assignments
+            log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
 
-            // only change fields of "our" class
-            if (!(at instanceof FieldReference) ||
-                    ((FieldReference) at).fieldInfo.owner.primaryType() == variableProperties.currentMethod.typeInfo.primaryType()) {
-                log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
+            if (at instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
-                if (at instanceof FieldReference &&
-                        checkForIllegalAssignmentIntoNestedOrEnclosingType(((FieldReference) at).fieldInfo, variableProperties.currentMethod)) {
-                    return; // there's no point actually doing something, an error has been raised.
-                    // it will trigger a problem with variableProperties.setValue
+                // only change fields of "our" class
+                if (fieldInfo.owner.primaryType() == methodInfo.typeInfo.primaryType()) {
+                    if (!fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
+                        typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
+                        fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
+                    }
+                    return;
                 }
 
-
-                // assignment to local variable: could be that we're in the block where it was created, then nothing happens
-                // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-                if (at instanceof LocalVariableReference) {
-                    variableProperties.ensureLocalCopy(at);
+                // even inside our class, there are limitations
+                if (checkForIllegalAssignmentIntoNestedOrEnclosingType(fieldInfo, methodInfo)) {
+                    return;
                 }
 
-                // remove Permanently not null, check not null; clear record fields
-                variableProperties.reset(at, value instanceof Instance);
-                variableProperties.setValue(at, value);
-
-                // the following block is there in case the value, instead of the expected complicated one, turns
-                // out to be a constant.
-                Boolean isNotNull = value.isNotNull(variableProperties);
-                if (isNotNull == Boolean.TRUE) {
-                    variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
-                    log(VARIABLE_PROPERTIES, "Added check-null property of {}", at.detailedString());
-                } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
-                    log(VARIABLE_PROPERTIES, "Cleared check-null property of {}", at.detailedString());
+                // if we're outside of construction, and we're assigning: non-final field, not taking anything into account
+                if (!methodInfo.methodAnalysis.partOfConstruction.get()) {
+                    if (!methodInfo.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
+                        log(ASSIGNMENT, "Mark assignment to field {} outside constructors in {}", fieldInfo.fullyQualifiedName(), methodInfo.distinguishingName());
+                        methodInfo.methodAnalysis.fieldAssignments.put(fieldInfo, true);
+                        methodInfo.methodAnalysis.fieldAssignmentValues.put(fieldInfo, new Instance(fieldInfo.type));
+                        AnnotationExpression effectivelyFinal = typeContext.effectivelyFinal.get();
+                        if (!fieldInfo.fieldAnalysis.annotations.isSet(effectivelyFinal)) {
+                            log(FINAL, "Mark field {} as NOT @Final", fieldInfo.fullyQualifiedName());
+                            fieldInfo.fieldAnalysis.annotations.put(effectivelyFinal, false);
+                        }
+                    }
+                    return;
                 }
-                variableProperties.addProperty(at, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
-                    variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
-                }
-                if (variableProperties.guaranteedToBeReached(at)) {
-                    variableProperties.addProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
-                } else {
-                    variableProperties.removeProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
-                }
-                Value valueForLinkAnalysis = value.valueForLinkAnalysis();
-                if (valueForLinkAnalysis != NO_VALUE) {
-                    Set<Variable> linkToBestCase = valueForLinkAnalysis.linkedVariables(true, variableProperties);
-                    Set<Variable> linkToWorstCase = valueForLinkAnalysis.linkedVariables(false, variableProperties);
-                    log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
-                            Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
-                    variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
-                }
-            } else {
-                LOGGER.warn("Ignoring assignment to field in outside primary type: {}, while in {}",
-                        at.detailedString(), variableProperties.currentMethod.distinguishingName());
             }
+
+            // assignment to local variable: could be that we're in the block where it was created, then nothing happens
+            // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
+            variableProperties.ensureLocalCopy(at);
+
+
+            // check not null; clear record fields
+            variableProperties.reset(at, value instanceof Instance && ((Instance) value).explicitlyConstructed());
+            variableProperties.setValue(at, value);
+
+            // the following block is there in case the value, instead of the expected complicated one, turns
+            // out to be a constant.
+            Boolean isNotNull = value.isNotNull(variableProperties);
+            if (isNotNull == Boolean.TRUE) {
+                variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
+                log(VARIABLE_PROPERTIES, "Added check-null property of {}", at.detailedString());
+            } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
+                log(VARIABLE_PROPERTIES, "Cleared check-null property of {}", at.detailedString());
+            }
+            variableProperties.addProperty(at, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+            if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
+                variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
+            }
+            if (variableProperties.guaranteedToBeReached(at)) {
+                variableProperties.addProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
+            } else {
+                variableProperties.removeProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
+            }
+            Value valueForLinkAnalysis = value.valueForLinkAnalysis();
+            if (valueForLinkAnalysis != NO_VALUE) {
+                Set<Variable> linkToBestCase = valueForLinkAnalysis.linkedVariables(true, variableProperties);
+                Set<Variable> linkToWorstCase = valueForLinkAnalysis.linkedVariables(false, variableProperties);
+                log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
+                        Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
+                variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
+            }
+
         } else {
             for (Variable variable : expression.variables()) {
-                variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
-                    variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                if (variable instanceof This) {
+                    if (!methodAnalysis.thisRead.isSet()) {
+                        log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
+                        methodAnalysis.thisRead.set(true);
+                    }
+                } else if (variable instanceof FieldReference && variableProperties.inConstructionPhase()) {
+                    // we're outside the construction phase with a field (so we're not keeping tabs on it in the variable properties
+                    FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                    if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
+                        methodAnalysis.fieldRead.put(fieldInfo, true);
+                        log(ASSIGNMENT, "Mark field {} as read outside construction phase", fieldInfo.fullyQualifiedName(), methodInfo.name);
+                    }
+                } else {
+                    variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+                    if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
+                        variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
+                    }
                 }
             }
         }

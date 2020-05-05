@@ -57,6 +57,7 @@ public class MethodAnalysis extends Analysis {
 
     // produces a warning
     public final SetOnceMap<LocalVariable, Boolean> unusedLocalVariables = new SetOnceMap<>();
+    public final SetOnceMap<Variable, Boolean> uselessAssignments = new SetOnceMap<>();
 
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.

@@ -34,7 +34,9 @@ public interface EvaluationContext {
 
     EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement);
 
-    void create(Variable variable, Value initialValue, VariableProperty... initialProperties);
+    void create(Variable variable, VariableProperty... initialProperties);
+
+    String variableName(@NotNull Variable variable);
 
     TypeContext getTypeContext();
 

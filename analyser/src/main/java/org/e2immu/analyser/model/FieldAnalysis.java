@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.Set;
 
@@ -38,4 +39,6 @@ public class FieldAnalysis extends Analysis {
     // the values are either other fields (in which case these other fields are not linked to parameters)
     // or parameters
     public final SetOnce<Set<Variable>> variablesLinkedToMe = new SetOnce<>();
+
+    public final SetOnceMap<MethodInfo, Boolean> errorsForAssignmentsOutsidePrimaryType = new SetOnceMap<>();
 }

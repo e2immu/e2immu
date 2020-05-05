@@ -147,4 +147,8 @@ public class Instance implements Value {
     public ParameterizedType type() {
         return parameterizedType;
     }
+
+    public boolean explicitlyConstructed() {
+        return constructor != null;
+    }
 }

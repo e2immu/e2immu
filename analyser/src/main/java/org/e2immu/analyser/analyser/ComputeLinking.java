@@ -275,15 +275,14 @@ public class ComputeLinking {
 
     private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
-            Set<VariableProperty> properties = entry.getValue().properties;
-            Variable variable = entry.getKey();
-            if (variable instanceof ParameterInfo) {
-                if (properties.contains(VariableProperty.ASSIGNED)
-                        && !methodInfo.methodAnalysis.parameterAssignments.isSet((ParameterInfo) variable)) {
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+            if (aboutVariable.variable instanceof ParameterInfo) {
+                ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
+                if (aboutVariable.properties.contains(VariableProperty.ASSIGNED)
+                        && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
                     typeContext.addMessage(Message.Severity.ERROR,
-                            "Parameter " + variable.detailedString() + " should not be assigned to");
-                    methodInfo.methodAnalysis.parameterAssignments.put((ParameterInfo) variable, true);
+                            "Parameter " + aboutVariable.name + " should not be assigned to");
+                    methodInfo.methodAnalysis.parameterAssignments.put(parameterInfo, true);
                     changes = true;
                 }
             }
@@ -294,10 +293,13 @@ public class ComputeLinking {
     private static boolean computeFieldAssignmentsFieldsRead(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
-        for (Map.Entry<Variable, VariableProperties.AboutVariable> entry : methodProperties.variableProperties.entrySet()) {
-            Variable variable = entry.getKey();
-            Set<VariableProperty> properties = entry.getValue().properties;
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+            Variable variable = aboutVariable.variable;
+            Set<VariableProperty> properties = aboutVariable.properties;
             if (variable instanceof FieldReference) {
+                // internal consistency check that we're in the construction phase!!
+                if(!methodInfo.methodAnalysis.partOfConstruction.get()) throw new UnsupportedOperationException();
+
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     boolean isModified = properties.contains(VariableProperty.ASSIGNED);
@@ -305,7 +307,7 @@ public class ComputeLinking {
                     log(ASSIGNMENT, "Mark that {} is assigned to? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
-                Value currentValue = entry.getValue().getCurrentValue();
+                Value currentValue = aboutVariable.getCurrentValue();
                 if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.ASSIGNED) &&
                         !properties.contains(VariableProperty.ASSIGNED_MULTIPLE_TIMES) &&
                         !methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
@@ -318,12 +320,6 @@ public class ComputeLinking {
                     methodAnalysis.fieldRead.put(fieldInfo, true);
                     changes = true;
                 }
-            } else if (variable instanceof This && properties.contains(VariableProperty.READ)) {
-                if (!methodAnalysis.thisRead.isSet()) {
-                    log(ASSIGNMENT, "Mark that 'this' has been read in {}", variable.detailedString());
-                    methodAnalysis.thisRead.set(true);
-                    changes = true;
-                }
             }
         }
 
@@ -333,13 +329,6 @@ public class ComputeLinking {
                 changes = true;
                 log(ASSIGNMENT, "Mark field {} not assigned in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);
             }
-            //FieldReference fieldReference = new FieldReference(fieldInfo, methodProperties.thisVariable);
-            //if (!methodAnalysis.directContentModifications.isSet(fieldReference)) {
-            //methodAnalysis.directContentModifications.put(fieldReference, false);
-            //changes = true;
-            //log(MODIFY_CONTENT, "Mark field {}'s content not modified in {}, not present, not delayed",
-            //        fieldInfo.fullyQualifiedName(), methodInfo.name);
-            //}
             if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
                 methodAnalysis.fieldRead.put(fieldInfo, false);
                 log(ASSIGNMENT, "Mark field {} as ignore/not read in {}, not present", fieldInfo.fullyQualifiedName(), methodInfo.name);

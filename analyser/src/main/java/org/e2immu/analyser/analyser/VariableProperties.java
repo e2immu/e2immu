@@ -21,12 +21,9 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LocalVariableModifier;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.annotation.NotNull;
@@ -50,8 +47,8 @@ class VariableProperties implements EvaluationContext {
         private final AboutVariable localCopyOf;
         private final Value initialValue;
         private final Value resetValue;
-        private final Variable variable;
-        private final String name;
+        public final Variable variable;
+        public final String name;
 
         private AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value currentValue) {
             this.localCopyOf = localCopyOf;
@@ -80,6 +77,10 @@ class VariableProperties implements EvaluationContext {
             AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue);
             av.properties.addAll(properties);
             return av;
+        }
+
+        public boolean isLocalCopy() {
+            return localCopyOf != null;
         }
 
         public boolean isNotLocalCopy() {
@@ -156,120 +157,110 @@ class VariableProperties implements EvaluationContext {
     }
 
     private AboutVariable findComplain(@NotNull Variable variable) {
-        return Objects.requireNonNull(find(variable, true));
-    }
-
-    private AboutVariable find(@NotNull Variable variable, boolean complain) {
-        Variable target;
-        Objects.requireNonNull(variable);
-        if (variable instanceof FieldReference && currentMethod != null) {
-            FieldReference fieldReference = (FieldReference) variable;
-            if (!(fieldReference.scope instanceof This) && fieldReference.scope != null) {
-                if (fieldReference.scope.parameterizedType().typeInfo != null) {
-                    // node.data..., either we redirect into a field reference on the type of 'node', or ...
-                    TypeInfo typeInfo = fieldReference.scope.parameterizedType().typeInfo;
-                    if (typeInfo.isRecord()) { // by definition in the innerOuter Type hierarchy
-                        String name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
-                        if (fieldReference.scope instanceof ParameterInfo || fieldReference.scope instanceof LocalVariableReference) {
-                            target = new LocalVariableReference(new LocalVariable(name), List.of());
-                            log(VARIABLE_PROPERTIES, "Replace {} with local variable {}", variable.detailedString(), name);
-                        } else { // field reference itself
-                            TypeInfo owner = ((FieldReference) fieldReference.scope).fieldInfo.owner;
-                            target = new FieldReference(new FieldInfo(Primitives.PRIMITIVES.voidParameterizedType, name, owner), null);
-                            log(VARIABLE_PROPERTIES, "Replace {} with local field {} in {}", variable.detailedString(), name, owner.fullyQualifiedName);
-                        }
-                    } else {
-                        Optional<TypeInfo> theType = currentMethod.typeInfo.inTypeInnerOuterHierarchy(typeInfo);
-                        if (theType.isPresent()) {
-                            target = new FieldReference(fieldReference.fieldInfo, null);
-                            log(VARIABLE_PROPERTIES, "Replace {} with actual field {}", variable.detailedString(), fieldReference.fieldInfo.fullyQualifiedName());
-                        } else {
-                            if (!complain) return null;
-                            throw new UnsupportedOperationException("Ignoring " + variable.detailedString() + " -- not in type hierarchy");
-                        }
-                    }
-                } else {
-                    if (!complain) return null;
-                    throw new UnsupportedOperationException("Ignoring " + variable.detailedString() + ", not yet implemented");
-                }
-            } else target = variable;
-        } else target = variable;
-        // NOTE: ParameterInfo variables are at the root, UNLESS they've been created by Lambda Blocks...
-        // so we cannot take the shortcut.
-        if (target instanceof FieldReference) {
-            AboutVariable aboutVariable = root.variableProperties.get(target);
-            if (aboutVariable == null && complain) {
-                throw new UnsupportedOperationException("Cannot find variable " + target.detailedString());
-            }
+        AboutVariable aboutVariable = find(variable);
+        if (aboutVariable != null) {
             return aboutVariable;
         }
-        AboutVariable aboutVariable = variableProperties.get(target);
-        if (aboutVariable != null) return aboutVariable;
-        if (parent != null) return parent.find(target, complain);
-        if (!complain) return null;
-        throw new UnsupportedOperationException("Cannot find variable " + target.detailedString());
+        throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
 
-    /**
-     * this method is the only way of adding variables to the VariableProperties class
-     *
-     * @param variable          the variable to add
-     * @param initialProperties initial properties about this variable
-     */
+    private AboutVariable find(@NotNull Variable variable) {
+        String name = variableName(variable);
+        return find(name);
+    }
+
+    private String nameOfFieldDuringConstruction(FieldReference fieldReference) {
+        String currentType = currentMethod.typeInfo.simpleName;
+        // field during construction phase
+        String prefix = fieldReference.scope == null ? currentType : ((This) fieldReference.scope).typeInfo.simpleName;
+        return prefix + "." + fieldReference.fieldInfo.name;
+    }
+
+    private AboutVariable find(String name) {
+        VariableProperties level = this;
+        while (level != null) {
+            AboutVariable aboutVariable = level.variableProperties.get(name);
+            if (aboutVariable != null) return aboutVariable;
+            level = level.parent;
+        }
+        return null;
+    }
+
+    public String variableName(@NotNull Variable variable) {
+        Objects.requireNonNull(variable);
+        String name;
+        if (variable instanceof FieldReference) {
+            FieldReference fieldReference = (FieldReference) variable;
+            // there are only 2 cases: a field during construction phase, and a field of a record
+            if (fieldReference.scope == null || fieldReference.scope instanceof This) {
+                if (!inConstructionPhase()) {
+                    throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
+                            + fieldReference.detailedString());
+                }
+                name = nameOfFieldDuringConstruction(fieldReference);
+            } else {
+                // we now expect the scope to be some other variable, of a private, nested type
+                TypeInfo typeInfo = fieldReference.scope.parameterizedType().typeInfo;
+                if (!typeInfo.isRecord()) { // by definition in the innerOuter Type hierarchy
+                    throw new UnsupportedOperationException("Expected a field of a record: " + fieldReference.detailedString());
+                }
+                name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
+            }
+        } else {
+            // parameter, local variable
+            name = variable.name();
+        }
+        log(VARIABLE_PROPERTIES, "Resolved variable {} to {}", variable.detailedString(), name);
+        return name;
+    }
+
     @Override
-    public void create(@NotNull Variable variable, @NotNull Value initialValue, VariableProperty... initialProperties) {
-        AboutVariable aboutVariable = new AboutVariable(null, Objects.requireNonNull(initialValue),
-                new VariableValue(variable));
-        aboutVariable.properties.addAll(Arrays.asList(initialProperties));
-        if (variableProperties.put(Objects.requireNonNull(variable), aboutVariable) != null)
-            throw new UnsupportedOperationException();
-        log(VARIABLE_PROPERTIES, "Created variable {}", variable.detailedString());
+    public void create(@NotNull Variable variable, VariableProperty... initialProperties) {
+        Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
+        if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo) {
+            Value resetValue = new VariableValue(variable, variable.name());
+            internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet);
+        } else if (variable instanceof This) {
+            throw new UnsupportedOperationException("Not allowed to add This to the variable properties map");
+        } else {
+            // field; only two cases allowed:
+            // (1) a normal field during construction phase; acts like a local variable
+            // (2) a non-final field inside a synchronisation block; acts like a local variable temporarily
+            boolean inSyncBlock = initialPropertiesAsSet.contains(NON_FINAL_FIELD_IN_SYNC_BLOCK);
+            FieldReference fieldReference = (FieldReference) variable;
+            if (inSyncBlock || fieldReference.scope == null || fieldReference.scope instanceof This) {
+                if (!inSyncBlock && !inConstructionPhase()) {
+                    throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
+                            + fieldReference.detailedString());
+                }
+                String name = nameOfFieldDuringConstruction(fieldReference);
+                Value resetValue = new VariableValue(fieldReference, name);
+                internalCreate(variable, name, resetValue, resetValue, initialPropertiesAsSet);
+            } else {
+                throw new UnsupportedOperationException("?? cannot create other fields myself");
+            }
+        }
+    }
+
+    private void internalCreate(Variable variable, String name, Value initialValue, Value resetValue, Set<VariableProperty> initialProperties) {
+        AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null, Objects.requireNonNull(initialValue),
+                Objects.requireNonNull(resetValue));
+        aboutVariable.properties.addAll(initialProperties);
+        if (variableProperties.put(name, aboutVariable) != null)
+            throw new UnsupportedOperationException("?? Duplicating name " + name);
+        log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
 
         // regardless of whether we're a field, a parameter or a local variable...
         if (isRecordType(variable)) {
-            // we will create local variables (if variable is parameter or local variable) or extra fields (if field) for each of the fields of the record
-            // they'll need their initialisation as well
             TypeInfo recordType = variable.parameterizedType().typeInfo;
-            boolean createLocalVariable = variable instanceof LocalVariableReference || variable instanceof ParameterInfo;
             for (FieldInfo recordField : recordType.typeInspection.get().fields) {
-                Variable newVariable;
-
-                String name = variable.name() + "." + recordField.name;
-                FieldInspection recordFieldInspection = recordField.fieldInspection.get();
+                String newName = name + "." + recordField.name;
+                FieldReference fieldReference = new FieldReference(recordField, variable);
+                Variable newVariable = new RecordField(fieldReference, newName);
                 Expression initialiser = computeInitialiser(recordField);
-
-                if (createLocalVariable) {
-                    LocalVariable.LocalVariableBuilder localVariableBuilder = new LocalVariable.LocalVariableBuilder()
-                            .setName(name)
-                            .setParameterizedType(recordField.type);
-                    if (recordFieldInspection.modifiers.contains(FieldModifier.FINAL)) {
-                        localVariableBuilder.addModifier(LocalVariableModifier.FINAL);
-                    }
-                    List<Expression> initialisers;
-                    if (initialiser instanceof EmptyExpression) {
-                        initialisers = List.of();
-                    } else {
-                        initialisers = List.of(initialiser);
-                    }
-                    newVariable = new LocalVariableReference(localVariableBuilder.build(), initialisers);
-                } else {
-                    FieldInfo newField = new FieldInfo(recordField.type, name, ((FieldReference) variable).fieldInfo.owner);
-                    FieldInspection.FieldInspectionBuilder builder = new FieldInspection.FieldInspectionBuilder();
-                    if (!(initialiser instanceof EmptyExpression)) {
-                        builder.setInitializer(initialiser);
-                    }
-                    if (recordFieldInspection.modifiers.contains(FieldModifier.FINAL)) {
-                        builder.addModifier(FieldModifier.FINAL);
-                    }
-                    builder.addModifier(FieldModifier.PRIVATE);
-                    // TODO copy some more annotations?
-                    newField.fieldInspection.set(builder.build());
-                    Variable scope = ((FieldReference) variable).scope;
-                    newVariable = new FieldReference(newField, scope);
-                }
                 Value newInitialValue = computeInitialValue(recordField, initialiser);
-                VariableProperty[] newInitialProperties = {};
-                create(newVariable, newInitialValue, newInitialProperties);
+                Value newResetValue = new VariableValue(newVariable, newName);
+                internalCreate(newVariable, newName, newInitialValue, newResetValue, Set.of());
             }
         }
     }
@@ -304,7 +295,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean addProperty(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = find(variable, false);
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return true; //not known to us, ignoring!
         return aboutVariable.properties.add(variableProperty);
     }
@@ -319,7 +310,7 @@ class VariableProperties implements EvaluationContext {
     // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
 
     public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = find(variable, false);
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return; //not known to us, ignoring!
         recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty);
     }
@@ -328,13 +319,14 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.properties.add(variableProperty);
         if (isRecordType(aboutVariable.variable)) {
             for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
-                recursivelyAddPropertyAlsoRecords(variableProperties.get(name), variableProperty);
+                AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                recursivelyAddPropertyAlsoRecords(aboutLocalVariable, variableProperty);
             }
         }
     }
 
     public void reset(Variable variable, boolean toInitialValue) {
-        AboutVariable aboutVariable = find(variable, false);
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
         recursivelyReset(aboutVariable, toInitialValue);
     }
@@ -344,12 +336,15 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.currentValue = toInitialValue ? aboutVariable.initialValue : aboutVariable.resetValue;
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
-            recordNames.forEach(name -> recursivelyReset(variableProperties.get(name), toInitialValue));
+            for (String name : recordNames) {
+                AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                recursivelyReset(aboutLocalVariable, toInitialValue);
+            }
         }
     }
 
     public boolean removeProperty(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = find(variable, false);
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return true; //not known to us, ignoring! (symmetric to add)
         return aboutVariable.properties.remove(variableProperty);
     }
@@ -392,7 +387,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     public Variable switchToValueVariable(Variable variable) {
-        AboutVariable aboutVariable = find(variable, false);
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return variable;
         if (aboutVariable.currentValue instanceof VariableValue)
             return ((VariableValue) aboutVariable.currentValue).variable;
@@ -485,7 +480,8 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    private void copyConditionally(Set<VariableProperty> from, Set<VariableProperty> to, VariableProperty... properties) {
+    private void copyConditionally(Set<VariableProperty> from, Set<VariableProperty> to, VariableProperty...
+            properties) {
         for (VariableProperty property : properties) {
             if (from.contains(property)) to.add(property);
         }
@@ -497,7 +493,10 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean isKnown(Variable variable) {
-        return find(variable, false) != null;
+        return find(variable) != null;
     }
 
+    public boolean inConstructionPhase() {
+        return currentMethod != null && currentMethod.methodAnalysis.partOfConstruction.get();
+    }
 }
