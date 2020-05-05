@@ -20,10 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.InstanceOfValue;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -60,6 +57,8 @@ public class InstanceOf implements Expression {
             result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
         } else if (value instanceof ClassValue) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value));
+        } else if(value instanceof FinalFieldValue) {
+           result = BoolValue.of(parameterizedType.isAssignableFrom(((FinalFieldValue)value).fieldReference.concreteReturnType()));
         } else {
             // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
             // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is

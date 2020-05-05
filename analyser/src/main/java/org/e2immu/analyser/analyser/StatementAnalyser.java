@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.Var;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
@@ -30,7 +29,6 @@ import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -542,7 +540,7 @@ public class StatementAnalyser {
                 FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
                 // only change fields of "our" class
-                if (fieldInfo.owner.primaryType() == methodInfo.typeInfo.primaryType()) {
+                if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
                     if (!fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
                         typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
                         fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
@@ -551,7 +549,7 @@ public class StatementAnalyser {
                 }
 
                 // even inside our class, there are limitations
-                if (checkForIllegalAssignmentIntoNestedOrEnclosingType(fieldInfo, methodInfo)) {
+                if (checkForIllegalAssignmentIntoNestedOrEnclosingType(fieldInfo, variableProperties)) {
                     return;
                 }
 
@@ -615,7 +613,7 @@ public class StatementAnalyser {
                         log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
                         methodAnalysis.thisRead.set(true);
                     }
-                } else if (variable instanceof FieldReference && !variableProperties.inConstructionPhase()) {
+                } else if (variable instanceof FieldReference && variableProperties.isNotAllowedToBeInTheMap((FieldReference) variable)) {
                     // we're outside the construction phase with a field (so we're not keeping tabs on it in the variable properties
                     FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                     if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
@@ -635,23 +633,25 @@ public class StatementAnalyser {
         }
         if (expression instanceof MethodCall)
             checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
-                    variableProperties.currentMethod);
+                    variableProperties);
         else if (expression instanceof MethodReference)
             checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
-                    variableProperties.currentMethod);
+                    variableProperties);
     }
 
     /**
-     * @param methodCalled  the method that is being called
-     * @param currentMethod the method where the call takes place
+     * @param methodCalled       the method that is being called
+     * @param variableProperties context
      */
-    private void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, MethodInfo currentMethod) {
+    private void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, VariableProperties variableProperties) {
         if (methodCalled.isConstructor) return;
-        if (methodCalled.typeInfo == currentMethod.typeInfo) return;
-        if (methodCalled.typeInfo.primaryType() != currentMethod.typeInfo.primaryType()) return; // outside
-        if (methodCalled.typeInfo.isRecord() && currentMethod.typeInfo.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
+        TypeInfo currentType = variableProperties.getCurrentType();
+        if (methodCalled.typeInfo == currentType) return;
+        if (methodCalled.typeInfo.primaryType() != currentType.primaryType()) return; // outside
+        if (methodCalled.typeInfo.isRecord() && currentType.isAnEnclosingTypeOf(methodCalled.typeInfo)) {
             return;
         }
+        MethodInfo currentMethod = variableProperties.getCurrentMethod();
         if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
             return;
         }
@@ -667,19 +667,22 @@ public class StatementAnalyser {
     }
 
     /**
-     * @param assignmentTarget the field being assigned to
-     * @param currentMethod    the method where the assignment takes place
+     * @param assignmentTarget   the field being assigned to
+     * @param variableProperties context
      * @return true if the assignment is illegal
      */
-    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldInfo assignmentTarget, MethodInfo currentMethod) {
+    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldInfo assignmentTarget,
+                                                                       VariableProperties variableProperties) {
+        MethodInfo currentMethod = variableProperties.getCurrentMethod();
         if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(assignmentTarget)) {
             return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(assignmentTarget);
         }
         boolean error;
-        if (assignmentTarget.owner == currentMethod.typeInfo) {
+        TypeInfo currentType = variableProperties.getCurrentType();
+        if (assignmentTarget.owner == currentType) {
             error = false;
         } else {
-            error = !(assignmentTarget.owner.isRecord() && currentMethod.typeInfo.isAnEnclosingTypeOf(assignmentTarget.owner));
+            error = !(assignmentTarget.owner.isRecord() && currentType.isAnEnclosingTypeOf(assignmentTarget.owner));
         }
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +

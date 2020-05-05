@@ -71,7 +71,6 @@ public class FieldAnalyser {
                 }
                 value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
-                fieldProperties.setValue(fieldReference, value);
                 haveInitialiser = true;
             } else {
                 value = NO_VALUE; // initialiser set, but to empty expression
@@ -155,7 +154,8 @@ public class FieldAnalyser {
                     annotations.put(constantAnnotation, true);
                     log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                 } else {
-                    valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable), consistentValue.dynamicTypeAnnotations(fieldProperties), null);
+                    valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable),
+                            consistentValue.dynamicTypeAnnotations(typeContext), null);
                     annotations.put(typeContext.constant.get(), false);
                     log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
                 }
@@ -182,7 +182,7 @@ public class FieldAnalyser {
                                 + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
                         finalCriteria = false;
                     } else {
-                        finalCriteria = value.isNotNull(fieldProperties);
+                        finalCriteria = value.isNotNull(typeContext);
                     }
                 } else {
                     finalCriteria = true;
@@ -199,7 +199,7 @@ public class FieldAnalyser {
                     if (allAssignmentValuesDefined) {
                         Boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
                                 .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                                .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(fieldProperties))
+                                .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(typeContext))
                                 .reduce(true, TypeAnalyser.TERNARY_AND);
                         if (allAssignmentValuesNotNull == null) {
                             isNotNullValue = null; // delay
@@ -210,7 +210,7 @@ public class FieldAnalyser {
                                 if (value == NO_VALUE) {
                                     isNotNullValue = null; // delay
                                 } else {
-                                    Boolean initialiserIsNotNull = value.isNotNull(fieldProperties);
+                                    Boolean initialiserIsNotNull = value.isNotNull(typeContext);
                                     if (initialiserIsNotNull == null) {
                                         isNotNullValue = null; // delay
                                     } else {
@@ -252,7 +252,7 @@ public class FieldAnalyser {
                 if (allAssignmentValuesDefined) {
                     Set<AnnotationExpression> intersection = typeInspection.constructorAndMethodStream()
                             .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                            .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(fieldProperties))
+                            .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(typeContext))
                             .reduce(INITIAL, (prev, curr) -> {
                                 if (prev == null || curr == null) return null;
                                 if (prev == INITIAL) return new HashSet<>(curr);
@@ -268,7 +268,7 @@ public class FieldAnalyser {
                             if (value == NO_VALUE) {
                                 dynamicTypeAnnotations = null; // delay
                             } else {
-                                Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(fieldProperties);
+                                Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(typeContext);
                                 if (dynamicsOfInitialiser == null) {
                                     dynamicTypeAnnotations = null; // delay
                                 } else {

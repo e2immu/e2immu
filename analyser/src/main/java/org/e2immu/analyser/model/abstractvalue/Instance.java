@@ -125,7 +125,7 @@ public class Instance implements Value {
 
         // RULE 2, 3
         TypeContext typeContext = evaluationContext.getTypeContext();
-        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || differentType) &&
                 (constructor.isIndependent(typeContext) == Boolean.TRUE // RULE 2
                         || constructor.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE)) { // RULE 3
@@ -140,6 +140,11 @@ public class Instance implements Value {
 
     @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
+        return isNotNull;
+    }
+
+    @Override
+    public Boolean isNotNull(TypeContext typeContext) {
         return isNotNull;
     }
 

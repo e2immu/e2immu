@@ -295,9 +295,6 @@ public class ComputeLinking {
             Variable variable = aboutVariable.variable;
             Set<VariableProperty> properties = aboutVariable.properties;
             if (variable instanceof FieldReference) {
-                // internal consistency check that we're in the construction phase!!
-                if (!methodInfo.methodAnalysis.partOfConstruction.get()) throw new UnsupportedOperationException();
-
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     boolean isModified = properties.contains(VariableProperty.ASSIGNED);

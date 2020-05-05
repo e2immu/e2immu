@@ -20,8 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
@@ -99,19 +98,29 @@ class VariableProperties implements EvaluationContext {
     final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
     final TypeContext typeContext;
-    final MethodInfo currentMethod;
+    private final MethodInfo currentMethod;
+    private final TypeInfo currentType;
     final boolean inSyncBlock;
 
+    public VariableProperties(TypeContext typeContext, TypeInfo currentType) {
+        this(typeContext, currentType, null);
+    }
+
     public VariableProperties(TypeContext typeContext, MethodInfo currentMethod) {
+        this(typeContext, currentMethod.typeInfo, currentMethod);
+    }
+
+    private VariableProperties(TypeContext typeContext, TypeInfo currentType, MethodInfo currentMethod) {
         this.parent = null;
         conditional = null;
         uponUsingConditional = null;
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
+        this.currentType = currentType;
         this.dependencyGraphBestCase = new DependencyGraph<>();
         this.dependencyGraphWorstCase = new DependencyGraph<>();
         guaranteedToBeReachedByParentStatement = true;
-        inSyncBlock = currentMethod.isSynchronized();
+        inSyncBlock = currentMethod != null && currentMethod.isSynchronized();
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
@@ -128,6 +137,7 @@ class VariableProperties implements EvaluationContext {
         this.conditional = conditional;
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
+        this.currentType = parent.currentType;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
@@ -143,6 +153,11 @@ class VariableProperties implements EvaluationContext {
     @Override
     public MethodInfo getCurrentMethod() {
         return currentMethod;
+    }
+
+    @Override
+    public TypeInfo getCurrentType() {
+        return currentType;
     }
 
     @Override
@@ -180,18 +195,23 @@ class VariableProperties implements EvaluationContext {
         if (aboutVariable != null) {
             return aboutVariable;
         }
+        createVariableIfRelevant(variable);
+        AboutVariable aboutVariable2ndAttempt = find(variable);
+        if (aboutVariable2ndAttempt != null) {
+            return aboutVariable2ndAttempt;
+        }
         throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
 
     private AboutVariable find(@NotNull Variable variable) {
-        String name = variableName(variable);
+        String name = variableName(variable, true);
+        if(name == null) return null;
         return find(name);
     }
 
-    private String nameOfFieldDuringConstruction(FieldReference fieldReference) {
-        String currentType = currentMethod.typeInfo.simpleName;
-        // field during construction phase
-        String prefix = fieldReference.scope == null ? currentType : ((This) fieldReference.scope).typeInfo.simpleName;
+    private String nameOfField(FieldReference fieldReference) {
+        String prefix = fieldReference.scope == null ? currentType.simpleName :
+                ((This) fieldReference.scope).typeInfo.simpleName;
         return prefix + "." + fieldReference.fieldInfo.name;
     }
 
@@ -206,32 +226,38 @@ class VariableProperties implements EvaluationContext {
     }
 
     public void createVariableIfRelevant(Variable variable) {
-        if (isKnown(variable)) return;
+        String name = variableName(variable, true);
+        if (name == null) return; // not allowed to be in the map
+        if (find(name) != null) return;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
-            if (fieldReference.fieldInfo.owner != currentMethod.typeInfo) return; // outside my type... no need
-            boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
-            if (effectivelyFinal || inSyncBlock || inConstructionPhase()) {
-                String name = nameOfFieldDuringConstruction(fieldReference);
-                Value resetValue = new VariableValue(fieldReference, name);
-                internalCreate(variable, nameOfFieldDuringConstruction(fieldReference), resetValue, resetValue, Set.of());
-            }
+            Value resetValue = new VariableValue(fieldReference, name);
+            internalCreate(variable, nameOfField(fieldReference), resetValue, resetValue, Set.of());
         }
+    }
+
+    public boolean isNotAllowedToBeInTheMap(FieldReference fieldReference) {
+        if (fieldReference.fieldInfo.owner != currentType) return true; // outside my type... no need
+        boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
+        return (!effectivelyFinal && !inSyncBlock && !inConstructionPhase());
     }
 
     public String variableName(@NotNull Variable variable) {
         Objects.requireNonNull(variable);
+        return variableName(variable, false);
+    }
+
+    private String variableName(Variable variable, boolean nullIfNotAllowed) {
         String name;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
             // there are 3 cases: a field during construction phase, an effectively final field of the type we're analysing, and a field of a record
             if (fieldReference.scope == null || fieldReference.scope instanceof This) {
-                boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
-                if (!effectivelyFinal && !inConstructionPhase()) {
-                    throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
-                            + fieldReference.detailedString());
+                if (isNotAllowedToBeInTheMap(fieldReference)) {
+                    if (nullIfNotAllowed) return null;
+                    throw new UnsupportedOperationException("Field not allowed to be in map");
                 }
-                name = nameOfFieldDuringConstruction(fieldReference);
+                name = nameOfField(fieldReference);
             } else {
                 // we now expect the scope to be some other variable, of a private, nested type
                 TypeInfo typeInfo = fieldReference.scope.parameterizedType().typeInfo;
@@ -268,7 +294,7 @@ class VariableProperties implements EvaluationContext {
                     throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
                             + fieldReference.detailedString());
                 }
-                String name = nameOfFieldDuringConstruction(fieldReference);
+                String name = nameOfField(fieldReference);
                 Value resetValue = new VariableValue(fieldReference, name);
                 internalCreate(variable, name, resetValue, resetValue, initialPropertiesAsSet);
             } else {
@@ -398,6 +424,27 @@ class VariableProperties implements EvaluationContext {
     @Override
     @NotNull
     public Value currentValue(Variable variable) {
+        if (variable instanceof This) {
+            return new ThisValue((This) variable);
+        }
+        if (variable instanceof FieldReference) {
+            if (isNotAllowedToBeInTheMap((FieldReference) variable)) {
+                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
+                if (isFinal == null) {
+                    return UnknownValue.NO_VALUE;
+                }
+                if (isFinal) {
+                    if (fieldInfo.hasBeenDefined()) {
+                        return fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet() ?
+                                fieldInfo.fieldAnalysis.effectivelyFinalValue.get() :
+                                UnknownValue.NO_VALUE;
+                    }
+                    return new FinalFieldValue((FieldReference) variable, Set.of(), null);
+                }
+                return new Instance(fieldInfo.type);
+            }
+        }
         AboutVariable aboutVariable = findComplain(variable);
         if (aboutVariable.properties.contains(ASSIGNED_IN_LOOP)) {
             return aboutVariable.resetValue;
@@ -415,10 +462,13 @@ class VariableProperties implements EvaluationContext {
             }
         }
         // step 2. is the variable defined at this level? look at the properties
-        AboutVariable aboutVariable = findComplain(variable);
-        if (!(aboutVariable.currentValue instanceof VariableValue) &&
-                aboutVariable.currentValue.isNotNull(this)) return true;
-        return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
+        String name = variableName(variable, true);
+        AboutVariable aboutVariable = name == null ? null : find(name);
+        if (aboutVariable != null && aboutVariable.currentValue instanceof VariableValue) {
+            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
+        }
+        Value currentValue = currentValue(variable);
+        return currentValue.isNotNull(this) == Boolean.TRUE;
     }
 
     public Variable switchToValueVariable(Variable variable) {
@@ -528,7 +578,9 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean isKnown(Variable variable) {
-        return find(variable) != null;
+        String name = variableName(variable, true);
+        if (name == null) return false;
+        return find(name) != null;
     }
 
     public boolean inConstructionPhase() {

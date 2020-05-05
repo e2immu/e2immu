@@ -88,12 +88,6 @@ public class RemainderValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
     }

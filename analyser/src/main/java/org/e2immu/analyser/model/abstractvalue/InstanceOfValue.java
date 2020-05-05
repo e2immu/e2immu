@@ -69,11 +69,6 @@ public class InstanceOfValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return Set.of(variable);
     }

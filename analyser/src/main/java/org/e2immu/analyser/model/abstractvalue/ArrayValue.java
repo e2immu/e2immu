@@ -21,11 +21,6 @@ public class ArrayValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
     public int compareTo(Value o) {
         if (o instanceof ArrayValue) {
             // TODO

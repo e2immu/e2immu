@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Set;
@@ -53,6 +54,11 @@ public class ConditionalValue implements Value {
         Boolean t = ifTrue.isNotNull(evaluationContext.child(condition, null, false));
         Boolean f = ifFalse.isNotNull(evaluationContext.child(NegatedValue.negate(condition), null, false));
         return TypeAnalyser.TERNARY_AND.apply(t, f);
+    }
+
+    @Override
+    public Boolean isNotNull(TypeContext typeContext) {
+        return ifTrue.isNotNull(typeContext) && ifFalse.isNotNull(typeContext);
     }
 
     @Override

@@ -204,7 +204,7 @@ public class MethodAnalyser {
             }
             Set<AnnotationExpression> intersection = returnStatements.stream()
                     .map(ns -> ns.returnValue.get())
-                    .map(v -> v.dynamicTypeAnnotations(methodProperties))
+                    .map(v -> v.dynamicTypeAnnotations(typeContext))
                     .reduce(INITIAL, (prev, curr) -> {
                         if (prev == null || curr == null) return null;
                         if (prev == INITIAL) return new HashSet<>(curr);

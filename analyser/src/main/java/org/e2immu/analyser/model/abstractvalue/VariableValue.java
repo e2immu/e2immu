@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -65,7 +66,7 @@ public class VariableValue implements Value {
     }
 
     @Override
-    public Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+    public Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
         return dynamicTypeAnnotations;
     }
 
@@ -100,6 +101,12 @@ public class VariableValue implements Value {
     }
 
     @Override
+    public Boolean isNotNull(TypeContext typeContext) {
+        if (variable.parameterizedType().isPrimitive()) return true;
+        return isNotNull;
+    }
+
+    @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         // easy cases
         if (isNotNull == Boolean.TRUE) return true;
@@ -115,7 +122,7 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != variable.parameterizedType().typeInfo;
+        boolean differentType = evaluationContext.getCurrentType() != variable.parameterizedType().typeInfo;
         boolean e2Immu = (bestCase || differentType) &&
                 variable.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
         if (e2Immu || variable.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();

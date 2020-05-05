@@ -93,11 +93,6 @@ public class NegatedValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
     public Map<Variable, Boolean> individualNullClauses() {
         return value.individualNullClauses().entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));

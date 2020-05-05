@@ -65,11 +65,6 @@ public class EqualsValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
     public Map<Variable, Boolean> individualNullClauses() {
         return lhs instanceof NullValue && rhs instanceof VariableValue ? Map.of(((VariableValue) rhs).variable, true) :
                 Map.of();

@@ -32,6 +32,7 @@ public interface EvaluationContext {
 
     MethodInfo getCurrentMethod();
 
+    TypeInfo getCurrentType();
 
     EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
                             boolean inSyncBlock,

@@ -109,7 +109,7 @@ public class TypeAnalyser {
             changes = false;
 
             List<This> thisVariables = typeInfo.thisVariables();
-            VariableProperties fieldProperties = new VariableProperties(typeContext, null);
+            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {

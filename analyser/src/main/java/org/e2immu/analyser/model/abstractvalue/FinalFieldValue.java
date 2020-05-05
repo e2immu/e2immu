@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -42,7 +43,7 @@ public class FinalFieldValue implements Value {
     }
 
     @Override
-    public Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+    public Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
         return dynamicTypeAnnotations;
     }
 
@@ -78,18 +79,23 @@ public class FinalFieldValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return fieldReference.fieldInfo.isNotNull(evaluationContext.getTypeContext());
+    public Boolean isNotNull(TypeContext typeContext) {
+        return fieldReference.fieldInfo.isNotNull(typeContext);
     }
 
-    /*
+    @Override
+    public Boolean isNotNull(EvaluationContext evaluationContext) {
+        // we already know it is final, or not, because final fields are only created when they are effectively final
+        return isNotNull(evaluationContext.getTypeContext());
+    }
+/*
     The difference between worst and best case here is that the worst case is guaranteed to be stable wrt. this evaluation.
     (Independent of whether the value's type has been analysed or not; the critical point is that it is not being evaluated.)
      */
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        boolean differentType = evaluationContext.getCurrentMethod().typeInfo != fieldReference.parameterizedType().typeInfo;
+        boolean differentType = evaluationContext.getCurrentType() != fieldReference.parameterizedType().typeInfo;
         boolean e2Immu = (bestCase || differentType) &&
                 fieldReference.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
         if (e2Immu || fieldReference.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();

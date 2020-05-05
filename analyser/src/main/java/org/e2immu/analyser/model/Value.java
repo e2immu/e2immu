@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotModified;
 
 import java.lang.annotation.Annotation;
@@ -32,9 +33,13 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface Value extends Comparable<Value> {
-    Boolean isNotNull(EvaluationContext evaluationContext);
+    // outside of scope of evaluation
+    default Boolean isNotNull(TypeContext typeContext) { return true; }
 
-    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+    // inside scope of evaluation
+    default Boolean isNotNull(EvaluationContext evaluationContext) { return true; }
+
+    default Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
         return Set.of();
     }
 

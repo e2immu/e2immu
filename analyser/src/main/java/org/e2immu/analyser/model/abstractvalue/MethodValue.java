@@ -95,6 +95,24 @@ public class MethodValue implements Value {
     }
 
     @Override
+    public Boolean isNotNull(TypeContext typeContext) {
+        if (isNotNull != null) return isNotNull;
+        Boolean isNotNull = methodInfo.isNotNull(typeContext);
+        if (isNotNull == Boolean.TRUE) {
+            return true;
+        }
+        Boolean isIdentity = methodInfo.isIdentity(typeContext);
+        if (isIdentity == Boolean.TRUE) {
+            Value valueFirst = parameters.get(0);
+            return valueFirst.isNotNull(typeContext);
+        }
+        Boolean isFluent = methodInfo.isFluent(typeContext);
+        if (isFluent == Boolean.TRUE) return true;
+        if (isFluent == null || isNotNull == null || isIdentity == null) return null;
+        return false;
+    }
+
+    @Override
     public Boolean isNotNull(EvaluationContext evaluationContext) {
         if (isNotNull != null) return isNotNull;
         TypeContext typeContext = evaluationContext.getTypeContext();
@@ -119,8 +137,7 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
-        TypeContext typeContext = evaluationContext.getTypeContext();
+    public Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
         Set<AnnotationExpression> annotationsOfMethod = methodInfo.dynamicTypeAnnotations(typeContext);
         if (annotationsOfMethod == null) return null; // not all known yet
         Boolean isIdentity = methodInfo.isIdentity(typeContext);
@@ -164,13 +181,13 @@ public class MethodValue implements Value {
         if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT; // no assignment
         if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
 
-        boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || returnTypeDifferent) && returnType.isE2Immutable(typeContext) == Boolean.TRUE) {
             return INDEPENDENT;
         }
 
         // RULE 2
-        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentMethod().typeInfo;
+        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || methodInfoDifferentType) && methodInfo.isIndependent(typeContext) == Boolean.TRUE) {
             return INDEPENDENT;
         }
