@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -32,57 +33,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * An object of a given type. Can even be not @NotNull.
- * It can be explicitly constructed, in which case linking can be investigated.
- * All Instance objects are different.
- * <p>
- * Note that we could make things more complicated by assuming that the creation of two
- * objects from identical parameters will yield an object that equals... but we would
- * have to study the equals method. That's for later.
+ * the result of a new object creation (new XX(...))
  */
 
 public class Instance implements Value {
     @NotNull
     public final ParameterizedType parameterizedType;
+    @NotNull
     public final List<Value> constructorParameterValues;
+    @NotNull
     public final MethodInfo constructor;
-    public final boolean isNotNull;
-    public final int uniqueNumber;
-    private final static AtomicInteger uniqueNumberGenerator = new AtomicInteger();
 
-    public Instance(@NotNull ParameterizedType parameterizedType) {
-        this(parameterizedType, null, null, true, uniqueNumberGenerator.incrementAndGet());
-    }
-
-    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull) {
-        this(parameterizedType, constructor, parameterValues, isNotNull, uniqueNumberGenerator.incrementAndGet());
-    }
-
-    private Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, boolean isNotNull, int uniqueNumber) {
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor;
         this.constructorParameterValues = parameterValues == null ? null : ImmutableList.copyOf(parameterValues);
-        this.isNotNull = isNotNull;
-        this.uniqueNumber = uniqueNumber;
     }
 
-    @Override
-    public Value finalNotNullCopy() {
-        if (isNotNull) return this;
-        return new Instance(parameterizedType, constructor, constructorParameterValues, true, uniqueNumber);
-    }
-
+    // every new instance is different.
+    // we may come back to this later, but for now...
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Instance that = (Instance) o;
-        return uniqueNumber == that.uniqueNumber;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(parameterizedType);
+        return this == o;
     }
 
     @Override
@@ -98,7 +70,7 @@ public class Instance implements Value {
 
     @Override
     public String toString() {
-        return "instance " + uniqueNumber + ": " + parameterizedType.detailedString()
+        return "instance type " + parameterizedType.detailedString()
                 + (constructorParameterValues != null ? "(" + constructorParameterValues.stream()
                 .map(Value::toString)
                 .collect(Collectors.joining(", ")) + ")" : "");
@@ -139,21 +111,21 @@ public class Instance implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return isNotNull;
-    }
-
-    @Override
-    public Boolean isNotNull(TypeContext typeContext) {
-        return isNotNull;
-    }
-
-    @Override
     public ParameterizedType type() {
         return parameterizedType;
     }
 
-    public boolean explicitlyConstructed() {
-        return constructor != null;
+    @Override
+    public Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) return 1;
+        TypeContext typeContext = evaluationContext.getTypeContext();
+        if (VariableProperty.CONTAINER == variableProperty) {
+            return constructor.getContainer(typeContext);
+        }
+        if (VariableProperty.IMMUTABLE == variableProperty) {
+            return constructor.getImmutable(typeContext);
+        }
+        // @NotModified should not be asked here
+        throw new UnsupportedOperationException();
     }
 }

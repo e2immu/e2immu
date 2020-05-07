@@ -385,12 +385,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return annotatedWithCheckOverloads(typeContext.independent.get());
     }
 
-    // this one is not "inheritable" but a shorthand to allow us not to have to write...
-    public Boolean isNotNull(TypeContext typeContext) {
-        if (typeInfo.isNotNullForMethods(typeContext) == Boolean.TRUE) return true;
-        return annotatedWith(typeContext.notNull.get());
-    }
-
     // this one is both inheritable and shortcut-able
     public Boolean isNotModified(TypeContext typeContext) {
         if (typeInfo.annotatedWith(typeContext.notModified.get()) == Boolean.TRUE) return true;
@@ -569,5 +563,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean isSynchronized() {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
+    }
+
+    public Integer getNotNull(TypeContext typeContext) {
+        Integer onMethod = numericAnnotatedWith(typeContext.notNull.get());
+        if (onMethod == null) return null;
+        return typeInfo.isNotNullForMethods(typeContext);
     }
 }

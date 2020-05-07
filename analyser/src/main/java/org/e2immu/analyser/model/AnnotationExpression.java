@@ -23,6 +23,7 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.E2Immutable;
@@ -246,4 +247,40 @@ public class AnnotationExpression {
             return AnnotationExpression.fromAnalyserExpressions(typeInfo, ImmutableList.copyOf(expressions));
         }
     }
+
+    public static AnnotationExpression container(TypeContext typeContext, int immutable) {
+        TypeInfo typeInfo;
+        switch (immutable) {
+            case 0:
+                typeInfo = typeContext.container.get().typeInfo;
+                break;
+            case 1:
+                typeInfo = typeContext.e1Container.get().typeInfo;
+                break;
+            case 2:
+                typeInfo = typeContext.e2Container.get().typeInfo;
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        return new AnnotationExpressionBuilder(typeInfo)
+                .build();
+    }
+
+    public static AnnotationExpression immutable(TypeContext typeContext, int immutable) {
+        TypeInfo typeInfo;
+        switch (immutable) {
+            case 1:
+                typeInfo = typeContext.e1Immutable.get().typeInfo;
+                break;
+            case 2:
+                typeInfo = typeContext.e2Immutable.get().typeInfo;
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        return new AnnotationExpressionBuilder(typeInfo)
+                .build();
+    }
+
 }

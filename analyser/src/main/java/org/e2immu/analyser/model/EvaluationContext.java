@@ -52,4 +52,6 @@ public interface EvaluationContext {
     void setNotNull(Variable variable);
 
     void setValue(@NotNull Variable variable, @NotNull Value value);
+
+    boolean equals(String name, String name1);
 }

@@ -30,13 +30,16 @@ public enum VariableProperty {
     // we focus on last assignment because that is what the 'currentValue' holds
     LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
 
-    CREATED("created"),
-    CONTENT_MODIFIED("content modified"),
-    // we don't know yet
-    CONTENT_MODIFIED_DELAYED("content modified delayed"),
+    CREATED("created"), // the state after creation, but before first assignment
 
     // this variable is changing inside a loop; do not read its value
     ASSIGNED_IN_LOOP("in loop"),
+
+    NOT_NULL("@NotNull"), // numeric
+    FINAL("@Final"), // boolean
+    CONTAINER("@Container"), // boolean
+    IMMUTABLE("@Immutable"), // numeric
+    NOT_MODIFIED("@NotModified"), // ternary
     ;
 
     public final String name;

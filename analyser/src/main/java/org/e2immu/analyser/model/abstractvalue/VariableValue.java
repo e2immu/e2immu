@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,45 +32,21 @@ public class VariableValue implements Value {
     public final Variable variable; // the variable of the inspection, as correct/large as possible
 
     @NotNull
-    public final String name; // the name in the variable properties
+    public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
     @NotNull
-    public final Set<AnnotationExpression> dynamicTypeAnnotations;
+    public final EvaluationContext evaluationContext;
+
     public final Value valueForLinkAnalysis;
-    public final Boolean isNotNull;
-    public final boolean isFinal;
 
-    public static VariableValue forLocalVariable(Variable variable, String name) {
-        return new VariableValue(variable, name, Set.of(), null, false, null);
-    }
-
-    public static VariableValue forParameterInfo(Variable variable, String name) {
-        return new VariableValue(variable, name, Set.of(), null, true, null);
-    }
-
-    public VariableValue(Variable variable,
-                         String name,
-                         Set<AnnotationExpression> dynamicTypeAnnotations,
-                         Value valueForLinkAnalysis,
-                         boolean isFinal,
-                         Boolean isNotNull) {
+    public VariableValue(@NotNull EvaluationContext evaluationContext,
+                         @NotNull Variable variable,
+                         @NotNull String name,
+                         Value valueForLinkAnalysis) {
+        this.evaluationContext = evaluationContext;
         this.variable = variable;
         this.name = name;
-        this.dynamicTypeAnnotations = dynamicTypeAnnotations;
         this.valueForLinkAnalysis = valueForLinkAnalysis;
-        this.isNotNull = isNotNull;
-        this.isFinal = isFinal;
-    }
-
-    @Override
-    public Value finalNotNullCopy() {
-        if (isFinal && isNotNull == Boolean.TRUE) return this;
-        return new VariableValue(variable, name, dynamicTypeAnnotations, valueForLinkAnalysis, true, true);
-    }
-
-    @Override
-    public Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
-        return dynamicTypeAnnotations;
     }
 
     @Override
@@ -77,7 +54,7 @@ public class VariableValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VariableValue that = (VariableValue) o;
-        return variable.equals(that.variable);
+        return evaluationContext.equals(name, that.name);
     }
 
     @Override
@@ -93,28 +70,13 @@ public class VariableValue implements Value {
     @Override
     public int compareTo(Value o) {
         if (o == UnknownValue.UNKNOWN_VALUE) return -1;
-        if (o instanceof VariableValue) return variable.name().compareTo(((VariableValue) o).variable.name());
+        if (o instanceof VariableValue) return name.compareTo(((VariableValue) o).name);
         if (o instanceof NegatedValue) {
             NegatedValue negatedValue = (NegatedValue) o;
             if (equals(((NegatedValue) o).value)) return -1; // I'm always BEFORE my negation
             return compareTo(negatedValue.value);
         }
         return 1;
-    }
-
-    @Override
-    public Boolean isNotNull(TypeContext typeContext) {
-        if (variable.parameterizedType().isPrimitive()) return true;
-        return isNotNull;
-    }
-
-    @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        // easy cases
-        if (isNotNull == Boolean.TRUE) return true;
-        if (variable.parameterizedType().isPrimitive()) return true;
-        // look up in the map
-        return evaluationContext.isNotNull(variable); // look up
     }
 
     /*

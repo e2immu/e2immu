@@ -783,8 +783,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 annotatedWith(typeContext.e2Container.get()));
     }
 
-    private Set<ElementType> isNotNull(TypeContext typeContext) {
-        AnnotationExpression isNotNull = typeContext.notNull.get();
+    private Set<ElementType> isNotNull(AnnotationExpression isNotNull) {
         AnnotationExpression found;
         if (hasBeenDefined()) {
             Optional<Map.Entry<AnnotationExpression, Boolean>> o = typeAnalysis.annotations.stream()
@@ -802,20 +801,27 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Arrays.stream(elements).collect(Collectors.toSet());
     }
 
-    // only looks at analysis result
-    public Boolean isNotNullForParameters(TypeContext typeContext) {
-        Set<ElementType> types = isNotNull(typeContext);
-        return types == null ? null : types.contains(ElementType.PARAMETER);
+    private Integer highestIsNotNull(TypeContext typeContext, ElementType elementType) {
+        Set<ElementType> set2 = isNotNull(typeContext.notNull2.get());
+        if (set2 != null && set2.contains(elementType)) return 3;
+        Set<ElementType> set1 = isNotNull(typeContext.notNull1.get());
+        if (set1 != null && set1.contains(elementType)) return 2;
+        Set<ElementType> set = isNotNull(typeContext.notNull.get());
+        if (set != null && set.contains(elementType)) return 1;
+        if (set == null) return null;
+        return 0;
     }
 
-    public Boolean isNotNullForFields(TypeContext typeContext) {
-        Set<ElementType> types = isNotNull(typeContext);
-        return types == null ? null : types.contains(ElementType.FIELD);
+    public Integer isNotNullForParameters(TypeContext typeContext) {
+        return highestIsNotNull(typeContext, ElementType.PARAMETER);
     }
 
-    public Boolean isNotNullForMethods(TypeContext typeContext) {
-        Set<ElementType> types = isNotNull(typeContext);
-        return types == null ? null : types.contains(ElementType.METHOD);
+    public Integer isNotNullForFields(TypeContext typeContext) {
+        return highestIsNotNull(typeContext, ElementType.FIELD);
+    }
+
+    public Integer isNotNullForMethods(TypeContext typeContext) {
+        return highestIsNotNull(typeContext, ElementType.METHOD);
     }
 
     @Override

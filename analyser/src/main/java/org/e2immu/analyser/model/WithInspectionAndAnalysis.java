@@ -25,6 +25,10 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface WithInspectionAndAnalysis {
+    static Integer boolToInt(Boolean b) {
+        return b == null ? null : b ? 1 : 0;
+    }
+
     Analysis getAnalysis();
 
     Inspection getInspection();
@@ -45,21 +49,38 @@ public interface WithInspectionAndAnalysis {
                 .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
     }
 
-    default Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
-        Set<AnnotationExpression> result = new HashSet<>();
-        for (AnnotationExpression ae : new AnnotationExpression[]{
-                typeContext.e2Immutable.get(),
-                typeContext.e1Immutable.get(),
-                typeContext.container.get(),
-                typeContext.e2Container.get(),
-                typeContext.e1Container.get()}) {
-            Boolean isPresent = annotatedWith(ae);
-            if (isPresent == null) return null; // delay
-            if (isPresent) {
-                result.add(ae);
-            }
+    default Integer numericAnnotatedWith(AnnotationExpression annotation) {
+        if (hasBeenDefined()) {
+            // TODO: add number @NotNull(n=3), @Immutable(n=...)
+            return boolToInt(getAnalysis().annotations.getOtherwiseNull(annotation));
         }
-        return result;
+        return boolToInt(getInspection().annotations.stream()
+                .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName)));
+    }
+
+    default Integer getContainer(TypeContext typeContext) {
+        Boolean container = annotatedWith(typeContext.container.get());
+        if (container == null) return null; // delay
+        if (container) return 1;
+        Boolean e1container = annotatedWith(typeContext.e1Container.get());
+        if (e1container != null) return 1;
+        Boolean e2container = annotatedWith(typeContext.e2Container.get());
+        if (e2container != null) return 1;
+        return 0; // not a container
+    }
+
+    default Integer getImmutable(TypeContext typeContext) {
+        Boolean e1Immutable = annotatedWith(typeContext.e1Immutable.get());
+        if (e1Immutable == null) return null;
+        Boolean e2Immutable = annotatedWith(typeContext.e2Immutable.get());
+        if (e2Immutable == null) return null;
+        Boolean e2Container = annotatedWith(typeContext.e2Container.get());
+        if (e2Container == null) return null;
+        Boolean e1Container = annotatedWith(typeContext.e1Container.get());
+        if (e1Container == null) return null;
+        if (e2Immutable || e2Container) return 2;
+        if (e1Immutable || e1Container) return 1;
+        return 0;
     }
 
     default Optional<Boolean> error(Class<?> annotation, AnnotationExpression expression) {

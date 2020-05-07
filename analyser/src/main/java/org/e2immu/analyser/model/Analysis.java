@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationType;
 
@@ -26,6 +28,7 @@ import java.util.Set;
 
 public abstract class Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
+    public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
     public void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
         Optional<AnnotationType> optionalAnnotationType = e2immuAnnotation(annotation);
@@ -59,4 +62,7 @@ public abstract class Analysis {
         return Optional.empty();
     }
 
+    public int getProperty(VariableProperty variableProperty) {
+        return properties.getOtherwise(variableProperty, Level.DELAY);
+    }
 }

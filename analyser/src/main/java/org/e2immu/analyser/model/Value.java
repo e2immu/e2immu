@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.EqualsValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -32,15 +34,38 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)
+ * Properties of variables are ALWAYS computed inside an evaluation context; properties of methods come from outside the scope only.
+ */
 public interface Value extends Comparable<Value> {
-    // outside of scope of evaluation
-    default Boolean isNotNull(TypeContext typeContext) { return true; }
 
-    // inside scope of evaluation
-    default Boolean isNotNull(EvaluationContext evaluationContext) { return true; }
+    default Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
+        return null; // no information about @NotModified, @Container/@Immutable, @Final
+    }
 
-    default Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
-        return Set.of();
+    // null = no idea, 0 = false, 1 = true
+    default Boolean isNotNull(EvaluationContext evaluationContext) {
+        Integer isNotNull = getProperty(evaluationContext, VariableProperty.NOT_NULL);
+        return isNotNull == null ? null : isNotNull == 1;
+    }
+
+    // null = no idea, -1 delaying; 1 = true, 0 = false
+    default Boolean isFinal(EvaluationContext evaluationContext) {
+        Integer isFinal = getProperty(evaluationContext, VariableProperty.FINAL);
+        return isFinal == null ? null : isFinal == 1;
+    }
+
+    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+        Integer container = getProperty(evaluationContext, VariableProperty.CONTAINER);
+        Integer immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+        boolean noContainer = container == null;
+        boolean noImmutable = immutable == null;
+
+        if (noContainer && noImmutable) return Set.of();
+        if (noContainer) return Set.of(AnnotationExpression.immutable(evaluationContext.getTypeContext(), immutable));
+        return Set.of(AnnotationExpression.container(evaluationContext.getTypeContext(), noImmutable ? 0 : immutable));
     }
 
     default IntValue toInt() {
@@ -64,19 +89,10 @@ public interface Value extends Comparable<Value> {
     }
 
     /**
-     * @return the type, if we are certain
+     * @return the type, if we are certain; used in WidestType for operators
      */
     default ParameterizedType type() {
         return null;
-    }
-
-    /**
-     * return a value, but with the guarantee that isNotNull will evaluate to true
-     *
-     * @return a copy, equal to this, but with the isNotNull flag set to true
-     */
-    default Value finalNotNullCopy() {
-        return this;
     }
 
     /**

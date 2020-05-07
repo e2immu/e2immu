@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
@@ -35,19 +36,11 @@ public class MethodValue implements Value {
     public final MethodInfo methodInfo;
     public final List<Value> parameters;
     public final Value object;
-    public final Boolean isNotNull;
 
-    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, Boolean isNotNull) {
+    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
-        this.isNotNull = isNotNull;
-    }
-
-    @Override
-    public Value finalNotNullCopy() {
-        if (isNotNull == Boolean.TRUE) return this;
-        return new MethodValue(methodInfo, object, parameters, true);
     }
 
     @Override
@@ -57,7 +50,9 @@ public class MethodValue implements Value {
         MethodValue that = (MethodValue) o;
         return methodInfo.equals(that.methodInfo) &&
                 parameters.equals(that.parameters) &&
-                object.equals(that.object);
+                object.equals(that.object) &&
+                methodInfo.methodAnalysis.sideEffect.isSet() &&
+                methodInfo.methodAnalysis.sideEffect.get().atMost(SideEffect.NONE_CONTEXT);
     }
 
     @Override
@@ -95,65 +90,62 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(TypeContext typeContext) {
-        if (isNotNull != null) return isNotNull;
-        Boolean isNotNull = methodInfo.isNotNull(typeContext);
-        if (isNotNull == Boolean.TRUE) {
-            return true;
-        }
-        Boolean isIdentity = methodInfo.isIdentity(typeContext);
-        if (isIdentity == Boolean.TRUE) {
-            Value valueFirst = parameters.get(0);
-            return valueFirst.isNotNull(typeContext);
-        }
-        Boolean isFluent = methodInfo.isFluent(typeContext);
-        if (isFluent == Boolean.TRUE) return true;
-        if (isFluent == null || isNotNull == null || isIdentity == null) return null;
-        return false;
-    }
-
-    @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        if (isNotNull != null) return isNotNull;
-        TypeContext typeContext = evaluationContext.getTypeContext();
-        Boolean isNotNull = methodInfo.isNotNull(typeContext);
-        if (isNotNull == Boolean.TRUE) {
-            return true;
-        }
-        Boolean isIdentity = methodInfo.isIdentity(typeContext);
-        if (isIdentity == Boolean.TRUE) {
-            Value valueFirst = parameters.get(0);
-            return valueFirst.isNotNull(evaluationContext);
-        }
-        Boolean isFluent = methodInfo.isFluent(typeContext);
-        if (isFluent == Boolean.TRUE) return true;
+    public Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod();
         if (recursiveCall) {
             // recursive call, we'll just reply true, but exclude the result later for return analysis
-            return true;
+            return 1;
         }
-        if (isFluent == null || isNotNull == null || isIdentity == null) return null;
-        return false;
+        switch (variableProperty) {
+            case NOT_NULL:
+                return localNotNull(evaluationContext);
+            case IMMUTABLE:
+                return localImmutable(evaluationContext.getTypeContext());
+            case CONTAINER:
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Set<AnnotationExpression> dynamicTypeAnnotations(TypeContext typeContext) {
-        Set<AnnotationExpression> annotationsOfMethod = methodInfo.dynamicTypeAnnotations(typeContext);
-        if (annotationsOfMethod == null) return null; // not all known yet
+    private Integer localNotNull(EvaluationContext evaluationContext) {
+        TypeContext typeContext = evaluationContext.getTypeContext();
+        Integer notNull = methodInfo.getNotNull(typeContext);
+        if (notNull == null) return null;
         Boolean isIdentity = methodInfo.isIdentity(typeContext);
-        Boolean isFluent = methodInfo.isFluent(typeContext);
-        if (isIdentity == null || isFluent == null) return null;
+        if (isIdentity == null) return null;
+        Integer identityNotNull;
+        if (isIdentity == Boolean.TRUE) {
+            Value valueFirst = parameters.get(0);
+            identityNotNull = valueFirst.getProperty(evaluationContext, VariableProperty.NOT_NULL);
+            if (identityNotNull == null) return null;
+        } else {
+            identityNotNull = 0;
+        }
+        return Math.max(notNull, identityNotNull);
+    }
+
+    private Integer localImmutable(TypeContext typeContext) {
+        Integer methodImmutable = methodInfo.getImmutable(typeContext);
+        if (methodImmutable == null) return null;
+        Boolean isIdentity = methodInfo.isIdentity(typeContext);
+        if (isIdentity == null) return null;
+        Integer identityImmutable;
         if (isIdentity) {
-            Set<AnnotationExpression> annotationsOfParameter = methodInfo.methodInspection.get().parameters.get(0).dynamicTypeAnnotations(typeContext);
-            if (annotationsOfParameter == null) return null;
-            return SetUtil.immutableUnion(annotationsOfMethod, annotationsOfParameter);
+            identityImmutable = methodInfo.methodInspection.get().parameters.get(0).getImmutable(typeContext);
+            if (identityImmutable == null) return null;
+        } else {
+            identityImmutable = 0;
         }
+        Boolean isFluent = methodInfo.isFluent(typeContext);
+        if (isFluent == null) return null;
+        Integer typeImmutable;
         if (isFluent) {
-            Set<AnnotationExpression> annotationsOfType = methodInfo.typeInfo.dynamicTypeAnnotations(typeContext);
-            if (annotationsOfType == null) return null;
-            return SetUtil.immutableUnion(annotationsOfMethod, annotationsOfType);
+            typeImmutable = methodInfo.typeInfo.getImmutable(typeContext);
+            if (typeImmutable == null) return null;
+        } else {
+            typeImmutable = 0;
         }
-        return annotationsOfMethod;
+        return Math.max(Math.max(methodImmutable, identityImmutable), typeImmutable);
     }
 
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
