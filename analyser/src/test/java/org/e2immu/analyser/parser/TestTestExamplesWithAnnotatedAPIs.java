@@ -97,7 +97,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
 
     @Test
     public void testNullParameterChecks() throws IOException {
-        testClass("NullParameterChecks", 0);
+        testClass("NullParameterChecks", 1);
     }
 
     @Test

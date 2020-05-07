@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -84,7 +83,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     result = UnknownValue.NO_VALUE; // delaying
                 } else if (isIdentity) {
                     if (isNotNull == Boolean.TRUE) {
-                        result = parameters.get(0).notNullCopy();
+                        result = parameters.get(0).finalNotNullCopy();
                     } else {
                         result = parameters.get(0);
                     }

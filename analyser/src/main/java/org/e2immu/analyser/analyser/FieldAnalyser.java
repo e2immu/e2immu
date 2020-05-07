@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -125,7 +124,7 @@ public class FieldAnalyser {
             // find the constructors where the value is set; if they're all set to the same value,
             // we can set the initial value; also take into account the value of the initialiser, if it is there
             Value consistentValue = value;
-            if (!fieldInfo.isExplicitlyFinal()) {
+            if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
                 for (MethodInfo method : typeInspection.methodsAndConstructors()) {
                     if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
                         if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
@@ -147,22 +146,27 @@ public class FieldAnalyser {
                 }
             }
             if (consistentValue != NO_VALUE) {
-                Value valueToSet;
-                if (consistentValue instanceof org.e2immu.analyser.model.Constant) {
-                    valueToSet = consistentValue;
-                    AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-                    annotations.put(constantAnnotation, true);
-                    log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
-                } else {
-                    valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable),
-                            consistentValue.dynamicTypeAnnotations(typeContext), null);
-                    annotations.put(typeContext.constant.get(), false);
-                    log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-                }
-                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
-                        fieldInfo.fullyQualifiedName(), consistentValue);
-                changes = true;
+                Boolean isNotNull = consistentValue.isNotNull(typeContext);
+                if (isNotNull != null) {
+                    Value valueToSet;
+                    if (consistentValue instanceof org.e2immu.analyser.model.Constant) {
+                        valueToSet = consistentValue;
+                        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+                        annotations.put(constantAnnotation, true);
+                        log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
+                    } else {
+
+                        valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable),
+                                consistentValue.dynamicTypeAnnotations(typeContext), null, isNotNull);
+                        annotations.put(typeContext.constant.get(), false);
+                        log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
+
+                    }
+                    fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+                    log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
+                            fieldInfo.fullyQualifiedName(), consistentValue);
+                    changes = true;
+                } // else delay
             }
         }
 

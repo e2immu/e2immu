@@ -37,32 +37,34 @@ public class VariableValue implements Value {
     public final Set<AnnotationExpression> dynamicTypeAnnotations;
     public final Value valueForLinkAnalysis;
     public final Boolean isNotNull;
+    public final boolean isFinal;
 
-    public VariableValue(Variable variable, String name) {
-        this(variable, name, Set.of(), null, null);
+    public static VariableValue forLocalVariable(Variable variable, String name) {
+        return new VariableValue(variable, name, Set.of(), null, false, null);
     }
 
-    public VariableValue(Variable variable, String name,
-                         Set<AnnotationExpression> dynamicTypeAnnotations) {
-        this(variable, name, dynamicTypeAnnotations, null, null);
+    public static VariableValue forParameterInfo(Variable variable, String name) {
+        return new VariableValue(variable, name, Set.of(), null, true, null);
     }
 
     public VariableValue(Variable variable,
                          String name,
                          Set<AnnotationExpression> dynamicTypeAnnotations,
                          Value valueForLinkAnalysis,
+                         boolean isFinal,
                          Boolean isNotNull) {
         this.variable = variable;
         this.name = name;
         this.dynamicTypeAnnotations = dynamicTypeAnnotations;
         this.valueForLinkAnalysis = valueForLinkAnalysis;
         this.isNotNull = isNotNull;
+        this.isFinal = isFinal;
     }
 
     @Override
-    public Value notNullCopy() {
-        if (isNotNull == Boolean.TRUE) return this;
-        return new VariableValue(variable, name, dynamicTypeAnnotations, valueForLinkAnalysis, true);
+    public Value finalNotNullCopy() {
+        if (isFinal && isNotNull == Boolean.TRUE) return this;
+        return new VariableValue(variable, name, dynamicTypeAnnotations, valueForLinkAnalysis, true, true);
     }
 
     @Override

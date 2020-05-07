@@ -79,6 +79,19 @@ public class NullParameterChecks {
     }
 
     public int method9(@NotNull String k) {
+        return s == null ? k.length() : s.length(); // ERROR: can generate null pointer
+    }
+
+    // this should be different from method9, as 's' cannot be a known value, and this.s.length() can
+    // generate a null-pointer exception
+    public int method9Bis(@NotNull String k) {
+        String s2 = this.s;
+        return s2 == null ? k.length() : s2.length();
+    }
+
+    // is just here to check that we can have a local variable withe the same name as the field
+    public int method9Ter(@NotNull String k) {
+        String s = this.s;
         return s == null ? k.length() : s.length();
     }
 
@@ -88,7 +101,7 @@ public class NullParameterChecks {
 
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
     public static String method11Lambda(@NotNull String t) {
-        Supplier<String> supplier = () -> t.trim()+".";
+        Supplier<String> supplier = () -> t.trim() + ".";
         return supplier.get();
     }
 
@@ -96,7 +109,7 @@ public class NullParameterChecks {
     // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
     public static String method12LambdaBlock(@NotNull String t) {
         Supplier<String> supplier = () -> {
-            return t.trim()+".";
+            return t.trim() + ".";
         };
         return supplier.get();
     }

@@ -165,7 +165,7 @@ class VariableProperties implements EvaluationContext {
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
         return new VariableProperties(this, currentMethod, conditional, uponUsingConditional,
-                inSyncBlock,
+                inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
 
@@ -205,7 +205,7 @@ class VariableProperties implements EvaluationContext {
 
     private AboutVariable find(@NotNull Variable variable) {
         String name = variableName(variable, true);
-        if(name == null) return null;
+        if (name == null) return null;
         return find(name);
     }
 
@@ -225,14 +225,32 @@ class VariableProperties implements EvaluationContext {
         return null;
     }
 
+    // there should be 2 methods here: one called during evaluation of rhs,
+    // one called on assignment sides
     public void createVariableIfRelevant(Variable variable) {
         String name = variableName(variable, true);
         if (name == null) return; // not allowed to be in the map
         if (find(name) != null) return;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
-            Value resetValue = new VariableValue(fieldReference, name);
+            Value resetValue;
+            Boolean isFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext);
+            if (isFinal == null) {
+                resetValue = UnknownValue.NO_VALUE; // delay
+            } else if (isFinal) {
+                if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                    resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+                } else {
+                    // DELAY!
+                    resetValue = UnknownValue.NO_VALUE;
+                }
+            } else {
+                // in sync block, or during construction phase; acts as LOCAL VARIABLE, so VV is justified
+                resetValue = new VariableValue(variable, name);
+            }
             internalCreate(variable, nameOfField(fieldReference), resetValue, resetValue, Set.of());
+        } else {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -440,9 +458,11 @@ class VariableProperties implements EvaluationContext {
                                 fieldInfo.fieldAnalysis.effectivelyFinalValue.get() :
                                 UnknownValue.NO_VALUE;
                     }
-                    return new FinalFieldValue((FieldReference) variable, Set.of(), null);
+                    Boolean isNotNull = fieldInfo.isNotNull(typeContext);
+                    if (isNotNull == null) return UnknownValue.NO_VALUE;
+                    return new FinalFieldValue((FieldReference) variable, Set.of(), null, isNotNull);
                 }
-                return new Instance(fieldInfo.type);
+                return new Instance(fieldInfo.type, null, null, false);
             }
         }
         AboutVariable aboutVariable = findComplain(variable);

@@ -52,8 +52,9 @@ public class InlineConditionalOperator implements Expression {
         Value c = conditional.evaluate(evaluationContext, evaluationVisitor);
 
         if (c instanceof BoolValue) {
-            evaluationContext.getTypeContext().addMessage(Message.Severity.ERROR, "Conditional always evaluates to constant");
-            return ErrorValue.inlineConditionalEvaluatesToConstant(new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
+            Value error = ErrorValue.inlineConditionalEvaluatesToConstant(new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
+            evaluationVisitor.visit(this, evaluationContext, error);
+            return error;
         }
 
         // we'll want to evaluate in a different context

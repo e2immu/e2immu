@@ -554,7 +554,7 @@ public class StatementAnalyser {
                 }
 
                 // if we're outside of construction, and we're assigning: non-final field, not taking anything into account
-                if (!methodInfo.methodAnalysis.partOfConstruction.get()) {
+                if (variableProperties.isNotAllowedToBeInTheMap((FieldReference)at)) {
                     if (!methodInfo.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                         log(ASSIGNMENT, "Mark assignment to field {} outside constructors in {}", fieldInfo.fullyQualifiedName(), methodInfo.distinguishingName());
                         methodInfo.methodAnalysis.fieldAssignments.put(fieldInfo, true);

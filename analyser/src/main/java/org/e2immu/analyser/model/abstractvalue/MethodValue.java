@@ -45,7 +45,7 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Value notNullCopy() {
+    public Value finalNotNullCopy() {
         if (isNotNull == Boolean.TRUE) return this;
         return new MethodValue(methodInfo, object, parameters, true);
     }

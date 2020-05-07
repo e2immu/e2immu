@@ -75,7 +75,7 @@ public interface Value extends Comparable<Value> {
      *
      * @return a copy, equal to this, but with the isNotNull flag set to true
      */
-    default Value notNullCopy() {
+    default Value finalNotNullCopy() {
         return this;
     }
 

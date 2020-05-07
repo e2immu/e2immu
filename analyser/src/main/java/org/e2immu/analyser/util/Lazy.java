@@ -67,14 +67,15 @@ public class Lazy<T> {
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
     //@Mark("get")
     public T get() {
-        if (t == null) {
-            synchronized (this) {
-                if (t == null) {
-                    t = Objects.requireNonNull(supplier.get());
-                }
+        T localT = t;
+        if (localT != null) return localT;
+
+        synchronized (this) {
+            if (t == null) {
+                t = Objects.requireNonNull(supplier.get());
             }
+            return t;
         }
-        return t;
     }
 
     /**

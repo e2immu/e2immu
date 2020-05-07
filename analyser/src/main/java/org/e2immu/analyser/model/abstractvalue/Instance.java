@@ -67,7 +67,7 @@ public class Instance implements Value {
     }
 
     @Override
-    public Value notNullCopy() {
+    public Value finalNotNullCopy() {
         if (isNotNull) return this;
         return new Instance(parameterizedType, constructor, constructorParameterValues, true, uniqueNumber);
     }
