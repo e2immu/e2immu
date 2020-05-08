@@ -35,12 +35,25 @@ public enum VariableProperty {
     // this variable is changing inside a loop; do not read its value
     ASSIGNED_IN_LOOP("in loop"),
 
+    // the ones corresponding to annotations
+
     NOT_NULL("@NotNull"), // numeric
     FINAL("@Final"), // boolean
     CONTAINER("@Container"), // boolean
     IMMUTABLE("@Immutable"), // numeric
     NOT_MODIFIED("@NotModified"), // ternary
-    ;
+    CONSTANT("@Constant"), //boolean
+    EXTENSION_CLASS("@ExtensionClass"),
+    FLUENT("@Fluent"),
+    IDENTITY("@Identity"),
+    IGNORE_MODIFICATIONS("@IgnoreModifications"),
+    INDEPENDENT("@Independent"),
+    LINKED("@Linked"),
+    MARK("@Mark"),
+    ONLY("@Only"),
+    OUTPUT("@Output"),
+    SINGLETON("@Singleton"),
+    UTILITY_CLASS("@UtilityClass");
 
     public final String name;
 

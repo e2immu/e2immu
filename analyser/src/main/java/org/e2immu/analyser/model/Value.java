@@ -40,28 +40,22 @@ import java.util.Set;
  */
 public interface Value extends Comparable<Value> {
 
-    default Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    // executed without context
+    default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
-        return null; // no information about @NotModified, @Container/@Immutable, @Final
+        return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final
     }
 
-    // null = no idea, 0 = false, 1 = true
-    default Boolean isNotNull(EvaluationContext evaluationContext) {
-        Integer isNotNull = getProperty(evaluationContext, VariableProperty.NOT_NULL);
-        return isNotNull == null ? null : isNotNull == 1;
-    }
-
-    // null = no idea, -1 delaying; 1 = true, 0 = false
-    default Boolean isFinal(EvaluationContext evaluationContext) {
-        Integer isFinal = getProperty(evaluationContext, VariableProperty.FINAL);
-        return isFinal == null ? null : isFinal == 1;
+    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
+        return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final
     }
 
     default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
-        Integer container = getProperty(evaluationContext, VariableProperty.CONTAINER);
-        Integer immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
-        boolean noContainer = container == null;
-        boolean noImmutable = immutable == null;
+        int container = getProperty(evaluationContext, VariableProperty.CONTAINER);
+        int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+        boolean noContainer = container == Level.UNDEFINED;
+        boolean noImmutable = immutable == Level.UNDEFINED;
 
         if (noContainer && noImmutable) return Set.of();
         if (noContainer) return Set.of(AnnotationExpression.immutable(evaluationContext.getTypeContext(), immutable));

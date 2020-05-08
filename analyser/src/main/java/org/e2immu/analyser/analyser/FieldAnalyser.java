@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -51,7 +52,7 @@ public class FieldAnalyser {
 
         boolean changes = false;
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
-        SetOnceMap<AnnotationExpression, Boolean> annotations = fieldInfo.fieldAnalysis.annotations;
+        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis;
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         boolean fieldCanBeAccessedFromOutsideThisType = fieldInfo.owner.isRecord();
 
@@ -82,10 +83,10 @@ public class FieldAnalyser {
 
         // STEP 2: EFFECTIVELY FINAL: @E1Immutable
 
-        if (!annotations.isSet(typeContext.effectivelyFinal.get())) {
+        if (Level.UNDEFINED == fieldAnalysis.getProperty(VariableProperty.FINAL)) {
             boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
             if (isExplicitlyFinal) {
-                annotations.put(typeContext.effectivelyFinal.get(), true);
+                fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE);
                 log(FINAL, "Mark field {} as effectively final, because explicitly so, value {}",
                         fieldInfo.fullyQualifiedName(), value);
                 changes = true;
@@ -105,7 +106,7 @@ public class FieldAnalyser {
                     } else {
                         isFinal = !isModifiedOutsideConstructors;
                     }
-                    annotations.put(typeContext.effectivelyFinal.get(), isFinal);
+                    fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
                     if (isFinal && fieldInfo.type.isRecordType()) {
                         typeContext.addMessage(Message.Severity.ERROR,
                                 "Effectively final field " + fieldInfo.fullyQualifiedName() +
@@ -120,7 +121,7 @@ public class FieldAnalyser {
 
         // STEP 3: EFFECTIVELY FINAL VALUE, and @Constant
 
-        if (fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE && !fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+        if (fieldAnalysis.propertyTrue(VariableProperty.FINAL) && !fieldAnalysis.effectivelyFinalValue.isSet()) {
             // find the constructors where the value is set; if they're all set to the same value,
             // we can set the initial value; also take into account the value of the initialiser, if it is there
             Value consistentValue = value;
@@ -134,7 +135,7 @@ public class FieldAnalyser {
                                 log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
                                         fieldInfo.fullyQualifiedName(), consistentValue, assignment);
                                 fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
-                                annotations.put(typeContext.constant.get(), false);
+                                fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
                                 return true;
                             }
                         } else {
@@ -149,16 +150,15 @@ public class FieldAnalyser {
                 Boolean isNotNull = consistentValue.isNotNull(typeContext);
                 if (isNotNull != null) {
                     Value valueToSet;
-                    if (consistentValue instanceof org.e2immu.analyser.model.Constant) {
+                    if (consistentValue instanceof Constant) {
                         valueToSet = consistentValue;
                         AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
                         annotations.put(constantAnnotation, true);
                         log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
                     } else {
-
                         valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable),
                                 consistentValue.dynamicTypeAnnotations(typeContext), null, isNotNull);
-                        annotations.put(typeContext.constant.get(), false);
+                        fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
                         log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
 
                     }
@@ -171,75 +171,8 @@ public class FieldAnalyser {
         }
 
         // STEP 4: @NotNull
-
-        if (!annotations.isSet(typeContext.notNull.get())) {
-            Boolean isNotNullValue;
-            Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
-            if (isFinal == null) {
-                log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
-                isNotNullValue = null;
-            } else {
-                Boolean finalCriteria;
-                if (isFinal == Boolean.FALSE) {
-                    if (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeAccessedFromOutsideThisType) {
-                        log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser,"
-                                + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
-                        finalCriteria = false;
-                    } else {
-                        finalCriteria = value.isNotNull(typeContext);
-                    }
-                } else {
-                    finalCriteria = true;
-                }
-                if (finalCriteria == null) {
-                    log(DELAYED, "Delaying @NotNull on {} until we know @NotNull of initialiser", fieldInfo.fullyQualifiedName());
-                    isNotNullValue = null;
-                } else if (finalCriteria) {
-                    // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
-                    // the real value with a generic VariableValue, relying on @NotNull
-                    boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                            m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                                    (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-                    if (allAssignmentValuesDefined) {
-                        Boolean allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
-                                .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                                .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull(typeContext))
-                                .reduce(true, TypeAnalyser.TERNARY_AND);
-                        if (allAssignmentValuesNotNull == null) {
-                            isNotNullValue = null; // delay
-                        } else {
-                            if (!haveInitialiser) {
-                                isNotNullValue = allAssignmentValuesNotNull;
-                            } else {
-                                if (value == NO_VALUE) {
-                                    isNotNullValue = null; // delay
-                                } else {
-                                    Boolean initialiserIsNotNull = value.isNotNull(typeContext);
-                                    if (initialiserIsNotNull == null) {
-                                        isNotNullValue = null; // delay
-                                    } else {
-                                        // this is the real one!
-                                        isNotNullValue = initialiserIsNotNull && allAssignmentValuesNotNull;
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        isNotNullValue = null; // delay
-                    }
-                } else {
-                    isNotNullValue = false;
-                }
-            }
-            if (isNotNullValue == null) {
-                log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
-            } else {
-                annotations.put(typeContext.notNull.get(), isNotNullValue);
-                log(NOT_NULL, "Mark field {} as " + (isNotNullValue ? "" : "NOT ") + "@NotNull",
-                        fieldInfo.fullyQualifiedName(), isNotNullValue);
-                changes = true;
-            }
-        }
+        if (analyseNotNull(fieldInfo, fieldAnalysis, value, haveInitialiser, typeInspection, fieldCanBeAccessedFromOutsideThisType))
+            changes = true;
 
         // STEP 5: Dynamic type annotations
 
@@ -307,9 +240,9 @@ public class FieldAnalyser {
 
         // STEP 6: @NotModified
 
-        if (!annotations.isSet(typeContext.notModified.get())) {
-            Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
-            if (isE2Immutable == null) {
+        if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.UNDEFINED) {
+            int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            if (Level.have(immutable, Level.E2IMMUTABLE) == Level.DELAY) {
                 log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
             } else if (isE2Immutable) {
                 annotations.put(typeContext.notModified.get(), false);
@@ -359,6 +292,83 @@ public class FieldAnalyser {
         }
         return changes;
     }
+
+    private boolean analyseNotNull(FieldInfo fieldInfo,
+                                   FieldAnalysis fieldAnalysis,
+                                   Value value,
+                                   boolean haveInitialiser,
+                                   TypeInspection typeInspection,
+                                   boolean fieldCanBeAccessedFromOutsideThisType) {
+        if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL) != Level.UNDEFINED) return false;
+        int isNotNullValue;
+        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (isFinal == Level.DELAY) {
+            log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
+            isNotNullValue = Level.DELAY;
+        } else {
+            int finalCriteria;
+            if (isFinal == Level.FALSE) {
+                if (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeAccessedFromOutsideThisType) {
+                    log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser,"
+                            + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+                    finalCriteria = Level.FALSE;
+                } else {
+                    finalCriteria = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                }
+            } else {
+                finalCriteria = Level.TRUE;
+            }
+            if (finalCriteria == Level.DELAY) {
+                log(DELAYED, "Delaying @NotNull on {} until we know @NotNull of initialiser", fieldInfo.fullyQualifiedName());
+                isNotNullValue = Level.DELAY;
+            } else if (finalCriteria == Level.TRUE) {
+                // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
+                // the real value with a generic VariableValue, relying on @NotNull
+                boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                        m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                                (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+                if (allAssignmentValuesDefined) {
+                    int allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
+                            .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                            .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).getPropertyOutsideContext(VariableProperty.NOT_NULL))
+                            .reduce(0, Level.AND);
+                    if (allAssignmentValuesNotNull == Level.DELAY) {
+                        isNotNullValue = Level.DELAY; // delay
+                    } else {
+                        if (!haveInitialiser) {
+                            isNotNullValue = allAssignmentValuesNotNull;
+                        } else {
+                            if (value == NO_VALUE) {
+                                isNotNullValue = Level.DELAY; // delay
+                            } else {
+                                int initialiserIsNotNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                                if (initialiserIsNotNull == Level.DELAY) {
+                                    isNotNullValue = Level.DELAY; // delay
+                                } else {
+                                    // this is the real one!
+                                    isNotNullValue = Level.AND.applyAsInt(initialiserIsNotNull, allAssignmentValuesNotNull);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    isNotNullValue = Level.DELAY; // delay
+                }
+            } else {
+                isNotNullValue = Level.DELAY;
+            }
+        }
+        if (isNotNullValue == Level.DELAY) {
+            log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
+        } else {
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNullValue);
+            log(NOT_NULL, "Mark field {} as " + (isNotNullValue == Level.TRUE ? "" : "NOT ") + "@NotNull",
+                    fieldInfo.fullyQualifiedName(), isNotNullValue);
+            return true;
+        }
+        return false;
+    }
+
 
     public void check(FieldInfo fieldInfo) {
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());

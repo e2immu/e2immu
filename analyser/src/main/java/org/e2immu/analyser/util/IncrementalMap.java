@@ -48,6 +48,17 @@ public class IncrementalMap<K> extends Freezable {
         map.put(k, v);
     }
 
+    @Only(before = "freeze")
+    public void improve(@NotNull K k, int v) {
+        Objects.requireNonNull(k);
+        ensureNotFrozen();
+        Integer current = map.get(k);
+        // can go from -1 to 1, not from 1 to -1; can go from 1 to 2, from -1 to -2
+        if (current == null || accept.test(current, v)) {
+            map.put(k, v);
+        }
+    }
+
     @NotNull
     public int get(K k) {
         if (!isSet(k)) throw new UnsupportedOperationException("Not yet decided on " + k);

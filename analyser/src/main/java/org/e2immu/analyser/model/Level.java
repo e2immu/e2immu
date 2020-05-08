@@ -2,6 +2,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.annotation.UtilityClass;
 
+import java.util.function.IntBinaryOperator;
+
 /**
  * This numeric encoding aims to work efficiently with properties at multiple levels,
  * taking into account that the presence or absence of a property or level may still be in computation (delayed).
@@ -15,6 +17,10 @@ import org.e2immu.annotation.UtilityClass;
 @UtilityClass
 public class Level {
 
+    public static final int E1IMMUTABLE = 0;
+    public static final int E2IMMUTABLE = 1;
+    public static final int NOT_NULL_1 = 1;
+
     private Level() {
         throw new UnsupportedOperationException();
     }
@@ -23,8 +29,14 @@ public class Level {
 
     // these are the allowed values
     public static final int DELAY = 0;
+    public static final int UNDEFINED = 0;
+
     public static final int FALSE = 1;
     public static final int TRUE = 2;
+
+    // be careful, assumes the same level everywhere
+    public static final IntBinaryOperator AND = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.min(i, j);
+    public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
 
     public static int tryNextLevel(int i) {
         return 3 * (1 + i / 3); // 0,1,2 to 3; 3,4,5 to 6, etc.
@@ -44,10 +56,17 @@ public class Level {
         return value + level * 3;
     }
 
+    public static int at(int i, int level) {
+        int j = i / 3;
+        if (j < level) return DELAY;
+        if (j > level) return TRUE;
+        return i % 3;
+    }
+
     /**
      * @param i     current value
      * @param level the minimal level to be reached; must be >= 0 (levels start at 0).
-     *                  Note that @E1Immutable is level 0, while @NotNull1 is at level 1
+     *              Note that @E1Immutable is level 0, while @NotNull1 is at level 1
      * @return true if the level reaches the threshold
      */
     public static boolean have(int i, int level) {
@@ -68,5 +87,9 @@ public class Level {
     public static int best(int i, int j) {
         if (better(i, j)) return i;
         return j;
+    }
+
+    public static int fromBool(boolean b) {
+        return b ? TRUE : FALSE;
     }
 }
