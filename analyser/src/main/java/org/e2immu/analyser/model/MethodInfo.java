@@ -29,6 +29,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
@@ -62,7 +63,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     //@Immutable(after="this.inspect(),this.inspect()")
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     //@Immutable(after="MethodAnalyser.analyse()")
-    public final MethodAnalysis methodAnalysis = new MethodAnalysis();
+    public final MethodAnalysis methodAnalysis;
 
     // for constructors
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
@@ -102,6 +103,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
         this.isDefaultImplementation = isDefaultImplementation;
         if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
+        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(), () -> typeInfo.overrides(this));
     }
 
     public boolean hasBeenInspected() {
@@ -363,38 +365,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public Boolean annotatedWithCheckOverloads(AnnotationExpression annotation) {
-        Boolean result = annotatedWith(annotation);
-        if (result != Boolean.FALSE) return result;
-        for (MethodInfo methodInfo : typeInfo.overrides(this)) {
-            Boolean resultFromOverload = methodInfo.annotatedWith(annotation);
-            if (resultFromOverload != Boolean.FALSE) return resultFromOverload;
-        }
-        return false;
-    }
-
-    public Boolean isFluent(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.fluent.get());
-    }
-
-    public Boolean isIdentity(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.identity.get());
-    }
-
-    public Boolean isIndependent(TypeContext typeContext) {
-        return annotatedWithCheckOverloads(typeContext.independent.get());
-    }
-
-    // this one is both inheritable and shortcut-able
-    public Boolean isNotModified(TypeContext typeContext) {
-        if (typeInfo.annotatedWith(typeContext.notModified.get()) == Boolean.TRUE) return true;
-        return annotatedWithCheckOverloads(typeContext.notModified.get());
-    }
-
-    public SideEffect sideEffect(TypeContext typeContext) {
-        Boolean notModified = isNotModified(typeContext);
-        if (notModified == null) return SideEffect.DELAYED;
-        if (notModified) {
+    public SideEffect sideEffect() {
+        int notModified = methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+        if (notModified == Level.DELAY) return SideEffect.DELAYED;
+        if (notModified == Level.TRUE) {
             if (isStatic) {
                 if (isVoid()) {
                     return SideEffect.STATIC_ONLY;
@@ -427,13 +401,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return name;
     }
 
-    public Boolean isAllParametersNotModified(TypeContext typeContext) {
-        for (ParameterInfo parameterInfo : methodInspection.get().parameters) {
-            Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-            if (isNotModified == null) return null; // no idea
-            if (!isNotModified) return false;
-        }
-        return true;
+    public int allParametersNotModified() {
+        return methodInspection.get().parameters.stream()
+                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
+                .min().orElse(Level.TRUE);
     }
 
     public Boolean isNoFieldsAssigned(TypeContext typeContext) {
@@ -549,25 +520,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return false;
     }
 
-    // the return type... is it E2Immu?
-    public Boolean isE2Immutable(TypeContext typeContext) {
-        if (isConstructor) return true;
-        if (isVoid()) return true;
-        ParameterizedType returnType = returnType();
-        if (returnType.isPrimitive()) return true;
-        Boolean staticallyE2Immutable = returnType.isE2Immutable(typeContext);
-        Boolean dynamicallyE2Immutable = TypeAnalyser.TERNARY_OR.apply(annotatedWith(typeContext.e2Container.get()),
-                annotatedWith(typeContext.e2Immutable.get()));
-        return TypeAnalyser.TERNARY_OR.apply(staticallyE2Immutable, dynamicallyE2Immutable);
-    }
-
     public boolean isSynchronized() {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
-    public Integer getNotNull(TypeContext typeContext) {
-        Integer onMethod = numericAnnotatedWith(typeContext.notNull.get());
-        if (onMethod == null) return null;
-        return typeInfo.isNotNullForMethods(typeContext);
-    }
 }

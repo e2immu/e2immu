@@ -18,12 +18,21 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.Set;
 
 public class FieldAnalysis extends Analysis {
+
+    public final TypeInfo bestType;
+    public final TypeInfo owner;
+
+    public FieldAnalysis(TypeInfo bestType, TypeInfo owner) {
+        this.owner = owner;
+        this.bestType = bestType;
+    }
 
     // if the field turns out to be effectively final, it can have a value
     public final SetOnce<Value> effectivelyFinalValue = new SetOnce<>();
@@ -41,4 +50,32 @@ public class FieldAnalysis extends Analysis {
     public final SetOnce<Set<Variable>> variablesLinkedToMe = new SetOnce<>();
 
     public final SetOnceMap<MethodInfo, Boolean> errorsForAssignmentsOutsidePrimaryType = new SetOnceMap<>();
+
+    @Override
+    public int getProperty(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_MODIFIED:
+                if (bestType.isPrimitive()) return Level.TRUE;
+                int e2Immutable = Level.value(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+                if (e2Immutable != Level.FALSE) return e2Immutable;
+                break;
+
+            case NOT_NULL:
+                if (bestType.isPrimitive()) return Level.TRUE;
+                int notNullFields = owner.typeAnalysis.getProperty(VariableProperty.NOT_NULL_FIELDS);
+                return Level.best(notNullFields, super.getProperty(VariableProperty.NOT_NULL));
+
+            case FINAL:
+                int e1ImmutableOwner = Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE);
+                if (e1ImmutableOwner == Level.TRUE) return Level.TRUE;
+
+            case IMMUTABLE:
+                int immutableType = owner == bestType || bestType == null ? Level.FALSE :
+                        bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                return Level.best(immutableType, super.getProperty(variableProperty));
+
+            default:
+        }
+        return super.getProperty(variableProperty);
+    }
 }

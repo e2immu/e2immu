@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
@@ -25,9 +26,24 @@ import org.e2immu.analyser.util.SetOnceMap;
 // ...
 public class TypeAnalysis extends Analysis {
 
+    public final boolean isPrimitiveObjectOrString;
+    public static final int E2IMMUTABLE_TRUE = Level.compose(Level.TRUE, Level.E2IMMUTABLE);
+
+    public TypeAnalysis(boolean isPrimitiveObjectOrString) {
+        this.isPrimitiveObjectOrString = isPrimitiveObjectOrString;
+    }
+
     // to avoid repetitions
     public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
 
     public final SetOnce<Boolean> doNotAllowDelaysOnNotModified = new SetOnce<>();
 
+
+    @Override
+    public int getProperty(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.IMMUTABLE) {
+            if (isPrimitiveObjectOrString) return E2IMMUTABLE_TRUE;
+        }
+        return super.getProperty(variableProperty);
+    }
 }

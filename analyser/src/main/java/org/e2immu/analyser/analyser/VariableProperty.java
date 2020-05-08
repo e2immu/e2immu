@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Level;
+
 public enum VariableProperty {
     CHECK_NOT_NULL("check not null"),
     READ("read"),
@@ -37,10 +39,16 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true), // numeric
+    NOT_NULL("@NotNull", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+
+    // the following three are on types only
+    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+
     FINAL("@Final"), // boolean
     CONTAINER("@Container"), // boolean
-    IMMUTABLE("@Immutable", true), // numeric
+    IMMUTABLE("@Immutable", true, Level.compose(Level.TRUE, Level.E2IMMUTABLE)), // numeric
     NOT_MODIFIED("@NotModified"), // ternary
     CONSTANT("@Constant"), //boolean
     EXTENSION_CLASS("@ExtensionClass"),
@@ -57,14 +65,16 @@ public enum VariableProperty {
 
     public final String name;
     public final boolean canImprove;
+    public final int best;
 
     private VariableProperty(String name) {
-        this(name, false);
+        this(name, false, Level.TRUE);
     }
 
-    private VariableProperty(String name, boolean canImprove) {
+    private VariableProperty(String name, boolean canImprove, int best) {
         this.name = name;
         this.canImprove = canImprove;
+        this.best = best;
     }
 
     @Override

@@ -162,7 +162,7 @@ public class FieldAnalyser {
                                       FieldReference fieldReference,
                                       TypeInspection typeInspection,
                                       EvaluationContext evaluationContext) {
-        if (!fieldAnalysis.propertyTrue(VariableProperty.FINAL) || fieldAnalysis.effectivelyFinalValue.isSet())
+        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
             return false;
         // find the constructors where the value is set; if they're all set to the same value,
         // we can set the initial value; also take into account the value of the initialiser, if it is there

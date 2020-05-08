@@ -377,16 +377,6 @@ public class ParameterizedType {
         return typeInfo != null && primitiveStringNotVoid.contains(typeInfo.fullyQualifiedName);
     }
 
-    public Boolean isE2Immutable(TypeContext typeContext) {
-        if (typeInfo != null) return typeInfo.isE2Immutable(typeContext);
-        return false;
-    }
-
-    public Boolean isContainer(TypeContext typeContext) {
-        if (typeInfo != null) return typeInfo.isContainer(typeContext);
-        return false;
-    }
-
     // ******************************************************************************************************
 
     public Map<NamedType, ParameterizedType> typeParameterMap(ParameterizedType concreteType) {
@@ -626,6 +616,14 @@ public class ParameterizedType {
 
     public boolean isEnum() {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
+    }
+
+    public TypeInfo bestTypeInfo() {
+        if (typeInfo != null) return typeInfo;
+        if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
+            return parameters.get(0).bestTypeInfo();
+        }
+        return null;
     }
 
     public boolean isRecordType() {

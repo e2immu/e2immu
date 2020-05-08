@@ -19,6 +19,9 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotNull;
@@ -26,17 +29,67 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 @NotNull
 public class MethodAnalysis extends Analysis {
+
+    private final Supplier<Iterable<MethodInfo>> overrides;
+    private final Supplier<TypeInfo> bestType;
+    public final TypeInfo typeInfo;
+
+    public MethodAnalysis(TypeInfo typeInfo, Supplier<TypeInfo> bestType, Supplier<Iterable<MethodInfo>> overrides) {
+        this.overrides = overrides;
+        this.typeInfo = typeInfo;
+        this.bestType = bestType;
+    }
+
+    @Override
+    public int getProperty(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case FLUENT:
+            case IDENTITY:
+            case INDEPENDENT:
+                return getPropertyCheckOverrides(variableProperty);
+            case NOT_MODIFIED:
+                int typeNotModified = typeInfo.typeAnalysis.getProperty(variableProperty);
+                if (typeNotModified == Level.TRUE) return typeNotModified;
+                return getPropertyCheckOverrides(variableProperty);
+            case NOT_NULL:
+                int notNullMethods = typeInfo.typeAnalysis.getProperty(VariableProperty.NOT_NULL_METHODS);
+                return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
+            case IMMUTABLE:
+            case CONTAINER:
+                TypeInfo typeInfo = bestType.get();
+                if (typeInfo == null ||  // will happen for constructors
+                        "void".equals(typeInfo.fullyQualifiedName) ||
+                        "java.lang.Void".equals(typeInfo.fullyQualifiedName) ||
+                        typeInfo.isPrimitive()) {
+                    return variableProperty == VariableProperty.IMMUTABLE ? Level.compose(Level.TRUE, Level.E2IMMUTABLE) : Level.TRUE;
+                }
+                int returnType = typeInfo.typeAnalysis.getProperty(variableProperty);
+                return Level.best(returnType, super.getProperty(variableProperty));
+            case CONSTANT:
+                return super.getProperty(variableProperty);
+        }
+        throw new UnsupportedOperationException("? no provisions for property " + variableProperty);
+    }
+
+    private int getPropertyCheckOverrides(VariableProperty variableProperty) {
+        int result = super.getProperty(variableProperty);
+        if (result != Level.FALSE) return result;
+        for (MethodInfo methodInfo : overrides.get()) {
+            int resultFromOverload = methodInfo.methodAnalysis.getProperty(variableProperty);
+            if (resultFromOverload != Level.FALSE) return resultFromOverload;
+        }
+        return Level.FALSE;
+    }
+
 
     // used to check that in a utility class, no objects of the class itself are created
     public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
 
     // not to be stored. later, move to separate class...
-    // TODO
-    public final SetOnce<SideEffect> sideEffect = new SetOnce<>();
-    // TODO ditto
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
     // if true, the method has no (non-static) method calls on the "this" scope

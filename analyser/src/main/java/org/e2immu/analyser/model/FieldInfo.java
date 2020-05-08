@@ -37,7 +37,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public final TypeInfo owner;
     public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
-    public final FieldAnalysis fieldAnalysis = new FieldAnalysis();
+    public final FieldAnalysis fieldAnalysis ;
 
     public FieldInfo(TypeInfo type, String name, TypeInfo owner) {
         this(type.asParameterizedType(), name, owner);
@@ -51,6 +51,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         this.type = type;
         this.name = name;
         this.owner = owner;
+        fieldAnalysis = new FieldAnalysis(type.bestTypeInfo(), owner);
     }
 
     @Override
@@ -126,11 +127,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return sb.toString();
     }
 
-    public boolean isIgnoreModifications() {
-        return getInspection().annotations.stream()
-                .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(IgnoreModifications.class.getCanonicalName()));
-    }
-
     public boolean isStatic() {
         return fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.STATIC);
     }
@@ -146,41 +142,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             return owner.hasTestAnnotation(annotation);
         // TODO check "where" on @NotModified
         return Optional.empty();
-    }
-
-    public Boolean isNotNull(TypeContext typeContext) {
-        if (type.isPrimitive()) return true;
-        if (owner.isNotNullForFields(typeContext) == Boolean.TRUE) return true;
-        return annotatedWith(typeContext.notNull.get());
-    }
-
-    public Boolean isNotModified(TypeContext typeContext) {
-        if (type.isPrimitive()) return true;
-        Boolean isE2Immutable = isE2Immutable(typeContext);
-        if (isE2Immutable == Boolean.TRUE) return true;
-        if (isE2Immutable == null) return null; // delay
-        return annotatedWith(typeContext.notModified.get());
-    }
-
-    public Boolean isEffectivelyFinal(TypeContext typeContext) {
-        Boolean isE2Immutable = owner.isE2Immutable(typeContext);
-        if (isE2Immutable == Boolean.TRUE) return true;
-        // NOTE: we're not delaying here because of not knowing the E2Immutable status of the owner
-        if (fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.FINAL)) return true;
-        return annotatedWith(typeContext.effectivelyFinal.get());
-    }
-
-    public Boolean isE2Immutable(TypeContext typeContext) {
-        // we do not look at the type's annotations if we are of that type (self reference)
-        Boolean staticType;
-        if (type.typeInfo == owner) {
-            staticType = false;
-        } else {
-            staticType = type.isE2Immutable(typeContext);
-        }
-        Boolean dynamicType = TypeAnalyser.TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()),
-                annotatedWith((typeContext.e2Container.get())));
-        return TypeAnalyser.TERNARY_OR.apply(staticType, dynamicType);
     }
 
     public String fullyQualifiedName() {

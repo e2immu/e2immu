@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
@@ -27,7 +26,6 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -139,22 +137,12 @@ public class TypeAnalyser {
             // this is caused by the fact that some knowledge may come later.
             // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
             if (typeInfo.hasBeenDefined()) {
-                Boolean isE2Immutable = isE2Immutable(typeInfo);
-                if (isE2Immutable != null && assignE2Immutable(typeInfo, isE2Immutable)) changes = true;
-                Boolean isE1Immutable = isE1Immutable(typeInfo);
-                if (isE1Immutable != null && assignE1Immutable(typeInfo, isE1Immutable)) changes = true;
-
-                Boolean isContainer = noMethodsWhoseParametersContentIsModified(typeInfo);
-                if (isContainer != null) {
-                    if (assignContainer(typeInfo, isContainer)) changes = true;
-                    if (isE1Immutable != null && assignE1Container(typeInfo, isContainer, isE1Immutable))
-                        changes = true;
-                    if (isE2Immutable != null && assignE2Container(typeInfo, isContainer, isE2Immutable))
-                        changes = true;
-                }
-                if (detectUtilityClass(typeInfo)) changes = true;
-                if (detectExtensionClass(typeInfo)) changes = true;
-                if (detectNotNull(typeInfo)) changes = true;
+                if (analyseE1Immutable(typeInfo)) changes = true;
+                if (analyseE2Immutable(typeInfo)) changes = true;
+                if (analyseContainer(typeInfo)) changes = true;
+                if (analyseUtilityClass(typeInfo)) changes = true;
+                if (analyseExtensionClass(typeInfo)) changes = true;
+                if (analyseNotNull(typeInfo)) changes = true;
             }
             if (cnt > 10) {
                 throw new UnsupportedOperationException("?10 iterations needed?");
@@ -191,178 +179,103 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    /*
-        private VariableProperties initializeVariableProperties(TypeInfo typeBeingAnalysed, List<This> thisVariables, MethodInfo currentMethod) {
-            VariableProperties fieldProperties = new VariableProperties(typeContext, currentMethod);
-            for (This thisVariable : thisVariables) {
-                if (!thisVariable.typeInfo.isRecord() || thisVariable.typeInfo == typeBeingAnalysed) {
-                    fieldProperties.create(thisVariable, new VariableValue(thisVariable));
-                    for (FieldInfo fieldInfo : thisVariable.typeInfo.typeInspection.get().fields) {
-                        createFieldReference(thisVariable, fieldProperties, fieldInfo);
-                    }
-                } // for records, we will make fields in the "create" method
-            }
-            return fieldProperties;
-        }
+    private boolean analyseContainer(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
+        if (container != Level.UNDEFINED) return false;
 
-        // this method is responsible for one of the big feed-back loops in the evaluation chain
-
-        private void createFieldReference(This thisVariable, VariableProperties fieldProperties, FieldInfo fieldInfo) {
-            FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            Value value;
-
-            Boolean isFinal = fieldInfo.isEffectivelyFinal(typeContext);
-            boolean haveConstantValue;
-            if (Boolean.TRUE == isFinal) {
-                if (fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    value = fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                    haveConstantValue = true;
-                } else {
-                    Boolean isE2Immutable = fieldInfo.isE2Immutable(typeContext);
-                    Set<AnnotationExpression> dynamicAnnotationExpressions;
-                    if (isE2Immutable == null) {
-                        dynamicAnnotationExpressions = null;
-                    } else {
-                        dynamicAnnotationExpressions = fieldInfo.fieldAnalysis.annotations.stream().filter(Map.Entry::getValue)
-                                .map(Map.Entry::getKey).collect(Collectors.toSet());
-                    }
-                    value = new VariableValue(fieldReference, dynamicAnnotationExpressions, true, null, null);
-                    haveConstantValue = false;
-                }
-            } else if (Boolean.FALSE == isFinal) {
-                // we know here that the field will never be effectively immutable, so no point in delaying links
-                value = new VariableValue(fieldReference, null, false, null, null);
-                haveConstantValue = false;
-            } else {
-                // no idea about @Final, @E2Immutable
-                value = new VariableValue(fieldReference, null, true, null, null);
-                haveConstantValue = false;
-            }
-
-            fieldProperties.create(fieldReference, value);
-            if (haveConstantValue) fieldProperties.setValue(fieldReference, value);
-        }
-    */
-    private boolean assignContainer(TypeInfo typeInfo, boolean isContainer) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.container.get())) return false;
-
-        typeInfo.typeAnalysis.annotations.put(typeContext.container.get(), isContainer);
-        log(CONTAINER, "Type " + typeInfo.fullyQualifiedName + " marked " + (isContainer ? "" : "not ")
-                + "@Container");
-        return true;
-    }
-
-    private boolean assignE1Container(TypeInfo typeInfo, boolean isContainer, boolean isE1Immutable) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Container.get())) return false;
-
-        boolean isE1Container = isContainer && isE1Immutable;
-
-        typeInfo.typeAnalysis.annotations.put(typeContext.e1Container.get(), isE1Container);
-        log(CONTAINER, "Type " + typeInfo.fullyQualifiedName + " marked " + (isE1Container ? "" : "not ")
-                + "@E1Container");
-        return true;
-    }
-
-    private boolean assignE2Container(TypeInfo typeInfo, boolean isContainer, boolean isE2Immutable) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Container.get())) return false;
-
-        boolean isE2Container = isContainer && isE2Immutable;
-
-        typeInfo.typeAnalysis.annotations.put(typeContext.e2Container.get(), isE2Container);
-        log(CONTAINER, "Type " + typeInfo.fullyQualifiedName + " marked " + (isE2Container ? "" : "not ")
-                + "@E2Container");
-        return true;
-    }
-
-    private Boolean noMethodsWhoseParametersContentIsModified(TypeInfo typeInfo) {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    Boolean isNotModified = parameterInfo.isNotModified(typeContext);
-                    if (isNotModified == null) return null; // cannot yet decide
-                    if (!isNotModified) {
+                    int notModified = parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+                    if (notModified == Level.DELAY) return false; // cannot yet decide
+                    if (notModified == Level.FALSE) {
                         log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.detailedString(),
                                 methodInfo.distinguishingName());
-                        return false;
+                        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+                        return true;
                     }
                 }
             }
         }
+        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        log(CONTAINER, "Mark {} as @Container", typeInfo.fullyQualifiedName);
         return true;
     }
 
-    private boolean assignE1Immutable(TypeInfo typeInfo, boolean isE1Immutable) {
-        if (typeInfo.typeAnalysis.annotations.getOtherwiseNull(typeContext.e2Immutable.get()) == Boolean.TRUE)
-            return false;
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.e1Immutable.get())) return false;
+    private boolean analyseE1Immutable(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
+        if (typeE1Immutable != Level.DELAY) return false; // we have a decision already
+        int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
 
-        typeInfo.typeAnalysis.annotations.put(typeContext.e1Immutable.get(), isE1Immutable);
-        log(E1IMMUTABLE, "Type " + typeInfo.fullyQualifiedName + " marked " + (isE1Immutable ? "" : "not ")
-                + "@E1Immutable");
-        return true;
-    }
-
-    private Boolean isE1Immutable(TypeInfo typeInfo) {
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-            Boolean effectivelyFinal = fieldInfo.isEffectivelyFinal(typeContext);
-            if (effectivelyFinal == null) return null; // cannot decide
-            if (!effectivelyFinal) {
-                return false;
+            int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) return false; // cannot decide
+            if (effectivelyFinal == Level.FALSE) {
+                log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
+                        typeInfo.fullyQualifiedName, fieldInfo.name);
+                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                return true;
             }
         }
+        log(E1IMMUTABLE, "Improve @Immutable of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, Level.E1IMMUTABLE));
         return true;
     }
 
-    private boolean assignE2Immutable(TypeInfo typeInfo, boolean isEffectivelyImmutable) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.e2Immutable.get())) return false;
+    private boolean analyseE2Immutable(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        int typeE2Immutable = Level.value(typeImmutable, Level.E2IMMUTABLE);
+        if (typeE2Immutable != Level.DELAY) return false; // we have a decision already
+        int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
 
-        typeInfo.typeAnalysis.annotations.put(typeContext.e2Immutable.get(), isEffectivelyImmutable);
-        log(E2IMMUTABLE, "Type " + typeInfo.fullyQualifiedName + " marked " + (isEffectivelyImmutable ? "" : "not ")
-                + "@E2Immutable");
-        return true;
-    }
-
-    private Boolean isE2Immutable(TypeInfo typeInfo) {
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis;
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
 
-            Boolean effectivelyFinal = fieldInfo.isEffectivelyFinal(typeContext);
-            if (effectivelyFinal == null) {
+            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) {
                 log(DELAYED, "Field {} non known yet if effectively final, delay E2Immu", fieldInfo.fullyQualifiedName());
-                return null;
+                return false;
             }
-            if (!effectivelyFinal) {
+            if (effectivelyFinal == Level.FALSE) {
                 log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
                         typeInfo.fullyQualifiedName, fieldInfo.name);
-                return false;
+                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                return true;
             }
 
             // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
 
-            Boolean fieldIsEffectivelyImmutable = fieldInfo.isE2Immutable(typeContext);
+            int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
             // field is of the type of the class being analysed... it will not make the difference.
-            if (fieldIsEffectivelyImmutable == null && typeInfo == fieldInfo.type.typeInfo)
-                fieldIsEffectivelyImmutable = true;
-
-            // part of rule 2: we now need to check that @NotModified is on the field
-            if (fieldIsEffectivelyImmutable == null) {
-                log(DELAYED, "Field {} not known yet if E2Immutable, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
-                return null;
+            if (e2immutable == Level.DELAY && typeInfo == fieldInfo.type.typeInfo) {
+                e2immutable = Level.TRUE;
             }
-            if (!fieldIsEffectivelyImmutable) {
-                Boolean notModified = fieldInfo.isNotModified(typeContext);
+            // part of rule 2: we now need to check that @NotModified is on the field
+            if (e2immutable == Level.DELAY) {
+                log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
+                return false;
+            }
+            if (e2immutable == Level.FALSE) {
+                int notModified = fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
 
-                if (notModified == null) {
+                if (notModified == Level.DELAY) {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
-                    return null;
+                    return false;
                 }
-                if (!notModified) {
+                if (notModified == Level.FALSE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also not @NotModified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
-                    return false;
+                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                    return true;
                 }
 
                 // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
@@ -370,22 +283,24 @@ public class TypeAnalyser {
                 if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
+                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                     return false;
                 }
             }
         }
 
-        // RULE 3: INDEPENDENCE OF FIELDS VS PARAMETERS
+        // RULE 3: INDEPENDENCE OF METHODS
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
-            Boolean independent = methodInfo.isIndependent(typeContext);
-            if (independent == null) {
+            int independent = methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            if (independent == Level.DELAY) {
                 log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
-                return null; //not decided
+                return false; //not decided
             }
-            if (!independent) {
+            if (independent == Level.FALSE) {
                 log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                         typeInfo.fullyQualifiedName, methodInfo.name);
+                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                 return false;
             }
         }
@@ -393,48 +308,58 @@ public class TypeAnalyser {
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            Boolean returnTypeIsEffectivelyImmutable = methodInfo.isE2Immutable(typeContext);
-            if (returnTypeIsEffectivelyImmutable == null) {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+            int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            int returnTypeE2Immutable = Level.value(returnTypeImmutable, Level.E2IMMUTABLE);
+            if (returnTypeE2Immutable == Level.DELAY) {
                 log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
-                return null;
+                return false;
             }
-            if (!returnTypeIsEffectivelyImmutable) {
+            if (returnTypeE2Immutable == Level.FALSE) {
                 // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
-                Boolean independent = methodInfo.isIndependent(typeContext);
-                if (independent == null) {
+                int independent = methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                if (independent == Level.DELAY) {
                     log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
                             typeInfo.fullyQualifiedName, methodInfo.name);
-                    return null; //not decided
+                    return false; //not decided
                 }
-                if (!independent) {
+                if (independent == Level.FALSE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                             typeInfo.fullyQualifiedName, methodInfo.name);
-                    return false;
+                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                    return true;
                 }
             }
         }
+        log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, Level.E2IMMUTABLE));
         return true;
     }
 
-    private boolean detectNotNull(TypeInfo typeInfo) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.notNull.get())) return false;
+    // this one analyses NotNull at level 0, for the whole type
+    // TODO we should split this up for methods, fields, parameters, with a "where" variable
+
+    private boolean analyseNotNull(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int typeNotNull = typeAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if (typeNotNull != Level.DELAY) return false;
 
         // all fields should be @NN, all methods, and all parameters...
         boolean isNotNull = true;
         methodLoop:
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                Boolean notNull = methodInfo.isNotNull(typeContext);
-                if (notNull == null) return false;
-                if (notNull == Boolean.FALSE) {
+                int notNull = methodInfo.methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                if (notNull == Level.DELAY) return false;
+                if (notNull == Level.FALSE) {
                     isNotNull = false;
                     break;
                 }
             }
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                Boolean notNull = parameterInfo.isNotNull(typeContext);
-                if (notNull == null) return false;
-                if (notNull == Boolean.FALSE) {
+                int notNull = parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
+                if (notNull == Level.DELAY) return false;
+                if (notNull == Level.FALSE) {
                     isNotNull = false;
                     break methodLoop;
                 }
@@ -442,116 +367,124 @@ public class TypeAnalyser {
         }
         if (isNotNull) {
             for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-                Boolean notNull = fieldInfo.isNotNull(typeContext);
-                if (notNull == null) return false;
-                if (notNull == Boolean.FALSE) {
+                int notNull = fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+                if (notNull == Level.DELAY) return false;
+                if (notNull == Level.FALSE) {
                     isNotNull = false;
                     break;
                 }
             }
         }
-        typeInfo.typeAnalysis.annotations.put(typeContext.notNull.get(), isNotNull);
+        typeAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNull);
         log(NOT_NULL, "Marked type {} as " + (isNotNull ? "" : "NOT ") + " @NotNull", typeInfo.fullyQualifiedName);
         return true;
     }
 
-    private boolean detectExtensionClass(TypeInfo typeInfo) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.extensionClass.get())) return false;
+    private boolean analyseExtensionClass(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
+        if (extensionClass != Level.DELAY) return false;
 
-        Boolean isE2Immutable = typeInfo.isE2Immutable(typeContext);
-        if (isE2Immutable == null) {
-            log(DELAYED, "Don't know yet about @E2Immutable for @ExtensionClass on {}, delaying", typeInfo.fullyQualifiedName);
+        int e2Immutable = Level.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        if (e2Immutable == Level.DELAY) {
+            log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean isExtensionClass = isE2Immutable;
-        if (isE2Immutable) {
-            ParameterizedType commonTypeOfFirstParameter = null;
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-                if (methodInfo.isStatic && !methodInfo.isPrivate()) {
-                    List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
-                    ParameterizedType typeOfFirstParameter;
-                    if (parameters.isEmpty()) {
-                        typeOfFirstParameter = methodInfo.returnType();
-                    } else {
-                        typeOfFirstParameter = parameters.get(0).parameterizedType;
-                    }
-                    if (commonTypeOfFirstParameter == null) {
-                        commonTypeOfFirstParameter = typeOfFirstParameter;
-                    } else if (!ParameterizedType.equalsTypeParametersOnlyIndex(commonTypeOfFirstParameter,
-                            typeOfFirstParameter)) {
-                        log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName +
-                                " is not an @ExtensionClass, it has no common type for the first " +
-                                "parameter (or return type, if no parameters) of static methods, seeing " +
-                                commonTypeOfFirstParameter.detailedString() + " vs " + typeOfFirstParameter.detailedString());
-                        commonTypeOfFirstParameter = null;
-                        break;
-                    }
+        if (e2Immutable == Level.FALSE) {
+            log(UTILITY_CLASS, "Type {} is not an @ExtensionClass, not @E2Immutable", typeInfo.fullyQualifiedName);
+            typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.FALSE);
+            return true;
+        }
+
+        ParameterizedType commonTypeOfFirstParameter = null;
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            if (methodInfo.isStatic && !methodInfo.isPrivate()) {
+                List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
+                ParameterizedType typeOfFirstParameter;
+                if (parameters.isEmpty()) {
+                    typeOfFirstParameter = methodInfo.returnType();
+                } else {
+                    typeOfFirstParameter = parameters.get(0).parameterizedType;
+                }
+                if (commonTypeOfFirstParameter == null) {
+                    commonTypeOfFirstParameter = typeOfFirstParameter;
+                } else if (!ParameterizedType.equalsTypeParametersOnlyIndex(commonTypeOfFirstParameter,
+                        typeOfFirstParameter)) {
+                    log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName +
+                            " is not an @ExtensionClass, it has no common type for the first " +
+                            "parameter (or return type, if no parameters) of static methods, seeing " +
+                            commonTypeOfFirstParameter.detailedString() + " vs " + typeOfFirstParameter.detailedString());
+                    commonTypeOfFirstParameter = null;
+                    break;
                 }
             }
-            isExtensionClass = commonTypeOfFirstParameter != null;
-        } else {
-            log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName + " is not an @ExtensionClass as it is not @E2Immutable");
         }
-        typeInfo.typeAnalysis.annotations.put(typeContext.extensionClass.get(), isExtensionClass);
+        boolean isExtensionClass = commonTypeOfFirstParameter != null;
+        typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, isExtensionClass);
         log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName + " marked " + (isExtensionClass ? "" : "not ")
                 + "@ExtensionClass");
         return true;
     }
 
-    private boolean detectUtilityClass(TypeInfo typeInfo) {
-        if (typeInfo.typeAnalysis.annotations.isSet(typeContext.utilityClass.get())) return false;
-        Boolean isE2Immutable = typeInfo.isE2Immutable(typeContext);
-        if (isE2Immutable == null) {
+    private boolean analyseUtilityClass(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
+        if (utilityClass != Level.DELAY) return false;
+
+        int e2Immutable = Level.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        if (e2Immutable == Level.DELAY) {
             log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean isUtilityClass = isE2Immutable;
-        if (isUtilityClass) {
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-                if (!methodInfo.isStatic) {
-                    log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
-                            " is not a @UtilityClass, method {} is not static", methodInfo.name);
-                    isUtilityClass = false;
-                    break;
-                }
+        if (e2Immutable == Level.FALSE) {
+            log(UTILITY_CLASS, "Type {} is not a @UtilityClass, not @E2Immutable", typeInfo.fullyQualifiedName);
+            typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
+            return true;
+        }
+
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            if (!methodInfo.isStatic) {
+                log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
+                        " is not a @UtilityClass, method {} is not static", methodInfo.name);
+                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
+                return true;
             }
         }
-        if (isUtilityClass) {
-            // this is technically enough, but we'll verify the constructors (should be static)
-            for (MethodInfo constructor : typeInfo.typeInspection.get().constructors) {
-                if (!constructor.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
-                    log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
-                            " looks like a @UtilityClass, but its constructors are not all private");
-                    isUtilityClass = false;
-                    break;
-                }
+        // this is technically enough, but we'll verify the constructors (should be static)
+        for (MethodInfo constructor : typeInfo.typeInspection.get().constructors) {
+            if (!constructor.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
+                log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
+                        " looks like a @UtilityClass, but its constructors are not all private");
+                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
+                return true;
             }
         }
-        if (isUtilityClass && typeInfo.typeInspection.get().constructors.isEmpty()) {
+
+        if (typeInfo.typeInspection.get().constructors.isEmpty()) {
             log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
-            isUtilityClass = false;
+            typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
+            return true;
         }
-        if (isUtilityClass) {
-            // and there should be no means of generating an object
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-                if (!methodInfo.methodAnalysis.createObjectOfSelf.isSet()) {
-                    log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
-                    return false;
-                }
-                if (methodInfo.methodAnalysis.createObjectOfSelf.get()) {
-                    log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
-                            " looks like a @UtilityClass, but an object of the class is created in method "
-                            + methodInfo.fullyQualifiedName());
-                    isUtilityClass = false;
-                    break;
-                }
+
+        // and there should be no means of generating an object
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            if (!methodInfo.methodAnalysis.createObjectOfSelf.isSet()) {
+                log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
+                        typeInfo.fullyQualifiedName, methodInfo.name);
+                return false;
+            }
+            if (methodInfo.methodAnalysis.createObjectOfSelf.get()) {
+                log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
+                        " looks like a @UtilityClass, but an object of the class is created in method "
+                        + methodInfo.fullyQualifiedName());
+                typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
+                return true;
             }
         }
-        typeInfo.typeAnalysis.annotations.put(typeContext.utilityClass.get(), isUtilityClass);
-        log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName + " marked " + (isUtilityClass ? "" : "not ")
-                + "@UtilityClass");
+
+        typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.TRUE);
+        log(UTILITY_CLASS, "Type {} marked @UtilityClass", typeInfo.fullyQualifiedName);
         return true;
     }
 

@@ -174,18 +174,19 @@ public class MethodAnalyser {
             if (returnStatements.size() == 1) {
                 value = returnStatements.get(0).returnValue.get();
             } else {
-                Boolean isNotNull = methodInfo.isNotNull(typeContext);
-                if (isNotNull == null) {
+                int notNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                if (notNull == Level.DELAY) {
                     log(DELAYED, "Have multiple return values, going to insert an MethodValue, but waiting for @NotNull on {}",
                             methodInfo.distinguishingName());
                     return false;
                 }
-                value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of(), isNotNull);
+                value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of());
             }
             methodAnalysis.singleReturnValue.set(value);
             boolean isConstant = value instanceof Constant;
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
             methodAnalysis.annotations.put(constantAnnotation, isConstant);
+            methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
             log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
             return true;
         }

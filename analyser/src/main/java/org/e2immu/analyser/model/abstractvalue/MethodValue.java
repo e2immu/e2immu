@@ -51,8 +51,7 @@ public class MethodValue implements Value {
         return methodInfo.equals(that.methodInfo) &&
                 parameters.equals(that.parameters) &&
                 object.equals(that.object) &&
-                methodInfo.methodAnalysis.sideEffect.isSet() &&
-                methodInfo.methodAnalysis.sideEffect.get().atMost(SideEffect.NONE_CONTEXT);
+                methodInfo.sideEffect().atMost(SideEffect.NONE_CONTEXT);
     }
 
     @Override
@@ -90,62 +89,44 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        return methodInfo.methodAnalysis.getProperty(variableProperty);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod();
         if (recursiveCall) {
-            // recursive call, we'll just reply true, but exclude the result later for return analysis
-            return 1;
+            return variableProperty.best;
         }
         switch (variableProperty) {
             case NOT_NULL:
-                return localNotNull(evaluationContext);
             case IMMUTABLE:
-                return localImmutable(evaluationContext.getTypeContext());
             case CONTAINER:
+                int identity = methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+                if (identity == Level.DELAY) return Level.DELAY;
+                int firstParameter;
+                if (identity == Level.TRUE) {
+                    Value valueFirst = parameters.get(0);
+                    firstParameter = valueFirst.getProperty(evaluationContext, VariableProperty.NOT_NULL);
+                } else {
+                    firstParameter = Level.FALSE;
+                }
+                int fluent = methodInfo.methodAnalysis.getProperty(VariableProperty.FLUENT);
+                if (fluent == Level.DELAY) return Level.DELAY;
+                int valueOfType;
+                if (fluent == Level.TRUE) {
+                    valueOfType = methodInfo.typeInfo.typeAnalysis.getProperty(variableProperty);
+                } else {
+                    valueOfType = Level.FALSE;
+                }
+                int valueOfMethod = methodInfo.methodAnalysis.getProperty(variableProperty);
+                if (valueOfMethod == Level.DELAY) return Level.DELAY;
+                return Level.best(valueOfType, Level.best(firstParameter, valueOfMethod));
+
             default:
         }
-        throw new UnsupportedOperationException();
-    }
-
-    private Integer localNotNull(EvaluationContext evaluationContext) {
-        TypeContext typeContext = evaluationContext.getTypeContext();
-        Integer notNull = methodInfo.getNotNull(typeContext);
-        if (notNull == null) return null;
-        Boolean isIdentity = methodInfo.isIdentity(typeContext);
-        if (isIdentity == null) return null;
-        Integer identityNotNull;
-        if (isIdentity == Boolean.TRUE) {
-            Value valueFirst = parameters.get(0);
-            identityNotNull = valueFirst.getProperty(evaluationContext, VariableProperty.NOT_NULL);
-            if (identityNotNull == null) return null;
-        } else {
-            identityNotNull = 0;
-        }
-        return Math.max(notNull, identityNotNull);
-    }
-
-    private Integer localImmutable(TypeContext typeContext) {
-        Integer methodImmutable = methodInfo.getImmutable(typeContext);
-        if (methodImmutable == null) return null;
-        Boolean isIdentity = methodInfo.isIdentity(typeContext);
-        if (isIdentity == null) return null;
-        Integer identityImmutable;
-        if (isIdentity) {
-            identityImmutable = methodInfo.methodInspection.get().parameters.get(0).getImmutable(typeContext);
-            if (identityImmutable == null) return null;
-        } else {
-            identityImmutable = 0;
-        }
-        Boolean isFluent = methodInfo.isFluent(typeContext);
-        if (isFluent == null) return null;
-        Integer typeImmutable;
-        if (isFluent) {
-            typeImmutable = methodInfo.typeInfo.getImmutable(typeContext);
-            if (typeImmutable == null) return null;
-        } else {
-            typeImmutable = 0;
-        }
-        return Math.max(Math.max(methodImmutable, identityImmutable), typeImmutable);
+        return methodInfo.methodAnalysis.getProperty(variableProperty);
     }
 
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
@@ -174,13 +155,14 @@ public class MethodValue implements Value {
         if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || returnTypeDifferent) && returnType.isE2Immutable(typeContext) == Boolean.TRUE) {
+        if ((bestCase || returnTypeDifferent) && (returnType.bestTypeInfo() == null ||
+                Level.value(returnType.bestTypeInfo().typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE)) {
             return INDEPENDENT;
         }
 
         // RULE 2
         boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || methodInfoDifferentType) && methodInfo.isIndependent(typeContext) == Boolean.TRUE) {
+        if ((bestCase || methodInfoDifferentType) && methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
             return INDEPENDENT;
         }
 

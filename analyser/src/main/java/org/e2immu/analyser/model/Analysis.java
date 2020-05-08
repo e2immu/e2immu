@@ -66,10 +66,6 @@ public abstract class Analysis {
         return null;
     }
 
-    public boolean propertyTrue(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY) == Level.TRUE;
-    }
-
     public int getProperty(VariableProperty variableProperty) {
         return properties.getOtherwise(variableProperty, Level.DELAY);
     }

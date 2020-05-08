@@ -22,12 +22,9 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.TypeAnalyser;
-import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -42,14 +39,12 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.text.Element;
 import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.TypeAnalyser.TERNARY_AND;
 import static org.e2immu.analyser.analyser.TypeAnalyser.TERNARY_OR;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -65,12 +60,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     //@Immutable(after="this.inspect()")
     public final SetOnceSupply<TypeInspection> typeInspection = new SetOnceSupply<>();
-    public final TypeAnalysis typeAnalysis = new TypeAnalysis();
+    public final TypeAnalysis typeAnalysis;
 
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
         simpleName = enclosingType.simpleName + "$" + number;
         fullyQualifiedName = enclosingType.fullyQualifiedName + "$" + number;
+        typeAnalysis = new TypeAnalysis(false);
     }
 
     @Override
@@ -83,6 +79,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             throw new UnsupportedOperationException("Expect a non-empty package name for " + simpleName);
         this.fullyQualifiedName = packageName + "." + simpleName;
         this.simpleName = Objects.requireNonNull(simpleName);
+        typeAnalysis = new TypeAnalysis(isPrimitiveObjectString());
     }
 
     public TypeInfo(@NotNull String fullyQualifiedName) {
@@ -93,6 +90,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             simpleName = fullyQualifiedName;
         }
+        typeAnalysis = new TypeAnalysis(isPrimitiveObjectString());
+    }
+
+    private boolean isPrimitiveObjectString() {
+        return isPrimitive() || "java.lang.String".equals(fullyQualifiedName) || "java.lang.Object".equals(fullyQualifiedName);
     }
 
     @Override
@@ -776,51 +778,34 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()), annotatedWith(typeContext.e2Container.get()));
     }
 
-    public Boolean isContainer(TypeContext typeContext) {
-        return TERNARY_OR.apply(TERNARY_OR.apply(
-                annotatedWith(typeContext.container.get()),
-                annotatedWith(typeContext.e1Container.get())),
-                annotatedWith(typeContext.e2Container.get()));
-    }
-
-    private Set<ElementType> isNotNull(AnnotationExpression isNotNull) {
-        AnnotationExpression found;
-        if (hasBeenDefined()) {
-            Optional<Map.Entry<AnnotationExpression, Boolean>> o = typeAnalysis.annotations.stream()
-                    .filter(e -> e.getKey().typeInfo.equals(isNotNull.typeInfo)).findFirst();
-            if (o.isEmpty()) return null; // don't know yet
-            if (!o.get().getValue()) return Set.of(); // it's not isNotNull
-            found = o.get().getKey();
-        } else {
-            Optional<AnnotationExpression> opt = typeInspection.get().annotations.stream()
-                    .filter(e -> e.typeInfo.equals(isNotNull.typeInfo)).findFirst();
-            if (opt.isEmpty()) return Set.of();
-            found = opt.get();
-        }
+    private Set<ElementType> where(AnnotationExpression isNotNull) {
+        Optional<AnnotationExpression> opt = typeInspection.get().annotations.stream()
+                .filter(e -> e.typeInfo.equals(isNotNull.typeInfo)).findFirst();
+        if (opt.isEmpty()) return Set.of();
+        AnnotationExpression found = opt.get();
         ElementType[] elements = found.extract("where", NOT_NULL_WHERE);
         return Arrays.stream(elements).collect(Collectors.toSet());
     }
 
-    private Integer highestIsNotNull(TypeContext typeContext, ElementType elementType) {
-        Set<ElementType> set2 = isNotNull(typeContext.notNull2.get());
-        if (set2 != null && set2.contains(elementType)) return 3;
-        Set<ElementType> set1 = isNotNull(typeContext.notNull1.get());
-        if (set1 != null && set1.contains(elementType)) return 2;
-        Set<ElementType> set = isNotNull(typeContext.notNull.get());
-        if (set != null && set.contains(elementType)) return 1;
-        if (set == null) return null;
-        return 0;
+    private int highestIsNotNull(TypeContext typeContext, ElementType elementType) {
+        Set<ElementType> set2 = where(typeContext.notNull2.get());
+        if (set2 != null && set2.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL_2);
+        Set<ElementType> set1 = where(typeContext.notNull1.get());
+        if (set1 != null && set1.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL_1);
+        Set<ElementType> set = where(typeContext.notNull.get());
+        if (set != null && set.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL);
+        return Level.FALSE;
     }
 
-    public Integer isNotNullForParameters(TypeContext typeContext) {
+    public int isNotNullForParameters(TypeContext typeContext) {
         return highestIsNotNull(typeContext, ElementType.PARAMETER);
     }
 
-    public Integer isNotNullForFields(TypeContext typeContext) {
+    public int isNotNullForFields(TypeContext typeContext) {
         return highestIsNotNull(typeContext, ElementType.FIELD);
     }
 
-    public Integer isNotNullForMethods(TypeContext typeContext) {
+    public int isNotNullForMethods(TypeContext typeContext) {
         return highestIsNotNull(typeContext, ElementType.METHOD);
     }
 
