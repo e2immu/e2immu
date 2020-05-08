@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -54,4 +55,7 @@ public interface EvaluationContext {
     void setValue(@NotNull Variable variable, @NotNull Value value);
 
     boolean equals(String name, String name1);
+
+    // we're adding a variable to the evaluation context
+    VariableValue newVariableValue(Variable variable);
 }

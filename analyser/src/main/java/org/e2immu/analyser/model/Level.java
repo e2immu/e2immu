@@ -19,7 +19,9 @@ public class Level {
 
     public static final int E1IMMUTABLE = 0;
     public static final int E2IMMUTABLE = 1;
+    public static final int NOT_NULL = 0;
     public static final int NOT_NULL_1 = 1;
+    public static final int NOT_NULL_2 = 2;
 
     private Level() {
         throw new UnsupportedOperationException();
@@ -28,39 +30,31 @@ public class Level {
     // levels are by default 0 (also @E1Immutable), 1 for @E2Immutable, @NotNull1, 2 for @NotNull2, @Immutable
 
     // these are the allowed values
-    public static final int DELAY = 0;
-    public static final int UNDEFINED = 0;
+    public static final int DELAY = -1;
+    public static final int UNDEFINED = -1;
 
-    public static final int FALSE = 1;
-    public static final int TRUE = 2;
+    public static final int FALSE = 0;
+    public static final int TRUE = 1;
 
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator AND = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.min(i, j);
     public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
 
-    public static int tryNextLevel(int i) {
-        return 3 * (1 + i / 3); // 0,1,2 to 3; 3,4,5 to 6, etc.
-    }
-
-    public static boolean decided(int i) {
-        return (i % 3) != 0;
-    }
-
-    public static boolean anyDelay(int i) {
-        return (i % 3) == 0;
-    }
-
+    // level == 1, then 2 = false, 3 = true, 1 = delay at this level/true at the level lower
     public static int compose(int value, int level) {
-        assert value >= 0 && value <= 2;
+        assert value >= DELAY && value <= TRUE;
         assert level >= 0;
-        return value + level * 3;
+        return value + level * 2;
     }
 
-    public static int at(int i, int level) {
-        int j = i / 3;
+    public static int value(int i, int level) {
+        assert i >= DELAY;
+        assert level >= 0;
+        if (i <= TRUE) return i;
+        int j = i / 2;
         if (j < level) return DELAY;
         if (j > level) return TRUE;
-        return i % 3;
+        return i % 2;
     }
 
     /**
@@ -70,14 +64,15 @@ public class Level {
      * @return true if the level reaches the threshold
      */
     public static boolean have(int i, int level) {
-        return i >= level * 3 + 2;
+        assert i >= DELAY;
+        assert level >= 0;
+        return i >= level * 2 + 1;
     }
 
     public static boolean acceptIncrement(int from, int to) {
         if (from >= to) return false; // we must go up
-        if (to - from >= 2) return true; // any increase with 2 is fine
-        // we now have an increase of 1; this is allowed, from 0 to 1, from 2 to 3, but not from 1 to 2
-        return from % 3 != 1;
+        if (from == DELAY) return true;
+        return from / 2 < to / 2; // we must go up a level
     }
 
     public static boolean better(int i, int than) {

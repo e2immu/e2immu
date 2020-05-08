@@ -37,10 +37,10 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull"), // numeric
+    NOT_NULL("@NotNull", true), // numeric
     FINAL("@Final"), // boolean
     CONTAINER("@Container"), // boolean
-    IMMUTABLE("@Immutable"), // numeric
+    IMMUTABLE("@Immutable", true), // numeric
     NOT_MODIFIED("@NotModified"), // ternary
     CONSTANT("@Constant"), //boolean
     EXTENSION_CLASS("@ExtensionClass"),
@@ -56,13 +56,20 @@ public enum VariableProperty {
     UTILITY_CLASS("@UtilityClass");
 
     public final String name;
+    public final boolean canImprove;
 
-    VariableProperty(String name) {
+    private VariableProperty(String name) {
+        this(name, false);
+    }
+
+    private VariableProperty(String name, boolean canImprove) {
         this.name = name;
+        this.canImprove = canImprove;
     }
 
     @Override
     public String toString() {
         return name;
     }
+
 }

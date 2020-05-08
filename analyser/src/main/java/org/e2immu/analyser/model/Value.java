@@ -46,6 +46,10 @@ public interface Value extends Comparable<Value> {
         return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final
     }
 
+    default int isNotNull0OutsideContext() {
+        return Level.value(getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL);
+    }
+
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
         return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final

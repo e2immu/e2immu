@@ -75,7 +75,11 @@ public abstract class Analysis {
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
-        properties.put(variableProperty, i);
+        if (variableProperty.canImprove) {
+            properties.improve(variableProperty, i);
+        } else {
+            properties.put(variableProperty, i);
+        }
     }
 
     public void setProperty(VariableProperty variableProperty, boolean b) {

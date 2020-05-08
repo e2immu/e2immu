@@ -67,6 +67,7 @@ public class Logger {
         ASSIGNMENT,
         SIDE_EFFECT,
         CNF,
+        DYNAMIC,
 
         INSPECT,
         ANALYSER,    // main analyser info

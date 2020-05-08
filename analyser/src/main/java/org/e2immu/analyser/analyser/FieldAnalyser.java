@@ -31,7 +31,9 @@ import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.model.value.UnknownValue.UNKNOWN_VALUE;
@@ -41,7 +43,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class FieldAnalyser {
     private final TypeContext typeContext;
-    private static final Set<AnnotationExpression> INITIAL = new HashSet<>();
+    private static final VariableProperty[] DYNAMIC_PROPERTIES = {VariableProperty.IMMUTABLE, VariableProperty.CONTAINER};
 
     public FieldAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -82,215 +84,237 @@ public class FieldAnalyser {
         }
 
         // STEP 2: EFFECTIVELY FINAL: @E1Immutable
-
-        if (Level.UNDEFINED == fieldAnalysis.getProperty(VariableProperty.FINAL)) {
-            boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
-            if (isExplicitlyFinal) {
-                fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE);
-                log(FINAL, "Mark field {} as effectively final, because explicitly so, value {}",
-                        fieldInfo.fullyQualifiedName(), value);
-                changes = true;
-            } else {
-                Boolean isModifiedOutsideConstructors = typeInspection.methods.stream()
-                        .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
-                        .map(m -> m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo))
-                        .reduce(false, TypeAnalyser.TERNARY_OR);
-
-                if (isModifiedOutsideConstructors == null) {
-                    log(DELAYED, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
-                } else {
-                    boolean isFinal;
-                    if (fieldCanBeAccessedFromOutsideThisType) {
-                        // this means other types can write to the field... not final by definition
-                        isFinal = false;
-                    } else {
-                        isFinal = !isModifiedOutsideConstructors;
-                    }
-                    fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
-                    if (isFinal && fieldInfo.type.isRecordType()) {
-                        typeContext.addMessage(Message.Severity.ERROR,
-                                "Effectively final field " + fieldInfo.fullyQualifiedName() +
-                                        " is not allowed to be of a record type " + fieldInfo.type.detailedString());
-                    }
-                    log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
-                            "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
-                    changes = true;
-                }
-            }
-        }
+        if (analyseFinal(fieldInfo, fieldAnalysis, value, fieldCanBeAccessedFromOutsideThisType, typeInspection))
+            changes = true;
 
         // STEP 3: EFFECTIVELY FINAL VALUE, and @Constant
-
-        if (fieldAnalysis.propertyTrue(VariableProperty.FINAL) && !fieldAnalysis.effectivelyFinalValue.isSet()) {
-            // find the constructors where the value is set; if they're all set to the same value,
-            // we can set the initial value; also take into account the value of the initialiser, if it is there
-            Value consistentValue = value;
-            if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
-                for (MethodInfo method : typeInspection.methodsAndConstructors()) {
-                    if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
-                        if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
-                            Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
-                            if (consistentValue == NO_VALUE) consistentValue = assignment;
-                            else if (!consistentValue.equals(assignment)) {
-                                log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
-                                        fieldInfo.fullyQualifiedName(), consistentValue, assignment);
-                                fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
-                                fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
-                                return true;
-                            }
-                        } else {
-                            log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
-                            consistentValue = NO_VALUE;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (consistentValue != NO_VALUE) {
-                Boolean isNotNull = consistentValue.isNotNull(typeContext);
-                if (isNotNull != null) {
-                    Value valueToSet;
-                    if (consistentValue instanceof Constant) {
-                        valueToSet = consistentValue;
-                        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-                        annotations.put(constantAnnotation, true);
-                        log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
-                    } else {
-                        valueToSet = new FinalFieldValue(new FieldReference(fieldInfo, thisVariable),
-                                consistentValue.dynamicTypeAnnotations(typeContext), null, isNotNull);
-                        fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
-                        log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-
-                    }
-                    fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
-                    log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
-                            fieldInfo.fullyQualifiedName(), consistentValue);
-                    changes = true;
-                } // else delay
-            }
-        }
+        if (analyseFinalValue(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldReference, typeInspection, fieldProperties))
+            changes = true;
 
         // STEP 4: @NotNull
         if (analyseNotNull(fieldInfo, fieldAnalysis, value, haveInitialiser, typeInspection, fieldCanBeAccessedFromOutsideThisType))
             changes = true;
 
         // STEP 5: Dynamic type annotations
-
         // dynamic type annotations come before @NotModified, because any E2Immutable type cannot be modified anyway.
-        if (!fieldInfo.fieldAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
-
-            Set<AnnotationExpression> dynamicTypeAnnotations;
-            if (fieldCanBeAccessedFromOutsideThisType) {
-                dynamicTypeAnnotations = Set.of(); // we don't control
-            } else {
-                boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                        m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                                (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-                if (allAssignmentValuesDefined) {
-                    Set<AnnotationExpression> intersection = typeInspection.constructorAndMethodStream()
-                            .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                            .map(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).dynamicTypeAnnotations(typeContext))
-                            .reduce(INITIAL, (prev, curr) -> {
-                                if (prev == null || curr == null) return null;
-                                if (prev == INITIAL) return new HashSet<>(curr);
-                                prev.retainAll(curr);
-                                return prev;
-                            });
-                    if (intersection == null) {
-                        dynamicTypeAnnotations = null; // delay
-                    } else {
-                        if (!haveInitialiser) {
-                            dynamicTypeAnnotations = intersection;
-                        } else {
-                            if (value == NO_VALUE) {
-                                dynamicTypeAnnotations = null; // delay
-                            } else {
-                                Set<AnnotationExpression> dynamicsOfInitialiser = value.dynamicTypeAnnotations(typeContext);
-                                if (dynamicsOfInitialiser == null) {
-                                    dynamicTypeAnnotations = null; // delay
-                                } else {
-                                    // this is the real one!
-                                    intersection.retainAll(dynamicsOfInitialiser);
-                                    dynamicTypeAnnotations = intersection;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    dynamicTypeAnnotations = null; // delay
-                }
-            }
-            if (dynamicTypeAnnotations == null) {
-                log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
-            } else {
-                boolean wroteOne = false;
-                for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
-                        typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
-                    boolean dynamic = dynamicTypeAnnotations.contains(ae);
-                    boolean positive = !wroteOne && dynamic;
-                    if (!fieldInfo.fieldAnalysis.annotations.isSet(ae)) {
-                        log(E2IMMUTABLE, "Mark field " + fieldInfo.fullyQualifiedName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
-                        fieldInfo.fieldAnalysis.annotations.put(ae, positive);
-                        if (!wroteOne) wroteOne = true;
-                    }
-                }
-                fieldInfo.fieldAnalysis.dynamicTypeAnnotationsAdded.set(true);
-            }
+        for (VariableProperty property : DYNAMIC_PROPERTIES) {
+            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeAccessedFromOutsideThisType, typeInspection))
+                changes = true;
         }
 
         // STEP 6: @NotModified
+        if (analyseNotModified(fieldInfo, fieldAnalysis, fieldReference, fieldCanBeAccessedFromOutsideThisType, typeInspection))
+            changes = true;
 
-        if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.UNDEFINED) {
-            int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-            if (Level.have(immutable, Level.E2IMMUTABLE) == Level.DELAY) {
-                log(DELAYED, "Delaying @NotModified, no idea about dynamic or static type");
-            } else if (isE2Immutable) {
-                annotations.put(typeContext.notModified.get(), false);
-                log(NOT_MODIFIED, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
-                changes = true;
-            } else {
-                boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                        m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
-                                (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
-                if (allContentModificationsDefined) {
-                    boolean notModified =
-                            !fieldCanBeAccessedFromOutsideThisType &&
-                                    typeInspection.constructorAndMethodStream()
-                                            .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
-                                            .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
-                    annotations.put(typeContext.notModified.get(), notModified);
-                    log(NOT_MODIFIED, "Mark field {} as " + (notModified ? "" : "not ") +
-                            "@NotModified", fieldInfo.fullyQualifiedName());
-                    changes = true;
-                } else {
-                    log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
-                            fieldInfo.fullyQualifiedName());
+        // STEP 7: @Linked, variablesLinkedToMe
+        if (analyseLinked(fieldInfo, fieldAnalysis, fieldReference, typeInspection)) changes = true;
+
+        return changes;
+    }
+
+    private boolean analyseDynamicTypeAnnotation(VariableProperty property,
+                                                 FieldInfo fieldInfo,
+                                                 FieldAnalysis fieldAnalysis,
+                                                 Value value,
+                                                 boolean haveInitialiser,
+                                                 boolean fieldCanBeAccessedFromOutsideThisType,
+                                                 TypeInspection typeInspection) {
+        if (!property.canImprove && fieldAnalysis.getProperty(property) != Level.DELAY) return false;
+        if (fieldCanBeAccessedFromOutsideThisType) {
+            log(DYNAMIC, "Field {} cannot have dynamic type property {}, it can be written from outside this type",
+                    fieldInfo.fullyQualifiedName(), property);
+            fieldAnalysis.setProperty(property, Level.FALSE);
+            return true;
+        }
+
+        boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                        (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+        if (!allAssignmentValuesDefined) {
+            log(DELAYED, "Delaying dynamic type property {} on field {}, not all assignment values defined",
+                    property, fieldInfo.fullyQualifiedName());
+            return false;
+        }
+
+        IntStream assignments = typeInspection.constructorAndMethodStream()
+                .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).getPropertyOutsideContext(property));
+        IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
+        IntStream combined = IntStream.concat(assignments, initialiser);
+        OptionalInt least = combined.min();
+
+        int conclusion = least.orElse(Level.FALSE);
+        if (conclusion == Level.DELAY) {
+            log(DELAYED, "Delaying dynamic type property {} on field {}, initialiser delayed",
+                    property, fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        log(DYNAMIC, "Set dynamic type property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(),
+                conclusion);
+        fieldAnalysis.setProperty(property, conclusion);
+        return true;
+    }
+
+    private boolean analyseFinalValue(FieldInfo fieldInfo,
+                                      FieldAnalysis fieldAnalysis,
+                                      Value value,
+                                      boolean haveInitialiser,
+                                      FieldReference fieldReference,
+                                      TypeInspection typeInspection,
+                                      EvaluationContext evaluationContext) {
+        if (!fieldAnalysis.propertyTrue(VariableProperty.FINAL) || fieldAnalysis.effectivelyFinalValue.isSet())
+            return false;
+        // find the constructors where the value is set; if they're all set to the same value,
+        // we can set the initial value; also take into account the value of the initialiser, if it is there
+        Value consistentValue = value;
+        if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
+            for (MethodInfo method : typeInspection.methodsAndConstructors()) {
+                if (method.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
+                    if (method.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
+                        Value assignment = method.methodAnalysis.fieldAssignmentValues.get(fieldInfo);
+                        if (consistentValue == NO_VALUE) consistentValue = assignment;
+                        else if (!consistentValue.equals(assignment)) {
+                            log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
+                                    fieldInfo.fullyQualifiedName(), consistentValue, assignment);
+                            fieldInfo.fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
+                            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
+                            return true;
+                        }
+                    } else {
+                        log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
+                        consistentValue = NO_VALUE;
+                        break;
+                    }
                 }
             }
         }
+        if (consistentValue == NO_VALUE) return false; // delay
 
-        // STEP 7: @Linked, variablesLinkedToMe
+        int isNotNull = consistentValue.isNotNull0OutsideContext();
+        if (isNotNull == Level.DELAY) return false; // delay
 
-        if (!fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
-            boolean allDefined = typeInspection.constructorAndMethodStream()
-                    .allMatch(m -> m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                            (!m.methodAnalysis.fieldAssignments.get(fieldInfo) ||
-                                    m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference)));
-            if (allDefined) {
-                Set<Variable> links = new HashSet<>();
-                typeInspection.constructorAndMethodStream().forEach(m -> {
-                    if (m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference))
-                        links.addAll(m.methodAnalysis.fieldsLinkedToFieldsAndVariables.get(fieldReference));
-                });
-                fieldInfo.fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
-                log(LINKED_VARIABLES, "Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
+        Value valueToSet;
+        boolean isConstant = consistentValue instanceof Constant;
+        fieldAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
 
-                AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(typeContext, links);
-                annotations.put(linkAnnotation, !links.isEmpty());
-                changes = true;
-            }
+        if (isConstant) {
+            valueToSet = consistentValue;
+            // directly adding the annotation; it will not be used for inspection
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+            fieldAnalysis.annotations.put(constantAnnotation, true);
+            log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
+        } else {
+            valueToSet = evaluationContext.newVariableValue(fieldReference);
+            log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.annotations.put(typeContext.constant.get(), false);
         }
-        return changes;
+        fieldInfo.fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+        log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
+                fieldInfo.fullyQualifiedName(), consistentValue);
+        return true;
+    }
+
+    private boolean analyseLinked(FieldInfo fieldInfo,
+                                  FieldAnalysis fieldAnalysis,
+                                  FieldReference fieldReference,
+                                  TypeInspection typeInspection) {
+        if (fieldAnalysis.variablesLinkedToMe.isSet()) return false;
+
+        boolean allDefined = typeInspection.constructorAndMethodStream()
+                .allMatch(m -> m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                        (!m.methodAnalysis.fieldAssignments.get(fieldInfo) ||
+                                m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference)));
+        if (!allDefined) return false;
+
+        Set<Variable> links = new HashSet<>();
+        typeInspection.constructorAndMethodStream().forEach(m -> {
+            if (m.methodAnalysis.fieldsLinkedToFieldsAndVariables.isSet(fieldReference))
+                links.addAll(m.methodAnalysis.fieldsLinkedToFieldsAndVariables.get(fieldReference));
+        });
+        fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
+        log(LINKED_VARIABLES, "Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
+
+        // explicitly adding the annotation here; it will not be inspected.
+        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(typeContext, links);
+        fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
+        return true;
+    }
+
+    private boolean analyseFinal(FieldInfo fieldInfo,
+                                 FieldAnalysis fieldAnalysis,
+                                 Value value,
+                                 boolean fieldCanBeAccessedFromOutsideThisType,
+                                 TypeInspection typeInspection) {
+        if (Level.UNDEFINED != fieldAnalysis.getProperty(VariableProperty.FINAL)) return false;
+        boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
+        if (isExplicitlyFinal) {
+            fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE);
+            log(FINAL, "Mark field {} as effectively final, because explicitly so, value {}",
+                    fieldInfo.fullyQualifiedName(), value);
+            return true;
+        }
+        Boolean isModifiedOutsideConstructors = typeInspection.methods.stream()
+                .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
+                .map(m -> m.methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo))
+                .reduce(false, TypeAnalyser.TERNARY_OR);
+
+        if (isModifiedOutsideConstructors == null) {
+            log(DELAYED, "Cannot yet conclude if {} is effectively final", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        boolean isFinal;
+        if (fieldCanBeAccessedFromOutsideThisType) {
+            // this means other types can write to the field... not final by definition
+            isFinal = false;
+        } else {
+            isFinal = !isModifiedOutsideConstructors;
+        }
+        fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
+        if (isFinal && fieldInfo.type.isRecordType()) {
+            typeContext.addMessage(Message.Severity.ERROR,
+                    "Effectively final field " + fieldInfo.fullyQualifiedName() +
+                            " is not allowed to be of a record type " + fieldInfo.type.detailedString());
+        }
+        log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
+                "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
+        return true;
+    }
+
+    private boolean analyseNotModified(FieldInfo fieldInfo,
+                                       FieldAnalysis fieldAnalysis,
+                                       FieldReference fieldReference,
+                                       boolean fieldCanBeAccessedFromOutsideThisType,
+                                       TypeInspection typeInspection) {
+        if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.UNDEFINED) return false;
+        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
+        if (e2immutable == Level.DELAY) {
+            log(DELAYED, "Delaying @NotModified, no idea about @E2Immutable");
+            return false;
+        }
+        if (e2immutable == Level.TRUE) {
+            fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED, Level.FALSE);
+            log(NOT_MODIFIED, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
+            return true;
+        }
+        boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                m.methodAnalysis.fieldRead.isSet(fieldInfo) &&
+                        (!m.methodAnalysis.fieldRead.get(fieldInfo) || m.methodAnalysis.contentModifications.isSet(fieldReference)));
+        if (allContentModificationsDefined) {
+            boolean notModified =
+                    !fieldCanBeAccessedFromOutsideThisType &&
+                            typeInspection.constructorAndMethodStream()
+                                    .filter(m -> m.methodAnalysis.fieldRead.get(fieldInfo))
+                                    .noneMatch(m -> m.methodAnalysis.contentModifications.get(fieldReference));
+            fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED, notModified);
+            log(NOT_MODIFIED, "Mark field {} as " + (notModified ? "" : "not ") +
+                    "@NotModified", fieldInfo.fullyQualifiedName());
+            return true;
+        }
+        log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
+                fieldInfo.fullyQualifiedName());
+        return false;
+
     }
 
     private boolean analyseNotNull(FieldInfo fieldInfo,
@@ -313,7 +337,7 @@ public class FieldAnalyser {
                             + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
                     finalCriteria = Level.FALSE;
                 } else {
-                    finalCriteria = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                    finalCriteria = value.isNotNull0OutsideContext();
                 }
             } else {
                 finalCriteria = Level.TRUE;
@@ -330,7 +354,7 @@ public class FieldAnalyser {
                 if (allAssignmentValuesDefined) {
                     int allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
                             .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                            .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).getPropertyOutsideContext(VariableProperty.NOT_NULL))
+                            .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull0OutsideContext())
                             .reduce(0, Level.AND);
                     if (allAssignmentValuesNotNull == Level.DELAY) {
                         isNotNullValue = Level.DELAY; // delay
@@ -341,7 +365,7 @@ public class FieldAnalyser {
                             if (value == NO_VALUE) {
                                 isNotNullValue = Level.DELAY; // delay
                             } else {
-                                int initialiserIsNotNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                                int initialiserIsNotNull = value.isNotNull0OutsideContext();
                                 if (initialiserIsNotNull == Level.DELAY) {
                                     isNotNullValue = Level.DELAY; // delay
                                 } else {
