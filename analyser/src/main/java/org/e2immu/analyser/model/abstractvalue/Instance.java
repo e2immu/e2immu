@@ -124,12 +124,11 @@ public class Instance implements Value {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
-        TypeContext typeContext = evaluationContext.getTypeContext();
         if (VariableProperty.CONTAINER == variableProperty) {
-            return constructor.getContainer(typeContext);
+            return constructor.methodAnalysis.getProperty(VariableProperty.CONTAINER);
         }
         if (VariableProperty.IMMUTABLE == variableProperty) {
-            return constructor.getImmutable(typeContext);
+            return constructor.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
         }
         // @NotModified should not be asked here
         throw new UnsupportedOperationException();

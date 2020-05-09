@@ -623,6 +623,10 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ANNOTATION;
     }
 
+    public boolean isNotModifiedByDefinition(TypeContext typeContext) {
+        return isPrimitive() || isEnum() || isAnnotation() || isFunctionalInterface(typeContext) || isUnboundParameterType();
+    }
+
     public TypeInfo bestTypeInfo() {
         if (typeInfo != null) return typeInfo;
         if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {

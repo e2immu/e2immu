@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -282,5 +283,16 @@ public class AnnotationExpression {
         return new AnnotationExpressionBuilder(typeInfo)
                 .build();
     }
+/*
+    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
+        int container = getProperty(evaluationContext, VariableProperty.CONTAINER);
+        int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+        boolean noContainer = container == Level.UNDEFINED;
+        boolean noImmutable = immutable == Level.UNDEFINED;
 
+        if (noContainer && noImmutable) return Set.of();
+        if (noContainer) return Set.of(AnnotationExpression.immutable(evaluationContext.getTypeContext(), immutable));
+        return Set.of(AnnotationExpression.container(evaluationContext.getTypeContext(), noImmutable ? 0 : immutable));
+    }
+*/
 }

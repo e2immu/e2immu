@@ -45,7 +45,7 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE;
                 break;
             case NOT_MODIFIED:
-                if (isNotModifiedByDefinition()) return Level.TRUE;
+                if (parameterizedType.isNotModifiedByDefinition(typeContext)) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && (Level.value(bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE) == Level.TRUE ||
@@ -56,13 +56,4 @@ public class ParameterAnalysis extends Analysis {
         }
         return super.getProperty(variableProperty);
     }
-
-    public boolean isNotModifiedByDefinition() {
-        if (parameterizedType.isPrimitive()) return true;
-        if (parameterizedType.isEnum()) return true;
-        if (parameterizedType.isAnnotation()) return true;
-        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
-        return parameterizedType.isUnboundParameterType();
-    }
-
 }

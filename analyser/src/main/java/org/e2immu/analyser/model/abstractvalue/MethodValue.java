@@ -147,8 +147,6 @@ public class MethodValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        TypeContext typeContext = evaluationContext.getTypeContext();
-
         // RULE 1
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT; // no assignment
@@ -172,8 +170,8 @@ public class MethodValue implements Value {
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
         // RULE 3
-        if ((bestCase || methodInfoDifferentType) &&
-                methodInfo.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE) // RULE 3
+        int typeE2Immutable = Level.value(methodInfo.typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        if ((bestCase || methodInfoDifferentType) && typeE2Immutable == Level.TRUE) // RULE 3
             return result;
 
         // default case, add b

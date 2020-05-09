@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -81,7 +80,7 @@ public class LambdaExpression implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         EvaluationContext childContext = evaluationContext.child(null, null, true);
-        parameters.forEach(pi -> childContext.create(pi));
+        parameters.forEach(pi -> childContext.createLocalVariableOrParameter(pi));
         Value v = expression.evaluate(childContext, visitor);
         visitor.visit(this, evaluationContext, v);
         return v;

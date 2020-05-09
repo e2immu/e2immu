@@ -75,6 +75,11 @@ public class Level {
         return (i - 1) / 2;
     }
 
+    public static int nextLevelTrue(int i, int maxLevel) {
+        int current = level(i);
+        return compose(Level.TRUE, Math.min(current + 1, maxLevel));
+    }
+
     public static boolean acceptIncrement(int from, int to) {
         if (from >= to) return false; // we must go up
         if (from == DELAY) return true;

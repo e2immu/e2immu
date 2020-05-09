@@ -22,9 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -91,7 +88,7 @@ public class LambdaBlock implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         if (block != Block.EMPTY_BLOCK) {
             EvaluationContext child = evaluationContext.child(null, null, true);
-            parameters.forEach(pi -> child.create(pi));
+            parameters.forEach(pi -> child.createLocalVariableOrParameter(pi));
 
             boolean changes = false;
             if (!numberedStatements.isSet()) {
@@ -100,7 +97,7 @@ public class LambdaBlock implements Expression {
                 recursivelyCreateNumberedStatements(block.statements,
                         indices,
                         numberedStatements,
-                        new SideEffectContext(child.getTypeContext(), child.getCurrentMethod()));
+                        new SideEffectContext(child.getCurrentMethod()));
                 this.numberedStatements.set(numberedStatements);
                 changes = true;
             }

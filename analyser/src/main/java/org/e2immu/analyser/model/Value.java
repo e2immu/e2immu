@@ -51,17 +51,6 @@ public interface Value extends Comparable<Value> {
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
-    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
-        int container = getProperty(evaluationContext, VariableProperty.CONTAINER);
-        int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
-        boolean noContainer = container == Level.UNDEFINED;
-        boolean noImmutable = immutable == Level.UNDEFINED;
-
-        if (noContainer && noImmutable) return Set.of();
-        if (noContainer) return Set.of(AnnotationExpression.immutable(evaluationContext.getTypeContext(), immutable));
-        return Set.of(AnnotationExpression.container(evaluationContext.getTypeContext(), noImmutable ? 0 : immutable));
-    }
-
     default IntValue toInt() {
         throw new UnsupportedOperationException(this.getClass().toString());
     }

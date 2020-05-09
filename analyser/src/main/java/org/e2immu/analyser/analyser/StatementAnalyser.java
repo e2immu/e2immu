@@ -153,9 +153,9 @@ public class StatementAnalyser {
     private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
         boolean changes = false;
         // we run at the local level
-        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties.values()) {
-            if (aboutVariable.isNotLocalCopy() && aboutVariable.properties.contains(VariableProperty.CREATED)
-                    && !aboutVariable.properties.contains(VariableProperty.READ)) {
+        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties()) {
+            if (aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE
+                    && aboutVariable.getProperty(VariableProperty.READ) != Level.TRUE) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
                 }
@@ -175,8 +175,8 @@ public class StatementAnalyser {
         boolean changes = false;
         // we run at the local level
         List<String> toRemove = new ArrayList<>();
-        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties.values()) {
-            if (aboutVariable.properties.contains(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)) {
+        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties()) {
+            if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
                 if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                     methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
                     typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
@@ -188,7 +188,7 @@ public class StatementAnalyser {
         }
         if (!toRemove.isEmpty()) {
             log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-            variableProperties.variableProperties.keySet().removeAll(toRemove);
+            variableProperties.removeAll(toRemove);
         }
         return changes;
     }
@@ -212,7 +212,7 @@ public class StatementAnalyser {
         if (codeOrganization.localVariableCreation != null) {
             theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.create(theLocalVariableReference, newLocalVariableProperties);
+            variableProperties.createLocalVariableOrParameter(theLocalVariableReference, newLocalVariableProperties);
         } else {
             theLocalVariableReference = null;
         }
@@ -225,7 +225,7 @@ public class StatementAnalyser {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                variableProperties.create(lvr, newLocalVariableProperties);
+                variableProperties.createLocalVariableOrParameter(lvr, newLocalVariableProperties);
             }
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement);
@@ -243,7 +243,8 @@ public class StatementAnalyser {
                         Variable.detailedString(set));
                 statement.existingVariablesAssignedInLoop.set(set);
             }
-            statement.existingVariablesAssignedInLoop.get().forEach(variable -> variableProperties.addPropertyAlsoRecords(variable, VariableProperty.ASSIGNED_IN_LOOP));
+            statement.existingVariablesAssignedInLoop.get().forEach(variable ->
+                    variableProperties.addPropertyAlsoRecords(variable, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE));
         }
 
         // PART 12: finally there are the updaters
@@ -274,8 +275,8 @@ public class StatementAnalyser {
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
-                ((ArrayValue) value).values.stream().allMatch(element -> element.isNotNull(variableProperties))) {
-            variableProperties.addProperty(theLocalVariableReference, VariableProperty.CHECK_NOT_NULL);
+                ((ArrayValue) value).values.stream().allMatch(elementValue -> elementValue.isNotNull0(variableProperties))) {
+            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.TRUE);
         }
 
         // PART 5: checks for ReturnStatement
@@ -398,7 +399,7 @@ public class StatementAnalyser {
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                subContext.create(lvr, VariableProperty.CHECK_NOT_NULL);
+                subContext.createLocalVariableOrParameter(lvr, VariableProperty.NOT_NULL);
             }
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
@@ -508,12 +509,27 @@ public class StatementAnalyser {
                     if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
                 });
         if (statement.statement instanceof ForEachStatement) {
-            // TODO: should be part of the evaluation, somehow
+            // TODO: should be part of the evaluation, maybe via forward properties? there will be more @NotNull situations
             for (Variable variable : expression.variables()) {
                 log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
                 variableOccursInNotNullContext(statement, variable, variableProperties);
             }
-            // TODO: this can evaluate to method call rather than a variable, which also should be @NotNull !!!!
+            if (expression instanceof MethodCall) {
+                MethodInfo methodCalled = ((MethodCall) expression).methodInfo;
+                if (methodCalled != variableProperties.getCurrentMethod()) { // not a recursive call
+                    int notNull = methodCalled.methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                    if (notNull == Level.DELAY) encounterUnevaluated.set(true);
+                    else if (notNull == Level.FALSE) {
+                        if (!statement.errorValue.isSet()) {
+                            typeContext.addMessage(Message.Severity.ERROR, "Result of method call can be null in a @NotNull situation: " +
+                                    methodCalled.distinguishingName() + " in " +
+                                    statement.streamIndices() + ", " +
+                                    variableProperties.getCurrentMethod().distinguishingName());
+                            statement.errorValue.set(true);
+                        }
+                    }
+                }
+            }
         }
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
@@ -553,7 +569,7 @@ public class StatementAnalyser {
                     if (!methodInfo.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                         log(ASSIGNMENT, "Mark assignment to field {} outside constructors in {}", fieldInfo.fullyQualifiedName(), methodInfo.distinguishingName());
                         methodInfo.methodAnalysis.fieldAssignments.put(fieldInfo, true);
-                        methodInfo.methodAnalysis.fieldAssignmentValues.put(fieldInfo, new Instance(fieldInfo.type));
+                        methodInfo.methodAnalysis.fieldAssignmentValues.put(fieldInfo, UnknownValue.UNKNOWN_VALUE);
                         AnnotationExpression effectivelyFinal = typeContext.effectivelyFinal.get();
                         if (!fieldInfo.fieldAnalysis.annotations.isSet(effectivelyFinal)) {
                             log(FINAL, "Mark field {} as NOT @Final", fieldInfo.fullyQualifiedName());
@@ -569,29 +585,28 @@ public class StatementAnalyser {
             // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
             variableProperties.ensureLocalCopy(at);
 
-
             // check not null; clear record fields
-            variableProperties.reset(at, value instanceof Instance && ((Instance) value).explicitlyConstructed());
-            variableProperties.setValue(at, value);
+            variableProperties.reset(at, value instanceof Instance);
+            VariableProperties.AboutVariable aboutVariable = variableProperties.findComplain(at);
 
-            // the following block is there in case the value, instead of the expected complicated one, turns
-            // out to be a constant.
-            Boolean isNotNull = value.isNotNull(variableProperties);
-            if (isNotNull == Boolean.TRUE) {
-                variableProperties.addProperty(at, VariableProperty.CHECK_NOT_NULL);
-                log(VARIABLE_PROPERTIES, "Added check-null property of {}", at.detailedString());
-            } else if (variableProperties.removeProperty(at, VariableProperty.CHECK_NOT_NULL)) {
-                log(VARIABLE_PROPERTIES, "Cleared check-null property of {}", at.detailedString());
-            }
-            variableProperties.addProperty(at, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-            if (!variableProperties.addProperty(at, VariableProperty.ASSIGNED)) {
-                variableProperties.addProperty(at, VariableProperty.ASSIGNED_MULTIPLE_TIMES);
-            }
-            if (variableProperties.guaranteedToBeReached(at)) {
-                variableProperties.addProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
+            aboutVariable.setCurrentValue(value);
+
+            if (value instanceof VariableValue) {
+                variableProperties.copyProperties(((VariableValue)value).variable, at);
             } else {
-                variableProperties.removeProperty(at, VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED);
+                // the following block is there in case the value, instead of the expected complicated one, turns
+                // out to be a constant.
+                int notNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
             }
+            aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
+
+            int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
+            aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
+
+            aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
+                    Level.fromBool(variableProperties.guaranteedToBeReached(at)));
+
             Value valueForLinkAnalysis = value.valueForLinkAnalysis();
             if (valueForLinkAnalysis != NO_VALUE) {
                 Set<Variable> linkToBestCase = valueForLinkAnalysis.linkedVariables(true, variableProperties);
@@ -619,9 +634,8 @@ public class StatementAnalyser {
                     variableProperties.createVariableIfRelevant(variable);
                     if (variableProperties.isKnown(variable)) {
                         variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                        if (!variableProperties.addProperty(variable, VariableProperty.READ)) {
-                            variableProperties.addProperty(variable, VariableProperty.READ_MULTIPLE_TIMES);
-                        }
+                        int read = variableProperties.getProperty(variable, VariableProperty.READ);
+                        variableProperties.addProperty(variable, VariableProperty.READ, Level.nextLevelTrue(read, 1));
                     }
                 }
             }
@@ -650,10 +664,10 @@ public class StatementAnalyser {
         if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
             return;
         }
-        Boolean isNotModified = methodCalled.isNotModified(typeContext);
+        int notModified = methodCalled.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
         boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet();
-        if (allowDelays && isNotModified == null) return; // delaying
-        boolean error = isNotModified == null || isNotModified == Boolean.FALSE;
+        if (allowDelays && notModified == Level.DELAY) return; // delaying
+        boolean error = notModified != Level.TRUE;
         currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
@@ -701,7 +715,8 @@ public class StatementAnalyser {
     private boolean analyseCallsWithParameters(NumberedStatement currentStatement, Expression expression, VariableProperties variableProperties) {
         if (expression instanceof HasParameterExpressions) {
             HasParameterExpressions call = (HasParameterExpressions) expression;
-            if (call.getMethodInfo() != null) {
+            // we also need to exclude recursive calls from this analysis
+            if (call.getMethodInfo() != null && call.getMethodInfo() != variableProperties.getCurrentMethod()) {
                 return analyseCallWithParameters(currentStatement, call, variableProperties);
             }
         }
@@ -742,16 +757,15 @@ public class StatementAnalyser {
                                          Expression parameterExpression,
                                          VariableProperties variableProperties) {
         // not modified
-        Boolean safeParameter = parameterInDefinition.isNotModified(typeContext);
-        if (safeParameter == Boolean.FALSE) {
-            recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED);
-        } else if (safeParameter == null) {
-            recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED_DELAYED);
-        }
-        // null not allowed
+        int notModified = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+        int value = Level.compose(Level.TRUE, notModified == Level.FALSE ? 1 : 0);
+        recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED, value);
+
+        // null not allowed; not a recursive call so no knowledge about the parameter as a variable
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
-            if (parameterInDefinition.isNotNull(typeContext) == Boolean.TRUE) {
+            int notNull = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
+            if (Level.value(notNull, Level.NOT_NULL) == Level.TRUE) {
                 return variableOccursInNotNullContext(currentStatement, v, variableProperties);
             }
         }
@@ -760,18 +774,19 @@ public class StatementAnalyser {
 
     private boolean variableOccursInNotNullContext(NumberedStatement currentStatement, Variable variable, VariableProperties variableProperties) {
         if (variable instanceof This) return false; // nothing to be done here
-        variableProperties.createVariableIfRelevant(variable);
-        if (variableProperties.isNotNull(variable))
-            return false; // ok there is a check on the variable, or we don't know yet
+        // the variable has already been created, if relevant
+        if(!variableProperties.isKnown(variable)) return false;
+
+        int notNull = variableProperties.getProperty(variable, VariableProperty.NOT_NULL);
+        if(Level.value(notNull, Level.NOT_NULL) == Level.TRUE) return false; // OK!
+
+        // if the variable has been assigned to another variable, we want to jump there!
+        // this chain potentially ends in fields or parameters
+        // if it is a field, it should also be known
         Variable valueVar = variableProperties.switchToValueVariable(variable);
         if (valueVar instanceof ParameterInfo) {
             ParameterInfo parameterInfo = (ParameterInfo) valueVar;
             return parameterInfo.markNotNull(Level.TRUE);
-        }
-        if (valueVar instanceof FieldReference) {
-            FieldInfo fieldInfo = ((FieldReference) valueVar).fieldInfo;
-            if (fieldInfo.isNotNull(typeContext) != Boolean.FALSE) return false;
-            // now we know that we don't know, and there is no explicit check
         }
         if (!currentStatement.errorValue.isSet()) {
             typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
@@ -786,30 +801,24 @@ public class StatementAnalyser {
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
         // not modified
         SideEffect sideEffect = methodCall.methodInfo.sideEffect();
-        if (sideEffect == SideEffect.DELAYED) {
-            recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED_DELAYED);
-            return;
-        }
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        if (!safeMethod) {
-            recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED);
-        }
+        int value = Level.compose(Level.TRUE, safeMethod ? 0 : 1);
+        recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED, value);
     }
 
-    private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties, VariableProperty propertyToSet) {
+    private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties, VariableProperty propertyToSet, int value) {
         Variable variable;
         if (expression instanceof VariableExpression) {
             variable = expression.variables().get(0);
         } else if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
-            recursivelyMarkVariables(fieldAccess.expression, variableProperties, propertyToSet);
+            recursivelyMarkVariables(fieldAccess.expression, variableProperties, propertyToSet, value);
             variable = fieldAccess.variable;
         } else {
             return;
         }
-        log(DEBUG_MODIFY_CONTENT, "SA: mark method object as {}: {}", propertyToSet, variable.detailedString());
+        log(DEBUG_MODIFY_CONTENT, "Mark method object as {}: {}", propertyToSet, variable.detailedString());
         variableProperties.createVariableIfRelevant(variable);
-        variableProperties.addProperty(variable, propertyToSet);
+        variableProperties.addProperty(variable, propertyToSet, value);
     }
-
 }

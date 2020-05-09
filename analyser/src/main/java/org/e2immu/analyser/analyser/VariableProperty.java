@@ -21,13 +21,17 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 
 public enum VariableProperty {
-    CHECK_NOT_NULL("check not null"),
-    READ("read"),
-    READ_MULTIPLE_TIMES("read+"),
+    // can be read multiple times
+    READ("read", true, Level.compose(Level.TRUE, 1)),
+
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
-    ASSIGNED("assigned"),
-    ASSIGNED_MULTIPLE_TIMES("assigned+"),
+    // multi-level: level 0 = seen, level 1 = modifications
+    CONTENT_MODIFIED("content modified", true, Level.compose(Level.TRUE, 1)),
+
+    // assigned multiple times
+    ASSIGNED("assigned", true, Level.compose(Level.TRUE, 1)),
+
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
     LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
@@ -39,18 +43,18 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+    NOT_NULL("@NotNull", true, Level.compose(Level.TRUE, Level.NOT_NULL_2)),
 
     // the following three are on types only
-    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
-    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
-    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, Level.compose(Level.TRUE, Level.NOT_NULL)), // numeric
+    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, Level.compose(Level.TRUE, Level.NOT_NULL_2)),
+    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, Level.compose(Level.TRUE, Level.NOT_NULL_2)),
+    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, Level.compose(Level.TRUE, Level.NOT_NULL_2)),
 
-    FINAL("@Final"), // boolean
-    CONTAINER("@Container"), // boolean
-    IMMUTABLE("@Immutable", true, Level.compose(Level.TRUE, Level.E2IMMUTABLE)), // numeric
-    NOT_MODIFIED("@NotModified"), // ternary
-    CONSTANT("@Constant"), //boolean
+    FINAL("@Final"),
+    CONTAINER("@Container"),
+    IMMUTABLE("@Immutable", true, Level.compose(Level.TRUE, Level.E2IMMUTABLE)),
+    NOT_MODIFIED("@NotModified"),
+    CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
     IDENTITY("@Identity"),

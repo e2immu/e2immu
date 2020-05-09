@@ -25,9 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface WithInspectionAndAnalysis {
-    static Integer boolToInt(Boolean b) {
-        return b == null ? null : b ? 1 : 0;
-    }
 
     Analysis getAnalysis();
 
@@ -47,40 +44,6 @@ public interface WithInspectionAndAnalysis {
         }
         return getInspection().annotations.stream()
                 .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
-    }
-
-    default Integer numericAnnotatedWith(AnnotationExpression annotation) {
-        if (hasBeenDefined()) {
-            // TODO: add number @NotNull(n=3), @Immutable(n=...)
-            return boolToInt(getAnalysis().annotations.getOtherwiseNull(annotation));
-        }
-        return boolToInt(getInspection().annotations.stream()
-                .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName)));
-    }
-
-    default Integer getContainer(TypeContext typeContext) {
-        Boolean container = annotatedWith(typeContext.container.get());
-        if (container == null) return null; // delay
-        if (container) return 1;
-        Boolean e1container = annotatedWith(typeContext.e1Container.get());
-        if (e1container != null) return 1;
-        Boolean e2container = annotatedWith(typeContext.e2Container.get());
-        if (e2container != null) return 1;
-        return 0; // not a container
-    }
-
-    default Integer getImmutable(TypeContext typeContext) {
-        Boolean e1Immutable = annotatedWith(typeContext.e1Immutable.get());
-        if (e1Immutable == null) return null;
-        Boolean e2Immutable = annotatedWith(typeContext.e2Immutable.get());
-        if (e2Immutable == null) return null;
-        Boolean e2Container = annotatedWith(typeContext.e2Container.get());
-        if (e2Container == null) return null;
-        Boolean e1Container = annotatedWith(typeContext.e1Container.get());
-        if (e1Container == null) return null;
-        if (e2Immutable || e2Container) return 2;
-        if (e1Immutable || e1Container) return 1;
-        return 0;
     }
 
     default Optional<Boolean> error(Class<?> annotation, AnnotationExpression expression) {

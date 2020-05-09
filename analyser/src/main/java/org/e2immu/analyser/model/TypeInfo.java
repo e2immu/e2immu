@@ -769,47 +769,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Objects.hash(fullyQualifiedName);
     }
 
-    public Boolean isE2Immutable(TypeContext typeContext) {
-        // these two are there for bootstrapping reasons.
-        // we need the AnnotationType enum, which needs java.lang.String in its name() method, before our
-        // own annotations, before the full java.lang package which obviously is annotated with our own annotations...
-        if (isPrimitive()) return true;
-        if ("java.lang.Object".equals(fullyQualifiedName) || "java.lang.String".equals(fullyQualifiedName)) return true;
-        if (typeInspection.isSet() && typeInspection.get().typeNature == TypeNature.ENUM) return true;
-        return TERNARY_OR.apply(annotatedWith(typeContext.e2Immutable.get()), annotatedWith(typeContext.e2Container.get()));
-    }
-
-    private Set<ElementType> where(AnnotationExpression isNotNull) {
-        Optional<AnnotationExpression> opt = typeInspection.get().annotations.stream()
-                .filter(e -> e.typeInfo.equals(isNotNull.typeInfo)).findFirst();
-        if (opt.isEmpty()) return Set.of();
-        AnnotationExpression found = opt.get();
-        ElementType[] elements = found.extract("where", NOT_NULL_WHERE);
-        return Arrays.stream(elements).collect(Collectors.toSet());
-    }
-
-    private int highestIsNotNull(TypeContext typeContext, ElementType elementType) {
-        Set<ElementType> set2 = where(typeContext.notNull2.get());
-        if (set2 != null && set2.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL_2);
-        Set<ElementType> set1 = where(typeContext.notNull1.get());
-        if (set1 != null && set1.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL_1);
-        Set<ElementType> set = where(typeContext.notNull.get());
-        if (set != null && set.contains(elementType)) return Level.compose(Level.TRUE, Level.NOT_NULL);
-        return Level.FALSE;
-    }
-
-    public int isNotNullForParameters(TypeContext typeContext) {
-        return highestIsNotNull(typeContext, ElementType.PARAMETER);
-    }
-
-    public int isNotNullForFields(TypeContext typeContext) {
-        return highestIsNotNull(typeContext, ElementType.FIELD);
-    }
-
-    public int isNotNullForMethods(TypeContext typeContext) {
-        return highestIsNotNull(typeContext, ElementType.METHOD);
-    }
-
     @Override
     public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
         if (!hasBeenDefined()) return Optional.empty();

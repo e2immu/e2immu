@@ -95,7 +95,7 @@ public class VariableValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return evaluationContext.getProperty(variableProperty);
+        return evaluationContext.getProperty(variable, variableProperty);
     }
     /*
     The difference between worst and best case here is that the worst case is guaranteed to be stable wrt. this evaluation.

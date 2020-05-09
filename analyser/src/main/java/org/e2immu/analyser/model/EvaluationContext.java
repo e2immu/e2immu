@@ -27,48 +27,62 @@ import java.util.Set;
 
 public interface EvaluationContext {
 
-    // called by VariableExpression, FieldAccess
-    Value currentValue(Variable variable);
+    // WHERE ARE WE??
 
-    // with null meaning that no decision can be made yet
-    boolean isNotNull(Variable variable);
-
+    // can be null, in evaluation of lambda expressions
     MethodInfo getCurrentMethod();
 
+    @NotNull
     TypeInfo getCurrentType();
 
-    EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
-                            boolean inSyncBlock,
+    // METHODS FOR THE MANAGEMENT OF HIERARCHY (NEW CONTEXT IN EACH BLOCK)
+
+    @NotNull
+    EvaluationContext childInSyncBlock(@NotNull Value conditional,
+                                       Runnable uponUsingConditional,
+                                       boolean inSyncBlock,
+                                       boolean guaranteedToBeReachedByParentStatement);
+
+    @NotNull
+    EvaluationContext child(@NotNull Value conditional,
+                            Runnable uponUsingConditional,
                             boolean guaranteedToBeReachedByParentStatement);
 
-    EvaluationContext child(Value conditional, Runnable uponUsingConditional,
-                            boolean guaranteedToBeReachedByParentStatement);
-
-    void create(Variable variable, VariableProperty... initialProperties);
-
-    String variableName(@NotNull Variable variable);
-
+    // used in LambdaBlock to create a new StatementAnalyser, which needs the typeContext...
+    @NotNull
     TypeContext getTypeContext();
 
-    void linkVariables(Variable variableFromExpression, Set<Variable> toBestCase, Set<Variable> toWorstCase);
+    // BASIC ACCESS
 
-    void setNotNull(Variable variable);
+    void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties);
 
+    // mark that variables are linked (statement analyser, assignment)
+    void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> toBestCase, @NotNull Set<Variable> toWorstCase);
+
+    // analysis of assignment in statement analyser
     void setValue(@NotNull Variable variable, @NotNull Value value);
 
-    boolean equals(String name, String name1);
+    // called by VariableExpression, FieldAccess; will create a field if necessary
+    // errors on local vars, parameters if they don't exist
 
-    /// NEW METHODS
+    @NotNull
+    Value currentValue(@NotNull Variable variable);
+    // we're adding a variable to the evaluation context, from FieldAnalyser with final value
 
-    // we're adding a variable to the evaluation context
-    VariableValue newVariableValue(Variable variable);
-
+    @NotNull
+    VariableValue newVariableValue(@NotNull Variable variable);
     // create a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
+
+    @NotNull
     VariableValue newArrayVariableValue(Value array, Value indexValue);
-
     // called by Assignment operator
-    Value assignment(Variable assignmentTarget, Value resultOfExpression);
 
+    @NotNull
+    Value assignment(Variable assignmentTarget, Value resultOfExpression);
     // delegation
-    int getProperty(VariableProperty variableProperty);
+
+    int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);
+
+    // method of VariableValue
+    boolean equals(@NotNull String name, @NotNull String other);
 }

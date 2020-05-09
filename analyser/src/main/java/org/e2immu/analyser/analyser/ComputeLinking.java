@@ -1,7 +1,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
@@ -122,7 +121,7 @@ public class ComputeLinking {
             }
         }
         methodAnalysis.variablesLinkedToMethodResult.set(variables);
-        methodAnalysis.annotations.put(typeContext.linked.get(), !variables.isEmpty());
+        methodAnalysis.setProperty(VariableProperty.LINKED, !variables.isEmpty());
         log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", methodInfo.fullyQualifiedName(), Variable.detailedString(variables));
         return true;
     }
@@ -154,9 +153,9 @@ public class ComputeLinking {
         if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties.values().stream()
+        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties().stream()
                 .anyMatch(av -> av.variable instanceof FieldReference &&
-                        ((FieldReference) av.variable).fieldInfo.isEffectivelyFinal(methodProperties.getTypeContext()) == Boolean.TRUE &&
+                        Level.value(av.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE &&
                         !((FieldReference) av.variable).fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet());
         if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
             log(DELAYED, "Some effectively final fields have not yet been evaluated -- delaying establishing links");
@@ -196,7 +195,7 @@ public class ComputeLinking {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), aboutVariable.variable);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
@@ -204,7 +203,7 @@ public class ComputeLinking {
                         FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
                         Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
                         boolean directlyModifiedField = directContentModification == Boolean.TRUE
-                                && !fieldInfo.isIgnoreModifications()
+                                && !fieldInfo.type.isNotModifiedByDefinition(typeContext)
                                 && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
                                 && methodAnalysis.fieldRead.get(fieldInfo); // if local, it will be set, but it has to be true
                         log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has {}been modified in {}",
@@ -232,22 +231,14 @@ public class ComputeLinking {
             // which end up not @NotModified, so that the parameter should also not be @NotModified
             // This piece of code is in the way of correct method @NotModified computation
             // (it's not because the field is @NotModified, that the method has to be...)
-            if (lookAtFields && variable instanceof FieldReference) {
-                Boolean notModified = ((FieldReference) variable).fieldInfo.isNotModified(typeContext);
-                if (notModified == null) hasDelays = true;
-                else if (!notModified) return true;
-            }
-            // local, parameter, field... data from statement analyser
-            VariableProperties.AboutVariable properties = methodProperties.variableProperties.get(variable);
-            // properties can be null (variable out of scope)
-            if (properties != null) {
-                if (properties.properties.contains(VariableProperty.CONTENT_MODIFIED)) return true;
-                if (properties.properties.contains(VariableProperty.CONTENT_MODIFIED_DELAYED)) hasDelays = true;
+            if (lookAtFields || !(variable instanceof FieldReference)) {
+                int notModified = methodProperties.getProperty(variable, VariableProperty.NOT_MODIFIED);
+                if (notModified == Level.FALSE) return true;
+                if (notModified == Level.DELAY) hasDelays = true;
             }
         }
         return hasDelays ? null : false;
     }
-
 
     private static Set<Variable> allVariablesLinkedToIncludingMyself(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,
                                                                      Variable variable) {
@@ -273,11 +264,11 @@ public class ComputeLinking {
 
     private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
             if (aboutVariable.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
-                if (aboutVariable.properties.contains(VariableProperty.ASSIGNED)
-                        && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
+                int assigned = Level.value(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
+                if (assigned == Level.TRUE && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
                     typeContext.addMessage(Message.Severity.ERROR,
                             "Parameter " + aboutVariable.name + " should not be assigned to");
                     methodInfo.methodAnalysis.parameterAssignments.put(parameterInfo, true);
@@ -291,26 +282,30 @@ public class ComputeLinking {
     private static boolean computeFieldAssignmentsFieldsRead(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties.values()) {
+        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
-            Set<VariableProperty> properties = aboutVariable.properties;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
+
+                boolean isAssigned = Level.value(assigned, 0) == Level.TRUE;
+                boolean isAssignedMultipleTimes = Level.value(assigned, 1) == Level.TRUE;
+
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
-                    boolean isModified = properties.contains(VariableProperty.ASSIGNED);
-                    methodAnalysis.fieldAssignments.put(fieldInfo, isModified);
-                    log(ASSIGNMENT, "Mark that {} is assigned to? {} in {}", fieldInfo.name, isModified, methodInfo.fullyQualifiedName());
+                    methodAnalysis.fieldAssignments.put(fieldInfo, isAssigned);
+                    log(ASSIGNMENT, "Mark that {} is assigned to? {} in {}", fieldInfo.name, isAssigned, methodInfo.fullyQualifiedName());
                     changes = true;
                 }
                 Value currentValue = aboutVariable.getCurrentValue();
-                if (currentValue != UnknownValue.NO_VALUE && properties.contains(VariableProperty.ASSIGNED) &&
-                        !properties.contains(VariableProperty.ASSIGNED_MULTIPLE_TIMES) &&
+                if (currentValue != UnknownValue.NO_VALUE && isAssigned &&
+                        !isAssignedMultipleTimes &&
                         !methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
                     log(ASSIGNMENT, "Single assignment of field {} to {}", fieldInfo.fullyQualifiedName(), currentValue);
                     methodAnalysis.fieldAssignmentValues.put(fieldInfo, currentValue);
                     changes = true;
                 }
-                if (properties.contains(VariableProperty.READ) && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
+                boolean read = Level.value(aboutVariable.getProperty(VariableProperty.READ), 0) == Level.TRUE;
+                if (read && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
                     log(ASSIGNMENT, "Mark that field {} has been read", variable.detailedString());
                     methodAnalysis.fieldRead.put(fieldInfo, true);
                     changes = true;

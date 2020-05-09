@@ -38,8 +38,9 @@ import static org.e2immu.analyser.util.Logger.log;
 
 class VariableProperties implements EvaluationContext {
 
+
     static class AboutVariable {
-        final Set<VariableProperty> properties = new HashSet<>();
+        final Map<VariableProperty, Integer> properties = new HashMap<>();
         @NotNull
         private Value currentValue;
 
@@ -74,7 +75,7 @@ class VariableProperties implements EvaluationContext {
 
         AboutVariable localCopy() {
             AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue);
-            av.properties.addAll(properties);
+            av.properties.putAll(properties);
             return av;
         }
 
@@ -85,9 +86,25 @@ class VariableProperties implements EvaluationContext {
         public boolean isNotLocalCopy() {
             return localCopyOf == null;
         }
+
+        public int getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, Level.DELAY);
+        }
+
+        void setCurrentValue(Value value) {
+            this.currentValue = value;
+        }
+
+        public void setProperty(VariableProperty variableProperty, int value) {
+            properties.put(variableProperty, value);
+        }
+
+        public void removeProperty(VariableProperty variableProperty) {
+            properties.remove(variableProperty);
+        }
     }
 
-    final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
+    private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
     final DependencyGraph<Variable> dependencyGraphBestCase;
     final DependencyGraph<Variable> dependencyGraphWorstCase;
@@ -190,7 +207,11 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    private AboutVariable findComplain(@NotNull Variable variable) {
+    public Collection<AboutVariable> variableProperties() {
+        return variableProperties.values();
+    }
+
+    AboutVariable findComplain(@NotNull Variable variable) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable != null) {
             return aboutVariable;
@@ -293,7 +314,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public void create(@NotNull Variable variable, VariableProperty... initialProperties) {
+    public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo) {
             Value resetValue = new VariableValue(variable, variable.name());
@@ -324,7 +345,7 @@ class VariableProperties implements EvaluationContext {
     private void internalCreate(Variable variable, String name, Value initialValue, Value resetValue, Set<VariableProperty> initialProperties) {
         AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null, Objects.requireNonNull(initialValue),
                 Objects.requireNonNull(resetValue));
-        aboutVariable.properties.addAll(initialProperties);
+        initialProperties.forEach(variableProperty -> aboutVariable.properties.put(variableProperty, Level.TRUE));
         if (variableProperties.put(name, aboutVariable) != null)
             throw new UnsupportedOperationException("?? Duplicating name " + name);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
@@ -373,10 +394,13 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.currentValue = Objects.requireNonNull(value);
     }
 
-    public boolean addProperty(Variable variable, VariableProperty variableProperty) {
+    public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         AboutVariable aboutVariable = find(variable);
-        if (aboutVariable == null) return true; //not known to us, ignoring!
-        return aboutVariable.properties.add(variableProperty);
+        if (aboutVariable == null) return;
+        Integer current = aboutVariable.properties.get(variableProperty);
+        if (current == null || current < value) {
+            aboutVariable.properties.put(variableProperty, value);
+        }
     }
 
     private static List<String> variableNamesOfLocalRecordVariables(AboutVariable aboutVariable) {
@@ -388,18 +412,18 @@ class VariableProperties implements EvaluationContext {
     // same as addProperty, but "descend" into fields of records as well
     // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
 
-    public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty) {
+    public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty, int value) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return; //not known to us, ignoring!
-        recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty);
+        recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty, value);
     }
 
-    private void recursivelyAddPropertyAlsoRecords(AboutVariable aboutVariable, VariableProperty variableProperty) {
-        aboutVariable.properties.add(variableProperty);
+    private void recursivelyAddPropertyAlsoRecords(AboutVariable aboutVariable, VariableProperty variableProperty, int value) {
+        aboutVariable.properties.put(variableProperty, value);
         if (isRecordType(aboutVariable.variable)) {
             for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
                 AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
-                recursivelyAddPropertyAlsoRecords(aboutLocalVariable, variableProperty);
+                recursivelyAddPropertyAlsoRecords(aboutLocalVariable, variableProperty, value);
             }
         }
     }
@@ -592,11 +616,6 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    @Override
-    public void setNotNull(Variable variable) {
-        addProperty(variable, CHECK_NOT_NULL);
-    }
-
     public boolean isKnown(Variable variable) {
         String name = variableName(variable, true);
         if (name == null) return false;
@@ -605,5 +624,19 @@ class VariableProperties implements EvaluationContext {
 
     public boolean inConstructionPhase() {
         return currentMethod != null && currentMethod.methodAnalysis.partOfConstruction.get();
+    }
+
+    public void removeAll(List<String> toRemove) {
+        variableProperties.keySet().removeAll(toRemove);
+    }
+
+    public void copyProperties(Variable from, Variable to) {
+        // TODO
+    }
+
+    @Override
+    public int getProperty(Variable variable, VariableProperty variableProperty) {
+        AboutVariable aboutVariable = findComplain(variable);
+        return aboutVariable.getProperty(variableProperty);
     }
 }

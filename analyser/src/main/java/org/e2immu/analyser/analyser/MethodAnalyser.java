@@ -24,12 +24,8 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatem
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -39,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -48,7 +43,6 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
-    private static final Set<AnnotationExpression> INITIAL = new HashSet<>();
 
     private final TypeContext typeContext;
     private final ParameterAnalyser parameterAnalyser;
@@ -99,12 +93,13 @@ public class MethodAnalyser {
         if (!methodInfo.methodAnalysis.numberedStatements.isSet()) {
             List<NumberedStatement> numberedStatements = new LinkedList<>();
             Stack<Integer> indices = new Stack<>();
-            CreateNumberedStatements.recursivelyCreateNumberedStatements(statements, indices, numberedStatements, new SideEffectContext(typeContext, methodInfo));
+            CreateNumberedStatements.recursivelyCreateNumberedStatements(statements, indices, numberedStatements,
+                    new SideEffectContext(methodInfo));
             methodInfo.methodAnalysis.numberedStatements.set(ImmutableList.copyOf(numberedStatements));
             changes = true;
         }
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            methodProperties.create(parameterInfo);
+            methodProperties.createLocalVariableOrParameter(parameterInfo);
         }
         if (analyseFlow(methodInfo, methodProperties)) changes = true;
         return changes;

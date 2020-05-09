@@ -23,16 +23,13 @@ import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
 
 public class SideEffectContext {
-
-    public final TypeContext typeContext;
     public final TypeInfo enclosingType;
     public final MethodInfo enclosingMethod;
     public final SideEffect exposureToOutsideWorld;
 
     // this would be the default, given that Object.equals, Object.hashCode and Object.toString() *should* be ContextFunctions
     // or suppliers.
-    public SideEffectContext(TypeContext typeContext, MethodInfo enclosingMethod) {
-        this.typeContext = typeContext;
+    public SideEffectContext(MethodInfo enclosingMethod) {
         exposureToOutsideWorld = SideEffect.NONE_CONTEXT;
         this.enclosingType = enclosingMethod.typeInfo;
         this.enclosingMethod = enclosingMethod;
