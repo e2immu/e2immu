@@ -37,9 +37,6 @@ public class FieldAnalysis extends Analysis {
     // if the field turns out to be effectively final, it can have a value
     public final SetOnce<Value> effectivelyFinalValue = new SetOnce<>();
 
-    // once we know the dynamic type annotations, we can convert this to annotations on the fields
-    public final SetOnce<Boolean> dynamicTypeAnnotationsAdded = new SetOnce<>();
-
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
     // In other words, if A->B, then B cannot be @NotModified unless A is too

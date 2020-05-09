@@ -143,17 +143,9 @@ public class Assignment implements Expression {
             target.evaluate(evaluationContext, visitor);
         }
         Value resultOfExpression = value.evaluate(evaluationContext, visitor);
-
+        visitor.visit(this, evaluationContext, resultOfExpression);
+        // we let the assignment code decide what to do; we'll read the value of the variable afterwards
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
-        // the value we return depends on the kind of variable we're dealing with.
-        // if the variable is a non-final field, there is no point in doing something with the value
-        // because it can be modified by another thread "as we speak"
-        // if the variable ends up being an effectively final field, we need the most correct value; this is one of the
-        // assignments during construction
-        // most importantly here, if we don't know yet if the field is effectively final or not, we delay
-        Value result = evaluationContext.assignment(assignmentTarget, resultOfExpression);
-
-        visitor.visit(this, evaluationContext, result);
-        return result;
+        return evaluationContext.currentValue(assignmentTarget);
     }
 }

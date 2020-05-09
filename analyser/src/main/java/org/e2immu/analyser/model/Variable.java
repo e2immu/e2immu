@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.annotation.E2Container;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 /**
  * groups: FieldInfo, ParameterInfo, LocalVariable
  */
+
+// at some point: @E2Container
 public interface Variable {
 
     static String detailedString(Set<Variable> dependencies) {

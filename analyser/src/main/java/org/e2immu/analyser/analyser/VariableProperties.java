@@ -38,86 +38,34 @@ import static org.e2immu.analyser.util.Logger.log;
 
 class VariableProperties implements EvaluationContext {
 
+    // the following two variables can be assigned to as we progress through the statements
 
-    static class AboutVariable {
-        final Map<VariableProperty, Integer> properties = new HashMap<>();
-        @NotNull
-        private Value currentValue;
+    private Value conditional; // any conditional added to this block
+    private boolean guaranteedToBeReachedInCurrentBlock = true;
 
-        private final AboutVariable localCopyOf;
-        private final Value initialValue;
-        private final Value resetValue;
-        public final Variable variable;
-        public final String name;
+    // all the rest is final
 
-        private AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value currentValue) {
-            this.localCopyOf = localCopyOf;
-            this.initialValue = initialValue;
-            this.currentValue = currentValue;
-            this.resetValue = currentValue;
-            this.variable = variable;
-            this.name = name; // the value used to put it in the map
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("props=").append(properties);
-            if (currentValue != null) {
-                sb.append(", currentValue=").append(currentValue);
-            }
-            return sb.toString();
-        }
-
-        public Value getCurrentValue() {
-            return currentValue;
-        }
-
-        AboutVariable localCopy() {
-            AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue);
-            av.properties.putAll(properties);
-            return av;
-        }
-
-        public boolean isLocalCopy() {
-            return localCopyOf != null;
-        }
-
-        public boolean isNotLocalCopy() {
-            return localCopyOf == null;
-        }
-
-        public int getProperty(VariableProperty variableProperty) {
-            return properties.getOrDefault(variableProperty, Level.DELAY);
-        }
-
-        void setCurrentValue(Value value) {
-            this.currentValue = value;
-        }
-
-        public void setProperty(VariableProperty variableProperty, int value) {
-            properties.put(variableProperty, value);
-        }
-
-        public void removeProperty(VariableProperty variableProperty) {
-            properties.remove(variableProperty);
-        }
-    }
-
-    private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
+    // these 2 will be modified by the statement analyser
 
     final DependencyGraph<Variable> dependencyGraphBestCase;
     final DependencyGraph<Variable> dependencyGraphWorstCase;
 
+    // modified by adding errors
+
+    final TypeContext typeContext;
+
+    // the rest should be not modified
+
     final VariableProperties parent;
-    Value conditional; // any conditional added to this block
-    private boolean guaranteedToBeReachedInCurrentBlock = true;
     final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
-    final TypeContext typeContext;
-    private final MethodInfo currentMethod;
-    private final TypeInfo currentType;
+    final MethodInfo currentMethod;
+    final TypeInfo currentType;
     final boolean inSyncBlock;
+
+    // locally modified
+
+    private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
     public VariableProperties(TypeContext typeContext, TypeInfo currentType) {
         this(typeContext, currentType, null);
@@ -211,29 +159,25 @@ class VariableProperties implements EvaluationContext {
         return variableProperties.values();
     }
 
-    AboutVariable findComplain(@NotNull Variable variable) {
+    private AboutVariable findComplain(@NotNull Variable variable) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable != null) {
             return aboutVariable;
         }
-        createVariableIfRelevant(variable);
-        AboutVariable aboutVariable2ndAttempt = find(variable);
-        if (aboutVariable2ndAttempt != null) {
-            return aboutVariable2ndAttempt;
+        if (variable instanceof FieldReference) {
+            ensureVariable((FieldReference) variable);
+            AboutVariable aboutVariable2ndAttempt = find(variable);
+            if (aboutVariable2ndAttempt != null) {
+                return aboutVariable2ndAttempt;
+            }
         }
         throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
 
     private AboutVariable find(@NotNull Variable variable) {
-        String name = variableName(variable, true);
+        String name = variableName(variable);
         if (name == null) return null;
         return find(name);
-    }
-
-    private String nameOfField(FieldReference fieldReference) {
-        String prefix = fieldReference.scope == null ? currentType.simpleName :
-                ((This) fieldReference.scope).typeInfo.simpleName;
-        return prefix + "." + fieldReference.fieldInfo.name;
     }
 
     private AboutVariable find(String name) {
@@ -246,65 +190,47 @@ class VariableProperties implements EvaluationContext {
         return null;
     }
 
-    // there should be 2 methods here: one called during evaluation of rhs,
-    // one called on assignment sides
-    public void createVariableIfRelevant(Variable variable) {
-        String name = variableName(variable, true);
-        if (name == null) return; // not allowed to be in the map
+    public void ensureVariable(FieldReference fieldReference) {
+        String name = variableName(fieldReference);
         if (find(name) != null) return;
-        if (variable instanceof FieldReference) {
-            FieldReference fieldReference = (FieldReference) variable;
-            Value resetValue;
-            Boolean isFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext);
-            if (isFinal == null) {
-                resetValue = UnknownValue.NO_VALUE; // delay
-            } else if (isFinal) {
-                if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                } else {
-                    // DELAY!
-                    resetValue = UnknownValue.NO_VALUE;
-                }
+        Value resetValue;
+        int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (effectivelyFinal == Level.DELAY) {
+            resetValue = UnknownValue.NO_VALUE; // delay
+        } else if (effectivelyFinal == Level.TRUE) {
+            if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
+                resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
             } else {
-                // in sync block, or during construction phase; acts as LOCAL VARIABLE, so VV is justified
-                resetValue = new VariableValue(variable, name);
+                // DELAY!
+                resetValue = UnknownValue.NO_VALUE;
             }
-            internalCreate(variable, nameOfField(fieldReference), resetValue, resetValue, Set.of());
         } else {
-            throw new UnsupportedOperationException();
+            resetValue = new VariableValue(this, fieldReference, name);
         }
+        internalCreate(fieldReference, name, resetValue, resetValue, Set.of(), singleCopy(fieldReference));
     }
 
-    public boolean isNotAllowedToBeInTheMap(FieldReference fieldReference) {
-        if (fieldReference.fieldInfo.owner != currentType) return true; // outside my type... no need
-        boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
-        return (!effectivelyFinal && !inSyncBlock && !inConstructionPhase());
+    private boolean singleCopy(FieldReference fieldReference) {
+        boolean effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE;
+        boolean inConstructionPhase = currentMethod != null && currentMethod.methodAnalysis.partOfConstruction.get();
+        return effectivelyFinal || inSyncBlock || inConstructionPhase;
     }
 
-    public String variableName(@NotNull Variable variable) {
-        Objects.requireNonNull(variable);
-        return variableName(variable, false);
-    }
-
-    private String variableName(Variable variable, boolean nullIfNotAllowed) {
+    @NotNull
+    private String variableName(@NotNull Variable variable) {
         String name;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
             // there are 3 cases: a field during construction phase, an effectively final field of the type we're analysing, and a field of a record
-            if (fieldReference.scope == null || fieldReference.scope instanceof This) {
-                if (isNotAllowedToBeInTheMap(fieldReference)) {
-                    if (nullIfNotAllowed) return null;
-                    throw new UnsupportedOperationException("Field not allowed to be in map");
-                }
-                name = nameOfField(fieldReference);
+            if (fieldReference.scope == null) {
+                name = currentType.simpleName + "." + fieldReference.fieldInfo.name;
+            } else if (fieldReference.scope instanceof This) {
+                name = ((This) fieldReference.scope).typeInfo.simpleName + ".this." + fieldReference.fieldInfo.name;
             } else {
-                // we now expect the scope to be some other variable, of a private, nested type
-                TypeInfo typeInfo = fieldReference.scope.parameterizedType().typeInfo;
-                if (!typeInfo.isRecord()) { // by definition in the innerOuter Type hierarchy
-                    throw new UnsupportedOperationException("Expected a field of a record: " + fieldReference.detailedString());
-                }
                 name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
             }
+        } else if (variable instanceof This) {
+            throw new UnsupportedOperationException();
         } else {
             // parameter, local variable
             name = variable.name();
@@ -317,10 +243,14 @@ class VariableProperties implements EvaluationContext {
     public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo) {
-            Value resetValue = new VariableValue(variable, variable.name());
-            internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet);
-        } else if (variable instanceof This) {
-            throw new UnsupportedOperationException("Not allowed to add This to the variable properties map");
+            Value resetValue = new VariableValue(this, variable, variable.name());
+            internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, true);
+        } else {
+            throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
+        }
+    }
+
+    /*
         } else {
             // field; only three cases allowed:
             // (1) a normal field during construction phase; acts like a local variable
@@ -329,7 +259,7 @@ class VariableProperties implements EvaluationContext {
             FieldReference fieldReference = (FieldReference) variable;
             boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
             if (effectivelyFinal || inSyncBlock || fieldReference.scope == null || fieldReference.scope instanceof This) {
-                if (!effectivelyFinal && !inSyncBlock && !inConstructionPhase()) {
+                if (!effectivelyFinal && !inSyncBlock && notInConstructionPhase()) {
                     throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
                             + fieldReference.detailedString());
                 }
@@ -341,11 +271,11 @@ class VariableProperties implements EvaluationContext {
             }
         }
     }
-
-    private void internalCreate(Variable variable, String name, Value initialValue, Value resetValue, Set<VariableProperty> initialProperties) {
+*/
+    private void internalCreate(Variable variable, String name, Value initialValue, Value resetValue, Set<VariableProperty> initialProperties, boolean singleCopy) {
         AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null, Objects.requireNonNull(initialValue),
-                Objects.requireNonNull(resetValue));
-        initialProperties.forEach(variableProperty -> aboutVariable.properties.put(variableProperty, Level.TRUE));
+                Objects.requireNonNull(resetValue), singleCopy);
+        initialProperties.forEach(variableProperty -> aboutVariable.setProperty(variableProperty, Level.TRUE));
         if (variableProperties.put(name, aboutVariable) != null)
             throw new UnsupportedOperationException("?? Duplicating name " + name);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
@@ -359,8 +289,8 @@ class VariableProperties implements EvaluationContext {
                 Variable newVariable = new RecordField(fieldReference, newName);
                 Expression initialiser = computeInitialiser(recordField);
                 Value newInitialValue = computeInitialValue(recordField, initialiser);
-                Value newResetValue = new VariableValue(newVariable, newName);
-                internalCreate(newVariable, newName, newInitialValue, newResetValue, Set.of());
+                Value newResetValue = new VariableValue(this, newVariable, newName);
+                internalCreate(newVariable, newName, newInitialValue, newResetValue, Set.of(), true);
             }
         }
     }
@@ -391,15 +321,15 @@ class VariableProperties implements EvaluationContext {
     @Override
     public void setValue(@NotNull Variable variable, @NotNull Value value) {
         AboutVariable aboutVariable = findComplain(variable);
-        aboutVariable.currentValue = Objects.requireNonNull(value);
+        aboutVariable.setCurrentValue(Objects.requireNonNull(value));
     }
 
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return;
-        Integer current = aboutVariable.properties.get(variableProperty);
-        if (current == null || current < value) {
-            aboutVariable.properties.put(variableProperty, value);
+        int current = aboutVariable.getProperty(variableProperty);
+        if (current < value) {
+            aboutVariable.setProperty(variableProperty, value);
         }
     }
 
@@ -419,7 +349,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     private void recursivelyAddPropertyAlsoRecords(AboutVariable aboutVariable, VariableProperty variableProperty, int value) {
-        aboutVariable.properties.put(variableProperty, value);
+        aboutVariable.setProperty(variableProperty, value);
         if (isRecordType(aboutVariable.variable)) {
             for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
                 AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
@@ -435,7 +365,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     private void recursivelyReset(AboutVariable aboutVariable, boolean toInitialValue) {
-        aboutVariable.properties.removeAll(List.of(CHECK_NOT_NULL));
+        aboutVariable.properties.removeAll(List.of(CHECK_NOT_NULL)); // this is shaky
         aboutVariable.currentValue = toInitialValue ? aboutVariable.initialValue : aboutVariable.resetValue;
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
@@ -446,10 +376,10 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    public boolean removeProperty(Variable variable, VariableProperty variableProperty) {
+    public void removeProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = find(variable);
-        if (aboutVariable == null) return true; //not known to us, ignoring! (symmetric to add)
-        return aboutVariable.properties.remove(variableProperty);
+        if (aboutVariable == null) return ; //not known to us, ignoring! (symmetric to add)
+        aboutVariable.removeProperty(variableProperty);
     }
 
     @Override
@@ -490,36 +420,33 @@ class VariableProperties implements EvaluationContext {
             }
         }
         AboutVariable aboutVariable = findComplain(variable);
-        if (aboutVariable.properties.contains(ASSIGNED_IN_LOOP)) {
+        if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) {
             return aboutVariable.resetValue;
         }
         return aboutVariable.currentValue;
     }
 
     @Override
-    public boolean isNotNull(Variable variable) {
-        // step 1. check the conditional
-        if (conditional != null) {
-            Map<Variable, Boolean> isNotNull = conditional.individualNullClauses();
-            if (isNotNull.get(variable) == Boolean.FALSE) {
-                return true;
-            }
+    public VariableValue newVariableValue(Variable variable) {
+        if (variable instanceof This) throw new UnsupportedOperationException();
+        if (variable instanceof FieldReference) {
+            ensureVariable((FieldReference) variable);
         }
-        // step 2. is the variable defined at this level? look at the properties
-        String name = variableName(variable, true);
-        AboutVariable aboutVariable = name == null ? null : find(name);
-        if (aboutVariable != null && aboutVariable.currentValue instanceof VariableValue) {
-            return aboutVariable.properties.contains(VariableProperty.CHECK_NOT_NULL);
-        }
-        Value currentValue = currentValue(variable);
-        return currentValue.isNotNull(this) == Boolean.TRUE;
+        AboutVariable aboutVariable = findComplain(variable);
+        return new VariableValue(this, variable, aboutVariable.name);
+    }
+
+    @Override
+    public VariableValue newArrayVariableValue(Value array, Value indexValue) {
+        throw new UnsupportedOperationException(); // TODO goal is to make a local variable with a combined name
     }
 
     public Variable switchToValueVariable(Variable variable) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return variable;
-        if (aboutVariable.currentValue instanceof VariableValue)
-            return ((VariableValue) aboutVariable.currentValue).variable;
+        Value currentValue = aboutVariable.getCurrentValue();
+        if (currentValue instanceof VariableValue)
+            return ((VariableValue) currentValue).variable;
         return variable;
     }
 
@@ -578,65 +505,128 @@ class VariableProperties implements EvaluationContext {
             AboutVariable av = entry.getValue();
             String name = entry.getKey();
             if (av.localCopyOf != null) {
-                av.localCopyOf.properties.clear();
+                av.localCopyOf.clearProperties();
 
+                Value avCurrentValue = av.getCurrentValue();
                 boolean erase;
                 // if: the block is executed for sure, and the assignment which contains current value, is executed for sure,
-                if (statementsExecutedAtLeastOnce && av.properties.contains(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)) {
+                if (statementsExecutedAtLeastOnce &&
+                        av.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED) == Level.TRUE) {
                     // erase when the result is a local variable, at this level
-                    erase = av.currentValue instanceof LocalVariableReference && variableProperties.containsKey(name);
+                    erase = avCurrentValue instanceof LocalVariableReference && variableProperties.containsKey(name);
                 } else {
                     erase = true; // block was executed conditionally, or the assignment was executed conditionally
                 }
-                copyConditionally(av.properties, av.localCopyOf.properties, READ, READ_MULTIPLE_TIMES, ASSIGNED,
-                        ASSIGNED_MULTIPLE_TIMES, CONTENT_MODIFIED);
+                copyIncrementLevel(av, av.localCopyOf);
+                copyBest(av, av.localCopyOf);
                 if (erase) {
-                    av.localCopyOf.currentValue = av.localCopyOf.resetValue;
-                    boolean notNullHere = av.properties.contains(CHECK_NOT_NULL);
-                    boolean notNullAtOrigin = av.localCopyOf.properties.contains(CHECK_NOT_NULL);
-                    if (notNullHere && !notNullAtOrigin) {
-                        av.localCopyOf.properties.add(CHECK_NOT_NULL);
-                    } else if (!notNullHere && notNullAtOrigin) {
-                        av.localCopyOf.properties.remove(CHECK_NOT_NULL);
-                    }
+                    av.localCopyOf.setCurrentValue(av.localCopyOf.resetValue);
+                    copyLeast(av, av.localCopyOf);
                     log(VARIABLE_PROPERTIES, "Erasing the value of {}, merge properties to {}", name);
                 } else {
-                    av.localCopyOf.currentValue = av.currentValue;
-                    log(VARIABLE_PROPERTIES, "Copied back value {} of {}, merge properties to {}",
-                            av.currentValue, name, av.properties);
+                    av.localCopyOf.setCurrentValue(avCurrentValue);
+                    log(VARIABLE_PROPERTIES, "Copied back value {} of {}", avCurrentValue, name);
                 }
             }
         }
     }
 
-    private void copyConditionally(Set<VariableProperty> from, Set<VariableProperty> to, VariableProperty...
-            properties) {
-        for (VariableProperty property : properties) {
-            if (from.contains(property)) to.add(property);
+    private static final VariableProperty[] BEST = {CONTENT_MODIFIED};
+
+    private void copyBest(AboutVariable from, AboutVariable to) {
+        for (VariableProperty property : BEST) {
+            int fromValue = from.getProperty(property);
+            int toValue = to.getProperty(property);
+            to.setProperty(property, Level.best(fromValue, toValue));
         }
     }
 
-    public boolean isKnown(Variable variable) {
-        String name = variableName(variable, true);
-        if (name == null) return false;
-        return find(name) != null;
+    private static final VariableProperty[] WORST = {VariableProperty.NOT_NULL};
+
+    private void copyLeast(AboutVariable from, AboutVariable to) {
+        for (VariableProperty property : WORST) {
+            int fromValue = from.getProperty(property);
+            int toValue = to.getProperty(property);
+            to.setProperty(property, Level.worst(fromValue, toValue));
+        }
     }
 
-    public boolean inConstructionPhase() {
-        return currentMethod != null && currentMethod.methodAnalysis.partOfConstruction.get();
+    private static final VariableProperty[] INCREMENT_LEVEL = {READ, ASSIGNED};
+
+    private void copyIncrementLevel(AboutVariable from, AboutVariable to) {
+        for (VariableProperty property : INCREMENT_LEVEL) {
+            int fromValue = from.getProperty(property);
+            int toValue = to.getProperty(property);
+            to.setProperty(property, Level.nextLevelTrue(Level.best(fromValue, toValue), 1));
+        }
+    }
+
+
+    public boolean isKnown(Variable variable) {
+        String name = variableName(variable);
+        if (name == null) return false;
+        return find(name) != null;
     }
 
     public void removeAll(List<String> toRemove) {
         variableProperties.keySet().removeAll(toRemove);
     }
 
+    private static final VariableProperty[] VARIABLE_PROPERTIES_TO_BE_COPIED =
+            {VariableProperty.NOT_NULL,
+                    IMMUTABLE,
+                    VariableProperty.CONTAINER};
+
     public void copyProperties(Variable from, Variable to) {
-        // TODO
+        AboutVariable aboutFrom = findComplain(from);
+        AboutVariable aboutTo = findComplain(to);
+
+        for (VariableProperty variableProperty : VARIABLE_PROPERTIES_TO_BE_COPIED) {
+            aboutTo.setProperty(variableProperty, aboutFrom.getProperty(variableProperty));
+        }
     }
 
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
         return aboutVariable.getProperty(variableProperty);
+    }
+
+    @Override
+    public boolean equals(Variable variable, Variable other) {
+        if (variable == other) return true;
+        AboutVariable av = findComplain(variable);
+        if (!av.singleCopy) return false;
+        AboutVariable avOther = findComplain(other);
+        if (!avOther.singleCopy) return false;
+        return av.name.equals(avOther.name);
+    }
+
+    public void assignmentBasics(Variable at, Value value) {
+        // assignment to local variable: could be that we're in the block where it was created, then nothing happens
+        // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
+        ensureLocalCopy(at);
+
+        // check not null; clear record fields
+        reset(at, value instanceof Instance);
+        AboutVariable aboutVariable = findComplain(at);
+
+        aboutVariable.setCurrentValue(value);
+
+        if (value instanceof VariableValue) {
+            copyProperties(((VariableValue) value).variable, at);
+        } else {
+            // the following block is there in case the value, instead of the expected complicated one, turns
+            // out to be a constant.
+            int notNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+            aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
+        }
+        aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
+
+        int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
+        aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
+
+        aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
+                Level.fromBool(guaranteedToBeReached(at)));
     }
 }

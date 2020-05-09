@@ -95,6 +95,11 @@ public class Level {
         return j;
     }
 
+    public static int worst(int i, int j) {
+        if (better(i, j)) return j;
+        return i;
+    }
+
     public static int fromBool(boolean b) {
         return b ? TRUE : FALSE;
     }

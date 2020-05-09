@@ -37,16 +37,13 @@ public class VariableValue implements Value {
     @NotNull
     public final EvaluationContext evaluationContext;
 
-    public final Value valueForLinkAnalysis;
 
     public VariableValue(@NotNull EvaluationContext evaluationContext,
                          @NotNull Variable variable,
-                         @NotNull String name,
-                         Value valueForLinkAnalysis) {
+                         @NotNull String name) {
         this.evaluationContext = evaluationContext;
         this.variable = variable;
         this.name = name;
-        this.valueForLinkAnalysis = valueForLinkAnalysis;
     }
 
     @Override
@@ -54,7 +51,7 @@ public class VariableValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VariableValue that = (VariableValue) o;
-        return evaluationContext.equals(name, that.name);
+        return evaluationContext.equals(variable, that.variable);
     }
 
     @Override
@@ -120,11 +117,6 @@ public class VariableValue implements Value {
     @Override
     public ParameterizedType type() {
         return variable.concreteReturnType();
-    }
-
-    @Override
-    public Value valueForLinkAnalysis() {
-        return valueForLinkAnalysis != null ? valueForLinkAnalysis : this;
     }
 
 }

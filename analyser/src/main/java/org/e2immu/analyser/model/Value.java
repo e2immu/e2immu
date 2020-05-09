@@ -78,16 +78,6 @@ public interface Value extends Comparable<Value> {
         return null;
     }
 
-    /**
-     * will be overridden by VariableValue
-     *
-     * @return the object that we need to compute the links in an assignment,
-     * as compared to the object with which we continue
-     */
-    default Value valueForLinkAnalysis() {
-        return this;
-    }
-
     // HELPERS, NO NEED TO IMPLEMENT
 
     default boolean isNotNull0(EvaluationContext evaluationContext) {

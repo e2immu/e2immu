@@ -153,7 +153,7 @@ public class StatementAnalyser {
     private boolean unusedLocalVariablesCheck(VariableProperties variableProperties) {
         boolean changes = false;
         // we run at the local level
-        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE
                     && aboutVariable.getProperty(VariableProperty.READ) != Level.TRUE) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
@@ -175,7 +175,7 @@ public class StatementAnalyser {
         boolean changes = false;
         // we run at the local level
         List<String> toRemove = new ArrayList<>();
-        for (VariableProperties.AboutVariable aboutVariable : variableProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
                 if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                     methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
@@ -550,7 +550,7 @@ public class StatementAnalyser {
             if (at instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
-                // only change fields of "our" class
+                // only change fields of "our" class, otherwise, raise error
                 if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
                     if (!fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
                         typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
@@ -559,58 +559,16 @@ public class StatementAnalyser {
                     return;
                 }
 
-                // even inside our class, there are limitations
-                if (checkForIllegalAssignmentIntoNestedOrEnclosingType(fieldInfo, variableProperties)) {
+                // even inside our class, there are limitations; potentially raise error
+                if (checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, variableProperties)) {
                     return;
                 }
-
-                // if we're outside of construction, and we're assigning: non-final field, not taking anything into account
-                if (variableProperties.isNotAllowedToBeInTheMap((FieldReference) at)) {
-                    if (!methodInfo.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
-                        log(ASSIGNMENT, "Mark assignment to field {} outside constructors in {}", fieldInfo.fullyQualifiedName(), methodInfo.distinguishingName());
-                        methodInfo.methodAnalysis.fieldAssignments.put(fieldInfo, true);
-                        methodInfo.methodAnalysis.fieldAssignmentValues.put(fieldInfo, UnknownValue.UNKNOWN_VALUE);
-                        AnnotationExpression effectivelyFinal = typeContext.effectivelyFinal.get();
-                        if (!fieldInfo.fieldAnalysis.annotations.isSet(effectivelyFinal)) {
-                            log(FINAL, "Mark field {} as NOT @Final", fieldInfo.fullyQualifiedName());
-                            fieldInfo.fieldAnalysis.annotations.put(effectivelyFinal, false);
-                        }
-                    }
-                    return;
-                }
-                variableProperties.createVariableIfRelevant(at);
             }
+            variableProperties.assignmentBasics(at, value);
 
-            // assignment to local variable: could be that we're in the block where it was created, then nothing happens
-            // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-            variableProperties.ensureLocalCopy(at);
-
-            // check not null; clear record fields
-            variableProperties.reset(at, value instanceof Instance);
-            VariableProperties.AboutVariable aboutVariable = variableProperties.findComplain(at);
-
-            aboutVariable.setCurrentValue(value);
-
-            if (value instanceof VariableValue) {
-                variableProperties.copyProperties(((VariableValue)value).variable, at);
-            } else {
-                // the following block is there in case the value, instead of the expected complicated one, turns
-                // out to be a constant.
-                int notNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
-                aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
-            }
-            aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
-
-            int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
-            aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
-
-            aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
-                    Level.fromBool(variableProperties.guaranteedToBeReached(at)));
-
-            Value valueForLinkAnalysis = value.valueForLinkAnalysis();
-            if (valueForLinkAnalysis != NO_VALUE) {
-                Set<Variable> linkToBestCase = valueForLinkAnalysis.linkedVariables(true, variableProperties);
-                Set<Variable> linkToWorstCase = valueForLinkAnalysis.linkedVariables(false, variableProperties);
+            if (value != NO_VALUE) {
+                Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
+                Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
                 log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
                         Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
                 variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
@@ -623,15 +581,8 @@ public class StatementAnalyser {
                         log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
                         methodAnalysis.thisRead.set(true);
                     }
-                } else if (variable instanceof FieldReference && variableProperties.isNotAllowedToBeInTheMap((FieldReference) variable)) {
-                    // we're outside the construction phase with a field (so we're not keeping tabs on it in the variable properties
-                    FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                    if (!methodAnalysis.fieldRead.isSet(fieldInfo)) {
-                        methodAnalysis.fieldRead.put(fieldInfo, true);
-                        log(ASSIGNMENT, "Mark field {} as read outside construction phase", fieldInfo.fullyQualifiedName(), methodInfo.name);
-                    }
                 } else {
-                    variableProperties.createVariableIfRelevant(variable);
+                    variableProperties.ensureVariable(variable);
                     if (variableProperties.isKnown(variable)) {
                         variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
                         int read = variableProperties.getProperty(variable, VariableProperty.READ);
@@ -680,24 +631,28 @@ public class StatementAnalyser {
      * @param variableProperties context
      * @return true if the assignment is illegal
      */
-    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldInfo assignmentTarget,
+    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldReference assignmentTarget,
                                                                        VariableProperties variableProperties) {
         MethodInfo currentMethod = variableProperties.getCurrentMethod();
-        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(assignmentTarget)) {
-            return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(assignmentTarget);
+        FieldInfo fieldInfo = assignmentTarget.fieldInfo;
+        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
+            return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(fieldInfo);
         }
         boolean error;
+        TypeInfo owner = fieldInfo.owner;
         TypeInfo currentType = variableProperties.getCurrentType();
-        if (assignmentTarget.owner == currentType) {
-            error = false;
+        if (owner == currentType) {
+            // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
+            error = !(assignmentTarget.scope instanceof This);
         } else {
-            error = !(assignmentTarget.owner.isRecord() && currentType.isAnEnclosingTypeOf(assignmentTarget.owner));
+            // outside current type, only records
+            error = !(owner.isRecord() && currentType.isAnEnclosingTypeOf(owner));
         }
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
-                    " is not allowed to assign to field " + assignmentTarget.fullyQualifiedName());
+                    " is not allowed to assign to field " + fieldInfo.fullyQualifiedName());
         }
-        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(assignmentTarget, error);
+        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(fieldInfo, error);
         return error;
     }
 
@@ -775,10 +730,10 @@ public class StatementAnalyser {
     private boolean variableOccursInNotNullContext(NumberedStatement currentStatement, Variable variable, VariableProperties variableProperties) {
         if (variable instanceof This) return false; // nothing to be done here
         // the variable has already been created, if relevant
-        if(!variableProperties.isKnown(variable)) return false;
+        if (!variableProperties.isKnown(variable)) return false;
 
         int notNull = variableProperties.getProperty(variable, VariableProperty.NOT_NULL);
-        if(Level.value(notNull, Level.NOT_NULL) == Level.TRUE) return false; // OK!
+        if (Level.value(notNull, Level.NOT_NULL) == Level.TRUE) return false; // OK!
 
         // if the variable has been assigned to another variable, we want to jump there!
         // this chain potentially ends in fields or parameters
@@ -818,7 +773,7 @@ public class StatementAnalyser {
             return;
         }
         log(DEBUG_MODIFY_CONTENT, "Mark method object as {}: {}", propertyToSet, variable.detailedString());
-        variableProperties.createVariableIfRelevant(variable);
+        variableProperties.ensureVariable(variable);
         variableProperties.addProperty(variable, propertyToSet, value);
     }
 }

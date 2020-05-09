@@ -195,7 +195,7 @@ public class ComputeLinking {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), aboutVariable.variable);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
@@ -264,7 +264,7 @@ public class ComputeLinking {
 
     private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             if (aboutVariable.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
                 int assigned = Level.value(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
@@ -282,7 +282,7 @@ public class ComputeLinking {
     private static boolean computeFieldAssignmentsFieldsRead(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
-        for (VariableProperties.AboutVariable aboutVariable : methodProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;

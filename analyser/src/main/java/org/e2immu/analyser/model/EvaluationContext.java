@@ -75,14 +75,10 @@ public interface EvaluationContext {
 
     @NotNull
     VariableValue newArrayVariableValue(Value array, Value indexValue);
-    // called by Assignment operator
 
-    @NotNull
-    Value assignment(Variable assignmentTarget, Value resultOfExpression);
     // delegation
-
     int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);
 
     // method of VariableValue
-    boolean equals(@NotNull String name, @NotNull String other);
+    boolean equals(@NotNull Variable variable, Variable other);
 }
