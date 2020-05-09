@@ -78,8 +78,8 @@ public class Primitives {
     public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
 
     public final MethodInfo plusOperatorInt = new MethodInfo(intTypeInfo, "+",
-            List.of(new ParameterInfo(intParameterizedType, "lhs", 0),
-                    new ParameterInfo(intParameterizedType, "rhs", 1)), intParameterizedType, true);
+            List.of(new ParameterInfo(null, null, intParameterizedType, "lhs", 0),
+                    new ParameterInfo(null, null, intParameterizedType, "rhs", 1)), intParameterizedType, true);
 
     public final MethodInfo minusOperatorInt = new MethodInfo(intTypeInfo, "-",
             List.of(), intParameterizedType, true);
@@ -111,8 +111,9 @@ public class Primitives {
             List.of(), booleanParameterizedType, true);
 
     public final MethodInfo multiplyOperatorInt = new MethodInfo(intTypeInfo, "*",
-            List.of(new ParameterInfo(intParameterizedType, "lhs", 0),
-                    new ParameterInfo(intParameterizedType, "rhs", 1)), intParameterizedType, true);
+            List.of(new ParameterInfo(null, null, intParameterizedType, "lhs", 0),
+                    new ParameterInfo(null, null, intParameterizedType, "rhs", 1)),
+            intParameterizedType, true);
 
     public final MethodInfo assignOperatorInt = new MethodInfo(intTypeInfo, "=",
             List.of(), intParameterizedType, true);
@@ -177,7 +178,7 @@ public class Primitives {
         }
 
         MethodInfo valueOf = new MethodInfo(annotationTypeTypeInfo, "valueOf", true);
-        ParameterInfo valueOf1 = new ParameterInfo(stringParameterizedType, "s", 0);
+        ParameterInfo valueOf1 = new ParameterInfo(null, valueOf, stringParameterizedType, "s", 0);
         valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .build(valueOf));
         valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()

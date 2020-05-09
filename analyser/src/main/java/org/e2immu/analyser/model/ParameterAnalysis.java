@@ -25,7 +25,7 @@ import org.e2immu.annotation.NotNull;
 public class ParameterAnalysis extends Analysis {
 
     private final ParameterizedType parameterizedType;
-    private final TypeContext typeContext;
+    private final TypeContext typeContext; // can be null, for primitives
     private final MethodInfo owner; // can be null, for lambda expressions
 
     public ParameterAnalysis(@NotNull ParameterizedType parameterizedType,
@@ -59,8 +59,9 @@ public class ParameterAnalysis extends Analysis {
 
     public boolean isNotModifiedByDefinition() {
         if (parameterizedType.isPrimitive()) return true;
-        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
         if (parameterizedType.isEnum()) return true;
+        if (parameterizedType.isAnnotation()) return true;
+        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
         return parameterizedType.isUnboundParameterType();
     }
 

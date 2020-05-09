@@ -619,6 +619,10 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
     }
 
+    public boolean isAnnotation() {
+        return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ANNOTATION;
+    }
+
     public TypeInfo bestTypeInfo() {
         if (typeInfo != null) return typeInfo;
         if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
