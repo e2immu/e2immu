@@ -90,11 +90,12 @@ public class FieldAccess implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         Value scope = expression.evaluate(evaluationContext, visitor);
+        Value currentValue = evaluationContext.currentValue(variable);
         Value value;
         if (scope instanceof NullValue) {
-            value = ErrorValue.nullPointerException(new VariableValue(variable, evaluationContext.variableName(variable)));
+            value = ErrorValue.nullPointerException(currentValue);
         } else {
-            value = evaluationContext.currentValue(variable);
+            value = currentValue;
         }
         visitor.visit(this, evaluationContext, value);
         return value;

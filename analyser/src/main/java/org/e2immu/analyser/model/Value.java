@@ -42,17 +42,13 @@ public interface Value extends Comparable<Value> {
 
     // executed without context
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
-        return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final
-    }
-
-    default int isNotNull0OutsideContext() {
-        return Level.value(getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL);
+        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // default = @NotNull
+        throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return 1; // default = @NotNull
-        return Level.UNDEFINED; // no information about @NotModified, @Container/@Immutable, @Final
+        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // default = @NotNull
+        throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
     default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
@@ -103,4 +99,13 @@ public interface Value extends Comparable<Value> {
         return this;
     }
 
+    // HELPERS, NO NEED TO IMPLEMENT
+
+    default boolean isNotNull0(EvaluationContext evaluationContext) {
+        return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.TRUE;
+    }
+
+    default int isNotNull0OutsideContext() {
+        return Level.value(getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL);
+    }
 }

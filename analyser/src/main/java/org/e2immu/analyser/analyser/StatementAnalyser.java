@@ -106,7 +106,7 @@ public class StatementAnalyser {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
                             ParameterInfo parameterInfo = (ParameterInfo) variable;
-                            if (parameterInfo.markNotNull(typeContext)) changes = true;
+                            if (parameterInfo.markNotNull(Level.TRUE)) changes = true;
                         }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
@@ -289,11 +289,6 @@ public class StatementAnalyser {
                 Set<Variable> vars = value.linkedVariables(true, variableProperties);
                 if (!statement.variablesLinkedToReturnValue.isSet()) {
                     statement.variablesLinkedToReturnValue.set(vars);
-                }
-                Boolean notNull = value.isNotNull(variableProperties);
-                if (notNull != null && !statement.returnsNotNull.isSet()) {
-                    statement.returnsNotNull.set(notNull);
-                    log(NOT_NULL, "Setting returnsNotNull on {} to {} based on {}", methodInfo.fullyQualifiedName(), notNull, value);
                 }
                 if (!statement.returnValue.isSet()) {
                     statement.returnValue.set(value);
@@ -554,7 +549,7 @@ public class StatementAnalyser {
                 }
 
                 // if we're outside of construction, and we're assigning: non-final field, not taking anything into account
-                if (variableProperties.isNotAllowedToBeInTheMap((FieldReference)at)) {
+                if (variableProperties.isNotAllowedToBeInTheMap((FieldReference) at)) {
                     if (!methodInfo.methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                         log(ASSIGNMENT, "Mark assignment to field {} outside constructors in {}", fieldInfo.fullyQualifiedName(), methodInfo.distinguishingName());
                         methodInfo.methodAnalysis.fieldAssignments.put(fieldInfo, true);
@@ -771,7 +766,7 @@ public class StatementAnalyser {
         Variable valueVar = variableProperties.switchToValueVariable(variable);
         if (valueVar instanceof ParameterInfo) {
             ParameterInfo parameterInfo = (ParameterInfo) valueVar;
-            return parameterInfo.markNotNull(typeContext);
+            return parameterInfo.markNotNull(Level.TRUE);
         }
         if (valueVar instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) valueVar).fieldInfo;
@@ -790,7 +785,7 @@ public class StatementAnalyser {
 
     private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
         // not modified
-        SideEffect sideEffect = methodCall.methodInfo.sideEffect(typeContext);
+        SideEffect sideEffect = methodCall.methodInfo.sideEffect();
         if (sideEffect == SideEffect.DELAYED) {
             recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED_DELAYED);
             return;

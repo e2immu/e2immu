@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -40,18 +41,19 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final String name;
     public final int index;
 
-    public final ParameterAnalysis parameterAnalysis = new ParameterAnalysis();
+    public final ParameterAnalysis parameterAnalysis;
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
 
-    public ParameterInfo(TypeInfo typeInfo, String name, int index) {
-        this(typeInfo.asParameterizedType(), name, index);
+    public ParameterInfo(TypeContext typeContext, MethodInfo owner, TypeInfo typeInfo, String name, int index) {
+        this(typeContext, owner, typeInfo.asParameterizedType(), name, index);
     }
 
-    public ParameterInfo(ParameterizedType parameterizedType, String name, int index) {
+    public ParameterInfo(TypeContext typeContext, MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
+        parameterAnalysis = new ParameterAnalysis(parameterizedType, typeContext, owner);
     }
 
     @Override
@@ -172,37 +174,15 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return parameterInspection.get().owner.typeInfo.hasTestAnnotation(annotation);
     }
 
-    public Boolean isNotModified(TypeContext typeContext) {
-        if (isNotModifiedByDefinition(typeContext)) return true;
-        if (Boolean.TRUE == parameterizedType.isE2Immutable(typeContext)) return true;
-        if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isE2Immutable(typeContext)) return true;
-        if (Boolean.TRUE == parameterInspection.get().owner.typeInfo.isContainer(typeContext)) return true;
-        return annotatedWith(typeContext.notModified.get());
-    }
-
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.NONE_PURE;
     }
 
-    public boolean isNotModifiedByDefinition(TypeContext typeContext) {
-        if (parameterizedType.isPrimitive()) return true;
-        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
-        if (parameterizedType.isEnum()) return true;
-        return parameterizedType.isUnboundParameterType();
-    }
-
-    public Boolean isNotNull(TypeContext typeContext) {
-        MethodInfo methodOfParameter = parameterInspection.get().owner;
-        if (methodOfParameter != null && methodOfParameter.typeInfo.isNotNullForParameters(typeContext) == Boolean.TRUE)
-            return true;
-        return annotatedWith(typeContext.notNull.get());
-    }
-
-    public boolean markNotNull(TypeContext typeContext) {
-        AnnotationExpression notNull = typeContext.notNull.get();
-        if (!parameterAnalysis.annotations.isSet(notNull)) {
-            parameterAnalysis.annotations.put(notNull, true);
+    public boolean markNotNull(int notNullLevel) {
+        int current = parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if (notNullLevel > current) {
+            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, notNullLevel);
             return true;
         }
         return false;

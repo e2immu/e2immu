@@ -227,7 +227,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         int i = 0;
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs());
-            ParameterInfo parameterInfo = new ParameterInfo(pt, parameter.getNameAsString(), i++);
+            ParameterInfo parameterInfo = new ParameterInfo(expressionContext.typeContext, this, pt, parameter.getNameAsString(), i++);
             parameterInfo.inspect(this, parameter, expressionContext, parameter.isVarArgs());
             builder.addParameter(parameterInfo);
         }
@@ -405,11 +405,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().parameters.stream()
                 .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
                 .min().orElse(Level.TRUE);
-    }
-
-    public Boolean isNoFieldsAssigned(TypeContext typeContext) {
-        if (methodAnalysis.fieldAssignments.isEmpty()) return true;
-        return methodAnalysis.fieldAssignments.stream().noneMatch(e -> e.getValue() == Boolean.TRUE);
     }
 
     public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {

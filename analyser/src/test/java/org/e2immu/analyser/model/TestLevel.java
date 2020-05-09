@@ -19,4 +19,15 @@ public class TestLevel {
         Assert.assertEquals(DELAY, Level.value(1, 1));
 
     }
+
+    @Test
+    public void testLevel() {
+        Assert.assertEquals(-1, Level.level(-1));
+        Assert.assertEquals(-1, Level.level(0));
+        Assert.assertEquals(0, Level.level(1));
+        Assert.assertEquals(0, Level.level(2));
+        Assert.assertEquals(1, Level.level(3));
+        Assert.assertEquals(1, Level.level(4));
+        Assert.assertEquals(2, Level.level(5));
+    }
 }

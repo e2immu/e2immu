@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,17 +40,18 @@ public class ParseArrayCreationExpr {
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(EmptyExpression.EMPTY_EXPRESSION)).collect(Collectors.toList());
-        return new NewObject(createArrayCreationConstructor(parameterizedType), parameterizedType, indexExpressions, arrayInitializer);
+        return new NewObject(createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
+                parameterizedType, indexExpressions, arrayInitializer);
     }
 
-    static MethodInfo createArrayCreationConstructor(ParameterizedType parameterizedType) {
+    static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInfo constructor = new MethodInfo(parameterizedType.typeInfo, List.of());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder()
                 .setBlock(Block.EMPTY_BLOCK)
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
-            ParameterInfo p = new ParameterInfo(Primitives.PRIMITIVES.intParameterizedType, "dim" + i, i);
+            ParameterInfo p = new ParameterInfo(typeContext, constructor, Primitives.PRIMITIVES.intParameterizedType, "dim" + i, i);
             p.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                     .setVarArgs(false)
                     .build(constructor));

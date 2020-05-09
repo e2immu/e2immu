@@ -18,8 +18,10 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 
 public class NullValue implements Value, Constant<Object> {
@@ -50,7 +52,7 @@ public class NullValue implements Value, Constant<Object> {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return false;
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+       return Level.FALSE; // mostly the NotNull, also: NotModified,
     }
 }

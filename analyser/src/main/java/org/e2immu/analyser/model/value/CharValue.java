@@ -68,12 +68,6 @@ public class CharValue implements Value, Constant<Character> {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.charParameterizedType;
     }

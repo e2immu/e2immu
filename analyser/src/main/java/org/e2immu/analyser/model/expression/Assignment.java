@@ -143,7 +143,6 @@ public class Assignment implements Expression {
             target.evaluate(evaluationContext, visitor);
         }
         Value resultOfExpression = value.evaluate(evaluationContext, visitor);
-        Value result = null;
 
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
         // the value we return depends on the kind of variable we're dealing with.
@@ -152,33 +151,8 @@ public class Assignment implements Expression {
         // if the variable ends up being an effectively final field, we need the most correct value; this is one of the
         // assignments during construction
         // most importantly here, if we don't know yet if the field is effectively final or not, we delay
+        Value result = evaluationContext.assignment(assignmentTarget, resultOfExpression);
 
-        if (assignmentTarget instanceof FieldReference) {
-            FieldReference fieldReference = (FieldReference) assignmentTarget;
-            Boolean isEffectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(evaluationContext.getTypeContext());
-            if (isEffectivelyFinal == null) {
-                // let's try to delay
-                result = UnknownValue.NO_VALUE;
-            } else if (!isEffectivelyFinal) {
-                // field, not effectively final guaranteed
-                result = new Instance(fieldReference.concreteReturnType);
-            }
-        }
-        if (result == null) {
-            if (resultOfExpression instanceof MethodValue || resultOfExpression instanceof Instance) {
-                Boolean isNotNull = resultOfExpression.isNotNull(evaluationContext);
-                if (isNotNull == null) {
-                    result = UnknownValue.NO_VALUE; // delay
-                } else {
-                    // here we set the valueForLinkAnalysis to be the method value rather than the variable value
-                    // which we will return
-                    String name = evaluationContext.variableName(assignmentTarget);
-                    result = new VariableValue(assignmentTarget, name, Set.of(), resultOfExpression, isNotNull);
-                }
-            } else {
-                result = resultOfExpression;
-            }
-        }
         visitor.visit(this, evaluationContext, result);
         return result;
     }

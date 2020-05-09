@@ -73,7 +73,7 @@ public class OrValue implements Value {
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
             log(CNF, "Return Instance in Or, found unknown value");
-            return new Instance(Primitives.PRIMITIVES.booleanParameterizedType);
+            return UnknownValue.UNKNOWN_VALUE;
         }
         // STEP 4: loop
 

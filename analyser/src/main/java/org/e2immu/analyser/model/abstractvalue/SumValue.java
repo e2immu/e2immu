@@ -49,7 +49,7 @@ public class SumValue implements Value {
 
         // any unknown lingering
         if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return new Instance(Primitives.PRIMITIVES.intParameterizedType); // TODO make number
+            return UnknownValue.UNKNOWN_VALUE;
 
         // a + x*a
         if (l instanceof ProductValue && ((ProductValue) l).lhs instanceof NumericValue &&

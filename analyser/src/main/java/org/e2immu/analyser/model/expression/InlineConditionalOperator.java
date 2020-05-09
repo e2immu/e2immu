@@ -21,12 +21,10 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ErrorValue;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
@@ -52,7 +50,7 @@ public class InlineConditionalOperator implements Expression {
         Value c = conditional.evaluate(evaluationContext, evaluationVisitor);
 
         if (c instanceof BoolValue) {
-            Value error = ErrorValue.inlineConditionalEvaluatesToConstant(new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
+            Value error = ErrorValue.inlineConditionalEvaluatesToConstant(UnknownValue.UNKNOWN_VALUE);
             evaluationVisitor.visit(this, evaluationContext, error);
             return error;
         }

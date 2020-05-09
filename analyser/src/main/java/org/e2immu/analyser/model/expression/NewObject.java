@@ -118,7 +118,7 @@ public class NewObject implements HasParameterExpressions {
             List<Value> parameterValues = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor))
                     .collect(Collectors.toList());
-            value = new Instance(parameterizedType, constructor, parameterValues, true);
+            value = new Instance(parameterizedType, constructor, parameterValues);
         }
         visitor.visit(this, evaluationContext, value);
         return value;
@@ -131,11 +131,11 @@ public class NewObject implements HasParameterExpressions {
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
 
         if (constructor != null) {
-            Boolean isNotModified = constructor.isAllParametersNotModified(sideEffectContext.typeContext);
-            if (isNotModified == Boolean.TRUE && params.lessThan(SideEffect.SIDE_EFFECT)) {
+            int notModified = constructor.allParametersNotModified();
+            if (notModified == Level.TRUE && params.lessThan(SideEffect.SIDE_EFFECT)) {
                 return SideEffect.STATIC_ONLY;
             }
-            if (isNotModified == null) return SideEffect.DELAYED;
+            if (notModified == Level.DELAY) return SideEffect.DELAYED;
         }
 
         return params;

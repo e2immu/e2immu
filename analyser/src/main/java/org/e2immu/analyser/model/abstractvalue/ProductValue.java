@@ -50,7 +50,7 @@ public class ProductValue implements Value {
 
         // any unknown lingering
         if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return new Instance(Primitives.PRIMITIVES.intParameterizedType); // TODO make number
+            return UnknownValue.UNKNOWN_VALUE;
 
         if (r instanceof SumValue) {
             SumValue sum = (SumValue) r;

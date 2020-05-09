@@ -18,10 +18,8 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.This;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -57,35 +55,34 @@ public class ReturnStatement extends StatementWithExpression {
             return SideEffect.STATIC_ONLY;
         }
         // at least NONE_PURE... unless the expression is tagged as "@Identity", then STATIC_ONLY is allowed
-        Boolean isIdentity = isIdentity(sideEffectContext.typeContext, expression);
-        if (isIdentity == null) return SideEffect.DELAYED;
-        SideEffect base = isIdentity ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
+        int identity = identity(expression);
+        if (identity == Level.DELAY) return SideEffect.DELAYED;
+        SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
         return base.combine(expression.sideEffect(sideEffectContext));
     }
 
-    public Boolean isFluent(TypeContext typeContext) {
+    public int fluent() {
         if (expression instanceof VariableExpression) {
             VariableExpression variableExpression = (VariableExpression) expression;
-            if (variableExpression.variable instanceof This) return true;
+            if (variableExpression.variable instanceof This) return Level.TRUE;
         }
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
-            return methodCall.methodInfo.isFluent(typeContext);
+            return methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.FLUENT);
         }
-        return false;
+        return Level.FALSE;
     }
 
-    public static Boolean isIdentity(TypeContext typeContext, Expression expression) {
-        if (isFirstParameter(expression)) return true;
+    public static int identity(Expression expression) {
+        if (isFirstParameter(expression)) return Level.TRUE;
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
-            if (methodCall.parameterExpressions.size() == 0) return false;
-            Boolean isIdentity = methodCall.methodInfo.isIdentity(typeContext);
-            if (isIdentity == Boolean.FALSE) return false;
-            if (isIdentity == null) return null;
-            return isIdentity(typeContext, methodCall.parameterExpressions.get(0));
+            if (methodCall.parameterExpressions.size() == 0) return Level.FALSE;
+            int identity = methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+            if (identity != Level.TRUE) return identity;
+            return identity(methodCall.parameterExpressions.get(0));
         }
-        return false;
+        return Level.FALSE;
     }
 
     private static boolean isFirstParameter(Expression expression) {

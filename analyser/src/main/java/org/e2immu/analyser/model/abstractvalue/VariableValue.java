@@ -18,12 +18,11 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,6 +33,7 @@ public class VariableValue implements Value {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
+    // provided so that we can compute a proper equals(), which is executed...
     @NotNull
     public final EvaluationContext evaluationContext;
 
@@ -79,6 +79,24 @@ public class VariableValue implements Value {
         return 1;
     }
 
+    @Override
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        ParameterizedType type = variable.parameterizedType();
+        TypeInfo bestType = type.bestTypeInfo();
+        if (bestType != null) return bestType.typeAnalysis.getProperty(variableProperty);
+        if (type.typeParameter != null) {
+            // but no extension... unbound type parameter
+            if (variableProperty == VariableProperty.NOT_MODIFIED) {
+                return Level.TRUE;
+            }
+        }
+        return Level.FALSE;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return evaluationContext.getProperty(variableProperty);
+    }
     /*
     The difference between worst and best case here is that the worst case is guaranteed to be stable wrt. this evaluation.
     (Independent of whether the value's type has been analysed or not; the critical point is that it is not being evaluated.)
@@ -87,8 +105,14 @@ public class VariableValue implements Value {
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         boolean differentType = evaluationContext.getCurrentType() != variable.parameterizedType().typeInfo;
-        boolean e2Immu = (bestCase || differentType) &&
-                variable.parameterizedType().isE2Immutable(evaluationContext.getTypeContext()) == Boolean.TRUE;
+        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        boolean e2ImmuType;
+        if (typeInfo != null) {
+            e2ImmuType = Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE;
+        } else {
+            e2ImmuType = false;
+        }
+        boolean e2Immu = (bestCase || differentType) && e2ImmuType;
         if (e2Immu || variable.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
         return Set.of(variable);
     }

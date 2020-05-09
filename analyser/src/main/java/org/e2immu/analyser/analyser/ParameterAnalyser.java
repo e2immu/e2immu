@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -58,14 +59,14 @@ public class ParameterAnalyser {
     }
 
     public boolean notModified(ParameterInfo parameterInfo, Boolean directContentModification) {
-        if (!parameterInfo.isNotModifiedByDefinition(typeContext)) {
+        if (!parameterInfo.parameterAnalysis.isNotModifiedByDefinition()) {
             if (directContentModification != null) {
                 boolean notModified = !directContentModification;
-                if (!parameterInfo.parameterAnalysis.annotations.isSet(typeContext.notModified.get())) {
+                if (parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) {
                     log(NOT_MODIFIED, "Mark {} of {} " + (notModified ? "" : "NOT") + " @NotModified",
                             parameterInfo.detailedString(),
                             parameterInfo.parameterInspection.get().owner.distinguishingName());
-                    parameterInfo.parameterAnalysis.annotations.put(typeContext.notModified.get(), notModified);
+                    parameterInfo.parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, notModified);
                     return true;
                 }
             } else {

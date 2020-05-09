@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
@@ -65,33 +66,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             List<Value> parameters = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
-            Boolean isNotNull = methodInfo.isNotNull(evaluationContext.getTypeContext());
 
             if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
                 Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {
-                    result = new MethodValue(methodInfo, objectValue, parameters, isNotNull);
+                    result = new MethodValue(methodInfo, objectValue, parameters);
                 }
             } else if (methodInfo.hasBeenDefined()) {
                 // we will, at some point, analyse this method
                 result = UnknownValue.NO_VALUE;
             } else {
-                Boolean isIdentity = methodInfo.isIdentity(evaluationContext.getTypeContext());
-                if (isIdentity == null) {
+                int identity = methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+                if (identity == Level.DELAY) {
                     result = UnknownValue.NO_VALUE; // delaying
-                } else if (isIdentity) {
-                    if (isNotNull == Boolean.TRUE) {
-                        result = parameters.get(0).finalNotNullCopy();
-                    } else {
-                        result = parameters.get(0);
-                    }
+                } else if (identity == Level.TRUE) {
+                    result = parameters.get(0);
                 } else {
                     // we will never analyse this method
-                    // simple example of a frequently recurring issue...
-                    result = new MethodValue(methodInfo, objectValue, parameters, isNotNull);
+                    result = new MethodValue(methodInfo, objectValue, parameters);
 
+                    // simple example of a frequently recurring issue...
                     if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
                         ParameterizedType type = objectValue.type();
                         if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
@@ -168,7 +164,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        SideEffect methodsSideEffect = methodInfo.sideEffect(sideEffectContext.typeContext);
+        SideEffect methodsSideEffect = methodInfo.sideEffect();
         if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
             return SideEffect.STATIC_ONLY;
         }

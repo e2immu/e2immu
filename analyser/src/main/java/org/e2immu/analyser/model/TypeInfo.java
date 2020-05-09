@@ -227,7 +227,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         MethodInfo valueOfMethodInfo = new MethodInfo(this, "valueOf", List.of(),
                 Primitives.PRIMITIVES.stringParameterizedType, true);
-        ParameterInfo valueOfP0 = new ParameterInfo(Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
+        ParameterInfo valueOfP0 = new ParameterInfo(expressionContext.typeContext, valueOfMethodInfo,
+                Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notNull.get())
                 .build(valueOfMethodInfo));
@@ -1009,7 +1010,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 
-        MethodInfo methodInfo = method.buildCopy(typeInfo);
+        MethodInfo methodInfo = method.buildCopy(typeContext, typeInfo);
         builder.addMethod(methodInfo);
 
         // compose the content of the method...

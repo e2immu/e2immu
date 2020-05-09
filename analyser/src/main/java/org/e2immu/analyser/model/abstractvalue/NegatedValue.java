@@ -51,8 +51,7 @@ public class NegatedValue implements Value {
             return ((NumericValue) v).negate();
         }
         if (v == UnknownValue.UNKNOWN_VALUE)
-            return new OrValue(new Instance(Primitives.PRIMITIVES.intParameterizedType),
-                    new Instance(Primitives.PRIMITIVES.booleanParameterizedType));
+            return UnknownValue.UNKNOWN_VALUE;
 
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {

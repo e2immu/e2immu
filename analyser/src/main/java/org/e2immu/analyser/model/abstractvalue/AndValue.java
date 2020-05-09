@@ -65,8 +65,8 @@ public class AndValue implements Value {
         // STEP 3: one-off observations
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
-            log(CNF, "Return Instance in And, found Unknown value");
-            return new Instance(Primitives.PRIMITIVES.booleanParameterizedType);
+            log(CNF, "Return Unknown value in And, found Unknown value");
+            return UnknownValue.UNKNOWN_VALUE;
         }
 
         // STEP 4: loop

@@ -84,7 +84,7 @@ public class ArrayAccess implements Expression {
             }
             value = arrayValue.values.get(intIndex);
         } else {
-            value = UnknownValue.UNKNOWN_VALUE;
+            value = evaluationContext.newArrayVariableValue(array, indexValue);
         }
         visitor.visit(expression, evaluationContext, value);
         return value;

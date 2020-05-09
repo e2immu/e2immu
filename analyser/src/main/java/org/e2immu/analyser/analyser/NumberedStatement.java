@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotModified;
@@ -34,7 +35,6 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<List<NumberedStatement>> blocks = new SetOnce<>();
     public SetOnce<Boolean> neverContinues = new SetOnce<>(); // returns, or escapes; set at the beginning of a block
     public SetOnce<Boolean> escapes = new SetOnce<>(); // escapes, on the beginning of a block
-    public SetOnce<Boolean> returnsNotNull = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Value> returnValue = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
 
@@ -74,5 +74,25 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
         }
         if (o.indices.length > indices.length) return -1;
         return 0;
+    }
+
+    // works for a select number of properties, simplifies some code in method analyser
+
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_NULL:
+            case CONTAINER:
+            case IMMUTABLE:
+                return returnValue.isSet() ? returnValue.get().getProperty(evaluationContext, variableProperty) : Level.DELAY;
+
+            case FLUENT:
+                if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
+                return ((ReturnStatement) statement).fluent();
+            case IDENTITY:
+                if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
+                return ReturnStatement.identity(((ReturnStatement) statement).expression);
+            default:
+                throw new UnsupportedOperationException("?? not implemented for property " + variableProperty);
+        }
     }
 }

@@ -16,11 +16,6 @@ public class ThisValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(TypeContext typeContext) {
-        return true;
-    }
-
-    @Override
     public int compareTo(Value o) {
         if (o instanceof This) {
             return thisVariable.typeInfo.fullyQualifiedName.compareTo(((This) o).typeInfo.fullyQualifiedName);

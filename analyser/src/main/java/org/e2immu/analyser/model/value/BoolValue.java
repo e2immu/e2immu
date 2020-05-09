@@ -76,11 +76,6 @@ public class BoolValue implements Value, Constant<Boolean> {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }

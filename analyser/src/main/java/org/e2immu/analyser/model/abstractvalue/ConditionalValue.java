@@ -19,7 +19,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.TypeContext;
@@ -46,19 +48,27 @@ public class ConditionalValue implements Value {
 
     @Override
     public String asString() {
-        return null;
+        return condition.asString() + "?" + ifTrue.asString() + ":" + ifFalse.asString();
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        Boolean t = ifTrue.isNotNull(evaluationContext.child(condition, null, false));
-        Boolean f = ifFalse.isNotNull(evaluationContext.child(NegatedValue.negate(condition), null, false));
-        return TypeAnalyser.TERNARY_AND.apply(t, f);
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) {
+            int notNullTrue = ifTrue.getProperty(evaluationContext, variableProperty);
+            int notNullFalse = ifFalse.getProperty(evaluationContext, variableProperty);
+            return Level.best(notNullTrue, notNullFalse);
+        }
+        throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
     @Override
-    public Boolean isNotNull(TypeContext typeContext) {
-        return ifTrue.isNotNull(typeContext) && ifFalse.isNotNull(typeContext);
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) {
+            int notNullTrue = ifTrue.getPropertyOutsideContext(variableProperty);
+            int notNullFalse = ifFalse.getPropertyOutsideContext(variableProperty);
+            return Level.best(notNullTrue, notNullFalse);
+        }
+        throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
     @Override

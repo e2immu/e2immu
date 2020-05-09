@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -109,12 +110,12 @@ public class LambdaBlock implements Expression {
             }
             visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
         }
-        return new Instance(functionalType);
+        return UnknownValue.UNKNOWN_VALUE; // TODO we should create a method!! MethodValue(functionalType);
     }
 
     private ParameterizedType createFunctionalType(List<ParameterInfo> parameters, ParameterizedType returnType) {
         TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
         return typeInfo.asParameterizedType();
-        // TODO this should be expanded greatly to be correct, but for now we only need the unicity
+        // TODO this should be expanded greatly to be correct, but for now we only need the uniqueness
     }
 }

@@ -82,12 +82,6 @@ public class DoubleValue implements Constant<Double>, NumericValue {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.doubleParameterizedType;
     }

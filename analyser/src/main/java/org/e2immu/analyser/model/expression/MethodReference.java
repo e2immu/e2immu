@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -28,6 +29,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -80,30 +82,35 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         Value value = scope.evaluate(evaluationContext, visitor);
         Value result;
 
-        Boolean isNotNull = methodInfo.isNotNull(evaluationContext.getTypeContext());
-        if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
-            Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
-            if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                result = singleValue;
+        if (methodInfo.isConstructor) {
+            // construction, similar to NewObject, without parameters
+            // TODO arrays?
+            result = new Instance(methodInfo.returnType(), methodInfo, List.of());
+        } else {
+            // normal method call, very similar to MethodCall.evaluate
+            if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
+                Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
+                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                    result = singleValue;
+                } else {
+                    Value method = new MethodValue(methodInfo, value, List.of());
+                    if (value instanceof NullValue) {
+                        result = ErrorValue.nullPointerException(method);
+                    } else {
+                        result = method;
+                    }
+                }
+            } else if (methodInfo.hasBeenDefined()) {
+                result = UnknownValue.NO_VALUE;
             } else {
-                Value method = new MethodValue(methodInfo, value, List.of(), isNotNull);
+                Value method = new MethodValue(methodInfo, value, List.of());
                 if (value instanceof NullValue) {
                     result = ErrorValue.nullPointerException(method);
                 } else {
                     result = method;
                 }
             }
-        } else if (methodInfo.hasBeenDefined()) {
-            result = UnknownValue.NO_VALUE;
-        } else {
-            Value method = new MethodValue(methodInfo, value, List.of(), isNotNull);
-            if (value instanceof NullValue) {
-                result = ErrorValue.nullPointerException(method);
-            } else {
-                result = method;
-            }
         }
-
         visitor.visit(this, evaluationContext, result);
         return result;
     }

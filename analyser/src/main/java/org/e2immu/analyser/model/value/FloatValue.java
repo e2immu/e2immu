@@ -83,12 +83,6 @@ public class FloatValue implements Constant<Float>, NumericValue {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.floatParameterizedType;
     }

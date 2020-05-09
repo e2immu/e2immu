@@ -88,8 +88,8 @@ public class BinaryOperator implements Expression {
 
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject) {
             if (l.equals(r)) return BoolValue.TRUE;
-            if (l == NullValue.NULL_VALUE && r.isNotNull(evaluationContext) == Boolean.TRUE ||
-                    r == NullValue.NULL_VALUE && l.isNotNull(evaluationContext) == Boolean.TRUE) {
+            if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
+                    r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.FALSE;
             }
             return EqualsValue.equals(l, r);
@@ -103,8 +103,8 @@ public class BinaryOperator implements Expression {
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorObject) {
             if (l.equals(r)) return BoolValue.FALSE;
-            if (l == NullValue.NULL_VALUE && r.isNotNull(evaluationContext) == Boolean.TRUE ||
-                    r == NullValue.NULL_VALUE && l.isNotNull(evaluationContext) == Boolean.TRUE) {
+            if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
+                    r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
             }
             return NegatedValue.negate(EqualsValue.equals(l, r));
@@ -155,7 +155,7 @@ public class BinaryOperator implements Expression {
             return GreaterThanZeroValue.greater(l, r, false);
         }
         if (operator == Primitives.PRIMITIVES.bitwiseAndOperatorInt) {
-            return new BitwiseAndValue(l, r);
+            return BitwiseAndValue.bitwiseAnd(l, r);
         }
         /*
             if (operator == Primitives.PRIMITIVES.bitwiseOrOperatorInt) {

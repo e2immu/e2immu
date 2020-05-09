@@ -91,7 +91,7 @@ public class MyMethodVisitor extends MethodVisitor {
         int parameterIndex = countLocalVars - (methodInfo.isStatic ? 0 : 1);
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
-            ParameterInfo parameterInfo = new ParameterInfo(parameterizedType, name, parameterIndex);
+            ParameterInfo parameterInfo = new ParameterInfo(typeContext, methodInfo, parameterizedType, name, parameterIndex);
             parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
             methodInspectionBuilder.addParameter(parameterInfo);
             hasNameFromLocalVar[parameterIndex] = true;
@@ -106,7 +106,7 @@ public class MyMethodVisitor extends MethodVisitor {
             if (!hasNameFromLocalVar[i]) {
                 ParameterizedType type = types.get(i);
                 String parameterName = factory.next(type);
-                ParameterInfo parameterInfo = new ParameterInfo(type, parameterName, i);
+                ParameterInfo parameterInfo = new ParameterInfo(typeContext, methodInfo, type, parameterName, i);
                 methodInspectionBuilder.addParameter(parameterInfo);
 
                 parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build(methodInfo));

@@ -80,12 +80,6 @@ public class ShortValue implements Value, Constant<Short>, NumericValue {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.shortParameterizedType;
     }

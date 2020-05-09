@@ -69,6 +69,12 @@ public class Level {
         return i >= level * 2 + 1;
     }
 
+    // the  best level where we have TRUE involved (-1, 0 = -1 (NONE), 1, 2 = 0, 2, 3 = 1, ...)
+    public static int level(int i) {
+        if (i < 1) return -1;
+        return (i - 1) / 2;
+    }
+
     public static boolean acceptIncrement(int from, int to) {
         if (from >= to) return false; // we must go up
         if (from == DELAY) return true;

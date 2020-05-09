@@ -18,7 +18,9 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 
 public class UnknownValue implements Value {
@@ -45,7 +47,12 @@ public class UnknownValue implements Value {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return null; // no idea!
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        return Level.FALSE;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return Level.FALSE;
     }
 }

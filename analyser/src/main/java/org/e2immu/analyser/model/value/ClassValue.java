@@ -70,12 +70,6 @@ public class ClassValue implements Value, Constant<ParameterizedType> {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.classTypeInfo.asParameterizedType();
     }

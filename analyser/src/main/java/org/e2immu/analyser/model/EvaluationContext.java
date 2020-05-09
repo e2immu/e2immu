@@ -26,6 +26,8 @@ import org.e2immu.annotation.NotNull;
 import java.util.Set;
 
 public interface EvaluationContext {
+
+    // called by VariableExpression, FieldAccess
     Value currentValue(Variable variable);
 
     // with null meaning that no decision can be made yet
@@ -56,6 +58,17 @@ public interface EvaluationContext {
 
     boolean equals(String name, String name1);
 
+    /// NEW METHODS
+
     // we're adding a variable to the evaluation context
     VariableValue newVariableValue(Variable variable);
+
+    // create a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
+    VariableValue newArrayVariableValue(Value array, Value indexValue);
+
+    // called by Assignment operator
+    Value assignment(Variable assignmentTarget, Value resultOfExpression);
+
+    // delegation
+    int getProperty(VariableProperty variableProperty);
 }

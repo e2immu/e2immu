@@ -18,13 +18,11 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.List;
 import java.util.Objects;
 
 public class StringValue implements Value, Constant<String> {
@@ -38,11 +36,11 @@ public class StringValue implements Value, Constant<String> {
         if (accept(l) && accept(r)) {
             return new StringValue(l.asString() + r.asString());
         }
-        return new Instance(Primitives.PRIMITIVES.stringParameterizedType);
+        return Instance.newStringInstance();
     }
 
     private static boolean accept(Value v) {
-        return v instanceof StringValue || v instanceof NumericValue || v instanceof NullValue || v instanceof ClassValue;
+        return v instanceof Constant;
     }
 
     @Override
@@ -80,12 +78,6 @@ public class StringValue implements Value, Constant<String> {
     public int hashCode() {
         return Objects.hash(value);
     }
-
-    @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
 
     @Override
     public ParameterizedType type() {

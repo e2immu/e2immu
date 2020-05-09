@@ -18,6 +18,50 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.annotation.NotNull;
+
 public class ParameterAnalysis extends Analysis {
+
+    private final ParameterizedType parameterizedType;
+    private final TypeContext typeContext;
+    private final MethodInfo owner; // can be null, for lambda expressions
+
+    public ParameterAnalysis(@NotNull ParameterizedType parameterizedType,
+                             @NotNull TypeContext typeContext,
+                             MethodInfo owner) {
+        this.owner = owner;
+        this.parameterizedType = parameterizedType;
+        this.typeContext = typeContext;
+    }
+
+    @Override
+    public int getProperty(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_NULL:
+                if (owner != null && Level.value(owner.typeInfo.typeAnalysis.
+                        getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL) == Level.TRUE)
+                    return Level.TRUE;
+                break;
+            case NOT_MODIFIED:
+                if (isNotModifiedByDefinition()) return Level.TRUE;
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (bestType != null && (Level.value(bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE) == Level.TRUE ||
+                        bestType.typeAnalysis.getProperty(VariableProperty.CONTAINER) == Level.TRUE)) {
+                    return Level.TRUE;
+                }
+            default:
+        }
+        return super.getProperty(variableProperty);
+    }
+
+    public boolean isNotModifiedByDefinition() {
+        if (parameterizedType.isPrimitive()) return true;
+        if (parameterizedType.isFunctionalInterface(typeContext)) return true;
+        if (parameterizedType.isEnum()) return true;
+        return parameterizedType.isUnboundParameterType();
+    }
 
 }

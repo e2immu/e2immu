@@ -57,8 +57,4 @@ public class ErrorValue implements Value {
         return msg;
     }
 
-    @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return null; // no idea!
-    }
 }

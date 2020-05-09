@@ -126,13 +126,10 @@ public class MethodAnalyser {
 
             List<NumberedStatement> returnStatements = methodAnalysis.returnStatements.get();
             if (!returnStatements.isEmpty()) {
-                if (methodIsIdentity(returnStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodIsFluent(returnStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodIsNotNull(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                if (propertiesOfReturnStatements(methodProperties, returnStatements, methodInfo, methodAnalysis))
+                    changes = true;
                 // methodIsConstant makes use of methodIsNotNull, so order is important
                 if (methodIsConstant(returnStatements, methodInfo, methodAnalysis)) changes = true;
-                if (methodHasDynamicTypeAnnotations(returnStatements, methodProperties, methodInfo, methodAnalysis))
-                    changes = true;
             }
 
             if (!methodInfo.isConstructor) {
@@ -164,188 +161,121 @@ public class MethodAnalyser {
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private boolean methodIsConstant(List<NumberedStatement> returnStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (!methodAnalysis.singleReturnValue.isSet()) {
-            boolean allReturnValuesSet = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
-            if (!allReturnValuesSet) {
-                log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
-                return false;
-            }
-            Value value;
-            if (returnStatements.size() == 1) {
-                value = returnStatements.get(0).returnValue.get();
-            } else {
-                int notNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
-                if (notNull == Level.DELAY) {
-                    log(DELAYED, "Have multiple return values, going to insert an MethodValue, but waiting for @NotNull on {}",
-                            methodInfo.distinguishingName());
-                    return false;
-                }
-                value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of());
-            }
-            methodAnalysis.singleReturnValue.set(value);
-            boolean isConstant = value instanceof Constant;
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-            methodAnalysis.annotations.put(constantAnnotation, isConstant);
-            methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
-            log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
-            return true;
+        if (methodAnalysis.singleReturnValue.isSet()) return false;
+
+        boolean allReturnValuesSet = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
+        if (!allReturnValuesSet) {
+            log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
+            return false;
         }
-        return false;
+        Value value;
+        if (returnStatements.size() == 1) {
+            value = returnStatements.get(0).returnValue.get();
+        } else {
+            value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of());
+        }
+        methodAnalysis.singleReturnValue.set(value);
+        boolean isConstant = value instanceof Constant;
+        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+        methodAnalysis.annotations.put(constantAnnotation, isConstant);
+        methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
+        log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
+        return true;
     }
 
-    private boolean methodHasDynamicTypeAnnotations(List<NumberedStatement> returnStatements,
-                                                    VariableProperties methodProperties,
-                                                    MethodInfo methodInfo,
-                                                    MethodAnalysis methodAnalysis) {
-        if (!methodAnalysis.dynamicTypeAnnotationsAdded.isSet()) {
-            boolean allReturnValuesDefined = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
-            if (!allReturnValuesDefined) {
-                log(DELAYED, "Not all return values defined");
-                return false;
-            }
-            Set<AnnotationExpression> intersection = returnStatements.stream()
-                    .map(ns -> ns.returnValue.get())
-                    .map(v -> v.dynamicTypeAnnotations(typeContext))
-                    .reduce(INITIAL, (prev, curr) -> {
-                        if (prev == null || curr == null) return null;
-                        if (prev == INITIAL) return new HashSet<>(curr);
-                        prev.retainAll(curr);
-                        return prev;
-                    });
-            if (intersection == null) {
-                log(DELAYED, "Have null intersection, delaying for {}", methodInfo.distinguishingName());
-                return false;
-            }
-            boolean wroteOne = false;
-            for (AnnotationExpression ae : new AnnotationExpression[]{typeContext.e2Container.get(), typeContext.e2Immutable.get(),
-                    typeContext.e1Container.get(), typeContext.e1Immutable.get(), typeContext.container.get()}) {
-                boolean dynamic = intersection.contains(ae);
-                boolean positive = !wroteOne && dynamic;
-                if (!methodAnalysis.annotations.isSet(ae)) {
-                    log(E2IMMUTABLE, "Mark method result " + methodInfo.distinguishingName() + " as " + (positive ? "" : "NOT ") + "@" + ae.typeInfo.simpleName);
-                    methodAnalysis.annotations.put(ae, positive);
-                    if (!wroteOne) wroteOne = true;
-                }
-            }
-            methodAnalysis.dynamicTypeAnnotationsAdded.set(true);
-            return true;
+    private final VariableProperty[] PROPERTIES_OF_RETURN_STATEMENTS = new VariableProperty[]{
+            VariableProperty.IDENTITY,
+            VariableProperty.FLUENT,
+            VariableProperty.NOT_NULL,
+            VariableProperty.CONTAINER,
+            VariableProperty.IMMUTABLE};
+
+    private boolean propertiesOfReturnStatements(EvaluationContext evaluationContext,
+                                                 List<NumberedStatement> returnStatements,
+                                                 MethodInfo methodInfo,
+                                                 MethodAnalysis methodAnalysis) {
+        boolean changes = false;
+        for (VariableProperty variableProperty : PROPERTIES_OF_RETURN_STATEMENTS) {
+            if (propertyOfReturnStatements(evaluationContext, variableProperty, returnStatements, methodInfo, methodAnalysis))
+                changes = true;
         }
-        return false;
+        return changes;
     }
 
-    private boolean methodIsNotNull(List<NumberedStatement> returnStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        boolean notNull = returnStatements.stream().allMatch(ns -> ns.returnsNotNull.isSet() && ns.returnsNotNull.get() == Boolean.TRUE);
-        if (notNull && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-            methodAnalysis.annotations.put(typeContext.notNull.get(), true);
-            log(NOT_NULL, "Set @NotNull on method {}", methodInfo.fullyQualifiedName());
-            return true;
-        }
-        boolean notNullFalse = returnStatements.stream().anyMatch(ns -> ns.returnsNotNull.isSet() && Boolean.FALSE == ns.returnsNotNull.get());
-        if (notNullFalse && !methodAnalysis.annotations.isSet(typeContext.notNull.get())) {
-            methodAnalysis.annotations.put(typeContext.notNull.get(), false);
-            log(NOT_NULL, "Set NOT @NotNull on method {}", methodInfo.fullyQualifiedName());
-            return true;
-        }
-        log(DELAYED, "Not deciding on @NotNull yet for method {}", methodInfo.distinguishingName());
-        return false;
-    }
+    private boolean propertyOfReturnStatements(EvaluationContext evaluationContext,
+                                               VariableProperty variableProperty,
+                                               List<NumberedStatement> returnStatements,
+                                               MethodInfo methodInfo,
+                                               MethodAnalysis methodAnalysis) {
+        int currentValue = methodAnalysis.getProperty(variableProperty);
+        if (!variableProperty.canImprove && currentValue != Level.DELAY) return false;
 
-    private boolean methodIsFluent(List<NumberedStatement> returnStatements,
-                                   MethodInfo methodInfo,
-                                   MethodAnalysis methodAnalysis) {
-        boolean fluent = returnStatements.stream().allMatch(ns -> ((ReturnStatement) ns.statement).isFluent(typeContext) == Boolean.TRUE);
-
-        if (fluent && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-            methodAnalysis.annotations.put(typeContext.fluent.get(), true);
-            log(FLUENT, "Set @Fluent on method {}", methodInfo.fullyQualifiedName());
-            return true;
+        int value = returnStatements.stream().mapToInt(ns -> ns.getProperty(evaluationContext, variableProperty)).min().orElse(Level.DELAY);
+        if (value == Level.DELAY) {
+            log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
+            return false;
         }
-        boolean fluentFalse = returnStatements.stream().anyMatch(ns -> ((ReturnStatement) ns.statement).isFluent(typeContext) == Boolean.FALSE);
-        if (fluentFalse && !methodAnalysis.annotations.isSet(typeContext.fluent.get())) {
-            methodAnalysis.annotations.put(typeContext.fluent.get(), false);
-            log(FLUENT, "Set NOT @Fluent on method {}", methodInfo.fullyQualifiedName());
-            return true;
-        }
-        return false;
-    }
-
-    private boolean methodIsIdentity(List<NumberedStatement> returnStatements,
-                                     MethodInfo methodInfo,
-                                     MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.annotations.isSet(typeContext.identity.get())) return false;
-        boolean identity = returnStatements.stream().allMatch(ns ->
-                ReturnStatement.isIdentity(typeContext, ((ReturnStatement) ns.statement).expression) == Boolean.TRUE);
-        if (identity) {
-            methodAnalysis.annotations.put(typeContext.identity.get(), true);
-            log(IDENTITY, "Set @Identity on method {}", methodInfo.fullyQualifiedName());
-            return true;
-        }
-        boolean identityFalse = returnStatements.stream().anyMatch(ns ->
-                ReturnStatement.isIdentity(typeContext, ((ReturnStatement) ns.statement).expression) == Boolean.FALSE);
-        if (identityFalse) {
-            methodAnalysis.annotations.put(typeContext.identity.get(), false);
-            log(IDENTITY, "Set NOT @Identity on method {}", methodInfo.fullyQualifiedName());
-            return true;
-        }
-        return false;
+        if (value <= currentValue) return false; // not improving.
+        log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
+        methodAnalysis.setProperty(variableProperty, value);
+        return true;
     }
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (!methodAnalysis.annotations.isSet(typeContext.notModified.get())) {
-            // first step, check that no fields are being assigned
-            boolean fieldAssignments = methodAnalysis.fieldAssignments.stream().anyMatch(Map.Entry::getValue);
-            if (fieldAssignments) {
-                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields are being assigned", methodInfo.distinguishingName());
-                methodAnalysis.annotations.put(typeContext.notModified.get(), false);
-                return true;
-            }
-            // second step, check that no fields are modified
-            if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-                log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
-                return false;
-            }
-            boolean isNotModified = methodAnalysis.contentModifications
-                    .stream()
-                    .filter(e -> e.getKey() instanceof FieldReference)
-                    .noneMatch(Map.Entry::getValue);
-            if (!isNotModified && isLogEnabled(NOT_MODIFIED)) {
-                List<String> fieldsWithContentModifications =
-                        methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
-                                .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
-                log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
-                        methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
-            }
-            if (isNotModified) {
-                Boolean allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
-                        .map(mi -> mi.isNotModified(typeContext))
-                        .reduce(true, TypeAnalyser.TERNARY_AND);
-                if (allMethodCallsNotModified == null) {
-                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
-                            methodInfo.distinguishingName());
-                    return false;
-                }
-                isNotModified = allMethodCallsNotModified;
-                if (isLogEnabled(NOT_MODIFIED)) {
-                    log(NOT_MODIFIED, "Mark method {} as {}@NotModified", methodInfo.distinguishingName(),
-                            isNotModified ? "" : "NOT ");
-                    if (!isNotModified) {
-                        List<String> offendingCalls = methodAnalysis.localMethodsCalled.get().stream()
-                                .filter(mi -> !mi.isNotModified(typeContext))
-                                .map(MethodInfo::distinguishingName)
-                                .collect(Collectors.toList());
-                        log(NOT_MODIFIED, "Offending method calls are to: {}", offendingCalls);
-                    }
-                }
-            } // else: already false, why should we analyse this?
-            // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-            methodAnalysis.annotations.put(typeContext.notModified.get(), isNotModified);
+        if (methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) return false;
+
+        // first step, check that no fields are being assigned
+        boolean fieldAssignments = methodAnalysis.fieldAssignments.stream().anyMatch(Map.Entry::getValue);
+        if (fieldAssignments) {
+            log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields are being assigned", methodInfo.distinguishingName());
+            methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, Level.FALSE);
             return true;
         }
-        return false;
+        // second step, check that no fields are modified
+        if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
+            log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
+            return false;
+        }
+        boolean isNotModified = methodAnalysis.contentModifications
+                .stream()
+                .filter(e -> e.getKey() instanceof FieldReference)
+                .noneMatch(Map.Entry::getValue);
+        if (!isNotModified && isLogEnabled(NOT_MODIFIED)) {
+            List<String> fieldsWithContentModifications =
+                    methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
+                            .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
+            log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
+                    methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
+        }
+        if (isNotModified) {
+            int allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
+                    .mapToInt(mi -> mi.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
+                    .min().orElse(Level.DELAY);
+            if (allMethodCallsNotModified == Level.DELAY) {
+                log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                        methodInfo.distinguishingName());
+                return false;
+            }
+            isNotModified = allMethodCallsNotModified == Level.TRUE;
+            if (isLogEnabled(NOT_MODIFIED)) {
+                log(NOT_MODIFIED, "Mark method {} as {}@NotModified", methodInfo.distinguishingName(),
+                        isNotModified ? "" : "NOT ");
+                if (!isNotModified) {
+                    List<String> offendingCalls = methodAnalysis.localMethodsCalled.get().stream()
+                            .filter(mi -> mi.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.FALSE)
+                            .map(MethodInfo::distinguishingName)
+                            .collect(Collectors.toList());
+                    log(NOT_MODIFIED, "Offending method calls are to: {}", offendingCalls);
+                }
+            }
+        } // else: already false, why should we analyse this?
+        // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
+        methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, isNotModified);
+        return true;
     }
 
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.annotations.isSet(typeContext.independent.get())) return false;
+        if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) return false;
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
             log(DELAYED, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
             return false;
@@ -361,14 +291,15 @@ public class MethodAnalyser {
                 return false;
             }
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
-            boolean e2ImmutableStatusOfFieldRefsIsKnown = variables.stream()
-                    .allMatch(v -> !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.isE2Immutable(typeContext) != null);
-            if (!e2ImmutableStatusOfFieldRefsIsKnown) {
+            int e2ImmutableStatusOfFieldRefs = variables.stream()
+                    .filter(v -> v instanceof FieldReference)
+                    .mapToInt(v -> Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
+                    .min().orElse(Level.DELAY);
+            if (e2ImmutableStatusOfFieldRefs == Level.DELAY) {
                 log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known");
                 return false;
             }
-            returnObjectIsIndependent = variables.stream().allMatch(v -> !(v instanceof FieldReference) ||
-                    ((FieldReference) v).fieldInfo.isE2Immutable(typeContext));
+            returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == Level.TRUE;
         } else {
             returnObjectIsIndependent = true;
         }
@@ -381,18 +312,9 @@ public class MethodAnalyser {
         // conclusion
 
         boolean independent = parametersIndependentOfFields && returnObjectIsIndependent;
-        methodAnalysis.annotations.put(typeContext.independent.get(), independent);
+        methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
-    }
-
-    // helper
-    private static Boolean onReturnStatement(NumberedStatement ns, Predicate<Expression> predicate) {
-        if (ns.statement instanceof ReturnStatement) {
-            ReturnStatement ret = (ReturnStatement) ns.statement;
-            return predicate.test(ret.expression);
-        }
-        return false;
     }
 }

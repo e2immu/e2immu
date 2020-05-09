@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
@@ -46,8 +47,13 @@ public class Instance implements Value {
 
     public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.constructor = constructor;
-        this.constructorParameterValues = parameterValues == null ? null : ImmutableList.copyOf(parameterValues);
+        this.constructor = Objects.requireNonNull(constructor);
+        this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
+    }
+
+    public static Instance newStringInstance() {
+        MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.get().constructors.get(0);
+        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of());
     }
 
     // every new instance is different.
@@ -71,9 +77,9 @@ public class Instance implements Value {
     @Override
     public String toString() {
         return "instance type " + parameterizedType.detailedString()
-                + (constructorParameterValues != null ? "(" + constructorParameterValues.stream()
+                + "(" + constructorParameterValues.stream()
                 .map(Value::toString)
-                .collect(Collectors.joining(", ")) + ")" : "");
+                .collect(Collectors.joining(", ")) + ")";
     }
 
     private static final Set<Variable> INDEPENDENT = Set.of();
@@ -96,11 +102,11 @@ public class Instance implements Value {
         }
 
         // RULE 2, 3
-        TypeContext typeContext = evaluationContext.getTypeContext();
         boolean differentType = constructor.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || differentType) &&
-                (constructor.isIndependent(typeContext) == Boolean.TRUE // RULE 2
-                        || constructor.typeInfo.isE2Immutable(typeContext) == Boolean.TRUE)) { // RULE 3
+                (constructor.methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.TRUE // RULE 2
+                        || Level.value(constructor.typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE) == Level.TRUE)) { // RULE 3
             return INDEPENDENT;
         }
 
@@ -116,8 +122,8 @@ public class Instance implements Value {
     }
 
     @Override
-    public Integer getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return 1;
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
         TypeContext typeContext = evaluationContext.getTypeContext();
         if (VariableProperty.CONTAINER == variableProperty) {
             return constructor.getContainer(typeContext);
@@ -127,5 +133,10 @@ public class Instance implements Value {
         }
         // @NotModified should not be asked here
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        return 0;
     }
 }

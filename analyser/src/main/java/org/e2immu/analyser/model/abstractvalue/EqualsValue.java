@@ -43,7 +43,7 @@ public class EqualsValue implements Value {
     public static Value equals(Value l, Value r) {
         if (l.equals(r)) return BoolValue.TRUE;
         if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return new Instance(Primitives.PRIMITIVES.booleanParameterizedType);
+            return UnknownValue.UNKNOWN_VALUE;
         return new EqualsValue(l, r);
     }
 

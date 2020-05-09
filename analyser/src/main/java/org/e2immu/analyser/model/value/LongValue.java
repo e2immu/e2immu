@@ -84,12 +84,6 @@ public class LongValue implements Constant<Long>, NumericValue {
     }
 
     @Override
-    public Boolean isNotNull(EvaluationContext evaluationContext) {
-        return true;
-    }
-
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.intParameterizedType;
     }
