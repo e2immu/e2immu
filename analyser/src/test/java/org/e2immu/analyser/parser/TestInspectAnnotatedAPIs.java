@@ -18,10 +18,12 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.config.UploadConfiguration;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
@@ -85,8 +87,8 @@ public class TestInspectAnnotatedAPIs {
         Assert.assertTrue(types.size() >= 15);
         TypeInfo optional = (TypeInfo) parser.getTypeContext().typeStore.get("java.util.Optional");
         Assert.assertNotNull(optional);
-        Assert.assertTrue(optional.isContainer(parser.getTypeContext()));
-        LOGGER.info("Source of Optional: "+optional.stream());
+        Assert.assertEquals(Level.TRUE, Level.value(optional.typeAnalysis.getProperty(VariableProperty.CONTAINER), 0));
+        LOGGER.info("Source of Optional: " + optional.stream());
     }
 
 }

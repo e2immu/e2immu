@@ -33,7 +33,7 @@ public class TestNumberedStatement {
     @Test
     public void test() {
         Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
-        SideEffectContext sideEffectContext = new SideEffectContext(null, new MethodInfo(new TypeInfo("?"), List.of()));
+        SideEffectContext sideEffectContext = new SideEffectContext(new MethodInfo(new TypeInfo("?"), List.of()));
 
         NumberedStatement ns0 = new NumberedStatement(sideEffectContext, emptyStatement, new int[]{0});
         NumberedStatement ns1 = new NumberedStatement(sideEffectContext, emptyStatement, new int[]{1});

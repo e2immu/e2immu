@@ -18,16 +18,15 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -35,6 +34,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TestAbstractValue {
 
@@ -82,14 +82,81 @@ public class TestAbstractValue {
         };
     }
 
+    static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+        @Override
+        public MethodInfo getCurrentMethod() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TypeInfo getCurrentType() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional, boolean inSyncBlock, boolean guaranteedToBeReachedByParentStatement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TypeContext getTypeContext() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void createLocalVariableOrParameter(Variable variable, VariableProperty... initialProperties) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void linkVariables(Variable variableFromExpression, Set<Variable> toBestCase, Set<Variable> toWorstCase) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setValue(Variable variable, Value value) {
+            // ignore
+        }
+
+        @Override
+        public Value currentValue(Variable variable) {
+            return new VariableValue(this, variable, variable.name());
+        }
+
+        @Override
+        public VariableValue newVariableValue(Variable variable) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public VariableValue newArrayVariableValue(Value array, Value indexValue) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            return 0;
+        }
+
+        @Override
+        public boolean equals(Variable variable, Variable other) {
+            return variable.name().equals(other.name());
+        }
+    };
+
     static final Variable va = createVariable("a");
     static final Variable vb = createVariable("b");
     static final Variable vc = createVariable("c");
     static final Variable vd = createVariable("d");
-    static final VariableValue a = new VariableValue(va, "a");
-    static final VariableValue b = new VariableValue(vb, "b");
-    static final VariableValue c = new VariableValue(vc, "c");
-    static final VariableValue d = new VariableValue(vd, "d");
+    static final VariableValue a = new VariableValue(minimalEvaluationContext, va, "a");
+    static final VariableValue b = new VariableValue(minimalEvaluationContext, vb, "b");
+    static final VariableValue c = new VariableValue(minimalEvaluationContext, vc, "c");
+    static final VariableValue d = new VariableValue(minimalEvaluationContext, vd, "d");
 
     @Test
     public void test() {
@@ -156,19 +223,19 @@ public class TestAbstractValue {
     public void testIsNull() {
         Value v = new EqualsValue(a, NullValue.NULL_VALUE);
         Assert.assertEquals("null == a", v.toString());
-        Map<Variable,Boolean> nullClauses = v.individualNullClauses();
+        Map<Variable, Boolean> nullClauses = v.individualNullClauses();
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
         Value v2 = new EqualsValue(b, NullValue.NULL_VALUE);
         Assert.assertEquals("null == b", v2.toString());
-        Map<Variable,Boolean> nullClauses2 = v2.individualNullClauses();
+        Map<Variable, Boolean> nullClauses2 = v2.individualNullClauses();
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
         Value andValue = new AndValue().append(v, NegatedValue.negate(v2));
         Assert.assertEquals("(null == a and not (null == b))", andValue.toString());
-        Map<Variable,Boolean> nullClausesAnd = andValue.individualNullClauses();
+        Map<Variable, Boolean> nullClausesAnd = andValue.individualNullClauses();
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
         Assert.assertEquals(false, nullClausesAnd.get(vb));
@@ -178,7 +245,7 @@ public class TestAbstractValue {
     public void testIsNotNull() {
         Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a));
         Assert.assertEquals("not (null == a)", v.toString());
-        Map<Variable,Boolean> nullClauses = v.individualNullClauses();
+        Map<Variable, Boolean> nullClauses = v.individualNullClauses();
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(false, nullClauses.get(va));
     }

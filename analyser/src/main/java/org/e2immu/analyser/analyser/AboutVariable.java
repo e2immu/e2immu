@@ -9,6 +9,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 class AboutVariable {
+
+    enum FieldReferenceState {
+        EFFECTIVELY_FINAL_DELAYED,
+        SINGLE_COPY,
+        MULTI_COPY,
+    }
+
     private final Map<VariableProperty, Integer> properties = new HashMap<>();
 
     @NotNull
@@ -21,16 +28,18 @@ class AboutVariable {
     final AboutVariable localCopyOf;
     final Variable variable;
     final String name;
-    final boolean singleCopy;
 
-    AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value resetValue, boolean singleCopy) {
+    final FieldReferenceState fieldReferenceState;
+
+    AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value resetValue,
+                  FieldReferenceState fieldReferenceState) {
         this.localCopyOf = localCopyOf;
         this.initialValue = initialValue;
         this.currentValue = resetValue;
         this.resetValue = resetValue;
         this.variable = variable;
         this.name = name; // the value used to put it in the map
-        this.singleCopy = singleCopy;
+        this.fieldReferenceState = fieldReferenceState;
     }
 
     @Override
@@ -52,7 +61,7 @@ class AboutVariable {
     }
 
     AboutVariable localCopy() {
-        AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, singleCopy);
+        AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, fieldReferenceState);
         av.properties.putAll(properties);
         return av;
     }
@@ -81,7 +90,7 @@ class AboutVariable {
         properties.remove(variableProperty);
     }
 
-     void clearProperties() {
+    void clearProperties() {
         properties.clear();
     }
 }

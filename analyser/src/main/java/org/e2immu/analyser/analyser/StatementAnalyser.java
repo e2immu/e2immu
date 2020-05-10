@@ -101,7 +101,7 @@ public class StatementAnalyser {
                 startStatement.escapes.set(escapesViaException);
 
                 if (escapesViaException) {
-                    List<Variable> nullVariables = variableProperties.getNullConditionals();
+                    Set<Variable> nullVariables = variableProperties.getNullConditionals(true);
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
@@ -582,12 +582,11 @@ public class StatementAnalyser {
                         methodAnalysis.thisRead.set(true);
                     }
                 } else {
-                    variableProperties.ensureVariable(variable);
-                    if (variableProperties.isKnown(variable)) {
-                        variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                        int read = variableProperties.getProperty(variable, VariableProperty.READ);
-                        variableProperties.addProperty(variable, VariableProperty.READ, Level.nextLevelTrue(read, 1));
-                    }
+                    if (variable instanceof FieldReference)
+                        variableProperties.ensureVariable((FieldReference) variable);
+                    variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+                    int read = variableProperties.getProperty(variable, VariableProperty.READ);
+                    variableProperties.addProperty(variable, VariableProperty.READ, Level.nextLevelTrue(read, 1));
                 }
             }
         }
@@ -773,7 +772,7 @@ public class StatementAnalyser {
             return;
         }
         log(DEBUG_MODIFY_CONTENT, "Mark method object as {}: {}", propertyToSet, variable.detailedString());
-        variableProperties.ensureVariable(variable);
+        if(variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
         variableProperties.addProperty(variable, propertyToSet, value);
     }
 }
