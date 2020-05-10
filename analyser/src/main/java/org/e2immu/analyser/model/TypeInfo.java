@@ -439,8 +439,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 builder.addAnnotation(expressionContext.typeContext.functionalInterface.get());
             }
         }
-
         typeInspection.set(builder.build(hasBeenDefined, this));
+
+        copyAnnotationsIntoTypeAnalysisProperties(expressionContext.typeContext, false);
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
@@ -1006,12 +1007,25 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public List<TypeInfo> myselfAndMyEnclosingTypes() {
         if (isNestedType()) {
-            return ListUtil.immutableConcat(List.of(this), typeInspection.get().packageNameOrEnclosingType.getRight().myselfAndMyEnclosingTypes());
+            return ListUtil.immutableConcat(List.of(this), typeInspection.get().packageNameOrEnclosingType
+                    .getRight().myselfAndMyEnclosingTypes());
         }
         return List.of(this);
     }
 
     public boolean isRecord() {
         return isNestedType() && isPrivate();
+    }
+
+    public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
+        typeAnalysis.fromAnnotationsIntoProperties(typeInspection.get().annotations, typeContext, overwrite);
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
+            methodInfo.methodAnalysis.fromAnnotationsIntoProperties(methodInfo.methodInspection.get().annotations,
+                    typeContext, overwrite);
+        });
+        typeInspection.get().fields.forEach(fieldInfo -> {
+            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(fieldInfo.fieldInspection.get().annotations,
+                    typeContext, overwrite);
+        });
     }
 }

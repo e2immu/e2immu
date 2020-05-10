@@ -25,10 +25,10 @@ import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationType;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.lang.annotation.ElementType;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public abstract class Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
@@ -125,10 +125,14 @@ public abstract class Analysis {
         }
     }
 
-    public void fromAnnotationsIntoProperties(List<AnnotationExpression> annotations, TypeContext typeContext) {
-        int notNull = -1;
+    private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
+    private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
+
+    public void fromAnnotationsIntoProperties(List<AnnotationExpression> annotations, TypeContext typeContext, boolean overwrite) {
+        Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         boolean container = false;
+        BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT) {
@@ -146,48 +150,77 @@ public abstract class Analysis {
                 } else if (typeContext.container.get().typeInfo == t) {
                     container = true;
                 } else if (typeContext.notNull.get().typeInfo == t) {
-                    notNull = Math.max(0, notNull);
+                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 0));
                 } else if (typeContext.notNull1.get().typeInfo == t) {
-                    notNull = Math.max(1, notNull);
+                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 1));
                 } else if (typeContext.notNull2.get().typeInfo == t) {
-                    notNull = Math.max(2, notNull);
+                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 2));
                 } else if (typeContext.notModified.get().typeInfo == t) {
-                    properties.put(VariableProperty.NOT_MODIFIED, Level.TRUE);
+                    method.accept(VariableProperty.NOT_MODIFIED, Level.TRUE);
                 } else if (typeContext.effectivelyFinal.get().typeInfo == t) {
-                    properties.put(VariableProperty.FINAL, Level.TRUE);
+                    method.accept(VariableProperty.FINAL, Level.TRUE);
                 } else if (typeContext.constant.get().typeInfo == t) {
-                    properties.put(VariableProperty.CONSTANT, Level.TRUE);
+                    method.accept(VariableProperty.CONSTANT, Level.TRUE);
                 } else if (typeContext.extensionClass.get().typeInfo == t) {
-                    properties.put(VariableProperty.EXTENSION_CLASS, Level.TRUE);
+                    method.accept(VariableProperty.EXTENSION_CLASS, Level.TRUE);
                 } else if (typeContext.fluent.get().typeInfo == t) {
-                    properties.put(VariableProperty.FLUENT, Level.TRUE);
+                    method.accept(VariableProperty.FLUENT, Level.TRUE);
                 } else if (typeContext.identity.get().typeInfo == t) {
-                    properties.put(VariableProperty.IDENTITY, Level.TRUE);
+                    method.accept(VariableProperty.IDENTITY, Level.TRUE);
                 } else if (typeContext.ignoreModifications.get().typeInfo == t) {
-                    properties.put(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
+                    method.accept(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
                 } else if (typeContext.independent.get().typeInfo == t) {
-                    properties.put(VariableProperty.INDEPENDENT, Level.TRUE);
+                    method.accept(VariableProperty.INDEPENDENT, Level.TRUE);
                 } else if (typeContext.mark.get().typeInfo == t) {
-                    properties.put(VariableProperty.MARK, Level.TRUE);
+                    method.accept(VariableProperty.MARK, Level.TRUE);
                 } else if (typeContext.only.get().typeInfo == t) {
-                    properties.put(VariableProperty.ONLY, Level.TRUE);
+                    method.accept(VariableProperty.ONLY, Level.TRUE);
                 } else if (typeContext.output.get().typeInfo == t) {
-                    properties.put(VariableProperty.OUTPUT, Level.TRUE);
+                    method.accept(VariableProperty.OUTPUT, Level.TRUE);
                 } else if (typeContext.singleton.get().typeInfo == t) {
-                    properties.put(VariableProperty.SINGLETON, Level.TRUE);
+                    method.accept(VariableProperty.SINGLETON, Level.TRUE);
                 } else if (typeContext.utilityClass.get().typeInfo == t) {
-                    properties.put(VariableProperty.UTILITY_CLASS, Level.TRUE);
+                    method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }
         if (container) {
-            properties.put(VariableProperty.CONTAINER, Level.TRUE);
+            method.accept(VariableProperty.CONTAINER, Level.TRUE);
         }
         if (immutable >= 0) {
-            properties.put(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, immutable));
+            method.accept(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, immutable));
         }
-        if (notNull >= 0) {
-            properties.put(VariableProperty.NOT_NULL, Level.compose(Level.TRUE, notNull));
+        for (Map.Entry<ElementType, Integer> entry : notNullMap.entrySet()) {
+            VariableProperty variableProperty;
+            switch (entry.getKey()) {
+                case FIELD:
+                    variableProperty = VariableProperty.NOT_NULL_FIELDS;
+                    break;
+                case METHOD:
+                    variableProperty = VariableProperty.NOT_NULL_METHODS;
+                    break;
+                case PARAMETER:
+                    variableProperty = VariableProperty.NOT_NULL_PARAMETERS;
+                    break;
+                case TYPE:
+                    variableProperty = VariableProperty.NOT_NULL;
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+            method.accept(variableProperty, Level.compose(Level.TRUE, entry.getValue()));
         }
+    }
+
+    static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {
+        Integer current = map.get(elementType);
+        map.put(elementType, Math.max(current == null ? 0 : current, value));
+    }
+
+    private static final ElementType[] NOT_NULL_WHERE = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
+
+    static List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE);
+        return Arrays.stream(elements).collect(Collectors.toList());
     }
 }

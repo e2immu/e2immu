@@ -93,6 +93,7 @@ public class InspectAnnotatedAPIs {
                 }
                 typesInGlobalTypeContext.add(typeInGlobalTypeContext);
                 mergeAnnotations(typeInfo, typeInGlobalTypeContext);
+                typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext, true);
             }
         });
         return typesInGlobalTypeContext;
