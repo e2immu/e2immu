@@ -181,6 +181,11 @@ public class MethodValue implements Value {
     }
 
     @Override
+    public Set<Variable> variables() {
+        return object.variables();
+    }
+
+    @Override
     public ParameterizedType type() {
         return methodInfo.returnType();
     }

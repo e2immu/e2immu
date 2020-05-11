@@ -620,6 +620,7 @@ class VariableProperties implements EvaluationContext {
         } else {
             aboutVariable.setCurrentValue(value);
         }
+        if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
         aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
 
         int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
@@ -628,17 +629,15 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                 Level.fromBool(guaranteedToBeReached(at)));
     }
-}
 
-/*
-
-
-        if (value instanceof VariableValue) {
-            copyProperties(((VariableValue) value).variable, at);
-        } else {
-            // the following block is there in case the value, instead of the expected complicated one, turns
-            // out to be a constant.
-            int notNull = value.getPropertyOutsideContext(VariableProperty.NOT_NULL);
-            aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
+    private static Value removeNullClausesInvolving(Value conditional, Variable variable) {
+        Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
+        if (toTest instanceof EqualsValue &&  toTest.variables().contains(variable)) {
+            return null;
         }
-*/
+        if (conditional instanceof AndValue) {
+            return ((AndValue) conditional).removeClausesInvolving(variable);
+        }
+        return conditional;
+    }
+}

@@ -87,4 +87,8 @@ public interface Value extends Comparable<Value> {
     default int isNotNull0OutsideContext() {
         return Level.value(getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL);
     }
+
+    default Set<Variable> variables() {
+        return Set.of();
+    }
 }

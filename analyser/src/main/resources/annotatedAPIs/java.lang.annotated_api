@@ -321,7 +321,9 @@ public class Math {
 
 public class System {
     @IgnoreModifications
+    @NotNull
     public static final PrintStream out;
+    @NotNull
     @IgnoreModifications
     public static final PrintStream err;
 

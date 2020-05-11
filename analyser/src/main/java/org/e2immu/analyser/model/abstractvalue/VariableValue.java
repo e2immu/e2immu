@@ -119,4 +119,8 @@ public class VariableValue implements Value {
         return variable.concreteReturnType();
     }
 
+    @Override
+    public Set<Variable> variables() {
+        return Set.of(variable);
+    }
 }

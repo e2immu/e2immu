@@ -26,9 +26,11 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class EqualsValue implements Value {
     public final Value lhs;
@@ -91,4 +93,8 @@ public class EqualsValue implements Value {
     }
 
 
+    @Override
+    public Set<Variable> variables() {
+        return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
+    }
 }

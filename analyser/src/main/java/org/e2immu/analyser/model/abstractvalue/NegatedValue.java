@@ -31,6 +31,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class NegatedValue implements Value {
@@ -95,6 +96,11 @@ public class NegatedValue implements Value {
     public Map<Variable, Boolean> individualNullClauses() {
         return value.individualNullClauses().entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return value.variables();
     }
 
     @Override

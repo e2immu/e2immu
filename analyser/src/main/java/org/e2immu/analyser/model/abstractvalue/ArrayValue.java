@@ -5,8 +5,10 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ArrayValue implements Value {
@@ -50,5 +52,10 @@ public class ArrayValue implements Value {
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
     }
 }

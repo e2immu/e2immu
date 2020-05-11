@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
@@ -186,6 +187,11 @@ public class OrValue implements Value {
         }
         if (o instanceof UnknownValue) return -1;
         return 1; // go to the back
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
     }
 
     @Override

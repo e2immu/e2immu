@@ -21,12 +21,15 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class BitwiseAndValue implements Value {
     public final Value lhs;
@@ -87,5 +90,10 @@ public class BitwiseAndValue implements Value {
     @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
 }

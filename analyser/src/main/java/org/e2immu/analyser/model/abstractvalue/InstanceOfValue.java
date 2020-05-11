@@ -77,4 +77,9 @@ public class InstanceOfValue implements Value {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
+
+    @Override
+    public Set<Variable> variables() {
+        return Set.of(variable);
+    }
 }

@@ -34,12 +34,7 @@ public class LocalVariable {
     @NotNull
     public final String name;
 
-    // purely for lookups
-    public LocalVariable(String name) {
-        this(List.of(), name, Primitives.PRIMITIVES.voidParameterizedType, List.of());
-    }
-
-    LocalVariable(List<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
+    public LocalVariable(List<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.modifiers = modifiers;

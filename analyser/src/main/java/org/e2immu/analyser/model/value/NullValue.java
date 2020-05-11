@@ -24,6 +24,9 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 
+import static org.e2immu.analyser.model.Level.FALSE;
+import static org.e2immu.analyser.model.Level.TRUE;
+
 public class NullValue implements Value, Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
 
@@ -52,7 +55,15 @@ public class NullValue implements Value, Constant<Object> {
     }
 
     @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return getPropertyOutsideContext(variableProperty);
+    }
+
+    @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-       return Level.FALSE; // mostly the NotNull, also: NotModified,
+        if (variableProperty == VariableProperty.NOT_NULL) return FALSE;
+        if (variableProperty == VariableProperty.CONTAINER) return TRUE;
+        if (variableProperty == VariableProperty.IMMUTABLE) return VariableProperty.IMMUTABLE.best;
+        throw new UnsupportedOperationException();
     }
 }

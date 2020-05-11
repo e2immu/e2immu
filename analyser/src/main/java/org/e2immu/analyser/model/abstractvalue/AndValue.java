@@ -231,4 +231,13 @@ public class AndValue implements Value {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
+
+    @Override
+    public Set<Variable> variables() {
+        return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
+    }
+
+    public Value removeClausesInvolving(Variable variable) {
+        return new AndValue(values.stream().filter(value -> !value.variables().contains(variable)).collect(Collectors.toList()));
+    }
 }
