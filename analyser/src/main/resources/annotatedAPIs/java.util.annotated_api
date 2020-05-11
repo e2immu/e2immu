@@ -59,7 +59,7 @@ public interface Collection<E> extends Iterable<E> {
 
     // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
     // arguments will not be null either)
-    void forEach​(@NotNull1 Consumer<? super E> action);
+    void forEach(@NotNull1 Consumer<? super E> action);
 
     @NotModified
     boolean isEmpty();

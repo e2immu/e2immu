@@ -469,7 +469,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
         return inSuperType.typeParameter == null || inSubType.typeParameter == null ||
                 inSuperType.typeParameter.index != inSubType.typeParameter.index ||
-                inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
+                translationMap.get(inSuperType.typeParameter).typeParameter != inSubType.typeParameter;
+             //   inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
     }
 
     @Override

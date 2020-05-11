@@ -113,7 +113,7 @@ public class TestWithSkeleton {
         TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
         collection.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 
-        MethodInfo forEach = collection.getMethodOrConstructorByDistinguishingName("java.util.Collection.forEach(? extends T0)");
+        MethodInfo forEach = collection.getMethodOrConstructorByDistinguishingName("java.util.Collection.forEach(java.util.function.Consumer<? super T0>)");
         Assert.assertNotNull(forEach);
     }
 
