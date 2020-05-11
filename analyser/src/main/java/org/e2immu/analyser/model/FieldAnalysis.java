@@ -52,13 +52,14 @@ public class FieldAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_MODIFIED:
+                if (bestType == null) return Level.TRUE; // we cannot modify because we cannot even execute a method
                 if (bestType.isPrimitive()) return Level.TRUE;
                 int e2Immutable = Level.value(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
                 if (e2Immutable != Level.FALSE) return e2Immutable;
                 break;
 
             case NOT_NULL:
-                if (bestType.isPrimitive()) return Level.TRUE;
+                if (bestType != null && bestType.isPrimitive()) return Level.TRUE;
                 int notNullFields = owner.typeAnalysis.getProperty(VariableProperty.NOT_NULL_FIELDS);
                 return Level.best(notNullFields, super.getProperty(VariableProperty.NOT_NULL));
 

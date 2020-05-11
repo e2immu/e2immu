@@ -40,15 +40,16 @@ import java.util.Set;
  */
 public interface Value extends Comparable<Value> {
 
-    // executed without context
+    // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // default = @NotNull
-        throw new UnsupportedOperationException("No info about " + variableProperty);
+        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
+        if (VariableProperty.CONTAINER == variableProperty) return Level.TRUE;
+        if (VariableProperty.IMMUTABLE == variableProperty) return VariableProperty.IMMUTABLE.best;
+        throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // default = @NotNull
-        throw new UnsupportedOperationException("No info about " + variableProperty);
+        return getPropertyOutsideContext(variableProperty);
     }
 
     default IntValue toInt() {

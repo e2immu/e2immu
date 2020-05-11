@@ -50,7 +50,7 @@ public class Level {
     public static int value(int i, int level) {
         assert i >= DELAY;
         assert level >= 0;
-        if (i <= TRUE) return i;
+        if (i < 0) return i;
         int j = i / 2;
         if (j < level) return DELAY;
         if (j > level) return TRUE;

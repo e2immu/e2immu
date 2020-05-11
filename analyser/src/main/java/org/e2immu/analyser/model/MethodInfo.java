@@ -103,7 +103,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
         this.isDefaultImplementation = isDefaultImplementation;
         if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
-        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(), () -> typeInfo.overrides(this, true));
+        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(),
+                () -> typeInfo.overrides(this, true).stream());
     }
 
     public boolean hasBeenInspected() {
@@ -470,7 +471,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return inSuperType.typeParameter == null || inSubType.typeParameter == null ||
                 inSuperType.typeParameter.index != inSubType.typeParameter.index ||
                 translationMap.get(inSuperType.typeParameter).typeParameter != inSubType.typeParameter;
-             //   inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
+        //   inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
     }
 
     @Override

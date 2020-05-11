@@ -30,15 +30,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @NotNull
 public class MethodAnalysis extends Analysis {
 
-    private final Supplier<Iterable<MethodInfo>> overrides;
+    private final Supplier<Stream<MethodInfo>> overrides;
     private final Supplier<TypeInfo> bestType;
     public final TypeInfo typeInfo;
 
-    public MethodAnalysis(TypeInfo typeInfo, Supplier<TypeInfo> bestType, Supplier<Iterable<MethodInfo>> overrides) {
+    public MethodAnalysis(TypeInfo typeInfo, Supplier<TypeInfo> bestType, Supplier<Stream<MethodInfo>> overrides) {
         this.overrides = overrides;
         this.typeInfo = typeInfo;
         this.bestType = bestType;
@@ -76,13 +78,9 @@ public class MethodAnalysis extends Analysis {
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
-        int result = super.getProperty(variableProperty);
-        if (result != Level.FALSE) return result;
-        for (MethodInfo methodInfo : overrides.get()) {
-            int resultFromOverload = methodInfo.methodAnalysis.getProperty(variableProperty);
-            if (resultFromOverload != Level.FALSE) return resultFromOverload;
-        }
-        return Level.FALSE;
+        IntStream mine = IntStream.of(super.getProperty(variableProperty));
+        IntStream overrideValues = overrides.get().mapToInt(mi -> mi.methodAnalysis.getProperty(variableProperty));
+        return IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
     }
 
 

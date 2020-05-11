@@ -238,7 +238,7 @@ class VariableProperties implements EvaluationContext {
                 name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
             }
         } else if (variable instanceof This) {
-            throw new UnsupportedOperationException();
+           return null; // will be ignored
         } else {
             // parameter, local variable
             name = variable.name();

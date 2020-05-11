@@ -128,14 +128,17 @@ public abstract class Analysis {
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
     private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
 
-    public void fromAnnotationsIntoProperties(List<AnnotationExpression> annotations, TypeContext typeContext, boolean overwrite) {
+    public void fromAnnotationsIntoProperties(boolean hasBeenDefined,
+                                              List<AnnotationExpression> annotations,
+                                              TypeContext typeContext,
+                                              boolean overwrite) {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         boolean container = false;
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
-            if (annotationType != null) {
+            if (annotationType == AnnotationType.CONTRACT || !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
                 TypeInfo t = annotationExpression.typeInfo;
                 if (typeContext.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
@@ -181,6 +184,8 @@ public abstract class Analysis {
                     method.accept(VariableProperty.SINGLETON, Level.TRUE);
                 } else if (typeContext.utilityClass.get().typeInfo == t) {
                     method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
+                } else if (typeContext.linked.get().typeInfo == t) {
+                    method.accept(VariableProperty.LINKED, Level.TRUE);
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }

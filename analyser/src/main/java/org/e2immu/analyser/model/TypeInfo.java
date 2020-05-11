@@ -1017,13 +1017,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
-        typeAnalysis.fromAnnotationsIntoProperties(typeInspection.get().annotations, typeContext, overwrite);
+        boolean hasBeenDefined = typeInspection.get().hasBeenDefined;
+        typeAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, typeInspection.get().annotations, typeContext, overwrite);
         typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
         typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
-                methodInfo.methodAnalysis.fromAnnotationsIntoProperties(methodInfo.methodInspection.get().annotations,
+                methodInfo.methodAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
                         typeContext, overwrite));
         typeInspection.get().fields.forEach(fieldInfo ->
-                fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(fieldInfo.fieldInspection.get().annotations,
+                fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
                         typeContext, overwrite));
     }
 
