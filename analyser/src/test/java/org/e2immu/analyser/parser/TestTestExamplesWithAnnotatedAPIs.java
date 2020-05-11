@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.BasicConfigurator;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -139,8 +138,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                         .build())
                 .build();
-
-        BasicConfigurator basicConfigurator;
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {

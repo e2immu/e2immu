@@ -93,7 +93,10 @@ public class InspectAnnotatedAPIs {
                 }
                 typesInGlobalTypeContext.add(typeInGlobalTypeContext);
                 mergeAnnotations(typeInfo, typeInGlobalTypeContext);
-                typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext, true);
+
+                ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
+                typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
+                typeInGlobalTypeContext.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext, true);
             }
         });
         return typesInGlobalTypeContext;

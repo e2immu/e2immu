@@ -107,6 +107,7 @@ public class Parser {
     private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile) {
         // phase 2: resolve methods and fields
         List<SortedType> sortedTypes = Resolver.sortTypes(inspectedTypesToTypeContextOfFile);
+        if (configuration.skipAnalysis) return sortedTypes;
 
         // sort the types according to dependencies
         // within each type, sort the methods

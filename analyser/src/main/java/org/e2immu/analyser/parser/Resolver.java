@@ -77,6 +77,9 @@ public class Resolver {
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
         fillInternalMethodCalls(methodGraph);
+
+        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContextOfFile, false);
+
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes

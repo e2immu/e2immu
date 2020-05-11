@@ -440,8 +440,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
-
-        copyAnnotationsIntoTypeAnalysisProperties(expressionContext.typeContext, false);
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
@@ -1019,13 +1017,24 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
         typeAnalysis.fromAnnotationsIntoProperties(typeInspection.get().annotations, typeContext, overwrite);
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
-            methodInfo.methodAnalysis.fromAnnotationsIntoProperties(methodInfo.methodInspection.get().annotations,
-                    typeContext, overwrite);
-        });
-        typeInspection.get().fields.forEach(fieldInfo -> {
-            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(fieldInfo.fieldInspection.get().annotations,
-                    typeContext, overwrite);
-        });
+        typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
+                methodInfo.methodAnalysis.fromAnnotationsIntoProperties(methodInfo.methodInspection.get().annotations,
+                        typeContext, overwrite));
+        typeInspection.get().fields.forEach(fieldInfo ->
+                fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(fieldInfo.fieldInspection.get().annotations,
+                        typeContext, overwrite));
+    }
+
+    public void resolveAllAnnotations(ExpressionContext expressionContext) {
+        typeInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
+                .forEach(ae -> ae.resolve(expressionContext));
+        typeInspection.get().subTypes.forEach(subType -> subType.resolveAllAnnotations(expressionContext));
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
+                methodInfo.methodInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
+                        .forEach(ae -> ae.resolve(expressionContext)));
+        typeInspection.get().fields.forEach(fieldInfo ->
+                fieldInfo.fieldInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
+                        .forEach(ae -> ae.resolve(expressionContext)));
     }
 }

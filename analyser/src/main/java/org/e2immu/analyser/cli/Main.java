@@ -50,6 +50,7 @@ public class Main {
     public static final String DEBUG = "debug";
     public static final String IGNORE_ERRORS = "ignore-errors";
     public static final String QUIET = "quiet";
+    public static final String SKIP_ANALYSIS = "skip-analysis"; // not available on CMD line
 
     public static void main(String[] args) {
         CommandLineParser parser = new DefaultParser();

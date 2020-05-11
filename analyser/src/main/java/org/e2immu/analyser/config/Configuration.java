@@ -52,6 +52,7 @@ public class Configuration {
     public final Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets;
     public final boolean quiet;
     public final boolean ignoreErrors;
+    public final boolean skipAnalysis;
 
     // upload
     public final UploadConfiguration uploadConfiguration;
@@ -67,6 +68,7 @@ public class Configuration {
                          Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
                          boolean quiet,
                          boolean ignoreErrors,
+                         boolean skipAnalysis,
 
                          UploadConfiguration uploadConfiguration,
                          AnnotatedAPIConfiguration annotatedAPIConfiguration,
@@ -75,6 +77,7 @@ public class Configuration {
         this.logTargets = logTargets;
         this.quiet = quiet;
         this.ignoreErrors = ignoreErrors;
+        this.skipAnalysis = skipAnalysis;
         this.uploadConfiguration = uploadConfiguration;
         this.annotatedAPIConfiguration = annotatedAPIConfiguration;
         this.annotationXmlConfiguration = annotationXmlConfiguration;
@@ -101,6 +104,7 @@ public class Configuration {
         Configuration that = (Configuration) o;
         return quiet == that.quiet &&
                 ignoreErrors == that.ignoreErrors &&
+                skipAnalysis == that.skipAnalysis &&
                 inputConfiguration.equals(that.inputConfiguration) &&
                 logTargets.equals(that.logTargets) &&
                 uploadConfiguration.equals(that.uploadConfiguration) &&
@@ -110,7 +114,9 @@ public class Configuration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(inputConfiguration, logTargets, quiet, ignoreErrors, uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration);
+        return Objects.hash(inputConfiguration, logTargets, quiet, ignoreErrors,
+                skipAnalysis,
+                uploadConfiguration, annotatedAPIConfiguration, annotationXmlConfiguration);
     }
 
     public static Configuration fromProperties(Map<String, String> analyserProperties) {
@@ -122,6 +128,8 @@ public class Configuration {
 
         setBooleanProperty(analyserProperties, Main.QUIET, builder::setQuiet);
         setBooleanProperty(analyserProperties, Main.IGNORE_ERRORS, builder::setIgnoreErrors);
+        setBooleanProperty(analyserProperties, Main.SKIP_ANALYSIS, builder::setSkipAnalysis);
+
         setSplitStringProperty(analyserProperties, COMMA, Main.DEBUG, builder::addDebugLogTargets);
 
         return builder.build();
@@ -161,6 +169,7 @@ public class Configuration {
 
         private boolean quiet;
         private boolean ignoreErrors;
+        private boolean skipAnalysis;
         private final Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets = new HashSet<>();
 
         private UploadConfiguration uploadConfiguration;
@@ -172,6 +181,7 @@ public class Configuration {
                     ImmutableSet.copyOf(logTargets),
                     quiet,
                     ignoreErrors,
+                    skipAnalysis,
                     uploadConfiguration != null ? uploadConfiguration : new UploadConfiguration.Builder().build(),
                     annotatedAPIConfiguration != null ? annotatedAPIConfiguration : new AnnotatedAPIConfiguration.Builder().build(),
                     annotationXmlConfiguration != null ? annotationXmlConfiguration : new AnnotationXmlConfiguration.Builder().build()
@@ -200,6 +210,12 @@ public class Configuration {
         @Fluent
         public Builder setQuiet(boolean quiet) {
             this.quiet = quiet;
+            return this;
+        }
+
+        @Fluent
+        public Builder setSkipAnalysis(boolean skipAnalysis) {
+            this.skipAnalysis = skipAnalysis;
             return this;
         }
 
