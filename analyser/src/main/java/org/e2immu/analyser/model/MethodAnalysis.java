@@ -71,10 +71,9 @@ public class MethodAnalysis extends Analysis {
                 }
                 int returnType = typeInfo.typeAnalysis.getProperty(variableProperty);
                 return Level.best(returnType, super.getProperty(variableProperty));
-            case CONSTANT:
-                return super.getProperty(variableProperty);
+            default:
         }
-        throw new UnsupportedOperationException("? no provisions for property " + variableProperty);
+        return super.getProperty(variableProperty);
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {

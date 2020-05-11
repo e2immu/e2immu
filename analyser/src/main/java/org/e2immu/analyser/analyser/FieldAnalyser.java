@@ -119,7 +119,8 @@ public class FieldAnalyser {
                                                  boolean haveInitialiser,
                                                  boolean fieldCanBeAccessedFromOutsideThisType,
                                                  TypeInspection typeInspection) {
-        if (!property.canImprove && fieldAnalysis.getProperty(property) != Level.DELAY) return false;
+        int currentValue = fieldAnalysis.getProperty(property);
+        if (!property.canImprove && currentValue != Level.DELAY) return false;
         if (fieldCanBeAccessedFromOutsideThisType) {
             log(DYNAMIC, "Field {} cannot have dynamic type property {}, it can be written from outside this type",
                     fieldInfo.fullyQualifiedName(), property);
@@ -148,6 +149,9 @@ public class FieldAnalyser {
             log(DELAYED, "Delaying dynamic type property {} on field {}, initialiser delayed",
                     property, fieldInfo.fullyQualifiedName());
             return false;
+        }
+        if(conclusion <= currentValue) {
+            return false; // not better
         }
         log(DYNAMIC, "Set dynamic type property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(),
                 conclusion);
@@ -395,6 +399,9 @@ public class FieldAnalyser {
 
 
     public void check(FieldInfo fieldInfo) {
+        // before we check, we copy the properties into annotations
+        fieldInfo.fieldAnalysis.transferPropertiesToAnnotations(typeContext);
+
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
         // TODO check the correct field name in @Linked(to="xxxx")

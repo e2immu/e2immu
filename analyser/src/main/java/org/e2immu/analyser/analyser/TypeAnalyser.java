@@ -63,8 +63,12 @@ public class TypeAnalyser {
     }
 
     public void check(SortedType sortedType) {
-        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", sortedType.typeInfo.fullyQualifiedName);
         TypeInfo typeInfo = sortedType.typeInfo;
+
+        // before we check, we copy the properties into annotations
+        typeInfo.typeAnalysis.transferPropertiesToAnnotations(typeContext);
+
+        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
         for (WithInspectionAndAnalysis m : sortedType.methodsAndFields) {
             if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
@@ -81,10 +85,14 @@ public class TypeAnalyser {
         }
         check(typeInfo, UtilityClass.class, typeContext.utilityClass.get());
         check(typeInfo, E1Immutable.class, typeContext.e1Immutable.get());
+        check(typeInfo, E1Container.class, typeContext.e1Container.get());
         check(typeInfo, ExtensionClass.class, typeContext.extensionClass.get());
         check(typeInfo, Container.class, typeContext.container.get());
         check(typeInfo, E2Immutable.class, typeContext.e2Immutable.get());
+        check(typeInfo, E2Container.class, typeContext.e2Container.get());
         check(typeInfo, NotNull.class, typeContext.notNull.get());
+        check(typeInfo, NotNull1.class, typeContext.notNull1.get());
+        check(typeInfo, NotNull2.class, typeContext.notNull2.get());
         // TODO there's a "where" which complicates things!! check(typeInfo, NotModified.class, typeContext.e2Immutable.get());
         // already implemented for "reading", but not yet for checking
     }
@@ -200,7 +208,7 @@ public class TypeAnalyser {
                 }
             }
         }
-        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.TRUE);
         log(CONTAINER, "Mark {} as @Container", typeInfo.fullyQualifiedName);
         return true;
     }

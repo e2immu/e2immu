@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
+import org.e2immu.analyser.util.Lazy;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationType;
 
@@ -108,20 +109,44 @@ public abstract class Analysis {
                 annotations.put(annotationExpression, true);
             }
         }
+
+        // container and immutable
         boolean container = getProperty(VariableProperty.CONTAINER) == Level.TRUE;
         boolean noContainer = getProperty(VariableProperty.CONTAINER) == Level.FALSE;
-        if (container) annotations.put(typeContext.container.get(), true);
+
         if (noContainer) annotations.put(typeContext.container.get(), false);
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (Level.have(immutable, 0)) {
-            if (container) annotations.put(typeContext.e1Container.get(), true);
-            if (noContainer) annotations.put(typeContext.e1Container.get(), false);
-            annotations.put(typeContext.e1Immutable.get(), true);
-        }
-        if (Level.have(immutable, 1)) {
+        if (Level.have(immutable, Level.E2IMMUTABLE)) {
             if (container) annotations.put(typeContext.e2Container.get(), true);
-            if (noContainer) annotations.put(typeContext.e2Container.get(), false);
-            annotations.put(typeContext.e2Immutable.get(), true);
+            else {
+                if (noContainer) annotations.put(typeContext.e2Container.get(), false);
+                annotations.put(typeContext.e2Immutable.get(), true);
+            }
+        } else if (Level.have(immutable, Level.E1IMMUTABLE)) {
+            if (container) annotations.put(typeContext.e1Container.get(), true);
+            else {
+                if (noContainer) annotations.put(typeContext.e1Container.get(), false);
+                annotations.put(typeContext.e1Immutable.get(), true);
+            }
+        } else if (container) annotations.put(typeContext.container.get(), true);
+
+        // not null
+        int notNull = getProperty(VariableProperty.NOT_NULL);
+        int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
+        if (notNull2 == Level.TRUE) {
+            annotations.put(typeContext.notNull2.get(), true);
+        } else {
+            if (notNull2 == Level.FALSE) annotations.put(typeContext.notNull2.get(), false);
+
+            int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
+            if (notNull1 == Level.TRUE) {
+                annotations.put(typeContext.notNull1.get(), true);
+            } else {
+                if (notNull1 == Level.FALSE) annotations.put(typeContext.notNull1.get(), false);
+
+                int notNull0 = Level.value(notNull, Level.NOT_NULL);
+                if (notNull0 != Level.DELAY) annotations.put(typeContext.notNull.get(), notNull0 == Level.TRUE);
+            }
         }
     }
 

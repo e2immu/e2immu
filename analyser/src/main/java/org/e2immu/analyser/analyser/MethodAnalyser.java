@@ -55,6 +55,9 @@ public class MethodAnalyser {
     }
 
     public void check(MethodInfo methodInfo) {
+        // before we check, we copy the properties into annotations
+        methodInfo.methodAnalysis.transferPropertiesToAnnotations(typeContext);
+
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
         check(methodInfo, Independent.class, typeContext.independent.get());
@@ -289,9 +292,15 @@ public class MethodAnalyser {
             int e2ImmutableStatusOfFieldRefs = variables.stream()
                     .filter(v -> v instanceof FieldReference)
                     .mapToInt(v -> Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
-                    .min().orElse(Level.DELAY);
+                    .min().orElse(Level.TRUE);
             if (e2ImmutableStatusOfFieldRefs == Level.DELAY) {
-                log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known");
+                log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
+                        variables.stream()
+                                .filter(v -> v instanceof FieldReference &&
+                                        Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                                                Level.E2IMMUTABLE) == Level.DELAY)
+                                .map(Variable::detailedString)
+                                .collect(Collectors.joining(", ")));
                 return false;
             }
             returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == Level.TRUE;
