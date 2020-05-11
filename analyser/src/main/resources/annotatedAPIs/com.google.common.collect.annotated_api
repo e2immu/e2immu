@@ -76,7 +76,7 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
 
     @NotNull
     @E2Container
-    static ImmutableList<E> copyOf(@NotNull Iterable<E> iterable);
+    static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable);
 }
 
 @E2Container
@@ -109,7 +109,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
 
     @NotNull
     @E2Container
-    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Iterable<E> iterable);
+    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Iterable<? extends E> iterable);
 
     @NotNull
     @E2Container

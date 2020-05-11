@@ -220,7 +220,7 @@ public class TestWithSkeleton {
 
         Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef));
         FieldReference finalStringRef2 = new FieldReference(finalString, new This(testSkeleton));
-        Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef2)); 
+        Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef2));
 
         Value currentValue = variableProperties.currentValue(finalStringRef);
         Assert.assertSame(currentValue, UnknownValue.NO_VALUE);

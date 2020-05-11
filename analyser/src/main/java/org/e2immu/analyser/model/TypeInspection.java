@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.Container;
@@ -114,10 +115,15 @@ public class TypeInspection extends Inspection {
         return Iterables.concat(methods, constructors);
     }
 
-    public TypeInspection copy(List<AnnotationExpression> alternativeAnnotations) {
+    public TypeInspection copy(List<AnnotationExpression> alternativeAnnotations,
+                               List<MethodInfo> extraConstructors, // exist identically in super types, but with different annotations
+                               List<MethodInfo> extraMethods) { // ditto
         return new TypeInspection(hasBeenDefined, typeInfo, packageNameOrEnclosingType, allTypesInPrimaryType,
                 typeNature, typeParameters,
-                parentClass, interfacesImplemented, constructors, methods, fields, modifiers, subTypes,
+                parentClass, interfacesImplemented,
+                ListUtil.immutableConcat(constructors, extraConstructors),
+                ListUtil.immutableConcat(methods, extraMethods),
+                fields, modifiers, subTypes,
                 ImmutableList.copyOf(alternativeAnnotations));
     }
 

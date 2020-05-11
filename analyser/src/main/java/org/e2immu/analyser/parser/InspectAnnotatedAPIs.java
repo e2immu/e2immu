@@ -22,10 +22,7 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +30,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.MERGE_ANNOTATIONS;
 import static org.e2immu.analyser.util.Logger.log;
@@ -102,9 +100,17 @@ public class InspectAnnotatedAPIs {
         return typesInGlobalTypeContext;
     }
 
-    private static void mergeAnnotations(TypeInfo typeFrom, TypeInfo typeTo) {
+    private static final Function<TypeInspection, List<MethodInfo>> CONSTRUCTORS = typeInspection -> typeInspection.constructors;
+    private static final Function<TypeInspection, List<MethodInfo>> METHODS = typeInspection -> typeInspection.methods;
+
+    private void mergeAnnotations(TypeInfo typeFrom, TypeInfo typeTo) {
+        List<MethodInfo> extraConstructors = findMissingCheckOverride(typeFrom, typeTo, CONSTRUCTORS);
+        List<MethodInfo> extraMethods = findMissingCheckOverride(typeFrom, typeTo, METHODS);
+
         if (typeFrom == typeTo) return; // same object, nothing to do
-        typeTo.typeInspection.overwrite(typeTo.typeInspection.get().copy(typeFrom.typeInspection.get().annotations));
+        typeTo.typeInspection.overwrite(typeTo.typeInspection.get().copy(typeFrom.typeInspection.get().annotations,
+                extraConstructors,
+                extraMethods));
         typeTo.typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
             MethodInfo methodFrom = typeFrom.getMethodOrConstructorByDistinguishingName(methodInfo.distinguishingName());
             if (methodFrom != null) {
@@ -130,6 +136,31 @@ public class InspectAnnotatedAPIs {
                 log(MERGE_ANNOTATIONS, "Field {} not found in merge", fieldInfo.fullyQualifiedName());
             }
         });
+    }
+
+    private List<MethodInfo> findMissingCheckOverride(TypeInfo typeFrom,
+                                                      TypeInfo typeTo,
+                                                      Function<TypeInspection, List<MethodInfo>> extractor) {
+        List<MethodInfo> res = new ArrayList<>();
+        Map<String, MethodInfo> inTypeTo = extractor.apply(typeTo.typeInspection.get())
+                .stream()
+                .collect(Collectors.toMap(MethodInfo::distinguishingName, mi -> mi));
+        for (MethodInfo methodInfo : extractor.apply(typeFrom.typeInspection.get())) {
+            String distinguishingName = methodInfo.distinguishingName();
+            boolean isInTypeTo = inTypeTo.containsKey(distinguishingName);
+            if (!isInTypeTo) {
+                // make sure it is in one of the supertypes; otherwise, raise error
+                if (typeTo.superTypes().stream().map(ti -> ti.getMethodOrConstructorByDistinguishingName(distinguishingName))
+                        .noneMatch(Objects::nonNull)) {
+                    globalTypeContext.addMessage(Message.Severity.ERROR, "Cannot find method " + distinguishingName + " in a supertype");
+
+                } else {
+                    log(MERGE_ANNOTATIONS, "Add copy of {}", distinguishingName);
+                    res.add(methodInfo);
+                }
+            }
+        }
+        return res;
     }
 
     void load(URL url) throws IOException {
