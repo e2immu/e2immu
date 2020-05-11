@@ -155,7 +155,7 @@ public class StatementAnalyser {
         // we run at the local level
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE
-                    && aboutVariable.getProperty(VariableProperty.READ) != Level.TRUE) {
+                    && Level.value(aboutVariable.getProperty(VariableProperty.READ), 0) != Level.TRUE) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
                 }
@@ -582,11 +582,7 @@ public class StatementAnalyser {
                         methodAnalysis.thisRead.set(true);
                     }
                 } else {
-                    if (variable instanceof FieldReference)
-                        variableProperties.ensureVariable((FieldReference) variable);
-                    variableProperties.removeProperty(variable, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-                    int read = variableProperties.getProperty(variable, VariableProperty.READ);
-                    variableProperties.addProperty(variable, VariableProperty.READ, Level.nextLevelTrue(read, 1));
+                    variableProperties.markRead(variable);
                 }
             }
         }
@@ -713,7 +709,7 @@ public class StatementAnalyser {
         // not modified
         int notModified = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
         int value = Level.compose(Level.TRUE, notModified == Level.FALSE ? 1 : 0);
-        recursivelyMarkVariables(parameterExpression, variableProperties, VariableProperty.CONTENT_MODIFIED, value);
+        recursivelyMarkContentModified(parameterExpression, variableProperties, value);
 
         // null not allowed; not a recursive call so no knowledge about the parameter as a variable
         if (parameterExpression instanceof VariableExpression) {
@@ -757,22 +753,27 @@ public class StatementAnalyser {
         SideEffect sideEffect = methodCall.methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
         int value = Level.compose(Level.TRUE, safeMethod ? 0 : 1);
-        recursivelyMarkVariables(methodCall.object, variableProperties, VariableProperty.CONTENT_MODIFIED, value);
+        recursivelyMarkContentModified(methodCall.object, variableProperties, value);
     }
 
-    private void recursivelyMarkVariables(Expression expression, VariableProperties variableProperties, VariableProperty propertyToSet, int value) {
+    private void recursivelyMarkContentModified(Expression expression, VariableProperties variableProperties, int value) {
         Variable variable;
         if (expression instanceof VariableExpression) {
             variable = expression.variables().get(0);
         } else if (expression instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) expression;
-            recursivelyMarkVariables(fieldAccess.expression, variableProperties, propertyToSet, value);
+            recursivelyMarkContentModified(fieldAccess.expression, variableProperties, value);
             variable = fieldAccess.variable;
         } else {
             return;
         }
-        log(DEBUG_MODIFY_CONTENT, "Mark method object as {}: {}", propertyToSet, variable.detailedString());
-        if(variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
-        variableProperties.addProperty(variable, propertyToSet, value);
+        if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
+        int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
+        if (ignoreContentModifications != Level.TRUE) {
+            log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
+            variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED, value);
+        } else {
+            log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified {}: {}", value, variable.detailedString());
+        }
     }
 }

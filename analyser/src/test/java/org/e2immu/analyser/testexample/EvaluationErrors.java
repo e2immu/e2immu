@@ -13,7 +13,7 @@ public class EvaluationErrors {
         int i=1;
         // ERROR 2: evaluation in if-statement is constant
         if(i != 1) {
-            System.out.println("hello");
+            return 2;
         }
         return 3;
     }

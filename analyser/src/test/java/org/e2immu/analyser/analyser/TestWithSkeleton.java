@@ -174,7 +174,6 @@ public class TestWithSkeleton {
     @Test
     public void testFinalField() {
         FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
-        finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, TRUE);
         finalString.fieldAnalysis.effectivelyFinalValue.set(new StringValue("this is the final value"));
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
@@ -198,7 +197,6 @@ public class TestWithSkeleton {
     @Test
     public void testFinalFieldWithoutFinalValue() {
         FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
-        finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, TRUE);
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
@@ -215,7 +213,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testNotYetFinalField() {
-        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
+        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("notYetFinalString")).findAny().orElseThrow();
         finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, DELAY);
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));

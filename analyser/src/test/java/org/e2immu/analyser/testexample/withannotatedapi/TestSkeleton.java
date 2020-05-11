@@ -7,6 +7,7 @@ public class TestSkeleton {
 
     private final Set<String> strings = new HashSet<>();
     public final String finalString;
+    private String notYetFinalString;
     public Set<Integer> set;
 
     public TestSkeleton() {

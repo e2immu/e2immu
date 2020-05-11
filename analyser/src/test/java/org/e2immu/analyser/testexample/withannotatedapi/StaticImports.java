@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
+import static java.lang.System.*;
 import static java.util.Arrays.stream;
 import static org.junit.Assert.assertEquals;
 
@@ -26,6 +27,7 @@ public class StaticImports {
     public static void test1() {
         int[] integers = {1, 2, 3};
         int sum = stream(integers).sum();
+        out.println("Sum is " + sum);
         assertEquals(6, sum);
     }
 }

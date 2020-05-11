@@ -205,8 +205,11 @@ class VariableProperties implements EvaluationContext {
             if (effectivelyFinal == Level.TRUE) {
                 if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                     resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                } else {
+                } else if(fieldReference.fieldInfo.owner.hasBeenDefined()) {
                     resetValue = UnknownValue.NO_VALUE; // delay
+                } else {
+                    // undefined, will never get a value, but may have decent properties
+                    resetValue = new VariableValue(this, fieldReference, name);
                 }
             } else {
                 // local variable situation
@@ -238,7 +241,7 @@ class VariableProperties implements EvaluationContext {
                 name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
             }
         } else if (variable instanceof This) {
-           return null; // will be ignored
+            return null; // will be ignored
         } else {
             // parameter, local variable
             name = variable.name();
@@ -388,12 +391,6 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    public void removeProperty(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = find(variable);
-        if (aboutVariable == null) return; //not known to us, ignoring! (symmetric to add)
-        aboutVariable.removeProperty(variableProperty);
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
@@ -466,30 +463,6 @@ class VariableProperties implements EvaluationContext {
 
     public void setGuaranteedToBeReachedInCurrentBlock(boolean guaranteedToBeReachedInCurrentBlock) {
         this.guaranteedToBeReachedInCurrentBlock = guaranteedToBeReachedInCurrentBlock;
-    }
-
-    public boolean guaranteedToBeReached(Variable variable) {
-        AboutVariable aboutVariable = findComplain(variable);
-        if (!guaranteedToBeReachedInCurrentBlock) return false;
-        return recursivelyCheckGuaranteedToBeReachedByParent(aboutVariable.name);
-    }
-
-    private boolean recursivelyCheckGuaranteedToBeReachedByParent(String name) {
-        if (variableProperties.containsKey(name)) {
-            return true; // this is the level where we are defined
-        }
-        if (!guaranteedToBeReachedByParentStatement) return false;
-        if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(name);
-        return true;
-    }
-
-    public void ensureLocalCopy(Variable variable) {
-        AboutVariable master = findComplain(variable);
-        if (!variableProperties.containsKey(master.name)) {
-            // we'll make a local copy
-            AboutVariable copy = master.localCopy();
-            variableProperties.put(copy.name, copy);
-        }
     }
 
     public void copyBackLocalCopies(boolean statementsExecutedAtLeastOnce) {
@@ -599,12 +572,22 @@ class VariableProperties implements EvaluationContext {
         return av.name.equals(avOther.name);
     }
 
+    private AboutVariable ensureLocalCopy(Variable variable) {
+        AboutVariable master = findComplain(variable);
+        if (!variableProperties.containsKey(master.name)) {
+            // we'll make a local copy
+            AboutVariable copy = master.localCopy();
+            variableProperties.put(copy.name, copy);
+            return copy;
+        }
+        return master;
+    }
+
     public void assignmentBasics(Variable at, Value value) {
         // assignment to local variable: could be that we're in the block where it was created, then nothing happens
         // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-        ensureLocalCopy(at);
+        AboutVariable aboutVariable = ensureLocalCopy(at);
 
-        AboutVariable aboutVariable = findComplain(at);
         if (value instanceof Instance) {
             recursivelyReset(aboutVariable, true);
         } else if (value instanceof VariableValue) {
@@ -626,7 +609,21 @@ class VariableProperties implements EvaluationContext {
         aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
 
         aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
-                Level.fromBool(guaranteedToBeReached(at)));
+                Level.fromBool(guaranteedToBeReached(aboutVariable)));
+    }
+
+    public boolean guaranteedToBeReached(AboutVariable aboutVariable) {
+        if (!guaranteedToBeReachedInCurrentBlock) return false;
+        return recursivelyCheckGuaranteedToBeReachedByParent(aboutVariable.name);
+    }
+
+    private boolean recursivelyCheckGuaranteedToBeReachedByParent(String name) {
+        if (variableProperties.containsKey(name)) {
+            return true; // this is the level where we are defined
+        }
+        if (!guaranteedToBeReachedByParentStatement) return false;
+        if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(name);
+        return true;
     }
 
     private static Value removeNullClausesInvolving(Value conditional, Variable variable) {
@@ -638,5 +635,12 @@ class VariableProperties implements EvaluationContext {
             return ((AndValue) conditional).removeClausesInvolving(variable);
         }
         return conditional;
+    }
+
+    void markRead(Variable variable) {
+        AboutVariable aboutVariable = findComplain(variable);
+        aboutVariable.removeProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+        int read = aboutVariable.getProperty(VariableProperty.READ);
+        aboutVariable.setProperty(VariableProperty.READ, Level.nextLevelTrue(read, 1));
     }
 }

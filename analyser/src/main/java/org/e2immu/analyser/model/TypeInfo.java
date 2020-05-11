@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -1023,9 +1024,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
                 methodInfo.methodAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
                         typeContext, overwrite));
-        typeInspection.get().fields.forEach(fieldInfo ->
-                fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
-                        typeContext, overwrite));
+        typeInspection.get().fields.forEach(fieldInfo -> {
+            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
+                    typeContext, overwrite);
+            // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
+            int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (fieldInfo.isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
+                fieldInfo.fieldAnalysis.improveProperty(VariableProperty.FINAL, Level.TRUE);
+            }
+        });
     }
 
     public void resolveAllAnnotations(ExpressionContext expressionContext) {
