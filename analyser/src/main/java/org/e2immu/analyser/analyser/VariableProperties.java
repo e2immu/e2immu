@@ -201,7 +201,7 @@ class VariableProperties implements EvaluationContext {
         } else if (fieldReferenceState == MULTI_COPY) {
             resetValue = UnknownValue.UNKNOWN_VALUE;
         } else {
-            int effectivelyFinal = getProperty(fieldReference, VariableProperty.FINAL);
+            int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.TRUE) {
                 if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                     resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
@@ -592,7 +592,6 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public boolean equals(Variable variable, Variable other) {
-        if (variable == other) return true;
         AboutVariable av = findComplain(variable);
         if (av.fieldReferenceState == MULTI_COPY) return false;
         AboutVariable avOther = findComplain(other);
@@ -632,7 +631,7 @@ class VariableProperties implements EvaluationContext {
 
     private static Value removeNullClausesInvolving(Value conditional, Variable variable) {
         Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
-        if (toTest instanceof EqualsValue &&  toTest.variables().contains(variable)) {
+        if (toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
             return null;
         }
         if (conditional instanceof AndValue) {

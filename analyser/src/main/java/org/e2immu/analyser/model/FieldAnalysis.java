@@ -65,6 +65,7 @@ public class FieldAnalysis extends Analysis {
             case FINAL:
                 int e1ImmutableOwner = Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE);
                 if (e1ImmutableOwner == Level.TRUE) return Level.TRUE;
+                break;
 
             case IMMUTABLE:
                 int immutableType = owner == bestType || bestType == null ? Level.FALSE :

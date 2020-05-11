@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
@@ -141,6 +142,27 @@ public class TestWithSkeleton {
     }
 
     @Test
+    public void testAddLocalVariableAssignToParam() {
+        MethodInfo method = testSkeleton.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
+        VariableProperties variableProperties = new VariableProperties(typeContext, method);
+        LocalVariable variableS = new LocalVariable(List.of(), "s", Primitives.PRIMITIVES.stringParameterizedType, List.of());
+        LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
+        variableProperties.createLocalVariableOrParameter(localS);
+
+        ParameterInfo param = method.methodInspection.get().parameters.get(0);
+        variableProperties.createLocalVariableOrParameter(param);
+
+        Assert.assertTrue(variableProperties.isKnown(param));
+        Assert.assertTrue(variableProperties.isKnown(localS));
+
+        // now explicitly set s to param
+        variableProperties.assignmentBasics(localS, variableProperties.newVariableValue(param));
+
+        VariableValue paramVv = (VariableValue) variableProperties.currentValue(localS);
+        Assert.assertSame(param, paramVv.variable);
+    }
+
+    @Test
     public void testFinalField() {
         FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
         finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, TRUE);
@@ -159,7 +181,68 @@ public class TestWithSkeleton {
         Assert.assertEquals("TestSkeleton.this.finalString", nvv.name);
 
         Value currentValue = variableProperties.currentValue(finalStringRef);
-        Assert.assertTrue("Have "+currentValue.getClass(), currentValue instanceof StringValue);
+        Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof StringValue);
         Assert.assertEquals("this is the final value", ((StringValue) currentValue).value);
+        Assert.assertEquals(TRUE, currentValue.getProperty(variableProperties, VariableProperty.NOT_NULL));
+    }
+
+    @Test
+    public void testFinalFieldWithoutFinalValue() {
+        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
+        finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, TRUE);
+
+        FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
+
+        // we're outside the method; during field initialisation
+        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        Assert.assertFalse(variableProperties.isKnown(finalStringRef));
+
+        Assert.assertEquals(TRUE, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertTrue(variableProperties.isKnown(finalStringRef));
+
+        Value currentValue = variableProperties.currentValue(finalStringRef);
+        Assert.assertSame(currentValue, UnknownValue.NO_VALUE);
+    }
+
+    @Test
+    public void testNotYetFinalField() {
+        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
+        finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, DELAY);
+
+        FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
+
+        // we're outside the method; during field initialisation
+        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        Assert.assertFalse(variableProperties.isKnown(finalStringRef));
+
+        Assert.assertEquals(DELAY, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertTrue(variableProperties.isKnown(finalStringRef));
+
+        Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef));
+        FieldReference finalStringRef2 = new FieldReference(finalString, new This(testSkeleton));
+        Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef2)); 
+
+        Value currentValue = variableProperties.currentValue(finalStringRef);
+        Assert.assertSame(currentValue, UnknownValue.NO_VALUE);
+    }
+
+    @Test
+    public void testNonFinalField() {
+        FieldInfo set = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("set")).findAny().orElseThrow();
+        set.fieldAnalysis.setProperty(VariableProperty.FINAL, FALSE);
+
+        FieldReference setRef = new FieldReference(set, new This(testSkeleton));
+
+        // we're outside the method; during field initialisation
+        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        Assert.assertFalse(variableProperties.isKnown(setRef));
+
+        Assert.assertFalse(variableProperties.equals(setRef, setRef)); // not even equal to itself!
+
+        Assert.assertEquals(FALSE, variableProperties.getProperty(setRef, VariableProperty.FINAL));
+        Assert.assertTrue(variableProperties.isKnown(setRef));
+
+        Value currentValue = variableProperties.currentValue(setRef);
+        Assert.assertSame(currentValue, UnknownValue.UNKNOWN_VALUE);
     }
 }

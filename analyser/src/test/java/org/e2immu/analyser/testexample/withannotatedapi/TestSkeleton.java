@@ -14,7 +14,7 @@ public class TestSkeleton {
         finalString = "will be ignored";
     }
 
-    public int method(int param) {
-        return 0;
+    public int method(String param) {
+        return param.length();
     }
 }
