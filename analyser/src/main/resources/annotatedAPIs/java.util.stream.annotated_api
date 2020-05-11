@@ -74,7 +74,7 @@ public interface IntStream {
 @E2Container
 public interface Stream<T> {
 
-    <R> Stream<R> map(Function<? super T, ? super R> mapper);
+    <R> Stream<R> map(Function<? super T, ? extends R> mapper);
 
     <R, A> R collect(Collector<? super T, A, R> collector);
 

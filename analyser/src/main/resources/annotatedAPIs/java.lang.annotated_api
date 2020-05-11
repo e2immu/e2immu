@@ -30,6 +30,7 @@ import org.e2immu.annotation.*;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
@@ -152,7 +153,7 @@ public class Throwable {
     }
 
     @Fluent
-    Throwable fillinStackTrace() {
+    Throwable fillInStackTrace() {
     }
 }
 
@@ -227,9 +228,6 @@ public class String implements CharSequence {
     public String() {
     }
 
-    public boolean startsWith(CharSequence s) {
-    }
-
     public int indexOf(int ch) {
     }
 
@@ -237,6 +235,12 @@ public class String implements CharSequence {
     }
 
     public String repeat(int count) {
+    }
+
+    public boolean startsWith(String s) {
+    }
+
+    public boolean startsWith(String s, int i) {
     }
 
     public String toLowerCase() {
@@ -253,7 +257,7 @@ public class String implements CharSequence {
 }
 
 @Container
-public class StringBuilder {
+public class StringBuilder implements CharSequence, Comparable<StringBuilder>, Serializable, Appendable {
     public StringBuilder() {
     }
 
@@ -290,9 +294,6 @@ public class StringBuilder {
 
     @Fluent
     public StringBuilder append(Object o) {
-    }
-
-    public int length() {
     }
 }
 

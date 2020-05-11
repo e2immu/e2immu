@@ -103,7 +103,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
         this.isDefaultImplementation = isDefaultImplementation;
         if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
-        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(), () -> typeInfo.overrides(this));
+        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(), () -> typeInfo.overrides(this, true));
     }
 
     public boolean hasBeenInspected() {
@@ -484,7 +484,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean hasOverrides() {
-        return !typeInfo.overrides(this).isEmpty();
+        return !typeInfo.overrides(this, true).isEmpty();
     }
 
 

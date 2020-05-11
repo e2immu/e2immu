@@ -102,7 +102,7 @@ public class ParseMethodReferenceExpr {
                 staticVsInstance(methodCandidates);
                 if (methodCandidates.size() > 1) {
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overrides = mc0.method.methodInfo.typeInfo.overrides(mc0.method.methodInfo);
+                    Set<MethodInfo> overrides = mc0.method.methodInfo.typeInfo.overrides(mc0.method.methodInfo, true);
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overrides.contains(mcN.method.methodInfo) && mcN.method.methodInfo != mc0.method.methodInfo) {
                             throw new UnsupportedOperationException("Not all candidates are overrides of the 1st one! No unique " +

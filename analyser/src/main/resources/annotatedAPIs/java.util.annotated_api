@@ -49,10 +49,10 @@ public interface Collection<E> extends Iterable<E> {
     boolean add(@NotNull E e);
 
     @Independent
-    boolean addAll(@NotNull1 Collection<E> collection);
+    boolean addAll(@NotNull1 Collection<? extends E> collection);
 
     @NotModified
-    boolean contains(@NotNull E e);
+    boolean contains(@NotNull Object object);
 
     @NotModified
     boolean containsAll(@NotNull1 Collection<?> c);
@@ -64,7 +64,7 @@ public interface Collection<E> extends Iterable<E> {
     @NotModified
     boolean isEmpty();
 
-    boolean remove(@NotNull E e);
+    boolean remove(@NotNull Object object);
 
     @Independent
     boolean removeAll(@NotNull1 Collection<?> c);
@@ -98,10 +98,10 @@ public interface List<E> extends Collection<E> {
     boolean add(@NotNull E e);
 
     @Independent
-    boolean addAll(@NotNull1 Collection<E> collection);
+    boolean addAll(@NotNull1 Collection<? extends E> collection);
 
     @NotModified
-    boolean contains(@NotNull E e);
+    boolean contains(@NotNull Object object);
 
     @NotModified
     boolean containsAll(@NotNull1 Collection<?> c);
@@ -121,17 +121,13 @@ public interface List<E> extends Collection<E> {
     @E2Container
     static <EE> List<EE> of();
 
-    boolean remove(@NotNull E e);
+    boolean remove(@NotNull Object object);
 
     @Independent
     boolean removeAll(@NotNull1 Collection<?> c);
 
     @NotModified
     int size();
-
-    @NotNull1
-    @NotModified
-    Stream<E> stream();
 
     @NotModified
     @NotNull1
@@ -145,11 +141,6 @@ public interface List<E> extends Collection<E> {
     @Independent
     @NotModified
     <T> T[] toArray(@NotNull1 @Output T[] a);
-
-    @NotNull1
-    @Independent
-    @NotModified
-    <T> T[] toArray(@NotNull IntFunction<T[]> generator);
 }
 
 @Container
@@ -241,9 +232,6 @@ public interface Map<K, V> {
     @NotModified
     @NotNull
     Set<K> keySet();
-
-    @NotModified
-    boolean containsKey(K key);
 }
 
 @Container
@@ -320,30 +308,7 @@ public class LinkedList<E> implements List<E> {
     }
 
     @NotModified
-    public boolean containsAll(Collection<?> c) {
-    }
-
-    @NotNull
-    public Iterator<E> iterator() {
-    }
-
-    public boolean remove(E e) {
-    }
-
-    @Independent
-    public boolean removeAll(Collection<?> c) {
-    }
-
-    @Independent
-    public boolean retainAll(Collection<?> c) {
-    }
-
-    @NotModified
     public int size() {
-    }
-
-    @NotModified
-    public Stream<E> stream() {
     }
 }
 

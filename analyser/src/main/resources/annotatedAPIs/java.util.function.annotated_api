@@ -83,7 +83,7 @@ public interface BiFunction<T, U, R> {
 @FunctionalInterface
 public interface BinaryOperator<T> extends BiFunction<T, T, T> {
 
-    static <T> BinaryOperator<T> mayBy(@NotNull Comparator<? super T> comparator);
+    static <T> BinaryOperator<T> maxBy(@NotNull Comparator<? super T> comparator);
     static <T> BinaryOperator<T> minBy(@NotNull Comparator<? super T> comparator);
 }
 

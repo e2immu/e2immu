@@ -882,14 +882,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    public Set<MethodInfo> overrides(MethodInfo methodInfo) {
+    public Set<MethodInfo> overrides(MethodInfo methodInfo, boolean cacheResult) {
         // NOTE: we cache, but only at our own level
         boolean ourOwnLevel = methodInfo.typeInfo == this;
-        Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.get().overrides.getOtherwiseNull(methodInfo) : null;
-        if (myOverrides != null) return myOverrides;
+        if (cacheResult) {
+            Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.get().overrides.getOtherwiseNull(methodInfo) : null;
+            if (myOverrides != null) return myOverrides;
+        }
         Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
-        if (ourOwnLevel) {
+        if (ourOwnLevel && cacheResult) {
             typeInspection.get().overrides.put(methodInfo, immutable);
         }
         return immutable;
