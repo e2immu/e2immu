@@ -74,10 +74,6 @@ public class TypeContext {
     public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
     public final Lazy<AnnotationExpression> utilityClass = new Lazy<>(() -> create(UtilityClass.class));
 
-    // from Java JDK
-    public final Lazy<AnnotationExpression> functionalInterface = new Lazy<>(() -> create(FunctionalInterface.class));
-
-
     public TypeContext() {
         typeStore = new MapBasedTypeStore();
         parentContext = null;
@@ -269,7 +265,7 @@ public class TypeContext {
         }
         return typeInfo.typeInspection.get().constructors.stream()
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
                 .collect(Collectors.toList());
     }
 
@@ -330,7 +326,7 @@ public class TypeContext {
                 .filter(m -> !staticOnly || m.isStatic)
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented +
                         (!m.isStatic && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m, functionalInterface.get())))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
@@ -345,13 +341,14 @@ public class TypeContext {
         }
     }
 
-    private static Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m, AnnotationExpression functionalInterface) {
+    private static Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {
         Set<Integer> res = new HashSet<>();
         int i = 0;
         for (ParameterInfo parameterInfo : m.methodInspection.get().parameters) {
             if (parameterInfo.parameterizedType.typeInfo != null && parameterInfo.parameterizedType.typeInfo.typeInspection.isSet()) {
                 TypeInspection typeInspection = parameterInfo.parameterizedType.typeInfo.typeInspection.get();
-                if (typeInspection.typeNature == TypeNature.INTERFACE && typeInspection.annotations.contains(functionalInterface)) {
+                if (typeInspection.typeNature == TypeNature.INTERFACE && typeInspection.annotations.contains(
+                        Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression)) {
                     res.add(i);
                 }
             }

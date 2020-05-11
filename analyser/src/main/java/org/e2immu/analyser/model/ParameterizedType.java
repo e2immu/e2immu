@@ -24,7 +24,6 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -44,6 +43,7 @@ public class ParameterizedType {
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
+
 
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS;
@@ -232,6 +232,14 @@ public class ParameterizedType {
         this.typeParameter = typeParameter;
     }
 
+    // from one type context into another one
+    public ParameterizedType copy(TypeContext localTypeContext) {
+        TypeInfo newTypeInfo = typeInfo == null ? null : localTypeContext.typeStore.get(typeInfo.fullyQualifiedName);
+        List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
+        TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.name, true);
+        return new ParameterizedType(newTypeInfo, arrays, wildCard, newParameters, newTypeParameter);
+    }
+
     public ParameterizedType copyWithOneFewerArrays() {
         if (arrays == 0) throw new UnsupportedOperationException();
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
@@ -417,13 +425,13 @@ public class ParameterizedType {
             return Map.of();
         }
         Map<NamedType, ParameterizedType> res = new HashMap<>();
-        boolean iAmFunctionalInterface = isFunctionalInterface(typeContext);
-        boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface(typeContext);
+        boolean iAmFunctionalInterface = isFunctionalInterface();
+        boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface();
 
         if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
-            MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(typeContext);
+            MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface();
             List<ParameterInfo> methodParams = methodTypeParameterMap.methodInfo.methodInspection.get().parameters;
-            MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(typeContext);
+            MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface();
             List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInfo.methodInspection.get().parameters;
 
             if (methodParams.size() != concreteTypeAbstractParams.size()) {
@@ -567,28 +575,28 @@ public class ParameterizedType {
                 primitiveType == Primitives.PRIMITIVES.doubleTypeInfo && "java.lang.Double".equals(fqn);
     }
 
-    public boolean isFunctionalInterface(TypeContext typeContext) {
+    public boolean isFunctionalInterface() {
         if (typeInfo == null || typeInfo.typeInspection.get("isFunctionalInterface on " + typeInfo.fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
             return false;
         }
-        return typeInfo.typeInspection.get().annotations.contains(typeContext.functionalInterface.get());
+        return typeInfo.typeInspection.get().annotations.contains(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
     }
 
     public boolean isUnboundParameterType() {
         return isTypeParameter() && wildCard == WildCard.NONE;
     }
 
-    public MethodTypeParameterMap findSingleAbstractMethodOfInterface(TypeContext typeContext) {
-        return findSingleAbstractMethodOfInterface(typeContext, true);
+    public MethodTypeParameterMap findSingleAbstractMethodOfInterface() {
+        return findSingleAbstractMethodOfInterface(true);
     }
 
-    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(TypeContext typeContext, boolean complain) {
-        if (!isFunctionalInterface(typeContext)) return null;
+    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(boolean complain) {
+        if (!isFunctionalInterface()) return null;
         Optional<MethodInfo> theMethod = typeInfo.typeInspection.get().methods.stream()
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
         if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
         for (ParameterizedType extension : typeInfo.typeInspection.get().interfacesImplemented) {
-            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(typeContext, false);
+            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(false);
             if (ofExtension != null) {
                 return ofExtension;
             }
@@ -623,8 +631,8 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ANNOTATION;
     }
 
-    public boolean isNotModifiedByDefinition(TypeContext typeContext) {
-        return isPrimitive() || isEnum() || isAnnotation() || isFunctionalInterface(typeContext) || isUnboundParameterType();
+    public boolean isNotModifiedByDefinition() {
+        return isPrimitive() || isEnum() || isAnnotation() || isFunctionalInterface() || isUnboundParameterType();
     }
 
     public TypeInfo bestTypeInfo() {

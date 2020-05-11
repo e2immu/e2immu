@@ -59,7 +59,7 @@ public class ParameterAnalyser {
     }
 
     public boolean notModified(ParameterInfo parameterInfo, Boolean directContentModification) {
-        if (!parameterInfo.parameterizedType.isNotModifiedByDefinition(typeContext)) {
+        if (!parameterInfo.parameterizedType.isNotModifiedByDefinition()) {
             if (directContentModification != null) {
                 boolean notModified = !directContentModification;
                 if (parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) {

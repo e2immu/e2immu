@@ -19,10 +19,8 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Fluent;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,10 +54,17 @@ public class ParameterInspection extends Inspection {
             return this;
         }
 
+
         @Override
         @Fluent
         public ParameterInspectionBuilder addAnnotation(@NotNull AnnotationExpression annotationExpression) {
             annotations.add(annotationExpression);
+            return this;
+        }
+
+        @Fluent
+        public ParameterInspectionBuilder addAnnotations(@NotNull1 List<AnnotationExpression> annotations) {
+            this.annotations.addAll(annotations);
             return this;
         }
 
@@ -68,5 +73,6 @@ public class ParameterInspection extends Inspection {
         public ParameterInspection build(MethodInfo owner) {
             return new ParameterInspection(owner, ImmutableList.copyOf(annotations), varArgs);
         }
+
     }
 }

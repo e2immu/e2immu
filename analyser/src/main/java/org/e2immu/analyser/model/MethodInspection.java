@@ -169,6 +169,18 @@ public class MethodInspection extends Inspection {
             }
             FirstThen<BlockStmt, Block> methodBody = new FirstThen<>(block != null ? block : new BlockStmt());
             if (alreadyKnown != null) methodBody.set(alreadyKnown);
+            for (TypeParameter typeParameter : typeParameters) {
+                if (typeParameter.owner.isRight() && typeParameter.owner.getRight() != methodInfo) {
+                    throw new UnsupportedOperationException("I cannot have type parameters owned by another method!");
+                }
+            }
+            for (ParameterInfo parameterInfo : parameters) {
+                if (parameterInfo.parameterizedType.typeParameter != null
+                        && parameterInfo.parameterizedType.typeParameter.isMethodTypeParameter()
+                        && parameterInfo.parameterizedType.typeParameter.owner.getRight() != methodInfo) {
+                    throw new UnsupportedOperationException("I cannot have parameters of a type being a type parameter owned by another method!");
+                }
+            }
             return new MethodInspection(methodInfo,
                     ImmutableList.copyOf(modifiers),
                     ImmutableList.copyOf(parameters),

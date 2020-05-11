@@ -25,15 +25,11 @@ import org.e2immu.annotation.NotNull;
 public class ParameterAnalysis extends Analysis {
 
     private final ParameterizedType parameterizedType;
-    private final TypeContext typeContext; // can be null, for primitives
     private final MethodInfo owner; // can be null, for lambda expressions
 
-    public ParameterAnalysis(@NotNull ParameterizedType parameterizedType,
-                             @NotNull TypeContext typeContext,
-                             MethodInfo owner) {
+    public ParameterAnalysis(@NotNull ParameterizedType parameterizedType, MethodInfo owner) {
         this.owner = owner;
         this.parameterizedType = parameterizedType;
-        this.typeContext = typeContext;
     }
 
     @Override
@@ -45,7 +41,7 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE;
                 break;
             case NOT_MODIFIED:
-                if (parameterizedType.isNotModifiedByDefinition(typeContext)) return Level.TRUE;
+                if (parameterizedType.isNotModifiedByDefinition()) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && (Level.value(bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE) == Level.TRUE ||

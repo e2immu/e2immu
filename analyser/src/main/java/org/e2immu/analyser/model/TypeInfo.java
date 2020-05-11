@@ -227,8 +227,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         MethodInfo valueOfMethodInfo = new MethodInfo(this, "valueOf", List.of(),
                 Primitives.PRIMITIVES.stringParameterizedType, true);
-        ParameterInfo valueOfP0 = new ParameterInfo(expressionContext.typeContext, valueOfMethodInfo,
-                Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
+        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notNull.get())
                 .build(valueOfMethodInfo));
@@ -436,7 +435,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 }
             }
             if (!haveNonStaticNonDefaultsInSuperType) {
-                builder.addAnnotation(expressionContext.typeContext.functionalInterface.get());
+                builder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
             }
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
@@ -958,8 +957,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
      */
 
-    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(TypeContext typeContext, ParameterizedType type, Expression expression) {
-        MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface(typeContext);
+    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(ParameterizedType type) {
+        MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface();
         TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anonymous");
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(this);
@@ -968,7 +967,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 
-        MethodInfo methodInfo = method.buildCopy(typeContext, typeInfo);
+        MethodInfo methodInfo = method.buildCopy(typeInfo);
         builder.addMethod(methodInfo);
 
         // compose the content of the method...

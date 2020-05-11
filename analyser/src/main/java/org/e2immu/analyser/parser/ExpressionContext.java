@@ -522,14 +522,14 @@ public class ExpressionContext {
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationExpression.from(ae, this)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
-                        .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
+                        .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface()))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 return new LocalVariableCreation(localVariable.build(), initializer);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
-                org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(), target.returnType().findSingleAbstractMethodOfInterface(typeContext));
+                org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(), target.returnType().findSingleAbstractMethodOfInterface());
                 if (value.returnType().isType() && value.returnType().typeInfo.isPrimitive() &&
                         target.returnType().isType() && target.returnType().typeInfo.isPrimitive()) {
                     ParameterizedType widestType = Primitives.PRIMITIVES.widestType(value.returnType(), target.returnType());

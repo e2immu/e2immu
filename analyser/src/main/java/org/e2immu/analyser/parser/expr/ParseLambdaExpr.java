@@ -65,7 +65,7 @@ public class ParseLambdaExpr {
                 break;
             }
             types.add(parameterType);
-            ParameterInfo parameterInfo = new ParameterInfo(expressionContext.typeContext, null, parameterType, parameter.getName().asString(), cnt++);
+            ParameterInfo parameterInfo = new ParameterInfo(null, parameterType, parameter.getName().asString(), cnt++);
             parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(null));
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);

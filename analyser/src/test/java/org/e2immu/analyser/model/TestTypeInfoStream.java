@@ -49,7 +49,7 @@ public class TestTypeInfoStream {
     ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
     final MethodInfo genericContainerPutMethod = new MethodInfo(containerTypeInfo, "put",
-            List.of(new ParameterInfo(null, null, typeT, "value", 0)),
+            List.of(new ParameterInfo(null, typeT, "value", 0)),
             typeT, false);
 
     final MethodInfo emptyConstructor = new MethodInfo(typeInfo, List.of());
@@ -57,8 +57,8 @@ public class TestTypeInfoStream {
             primitives.stringParameterizedType, false);
 
     final MethodInfo intSum = new MethodInfo(typeInfo, "sum",
-            List.of(new ParameterInfo(null, null, primitives.intTypeInfo, "x", 0),
-                    new ParameterInfo(null, null, primitives.intTypeInfo, "y", 1)), primitives.intParameterizedType, true);
+            List.of(new ParameterInfo(null, primitives.intTypeInfo, "x", 0),
+                    new ParameterInfo(null, primitives.intTypeInfo, "y", 1)), primitives.intParameterizedType, true);
 
     @Test
     public void test2() {
@@ -78,7 +78,7 @@ public class TestTypeInfoStream {
                 .build();
         MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
-        ParameterInfo p0 = new ParameterInfo(null, hashMapConstructor, typeT, "value", 0);
+        ParameterInfo p0 = new ParameterInfo(hashMapConstructor, typeT, "value", 0);
         p0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(genericContainerPutMethod));
         genericContainerPutMethod.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .setReturnType(typeT)
@@ -167,9 +167,9 @@ public class TestTypeInfoStream {
                 .build(toStringMethodInfo));
         emptyConstructor.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .build(emptyConstructor));
-        ParameterInfo x = new ParameterInfo(null, intSum, primitives.intTypeInfo, "x", 0);
+        ParameterInfo x = new ParameterInfo(intSum, primitives.intTypeInfo, "x", 0);
         x.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(intSum));
-        ParameterInfo y = new ParameterInfo(null, intSum, primitives.intTypeInfo, "y", 1);
+        ParameterInfo y = new ParameterInfo(intSum, primitives.intTypeInfo, "y", 1);
         y.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(intSum));
         intSum.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addModifier(MethodModifier.PUBLIC)

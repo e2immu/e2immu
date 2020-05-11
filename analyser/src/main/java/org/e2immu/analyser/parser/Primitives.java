@@ -19,6 +19,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.util.Lazy;
 
 import java.util.HashMap;
 import java.util.List;
@@ -72,14 +74,18 @@ public class Primitives {
     public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypeTypeInfo, "VERIFY_ABSENT", annotationTypeTypeInfo);
     public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypeTypeInfo, "CONTRACT", annotationTypeTypeInfo);
 
+    public final TypeInfo functionalInterface = new TypeInfo("java.lang.FunctionalInterface");
+    public final AnnotationExpression functionalInterfaceAnnotationExpression =
+            AnnotationExpression.fromAnalyserExpressions(functionalInterface, List.of());
+
     public final TypeInfo classTypeInfo = new TypeInfo(JAVA_LANG, "Class");
 
     public final TypeInfo objectTypeInfo = new TypeInfo(JAVA_LANG, "Object");
     public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
 
     public final MethodInfo plusOperatorInt = new MethodInfo(intTypeInfo, "+",
-            List.of(new ParameterInfo(null, null, intParameterizedType, "lhs", 0),
-                    new ParameterInfo(null, null, intParameterizedType, "rhs", 1)), intParameterizedType, true);
+            List.of(new ParameterInfo(null, intParameterizedType, "lhs", 0),
+                    new ParameterInfo(null, intParameterizedType, "rhs", 1)), intParameterizedType, true);
 
     public final MethodInfo minusOperatorInt = new MethodInfo(intTypeInfo, "-",
             List.of(), intParameterizedType, true);
@@ -111,8 +117,8 @@ public class Primitives {
             List.of(), booleanParameterizedType, true);
 
     public final MethodInfo multiplyOperatorInt = new MethodInfo(intTypeInfo, "*",
-            List.of(new ParameterInfo(null, null, intParameterizedType, "lhs", 0),
-                    new ParameterInfo(null, null, intParameterizedType, "rhs", 1)),
+            List.of(new ParameterInfo(null, intParameterizedType, "lhs", 0),
+                    new ParameterInfo(null, intParameterizedType, "rhs", 1)),
             intParameterizedType, true);
 
     public final MethodInfo assignOperatorInt = new MethodInfo(intTypeInfo, "=",
@@ -173,12 +179,12 @@ public class Primitives {
             primitiveByName.put(ti.simpleName, ti);
         }
 
-        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo)) {
+        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, functionalInterface)) {
             typeByName.put(ti.simpleName, ti);
         }
 
         MethodInfo valueOf = new MethodInfo(annotationTypeTypeInfo, "valueOf", true);
-        ParameterInfo valueOf1 = new ParameterInfo(null, valueOf, stringParameterizedType, "s", 0);
+        ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
         valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .build(valueOf));
         valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
@@ -207,6 +213,10 @@ public class Primitives {
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
                     .build());
         }
+        functionalInterface.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                .setPackageName("java.lang")
+                .setTypeNature(TypeNature.ANNOTATION)
+                .build(false, functionalInterface));
     }
 
     public ParameterizedType widestType(ParameterizedType t1, ParameterizedType t2) {

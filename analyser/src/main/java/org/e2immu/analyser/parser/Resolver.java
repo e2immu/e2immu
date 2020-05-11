@@ -144,7 +144,7 @@ public class Resolver {
                     ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
                     Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
                     // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-                    MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(subContext.typeContext);
+                    MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface();
                     if (singleAbstractMethod != null) {
                         singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
                         log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
@@ -152,8 +152,8 @@ public class Resolver {
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
 
                     MethodInfo sam;
-                    if (fieldInfo.type.isFunctionalInterface(typeContextOfType) && !parsedExpression.find(LambdaBlock.class).isEmpty()) {
-                        sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(typeContextOfType, fieldInfo.type, parsedExpression);
+                    if (fieldInfo.type.isFunctionalInterface() && !parsedExpression.find(LambdaBlock.class).isEmpty()) {
+                        sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(fieldInfo.type);
                     } else {
                         sam = null;
                     }
@@ -174,21 +174,7 @@ public class Resolver {
             try {
                 MethodInspection methodInspection = methodInfo.methodInspection.get();
 
-                // ANNOTATIONS
-
-                methodInspection.annotations.forEach(annotationExpression -> {
-                    if (!annotationExpression.expressions.isSet()) {
-                        annotationExpression.resolve(expressionContext);
-                    }
-                });
-                methodInspection.parameters.forEach(parameterInfo -> parameterInfo.parameterInspection
-                        .get().annotations.forEach(annotationExpression -> {
-                            if (!annotationExpression.expressions.isSet()) {
-                                annotationExpression.resolve(expressionContext);
-                            }
-                        }));
-
-                // BODY
+                // TYPE PARAMETERS OF METHOD
 
                 List<TypeParameter> typeParameters = methodInspection.typeParameters;
                 ExpressionContext subContext;
@@ -199,6 +185,23 @@ public class Resolver {
                             methodInfo.name);
                     typeParameters.forEach(subContext.typeContext::addToContext);
                 }
+
+                // ANNOTATIONS
+
+                methodInspection.annotations.forEach(annotationExpression -> {
+                    if (!annotationExpression.expressions.isSet()) {
+                        annotationExpression.resolve(subContext);
+                    }
+                });
+                methodInspection.parameters.forEach(parameterInfo -> parameterInfo.parameterInspection
+                        .get().annotations.forEach(annotationExpression -> {
+                            if (!annotationExpression.expressions.isSet()) {
+                                annotationExpression.resolve(subContext);
+                            }
+                        }));
+
+                // BODY
+
                 Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
                 // let's start by adding the types of parameters, and the return type
                 methodInspection.parameters.stream().map(p -> p.parameterizedType)

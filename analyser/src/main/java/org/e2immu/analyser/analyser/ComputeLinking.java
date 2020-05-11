@@ -203,7 +203,7 @@ public class ComputeLinking {
                         FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
                         Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
                         boolean directlyModifiedField = directContentModification == Boolean.TRUE
-                                && !fieldInfo.type.isNotModifiedByDefinition(typeContext)
+                                && !fieldInfo.type.isNotModifiedByDefinition()
                                 && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
                                 && methodAnalysis.fieldRead.get(fieldInfo); // if local, it will be set, but it has to be true
                         log(DEBUG_MODIFY_CONTENT, "Mark that the content of {} has {}been modified in {}",

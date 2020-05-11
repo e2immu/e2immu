@@ -99,13 +99,22 @@ public class TestWithSkeleton {
         MethodInfo setOf = set.getMethodOrConstructorByDistinguishingName("java.util.Set.of()");
         Assert.assertEquals(TRUE, setOf.methodAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(TRUE, setOf.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-        Assert.assertEquals(TRUE, setOf.methodAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(Level.compose(TRUE, NOT_NULL_1), setOf.methodAnalysis.getProperty(VariableProperty.NOT_NULL));
         Assert.assertEquals(TRUE, value(setOf.methodAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
 
         TypeInfo system = typeContext.typeStore.get("java.lang.System");
         FieldInfo out = system.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();
         Assert.assertEquals(TRUE, out.fieldAnalysis.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
         Assert.assertEquals(TRUE, out.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+    }
+
+    @Test
+    public void testCopyOfMethod() {
+        TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
+        collection.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
+
+        MethodInfo forEach = collection.getMethodOrConstructorByDistinguishingName("java.util.Collection.forEach(? extends T0)");
+        Assert.assertNotNull(forEach);
     }
 
     @Test

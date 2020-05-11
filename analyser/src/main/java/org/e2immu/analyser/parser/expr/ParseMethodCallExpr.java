@@ -125,7 +125,7 @@ public class ParseMethodCallExpr {
                     Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(expressionContext, methodCandidates, evaluatedExpressions.keySet());
                     if (pair != null) {
                         pos = pair.v;
-                        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, pair.k, pos, singleAbstractMethod);
+                        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
                         evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), abstractInterfaceMethod);
                     }
                 }
@@ -182,7 +182,7 @@ public class ParseMethodCallExpr {
                         methodNameForErrorReporting, i, singleAbstractMethod);
                 MethodTypeParameterMap mapForEvaluation;
 
-                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext, method, i, singleAbstractMethod);
+                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
                 if (abstractInterfaceMethod != null) {
                     if (singleAbstractMethod != null) {
                         ParameterizedType returnTypeOfMethod = method.methodInfo.methodInspection.get().returnType;
@@ -305,9 +305,9 @@ public class ParseMethodCallExpr {
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
                     ParameterInfo pi = mi.parameters.get(i);
-                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
                     if (isFunctionalInterface) {
-                        MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                        MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface();
                         int numberOfParameters = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size();
                         boolean added = numberOfParametersInFunctionalInterface.add(numberOfParameters);
                         if (!added) {
@@ -335,14 +335,14 @@ public class ParseMethodCallExpr {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
                     if (i < mi.parameters.size()) {
                         ParameterInfo pi = mi.parameters.get(i);
-                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
                         if (isFunctionalInterface) {
                             if (functionalInterface == null) {
                                 functionalInterface = pi.parameterizedType;
                                 mcOfFunctionalInterface = mc;
-                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface();
                             } else {
-                                MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+                                MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface();
                                 if (!singleAbstractMethod.isAssignableFrom(sam2)) {
                                     log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
                                             pi.parameterizedType.detailedString(), functionalInterface.detailedString(),
@@ -372,7 +372,7 @@ public class ParseMethodCallExpr {
                     MethodInspection mi = mc.method.methodInfo.methodInspection.get();
                     if (i < mi.parameters.size()) {
                         ParameterInfo pi = mi.parameters.get(i);
-                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(expressionContext.typeContext);
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
                         if (isFunctionalInterface) {
                             ok = false;
                             break;
@@ -440,15 +440,15 @@ public class ParseMethodCallExpr {
             return 1; // we'll just have to redo this
         }
         if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
-            MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+            MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface();
             if (sam == null) return NOT_ASSIGNABLE;
             int numberOfParametersInSam = sam.methodInfo.methodInspection.get().parameters.size();
             return ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters.contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
-        if (typeOfParameter.isFunctionalInterface(expressionContext.typeContext) && returnType.isFunctionalInterface(expressionContext.typeContext)) {
-            MethodTypeParameterMap sam1 = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
-            MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+        if (typeOfParameter.isFunctionalInterface() && returnType.isFunctionalInterface()) {
+            MethodTypeParameterMap sam1 = typeOfParameter.findSingleAbstractMethodOfInterface();
+            MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface();
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
         return typeOfParameter.numericIsAssignableFrom(returnType);
@@ -468,12 +468,11 @@ public class ParseMethodCallExpr {
 
     This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
      */
-    private static MethodTypeParameterMap determineAbstractInterfaceMethod(TypeContext typeContext,
-                                                                           MethodTypeParameterMap method,
+    private static MethodTypeParameterMap determineAbstractInterfaceMethod(MethodTypeParameterMap method,
                                                                            int p,
                                                                            MethodTypeParameterMap singleAbstractMethod) {
         Objects.requireNonNull(method);
-        MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface(typeContext);
+        MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface();
         log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}", p, method.methodInfo.fullyQualifiedName(), abstractInterfaceMethod);
         if (abstractInterfaceMethod == null || singleAbstractMethod == null) return abstractInterfaceMethod;
 

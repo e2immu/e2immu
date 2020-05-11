@@ -144,16 +144,14 @@ public class MethodTypeParameterMap {
         return mi.returnType.isVoid() == miOther.returnType.isVoid();
     }
 
-    public MethodInfo buildCopy(TypeContext typeContext, TypeInfo typeInfo) {
+    public MethodInfo buildCopy(TypeInfo typeInfo) {
         MethodInfo copy = new MethodInfo(typeInfo, methodInfo.name, false);
         MethodInspection.MethodInspectionBuilder mib = new MethodInspection.MethodInspectionBuilder();
         MethodInspection mi = methodInfo.methodInspection.get();
         mib.addModifier(MethodModifier.PUBLIC);
 
         for (ParameterInfo p : mi.parameters) {
-            ParameterInfo newParameter = new ParameterInfo(
-                    typeContext, copy,
-                    getConcreteTypeOfParameter(p.index), p.name, p.index);
+            ParameterInfo newParameter = new ParameterInfo(copy, getConcreteTypeOfParameter(p.index), p.name, p.index);
             mib.addParameter(newParameter);
             ParameterInspection.ParameterInspectionBuilder pib = new ParameterInspection.ParameterInspectionBuilder();
             if (p.parameterInspection.get().varArgs) {

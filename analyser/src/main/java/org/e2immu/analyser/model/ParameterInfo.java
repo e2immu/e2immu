@@ -44,16 +44,16 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final ParameterAnalysis parameterAnalysis;
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
 
-    public ParameterInfo(TypeContext typeContext, MethodInfo owner, TypeInfo typeInfo, String name, int index) {
-        this(typeContext, owner, typeInfo.asParameterizedType(), name, index);
+    public ParameterInfo( MethodInfo owner, TypeInfo typeInfo, String name, int index) {
+        this( owner, typeInfo.asParameterizedType(), name, index);
     }
 
-    public ParameterInfo(TypeContext typeContext, MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
+    public ParameterInfo( MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
-        parameterAnalysis = new ParameterAnalysis(parameterizedType, typeContext, owner);
+        parameterAnalysis = new ParameterAnalysis(parameterizedType, owner);
     }
 
     @Override

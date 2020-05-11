@@ -178,21 +178,21 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         log(INSPECT, "Inspecting method {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         int tpIndex = 0;
-        TypeContext typeContextWithParameters = md.getTypeParameters().isNonEmpty() ?
-                new TypeContext(expressionContext.typeContext) : expressionContext.typeContext;
+        ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
+                expressionContext.newTypeContext("Method type parameters");
         for (TypeParameter typeParameter : md.getTypeParameters()) {
-            org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(this, typeParameter.getNameAsString(), tpIndex++);
+            org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(this,
+                    typeParameter.getNameAsString(), tpIndex++);
             builder.addTypeParameter(tp);
-            expressionContext.typeContext.addToContext(tp);
-            typeContextWithParameters.addToContext(tp);
-            tp.inspect(expressionContext.typeContext, typeParameter);
+            newContext.typeContext.addToContext(tp);
+            tp.inspect(newContext.typeContext, typeParameter);
         }
-        addAnnotations(builder, md.getAnnotations(), expressionContext);
+        addAnnotations(builder, md.getAnnotations(), newContext);
         addModifiers(builder, md.getModifiers());
         if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-        addParameters(builder, md.getParameters(), expressionContext);
-        addExceptionTypes(builder, md.getThrownExceptions(), expressionContext.typeContext);
-        ParameterizedType pt = ParameterizedType.from(typeContextWithParameters, md.getType());
+        addParameters(builder, md.getParameters(), newContext);
+        addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext);
+        ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
         builder.setReturnType(pt);
         if (md.getBody().isPresent()) {
             builder.setBlock(md.getBody().get());
@@ -200,7 +200,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         methodInspection.set(builder.build(this));
     }
 
-    private static void addAnnotations(MethodInspection.MethodInspectionBuilder builder, NodeList<AnnotationExpr> annotations, ExpressionContext expressionContext) {
+    private static void addAnnotations(MethodInspection.MethodInspectionBuilder builder,
+                                       NodeList<AnnotationExpr> annotations,
+                                       ExpressionContext expressionContext) {
         for (AnnotationExpr ae : annotations) {
             builder.addAnnotation(AnnotationExpression.from(ae, expressionContext));
         }
@@ -227,7 +229,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         int i = 0;
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs());
-            ParameterInfo parameterInfo = new ParameterInfo(expressionContext.typeContext, this, pt, parameter.getNameAsString(), i++);
+            ParameterInfo parameterInfo = new ParameterInfo(this, pt, parameter.getNameAsString(), i++);
             parameterInfo.inspect(this, parameter, expressionContext, parameter.isVarArgs());
             builder.addParameter(parameterInfo);
         }

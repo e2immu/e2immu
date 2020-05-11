@@ -23,6 +23,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.statement.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,23 +151,76 @@ public class InspectAnnotatedAPIs {
             boolean isInTypeTo = inTypeTo.containsKey(distinguishingName);
             if (!isInTypeTo) {
                 // make sure it is in one of the supertypes; otherwise, raise error
-                if (typeTo.superTypes().stream().map(ti -> ti.getMethodOrConstructorByDistinguishingName(distinguishingName))
-                        .noneMatch(Objects::nonNull)) {
+                MethodInfo copy = copy(methodInfo, typeTo);
+                Set<MethodInfo> overrides = typeTo.overrides(copy);
+                if (overrides.isEmpty()) {
                     globalTypeContext.addMessage(Message.Severity.ERROR, "Cannot find method " + distinguishingName + " in a supertype");
-
                 } else {
                     log(MERGE_ANNOTATIONS, "Add copy of {}", distinguishingName);
-                    res.add(methodInfo);
+                    res.add(copy);
                 }
             }
         }
         return res;
     }
 
+    /**
+     * target type context is the globalTypeContext
+     *
+     * @param methodInfo the method to copy
+     * @param typeTo     the type that will own the copy
+     * @return the new copy
+     */
+    private MethodInfo copy(MethodInfo methodInfo, TypeInfo typeTo) {
+        MethodInfo copy = methodInfo.isConstructor ? new MethodInfo(typeTo, List.of()) :
+                new MethodInfo(typeTo, methodInfo.name, List.of(), Primitives.PRIMITIVES.voidParameterizedType,
+                        methodInfo.isStatic, methodInfo.isDefaultImplementation);
+        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        TypeContext localTypeContext = new TypeContext(globalTypeContext);
+        recursivelyAddTypeParameters(typeTo, localTypeContext);
+        for (TypeParameter typeParameter : methodInspection.typeParameters) {
+            TypeParameter newTypeParameter = new TypeParameter(copy, typeParameter.name, typeParameter.index);
+            localTypeContext.addToContext(newTypeParameter);
+            builder.addTypeParameter(newTypeParameter);
+        }
+        methodInspection.modifiers.forEach(builder::addModifier);
+        methodInspection.annotations.forEach(builder::addAnnotation);
+        methodInspection.parameters.forEach(parameterInfo -> {
+            ParameterizedType parameterizedType = parameterInfo.parameterizedType.copy(localTypeContext);
+            ParameterInfo newParameter = new ParameterInfo(copy, parameterizedType, parameterInfo.name, parameterInfo.index);
+            newParameter.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
+                    .setVarArgs(parameterInfo.parameterInspection.get().varArgs)
+                    .addAnnotations(parameterInfo.parameterInspection.get().annotations)
+                    .build(copy));
+            builder.addParameter(newParameter);
+        });
+        methodInspection.exceptionTypes.forEach(parameterizedType -> builder.addExceptionType(parameterizedType.copy(localTypeContext)));
+        builder.setReturnType(methodInspection.returnType.copy(localTypeContext));
+        builder.setBlock(Block.EMPTY_BLOCK);
+        copy.methodInspection.set(builder.build(copy));
+        return copy;
+    }
+
+    private void recursivelyAddTypeParameters(TypeInfo typeInfo, TypeContext typeContext) {
+        for (TypeParameter typeParameter : typeInfo.typeInspection.get().typeParameters) {
+            typeContext.addToContext(typeParameter);
+        }
+        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
+            recursivelyAddTypeParameters(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight(), typeContext);
+        }
+    }
+
     void load(URL url) throws IOException {
         try (InputStreamReader isr = new InputStreamReader(url.openStream())) {
             String source = IOUtils.toString(isr);
-            CompilationUnit compilationUnit = StaticJavaParser.parse(source);
+            CompilationUnit compilationUnit;
+            try {
+                compilationUnit = StaticJavaParser.parse(source);
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught exception while parsing " + url);
+                throw rte;
+            }
             if (compilationUnit.getTypes().isEmpty()) {
                 LOGGER.warn("No types in compilation unit: {}", url);
             } else {
