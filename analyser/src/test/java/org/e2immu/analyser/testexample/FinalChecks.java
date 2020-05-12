@@ -27,7 +27,6 @@ public class FinalChecks {
     @Final
     private String s3 = "abc";
 
-    @Final
     private final String s1;
 
     @Final

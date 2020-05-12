@@ -71,7 +71,7 @@ public class TestTestExamples {
 
     @Test
     public void testEvaluateConstants() throws IOException {
-        goTest("EvaluateConstants", 2);
+        goTest("EvaluateConstants", 3);
     }
 
     @Test

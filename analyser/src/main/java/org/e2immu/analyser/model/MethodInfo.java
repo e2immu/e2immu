@@ -529,6 +529,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 if (Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
                     return Level.TRUE;
                 }
+            case NOT_NULL:
+                if (returnType().isPrimitive()) return Level.TRUE;
         }
         return Level.UNDEFINED;
     }

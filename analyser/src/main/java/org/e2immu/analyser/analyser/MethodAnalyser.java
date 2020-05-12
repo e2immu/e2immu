@@ -219,7 +219,7 @@ public class MethodAnalyser {
     }
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) return false;
+        if (methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.DELAY) return false;
 
         // first step, check that no fields are being assigned
         boolean fieldAssignments = methodAnalysis.fieldAssignments.stream().anyMatch(Map.Entry::getValue);
@@ -247,7 +247,7 @@ public class MethodAnalyser {
         if (isNotModified) {
             int allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
                     .mapToInt(mi -> mi.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
-                    .min().orElse(Level.DELAY);
+                    .min().orElse(Level.TRUE); // true when there are none
             if (allMethodCallsNotModified == Level.DELAY) {
                 log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                         methodInfo.distinguishingName());

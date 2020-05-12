@@ -45,7 +45,6 @@ public class EvaluateConstants {
     public static String print() {
         // ERROR: if statement evaluates to constant
         if (ee()) return "a";
-        // ERROR: not a single return statement, so we cannot compute @Constant
         return "b";
     }
 
@@ -53,6 +52,7 @@ public class EvaluateConstants {
     @NotModified
     @Constant
     // ERROR: ee() evaluates to constant
+    // ERROR 2: it does not see the @Constant, we cannot recover from the error in the expression
     public static String print2() {
         return ee() ? "a" : "b";
     }

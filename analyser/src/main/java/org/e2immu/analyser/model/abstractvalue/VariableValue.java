@@ -78,16 +78,21 @@ public class VariableValue implements Value {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        ParameterizedType type = variable.parameterizedType();
-        TypeInfo bestType = type.bestTypeInfo();
-        if (bestType != null) return bestType.typeAnalysis.getProperty(variableProperty);
-        if (type.typeParameter != null) {
-            // but no extension... unbound type parameter
-            if (variableProperty == VariableProperty.NOT_MODIFIED) {
-                return Level.TRUE;
-            }
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            if (variable.parameterizedType().isPrimitive()) return Level.TRUE;
+            if (variable instanceof This) return Level.TRUE;
         }
-        return Level.FALSE;
+        if (variableProperty == VariableProperty.NOT_MODIFIED) {
+            ParameterizedType type = variable.parameterizedType();
+            if (type.isNotModifiedByDefinition()) return Level.TRUE;
+        }
+        if (variable instanceof ParameterInfo) {
+            return ((ParameterInfo) variable).parameterAnalysis.getProperty(variableProperty);
+        }
+        if (variable instanceof FieldInfo) {
+            return ((FieldInfo) variable).fieldAnalysis.getProperty(variableProperty);
+        }
+        return Level.DELAY;
     }
 
     @Override
