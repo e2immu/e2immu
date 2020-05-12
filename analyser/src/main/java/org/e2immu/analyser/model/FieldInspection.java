@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -74,6 +75,10 @@ public class FieldInspection extends Inspection {
 
     public FieldInspection copy(List<AnnotationExpression> alternativeAnnotations) {
         return new FieldInspection(modifiers, initialiser, ImmutableList.copyOf(alternativeAnnotations));
+    }
+
+    public boolean haveInitialiser() {
+        return initialiser.isSet() ? initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION : initialiser.getFirst() != EMPTY;
     }
 
     public static class FieldInspectionBuilder implements BuilderWithAnnotations<FieldInspectionBuilder> {

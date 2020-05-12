@@ -113,10 +113,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     @Override
     public boolean hasBeenDefined() {
-        if (!hasBeenInspected()) return false;
-        FirstThen<BlockStmt, Block> body = methodInspection.get().methodBody;
-        return (body.isSet() && !body.get().statements.isEmpty() ||
-                !body.isSet() && !body.getFirst().getStatements().isEmpty());
+        return typeInfo.hasBeenDefined() && (!typeInfo.isInterface() || methodInspection.get().haveCodeBlock());
     }
 
     @Override

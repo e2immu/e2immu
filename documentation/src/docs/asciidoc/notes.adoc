@@ -1,0 +1,13 @@
+=== Notes
+
+==== HasBeenDefined
+
+Implications: if true, the default annotation type `VERIFY` has the meaning of `CONTRACT`.
+
+Code in annotated APIs and byte code inspection will always have `false'.
+We switch off the analyser for annotated APIs, so that no code blocks, even if present, will be analysed.
+
+In normal code to be analysed, the value is true when at least one method has a code block or one field has an initialiser.
+For interfaces, value is false except for methods with a code block (which coincides with the `default` modifier), and fields with initialisers.
+
+The analyser treats enumerations as normal classes, and skips annotations.

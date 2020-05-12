@@ -37,7 +37,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public final TypeInfo owner;
     public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
-    public final FieldAnalysis fieldAnalysis ;
+    public final FieldAnalysis fieldAnalysis;
 
     public FieldInfo(TypeInfo type, String name, TypeInfo owner) {
         this(type.asParameterizedType(), name, owner);
@@ -81,6 +81,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     @Override
     public Inspection getInspection() {
         return fieldInspection.get();
+    }
+
+    @Override
+    public boolean hasBeenDefined() {
+        return owner.hasBeenDefined() && (!owner.isInterface() || fieldInspection.get().haveInitialiser());
     }
 
     public Set<String> imports() {

@@ -207,7 +207,7 @@ public class Primitives {
                 .addField(annotationTypeVerifyAbsent)
                 .addMethod(valueOf)
                 .addMethod(name)
-                .build(true, annotationTypeTypeInfo));
+                .build(false, annotationTypeTypeInfo));
         for (FieldInfo fieldInfo : new FieldInfo[]{annotationTypeComputed, annotationTypeContract, annotationTypeVerify, annotationTypeVerifyAbsent}) {
             fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))

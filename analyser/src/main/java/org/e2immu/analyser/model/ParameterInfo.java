@@ -44,11 +44,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final ParameterAnalysis parameterAnalysis;
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
 
-    public ParameterInfo( MethodInfo owner, TypeInfo typeInfo, String name, int index) {
-        this( owner, typeInfo.asParameterizedType(), name, index);
+    public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {
+        this(owner, typeInfo.asParameterizedType(), name, index);
     }
 
-    public ParameterInfo( MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
+    public ParameterInfo(MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
@@ -88,8 +88,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public boolean hasBeenDefined() {
-        return parameterInspection.isSet() && (parameterInspection.get().owner == null ||
-                parameterInspection.get().owner.hasBeenDefined());
+        return parameterInspection.get().owner.hasBeenDefined();
     }
 
     @Override

@@ -163,7 +163,9 @@ public abstract class Analysis {
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
-            if (annotationType == AnnotationType.CONTRACT || !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
+            if (annotationType == AnnotationType.CONTRACT ||
+                    // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
+                    !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
                 TypeInfo t = annotationExpression.typeInfo;
                 if (typeContext.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);

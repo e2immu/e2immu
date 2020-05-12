@@ -34,9 +34,12 @@ public interface WithInspectionAndAnalysis {
 
     Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation);
 
-    default boolean hasBeenDefined() {
-        return true;
-    }
+    // byte code inspection + annotated APIs: hasBeenDefined on type == false
+    // classes and enumerations with at least one field with initialiser or method with code block: hasBeenDefined == true
+    // annotation classes: hasBeenDefined == false
+    // interfaces: only for methods with code block, and initialisers, if the type has been defined
+
+    boolean hasBeenDefined();
 
     default Boolean annotatedWith(AnnotationExpression annotation) {
         if (hasBeenDefined()) {

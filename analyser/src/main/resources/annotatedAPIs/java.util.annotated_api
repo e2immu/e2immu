@@ -388,16 +388,12 @@ public class Objects {
     @NotModified
     @Identity
     public static <T> T requireNonNull(@NotNull T t) {
-        if (t == null) throw new NullPointerException();
-        return t;
     }
 
     @NotNull
     @NotModified
     @Identity
     public static <T> T requireNonNull(@NotNull T t, String message) {
-        if (t == null) throw new NullPointerException(message);
-        return t;
     }
 
     @NotModified

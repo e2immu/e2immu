@@ -91,6 +91,11 @@ public class MethodInspection extends Inspection {
                 ImmutableList.copyOf(alternativeAnnotations), typeParameters, exceptionTypes, implementationOf, methodBody);
     }
 
+    public boolean haveCodeBlock() {
+        return methodBody.isSet() && !methodBody.get().statements.isEmpty() ||
+                !methodBody.isSet() && !methodBody.getFirst().getStatements().isEmpty();
+    }
+
     @Container(builds = MethodInspection.class)
     public static class MethodInspectionBuilder implements BuilderWithAnnotations<MethodInspectionBuilder> {
         private final List<ParameterInfo> parameters = new ArrayList<>();

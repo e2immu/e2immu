@@ -92,9 +92,9 @@ public class TypeInspection extends Inspection {
         this.fields = fields;
         this.modifiers = modifiers;
         this.subTypes = subTypes;
-        if (typeNature == TypeNature.INTERFACE || typeNature == TypeNature.PRIMITIVE
-                || typeNature == TypeNature.ANNOTATION) this.hasBeenDefined = false;
-        else {
+        if (typeNature == TypeNature.PRIMITIVE || typeNature == TypeNature.ANNOTATION) {
+            this.hasBeenDefined = false;
+        } else {
             this.hasBeenDefined = hasBeenDefined;
         }
         if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;

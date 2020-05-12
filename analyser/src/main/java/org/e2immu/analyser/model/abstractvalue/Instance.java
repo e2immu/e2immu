@@ -42,12 +42,11 @@ public class Instance implements Value {
     public final ParameterizedType parameterizedType;
     @NotNull
     public final List<Value> constructorParameterValues;
-    @NotNull
     public final MethodInfo constructor;
 
     public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.constructor = Objects.requireNonNull(constructor);
+        this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
     }
 
@@ -125,9 +124,11 @@ public class Instance implements Value {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
         if (VariableProperty.CONTAINER == variableProperty) {
+            if(constructor == null) return Level.FALSE; // anonymous class; TODO
             return constructor.methodAnalysis.getProperty(VariableProperty.CONTAINER);
         }
         if (VariableProperty.IMMUTABLE == variableProperty) {
+            if(constructor == null) return Level.FALSE; // anonymous class; TODO
             return constructor.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
         }
         // @NotModified should not be asked here
