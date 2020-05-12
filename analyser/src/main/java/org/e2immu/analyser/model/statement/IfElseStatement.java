@@ -65,7 +65,9 @@ public class IfElseStatement extends StatementWithExpression {
         if (elseBlock != Block.EMPTY_BLOCK) {
             builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementsExecutedAtLeastOnce(v -> false)
-                    .setStatements(elseBlock).build());
+                    .setStatements(elseBlock)
+                    .build())
+                    .setNoBlockMayBeExecuted(false); // either the if or the else block, but one shall be executed
         }
         return builder.build();
     }

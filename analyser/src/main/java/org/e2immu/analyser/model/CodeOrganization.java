@@ -35,13 +35,18 @@ public class CodeOrganization {
 
     public final List<CodeOrganization> subStatements; // catches, finally, switch entries
 
+    // decides if it possible at all that no block (statements, subStatements.statements) will be executed
+    // this is possible in if statements without else, switch statements without default, loops that are not while(true), etc. etc.
+    public final boolean noBlockMayBeExecuted;
+
     private CodeOrganization(List<Expression> initialisers,
                              LocalVariable localVariableCreation,
                              Expression expression,
                              List<Expression> updaters,
                              HasStatements statements,
                              @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
-                             List<CodeOrganization> subStatements) {
+                             List<CodeOrganization> subStatements,
+                             boolean noBlockMayBeExecuted) {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
@@ -52,6 +57,7 @@ public class CodeOrganization {
         }
         this.subStatements = Objects.requireNonNull(subStatements);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
+        this.noBlockMayBeExecuted = noBlockMayBeExecuted;
     }
 
     public <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Class<E> clazz) {
@@ -74,6 +80,7 @@ public class CodeOrganization {
         private Predicate<Value> statementsExecutedAtLeastOnce;
         private HasStatements statements;  // block in loops, statements or block in switch statement
         private final List<CodeOrganization> subStatements = new ArrayList<>(); // catches, finally, switch entries
+        private boolean noBlockMayBeExecuted = true;
 
         public Builder setExpression(Expression expression) {
             this.expression = expression;
@@ -110,6 +117,11 @@ public class CodeOrganization {
             return this;
         }
 
+        public Builder setNoBlockMayBeExecuted(boolean noBlockMayBeExecuted) {
+            this.noBlockMayBeExecuted = noBlockMayBeExecuted;
+            return this;
+        }
+
         @NotNull
         public CodeOrganization build() {
             return new CodeOrganization(ImmutableList.copyOf(initialisers),
@@ -118,7 +130,8 @@ public class CodeOrganization {
                     ImmutableList.copyOf(updaters),
                     statements == null ? Block.EMPTY_BLOCK : statements,
                     statementsExecutedAtLeastOnce == null ? v -> false : statementsExecutedAtLeastOnce,
-                    ImmutableList.copyOf(subStatements));
+                    ImmutableList.copyOf(subStatements),
+                    noBlockMayBeExecuted);
         }
     }
 }

@@ -334,6 +334,7 @@ public class StatementAnalyser {
         // we'll treat it as a conditional on 'value', even if there is no if() statement
 
         List<NumberedStatement> startOfBlocks = statement.blocks.get();
+        List<VariableProperties> evaluationContextsGathered = new ArrayList<>();
         boolean allButLastSubStatementsEscape = true;
         Value defaultCondition = NO_VALUE;
         List<Value> conditions = new ArrayList<>();
@@ -350,7 +351,7 @@ public class StatementAnalyser {
                     inSyncBlock, statementsExecutedAtLeastOnce);
 
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
-            variablePropertiesWithValue.copyBackLocalCopies(statementsExecutedAtLeastOnce);
+            evaluationContextsGathered.add(variablePropertiesWithValue);
             breakOrContinueStatementsInChildren.addAll(startOfFirstBlock.breakAndContinueStatements.isSet() ?
                     startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
@@ -408,7 +409,7 @@ public class StatementAnalyser {
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
             computeVariablePropertiesOfBlock(subStatementStart, subContext);
-            subContext.copyBackLocalCopies(statementsExecutedAtLeastOnce);
+            evaluationContextsGathered.add(subContext);
             breakOrContinueStatementsInChildren.addAll(subStatementStart.breakAndContinueStatements.isSet() ?
                     subStatementStart.breakAndContinueStatements.get() : List.of());
 
@@ -417,6 +418,10 @@ public class StatementAnalyser {
             if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
             }
+        }
+
+        if(!evaluationContextsGathered.isEmpty()) {
+            variableProperties.copyBackLocalCopies(evaluationContextsGathered, codeOrganization.noBlockMayBeExecuted);
         }
 
         // we don't want to set the value for break statements themselves; that happens higher up

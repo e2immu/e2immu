@@ -101,7 +101,8 @@ public class TryStatement implements Statement {
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
                 .setStatementsExecutedAtLeastOnce(v -> true)
-                .setStatements(tryBlock);
+                .setStatements(tryBlock)
+                .setNoBlockMayBeExecuted(false); //there's always the main block
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable)
                     .setStatementsExecutedAtLeastOnce(v -> false)
