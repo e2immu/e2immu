@@ -456,7 +456,10 @@ public class StatementAnalyser {
         List<NumberedStatement> result = new ArrayList<>();
         NumberedStatement statement = startStatement;
         while (true) {
-            if (statement.statement instanceof ReturnStatement) return List.of(statement);
+            if (statement.statement instanceof ReturnStatement) {
+                result.add(statement);
+                return result;
+            }
             for (NumberedStatement block : statement.blocks.get()) {
                 result.addAll(extractReturnStatements(block));
             }

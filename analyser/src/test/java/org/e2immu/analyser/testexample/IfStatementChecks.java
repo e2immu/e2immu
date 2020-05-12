@@ -1,12 +1,13 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
+@E2Container
+@ExtensionClass(of = String.class)
 public class IfStatementChecks {
 
     @NotNull
+    @Identity(type = AnnotationType.VERIFY_ABSENT)
     public static String method1(String a) {
         if (a == null) return "b";
         return a;
@@ -19,6 +20,7 @@ public class IfStatementChecks {
     }
 
     @NotNull
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static String method3(String c) {
         if (c != null) return c;
         return "abc";
@@ -28,7 +30,7 @@ public class IfStatementChecks {
     @NotNull
     public static String method4(String c) {
         String res;
-        if(c == null) {
+        if (c == null) {
             res = "abc";
         } else {
             res = "cef";
