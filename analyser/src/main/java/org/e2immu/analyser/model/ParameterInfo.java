@@ -188,6 +188,12 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     public int minimalValueByDefinition(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            MethodInfo owner = parameterInspection.get().owner;
+            if (Level.value(owner.typeInfo.typeAnalysis.
+                    getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL) == Level.TRUE)
+                return Level.TRUE;
+        }
         if (variableProperty == VariableProperty.NOT_MODIFIED) {
             return parameterizedType.isNotModifiedByDefinition() ? Level.TRUE : Level.UNDEFINED;
         }

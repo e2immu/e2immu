@@ -205,7 +205,7 @@ class VariableProperties implements EvaluationContext {
             if (effectivelyFinal == Level.TRUE) {
                 if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
                     resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
-                } else if(fieldReference.fieldInfo.owner.hasBeenDefined()) {
+                } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
                     resetValue = UnknownValue.NO_VALUE; // delay
                 } else {
                     // undefined, will never get a value, but may have decent properties

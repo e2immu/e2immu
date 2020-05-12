@@ -150,7 +150,7 @@ public class FieldAnalyser {
                     property, fieldInfo.fullyQualifiedName());
             return false;
         }
-        if(conclusion <= currentValue) {
+        if (conclusion <= currentValue) {
             return false; // not better
         }
         log(DYNAMIC, "Set dynamic type property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(),
@@ -328,73 +328,58 @@ public class FieldAnalyser {
                                    TypeInspection typeInspection,
                                    boolean fieldCanBeAccessedFromOutsideThisType) {
         if (fieldAnalysis.getProperty(VariableProperty.NOT_NULL) != Level.UNDEFINED) return false;
-        int isNotNullValue;
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
-            isNotNullValue = Level.DELAY;
-        } else {
-            int finalCriteria;
-            if (isFinal == Level.FALSE) {
-                if (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeAccessedFromOutsideThisType) {
-                    log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser,"
-                            + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
-                    finalCriteria = Level.FALSE;
-                } else {
-                    finalCriteria = value.isNotNull0OutsideContext();
-                }
-            } else {
-                finalCriteria = Level.TRUE;
-            }
-            if (finalCriteria == Level.DELAY) {
-                log(DELAYED, "Delaying @NotNull on {} until we know @NotNull of initialiser", fieldInfo.fullyQualifiedName());
-                isNotNullValue = Level.DELAY;
-            } else if (finalCriteria == Level.TRUE) {
-                // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
-                // the real value with a generic VariableValue, relying on @NotNull
-                boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
-                        m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
-                                (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
-                if (allAssignmentValuesDefined) {
-                    int allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
-                            .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
-                            .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull0OutsideContext())
-                            .reduce(0, Level.AND);
-                    if (allAssignmentValuesNotNull == Level.DELAY) {
-                        isNotNullValue = Level.DELAY; // delay
-                    } else {
-                        if (!haveInitialiser) {
-                            isNotNullValue = allAssignmentValuesNotNull;
-                        } else {
-                            if (value == NO_VALUE) {
-                                isNotNullValue = Level.DELAY; // delay
-                            } else {
-                                int initialiserIsNotNull = value.isNotNull0OutsideContext();
-                                if (initialiserIsNotNull == Level.DELAY) {
-                                    isNotNullValue = Level.DELAY; // delay
-                                } else {
-                                    // this is the real one!
-                                    isNotNullValue = Level.AND.applyAsInt(initialiserIsNotNull, allAssignmentValuesNotNull);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    isNotNullValue = Level.DELAY; // delay
-                }
-            } else {
-                isNotNullValue = Level.DELAY;
-            }
+            return false;
         }
-        if (isNotNullValue == Level.DELAY) {
-            log(DELAYED, "Delaying @NotNull on field {}", fieldInfo.fullyQualifiedName());
-        } else {
-            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNullValue);
-            log(NOT_NULL, "Mark field {} as " + (isNotNullValue == Level.TRUE ? "" : "NOT ") + "@NotNull",
-                    fieldInfo.fullyQualifiedName(), isNotNullValue);
+        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeAccessedFromOutsideThisType)) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser,"
+                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, Level.FALSE);
             return true;
         }
-        return false;
+
+        // so now we need to check all assignments, and the initialiser
+
+        // to avoid chicken and egg problems we do not look at effectivelyFinalValue, because that one replaces
+        // the real value with a generic VariableValue, relying on @NotNull
+        boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+                m.methodAnalysis.fieldAssignments.isSet(fieldInfo) &&
+                        (!m.methodAnalysis.fieldAssignments.get(fieldInfo) || m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)));
+        if (!allAssignmentValuesDefined) {
+            log(DELAYED, "Delaying @NotNull on field {}, not all assignment values known", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        int allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
+                .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull0OutsideContext())
+                .reduce(Level.TRUE, Level.AND);
+        if (allAssignmentValuesNotNull == Level.DELAY) {
+            log(DELAYED, "Delaying @NotNull on field {}, not all assignment values @NotNull known", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        int isNotNullValue;
+        if (!haveInitialiser) {
+            isNotNullValue = allAssignmentValuesNotNull;
+        } else {
+            if (value == NO_VALUE) {
+                log(DELAYED, "Delaying @NotNull on field {}, initialiser not yet known", fieldInfo.fullyQualifiedName());
+                return false;
+            }
+            int initialiserIsNotNull = value.isNotNull0OutsideContext();
+            if (initialiserIsNotNull == Level.DELAY) {
+                log(DELAYED, "Delaying @NotNull on field {}, @NotNull of initialiser not yet known", fieldInfo.fullyQualifiedName());
+                return false;
+            }
+            // this is the real one!
+            isNotNullValue = Level.AND.applyAsInt(initialiserIsNotNull, allAssignmentValuesNotNull);
+        }
+
+        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNullValue);
+        log(NOT_NULL, "Mark field {} as " + (isNotNullValue == Level.TRUE ? "" : "NOT ") + "@NotNull",
+                fieldInfo.fullyQualifiedName(), isNotNullValue);
+        return true;
     }
 
 

@@ -632,7 +632,7 @@ public class ParameterizedType {
     }
 
     public boolean isNotModifiedByDefinition() {
-        return isPrimitive() || isEnum() || isAnnotation() || isFunctionalInterface() || isUnboundParameterType();
+        return isE2ContainerByDefinition() || isFunctionalInterface() || isUnboundParameterType();
     }
 
     public boolean isE2ContainerByDefinition() {
