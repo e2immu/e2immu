@@ -186,4 +186,14 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         }
         return false;
     }
+
+    public int minimalValueByDefinition(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.NOT_MODIFIED) {
+            return parameterizedType.isNotModifiedByDefinition() ? Level.TRUE : Level.UNDEFINED;
+        }
+        if (variableProperty == VariableProperty.CONTAINER || variableProperty == VariableProperty.IMMUTABLE) {
+            return parameterizedType.isE2ContainerByDefinition() ? variableProperty.best : Level.UNDEFINED;
+        }
+        return Level.UNDEFINED;
+    }
 }

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.Linked;
 
 /**
  * Classic key-value object, typical example of value class
@@ -28,7 +29,10 @@ import org.e2immu.annotation.E1Container;
  */
 @E1Container
 public class Pair<K, V> {
+
+    @Linked(to = {"k"})
     public final K k;
+    @Linked(to = {"v"})
     public final V v;
 
     public Pair(K k, V v) {

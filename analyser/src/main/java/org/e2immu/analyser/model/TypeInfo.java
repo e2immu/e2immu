@@ -1049,4 +1049,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public boolean isInterface() {
         return typeInspection.get().typeNature == TypeNature.INTERFACE;
     }
+
+    public int minimalValueByDefinition(VariableProperty variableProperty) {
+        return Level.UNDEFINED;
+    }
 }

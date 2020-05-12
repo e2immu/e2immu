@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.TypeAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
@@ -164,5 +165,20 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public boolean isPrivate() {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
+    }
+
+    public int minimalValueByDefinition(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_MODIFIED:
+                if (type.isNotModifiedByDefinition()) return Level.TRUE;
+                return Level.UNDEFINED;
+            case NOT_NULL:
+                if (type.isPrimitive()) return Level.TRUE;
+                return Level.UNDEFINED;
+            case FINAL:
+                if (isExplicitlyFinal()) return Level.TRUE;
+            default:
+        }
+        return Level.UNDEFINED;
     }
 }

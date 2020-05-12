@@ -37,13 +37,13 @@ import java.util.stream.Stream;
 public class MethodAnalysis extends Analysis {
 
     private final Supplier<Stream<MethodInfo>> overrides;
-    private final Supplier<TypeInfo> bestType;
+    private final Supplier<ParameterizedType> returnType;
     public final TypeInfo typeInfo;
 
-    public MethodAnalysis(TypeInfo typeInfo, Supplier<TypeInfo> bestType, Supplier<Stream<MethodInfo>> overrides) {
+    public MethodAnalysis(TypeInfo typeInfo, Supplier<ParameterizedType> returnType, Supplier<Stream<MethodInfo>> overrides) {
         this.overrides = overrides;
         this.typeInfo = typeInfo;
-        this.bestType = bestType;
+        this.returnType = returnType;
     }
 
     @Override
@@ -62,15 +62,12 @@ public class MethodAnalysis extends Analysis {
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
             case IMMUTABLE:
             case CONTAINER:
-                TypeInfo typeInfo = bestType.get();
-                if (typeInfo == null ||  // will happen for constructors
-                        "void".equals(typeInfo.fullyQualifiedName) ||
-                        "java.lang.Void".equals(typeInfo.fullyQualifiedName) ||
-                        typeInfo.isPrimitive()) {
-                    return variableProperty == VariableProperty.IMMUTABLE ? Level.compose(Level.TRUE, Level.E2IMMUTABLE) : Level.TRUE;
+                ParameterizedType returnType = this.returnType.get();
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
+                if (returnType.isE2ContainerByDefinition()) {
+                    return variableProperty.best;
                 }
-                int returnType = typeInfo.typeAnalysis.getProperty(variableProperty);
-                return Level.best(returnType, super.getProperty(variableProperty));
+                return super.getProperty(variableProperty);
             default:
         }
         return super.getProperty(variableProperty);

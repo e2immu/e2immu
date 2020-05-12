@@ -400,7 +400,7 @@ public class FieldAnalyser {
 
     public void check(FieldInfo fieldInfo) {
         // before we check, we copy the properties into annotations
-        fieldInfo.fieldAnalysis.transferPropertiesToAnnotations(typeContext);
+        fieldInfo.fieldAnalysis.transferPropertiesToAnnotations(typeContext, fieldInfo::minimalValueByDefinition);
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
@@ -428,7 +428,7 @@ public class FieldAnalyser {
                             " is not read outside constructors");
                 }
             }
-        } else if (fieldInfo.fieldAnalysis.annotations.getOtherwiseNull(typeContext.effectivelyFinal.get()) != Boolean.TRUE) {
+        } else if (fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
             // error, unless we're in a record
             if (!fieldInfo.owner.isRecord()) {
                 typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +

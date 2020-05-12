@@ -103,7 +103,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
         this.isDefaultImplementation = isDefaultImplementation;
         if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
-        methodAnalysis = new MethodAnalysis(typeInfo, () -> returnType().bestTypeInfo(),
+        methodAnalysis = new MethodAnalysis(typeInfo, this::returnType,
                 () -> typeInfo.overrides(this, true).stream());
     }
 
@@ -520,4 +520,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
+    public int minimalValueByDefinition(VariableProperty variableProperty) {
+        return Level.UNDEFINED;
+    }
 }

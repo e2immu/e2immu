@@ -29,6 +29,8 @@ import org.e2immu.annotation.AnnotationType;
 import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 public abstract class Analysis {
@@ -87,7 +89,7 @@ public abstract class Analysis {
         properties.improve(variableProperty, i);
     }
 
-    public void transferPropertiesToAnnotations(TypeContext typeContext) {
+    public void transferPropertiesToAnnotations(TypeContext typeContext, ToIntFunction<VariableProperty> minimalValue) {
         ImmutableMap.Builder<VariableProperty, AnnotationExpression> mapBuilder = new ImmutableMap.Builder<>();
         mapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
         mapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
@@ -103,51 +105,67 @@ public abstract class Analysis {
             VariableProperty variableProperty = entry.getKey();
             AnnotationExpression annotationExpression = entry.getValue();
             int value = getProperty(variableProperty);
+            int minimal = minimalValue.applyAsInt(variableProperty);
             if (value == Level.FALSE) {
                 annotations.put(annotationExpression, false);
-            } else if (value == Level.TRUE) {
+            } else if (value == Level.TRUE && value > minimal) {
                 annotations.put(annotationExpression, true);
             }
         }
 
         // container and immutable
-        boolean container = getProperty(VariableProperty.CONTAINER) == Level.TRUE;
-        boolean noContainer = getProperty(VariableProperty.CONTAINER) == Level.FALSE;
+        int container = getProperty(VariableProperty.CONTAINER);
+        boolean haveContainer = container == Level.TRUE;
+        boolean noContainer = container == Level.FALSE;
+        int minContainer = minimalValue.applyAsInt(VariableProperty.CONTAINER);
+        int minImmutable = minimalValue.applyAsInt(VariableProperty.IMMUTABLE);
 
         if (noContainer) annotations.put(typeContext.container.get(), false);
         int immutable = getProperty(VariableProperty.IMMUTABLE);
         if (Level.have(immutable, Level.E2IMMUTABLE)) {
-            if (container) annotations.put(typeContext.e2Container.get(), true);
-            else {
+            if (haveContainer) {
+                if (immutable > minImmutable || container > minContainer) {
+                    annotations.put(typeContext.e2Container.get(), true);
+                }
+            } else {
                 if (noContainer) annotations.put(typeContext.e2Container.get(), false);
-                annotations.put(typeContext.e2Immutable.get(), true);
+                if (immutable > minImmutable) annotations.put(typeContext.e2Immutable.get(), true);
             }
         } else if (Level.have(immutable, Level.E1IMMUTABLE)) {
-            if (container) annotations.put(typeContext.e1Container.get(), true);
-            else {
+            if (haveContainer) {
+                if (immutable > minImmutable || container > minContainer) {
+                    annotations.put(typeContext.e1Container.get(), true);
+                }
+            } else {
                 if (noContainer) annotations.put(typeContext.e1Container.get(), false);
-                annotations.put(typeContext.e1Immutable.get(), true);
+                if (immutable > minImmutable) annotations.put(typeContext.e1Immutable.get(), true);
             }
-        } else if (container) annotations.put(typeContext.container.get(), true);
+        } else if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
 
         // not null
+        int minNotNull = minimalValue.applyAsInt(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
         int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
         if (notNull2 == Level.TRUE) {
-            annotations.put(typeContext.notNull2.get(), true);
+            if (notNull2 > minNotNull) annotations.put(typeContext.notNull2.get(), true);
         } else {
             if (notNull2 == Level.FALSE) annotations.put(typeContext.notNull2.get(), false);
 
             int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
             if (notNull1 == Level.TRUE) {
-                annotations.put(typeContext.notNull1.get(), true);
+                if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
             } else {
                 if (notNull1 == Level.FALSE) annotations.put(typeContext.notNull1.get(), false);
-
                 int notNull0 = Level.value(notNull, Level.NOT_NULL);
-                if (notNull0 != Level.DELAY) annotations.put(typeContext.notNull.get(), notNull0 == Level.TRUE);
+                if (notNull0 == Level.TRUE && notNull0 > minNotNull) {
+                    annotations.put(typeContext.notNull.get(), true);
+                }
+                if (notNull0 == Level.FALSE) {
+                    annotations.put(typeContext.notNull.get(), false);
+                }
             }
         }
+
     }
 
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;

@@ -66,7 +66,7 @@ public class TypeAnalyser {
         TypeInfo typeInfo = sortedType.typeInfo;
 
         // before we check, we copy the properties into annotations
-        typeInfo.typeAnalysis.transferPropertiesToAnnotations(typeContext);
+        typeInfo.typeAnalysis.transferPropertiesToAnnotations(typeContext, typeInfo::minimalValueByDefinition);
 
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 

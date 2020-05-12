@@ -56,7 +56,7 @@ public class MethodAnalyser {
 
     public void check(MethodInfo methodInfo) {
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.transferPropertiesToAnnotations(typeContext);
+        methodInfo.methodAnalysis.transferPropertiesToAnnotations(typeContext, methodInfo::minimalValueByDefinition);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
@@ -122,15 +122,14 @@ public class MethodAnalyser {
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;
 
-            List<NumberedStatement> returnStatements = methodAnalysis.returnStatements.get();
-            if (!returnStatements.isEmpty()) {
-                if (propertiesOfReturnStatements(methodProperties, returnStatements, methodInfo, methodAnalysis))
-                    changes = true;
-                // methodIsConstant makes use of methodIsNotNull, so order is important
-                if (methodIsConstant(returnStatements, methodInfo, methodAnalysis)) changes = true;
-            }
-
             if (!methodInfo.isConstructor) {
+                List<NumberedStatement> returnStatements = methodAnalysis.returnStatements.get();
+                if (!returnStatements.isEmpty()) {
+                    if (propertiesOfReturnStatements(methodProperties, returnStatements, methodInfo, methodAnalysis))
+                        changes = true;
+                    // methodIsConstant makes use of methodIsNotNull, so order is important
+                    if (methodIsConstant(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                }
                 if (methodInfo.isStatic) {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }

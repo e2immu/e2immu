@@ -635,6 +635,11 @@ public class ParameterizedType {
         return isPrimitive() || isEnum() || isAnnotation() || isFunctionalInterface() || isUnboundParameterType();
     }
 
+    public boolean isE2ContainerByDefinition() {
+        return isPrimitive() || isEnum() || isAnnotation() ||
+                typeInfo != null && ("java.lang.String".equals(typeInfo.fullyQualifiedName) || "java.lang.Object".equals(typeInfo.fullyQualifiedName));
+    }
+
     public TypeInfo bestTypeInfo() {
         if (typeInfo != null) return typeInfo;
         if (typeParameter != null && wildCard == WildCard.EXTENDS && parameters.size() == 1) {
