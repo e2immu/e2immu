@@ -83,7 +83,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
             case NOT_NULL:
             case CONTAINER:
             case IMMUTABLE:
-                return returnValue.isSet() ? returnValue.get().getProperty(evaluationContext, variableProperty) : Level.DELAY;
+                return returnValue.isSet() ? returnValue.get().getPropertyOutsideContext(variableProperty) : Level.DELAY;
 
             case FLUENT:
                 if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();

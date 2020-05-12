@@ -292,7 +292,11 @@ public class StatementAnalyser {
                     statement.variablesLinkedToReturnValue.set(vars);
                 }
                 if (!statement.returnValue.isSet()) {
-                    statement.returnValue.set(value);
+                    if (value instanceof VariableValue) {
+                        statement.returnValue.set(new VariableValueCopy((VariableValue) value, variableProperties));
+                    } else {
+                        statement.returnValue.set(value);
+                    }
                 }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
