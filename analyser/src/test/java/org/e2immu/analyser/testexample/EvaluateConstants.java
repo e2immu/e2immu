@@ -25,12 +25,10 @@ public class EvaluateConstants {
     final static boolean a = true;
     final static boolean b = false;
 
-    @Final
     @Constant(boolValue = false, test = true)
     final static boolean c = !a;
     final static boolean d = a || b;
 
-    @Final
     @Constant(boolValue = false, test = true)
     final static boolean e = c && !d;
 
@@ -54,20 +52,18 @@ public class EvaluateConstants {
     @NotNull
     @NotModified
     @Constant
+    // ERROR: ee() evaluates to constant
     public static String print2() {
         return ee() ? "a" : "b";
     }
 
-    @Final
     @Constant(intValue = 3)
     final int i = 3;
     final int j = 233;
 
-    @Final
     @Constant(intValue = 699)
     final int k = i * j;
 
-    @Final
     @Constant(boolValue = true)
     final boolean l = k > 400;
 
@@ -78,17 +74,14 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @Final
     @Constant(stringValue = "hello")
     final static String s = "hello";
 
     @NotNull
-    @Final
     @Constant(stringValue = "world")
     final static String w = "world";
 
     @NotNull
-    @Final
     @Constant(stringValue = "hello world")
     final static String t = s + " " + w;
 
@@ -115,7 +108,6 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @Independent
     public String getEffectivelyFinal() {
         return effectivelyFinal;
     }

@@ -170,13 +170,26 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public int minimalValueByDefinition(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_MODIFIED:
-                if (type.isNotModifiedByDefinition()) return Level.TRUE;
+                if (type.isNotModifiedByDefinition() || type.isE2ContainerByDefinition()) return Level.TRUE;
+                TypeInfo bestInfo = type.bestTypeInfo();
+                if (bestInfo != null && Level.value(bestInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                    // in an @E2Immutable class, all fields are @NotModified, so no need to write this
+                    return Level.TRUE;
+                }
                 return Level.UNDEFINED;
             case NOT_NULL:
                 if (type.isPrimitive()) return Level.TRUE;
                 return Level.UNDEFINED;
             case FINAL:
                 if (isExplicitlyFinal()) return Level.TRUE;
+                if (Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                    // in an @E2Immutable class, all fields are effectively final, so no need to write this
+                    return Level.TRUE;
+                }
+            case IMMUTABLE:
+            case CONTAINER:
+                if (type.isE2ContainerByDefinition()) return variableProperty.best;
+
             default:
         }
         return Level.UNDEFINED;

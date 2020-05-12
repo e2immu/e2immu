@@ -521,6 +521,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int minimalValueByDefinition(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case IMMUTABLE:
+            case CONTAINER:
+                if (returnType().isE2ContainerByDefinition()) return variableProperty.best;
+            case INDEPENDENT:
+                if (Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                    return Level.TRUE;
+                }
+        }
         return Level.UNDEFINED;
     }
 }

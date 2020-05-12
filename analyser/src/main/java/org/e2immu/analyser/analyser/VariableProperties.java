@@ -340,12 +340,6 @@ class VariableProperties implements EvaluationContext {
         return EmptyExpression.EMPTY_EXPRESSION;
     }
 
-    @Override
-    public void setValue(@NotNull Variable variable, @NotNull Value value) {
-        AboutVariable aboutVariable = findComplain(variable);
-        aboutVariable.setCurrentValue(Objects.requireNonNull(value));
-    }
-
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return;

@@ -119,11 +119,6 @@ public class TestAbstractValue {
         }
 
         @Override
-        public void setValue(Variable variable, Value value) {
-            // ignore
-        }
-
-        @Override
         public Value currentValue(Variable variable) {
             return new VariableValue(this, variable, variable.name());
         }

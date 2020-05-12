@@ -3,6 +3,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -54,10 +55,6 @@ class AboutVariable {
 
     Value getCurrentValue() {
         return currentValue;
-    }
-
-    Value getResetValue() {
-        return resetValue;
     }
 
     AboutVariable localCopy() {
