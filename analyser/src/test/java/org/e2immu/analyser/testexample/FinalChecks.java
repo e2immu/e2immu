@@ -18,10 +18,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Final;
+import org.e2immu.annotation.*;
 
+@E1Immutable(type = AnnotationType.VERIFY_ABSENT)
+@Container
 public class FinalChecks {
 
     @Final
@@ -32,6 +32,7 @@ public class FinalChecks {
     @Final
     private String s2;
 
+    // because this one is NOT final, the type is not @E1Immutable
     @Final(type = AnnotationType.VERIFY_ABSENT)
     private String s4;
 

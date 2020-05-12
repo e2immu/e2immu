@@ -280,7 +280,7 @@ public class FieldAnalyser {
                             " is not allowed to be of a record type " + fieldInfo.type.detailedString());
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
-                "effectively final, not modified outside constructors", fieldInfo.fullyQualifiedName());
+                "effectively final", fieldInfo.fullyQualifiedName());
         return true;
     }
 

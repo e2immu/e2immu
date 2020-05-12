@@ -182,10 +182,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 return Level.UNDEFINED;
             case FINAL:
                 if (isExplicitlyFinal()) return Level.TRUE;
-                if (Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
-                    // in an @E2Immutable class, all fields are effectively final, so no need to write this
+                if (Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE) {
+                    // in an @E1Immutable class, all fields are effectively final, so no need to write this
                     return Level.TRUE;
                 }
+                return Level.UNDEFINED;
             case IMMUTABLE:
             case CONTAINER:
                 if (type.isE2ContainerByDefinition()) return variableProperty.best;

@@ -218,7 +218,7 @@ public class TypeAnalyser {
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
         if (typeE1Immutable != Level.DELAY) return false; // we have a decision already
-        int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
+        int no = Level.compose(Level.FALSE, Level.E1IMMUTABLE);
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -240,24 +240,18 @@ public class TypeAnalyser {
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE2Immutable = Level.value(typeImmutable, Level.E2IMMUTABLE);
         if (typeE2Immutable != Level.DELAY) return false; // we have a decision already
+        int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
+        if (typeE1Immutable != Level.TRUE) {
+            log(E2IMMUTABLE, "Type {} is not @E2Immutable, because it is not @E1Immutable", typeInfo.fullyQualifiedName);
+            return false;
+        }
         int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis;
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
-
-            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-            if (effectivelyFinal == Level.DELAY) {
-                log(DELAYED, "Field {} non known yet if effectively final, delay E2Immu", fieldInfo.fullyQualifiedName());
-                return false;
-            }
-            if (effectivelyFinal == Level.FALSE) {
-                log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not effectively final",
-                        typeInfo.fullyQualifiedName, fieldInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                return true;
-            }
+            // checked with @E1Immutable
 
             // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
 
