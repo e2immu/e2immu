@@ -87,7 +87,8 @@ public class LambdaBlock implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
         if (block != Block.EMPTY_BLOCK) {
-            EvaluationContext child = evaluationContext.child(null, null, true);
+            // we have no guarantee that this block will be executed. maybe there are situations?
+            EvaluationContext child = evaluationContext.child(null, null, false);
             parameters.forEach(pi -> child.createLocalVariableOrParameter(pi));
 
             boolean changes = false;
@@ -105,6 +106,7 @@ public class LambdaBlock implements Expression {
             if (!this.numberedStatements.get().isEmpty() && statementAnalyser.computeVariablePropertiesOfBlock(this.numberedStatements.get().get(0), child)) {
                 changes = true;
             }
+            evaluationContext.merge(child);
             visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
         }
         return UnknownValue.UNKNOWN_VALUE; // TODO we should create a method!! MethodValue(functionalType);

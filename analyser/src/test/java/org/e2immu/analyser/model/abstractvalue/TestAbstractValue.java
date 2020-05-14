@@ -142,6 +142,11 @@ public class TestAbstractValue {
         public boolean equals(Variable variable, Variable other) {
             return variable.name().equals(other.name());
         }
+
+        @Override
+        public void merge(EvaluationContext child) {
+            throw new UnsupportedOperationException();
+        }
     };
 
     static final Variable va = createVariable("a");

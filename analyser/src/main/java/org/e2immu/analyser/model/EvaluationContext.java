@@ -78,4 +78,7 @@ public interface EvaluationContext {
 
     // method of VariableValue
     boolean equals(@NotNull Variable variable, Variable other);
+
+    // merge "up", explicitly called for Lambda blocks and expressions
+    void merge(EvaluationContext child);
 }

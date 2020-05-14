@@ -79,9 +79,10 @@ public class LambdaExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        EvaluationContext childContext = evaluationContext.child(null, null, true);
+        EvaluationContext childContext = evaluationContext.child(null, null, false);
         parameters.forEach(pi -> childContext.createLocalVariableOrParameter(pi));
         Value v = expression.evaluate(childContext, visitor);
+        evaluationContext.merge(childContext);
         visitor.visit(this, evaluationContext, v);
         return v;
     }
