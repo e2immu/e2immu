@@ -339,6 +339,10 @@ public class TypeContext {
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
             recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, staticOnly);
         }
+        if(typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
+            ParameterizedType enclosingType = typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().asParameterizedType();
+            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, enclosingType), result, visited, staticOnly);
+        }
     }
 
     private static Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {

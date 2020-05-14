@@ -122,21 +122,23 @@ public class Instance implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
-        if (VariableProperty.CONTAINER == variableProperty) {
-            if(constructor == null) return Level.FALSE; // anonymous class; TODO
-            return constructor.methodAnalysis.getProperty(VariableProperty.CONTAINER);
-        }
-        if (VariableProperty.IMMUTABLE == variableProperty) {
-            if(constructor == null) return Level.FALSE; // anonymous class; TODO
-            return constructor.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        }
-        // @NotModified should not be asked here
-        throw new UnsupportedOperationException();
+        return getPropertyOutsideContext(variableProperty);
     }
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return 0;
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+
+        if (VariableProperty.NOT_NULL == variableProperty) {
+            return bestType == null ? Level.TRUE :
+                    Math.max(Level.TRUE, bestType.typeAnalysis.getProperty(VariableProperty.NOT_NULL));
+        }
+        if (VariableProperty.CONTAINER == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
+            return bestType == null ? Level.FALSE :
+                    Math.max(Level.FALSE, bestType.typeAnalysis.getProperty(variableProperty));
+        }
+
+        // @NotModified should not be asked here
+        throw new UnsupportedOperationException();
     }
 }

@@ -576,7 +576,7 @@ public class StatementAnalyser {
                     return;
                 }
             }
-            variableProperties.assignmentBasics(at, value);
+            variableProperties.assignmentBasics(at, value, assignment.value != EmptyExpression.EMPTY_EXPRESSION);
 
             if (value != NO_VALUE) {
                 Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);

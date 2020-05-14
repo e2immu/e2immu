@@ -24,10 +24,14 @@ import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class UtilityClassChecks {
 
+    static void print(String s) {
+        System.out.println(s); // ERROR (we don't have System.out in Annotated API here... so potential null pointer exception
+    }
+
     @UtilityClass
     static class UtilityClass1 {
         static void hello(String s) {
-            System.out.println(s);
+            UtilityClassChecks.print(s);
         }
 
         private UtilityClass1() {
@@ -39,19 +43,19 @@ public class UtilityClassChecks {
     @UtilityClass(type = VERIFY_ABSENT)
     static class NotAUtilityClass {
         static void hello(String s) {
-            System.out.println(s);
+            print(s);
         }
     }
 
     @UtilityClass(type = VERIFY_ABSENT)
     static class NotAUtilityClass2 {
         static void hello(String s) {
-            System.out.println(s);
+            print(s);
         }
 
         private NotAUtilityClass2() {
             // nothing here
-            System.out.println("?");
+            print("?");
         }
 
         static void createInstance() {

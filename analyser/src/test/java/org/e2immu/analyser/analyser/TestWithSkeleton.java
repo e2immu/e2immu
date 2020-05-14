@@ -141,7 +141,7 @@ public class TestWithSkeleton {
         Assert.assertEquals(TRUE, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
 
         // now explicitly set s to null
-        variableProperties.assignmentBasics(localS, NullValue.NULL_VALUE);
+        variableProperties.assignmentBasics(localS, NullValue.NULL_VALUE, true);
         Assert.assertEquals(TRUE, variableProperties.getProperty(localS, VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
         Assert.assertEquals(TRUE, variableProperties.getProperty(localS, VariableProperty.ASSIGNED));
 
@@ -165,7 +165,7 @@ public class TestWithSkeleton {
         Assert.assertTrue(variableProperties.isKnown(localS));
 
         // now explicitly set s to param
-        variableProperties.assignmentBasics(localS, variableProperties.newVariableValue(param));
+        variableProperties.assignmentBasics(localS, variableProperties.newVariableValue(param), true);
 
         VariableValue paramVv = (VariableValue) variableProperties.currentValue(localS);
         Assert.assertSame(param, paramVv.variable);

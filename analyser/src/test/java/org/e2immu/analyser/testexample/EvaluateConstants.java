@@ -41,7 +41,7 @@ public class EvaluateConstants {
 
     @NotNull
     @NotModified
-    @Constant(stringValue = "b")
+    @Constant(stringValue = "b") // ERROR, caused by the other error
     public static String print() {
         // ERROR: if statement evaluates to constant
         if (ee()) return "a";

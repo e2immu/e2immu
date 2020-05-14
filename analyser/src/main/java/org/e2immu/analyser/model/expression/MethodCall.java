@@ -78,10 +78,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // we will, at some point, analyse this method
                 result = UnknownValue.NO_VALUE;
             } else {
+                // method has NOT been defined, so we definitely do NOT delay
                 int identity = methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
-                if (identity == Level.DELAY) {
-                    result = UnknownValue.NO_VALUE; // delaying
-                } else if (identity == Level.TRUE) {
+                if (identity == Level.TRUE) {
                     result = parameters.get(0);
                 } else {
                     // we will never analyse this method

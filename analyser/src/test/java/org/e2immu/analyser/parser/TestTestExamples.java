@@ -44,8 +44,8 @@ public class TestTestExamples {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
         org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE,
 
-                //LAMBDA,
-                //METHOD_CALL,
+                LAMBDA,
+                METHOD_CALL,
 
                 VARIABLE_PROPERTIES,
                 DELAYED,
@@ -71,7 +71,7 @@ public class TestTestExamples {
 
     @Test
     public void testEvaluateConstants() throws IOException {
-        goTest("EvaluateConstants", 3);
+        goTest("EvaluateConstants", 4);
     }
 
     @Test
@@ -138,7 +138,7 @@ public class TestTestExamples {
 
     @Test
     public void testUtilityClassChecks() throws IOException {
-        goTest("UtilityClassChecks");
+        goTest("UtilityClassChecks", 1);
     }
 
     @NotModified

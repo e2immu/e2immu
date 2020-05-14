@@ -22,10 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.*;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 // extension class: implies @NotNull on first argument
@@ -67,6 +64,17 @@ public class SMapList {
             throw new IllegalArgumentException(NULL_VALUE);
         }
         List<B> set = map.computeIfAbsent(a, k -> new LinkedList<>());
+        return set.add(b);
+    }
+
+    public static <A, B> boolean addWithArrayList(Map<A, List<B>> map, @NotNull A a, @NotNull B b) {
+        if (a == null) {
+            throw new IllegalArgumentException(NULL_KEY);
+        }
+        if (b == null) {
+            throw new IllegalArgumentException(NULL_VALUE);
+        }
+        List<B> set = map.computeIfAbsent(a, k -> new ArrayList<>());
         return set.add(b);
     }
 
