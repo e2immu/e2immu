@@ -6,7 +6,7 @@ import org.e2immu.annotation.NotNull;
 
 public class LoopStatementChecks {
 
-    @Constant(stringValue = "abc")
+    @Constant(type = AnnotationType.VERIFY_ABSENT) // TODO for later
     @NotNull
     public static String method1(int n) {
         String res1;

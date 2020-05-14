@@ -546,22 +546,12 @@ class VariableProperties implements EvaluationContext {
             }
             // depending on whether there is an assignment everywhere, or there is one which has been guaranteed to be executed
             // we keep track of the current values as well...
-            boolean atLeastOneBlockGuaranteedToBeReached;
-            Value copySingleValue = isCopySingleValue(assignmentContexts, name);
-            if (copySingleValue != null) {
-                atLeastOneBlockGuaranteedToBeReached = true;
-                log(VARIABLE_PROPERTIES, "--- variable {} has a single value copied into parent context", name);
-                localAv.setCurrentValue(copySingleValue);
-            } else {
-                atLeastOneBlockGuaranteedToBeReached = assignmentContexts.get(0).guaranteedToBeReachedByParentStatement;
-                String copied = atLeastOneBlockGuaranteedToBeReached ? "copied" : "merged";
-                log(VARIABLE_PROPERTIES, "--- variable {} has multiple values " + copied + " into parent context", name);
-
-                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name));
-            }
+            boolean atLeastOneAssignmentGuaranteedToBeReached = atLeastOneAssignmentGuaranteedToBeReached(assignmentContexts, name);
+            String copied = atLeastOneAssignmentGuaranteedToBeReached ? "copied" : "merged";
+            log(VARIABLE_PROPERTIES, "--- variable {}: properties " + copied + " into parent context", name);
 
             // now copy all the properties; this will be property per property
-            boolean includeThis = noBlockMayBeExecuted && !atLeastOneBlockGuaranteedToBeReached;
+            boolean includeThis = noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
 
             for (VariableProperty variableProperty : WORST) {
                 IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, variableProperty);
@@ -569,6 +559,14 @@ class VariableProperties implements EvaluationContext {
                         .peek(i -> log(VARIABLE_PROPERTIES, "Have value {}", i))
                         .min().orElse(Level.DELAY);
                 localAv.setProperty(variableProperty, worstValue);
+            }
+
+            if (!atLeastOneAssignmentGuaranteedToBeReached || assignmentContexts.size() > 1) {
+                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name));
+            } else {
+                Value singleValue = assignmentContexts.get(0).variableProperties.get(name).getCurrentValue();
+                log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
+                localAv.setCurrentValue(singleValue);
             }
         }
         // so now we've dealt with all the variables which were assigned.
@@ -608,20 +606,10 @@ class VariableProperties implements EvaluationContext {
         return contexts;
     }
 
-    // following trimContexts, the situation is either:
-    // (A) one guaranted to be reached, and then some optionally (see try {} catch {} without finally), or
-    // (B) one guaranteed to be reached only (for statement), or
-    // (C) only optional ones (like if {} else {})
-    // there cannot be 2 guaranteed to be reached. A single value result value is only possible in case of (B)
-    private static Value isCopySingleValue(List<VariableProperties> contexts, String name) {
-        if (contexts.size() != 1) return null;
-        VariableProperties vp = contexts.get(0);
-        AboutVariable aboutVariable = Objects.requireNonNull(vp.variableProperties.get(name));
-        // the assignment has to be reached...
-        if (aboutVariable.getProperty(LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED) != Level.TRUE) return null;
-        // ok we can now return a value
-        // if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) return aboutVariable.resetValue;
-        return aboutVariable.getCurrentValue();
+    private static boolean atLeastOneAssignmentGuaranteedToBeReached(List<VariableProperties> contexts, String name) {
+        VariableProperties first = contexts.get(0);
+        return first.guaranteedToBeReachedByParentStatement
+                && first.variableProperties.get(name).getProperty(LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED) == Level.TRUE;
     }
 
     private IntStream streamBuilder(List<VariableProperties> evaluationContexts,
@@ -631,22 +619,20 @@ class VariableProperties implements EvaluationContext {
                                     VariableProperty variableProperty) {
         IntStream s1 = evaluationContexts.stream()
                 .filter(ec -> ec.variableProperties.containsKey(name)) // for more efficiency: in the assignment case, this filter is not needed
-                .map(ec -> ec.variableProperties.get(name))
-                .mapToInt(aboutVariable -> getPropertyPotentiallyFromValue(aboutVariable, variableProperty));
+                .mapToInt(ec -> getPropertyPotentiallyFromCurrentValue(ec, name, variableProperty));
         IntStream s2 = includeThis
-                ? IntStream.of(getPropertyPotentiallyFromValue(variableProperties.get(name), variableProperty))
+                ? IntStream.of(getPropertyPotentiallyFromCurrentValue(this, name, variableProperty))
                 : IntStream.of();
         return IntStream.concat(movedUpFirstOne ? s1.skip(1) : s1, s2);
     }
 
     private static final EnumSet<VariableProperty> ON_VALUE = EnumSet.of(VariableProperty.NOT_NULL, IMMUTABLE, VariableProperty.CONTAINER);
 
-    private int getPropertyPotentiallyFromValue(AboutVariable aboutVariable, VariableProperty variableProperty) {
-        Value currentValue = aboutVariable.getCurrentValue();
-        if (!(currentValue instanceof VariableValue) && ON_VALUE.contains(variableProperty)) {
-            return currentValue.getProperty(this, variableProperty);
+    private int getPropertyPotentiallyFromCurrentValue(VariableProperties context, String name, VariableProperty variableProperty) {
+        if (ON_VALUE.contains(variableProperty)) {
+            return context.variableProperties.get(name).getCurrentValue().getProperty(context, variableProperty);
         }
-        return aboutVariable.getProperty(variableProperty);
+        return context.variableProperties.get(name).getProperty(variableProperty);
     }
 
     public boolean isKnown(Variable variable) {

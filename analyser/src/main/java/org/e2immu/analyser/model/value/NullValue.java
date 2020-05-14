@@ -64,6 +64,6 @@ public class NullValue implements Value, Constant<Object> {
         if (variableProperty == VariableProperty.NOT_NULL) return FALSE;
         if (variableProperty == VariableProperty.CONTAINER) return TRUE;
         if (variableProperty == VariableProperty.IMMUTABLE) return VariableProperty.IMMUTABLE.best;
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Asking for");
     }
 }
