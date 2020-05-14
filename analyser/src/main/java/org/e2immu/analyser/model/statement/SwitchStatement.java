@@ -43,6 +43,8 @@ public class SwitchStatement extends StatementWithExpression {
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression);
         switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
+        boolean haveNoDefault = switchEntries.stream().allMatch(switchEntry -> switchEntry.isNotDefault());
+        builder.setNoBlockMayBeExecuted(haveNoDefault);
         return builder.build();
     }
 }

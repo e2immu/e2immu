@@ -420,7 +420,7 @@ public class StatementAnalyser {
             }
         }
 
-        if(!evaluationContextsGathered.isEmpty()) {
+        if (!evaluationContextsGathered.isEmpty()) {
             variableProperties.copyBackLocalCopies(evaluationContextsGathered, codeOrganization.noBlockMayBeExecuted);
         }
 
@@ -516,7 +516,7 @@ public class StatementAnalyser {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
-                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError);
+                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError, statement);
                     doImplicitNullCheck(statement, localExpression, lvp);
                     if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
                 });
@@ -553,7 +553,10 @@ public class StatementAnalyser {
      * @param variableProperties the evaluation context
      * @param value              the result of the evaluation
      */
-    private void doAssignmentTargetsAndInputVariables(Expression expression, VariableProperties variableProperties, Value value) {
+    private void doAssignmentTargetsAndInputVariables(Expression expression,
+                                                      VariableProperties variableProperties,
+                                                      Value value,
+                                                      NumberedStatement statement) {
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
             Variable at = assignment.target.assignmentTarget().orElseThrow();
@@ -573,6 +576,12 @@ public class StatementAnalyser {
 
                 // even inside our class, there are limitations; potentially raise error
                 if (checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, variableProperties)) {
+                    return;
+                }
+            } else if (at instanceof ParameterInfo) {
+                if (!statement.errorValue.isSet()) {
+                    typeContext.addMessage(Message.Severity.ERROR, "Assignment to parameter " + at.detailedString());
+                    statement.errorValue.set(true);
                     return;
                 }
             }

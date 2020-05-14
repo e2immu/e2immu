@@ -534,9 +534,9 @@ class VariableProperties implements EvaluationContext {
                 boolean done = assignmentContexts.isEmpty();
                 log(VARIABLE_PROPERTIES, "--- variable {}: had to make a local copy; done? {}", name, done);
                 if (done) {
-                    if (localAv.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) {
-                        localAv.setCurrentValue(localAv.resetValue);
-                    }
+                    //if (localAv.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) {
+                    //localAv.setCurrentValue(localAv.resetValue);
+                    //}
                     continue;
                 }
             }
@@ -570,7 +570,9 @@ class VariableProperties implements EvaluationContext {
             }
             for (VariableProperty variableProperty : WORST) {
                 IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, variableProperty);
-                int worstValue = intStream.min().orElse(Level.DELAY);
+                int worstValue = intStream
+                        .peek(i -> log(VARIABLE_PROPERTIES, "Have value {}", i))
+                        .min().orElse(Level.DELAY);
                 localAv.setProperty(variableProperty, worstValue);
             }
         }
@@ -600,7 +602,7 @@ class VariableProperties implements EvaluationContext {
         // the assignment has to be reached...
         if (aboutVariable.getProperty(LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED) != Level.TRUE) return null;
         // ok we can now return a value
-        if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) return aboutVariable.resetValue;
+        // if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) return aboutVariable.resetValue;
         return aboutVariable.getCurrentValue();
     }
 

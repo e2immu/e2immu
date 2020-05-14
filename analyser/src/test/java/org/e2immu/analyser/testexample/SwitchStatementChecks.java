@@ -64,20 +64,23 @@ public class SwitchStatementChecks {
         switch (c) {
             case 'a':
                 res = "a";
+                break;
             case 'b':
                 res = "b";
+                break;
             default:
                 res = "c";
         }
         return res;
     }
 
+    // TODO this one works like method5 at the moment, we don't have any support for
+    // not having break statements... or should we block this?
     @NotNull
-    @Constant(stringValue = "a")
+    @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static String method6(char c) {
         String res;
-        char d = 'a';
-        switch (d) { // ERROR 3 & 4: evaluates to constant
+        switch (c) {
             case 'a':
                 res = "a";
             case 'b':
@@ -87,6 +90,26 @@ public class SwitchStatementChecks {
         }
         return res;
     }
+
+
+    @NotNull
+    @Constant(stringValue = "a")
+    public static String method7(char c) {
+        String res;
+        char d = 'a';
+        switch (d) { // ERROR 3 & 4: evaluates to constant
+            case 'a':
+                res = "a";
+                break;
+            case 'b':
+                res = "b";
+                break;
+            default:
+                res = "c";
+        }
+        return res;
+    }
+
 
 }
 

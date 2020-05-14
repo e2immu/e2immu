@@ -83,6 +83,10 @@ public abstract class SwitchEntry implements Statement {
 
     public abstract CodeOrganization codeOrganization();
 
+    public boolean isNotDefault() {
+        return !labels.isEmpty();
+    }
+
     public static class StatementsEntry extends SwitchEntry implements HasStatements {
         public final List<Statement> statements;
         public final boolean java12Style;

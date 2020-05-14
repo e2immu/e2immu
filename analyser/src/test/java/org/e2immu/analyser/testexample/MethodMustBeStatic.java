@@ -14,7 +14,7 @@ public class MethodMustBeStatic {
 
     static class ChildClass extends ParentClass {
 
-        private String t;
+        private final String t;
 
         public ChildClass(String s, String t) {
             super(s);
@@ -39,7 +39,7 @@ public class MethodMustBeStatic {
 
         public String methodMustNotBeStatic4(String input) {
             return Stream.of(input).map(s -> {
-                System.out.println(s);
+                if(s == null) return "null";
                 return s + "something" + t;
             }).findAny().get();
         }

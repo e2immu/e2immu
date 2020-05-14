@@ -7,6 +7,7 @@ import org.e2immu.annotation.NotNull;
 public class LoopStatementChecks {
 
     @Constant(stringValue = "abc")
+    @NotNull
     public static String method1(int n) {
         String res1;
         int i=0;
@@ -19,6 +20,7 @@ public class LoopStatementChecks {
     }
 
     @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(type = AnnotationType.VERIFY_ABSENT)
     public static String method2(int n) {
         String res2 = null; // = null forced upon us by compiler!
         int i=0;
@@ -43,18 +45,20 @@ public class LoopStatementChecks {
     // important here is that i==0 is not a constant expression, because i is a loop variable
     // the interesting value to check here is 1, because the i++ is evaluated BEFORE the i<10 and the i++
     // at the moment
-    public static void method4() {
+    public static int method4() {
         for(int i=0; i<10; i++) {
-            if(i == 1) System.out.println("1!");
+            if(i == 1) return 4;
         }
+        return 0;
     }
 
     // same as in 4
-    public static void method5() {
+    public static int method5() {
         int i=0;
         for(; i<10; i++) {
-            if(i == 1) System.out.println("0!");
+            if(i == 1) return 5;
         }
+        return 0;
     }
 
     public static void method6() {
