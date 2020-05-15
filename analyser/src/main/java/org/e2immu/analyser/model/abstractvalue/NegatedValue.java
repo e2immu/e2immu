@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -39,11 +40,12 @@ public class NegatedValue implements Value {
 
     public final Value value;
 
-    private NegatedValue(Value value) {
-        this.value = value;
+    private NegatedValue(@NotNull Value value) {
+        this.value = Objects.requireNonNull(value);
     }
 
-    public static Value negate(Value v) {
+    public static Value negate(@NotNull Value v) {
+        Objects.requireNonNull(v);
         if (v instanceof BoolValue) {
             BoolValue boolValue = (BoolValue) v;
             return boolValue.value ? BoolValue.FALSE : BoolValue.TRUE;

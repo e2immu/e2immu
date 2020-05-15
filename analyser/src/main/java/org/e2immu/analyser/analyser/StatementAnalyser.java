@@ -105,8 +105,7 @@ public class StatementAnalyser {
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
-                            ParameterInfo parameterInfo = (ParameterInfo) variable;
-                            if (parameterInfo.markNotNull(Level.TRUE)) changes = true;
+                            if(((ParameterInfo) variable).parameterAnalysis.notNull(true)) changes = true;
                         }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
@@ -355,7 +354,7 @@ public class StatementAnalyser {
                     startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
-            if (valueAfterCheckingForConstant != NO_VALUE) {
+            if (valueAfterCheckingForConstant != NO_VALUE && valueAfterCheckingForConstant != null) {
                 defaultCondition = NegatedValue.negate(valueAfterCheckingForConstant);
             }
 
@@ -747,20 +746,13 @@ public class StatementAnalyser {
         // the variable has already been created, if relevant
         if (!variableProperties.isKnown(variable)) return false;
 
-        int notNull = variableProperties.getProperty(variable, VariableProperty.NOT_NULL);
-        if (Level.haveTrueAt(notNull, Level.NOT_NULL)) return false; // OK!
-
-        // if the variable has been assigned to another variable, we want to jump there!
-        // this chain potentially ends in fields or parameters
-        // if it is a field, it should also be known
-        Variable valueVar = variableProperties.switchToValueVariable(variable);
-        if (valueVar instanceof ParameterInfo) {
-            ParameterInfo parameterInfo = (ParameterInfo) valueVar;
-            return parameterInfo.markNotNull(Level.TRUE);
+        int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
+        if (notNull != Level.FALSE) {
+            // delay -> true at level 0; true -> true at level 1
+            int valueToSet = Level.compose(Level.TRUE, notNull == Level.TRUE ? 1 : 0);
+            variableProperties.addProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, valueToSet);
+            return false;
         }
-
-        // should we raise an error message?
-        if (Level.value(notNull, Level.NOT_NULL) == Level.DELAY) return false; // delaying opinion
         if (!currentStatement.errorValue.isSet()) {
             typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
                     + variable.detailedString() + " in statement "

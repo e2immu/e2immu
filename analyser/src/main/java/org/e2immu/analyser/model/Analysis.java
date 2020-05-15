@@ -265,10 +265,11 @@ public abstract class Analysis {
         map.put(elementType, Math.max(current == null ? 0 : current, value));
     }
 
-    private static final ElementType[] NOT_NULL_WHERE = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
+    protected static final ElementType[] NOT_NULL_WHERE_ALL = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
+    protected static final ElementType[] NOT_NULL_WHERE_TYPE = {ElementType.TYPE};
 
-    static List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
-        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE);
+    protected  List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_TYPE);
         return Arrays.stream(elements).collect(Collectors.toList());
     }
 }

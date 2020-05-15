@@ -19,11 +19,9 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ComputeLinking {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinking.class);
 
-    public final ParameterAnalyser parameterAnalyser;
     public final TypeContext typeContext;
 
-    public ComputeLinking(TypeContext typeContext, ParameterAnalyser parameterAnalyser) {
-        this.parameterAnalyser = parameterAnalyser;
+    public ComputeLinking(TypeContext typeContext) {
         this.typeContext = typeContext;
     }
 
@@ -61,7 +59,7 @@ public class ComputeLinking {
             if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodAnalysis))
                 changes = true;
 
-            if (computeContentModifications(methodInfo, methodAnalysis, methodProperties)) changes = true;
+            if (computeContentModificationsAndNotNull(methodInfo, methodAnalysis, methodProperties)) changes = true;
             if (checkParameterAssignmentError(methodInfo, methodProperties)) changes = true;
 
             return changes;
@@ -189,16 +187,19 @@ public class ComputeLinking {
         return true;
     }
 
-    private boolean computeContentModifications(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+    private boolean computeContentModificationsAndNotNull(MethodInfo methodInfo,
+                                                          MethodAnalysis methodAnalysis,
+                                                          VariableProperties methodProperties) {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
-            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(), aboutVariable.variable);
+            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(),
+                    aboutVariable.variable);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
+                    FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
                     if (!methodAnalysis.contentModifications.isSet(linkedVariable)) {
-                        FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
                         Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, false);
                         boolean directlyModifiedField = directContentModification == Boolean.TRUE
                                 && methodAnalysis.fieldRead.isSet(fieldInfo) // it is a field local to us, or it has been read
@@ -207,36 +208,64 @@ public class ComputeLinking {
                                 linkedVariable.detailedString(),
                                 directContentModification == null ? "?? " :
                                         directContentModification ? "" : "NOT ",
-                                methodInfo.fullyQualifiedName());
+                                methodInfo.distinguishingName());
                         methodAnalysis.contentModifications.put(linkedVariable, directlyModifiedField);
                         changes = true;
                     }
+                    if (!methodAnalysis.ignoreFieldAssignmentForNotNull.isSet(fieldInfo)) {
+                        Boolean notNull = summarizeNotNullContext(methodProperties, linkedVariables);
+                        boolean ignore = notNull == null;
+                        methodAnalysis.ignoreFieldAssignmentForNotNull.put(fieldInfo, ignore);
+                        log(NOT_NULL, "Mark that the field assignment of {} can {}be ignored in {}", linkedVariable.detailedString(),
+                                ignore ? "" : "not ",
+                                methodInfo.distinguishingName());
+                        changes = true;
+                    }
                 } else if (linkedVariable instanceof ParameterInfo) {
+                    ParameterAnalysis parameterAnalysis = ((ParameterInfo) linkedVariable).parameterAnalysis;
                     Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, true);
-                    parameterAnalyser.notModified((ParameterInfo) linkedVariable, directContentModification);
+                    parameterAnalysis.notModified(directContentModification);
+                    Boolean notNull = summarizeNotNullContext(methodProperties, linkedVariables);
+                    parameterAnalysis.notNull(notNull);
                 }
             }
         }
         return changes;
     }
 
-    private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables, boolean lookAtFields) {
+    private Boolean summarize(
+            VariableProperty localProperty,
+            VariableProperty externalProperty,
+            VariableProperties methodProperties,
+            Set<Variable> linkedVariables,
+            boolean lookAtFields) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
 
-            int contentModification = methodProperties.getProperty(variable, VariableProperty.CONTENT_MODIFIED);
+            int contentModification = methodProperties.getProperty(variable, localProperty);
             if (Level.haveTrueAt(contentModification, 1)) return true;
             if (Level.haveTrueAt(contentModification, 0)) hasDelays = true;
 
             // This piece of code is really required for parameters that are linked to fields,
             // which end up not @NotModified, so that the parameter should also not be @NotModified
+
+            // for @NotNull, we want to start from evidence at the parameter level
+            // IN AT LEAST ONE method
             if (lookAtFields || !(variable instanceof FieldReference)) {
-                int notModified = methodProperties.getProperty(variable, VariableProperty.NOT_MODIFIED);
+                int notModified = methodProperties.getProperty(variable, externalProperty);
                 if (notModified == Level.FALSE) return true;
                 if (notModified == Level.DELAY) hasDelays = true;
             }
         }
         return hasDelays ? null : false;
+    }
+
+    private Boolean summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables, boolean lookAtFields) {
+        return summarize(VariableProperty.CONTENT_MODIFIED, VariableProperty.NOT_MODIFIED, methodProperties, linkedVariables, lookAtFields);
+    }
+
+    private Boolean summarizeNotNullContext(VariableProperties methodProperties, Set<Variable> linkedVariables) {
+        return summarize(VariableProperty.IN_NOT_NULL_CONTEXT, VariableProperty.NOT_NULL, methodProperties, linkedVariables, false);
     }
 
     private static Set<Variable> allVariablesLinkedToIncludingMyself(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,

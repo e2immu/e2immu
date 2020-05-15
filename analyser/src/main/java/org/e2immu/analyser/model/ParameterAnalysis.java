@@ -22,13 +22,19 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class ParameterAnalysis extends Analysis {
 
     private final ParameterizedType parameterizedType;
     private final MethodInfo owner; // can be null, for lambda expressions
+    private final String logName;
 
-    public ParameterAnalysis(@NotNull ParameterizedType parameterizedType, MethodInfo owner) {
+    public ParameterAnalysis(String logName, @NotNull ParameterizedType parameterizedType, MethodInfo owner) {
         this.owner = owner;
+        this.logName = logName;
         this.parameterizedType = parameterizedType;
     }
 
@@ -54,5 +60,35 @@ public class ParameterAnalysis extends Analysis {
             default:
         }
         return super.getProperty(variableProperty);
+    }
+
+
+    public boolean notModified(Boolean directContentModification) {
+        if (directContentModification != null) {
+            boolean notModified = !directContentModification;
+            if (getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) {
+                log(NOT_MODIFIED, "Mark {} " + (notModified ? "" : "NOT") + " @NotModified",
+                        logName);
+                setProperty(VariableProperty.NOT_MODIFIED, notModified);
+                return true;
+            }
+        } else {
+            log(DELAYED, "Delaying setting parameter @NotModified on {}", logName);
+        }
+
+        return false;
+    }
+
+    public boolean notNull( Boolean notNull) {
+        if (notNull != null) {
+            if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull",logName);
+                setProperty(VariableProperty.NOT_NULL, notNull);
+                return true;
+            }
+        } else {
+            log(DELAYED, "Delaying setting parameter @NotNull on {}", logName);
+        }
+        return false;
     }
 }

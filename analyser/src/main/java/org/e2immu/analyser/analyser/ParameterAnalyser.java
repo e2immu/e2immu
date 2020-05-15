@@ -61,21 +61,4 @@ public class ParameterAnalyser {
                         ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NotNull"));
     }
 
-    public boolean notModified(ParameterInfo parameterInfo, Boolean directContentModification) {
-        if (directContentModification != null) {
-            boolean notModified = !directContentModification;
-            if (parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) {
-                log(NOT_MODIFIED, "Mark {} of {} " + (notModified ? "" : "NOT") + " @NotModified",
-                        parameterInfo.detailedString(),
-                        parameterInfo.parameterInspection.get().owner.distinguishingName());
-                parameterInfo.parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, notModified);
-                return true;
-            }
-        } else {
-            log(DELAYED, "Delaying setting parameter not modified on {}", parameterInfo.detailedString());
-        }
-
-        return false;
-    }
-
 }

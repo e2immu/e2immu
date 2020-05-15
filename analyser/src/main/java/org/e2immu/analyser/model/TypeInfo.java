@@ -1014,13 +1014,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
+        boolean hasBeenDefined = hasBeenDefined();
         typeAnalysis.fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
         typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
-                methodInfo.methodAnalysis.fromAnnotationsIntoProperties(hasBeenDefined(), methodInfo.methodInspection.get().annotations,
-                        typeContext, overwrite));
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
+            methodInfo.methodAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
+                    typeContext, overwrite);
+            methodInfo.methodInspection.get().parameters.forEach(parameterInfo ->
+                    parameterInfo.parameterAnalysis.fromAnnotationsIntoProperties(hasBeenDefined,
+                            parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
+        });
         typeInspection.get().fields.forEach(fieldInfo -> {
-            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined(), fieldInfo.fieldInspection.get().annotations,
+            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
                     typeContext, overwrite);
             // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
             int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -1034,9 +1039,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         typeInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
                 .forEach(ae -> ae.resolve(expressionContext));
         typeInspection.get().subTypes.forEach(subType -> subType.resolveAllAnnotations(expressionContext));
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
-                methodInfo.methodInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
-                        .forEach(ae -> ae.resolve(expressionContext)));
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
+            methodInfo.methodInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
+                    .forEach(ae -> ae.resolve(expressionContext));
+            methodInfo.methodInspection.get().parameters.forEach(parameterInfo ->
+                    parameterInfo.parameterInspection.get().annotations
+                            .stream().filter(ae -> !ae.expressions.isSet())
+                            .forEach(ae -> ae.resolve(expressionContext)));
+        });
         typeInspection.get().fields.forEach(fieldInfo ->
                 fieldInfo.fieldInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
                         .forEach(ae -> ae.resolve(expressionContext)));

@@ -22,6 +22,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
+import java.lang.annotation.ElementType;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 // ...
 public class TypeAnalysis extends Analysis {
@@ -38,6 +43,10 @@ public class TypeAnalysis extends Analysis {
 
     public final SetOnce<Boolean> doNotAllowDelaysOnNotModified = new SetOnce<>();
 
+    protected List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_ALL);
+        return Arrays.stream(elements).collect(Collectors.toList());
+    }
 
     @Override
     public int getProperty(VariableProperty variableProperty) {

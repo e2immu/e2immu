@@ -29,6 +29,9 @@ public enum VariableProperty {
     // multi-level: level 0 = seen, level 1 = modifications
     CONTENT_MODIFIED("content modified", true, Level.compose(Level.TRUE, 1)),
 
+    // multi-level: level 0 = method info has been delayed, level 1 = null context
+    IN_NOT_NULL_CONTEXT("not-null context", true, Level.compose(Level.TRUE, 1)),
+
     // assigned multiple times
     ASSIGNED("assigned", true, Level.compose(Level.TRUE, 1)),
 

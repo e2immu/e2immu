@@ -350,6 +350,8 @@ public class FieldAnalyser {
         }
         int allAssignmentValuesNotNull = typeInspection.constructorAndMethodStream()
                 .filter(m -> m.methodAnalysis.fieldAssignments.get(fieldInfo) && m.methodAnalysis.fieldAssignmentValues.isSet(fieldInfo))
+                .filter(m -> !m.methodAnalysis.ignoreFieldAssignmentForNotNull.isSet(fieldInfo) ||
+                        m.methodAnalysis.ignoreFieldAssignmentForNotNull.get(fieldInfo))
                 .mapToInt(m -> m.methodAnalysis.fieldAssignmentValues.get(fieldInfo).isNotNull0OutsideContext())
                 .reduce(Level.TRUE, Level.AND);
         if (allAssignmentValuesNotNull == Level.DELAY) {

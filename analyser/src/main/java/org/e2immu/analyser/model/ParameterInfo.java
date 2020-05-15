@@ -53,7 +53,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
-        parameterAnalysis = new ParameterAnalysis(parameterizedType, owner);
+        parameterAnalysis = new ParameterAnalysis(name + (owner == null ? "" : (" of " + owner.name)),
+                parameterizedType, owner);
     }
 
     @Override
@@ -176,15 +177,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.NONE_PURE;
-    }
-
-    public boolean markNotNull(int notNullLevel) {
-        int current = parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
-        if (notNullLevel > current) {
-            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, notNullLevel);
-            return true;
-        }
-        return false;
     }
 
     public int minimalValueByDefinition(VariableProperty variableProperty) {

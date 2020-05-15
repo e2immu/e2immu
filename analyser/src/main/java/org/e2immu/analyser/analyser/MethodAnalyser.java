@@ -51,7 +51,7 @@ public class MethodAnalyser {
     public MethodAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
         this.parameterAnalyser = new ParameterAnalyser(typeContext);
-        this.computeLinking = new ComputeLinking(typeContext, parameterAnalyser);
+        this.computeLinking = new ComputeLinking(typeContext);
     }
 
     public void check(MethodInfo methodInfo) {
@@ -230,7 +230,8 @@ public class MethodAnalyser {
         }
         // second step, check that no fields are modified
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-            log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed");
+            log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed",
+                    methodInfo.distinguishingName());
             return false;
         }
         boolean isNotModified = methodAnalysis.contentModifications
