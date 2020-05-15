@@ -153,12 +153,10 @@ public class ComputeLinking {
         if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties().stream()
-                .anyMatch(av -> av.variable instanceof FieldReference &&
-                        Level.haveTrueAt(av.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) &&
-                        !((FieldReference) av.variable).fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet());
-        if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
-            log(DELAYED, "Some effectively final fields have not yet been evaluated -- delaying establishing links");
+        boolean someVariablesHaveNotBeenEvaluated = methodProperties.variableProperties().stream()
+                .anyMatch(av -> av.getCurrentValue() == UnknownValue.NO_VALUE);
+        if (someVariablesHaveNotBeenEvaluated) {
+            log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links");
             return false;
         }
         if (!methodProperties.dependencyGraphBestCase.equalTransitiveTerminals(methodProperties.dependencyGraphWorstCase)) {

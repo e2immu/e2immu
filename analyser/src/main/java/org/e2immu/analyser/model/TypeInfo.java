@@ -983,10 +983,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return methodInfo;
     }
 
-    public List<This> thisVariables() {
-        return allTypesInPrimaryType().stream().map(t -> new This(t, t != this)).collect(Collectors.toList());
-    }
-
     public boolean isNestedType() {
         return typeInspection.get().packageNameOrEnclosingType.isRight();
     }

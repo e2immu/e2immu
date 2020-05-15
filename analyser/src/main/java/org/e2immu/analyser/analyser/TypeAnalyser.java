@@ -114,7 +114,6 @@ public class TypeAnalyser {
             log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
             changes = false;
 
-            List<This> thisVariables = typeInfo.thisVariables();
             VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
@@ -137,7 +136,7 @@ public class TypeAnalyser {
                         }
                     }
 
-                    if (fieldAnalyser.analyse(fieldInfo, thisVariables.get(0), fieldProperties))
+                    if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                 }
             }
