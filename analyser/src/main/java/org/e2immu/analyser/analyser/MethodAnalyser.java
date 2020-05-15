@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;

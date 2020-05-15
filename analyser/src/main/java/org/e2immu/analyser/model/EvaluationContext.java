@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
@@ -26,6 +27,9 @@ import org.e2immu.annotation.NotNull;
 import java.util.Set;
 
 public interface EvaluationContext {
+
+    int getIteration();
+    DebugConfiguration getDebugConfiguration();
 
     // WHERE ARE WE??
 

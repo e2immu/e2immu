@@ -63,6 +63,9 @@ public class Configuration {
     // write a Xml
     public final AnnotationXmlConfiguration annotationXmlConfiguration;
 
+    // for debugging purposes
+    public final DebugConfiguration debugConfiguration;
+
     public Configuration(InputConfiguration inputConfiguration,
 
                          Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
@@ -72,7 +75,8 @@ public class Configuration {
 
                          UploadConfiguration uploadConfiguration,
                          AnnotatedAPIConfiguration annotatedAPIConfiguration,
-                         AnnotationXmlConfiguration annotationXmlConfiguration) {
+                         AnnotationXmlConfiguration annotationXmlConfiguration,
+                         DebugConfiguration debugConfiguration) {
         this.inputConfiguration = inputConfiguration;
         this.logTargets = logTargets;
         this.quiet = quiet;
@@ -81,6 +85,7 @@ public class Configuration {
         this.uploadConfiguration = uploadConfiguration;
         this.annotatedAPIConfiguration = annotatedAPIConfiguration;
         this.annotationXmlConfiguration = annotationXmlConfiguration;
+        this.debugConfiguration = debugConfiguration;
     }
 
     @Override
@@ -175,6 +180,7 @@ public class Configuration {
         private UploadConfiguration uploadConfiguration;
         private AnnotatedAPIConfiguration annotatedAPIConfiguration;
         private AnnotationXmlConfiguration annotationXmlConfiguration;
+        private DebugConfiguration debugConfiguration;
 
         public Configuration build() {
             return new Configuration(inputConfiguration != null ? inputConfiguration : new InputConfiguration.Builder().build(),
@@ -184,7 +190,8 @@ public class Configuration {
                     skipAnalysis,
                     uploadConfiguration != null ? uploadConfiguration : new UploadConfiguration.Builder().build(),
                     annotatedAPIConfiguration != null ? annotatedAPIConfiguration : new AnnotatedAPIConfiguration.Builder().build(),
-                    annotationXmlConfiguration != null ? annotationXmlConfiguration : new AnnotationXmlConfiguration.Builder().build()
+                    annotationXmlConfiguration != null ? annotationXmlConfiguration : new AnnotationXmlConfiguration.Builder().build(),
+                    debugConfiguration != null ? debugConfiguration : new DebugConfiguration.Builder().build()
             );
         }
 
@@ -228,6 +235,12 @@ public class Configuration {
         @Fluent
         public Builder setWriteAnnotationXmConfiguration(AnnotationXmlConfiguration annotationXmConfiguration) {
             this.annotationXmlConfiguration = annotationXmConfiguration;
+            return this;
+        }
+
+        @Fluent
+        public Builder setDebugConfiguration(DebugConfiguration debugConfiguration) {
+            this.debugConfiguration = debugConfiguration;
             return this;
         }
 

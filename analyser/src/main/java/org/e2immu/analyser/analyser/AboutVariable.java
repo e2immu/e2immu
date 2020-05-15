@@ -1,5 +1,6 @@
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -10,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 class AboutVariable {
-
     enum FieldReferenceState {
         EFFECTIVELY_FINAL_DELAYED,
         SINGLE_COPY,
@@ -87,7 +87,8 @@ class AboutVariable {
         properties.remove(variableProperty);
     }
 
-    void clearProperties() {
-        properties.clear();
+    public Map<VariableProperty, Integer> properties() {
+        return ImmutableMap.copyOf(properties);
     }
+
 }

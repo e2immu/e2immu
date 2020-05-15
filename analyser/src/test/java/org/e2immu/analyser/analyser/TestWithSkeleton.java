@@ -20,6 +20,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.EqualsValue;
@@ -120,7 +121,7 @@ public class TestWithSkeleton {
     @Test
     public void testAddLocalVariable() {
         MethodInfo method = testSkeleton.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
-        VariableProperties variableProperties = new VariableProperties(typeContext, method);
+        VariableProperties variableProperties = newVariableProperties(method);
         LocalVariable variableS = new LocalVariable(List.of(), "s", Primitives.PRIMITIVES.stringParameterizedType, List.of());
         LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
         variableProperties.createLocalVariableOrParameter(localS);
@@ -150,10 +151,18 @@ public class TestWithSkeleton {
         Assert.assertEquals(FALSE, variableProperties.currentValue(localS).getProperty(variableProperties, VariableProperty.NOT_NULL));
     }
 
+    private VariableProperties newVariableProperties(MethodInfo method) {
+        return new VariableProperties(typeContext, 0, new DebugConfiguration.Builder().build(), method);
+    }
+
+    private VariableProperties newVariableProperties(TypeInfo typeInfo) {
+        return new VariableProperties(typeContext, typeInfo, 0, new DebugConfiguration.Builder().build());
+    }
+
     @Test
     public void testAddLocalVariableAssignToParam() {
         MethodInfo method = testSkeleton.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
-        VariableProperties variableProperties = new VariableProperties(typeContext, method);
+        VariableProperties variableProperties = newVariableProperties(method);
         LocalVariable variableS = new LocalVariable(List.of(), "s", Primitives.PRIMITIVES.stringParameterizedType, List.of());
         LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
         variableProperties.createLocalVariableOrParameter(localS);
@@ -179,7 +188,7 @@ public class TestWithSkeleton {
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
         // we're outside the method; during field initialisation
-        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
         Assert.assertEquals(TRUE, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
@@ -201,7 +210,7 @@ public class TestWithSkeleton {
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
         // we're outside the method; during field initialisation
-        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
         Assert.assertEquals(TRUE, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
@@ -219,7 +228,7 @@ public class TestWithSkeleton {
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
         // we're outside the method; during field initialisation
-        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
         Assert.assertEquals(DELAY, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
@@ -241,7 +250,7 @@ public class TestWithSkeleton {
         FieldReference setRef = new FieldReference(set, new This(testSkeleton));
 
         // we're outside the method; during field initialisation
-        VariableProperties variableProperties = new VariableProperties(typeContext, testSkeleton);
+        VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(setRef));
 
         Assert.assertFalse(variableProperties.equals(setRef, setRef)); // not even equal to itself!

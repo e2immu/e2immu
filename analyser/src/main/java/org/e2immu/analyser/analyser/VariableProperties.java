@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -61,6 +62,8 @@ class VariableProperties implements EvaluationContext {
 
     // the rest should be not modified
 
+    final int iteration;
+    final DebugConfiguration debugConfiguration;
     final VariableProperties parent;
     final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
@@ -72,15 +75,17 @@ class VariableProperties implements EvaluationContext {
 
     private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
-    public VariableProperties(TypeContext typeContext, TypeInfo currentType) {
-        this(typeContext, currentType, null);
+    public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
+        this(typeContext, currentType, iteration, debugConfiguration, null);
     }
 
-    public VariableProperties(TypeContext typeContext, MethodInfo currentMethod) {
-        this(typeContext, currentMethod.typeInfo, currentMethod);
+    public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
+        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod);
     }
 
-    private VariableProperties(TypeContext typeContext, TypeInfo currentType, MethodInfo currentMethod) {
+    private VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
+        this.iteration = iteration;
+        this.debugConfiguration = debugConfiguration;
         this.parent = null;
         conditional = null;
         uponUsingConditional = null;
@@ -102,6 +107,8 @@ class VariableProperties implements EvaluationContext {
     private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional,
                                boolean inSyncBlock,
                                boolean guaranteedToBeReachedByParentStatement) {
+        this.iteration = parent.iteration;
+        this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
         this.conditional = conditional;
@@ -112,6 +119,16 @@ class VariableProperties implements EvaluationContext {
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
+    }
+
+    @Override
+    public int getIteration() {
+        return iteration;
+    }
+
+    @Override
+    public DebugConfiguration getDebugConfiguration() {
+        return debugConfiguration;
     }
 
     @Override

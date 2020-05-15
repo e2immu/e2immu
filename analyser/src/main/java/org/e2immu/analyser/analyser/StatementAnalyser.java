@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
@@ -53,6 +55,7 @@ public class StatementAnalyser {
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
 
+
     public StatementAnalyser(TypeContext typeContext, MethodInfo methodInfo) {
         this.typeContext = typeContext;
         this.methodAnalysis = methodInfo.methodAnalysis;
@@ -61,6 +64,7 @@ public class StatementAnalyser {
 
     public boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, EvaluationContext evaluationContext) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
+
         boolean changes = false;
         NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
         boolean neverContinues = false;
@@ -69,8 +73,18 @@ public class StatementAnalyser {
 
         try {
             while (statement != null) {
-                if (computeVariablePropertiesOfStatement(statement, variableProperties))
+                String statementId = statement.streamIndices();
+                if (computeVariablePropertiesOfStatement(statement, variableProperties)) {
                     changes = true;
+                }
+
+                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
+                    variableProperties.variableProperties().forEach(aboutVariable -> {
+                        statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo,
+                                statementId, aboutVariable.name, aboutVariable.variable,
+                                aboutVariable.getCurrentValue(), aboutVariable.properties());
+                    });
+                }
 
                 if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {
                     neverContinues = true;
@@ -105,7 +119,7 @@ public class StatementAnalyser {
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
-                            if(((ParameterInfo) variable).parameterAnalysis.notNull(true)) changes = true;
+                            if (((ParameterInfo) variable).parameterAnalysis.notNull(true)) changes = true;
                         }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");

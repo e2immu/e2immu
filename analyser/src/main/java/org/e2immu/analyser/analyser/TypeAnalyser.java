@@ -18,6 +18,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
@@ -103,41 +106,60 @@ public class TypeAnalyser {
                         " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
     }
 
-    public void analyse(SortedType sortedType) {
+    public void analyse(SortedType sortedType, DebugConfiguration debugConfiguration) {
         TypeInfo typeInfo = sortedType.typeInfo;
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
         boolean changes = true;
         int cnt = 0;
         while (changes) {
-            cnt++;
             log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
             changes = false;
 
-            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo);
+            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, cnt, debugConfiguration);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(typeContext, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(typeContext, cnt, debugConfiguration, (MethodInfo) member);
+
+                    for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
+                        methodAnalyserVisitor.visit(cnt, (MethodInfo) member);
+                    }
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
+                    for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
+                        methodAnalyserVisitor.visit(cnt, (MethodInfo) member);
+                    }
+
                 } else {
                     FieldInfo fieldInfo = (FieldInfo) member;
-
                     // these are the "hidden" methods: fields of functional interfaces
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(typeContext,
+                            VariableProperties methodProperties = new VariableProperties(typeContext, cnt, debugConfiguration,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
+
+                            for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
+                                methodAnalyserVisitor.visit(cnt, fieldInitialiser.implementationOfSingleAbstractMethod);
+                            }
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
+                            }
+                            for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
+                                methodAnalyserVisitor.visit(cnt, fieldInitialiser.implementationOfSingleAbstractMethod);
                             }
                         }
                     }
 
+                    for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.beforeFieldAnalyserVisitors) {
+                        fieldAnalyserVisitor.visit(cnt, fieldInfo);
+                    }
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
+                    for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
+                        fieldAnalyserVisitor.visit(cnt, fieldInfo);
+                    }
                 }
             }
             // TODO at some point we will have overlapping qualities
@@ -151,6 +173,7 @@ public class TypeAnalyser {
                 if (analyseExtensionClass(typeInfo)) changes = true;
                 if (analyseNotNull(typeInfo)) changes = true;
             }
+            cnt++;
             if (cnt > 10) {
                 throw new UnsupportedOperationException("?10 iterations needed?");
             }
@@ -162,7 +185,7 @@ public class TypeAnalyser {
         }
 
         if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
-            postAnalysisIntoNestedTypes(typeInfo);
+            postAnalysisIntoNestedTypes(typeInfo, debugConfiguration);
             typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
         }
     }
@@ -172,14 +195,14 @@ public class TypeAnalyser {
      *
      * @param typeInfo the enclosing type
      */
-    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo) {
+    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo, DebugConfiguration debugConfiguration) {
         log(ANALYSER, "\n--------\nStarting post-analysis into method calls from nested types to {}\n--------",
                 typeInfo.fullyQualifiedName);
         for (TypeInfo nestedType : typeInfo.typeInspection.get().subTypes) {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
 
-            analyse(sortedType);
+            analyse(sortedType, debugConfiguration);
             check(sortedType); // we're not checking at top level!
         }
         log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",

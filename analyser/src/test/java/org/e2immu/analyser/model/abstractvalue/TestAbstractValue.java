@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
@@ -83,6 +84,17 @@ public class TestAbstractValue {
     }
 
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+
+        @Override
+        public int getIteration() {
+            return 0;
+        }
+
+        @Override
+        public DebugConfiguration getDebugConfiguration() {
+            return new DebugConfiguration.Builder().build();
+        }
+
         @Override
         public MethodInfo getCurrentMethod() {
             throw new UnsupportedOperationException();
