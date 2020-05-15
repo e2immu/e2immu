@@ -759,6 +759,9 @@ public class StatementAnalyser {
             ParameterInfo parameterInfo = (ParameterInfo) valueVar;
             return parameterInfo.markNotNull(Level.TRUE);
         }
+
+        // should we raise an error message?
+        if (Level.value(notNull, Level.NOT_NULL) == Level.DELAY) return false; // delaying opinion
         if (!currentStatement.errorValue.isSet()) {
             typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
                     + variable.detailedString() + " in statement "
@@ -773,7 +776,7 @@ public class StatementAnalyser {
         // not modified
         SideEffect sideEffect = methodCall.methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int value = Level.compose(Level.TRUE, safeMethod ? 0 : 1);
+        int value = Level.compose(Level.TRUE, safeMethod ? 0 : 1); // 0=delayed level, 1=actual modification level
         recursivelyMarkContentModified(methodCall.object, variableProperties, value);
     }
 

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -36,6 +37,8 @@ public class VariableValueCopy implements Value {
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
     private final Map<VariableProperty, Integer> copiedProperties;
+    private final Set<Variable> linkedVariablesBest;
+    private final Set<Variable> linkedVariablesWorst;
 
     private static final VariableProperty[] PROPERTIES = {VariableProperty.IMMUTABLE, VariableProperty.CONTAINER, VariableProperty.NOT_NULL,
             VariableProperty.CONTENT_MODIFIED};
@@ -48,6 +51,8 @@ public class VariableValueCopy implements Value {
             builder.put(property, original.getProperty(evaluationContext, property));
         }
         copiedProperties = builder.build();
+        linkedVariablesBest = ImmutableSet.copyOf(original.linkedVariables(true, evaluationContext));
+        linkedVariablesWorst = ImmutableSet.copyOf(original.linkedVariables(false, evaluationContext));
     }
 
     @Override
@@ -82,7 +87,7 @@ public class VariableValueCopy implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException();
+        return bestCase ? linkedVariablesBest : linkedVariablesWorst;
     }
 
     @Override

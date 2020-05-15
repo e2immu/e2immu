@@ -155,7 +155,7 @@ public class ComputeLinking {
         // final fields need to have a value set; all the others act as local variables
         boolean someFieldsReadOrAssignedHaveNotBeenEvaluated = methodProperties.variableProperties().stream()
                 .anyMatch(av -> av.variable instanceof FieldReference &&
-                        Level.value(av.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE &&
+                        Level.haveTrueAt(av.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) &&
                         !((FieldReference) av.variable).fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet());
         if (someFieldsReadOrAssignedHaveNotBeenEvaluated) {
             log(DELAYED, "Some effectively final fields have not yet been evaluated -- delaying establishing links");
@@ -226,10 +226,12 @@ public class ComputeLinking {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
 
+            int contentModification = methodProperties.getProperty(variable, VariableProperty.CONTENT_MODIFIED);
+            if (Level.haveTrueAt(contentModification, 1)) return true;
+            if (Level.haveTrueAt(contentModification, 0)) hasDelays = true;
+
             // This piece of code is really required for parameters that are linked to fields,
             // which end up not @NotModified, so that the parameter should also not be @NotModified
-            // This piece of code is in the way of correct method @NotModified computation
-            // (it's not because the field is @NotModified, that the method has to be...)
             if (lookAtFields || !(variable instanceof FieldReference)) {
                 int notModified = methodProperties.getProperty(variable, VariableProperty.NOT_MODIFIED);
                 if (notModified == Level.FALSE) return true;
@@ -266,8 +268,8 @@ public class ComputeLinking {
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             if (aboutVariable.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
-                int assigned = Level.value(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
-                if (assigned == Level.TRUE && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
+                boolean assigned = Level.haveTrueAt(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
+                if (assigned && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
                     typeContext.addMessage(Message.Severity.ERROR,
                             "Parameter " + aboutVariable.name + " should not be assigned to");
                     methodInfo.methodAnalysis.parameterAssignments.put(parameterInfo, true);
@@ -287,8 +289,8 @@ public class ComputeLinking {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
 
-                boolean isAssigned = Level.value(assigned, 0) == Level.TRUE;
-                boolean isAssignedMultipleTimes = Level.value(assigned, 1) == Level.TRUE;
+                boolean isAssigned = Level.haveTrueAt(assigned, 0);
+                boolean isAssignedMultipleTimes = Level.haveTrueAt(assigned, 1);
 
                 if (!methodAnalysis.fieldAssignments.isSet(fieldInfo)) {
                     methodAnalysis.fieldAssignments.put(fieldInfo, isAssigned);
@@ -303,7 +305,7 @@ public class ComputeLinking {
                     methodAnalysis.fieldAssignmentValues.put(fieldInfo, currentValue);
                     changes = true;
                 }
-                boolean read = Level.value(aboutVariable.getProperty(VariableProperty.READ), 0) == Level.TRUE;
+                boolean read = Level.haveTrueAt(aboutVariable.getProperty(VariableProperty.READ), 0);
                 if (read && !methodAnalysis.fieldRead.isSet(fieldInfo)) {
                     log(ASSIGNMENT, "Mark that field {} has been read", variable.detailedString());
                     methodAnalysis.fieldRead.put(fieldInfo, true);

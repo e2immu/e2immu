@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,9 +29,9 @@ public class SimpleNotModifiedChecks {
 
     // first example shows direct modification
 
-    @E1Immutable
+    @E1Container
     static class Example1 {
-        @Final
+
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set1 = new HashSet<>();
 
@@ -46,10 +43,9 @@ public class SimpleNotModifiedChecks {
 
     // second example shows no modification
 
-    @E1Immutable
+    @E1Container
     static class Example2 {
         @NotModified
-        @Final
         public Set<String> set2 = new HashSet<>();
 
         @NotModified
@@ -60,9 +56,9 @@ public class SimpleNotModifiedChecks {
 
     // third example shows modification, with a local variable as an indirection step
 
+    @E1Container
     static class Example3 {
         @NotNull
-        @Final
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set3 = new HashSet<>();
 
@@ -75,11 +71,10 @@ public class SimpleNotModifiedChecks {
     // fourth example shows the same indirect modification, with a set now linked to a
     // parameter which also becomes not modified
 
-    @E1Immutable
+    @E1Container
     static class Example4 {
         @NotModified(type = VERIFY_ABSENT)
         @NotNull(type = VERIFY_ABSENT)
-        @Final
         public Set<String> set4;
 
         public Example4(@NotModified(type = VERIFY_ABSENT) @NotNull(type = VERIFY_ABSENT) Set<String> in4) {
@@ -96,6 +91,7 @@ public class SimpleNotModifiedChecks {
     // fifth example shows the same indirect modification; this time construction is not
     // linked to the set
 
+    @E1Container
     static class Example5 {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set5;
@@ -112,14 +108,17 @@ public class SimpleNotModifiedChecks {
     }
 
     // sixth example is direct modification, but indirectly on an instance variable of the class
+    // we're not allowing that
 
+    @E1Immutable
+    @Container(type = VERIFY_ABSENT)
     static class Example6 {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set6 = new HashSet<>();
 
         @NotModified(type = VERIFY_ABSENT)
         public static void copyIn(@NotNull Example6 example6, @NotNull @NotModified Set<String> values) {
-            example6.set6.addAll(values);
+            example6.set6.addAll(values); // should raise an ERROR
         }
     }
 }

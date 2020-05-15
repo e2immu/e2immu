@@ -22,14 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
-import org.e2immu.analyser.util.Lazy;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationType;
 
 import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -122,7 +120,7 @@ public abstract class Analysis {
 
         if (noContainer) annotations.put(typeContext.container.get(), false);
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (Level.have(immutable, Level.E2IMMUTABLE)) {
+        if (Level.haveTrueAt(immutable, Level.E2IMMUTABLE)) {
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
                     annotations.put(typeContext.e2Container.get(), true);
@@ -131,7 +129,7 @@ public abstract class Analysis {
                 if (noContainer) annotations.put(typeContext.e2Container.get(), false);
                 if (immutable > minImmutable) annotations.put(typeContext.e2Immutable.get(), true);
             }
-        } else if (Level.have(immutable, Level.E1IMMUTABLE)) {
+        } else if (Level.haveTrueAt(immutable, Level.E1IMMUTABLE)) {
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
                     annotations.put(typeContext.e1Container.get(), true);
