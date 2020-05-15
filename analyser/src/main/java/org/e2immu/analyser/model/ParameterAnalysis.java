@@ -38,7 +38,7 @@ public class ParameterAnalysis extends Analysis {
             case NOT_NULL:
                 if (owner != null && Level.value(owner.typeInfo.typeAnalysis.
                         getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL) == Level.TRUE)
-                    return Level.TRUE;
+                    return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
             case NOT_MODIFIED:
                 if (parameterizedType.isNotModifiedByDefinition()) return Level.TRUE;
@@ -48,6 +48,9 @@ public class ParameterAnalysis extends Analysis {
                         bestType.typeAnalysis.getProperty(VariableProperty.CONTAINER) == Level.TRUE)) {
                     return Level.TRUE;
                 }
+            case IMMUTABLE:
+            case CONTAINER:
+                return Level.FALSE; // no assignment, so no way of knowing
             default:
         }
         return super.getProperty(variableProperty);

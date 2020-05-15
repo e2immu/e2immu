@@ -129,7 +129,6 @@ public class StatementAnalyser {
 
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
-
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statement);
@@ -155,7 +154,7 @@ public class StatementAnalyser {
         // we run at the local level
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE
-                    && Level.value(aboutVariable.getProperty(VariableProperty.READ), 0) != Level.TRUE) {
+                    && !Level.haveTrueAt(aboutVariable.getProperty(VariableProperty.READ), 0)) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
                 }
@@ -736,7 +735,7 @@ public class StatementAnalyser {
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
             int notNull = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
-            if (Level.value(notNull, Level.NOT_NULL) == Level.TRUE) {
+            if (Level.haveTrueAt(notNull, Level.NOT_NULL)) {
                 return variableOccursInNotNullContext(currentStatement, v, variableProperties);
             }
         }
@@ -749,7 +748,7 @@ public class StatementAnalyser {
         if (!variableProperties.isKnown(variable)) return false;
 
         int notNull = variableProperties.getProperty(variable, VariableProperty.NOT_NULL);
-        if (Level.value(notNull, Level.NOT_NULL) == Level.TRUE) return false; // OK!
+        if (Level.haveTrueAt(notNull, Level.NOT_NULL)) return false; // OK!
 
         // if the variable has been assigned to another variable, we want to jump there!
         // this chain potentially ends in fields or parameters

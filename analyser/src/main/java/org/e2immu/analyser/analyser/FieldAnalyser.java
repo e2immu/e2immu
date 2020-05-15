@@ -194,9 +194,6 @@ public class FieldAnalyser {
         }
         if (consistentValue == NO_VALUE) return false; // delay
 
-        int isNotNull = consistentValue.isNotNull0OutsideContext();
-        if (isNotNull == Level.DELAY) return false; // delay
-
         Value valueToSet;
         boolean isConstant = consistentValue instanceof Constant;
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);

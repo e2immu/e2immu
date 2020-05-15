@@ -647,6 +647,9 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
+        if (variable instanceof This) {
+            return ThisValue.getProperty(((This) variable).typeInfo, variableProperty);
+        }
         AboutVariable aboutVariable = findComplain(variable);
         if (VariableProperty.NOT_NULL.equals(variableProperty)) {
             if (getNullConditionals(false).contains(variable)) {
