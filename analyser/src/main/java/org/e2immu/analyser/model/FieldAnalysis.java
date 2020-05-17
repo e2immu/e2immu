@@ -60,7 +60,6 @@ public class FieldAnalysis extends Analysis {
         switch (variableProperty) {
             case NOT_MODIFIED:
                 if (bestType == null) return Level.TRUE; // we cannot modify because we cannot even execute a method
-                if (bestType.isPrimitive()) return Level.TRUE;
                 int e2Immutable = Level.value(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
                 if (e2Immutable != Level.FALSE) return e2Immutable;
                 break;

@@ -327,14 +327,10 @@ public class FieldAnalyser {
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
         if (e2immutable == Level.DELAY) {
-            log(DELAYED, "Delaying @NotModified, no idea about @E2Immutable");
+            log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
             return false;
         }
-        if (e2immutable == Level.TRUE) {
-            fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED, Level.FALSE);
-            log(NOT_MODIFIED, "Field {} does not need @NotModified, as it is @E2Immutable", fieldInfo.fullyQualifiedName());
-            return true;
-        }
+        // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
         boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 m.methodAnalysis.get().fieldRead.isSet(fieldInfo) &&
                         (!m.methodAnalysis.get().fieldRead.get(fieldInfo) ||
@@ -353,7 +349,6 @@ public class FieldAnalyser {
         log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
                 fieldInfo.fullyQualifiedName());
         return false;
-
     }
 
     private boolean analyseNotNull(FieldInfo fieldInfo,

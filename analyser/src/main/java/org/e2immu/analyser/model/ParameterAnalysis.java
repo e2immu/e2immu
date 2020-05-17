@@ -33,7 +33,7 @@ public class ParameterAnalysis extends Analysis {
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined());
         this.owner = parameterInfo.parameterInspection.get().owner;
-        this.logName = parameterInfo.detailedString() + (owner == null ?" in lambda": " in " + owner.distinguishingName());
+        this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
     }
 
@@ -46,13 +46,12 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
             case NOT_MODIFIED:
-                if (parameterizedType.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && (Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE) ||
-                        bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE)) {
+                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE)) {
                     return Level.TRUE;
                 }
+                break;
             case IMMUTABLE:
             case CONTAINER:
                 return Level.FALSE; // no assignment, so no way of knowing

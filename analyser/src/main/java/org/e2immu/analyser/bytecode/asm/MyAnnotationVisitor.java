@@ -35,7 +35,7 @@ import static org.objectweb.asm.Opcodes.ASM7;
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private final TypeContext typeContext;
     private final BuilderWithAnnotations<T> builderWithAnnotations;
-    private AnnotationExpression.AnnotationExpressionBuilder expressionBuilder;
+    private final AnnotationExpression.AnnotationExpressionBuilder expressionBuilder;
 
     public MyAnnotationVisitor(TypeContext typeContext, String descriptor, BuilderWithAnnotations<T> builderWithAnnotations) {
         super(ASM7);

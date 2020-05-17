@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <item name='java.lang.Object'>
+        <annotation name='org.e2immu.annotation.E2Container'/>
+    </item>
+    <item name='java.lang.String'>
+        <annotation name='org.e2immu.annotation.E2Container'/>
+    </item>
+</root>

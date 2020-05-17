@@ -19,14 +19,19 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.model.Annotation;
-import org.e2immu.analyser.model.BuilderWithAnnotations;
-import org.e2immu.analyser.model.ParameterInspection;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.FieldAccess;
+import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.List;
 
 public class JetBrainsAnnotationTranslator {
     private static final String ORG_JETBRAINS_ANNOTATIONS_NOTNULL = "org.jetbrains.annotations.NotNull";
+    private static final String E2IMMU = "org.e2immu.annotation";
 
     private final TypeContext typeContext;
 
@@ -45,6 +50,17 @@ public class JetBrainsAnnotationTranslator {
             if (builderWithAnnotations instanceof ParameterInspection.ParameterInspectionBuilder) {
                 builderWithAnnotations.addAnnotation(typeContext.notNull.get());
             }
+        } else if (annotation.name.startsWith(E2IMMU)) {
+            builderWithAnnotations.addAnnotation(toAnnotationExpression(annotation));
         }
+    }
+
+    private AnnotationExpression toAnnotationExpression(Annotation annotation) {
+        TypeInfo typeInfo = typeContext.getFullyQualified(annotation.name, true);
+        MemberValuePair contractExpression = new MemberValuePair("type",
+                new VariableExpression(
+                        new FieldReference(
+                                Primitives.PRIMITIVES.annotationTypeContract, null)));
+        return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(contractExpression));
     }
 }

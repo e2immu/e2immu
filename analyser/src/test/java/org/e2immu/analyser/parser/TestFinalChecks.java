@@ -5,6 +5,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -37,6 +38,9 @@ public class TestFinalChecks extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        Assert.assertEquals(VariableProperty.IMMUTABLE.best, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+
         if ("setS4".equals(methodInfo.name) && iteration >= 0) {
             // @NotModified decided straight away, @Identity as well
             ParameterInfo s4 = methodInfo.methodInspection.get().parameters.get(0);
