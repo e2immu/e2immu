@@ -20,10 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -109,8 +106,8 @@ public class TestBasics {
         Assert.fail();
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId,
-                                                         variableName, variable, currentValue, properties) -> {
+    StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId,
+                                                                 variableName, variable, currentValue, properties) -> {
         if (methodInfo.name.equals("getExplicitlyFinal")
                 && "0".equals(statementId)
                 && "Basics.this.explicitlyFinal".equals(variableName)) {
@@ -144,7 +141,7 @@ public class TestBasics {
                 .setDebugConfiguration(new DebugConfiguration.Builder()
                         .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                         .build())
                 .build();
         Parser parser = new Parser(configuration);

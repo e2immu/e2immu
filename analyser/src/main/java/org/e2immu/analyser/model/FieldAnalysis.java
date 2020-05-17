@@ -48,6 +48,8 @@ public class FieldAnalysis extends Analysis {
 
     public final SetOnceMap<MethodInfo, Boolean> errorsForAssignmentsOutsidePrimaryType = new SetOnceMap<>();
 
+    public final SetOnce<Boolean> fieldError = new SetOnce<>();
+
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {

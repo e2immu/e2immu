@@ -34,8 +34,8 @@ import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-public class TestTestExamplesWithAnnotatedAPIs {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamplesWithAnnotatedAPIs.class);
+public abstract class WithAnnotatedAPIs {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WithAnnotatedAPIs.class);
 
     @BeforeClass
     public static void beforeClass() {
@@ -45,7 +45,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 //LAMBDA,
                 //METHOD_CALL,
 
-                //VARIABLE_PROPERTIES,
+                VARIABLE_PROPERTIES,
                 FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,
@@ -60,56 +60,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
                 NOT_MODIFIED);
     }
 
-    @Test
-    public void testAnnotationsOnLambdas() throws IOException {
-        testClass("AnnotationsOnLambdas", 0);
-    }
-
-    @Test
-    public void testContainerChecks() throws IOException {
-        testClass("ContainerChecks", 1);
-    }
-
-    @Test
-    public void testCyclicReferences() throws IOException {
-        testClass("CyclicReferences", 0);
-    }
-
-    @Test
-    public void testE2ImmutableChecks() throws IOException {
-        testClass("E2ImmutableChecks", 0);
-    }
-
-    @Test
-    public void testNotModifiedChecks() throws IOException {
-        testClass("NotModifiedChecks", 0);
-    }
-
-    @Test
-    public void testNotModifiedChecks2() throws IOException {
-        testClass("NotModifiedChecks2", 0);
-    }
-
-    @Test
-    public void testSimpleNotModifiedChecks() throws IOException {
-        testClass("SimpleNotModifiedChecks", 1);
-    }
-
-    @Test
-    public void testStaticImports() throws IOException {
-        testClass("StaticImports", 0);
-    }
-
-    @Test
-    public void testStaticSideEffectsOnlyChecks() throws IOException {
-        testClass("StaticSideEffectsOnlyChecks", 0);
-    }
-
-    @Test
-    public void testSubTypes() throws IOException {
-        testClass("SubTypes", 2);
-    }
-
     protected void testClass(String className, int errorsToExpect) throws IOException {
         testClass(className, errorsToExpect, new DebugConfiguration.Builder().build());
     }
@@ -118,6 +68,7 @@ public class TestTestExamplesWithAnnotatedAPIs {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         Configuration configuration = new Configuration.Builder()
+                .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi." + className)

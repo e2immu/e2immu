@@ -18,17 +18,20 @@ public class DebugConfiguration {
     public final List<MethodAnalyserVisitor> afterMethodAnalyserVisitors;
 
     public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
+    public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
 
     private DebugConfiguration(List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors,
                                List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
                                List<MethodAnalyserVisitor> beforeMethodAnalyserVisitors,
                                List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
-                               List<StatementAnalyserVisitor> statementAnalyserVisitors) {
+                               List<StatementAnalyserVisitor> statementAnalyserVisitors,
+                               List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors) {
         this.beforeFieldAnalyserVisitors = beforeFieldAnalyserVisitors;
         this.afterFieldAnalyserVisitors = afterFieldAnalyserVisitors;
         this.beforeMethodAnalyserVisitors = beforeMethodAnalyserVisitors;
         this.afterMethodAnalyserVisitors = afterMethodAnalyserVisitors;
         this.statementAnalyserVisitors = statementAnalyserVisitors;
+        this.statementAnalyserVariableVisitors = statementAnalyserVariableVisitors;
     }
 
     @Container(builds = DebugConfiguration.class)
@@ -40,6 +43,7 @@ public class DebugConfiguration {
         private final List<MethodAnalyserVisitor> afterMethodAnalyserVisitors = new ArrayList<>();
 
         private final List<StatementAnalyserVisitor> statementAnalyserVisitors = new ArrayList<>();
+        private final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors = new ArrayList<>();
 
         @Fluent
         public Builder addAfterFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
@@ -71,12 +75,19 @@ public class DebugConfiguration {
             return this;
         }
 
+        @Fluent
+        public Builder addStatementAnalyserVariableVisitor(StatementAnalyserVariableVisitor statementAnalyserVariableVisitor) {
+            this.statementAnalyserVariableVisitors.add(statementAnalyserVariableVisitor);
+            return this;
+        }
+
         public DebugConfiguration build() {
             return new DebugConfiguration(ImmutableList.copyOf(beforeFieldAnalyserVisitors),
                     ImmutableList.copyOf(afterFieldAnalyserVisitors),
                     ImmutableList.copyOf(beforeMethodAnalyserVisitors),
                     ImmutableList.copyOf(afterMethodAnalyserVisitors),
-                    ImmutableList.copyOf(statementAnalyserVisitors));
+                    ImmutableList.copyOf(statementAnalyserVisitors),
+                    ImmutableList.copyOf(statementAnalyserVariableVisitors));
         }
     }
 }

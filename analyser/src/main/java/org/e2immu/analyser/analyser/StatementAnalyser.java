@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -78,12 +79,16 @@ public class StatementAnalyser {
                     changes = true;
                 }
 
-                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
+                for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
+                        ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVariableVisitors) {
                     variableProperties.variableProperties().forEach(aboutVariable -> {
-                        statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo,
+                        statementAnalyserVariableVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo,
                                 statementId, aboutVariable.name, aboutVariable.variable,
                                 aboutVariable.getCurrentValue(), aboutVariable.properties());
                     });
+                }
+                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
+                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement);
                 }
 
                 if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {
@@ -532,11 +537,13 @@ public class StatementAnalyser {
                     doImplicitNullCheck(statement, localExpression, lvp);
                     if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
                 });
-        if (statement.statement instanceof ForEachStatement) {
+        if (statement.statement instanceof ExpressionAsStatement && expression instanceof MethodCall) {
+            checkUnusedReturnValue((MethodCall) expression, statement);
+        } else if (statement.statement instanceof ForEachStatement) {
             // TODO: should be part of the evaluation, maybe via forward properties? there will be more @NotNull situations
             for (Variable variable : expression.variables()) {
                 log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
-                variableOccursInNotNullContext(statement, variable, variableProperties);
+                variableOccursInNotNullContext(statement, variable, variableProperties, Level.TRUE);
             }
             if (expression instanceof MethodCall) {
                 MethodInfo methodCalled = ((MethodCall) expression).methodInfo;
@@ -556,6 +563,25 @@ public class StatementAnalyser {
             }
         }
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
+    }
+
+    private void checkUnusedReturnValue(MethodCall methodCall, NumberedStatement statement) {
+        if (statement.errorValue.isSet()) return;
+        if (methodCall.methodInfo.returnType().isVoid()) return;
+        int identity = methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
+        
+        SideEffect sideEffect = methodCall.methodInfo.sideEffect();
+        switch (sideEffect) {
+            case DELAYED:
+            case STATIC_ONLY:
+            case SIDE_EFFECT:
+                return; // nothing to be done about these
+            default:
+                typeContext.addMessage(Message.Severity.ERROR, "Ignoring result of method call at " +
+                        statement.streamIndices() + " in method " + methodInfo.distinguishingName());
+                statement.errorValue.set(true);
+        }
     }
 
     /**
@@ -688,7 +714,7 @@ public class StatementAnalyser {
                                      Expression expression,
                                      VariableProperties variableProperties) {
         for (Variable variable : expression.variablesInScopeSide()) {
-            variableOccursInNotNullContext(currentStatement, variable, variableProperties);
+            variableOccursInNotNullContext(currentStatement, variable, variableProperties, Level.TRUE);
         }
     }
 
@@ -741,33 +767,43 @@ public class StatementAnalyser {
                                          VariableProperties variableProperties) {
         // not modified
         int notModified = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-        int value = Level.compose(Level.TRUE, notModified == Level.FALSE ? 1 : 0);
+        int value = notModified == Level.DELAY ? Level.compose(Level.TRUE, 0) :
+                Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
+
         recursivelyMarkContentModified(parameterExpression, variableProperties, value);
 
         // null not allowed; not a recursive call so no knowledge about the parameter as a variable
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
-            int notNull = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
-            if (Level.haveTrueAt(notNull, Level.NOT_NULL)) {
-                return variableOccursInNotNullContext(currentStatement, v, variableProperties);
+            int notNull = Level.value(parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
+            if (notNull != Level.FALSE) {
+                return variableOccursInNotNullContext(currentStatement, v, variableProperties, notNull);
             }
         }
         return false;
     }
 
-    private boolean variableOccursInNotNullContext(NumberedStatement currentStatement, Variable variable, VariableProperties variableProperties) {
+    private boolean variableOccursInNotNullContext(NumberedStatement currentStatement,
+                                                   Variable variable,
+                                                   VariableProperties variableProperties,
+                                                   int notNullContext) { // DELAY or TRUE
         if (variable instanceof This) return false; // nothing to be done here
         // the variable has already been created, if relevant
         if (!variableProperties.isKnown(variable)) return false;
 
-        int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
-        if (notNull != Level.FALSE) {
-            // delay -> true at level 0; true -> true at level 1
-            int valueToSet = Level.compose(Level.TRUE, notNull == Level.TRUE ? 1 : 0);
-            variableProperties.addProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, valueToSet);
+        // check null conditionals
+        if (variableProperties.getNullConditionals(false).contains(variable)) {
+            // we're in an explicit != null situation for this variable
             return false;
         }
-        if (!currentStatement.errorValue.isSet()) {
+
+        // mark that we need @NotNull on this variable, no delay situation
+        int valueToSet = Level.compose(Level.TRUE, Level.DELAY == notNullContext ? 0 : 1);
+        variableProperties.addProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, valueToSet);
+
+        // if we already know that the variable is NOT @NotNull, then we'll raise an error
+        int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
+        if (notNull == Level.FALSE && !currentStatement.errorValue.isSet()) {
             typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
                     + variable.detailedString() + " in statement "
                     + currentStatement.streamIndices() + " of " + methodInfo.name);
@@ -781,7 +817,13 @@ public class StatementAnalyser {
         // not modified
         SideEffect sideEffect = methodCall.methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int value = Level.compose(Level.TRUE, safeMethod ? 0 : 1); // 0=delayed level, 1=actual modification level
+
+        int value;
+        if (sideEffect == SideEffect.DELAYED) {
+            value = Level.compose(Level.TRUE, 0);
+        } else {
+            value = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1); // 0=delayed level, 1=actual modification level
+        }
         recursivelyMarkContentModified(methodCall.object, variableProperties, value);
     }
 

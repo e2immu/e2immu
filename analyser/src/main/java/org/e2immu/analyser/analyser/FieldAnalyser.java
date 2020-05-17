@@ -109,7 +109,42 @@ public class FieldAnalyser {
         // STEP 7: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, fieldReference, typeInspection)) changes = true;
 
+        if (fieldErrors(fieldInfo, fieldAnalysis)) changes = true;
         return changes;
+    }
+
+    private boolean fieldErrors(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        if (fieldAnalysis.fieldError.isSet()) return false;
+
+        if (fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
+            if (!fieldInfo.isStatic()) {
+                List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
+                Boolean readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
+                        .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
+                        .map(m -> m.methodAnalysis.fieldRead.getOtherwiseNull(fieldInfo))
+                        .reduce(Boolean.FALSE, TypeAnalyser.TERNARY_OR);
+                if(readInMethods == null) {
+                    log(DELAYED, "Not yet ready to decide on read outside constructors");
+                    return false;
+                }
+                fieldAnalysis.fieldError.set(!readInMethods);
+                if (!readInMethods) {
+                    typeContext.addMessage(Message.Severity.ERROR, "Private field " + fieldInfo.fullyQualifiedName() +
+                            " is not read outside constructors");
+                }
+                return true;
+            }
+        } else if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
+            // error, unless we're in a record
+            boolean record = fieldInfo.owner.isRecord();
+            fieldAnalysis.fieldError.set(!record);
+            if (!record) {
+                typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
+                        " is not effectively final (@Final)");
+            } // else: nested private types can have fields the way they like it
+            return true;
+        }
+        return false;
     }
 
     private boolean analyseDynamicTypeAnnotation(VariableProperty property,
@@ -401,24 +436,6 @@ public class FieldAnalyser {
         check(fieldInfo, E1Container.class, typeContext.e1Container.get());
         check(fieldInfo, E2Container.class, typeContext.e2Container.get());
 
-        if (fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
-            if (!fieldInfo.isStatic()) {
-                List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
-                boolean readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
-                        .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
-                        .anyMatch(m -> m.methodAnalysis.fieldRead.getOtherwiseNull(fieldInfo) == Boolean.TRUE);
-                if (!readInMethods) {
-                    typeContext.addMessage(Message.Severity.ERROR, "Private field " + fieldInfo.fullyQualifiedName() +
-                            " is not read outside constructors");
-                }
-            }
-        } else if (fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
-            // error, unless we're in a record
-            if (!fieldInfo.owner.isRecord()) {
-                typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
-                        " is not effectively final (@Final)");
-            } // else: nested private types can have fields the way they like it
-        }
         CheckConstant.checkConstantForFields(typeContext, fieldInfo);
     }
 
