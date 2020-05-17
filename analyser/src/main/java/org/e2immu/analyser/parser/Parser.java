@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.upload.AnnotationUploader;
 import org.e2immu.analyser.util.ListUtil;
@@ -110,11 +111,11 @@ public class Parser {
         List<SortedType> sortedTypes = Resolver.sortTypes(inspectedTypesToTypeContextOfFile);
         if (configuration.skipAnalysis) return sortedTypes;
 
-        // sort the types according to dependencies
-        // within each type, sort the methods
-        // phase 3: analyse all the types
-        Primitives.PRIMITIVES.inspectBoxed();
         checkTypeAnalysisOfLoadedObjects();
+
+        for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
+            typeContextVisitor.visit(globalTypeContext);
+        }
 
         TypeAnalyser typeAnalyser = new TypeAnalyser(globalTypeContext);
         for (SortedType sortedType : sortedTypes) {

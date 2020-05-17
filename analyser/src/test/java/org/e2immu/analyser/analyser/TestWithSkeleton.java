@@ -94,7 +94,7 @@ public class TestWithSkeleton {
         TypeAnalysis setAnalysis = set.typeAnalysis.get();
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
-        Assert.assertEquals(DELAY, setAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(FALSE, setAnalysis.getProperty(VariableProperty.NOT_NULL));
 
         set.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 

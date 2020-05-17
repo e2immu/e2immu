@@ -44,32 +44,12 @@ public class TestBasics extends CommonTestRunner {
         super(false);
     }
 
-    @BeforeClass
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(ch.qos.logback.classic.Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE,
-
-                LAMBDA,
-                METHOD_CALL,
-
-                VARIABLE_PROPERTIES,
-                DELAYED,
-
-                FINAL,
-                LINKED_VARIABLES,
-                INDEPENDENT,
-                E2IMMUTABLE,
-                ANNOTATION_EXPRESSION,
-                CONSTANT,
-                CONTAINER,
-                E1IMMUTABLE,
-                SIDE_EFFECT,
-                UTILITY_CLASS,
-                NOT_NULL,
-                NOT_MODIFIED);
-    }
-
     FieldAnalyserVisitor beforeFieldAnalyserVisitor = (iteration, fieldInfo) -> {
+
+        // check that the XML annotations have been read properly
+        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        Assert.assertEquals(VariableProperty.IMMUTABLE.best, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         if ("explicitlyFinal".equals(fieldInfo.name)) {
             if (iteration == 0) {
@@ -142,27 +122,11 @@ public class TestBasics extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        String typeName = "Basics";
-        Configuration configuration = new Configuration.Builder()
-                .setDebugConfiguration(new DebugConfiguration.Builder()
-                        .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
-                        .build())
-                .build();
-        Parser parser = new Parser(configuration);
-        URL url = new File("src/test/java/org/e2immu/analyser/testexample/" + typeName + ".java").toURI().toURL();
-        TypeInfo typeInfo = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample." + typeName);
-        List<SortedType> types = parser.parseJavaFiles(Map.of(typeInfo, url));
-        for (SortedType sortedType : types) {
-            if (sortedType.typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) {
-                LOGGER.info("\n\nStream:\n{}", sortedType.typeInfo.stream());
-            }
-        }
-        for (Message message : parser.getMessages()) {
-            LOGGER.info(message.toString());
-        }
-        Assert.assertEquals(0, parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
+        testClass("Basics", 0, new DebugConfiguration.Builder()
+                .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
+                .build());
     }
 
 }

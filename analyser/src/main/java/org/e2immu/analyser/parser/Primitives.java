@@ -300,16 +300,4 @@ public class Primitives {
         }
         throw new UnsupportedOperationException();
     }
-
-    public void inspectBoxed() {
-        for (TypeInfo ti : boxed) {
-            if (!ti.hasBeenInspected()) {
-                ti.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
-                        .setPackageName(JAVA_LANG)
-                        .setTypeNature(TypeNature.CLASS)
-                        .build(false, ti));
-                primitiveByName.put(ti.simpleName, ti);
-            }
-        }
-    }
 }

@@ -1,11 +1,11 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -72,9 +72,20 @@ public class TestNullParameterChecks extends CommonTestRunner {
         }
     };
 
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo objects = typeContext.typeStore.get("java.util.Objects");
+        MethodInfo requireNonNull = objects.typeInspection.get()
+                .methods.stream().filter(mi -> "requireNonNull".equals(mi.name) &&
+                        1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
+        Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+        Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED));
+
+    };
+
     @Test
     public void test() throws IOException {
         testClass("NullParameterChecks", 1, new DebugConfiguration.Builder()
+                .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

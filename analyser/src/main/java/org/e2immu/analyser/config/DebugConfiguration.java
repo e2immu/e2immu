@@ -11,6 +11,7 @@ import java.util.List;
 @E2Container
 public class DebugConfiguration {
 
+    public final List<TypeContextVisitor> typeContextVisitors;
     public final List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors;
     public final List<FieldAnalyserVisitor> afterFieldAnalyserVisitors;
 
@@ -20,7 +21,8 @@ public class DebugConfiguration {
     public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
     public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
 
-    private DebugConfiguration(List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors,
+    private DebugConfiguration(List<TypeContextVisitor> typeContextVisitors,
+                               List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors,
                                List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
                                List<MethodAnalyserVisitor> beforeMethodAnalyserVisitors,
                                List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
@@ -32,10 +34,13 @@ public class DebugConfiguration {
         this.afterMethodAnalyserVisitors = afterMethodAnalyserVisitors;
         this.statementAnalyserVisitors = statementAnalyserVisitors;
         this.statementAnalyserVariableVisitors = statementAnalyserVariableVisitors;
+        this.typeContextVisitors = typeContextVisitors;
     }
 
     @Container(builds = DebugConfiguration.class)
     public static class Builder {
+        private final List<TypeContextVisitor> typeContextVisitors = new ArrayList<>();
+
         private final List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors = new ArrayList<>();
         private final List<FieldAnalyserVisitor> afterFieldAnalyserVisitors = new ArrayList<>();
 
@@ -81,8 +86,16 @@ public class DebugConfiguration {
             return this;
         }
 
+        @Fluent
+        public Builder addTypeContextVisitor(TypeContextVisitor typeContextVisitor) {
+            this.typeContextVisitors.add(typeContextVisitor);
+            return this;
+        }
+
         public DebugConfiguration build() {
-            return new DebugConfiguration(ImmutableList.copyOf(beforeFieldAnalyserVisitors),
+            return new DebugConfiguration(
+                    ImmutableList.copyOf(typeContextVisitors),
+                    ImmutableList.copyOf(beforeFieldAnalyserVisitors),
                     ImmutableList.copyOf(afterFieldAnalyserVisitors),
                     ImmutableList.copyOf(beforeMethodAnalyserVisitors),
                     ImmutableList.copyOf(afterMethodAnalyserVisitors),

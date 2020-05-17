@@ -46,6 +46,7 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
             case NOT_MODIFIED:
+                if (parameterizedType.isUnboundParameterType()) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE)) {

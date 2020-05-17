@@ -94,23 +94,28 @@ public class FieldAnalysis extends Analysis {
                     // in an @E2Immutable class, all fields are @NotModified, so no need to write this
                     return Level.TRUE;
                 }
-                return Level.UNDEFINED;
+                break;
             case NOT_NULL:
                 if (type.isPrimitive()) return Level.TRUE;
-                return Level.UNDEFINED;
+                break;
+
             case FINAL:
                 if (isExplicitlyFinal) return Level.TRUE;
                 if (Level.haveTrueAt(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE)) {
                     // in an @E1Immutable class, all fields are effectively final, so no need to write this
                     return Level.TRUE;
                 }
-                return Level.UNDEFINED;
+                break;
+            default:
+
             case IMMUTABLE:
-            case CONTAINER:
                 if (Level.haveTrueAt(type.getProperty(variableProperty), Level.E2IMMUTABLE))
                     return variableProperty.best;
+                break;
 
-            default:
+            case CONTAINER:
+                if(type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE;
+                break;
         }
         return Level.UNDEFINED;
     }
