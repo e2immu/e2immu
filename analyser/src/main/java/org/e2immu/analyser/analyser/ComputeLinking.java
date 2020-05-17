@@ -34,7 +34,7 @@ public class ComputeLinking {
                                                      VariableProperties methodProperties) {
         boolean changes = false;
         try {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
             NumberedStatement startStatement = statements.get(0);
             if (statementAnalyser.computeVariablePropertiesOfBlock(startStatement, methodProperties)) changes = true;
@@ -93,11 +93,11 @@ public class ComputeLinking {
                     for (Variable variable : numberedStatement.variablesLinkedToReturnValue.get()) {
                         Set<Variable> dependencies;
                         if (variable instanceof FieldReference) {
-                            if (!((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.isSet()) {
+                            if (!((FieldReference) variable).fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet()) {
                                 log(DELAYED, "Dependencies of {} have not yet been established", variable.detailedString());
                                 return false;
                             }
-                            dependencies = SetUtil.immutableUnion(((FieldReference) variable).fieldInfo.fieldAnalysis.variablesLinkedToMe.get(),
+                            dependencies = SetUtil.immutableUnion(((FieldReference) variable).fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get(),
                                     Set.of(variable));
                         } else if (variable instanceof ParameterInfo) {
                             dependencies = Set.of(variable);
@@ -177,7 +177,7 @@ public class ComputeLinking {
                     methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));
 
             if (variable instanceof FieldReference) {
-                methodInfo.methodAnalysis.fieldsLinkedToFieldsAndVariables.put(variable, fieldAndParameterDependencies);
+                methodInfo.methodAnalysis.get().fieldsLinkedToFieldsAndVariables.put(variable, fieldAndParameterDependencies);
                 changes.set(true);
                 log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.detailedString(),
                         methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));
@@ -223,7 +223,7 @@ public class ComputeLinking {
                         changes = true;
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
-                    ParameterAnalysis parameterAnalysis = ((ParameterInfo) linkedVariable).parameterAnalysis;
+                    ParameterAnalysis parameterAnalysis = ((ParameterInfo) linkedVariable).parameterAnalysis.get();
                     Boolean directContentModification = summarizeModification(methodProperties, linkedVariables, true);
                     parameterAnalysis.notModified(directContentModification);
                     Boolean notNull = summarizeNotNullContext(methodProperties, linkedVariables);
@@ -297,10 +297,10 @@ public class ComputeLinking {
             if (aboutVariable.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
                 boolean assigned = Level.haveTrueAt(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
-                if (assigned && !methodInfo.methodAnalysis.parameterAssignments.isSet(parameterInfo)) {
+                if (assigned && !methodInfo.methodAnalysis.get().parameterAssignments.isSet(parameterInfo)) {
                     typeContext.addMessage(Message.Severity.ERROR,
                             "Parameter " + aboutVariable.name + " should not be assigned to");
-                    methodInfo.methodAnalysis.parameterAssignments.put(parameterInfo, true);
+                    methodInfo.methodAnalysis.get().parameterAssignments.put(parameterInfo, true);
                     changes = true;
                 }
             }
@@ -310,7 +310,7 @@ public class ComputeLinking {
 
     private static boolean computeFieldAssignmentsFieldsRead(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
             if (variable instanceof FieldReference) {

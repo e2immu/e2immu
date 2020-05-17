@@ -222,10 +222,11 @@ class VariableProperties implements EvaluationContext {
         } else if (fieldReferenceState == MULTI_COPY) {
             resetValue = UnknownValue.UNKNOWN_VALUE;
         } else {
-            int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
+            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.TRUE) {
-                if (fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    resetValue = fieldReference.fieldInfo.fieldAnalysis.effectivelyFinalValue.get();
+                if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+                    resetValue = fieldAnalysis.effectivelyFinalValue.get();
                 } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
                     resetValue = UnknownValue.NO_VALUE; // delay
                 } else {
@@ -241,10 +242,10 @@ class VariableProperties implements EvaluationContext {
     }
 
     private AboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
-        int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+        int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
         boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
-        boolean inConstructionPhase = currentMethod != null && currentMethod.methodAnalysis.partOfConstruction.get();
+        boolean inConstructionPhase = currentMethod != null && currentMethod.methodAnalysis.get().partOfConstruction.get();
         return isEffectivelyFinal || inSyncBlock || inConstructionPhase ? SINGLE_COPY : MULTI_COPY;
     }
 
@@ -314,7 +315,7 @@ class VariableProperties implements EvaluationContext {
                 Objects.requireNonNull(initialValue),
                 Objects.requireNonNull(resetValue), Objects.requireNonNull(fieldReferenceState));
         if (variable instanceof FieldReference) {
-            ((FieldReference) variable).fieldInfo.fieldAnalysis.properties.visit(aboutVariable::setProperty);
+            ((FieldReference) variable).fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
         }
         // copied over the existing one
         initialProperties.forEach(variableProperty -> aboutVariable.setProperty(variableProperty, Level.TRUE));
@@ -343,8 +344,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     private Value computeInitialValue(FieldInfo recordField, Expression initialiser) {
-        if (recordField.fieldAnalysis.effectivelyFinalValue.isSet()) {
-            return recordField.fieldAnalysis.effectivelyFinalValue.get();
+        if (recordField.fieldAnalysis.get().effectivelyFinalValue.isSet()) {
+            return recordField.fieldAnalysis.get().effectivelyFinalValue.get();
         }
         if (initialiser instanceof EmptyExpression) {
             return recordField.type.defaultValue();

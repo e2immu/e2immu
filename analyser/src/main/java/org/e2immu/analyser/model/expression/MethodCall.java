@@ -64,11 +64,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (objectValue instanceof NullValue) {
             result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);
         } else {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
             List<Value> parameters = parameterExpressions.stream()
                     .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
 
-            if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
-                Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
+            if (methodAnalysis.singleReturnValue.isSet()) {
+                Value singleValue = methodAnalysis.singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {
@@ -79,7 +81,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 result = UnknownValue.NO_VALUE;
             } else {
                 // method has NOT been defined, so we definitely do NOT delay
-                int identity = methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+                int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
                 if (identity == Level.TRUE) {
                     result = parameters.get(0);
                 } else {

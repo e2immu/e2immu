@@ -65,7 +65,7 @@ public class TestNullParameterChecks extends WithAnnotatedAPIs {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("method9".equals(methodInfo.name) && iteration >= 1) {
-            Assert.assertTrue(methodInfo.methodAnalysis.returnStatements.get().get(0).errorValue.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().returnStatements.get().get(0).errorValue.get());
         }
     };
 

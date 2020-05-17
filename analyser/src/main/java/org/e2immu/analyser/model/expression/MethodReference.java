@@ -88,8 +88,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             result = new Instance(methodInfo.returnType(), methodInfo, List.of());
         } else {
             // normal method call, very similar to MethodCall.evaluate
-            if (methodInfo.methodAnalysis.singleReturnValue.isSet()) {
-                Value singleValue = methodInfo.methodAnalysis.singleReturnValue.get();
+            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+                Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {

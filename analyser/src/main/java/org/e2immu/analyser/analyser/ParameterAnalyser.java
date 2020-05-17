@@ -44,7 +44,7 @@ public class ParameterAnalyser {
 
     public void check(ParameterInfo parameterInfo) {
         // before we check, we copy the properties into annotations
-        parameterInfo.parameterAnalysis.transferPropertiesToAnnotations(typeContext, parameterInfo::minimalValueByDefinition);
+        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(typeContext, parameterInfo::minimalValueByDefinition);
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 

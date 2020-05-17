@@ -103,8 +103,8 @@ public class Instance implements Value {
         // RULE 2, 3
         boolean differentType = constructor.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || differentType) &&
-                (constructor.methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.TRUE // RULE 2
-                        || Level.value(constructor.typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                (constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.TRUE // RULE 2
+                        || Level.value(constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE) == Level.TRUE)) { // RULE 3
             return INDEPENDENT;
         }
@@ -131,11 +131,11 @@ public class Instance implements Value {
 
         if (VariableProperty.NOT_NULL == variableProperty) {
             return bestType == null ? Level.TRUE :
-                    Math.max(Level.TRUE, bestType.typeAnalysis.getProperty(VariableProperty.NOT_NULL));
+                    Math.max(Level.TRUE, bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
         if (VariableProperty.CONTAINER == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
             return bestType == null ? Level.FALSE :
-                    Math.max(Level.FALSE, bestType.typeAnalysis.getProperty(variableProperty));
+                    Math.max(Level.FALSE, bestType.typeAnalysis.get().getProperty(variableProperty));
         }
 
         // @NotModified should not be asked here

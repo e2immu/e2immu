@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -90,7 +91,7 @@ public class MethodValue implements Value {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return methodInfo.methodAnalysis.getProperty(variableProperty);
+        return methodInfo.methodAnalysis.get().getProperty(variableProperty);
     }
 
     @Override
@@ -99,11 +100,12 @@ public class MethodValue implements Value {
         if (recursiveCall) {
             return variableProperty.best;
         }
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         switch (variableProperty) {
             case NOT_NULL:
             case IMMUTABLE:
             case CONTAINER:
-                int identity = methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+                int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
                 if (identity == Level.DELAY) return Level.DELAY;
                 int firstParameter;
                 if (identity == Level.TRUE) {
@@ -112,21 +114,21 @@ public class MethodValue implements Value {
                 } else {
                     firstParameter = Level.FALSE;
                 }
-                int fluent = methodInfo.methodAnalysis.getProperty(VariableProperty.FLUENT);
+                int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.DELAY) return Level.DELAY;
                 int valueOfType;
                 if (fluent == Level.TRUE) {
-                    valueOfType = methodInfo.typeInfo.typeAnalysis.getProperty(variableProperty);
+                    valueOfType = methodInfo.typeInfo.typeAnalysis.get().getProperty(variableProperty);
                 } else {
                     valueOfType = Level.FALSE;
                 }
-                int valueOfMethod = methodInfo.methodAnalysis.getProperty(variableProperty);
+                int valueOfMethod = methodAnalysis.getProperty(variableProperty);
                 if (valueOfMethod == Level.DELAY) return Level.DELAY;
                 return Level.best(valueOfType, Level.best(firstParameter, valueOfMethod));
 
             default:
         }
-        return methodInfo.methodAnalysis.getProperty(variableProperty);
+        return methodAnalysis.getProperty(variableProperty);
     }
 
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
@@ -154,13 +156,14 @@ public class MethodValue implements Value {
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || returnTypeDifferent) && (returnType.bestTypeInfo() == null ||
-                Level.value(returnType.bestTypeInfo().typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE)) {
+                Level.haveTrueAt(returnType.bestTypeInfo().typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))) {
             return INDEPENDENT;
         }
 
         // RULE 2
         boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || methodInfoDifferentType) && methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
+        if ((bestCase || methodInfoDifferentType) && methodInfo.methodAnalysis.get()
+                .getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
             return INDEPENDENT;
         }
 
@@ -170,7 +173,7 @@ public class MethodValue implements Value {
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
         // RULE 3
-        int typeE2Immutable = Level.value(methodInfo.typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        int typeE2Immutable = Level.value(methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
         if ((bestCase || methodInfoDifferentType) && typeE2Immutable == Level.TRUE) // RULE 3
             return result;
 

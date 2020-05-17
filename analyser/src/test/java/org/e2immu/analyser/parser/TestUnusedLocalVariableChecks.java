@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -23,24 +24,25 @@ public class TestUnusedLocalVariableChecks extends WithAnnotatedAPIs {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         // ERROR: Unused variable "a"
         if ("UnusedLocalVariableChecks".equals(methodInfo.name)) {
             Assert.assertEquals(1L,
-                    methodInfo.methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("a", methodInfo.methodAnalysis.unusedLocalVariables.stream()
+                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("a", methodAnalysis.unusedLocalVariables.stream()
                     .findFirst().orElseThrow().getKey().name);
         }
 
         if ("method1".equals(methodInfo.name)) {
             // ERROR: unused variable "s"
             Assert.assertEquals(1L,
-                    methodInfo.methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("s", methodInfo.methodAnalysis.unusedLocalVariables.stream()
+                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("s", methodAnalysis.unusedLocalVariables.stream()
                     .findFirst().orElseThrow().getKey().name);
 
             // ERROR: method should be static
-            Assert.assertTrue(methodInfo.methodAnalysis.complainedAboutMissingStaticStatement.get());
+            Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticStatement.get());
 
         }
 
@@ -49,7 +51,7 @@ public class TestUnusedLocalVariableChecks extends WithAnnotatedAPIs {
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
         // ERROR: b is never read
         if ("b".equals(fieldInfo.name) && iteration>= 1) {
-            Assert.assertTrue(fieldInfo.fieldAnalysis.fieldError.get());
+            Assert.assertTrue(fieldInfo.fieldAnalysis.get().fieldError.get());
         }
     };
 

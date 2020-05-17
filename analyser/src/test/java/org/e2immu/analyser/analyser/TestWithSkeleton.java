@@ -91,22 +91,25 @@ public class TestWithSkeleton {
         Assert.assertNotNull(set);
         Assert.assertFalse(set.typeInspection.get().hasBeenDefined);
         Assert.assertTrue(set.annotatedWith(typeContext.container.get()));
-        Assert.assertEquals(TRUE, set.typeAnalysis.getProperty(VariableProperty.CONTAINER));
-        Assert.assertEquals(TRUE, set.typeAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
-        Assert.assertEquals(DELAY, set.typeAnalysis.getProperty(VariableProperty.NOT_NULL));
+        TypeAnalysis setAnalysis = set.typeAnalysis.get();
+        Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
+        Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
+        Assert.assertEquals(DELAY, setAnalysis.getProperty(VariableProperty.NOT_NULL));
 
         set.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 
         MethodInfo setOf = set.getMethodOrConstructorByDistinguishingName("java.util.Set.of()");
-        Assert.assertEquals(TRUE, setOf.methodAnalysis.getProperty(VariableProperty.CONTAINER));
-        Assert.assertEquals(TRUE, setOf.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-        Assert.assertEquals(Level.compose(TRUE, NOT_NULL_1), setOf.methodAnalysis.getProperty(VariableProperty.NOT_NULL));
-        Assert.assertEquals(TRUE, value(setOf.methodAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
+        MethodAnalysis setOfAnalysis = setOf.methodAnalysis.get();
+        Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.CONTAINER));
+        Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+        Assert.assertEquals(Level.compose(TRUE, NOT_NULL_1), setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(TRUE, value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
 
         TypeInfo system = typeContext.typeStore.get("java.lang.System");
         FieldInfo out = system.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();
-        Assert.assertEquals(TRUE, out.fieldAnalysis.getProperty(VariableProperty.IGNORE_MODIFICATIONS));
-        Assert.assertEquals(TRUE, out.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+
+        Assert.assertEquals(TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
+        Assert.assertEquals(TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     }
 
     @Test
@@ -183,7 +186,7 @@ public class TestWithSkeleton {
     @Test
     public void testFinalField() {
         FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
-        finalString.fieldAnalysis.effectivelyFinalValue.set(new StringValue("this is the final value"));
+        finalString.fieldAnalysis.get().effectivelyFinalValue.set(new StringValue("this is the final value"));
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
@@ -223,7 +226,7 @@ public class TestWithSkeleton {
     @Test
     public void testNotYetFinalField() {
         FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("notYetFinalString")).findAny().orElseThrow();
-        finalString.fieldAnalysis.setProperty(VariableProperty.FINAL, DELAY);
+        finalString.fieldAnalysis.get().setProperty(VariableProperty.FINAL, DELAY);
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
@@ -245,7 +248,7 @@ public class TestWithSkeleton {
     @Test
     public void testNonFinalField() {
         FieldInfo set = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("set")).findAny().orElseThrow();
-        set.fieldAnalysis.setProperty(VariableProperty.FINAL, FALSE);
+        set.fieldAnalysis.get().setProperty(VariableProperty.FINAL, FALSE);
 
         FieldReference setRef = new FieldReference(set, new This(testSkeleton));
 

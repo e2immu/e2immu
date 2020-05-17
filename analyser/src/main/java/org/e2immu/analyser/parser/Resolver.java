@@ -251,13 +251,14 @@ public class Resolver {
                 MethodInfo methodInfo = ((MethodInfo) from);
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
-                methodInfo.methodAnalysis.methodsOfOwnClassReached.set(methodsReached);
+                methodInfo.methodAnalysis.get().methodsOfOwnClassReached.set(methodsReached);
             }
         });
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo) {
                 MethodInfo methodInfo = ((MethodInfo) from);
-                methodInfo.methodAnalysis.partOfConstruction.set(methodInfo.isConstructor || methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
+                methodInfo.methodAnalysis.get().partOfConstruction.set(methodInfo.isConstructor ||
+                        methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
             }
         });
     }

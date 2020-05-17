@@ -38,7 +38,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     public final TypeInfo owner;
     public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
-    public final FieldAnalysis fieldAnalysis;
+    public final SetOnce<FieldAnalysis> fieldAnalysis = new SetOnce<>();
 
     public FieldInfo(TypeInfo type, String name, TypeInfo owner) {
         this(type.asParameterizedType(), name, owner);
@@ -52,7 +52,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         this.type = type;
         this.name = name;
         this.owner = owner;
-        fieldAnalysis = new FieldAnalysis(type.bestTypeInfo(), owner);
     }
 
     @Override
@@ -76,7 +75,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
 
     @Override
     public Analysis getAnalysis() {
-        return fieldAnalysis;
+        return fieldAnalysis.get();
     }
 
     @Override
@@ -105,17 +104,21 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             Set<TypeInfo> annotationsSeen = new HashSet<>();
             fieldInspection.get().annotations.forEach(ae -> {
                 sb.append(ae.stream());
-                fieldAnalysis.peekIntoAnnotations(ae, annotationsSeen, sb);
+                if(fieldAnalysis.isSet()) {
+                    fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen, sb);
+                }
                 sb.append("\n");
                 StringUtil.indent(sb, indent);
             });
-            fieldAnalysis.annotations.visit((annotation, present) -> {
-                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
-                    sb.append(annotation.stream());
-                    sb.append("\n");
-                    StringUtil.indent(sb, indent);
-                }
-            });
+            if(fieldAnalysis.isSet()) {
+                fieldAnalysis.get().annotations.visit((annotation, present) -> {
+                    if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                        sb.append(annotation.stream());
+                        sb.append("\n");
+                        StringUtil.indent(sb, indent);
+                    }
+                });
+            }
             FieldInspection fieldInspection = this.fieldInspection.get();
             sb.append(fieldInspection.modifiers.stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
         }
@@ -172,7 +175,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             case NOT_MODIFIED:
                 if (type.isNotModifiedByDefinition()) return Level.TRUE;
                 TypeInfo bestInfo = type.bestTypeInfo();
-                if (bestInfo != null && Level.value(bestInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                if (bestInfo != null && Level.value(bestInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
                     // in an @E2Immutable class, all fields are @NotModified, so no need to write this
                     return Level.TRUE;
                 }
@@ -182,7 +185,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 return Level.UNDEFINED;
             case FINAL:
                 if (isExplicitlyFinal()) return Level.TRUE;
-                if (Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE) {
+                if (Level.value(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE) {
                     // in an @E1Immutable class, all fields are effectively final, so no need to write this
                     return Level.TRUE;
                 }

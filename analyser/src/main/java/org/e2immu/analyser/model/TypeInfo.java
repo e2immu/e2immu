@@ -31,10 +31,7 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeStore;
-import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetOnceSupply;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -61,13 +58,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     //@Immutable(after="this.inspect()")
     public final SetOnceSupply<TypeInspection> typeInspection = new SetOnceSupply<>();
-    public final TypeAnalysis typeAnalysis;
+    public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
 
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
         simpleName = enclosingType.simpleName + "$" + number;
         fullyQualifiedName = enclosingType.fullyQualifiedName + "$" + number;
-        typeAnalysis = new TypeAnalysis(false);
     }
 
     @Override
@@ -80,7 +76,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             throw new UnsupportedOperationException("Expect a non-empty package name for " + simpleName);
         this.fullyQualifiedName = packageName + "." + simpleName;
         this.simpleName = Objects.requireNonNull(simpleName);
-        typeAnalysis = new TypeAnalysis(isPrimitiveObjectString());
     }
 
     public TypeInfo(@NotNull String fullyQualifiedName) {
@@ -91,7 +86,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             simpleName = fullyQualifiedName;
         }
-        typeAnalysis = new TypeAnalysis(isPrimitiveObjectString());
     }
 
     private boolean isPrimitiveObjectString() {
@@ -106,7 +100,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     @Override
     @NotNull
     public Analysis getAnalysis() {
-        return typeAnalysis;
+        return typeAnalysis.get();
     }
 
     public boolean hasBeenInspected() {
@@ -631,17 +625,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (AnnotationExpression annotation : annotations) {
             StringUtil.indent(sb, indent);
             sb.append(annotation.stream());
-            typeAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
+            if(typeAnalysis.isSet()) {
+                typeAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+            }
             sb.append("\n");
         }
-        typeAnalysis.annotations.visit((annotation, present) -> {
-            if (present && !annotationsSeen.contains(annotation.typeInfo)) {
-                StringUtil.indent(sb, indent);
-                sb.append(annotation.stream());
-                sb.append("\n");
-            }
-        });
-
+        if(typeAnalysis.isSet()) {
+            typeAnalysis.get().annotations.visit((annotation, present) -> {
+                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                    StringUtil.indent(sb, indent);
+                    sb.append(annotation.stream());
+                    sb.append("\n");
+                }
+            });
+        }
         if (doTypeDeclaration) {
             // the class name
             StringUtil.indent(sb, indent);
@@ -1015,22 +1012,22 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
         boolean hasBeenDefined = hasBeenDefined();
-        typeAnalysis.fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
+        typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
         typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
         typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
-            methodInfo.methodAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
+            methodInfo.methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
                     typeContext, overwrite);
             methodInfo.methodInspection.get().parameters.forEach(parameterInfo ->
-                    parameterInfo.parameterAnalysis.fromAnnotationsIntoProperties(hasBeenDefined,
+                    parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
                             parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
         });
         typeInspection.get().fields.forEach(fieldInfo -> {
-            fieldInfo.fieldAnalysis.fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
+            fieldInfo.fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
                     typeContext, overwrite);
             // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-            int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
             if (fieldInfo.isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
-                fieldInfo.fieldAnalysis.improveProperty(VariableProperty.FINAL, Level.TRUE);
+                fieldInfo.fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
             }
         });
     }

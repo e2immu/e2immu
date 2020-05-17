@@ -25,7 +25,7 @@ public class ThisValue implements Value {
         if (variableProperty == VariableProperty.NOT_NULL) {
             return Level.TRUE;
         }
-        return typeInfo.typeAnalysis.getProperty(variableProperty);
+        return typeInfo.typeAnalysis.get().getProperty(variableProperty);
     }
 
     @Override

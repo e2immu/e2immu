@@ -56,7 +56,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         }
         name = methodInfo.name + "(" + parameters + ")";
         addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().annotations : List.of(),
-                methodInfo.methodAnalysis.annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
+                methodInfo.methodAnalysis.get().annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
                         .map(Map.Entry::getKey)
                         .collect(Collectors.toList()));
         freeze();

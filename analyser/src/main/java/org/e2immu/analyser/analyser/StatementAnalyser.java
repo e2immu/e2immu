@@ -59,7 +59,7 @@ public class StatementAnalyser {
 
     public StatementAnalyser(TypeContext typeContext, MethodInfo methodInfo) {
         this.typeContext = typeContext;
-        this.methodAnalysis = methodInfo.methodAnalysis;
+        this.methodAnalysis = methodInfo.methodAnalysis.get();
         this.methodInfo = methodInfo;
     }
 
@@ -124,7 +124,7 @@ public class StatementAnalyser {
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
-                            if (((ParameterInfo) variable).parameterAnalysis.notNull(true)) changes = true;
+                            if (((ParameterInfo) variable).parameterAnalysis.get().notNull(true)) changes = true;
                         }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
@@ -548,7 +548,7 @@ public class StatementAnalyser {
             if (expression instanceof MethodCall) {
                 MethodInfo methodCalled = ((MethodCall) expression).methodInfo;
                 if (methodCalled != variableProperties.getCurrentMethod()) { // not a recursive call
-                    int notNull = methodCalled.methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                    int notNull = methodCalled.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
                     if (notNull == Level.DELAY) encounterUnevaluated.set(true);
                     else if (notNull == Level.FALSE) {
                         if (!statement.errorValue.isSet()) {
@@ -568,9 +568,9 @@ public class StatementAnalyser {
     private void checkUnusedReturnValue(MethodCall methodCall, NumberedStatement statement) {
         if (statement.errorValue.isSet()) return;
         if (methodCall.methodInfo.returnType().isVoid()) return;
-        int identity = methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
         if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
-        
+
         SideEffect sideEffect = methodCall.methodInfo.sideEffect();
         switch (sideEffect) {
             case DELAYED:
@@ -602,12 +602,12 @@ public class StatementAnalyser {
 
             if (at instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
-
+                FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
                 // only change fields of "our" class, otherwise, raise error
                 if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
-                    if (!fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
+                    if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
                         typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
-                        fieldInfo.fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
+                        fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
                     }
                     return;
                 }
@@ -666,14 +666,14 @@ public class StatementAnalyser {
             return;
         }
         MethodInfo currentMethod = variableProperties.getCurrentMethod();
-        if (currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
+        if (currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
             return;
         }
-        int notModified = methodCalled.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-        boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet();
+        int notModified = methodCalled.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+        boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.get().doNotAllowDelaysOnNotModified.isSet();
         if (allowDelays && notModified == Level.DELAY) return; // delaying
         boolean error = notModified != Level.TRUE;
-        currentMethod.methodAnalysis.errorCallingModifyingMethodOutsideType.put(methodCalled, error);
+        currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
                     " is not allowed to call non-@NotModified method " + methodCalled.distinguishingName());
@@ -688,9 +688,10 @@ public class StatementAnalyser {
     private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldReference assignmentTarget,
                                                                        VariableProperties variableProperties) {
         MethodInfo currentMethod = variableProperties.getCurrentMethod();
+        MethodAnalysis currentMethodAnalysis = currentMethod.methodAnalysis.get();
         FieldInfo fieldInfo = assignmentTarget.fieldInfo;
-        if (currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
-            return currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.get(fieldInfo);
+        if (currentMethodAnalysis.errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
+            return currentMethodAnalysis.errorAssigningToFieldOutsideType.get(fieldInfo);
         }
         boolean error;
         TypeInfo owner = fieldInfo.owner;
@@ -706,7 +707,7 @@ public class StatementAnalyser {
             typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
                     " is not allowed to assign to field " + fieldInfo.fullyQualifiedName());
         }
-        currentMethod.methodAnalysis.errorAssigningToFieldOutsideType.put(fieldInfo, error);
+        currentMethodAnalysis.errorAssigningToFieldOutsideType.put(fieldInfo, error);
         return error;
     }
 
@@ -766,7 +767,7 @@ public class StatementAnalyser {
                                          Expression parameterExpression,
                                          VariableProperties variableProperties) {
         // not modified
-        int notModified = parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+        int notModified = parameterInDefinition.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
         int value = notModified == Level.DELAY ? Level.compose(Level.TRUE, 0) :
                 Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
 
@@ -775,7 +776,7 @@ public class StatementAnalyser {
         // null not allowed; not a recursive call so no knowledge about the parameter as a variable
         if (parameterExpression instanceof VariableExpression) {
             Variable v = ((VariableExpression) parameterExpression).variable;
-            int notNull = Level.value(parameterInDefinition.parameterAnalysis.getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
+            int notNull = Level.value(parameterInDefinition.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
             if (notNull != Level.FALSE) {
                 return variableOccursInNotNullContext(currentStatement, v, variableProperties, notNull);
             }

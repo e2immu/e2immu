@@ -42,16 +42,16 @@ public class ParameterAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
-                if (owner != null && Level.value(owner.typeInfo.typeAnalysis.
-                        getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL) == Level.TRUE)
+                if (owner != null && Level.haveTrueAt(owner.typeInfo.typeAnalysis.get()
+                        .getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
             case NOT_MODIFIED:
                 if (parameterizedType.isNotModifiedByDefinition()) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && (Level.value(bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE) == Level.TRUE ||
-                        bestType.typeAnalysis.getProperty(VariableProperty.CONTAINER) == Level.TRUE)) {
+                if (bestType != null && (Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE) ||
+                        bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE)) {
                     return Level.TRUE;
                 }
             case IMMUTABLE:
@@ -79,10 +79,10 @@ public class ParameterAnalysis extends Analysis {
         return false;
     }
 
-    public boolean notNull( Boolean notNull) {
+    public boolean notNull(Boolean notNull) {
         if (notNull != null) {
             if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull",logName);
+                log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull", logName);
                 setProperty(VariableProperty.NOT_NULL, notNull);
                 return true;
             }

@@ -87,7 +87,7 @@ public class TestInspectAnnotatedAPIs {
         Assert.assertTrue(types.size() >= 15);
         TypeInfo optional = (TypeInfo) parser.getTypeContext().typeStore.get("java.util.Optional");
         Assert.assertNotNull(optional);
-        Assert.assertEquals(Level.TRUE, Level.value(optional.typeAnalysis.getProperty(VariableProperty.CONTAINER), 0));
+        Assert.assertEquals(Level.TRUE, Level.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
         LOGGER.info("Source of Optional: " + optional.stream());
     }
 

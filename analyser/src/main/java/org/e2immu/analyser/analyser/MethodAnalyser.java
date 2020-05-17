@@ -57,7 +57,7 @@ public class MethodAnalyser {
 
     public void check(MethodInfo methodInfo) {
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.transferPropertiesToAnnotations(typeContext, methodInfo::minimalValueByDefinition);
+        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(typeContext, methodInfo::minimalValueByDefinition);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
@@ -94,12 +94,12 @@ public class MethodAnalyser {
 
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
 
-        if (!methodInfo.methodAnalysis.numberedStatements.isSet()) {
+        if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
             List<NumberedStatement> numberedStatements = new LinkedList<>();
             Stack<Integer> indices = new Stack<>();
             CreateNumberedStatements.recursivelyCreateNumberedStatements(statements, indices, numberedStatements,
                     new SideEffectContext(methodInfo));
-            methodInfo.methodAnalysis.numberedStatements.set(ImmutableList.copyOf(numberedStatements));
+            methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
             changes = true;
         }
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
@@ -111,7 +111,7 @@ public class MethodAnalyser {
 
     private boolean analyseFlow(MethodInfo methodInfo, VariableProperties methodProperties) {
         try {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
             boolean changes = false;
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
@@ -248,7 +248,7 @@ public class MethodAnalyser {
         }
         if (isNotModified) {
             int allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
-                    .mapToInt(mi -> mi.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
+                    .mapToInt(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED))
                     .min().orElse(Level.TRUE); // true when there are none
             if (allMethodCallsNotModified == Level.DELAY) {
                 log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
@@ -261,7 +261,7 @@ public class MethodAnalyser {
                         isNotModified ? "" : "NOT ");
                 if (!isNotModified) {
                     List<String> offendingCalls = methodAnalysis.localMethodsCalled.get().stream()
-                            .filter(mi -> mi.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) == Level.FALSE)
+                            .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED) == Level.FALSE)
                             .map(MethodInfo::distinguishingName)
                             .collect(Collectors.toList());
                     log(NOT_MODIFIED, "Offending method calls are to: {}", offendingCalls);
@@ -292,13 +292,13 @@ public class MethodAnalyser {
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
             int e2ImmutableStatusOfFieldRefs = variables.stream()
                     .filter(v -> v instanceof FieldReference)
-                    .mapToInt(v -> Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
+                    .mapToInt(v -> Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
                     .min().orElse(Level.TRUE);
             if (e2ImmutableStatusOfFieldRefs == Level.DELAY) {
                 log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                         variables.stream()
                                 .filter(v -> v instanceof FieldReference &&
-                                        Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                                        Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                                                 Level.E2IMMUTABLE) == Level.DELAY)
                                 .map(Variable::detailedString)
                                 .collect(Collectors.joining(", ")));

@@ -63,7 +63,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     //@Immutable(after="this.inspect(),this.inspect()")
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     //@Immutable(after="MethodAnalyser.analyse()")
-    public final MethodAnalysis methodAnalysis;
+    public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
 
     // for constructors
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
@@ -103,8 +103,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this.isConstructor = isConstructor;
         this.isDefaultImplementation = isDefaultImplementation;
         if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
-        methodAnalysis = new MethodAnalysis(typeInfo, this::returnType,
-                () -> typeInfo.overrides(this, true).stream());
     }
 
     public boolean hasBeenInspected() {
@@ -144,7 +142,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     @Override
     public Analysis getAnalysis() {
-        return methodAnalysis;
+        return methodAnalysis.get();
     }
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
@@ -276,16 +274,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             for (AnnotationExpression annotation : methodInspection.get().annotations) {
                 StringUtil.indent(sb, indent);
                 sb.append(annotation.stream());
-                methodAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
+                if(methodAnalysis.isSet()) {
+                    methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+                }
                 sb.append("\n");
             }
-            methodAnalysis.annotations.visit((annotation, present) -> {
-                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
-                    StringUtil.indent(sb, indent);
-                    sb.append(annotation.stream());
-                    sb.append("\n");
-                }
-            });
+            if(methodAnalysis.isSet()) {
+                methodAnalysis.get().annotations.visit((annotation, present) -> {
+                    if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                        StringUtil.indent(sb, indent);
+                        sb.append(annotation.stream());
+                        sb.append("\n");
+                    }
+                });
+            }
         }
         StringUtil.indent(sb, indent);
         sb.append(methodModifiers.stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
@@ -366,8 +368,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public SideEffect sideEffect() {
-        int notModified = methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-        int typeE2Immutable = Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        int notModified = methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+        int typeE2Immutable = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
         if (typeE2Immutable != Level.TRUE && notModified == Level.DELAY) return SideEffect.DELAYED;
         if (typeE2Immutable == Level.TRUE || notModified == Level.TRUE) {
             if (isStatic) {
@@ -404,7 +406,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public int allParametersNotModified() {
         return methodInspection.get().parameters.stream()
-                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED))
+                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED))
                 .min().orElse(Level.TRUE);
     }
 
@@ -510,7 +512,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      */
     public boolean isCalledFromNonPrivateMethod() {
         for (MethodInfo other : typeInfo.typeInspection.get().methods) {
-            if (!other.isPrivate() && other.methodAnalysis.methodsOfOwnClassReached.get().contains(this)) {
+            if (!other.isPrivate() && other.methodAnalysis.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
@@ -527,7 +529,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             case CONTAINER:
                 if (returnType().isE2ContainerByDefinition()) return variableProperty.best;
             case INDEPENDENT:
-                if (Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                if (Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
                     return Level.TRUE;
                 }
             case NOT_NULL:

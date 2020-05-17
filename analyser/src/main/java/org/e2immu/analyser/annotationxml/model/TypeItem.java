@@ -38,9 +38,10 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
     public TypeItem(TypeInfo typeInfo) {
         this.name = typeInfo.fullyQualifiedName;
         addAnnotations(typeInfo.typeInspection.isSet() ? typeInfo.typeInspection.get().annotations : List.of(),
-                typeInfo.typeAnalysis.annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList()));
+                typeInfo.typeAnalysis.isSet() ?
+                        typeInfo.typeAnalysis.get().annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toList()) : List.of());
         if (typeInfo.typeInspection.isSet()) {
             for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
                 MethodItem methodItem = new MethodItem(methodInfo);

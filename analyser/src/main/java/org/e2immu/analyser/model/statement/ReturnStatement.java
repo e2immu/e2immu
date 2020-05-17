@@ -68,7 +68,7 @@ public class ReturnStatement extends StatementWithExpression {
         }
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
-            return methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.FLUENT);
+            return methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
         }
         return Level.FALSE;
     }
@@ -78,7 +78,7 @@ public class ReturnStatement extends StatementWithExpression {
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
             if (methodCall.parameterExpressions.size() == 0) return Level.FALSE;
-            int identity = methodCall.methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY);
+            int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
             if (identity != Level.TRUE) return identity;
             return identity(methodCall.parameterExpressions.get(0));
         }

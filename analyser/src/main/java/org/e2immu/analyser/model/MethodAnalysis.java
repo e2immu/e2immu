@@ -54,11 +54,11 @@ public class MethodAnalysis extends Analysis {
             case INDEPENDENT:
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_MODIFIED:
-                int typeNotModified = typeInfo.typeAnalysis.getProperty(variableProperty);
+                int typeNotModified = typeInfo.typeAnalysis.get().getProperty(variableProperty);
                 if (typeNotModified == Level.TRUE) return typeNotModified;
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_NULL:
-                int notNullMethods = typeInfo.typeAnalysis.getProperty(VariableProperty.NOT_NULL_METHODS);
+                int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
             case IMMUTABLE:
             case CONTAINER:
@@ -75,7 +75,7 @@ public class MethodAnalysis extends Analysis {
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(super.getProperty(variableProperty));
-        IntStream overrideValues = overrides.get().mapToInt(mi -> mi.methodAnalysis.getProperty(variableProperty));
+        IntStream overrideValues = overrides.get().mapToInt(mi -> mi.methodAnalysis.get().getProperty(variableProperty));
         return IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
     }
 

@@ -41,7 +41,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final String name;
     public final int index;
 
-    public final ParameterAnalysis parameterAnalysis;
+    public final SetOnce<ParameterAnalysis> parameterAnalysis = new SetOnce<>();
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
 
     public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {
@@ -53,8 +53,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
-        parameterAnalysis = new ParameterAnalysis(name + (owner == null ? "" : (" of " + owner.name)),
-                parameterizedType, owner);
     }
 
     @Override
@@ -108,7 +106,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public Analysis getAnalysis() {
-        return parameterAnalysis;
+        return parameterAnalysis.get();
     }
 
     @Override
@@ -123,14 +121,18 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.annotations) {
             sb.append(annotation.stream());
-            parameterAnalysis.peekIntoAnnotations(annotation, annotationsSeen, sb);
+            if (parameterAnalysis.isSet()) {
+                parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+            }
             sb.append(" ");
         }
-        parameterAnalysis.annotations.visit((annotation, present) -> {
-            if (present && !annotationsSeen.contains(annotation.typeInfo)) {
-                sb.append(annotation.stream()).append(" ");
-            }
-        });
+        if (parameterAnalysis.isSet()) {
+            parameterAnalysis.get().annotations.visit((annotation, present) -> {
+                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                    sb.append(annotation.stream()).append(" ");
+                }
+            });
+        }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
             sb.append(parameterizedType.stream(parameterInspection.varArgs));
             sb.append(" ");
@@ -182,8 +184,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public int minimalValueByDefinition(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL) {
             MethodInfo owner = parameterInspection.get().owner;
-            if (Level.value(owner.typeInfo.typeAnalysis.
-                    getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL) == Level.TRUE)
+            if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                 return Level.TRUE;
         }
         if (variableProperty == VariableProperty.NOT_MODIFIED) {

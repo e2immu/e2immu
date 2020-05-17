@@ -87,10 +87,10 @@ public class VariableValue implements Value {
             if (type.isNotModifiedByDefinition()) return Level.TRUE;
         }
         if (variable instanceof ParameterInfo) {
-            return ((ParameterInfo) variable).parameterAnalysis.getProperty(variableProperty);
+            return ((ParameterInfo) variable).parameterAnalysis.get().getProperty(variableProperty);
         }
         if (variable instanceof FieldInfo) {
-            return ((FieldInfo) variable).fieldAnalysis.getProperty(variableProperty);
+            return ((FieldInfo) variable).fieldAnalysis.get().getProperty(variableProperty);
         }
         return Level.DELAY;
     }
@@ -110,7 +110,7 @@ public class VariableValue implements Value {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
         boolean e2ImmuType;
         if (typeInfo != null) {
-            e2ImmuType = Level.value(typeInfo.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE;
+            e2ImmuType = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE;
         } else {
             e2ImmuType = false;
         }

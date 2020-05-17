@@ -57,7 +57,9 @@ public class CheckConstant {
 
 
     public static void checkConstantForFields(TypeContext typeContext, FieldInfo fieldInfo) {
-        Value singleReturnValue = fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet() ? fieldInfo.fieldAnalysis.effectivelyFinalValue.get() : UnknownValue.NO_VALUE;
+        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+        Value singleReturnValue = fieldAnalysis.effectivelyFinalValue.isSet() ?
+                fieldAnalysis.effectivelyFinalValue.get() : UnknownValue.NO_VALUE;
         checkConstant(typeContext,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().annotations,
@@ -65,7 +67,8 @@ public class CheckConstant {
     }
 
     public static void checkConstantForMethods(TypeContext typeContext, MethodInfo methodInfo) {
-        Value singleReturnValue = methodInfo.methodAnalysis.singleReturnValue.isSet() ? methodInfo.methodAnalysis.singleReturnValue.get() : UnknownValue.NO_VALUE;
+        Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.isSet() ?
+                methodInfo.methodAnalysis.get().singleReturnValue.get() : UnknownValue.NO_VALUE;
         checkConstant(typeContext,
                 singleReturnValue,
                 methodInfo.methodInspection.get().annotations,

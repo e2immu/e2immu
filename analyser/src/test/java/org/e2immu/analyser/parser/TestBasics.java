@@ -67,22 +67,23 @@ public class TestBasics {
     }
 
     FieldAnalyserVisitor beforeFieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         if ("explicitlyFinal".equals(fieldInfo.name)) {
             if (iteration == 0) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertFalse(fieldInfo.fieldAnalysis.effectivelyFinalValue.isSet());
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
+                Assert.assertFalse(fieldAnalysis.effectivelyFinalValue.isSet());
 
                 return;
             }
             if (iteration == 1) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("abc", fieldInfo.fieldAnalysis.effectivelyFinalValue.get().toString());
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
+                Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(Level.DELAY, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
             if (iteration == 2) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
         }
@@ -90,16 +91,18 @@ public class TestBasics {
     };
 
     FieldAnalyserVisitor afterFieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+
         if ("explicitlyFinal".equals(fieldInfo.name)) {
             if (iteration == 0) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("abc", fieldInfo.fieldAnalysis.effectivelyFinalValue.get().toString());
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
+                Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(Level.DELAY, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
             if (iteration == 1 || iteration == 2) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
         }

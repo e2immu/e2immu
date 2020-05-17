@@ -47,8 +47,8 @@ public class TestIdentityChecks extends WithAnnotatedAPIs {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("idem".equals(methodInfo.name) && iteration >= 0) {
             // @NotModified decided straight away, @Identity as well
-            Assert.assertEquals(1, methodInfo.methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-            Assert.assertEquals(1, methodInfo.methodAnalysis.getProperty(VariableProperty.IDENTITY));
+            Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED));
+            Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
         }
     };
 

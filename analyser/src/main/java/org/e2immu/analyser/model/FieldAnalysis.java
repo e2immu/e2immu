@@ -62,17 +62,17 @@ public class FieldAnalysis extends Analysis {
 
             case NOT_NULL:
                 if (bestType != null && bestType.isPrimitive()) return Level.TRUE;
-                int notNullFields = owner.typeAnalysis.getProperty(VariableProperty.NOT_NULL_FIELDS);
+                int notNullFields = owner.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_FIELDS);
                 return Level.best(notNullFields, super.getProperty(VariableProperty.NOT_NULL));
 
             case FINAL:
-                int e1ImmutableOwner = Level.value(owner.typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE);
+                int e1ImmutableOwner = Level.value(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE);
                 if (e1ImmutableOwner == Level.TRUE) return Level.TRUE;
                 break;
 
             case IMMUTABLE:
                 int immutableType = owner == bestType || bestType == null ? Level.FALSE :
-                        bestType.typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                        bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
                 return Level.best(immutableType, super.getProperty(variableProperty));
 
             default:

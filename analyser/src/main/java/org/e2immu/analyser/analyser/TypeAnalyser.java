@@ -69,7 +69,7 @@ public class TypeAnalyser {
         TypeInfo typeInfo = sortedType.typeInfo;
 
         // before we check, we copy the properties into annotations
-        typeInfo.typeAnalysis.transferPropertiesToAnnotations(typeContext, typeInfo::minimalValueByDefinition);
+        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(typeContext, typeInfo::minimalValueByDefinition);
 
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
@@ -179,14 +179,15 @@ public class TypeAnalyser {
             }
         }
 
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         // from now on, even if we come back here, all @NotModifieds have been set, no delays allowed anymore
-        if (!typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
-            typeInfo.typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
+        if (!typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
+            typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
         }
 
-        if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
+        if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
             postAnalysisIntoNestedTypes(typeInfo, debugConfiguration);
-            typeInfo.typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
+            typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
         }
     }
 
@@ -210,14 +211,14 @@ public class TypeAnalyser {
     }
 
     private boolean analyseContainer(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return false;
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    int notModified = parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+                    int notModified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
                     if (notModified == Level.DELAY) return false; // cannot yet decide
                     if (notModified == Level.FALSE) {
                         log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
@@ -236,14 +237,14 @@ public class TypeAnalyser {
     }
 
     private boolean analyseE1Immutable(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
         if (typeE1Immutable != Level.DELAY) return false; // we have a decision already
         int no = Level.compose(Level.FALSE, Level.E1IMMUTABLE);
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-            int effectivelyFinal = fieldInfo.fieldAnalysis.getProperty(VariableProperty.FINAL);
+            int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) return false; // cannot decide
             if (effectivelyFinal == Level.FALSE) {
                 log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
@@ -258,7 +259,7 @@ public class TypeAnalyser {
     }
 
     private boolean analyseE2Immutable(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE2Immutable = Level.value(typeImmutable, Level.E2IMMUTABLE);
         if (typeE2Immutable != Level.DELAY) return false; // we have a decision already
@@ -270,7 +271,7 @@ public class TypeAnalyser {
         int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis;
+            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
             // checked with @E1Immutable
@@ -316,7 +317,7 @@ public class TypeAnalyser {
         // RULE 3: INDEPENDENCE OF METHODS
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
-            int independent = methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+            int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
             if (independent == Level.DELAY) {
                 log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
                 return false; //not decided
@@ -332,7 +333,7 @@ public class TypeAnalyser {
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis;
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
             int returnTypeE2Immutable = Level.value(returnTypeImmutable, Level.E2IMMUTABLE);
             if (returnTypeE2Immutable == Level.DELAY) {
@@ -341,7 +342,7 @@ public class TypeAnalyser {
             }
             if (returnTypeE2Immutable == Level.FALSE) {
                 // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
-                int independent = methodInfo.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                 if (independent == Level.DELAY) {
                     log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
                             typeInfo.fullyQualifiedName, methodInfo.name);
@@ -364,7 +365,7 @@ public class TypeAnalyser {
     // TODO we should split this up for methods, fields, parameters, with a "where" variable
 
     private boolean analyseNotNull(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int typeNotNull = typeAnalysis.getProperty(VariableProperty.NOT_NULL);
         if (typeNotNull != Level.DELAY) return false;
 
@@ -373,7 +374,7 @@ public class TypeAnalyser {
         methodLoop:
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                int notNull = methodInfo.methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
                 if (notNull == Level.DELAY) return false;
                 if (notNull == Level.FALSE) {
                     isNotNull = false;
@@ -381,7 +382,7 @@ public class TypeAnalyser {
                 }
             }
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                int notNull = parameterInfo.parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
+                int notNull = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL);
                 if (notNull == Level.DELAY) return false;
                 if (notNull == Level.FALSE) {
                     isNotNull = false;
@@ -391,7 +392,7 @@ public class TypeAnalyser {
         }
         if (isNotNull) {
             for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-                int notNull = fieldInfo.fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+                int notNull = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
                 if (notNull == Level.DELAY) return false;
                 if (notNull == Level.FALSE) {
                     isNotNull = false;
@@ -405,7 +406,7 @@ public class TypeAnalyser {
     }
 
     private boolean analyseExtensionClass(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
         if (extensionClass != Level.DELAY) return false;
 
@@ -451,7 +452,7 @@ public class TypeAnalyser {
     }
 
     private boolean analyseUtilityClass(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis;
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
         if (utilityClass != Level.DELAY) return false;
 
@@ -493,12 +494,12 @@ public class TypeAnalyser {
 
         // and there should be no means of generating an object
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            if (!methodInfo.methodAnalysis.createObjectOfSelf.isSet()) {
+            if (!methodInfo.methodAnalysis.get().createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
                         typeInfo.fullyQualifiedName, methodInfo.name);
                 return false;
             }
-            if (methodInfo.methodAnalysis.createObjectOfSelf.get()) {
+            if (methodInfo.methodAnalysis.get().createObjectOfSelf.get()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodInfo.fullyQualifiedName());
