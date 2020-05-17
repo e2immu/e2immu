@@ -34,7 +34,11 @@ import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-public class TestTestExamplesWithAnnotatedAPIs {
+public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
+    public TestTestExamplesWithAnnotatedAPIs() {
+        super(true);
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamplesWithAnnotatedAPIs.class);
 
     @BeforeClass
@@ -108,35 +112,6 @@ public class TestTestExamplesWithAnnotatedAPIs {
     @Test
     public void testSubTypes() throws IOException {
         testClass("SubTypes", 2);
-    }
-
-    protected void testClass(String className, int errorsToExpect) throws IOException {
-        testClass(className, errorsToExpect, new DebugConfiguration.Builder().build());
-    }
-
-    protected void testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
-        // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
-        // test runner's classpath to ours
-        Configuration configuration = new Configuration.Builder()
-                .setInputConfiguration(new InputConfiguration.Builder()
-                        .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi." + className)
-                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                        .build())
-                .build();
-        Parser parser = new Parser(configuration);
-        List<SortedType> types = parser.run();
-        for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
-        }
-        for (Message message : parser.getMessages()) {
-            LOGGER.info(message.toString());
-        }
-        Assert.assertEquals(errorsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
     }
 
 }

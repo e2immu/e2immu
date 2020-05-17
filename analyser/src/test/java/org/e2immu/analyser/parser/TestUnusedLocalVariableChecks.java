@@ -13,7 +13,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-public class TestUnusedLocalVariableChecks extends WithAnnotatedAPIs {
+public class TestUnusedLocalVariableChecks extends CommonTestRunner {
+    public TestUnusedLocalVariableChecks() {
+        super(true);
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUnusedLocalVariableChecks.class);
 
     StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement) -> {
@@ -50,7 +54,7 @@ public class TestUnusedLocalVariableChecks extends WithAnnotatedAPIs {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
         // ERROR: b is never read
-        if ("b".equals(fieldInfo.name) && iteration>= 1) {
+        if ("b".equals(fieldInfo.name) && iteration >= 1) {
             Assert.assertTrue(fieldInfo.fieldAnalysis.get().fieldError.get());
         }
     };

@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,8 +37,12 @@ import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-public class TestBasics {
+public class TestBasics extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
+
+    public TestBasics() {
+        super(false);
+    }
 
     @BeforeClass
     public static void beforeClass() {
@@ -138,7 +141,7 @@ public class TestBasics {
     };
 
     @Test
-    public void testBasics() throws IOException {
+    public void test() throws IOException {
         String typeName = "Basics";
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(new DebugConfiguration.Builder()

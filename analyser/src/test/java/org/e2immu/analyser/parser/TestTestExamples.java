@@ -20,24 +20,21 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.annotation.NotModified;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-public class TestTestExamples {
+public class TestTestExamples extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamples.class);
+
+    public TestTestExamples() {
+        super(false);
+    }
 
     @BeforeClass
     public static void beforeClass() {
@@ -66,94 +63,67 @@ public class TestTestExamples {
 
     @Test
     public void testEvaluateConstants() throws IOException {
-        goTest("EvaluateConstants", 4);
+        testClass("EvaluateConstants", 4);
     }
 
     @Test
     public void testEvaluationErrors() throws IOException {
-        goTest("EvaluationErrors", 2);
+        testClass("EvaluationErrors", 2);
     }
 
     @Test
     public void testFieldResolution() throws IOException {
-        goTest("FieldResolution");
-    }
-
-    @Test
-    public void testFinalChecks() throws IOException {
-        goTest("FinalChecks");
+        testClass("FieldResolution", 0);
     }
 
     @Test
     public void testIfStatementChecks() throws IOException {
-        goTest("IfStatementChecks");
+        testClass("IfStatementChecks", 0);
     }
 
     @Test
     public void testInnerClass() throws IOException {
-        goTest("InnerClass", 3);
+        testClass("InnerClass", 3);
     }
 
     @Test
     public void testLoopStatementChecks() throws IOException {
-        goTest("LoopStatementChecks", 1);
+        testClass("LoopStatementChecks", 1);
     }
 
     @Test
     public void testMethodMustBeStatic() throws IOException {
-        goTest("MethodMustBeStatic");
+        testClass("MethodMustBeStatic", 0);
     }
 
     @Test
     public void testMethodReferences() throws IOException {
-        goTest("MethodReferences");
+        testClass("MethodReferences", 0);
     }
 
     @Test
     public void testModifyParameterChecks() throws IOException {
-        goTest("ModifyParameterChecks", 2);
+        testClass("ModifyParameterChecks", 2);
     }
 
     @Test
     public void testSwitchStatementChecks() throws IOException {
-        goTest("SwitchStatementChecks", 4);
+        testClass("SwitchStatementChecks", 4);
     }
 
     @Test
     public void testTryStatementChecks() throws IOException {
-        goTest("TryStatementChecks", 1);
+        testClass("TryStatementChecks", 1);
     }
 
     @Test
     public void testTypeParameters() throws IOException {
-        goTest("TypeParameters");
+        testClass("TypeParameters", 0);
     }
 
     @Test
     public void testUtilityClassChecks() throws IOException {
-        goTest("UtilityClassChecks", 1);
-    }
-
-    @NotModified
-    private void goTest(String fileName) throws IOException {
-        goTest(fileName, 0);
-    }
-
-    @NotModified
-    private void goTest(String typeName, long countError) throws IOException {
-        Parser parser = new Parser();
-        URL url = new File("src/test/java/org/e2immu/analyser/testexample/" + typeName + ".java").toURI().toURL();
-        TypeInfo typeInfo = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample." + typeName);
-        List<SortedType> types = parser.parseJavaFiles(Map.of(typeInfo, url));
-        for (SortedType sortedType : types) {
-            if (sortedType.typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) {
-                LOGGER.info("\n\nStream:\n{}", sortedType.typeInfo.stream());
-            }
-        }
-        for (Message message : parser.getMessages()) {
-            LOGGER.info(message.toString());
-        }
-        Assert.assertEquals(countError, parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
+        testClass("UtilityClassChecks", 1);
     }
 
 }

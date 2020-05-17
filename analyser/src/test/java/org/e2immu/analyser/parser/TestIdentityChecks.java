@@ -13,8 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class TestIdentityChecks extends WithAnnotatedAPIs {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestIdentityChecks.class);
+public class TestIdentityChecks extends CommonTestRunner {
+    public TestIdentityChecks() {
+        super(true);
+    }
 
     /*
 
@@ -30,12 +32,12 @@ public class TestIdentityChecks extends WithAnnotatedAPIs {
     StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId, variableName,
                                                                  variable, currentValue, properties) -> {
         if (methodInfo.name.equals("idem") && "s".equals(variableName)) {
-            if("0".equals(statementId)) {
+            if ("0".equals(statementId)) {
                 Assert.assertEquals(2, (int) properties.get(VariableProperty.CONTENT_MODIFIED));
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT));
-            } else if("1".equals(statementId)) {
+            } else if ("1".equals(statementId)) {
                 Assert.assertEquals(2, (int) properties.get(VariableProperty.CONTENT_MODIFIED));
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug

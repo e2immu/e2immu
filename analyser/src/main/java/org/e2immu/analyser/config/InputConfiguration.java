@@ -36,6 +36,8 @@ public class InputConfiguration {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
     public static final String[] DEFAULT_CLASSPATH = {"build/classes/java/main",
             "jmods/java.base.jmod", "src/main/resources/annotatedAPIs"};
+    public static final String[] CLASSPATH_WITHOUT_ANNOTATED_APIS = {"build/classes/java/main",
+            "jmods/java.base.jmod"};
 
     // input options
     public final List<String> sources;

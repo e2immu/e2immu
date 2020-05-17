@@ -13,9 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class TestNullParameterChecks extends WithAnnotatedAPIs {
+public class TestNullParameterChecks extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestNullParameterChecks.class);
 
+    public TestNullParameterChecks() {
+        super(true);
+    }
     //     public void method2(@NotNull String s) {
     //        this.s = Objects.requireNonNull(s);
     //    }

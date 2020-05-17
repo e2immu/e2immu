@@ -25,7 +25,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +33,14 @@ import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
-public abstract class WithAnnotatedAPIs {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WithAnnotatedAPIs.class);
+public abstract class CommonTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommonTestRunner.class);
+
+    public final boolean withAnnotatedAPIs;
+
+    protected CommonTestRunner(boolean withAnnotatedAPIs) {
+        this.withAnnotatedAPIs = withAnnotatedAPIs;
+    }
 
     @BeforeClass
     public static void beforeClass() {
@@ -67,12 +72,14 @@ public abstract class WithAnnotatedAPIs {
     protected void testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
+        String path = withAnnotatedAPIs ? "withannotatedapi." : "";
+
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi." + className)
-                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample." + path + className)
+                        .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
