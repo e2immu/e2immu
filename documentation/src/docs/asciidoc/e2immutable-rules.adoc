@@ -26,7 +26,7 @@ It is important to realise that `@NotModified` works on static and on instance f
 
 @Independent on methods:: There is no link between this method's parameters and any of the fields of the method.
 Neither is there a link between the return value, if present, and the parameters.
-Because cannot occur between variables of primitive or @E2Immutable types, there's no need to require @Independent when parameters and return type are of these types.
+Because modifications cannot occur between variables of primitive or @E2Immutable types, there's no need to require @Independent when parameters and return type are of these types.
 
 @Final on fields::  field is effectively or eventually final: it is not assigned to outside construction time.
 
@@ -48,6 +48,8 @@ A @Container is a 'safe place' to store objects, allowing you complete freedom t
 . all its fields are <<notmodified-annotation>>
 . all its fields are either private, or <<e2immutable-annotation>> themselves
 . all its constructors and non-private methods are <<independent-annotation>>.
+
+Because all fields are @NotModified, the methods must be @NotModified as well in an @E2Immutable type.
 
 @E2Immutable, @E1Immutable, ... on a field or parameter:: the code analyser should be able to deduce from the flow of the code that this object, even though its formal type does not have this property.
 
