@@ -55,6 +55,7 @@ public class ParseArrayCreationExpr {
             p.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                     .setVarArgs(false)
                     .build(constructor));
+            p.parameterAnalysis.set(new ParameterAnalysis(p));
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));

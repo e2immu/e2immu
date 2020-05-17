@@ -274,12 +274,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             for (AnnotationExpression annotation : methodInspection.get().annotations) {
                 StringUtil.indent(sb, indent);
                 sb.append(annotation.stream());
-                if(methodAnalysis.isSet()) {
+                if (methodAnalysis.isSet()) {
                     methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
                 }
                 sb.append("\n");
             }
-            if(methodAnalysis.isSet()) {
+            if (methodAnalysis.isSet()) {
                 methodAnalysis.get().annotations.visit((annotation, present) -> {
                     if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                         StringUtil.indent(sb, indent);
@@ -468,10 +468,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             return differentType(inMap, inSubType, translationMap);
         }
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
-        return inSuperType.typeParameter == null || inSubType.typeParameter == null ||
-                inSuperType.typeParameter.index != inSubType.typeParameter.index ||
-                translationMap.get(inSuperType.typeParameter).typeParameter != inSubType.typeParameter;
-        //   inSuperType.typeParameter.owner.isLeft() != inSubType.typeParameter.owner.isLeft();
+        if (inSuperType.typeParameter == null || inSubType.typeParameter == null ||
+                inSuperType.typeParameter.index != inSubType.typeParameter.index) return true;
+        ParameterizedType translated =
+                translationMap.get(inSuperType.typeParameter);
+        return translated == null || translated.typeParameter != inSubType.typeParameter;
     }
 
     @Override
@@ -523,18 +524,26 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
-    public int minimalValueByDefinition(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case IMMUTABLE:
-            case CONTAINER:
-                if (returnType().isE2ContainerByDefinition()) return variableProperty.best;
-            case INDEPENDENT:
-                if (Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
-                    return Level.TRUE;
-                }
-            case NOT_NULL:
-                if (returnType().isPrimitive()) return Level.TRUE;
+    public void copyAnnotationsIntoMethodAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
+        if (methodAnalysis.isSet()) {
+            if (!overwrite)
+                throw new UnsupportedOperationException("Method analysis already set for " + distinguishingName());
+        } else {
+            MethodAnalysis methodAnalysis = new MethodAnalysis(this);
+            this.methodAnalysis.set(methodAnalysis);
         }
-        return Level.UNDEFINED;
+        methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInspection.get().annotations,
+                typeContext, overwrite);
+        methodInspection.get().parameters.forEach(parameterInfo -> {
+            if (parameterInfo.parameterAnalysis.isSet()) {
+                if (!overwrite)
+                    throw new UnsupportedOperationException("Parameter analysis already set in " + distinguishingName());
+            } else {
+                ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo);
+                parameterInfo.parameterAnalysis.set(parameterAnalysis);
+            }
+            parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
+                    parameterInfo.parameterInspection.get().annotations, typeContext, overwrite);
+        });
     }
 }

@@ -19,8 +19,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 
 import java.lang.annotation.ElementType;
 import java.util.Arrays;
@@ -31,11 +31,11 @@ import java.util.stream.Collectors;
 // ...
 public class TypeAnalysis extends Analysis {
 
-    public final boolean isPrimitiveObjectOrString;
-    public static final int E2IMMUTABLE_TRUE = Level.compose(Level.TRUE, Level.E2IMMUTABLE);
+    public final TypeInfo typeInfo;
 
-    public TypeAnalysis(boolean isPrimitiveObjectOrString) {
-        this.isPrimitiveObjectOrString = isPrimitiveObjectOrString;
+    public TypeAnalysis(TypeInfo typeInfo) {
+        super(typeInfo.hasBeenDefined());
+        this.typeInfo = typeInfo;
     }
 
     // to avoid repetitions
@@ -49,10 +49,7 @@ public class TypeAnalysis extends Analysis {
     }
 
     @Override
-    public int getProperty(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.IMMUTABLE) {
-            if (isPrimitiveObjectOrString) return E2IMMUTABLE_TRUE;
-        }
-        return super.getProperty(variableProperty);
+    public int minimalValue(VariableProperty variableProperty) {
+        return Level.UNDEFINED;
     }
 }

@@ -19,8 +19,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.NotNull;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -32,10 +30,11 @@ public class ParameterAnalysis extends Analysis {
     private final MethodInfo owner; // can be null, for lambda expressions
     private final String logName;
 
-    public ParameterAnalysis(String logName, @NotNull ParameterizedType parameterizedType, MethodInfo owner) {
-        this.owner = owner;
-        this.logName = logName;
-        this.parameterizedType = parameterizedType;
+    public ParameterAnalysis(ParameterInfo parameterInfo) {
+        super(parameterInfo.hasBeenDefined());
+        this.owner = parameterInfo.parameterInspection.get().owner;
+        this.logName = parameterInfo.detailedString() + (owner == null ?" in lambda": " in " + owner.distinguishingName());
+        this.parameterizedType = parameterInfo.parameterizedType;
     }
 
     @Override
@@ -47,7 +46,7 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
             case NOT_MODIFIED:
-                if (parameterizedType.isNotModifiedByDefinition()) return Level.TRUE;
+                if (parameterizedType.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && (Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE) ||
@@ -62,6 +61,21 @@ public class ParameterAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
+    @Override
+    public int minimalValue(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_NULL:
+                if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
+                    return Level.TRUE;
+                break;
+            case NOT_MODIFIED:
+            case CONTAINER:
+            case IMMUTABLE:
+                return parameterizedType.getProperty(variableProperty);
+            default:
+        }
+        return Level.UNDEFINED;
+    }
 
     public boolean notModified(Boolean directContentModification) {
         if (directContentModification != null) {

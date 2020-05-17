@@ -76,9 +76,9 @@ public class Resolver {
             recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType);
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
-        fillInternalMethodCalls(methodGraph);
 
         typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContextOfFile, false);
+        fillInternalMethodCalls(methodGraph);
 
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
 

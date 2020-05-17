@@ -19,9 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotNull;
@@ -29,21 +27,20 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @NotNull
 public class MethodAnalysis extends Analysis {
 
-    private final Supplier<Stream<MethodInfo>> overrides;
-    private final Supplier<ParameterizedType> returnType;
+    private final Set<MethodInfo> overrides;
+    private final ParameterizedType returnType;
     public final TypeInfo typeInfo;
 
-    public MethodAnalysis(TypeInfo typeInfo, Supplier<ParameterizedType> returnType, Supplier<Stream<MethodInfo>> overrides) {
-        this.overrides = overrides;
-        this.typeInfo = typeInfo;
-        this.returnType = returnType;
+    public MethodAnalysis(MethodInfo methodInfo) {
+        super(methodInfo.hasBeenDefined());
+        this.overrides = methodInfo.typeInfo.overrides(methodInfo, true);
+        this.typeInfo = methodInfo.typeInfo;
+        this.returnType = methodInfo.returnType();
     }
 
     @Override
@@ -62,9 +59,8 @@ public class MethodAnalysis extends Analysis {
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
             case IMMUTABLE:
             case CONTAINER:
-                ParameterizedType returnType = this.returnType.get();
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
-                if (returnType.isE2ContainerByDefinition()) {
+                if (Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE)) {
                     return variableProperty.best;
                 }
                 return super.getProperty(variableProperty);
@@ -75,10 +71,28 @@ public class MethodAnalysis extends Analysis {
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(super.getProperty(variableProperty));
-        IntStream overrideValues = overrides.get().mapToInt(mi -> mi.methodAnalysis.get().getProperty(variableProperty));
+        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getProperty(variableProperty));
         return IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
     }
 
+    @Override
+    public int minimalValue(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case IMMUTABLE:
+            case CONTAINER:
+                if (Level.haveTrueAt(returnType.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
+                    return variableProperty.best;
+                break;
+            case INDEPENDENT:
+                if (Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                    return Level.TRUE;
+                }
+                break;
+            case NOT_NULL:
+                if (returnType.isPrimitive()) return Level.TRUE;
+        }
+        return Level.UNDEFINED;
+    }
 
     // used to check that in a utility class, no objects of the class itself are created
     public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();

@@ -151,8 +151,7 @@ public class MethodValue implements Value {
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         // RULE 1
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType == Primitives.PRIMITIVES.voidParameterizedType) return INDEPENDENT; // no assignment
-        if (returnType.isPrimitiveOrStringNotVoid()) return INDEPENDENT;
+        if (returnType.isVoid()) return INDEPENDENT; // no assignment
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || returnTypeDifferent) && (returnType.bestTypeInfo() == null ||

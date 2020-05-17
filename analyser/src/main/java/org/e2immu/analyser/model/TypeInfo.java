@@ -25,7 +25,6 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -37,19 +36,17 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.TypeAnalyser.TERNARY_OR;
+import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInfo.class);
-    private static final ElementType[] NOT_NULL_WHERE = new ElementType[]{ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD};
 
     @NotNull
     public final String simpleName;
@@ -86,10 +83,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             simpleName = fullyQualifiedName;
         }
-    }
-
-    private boolean isPrimitiveObjectString() {
-        return isPrimitive() || "java.lang.String".equals(fullyQualifiedName) || "java.lang.Object".equals(fullyQualifiedName);
     }
 
     @Override
@@ -191,7 +184,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 log(INSPECT, "Have member {} in {}", amd.getNameAsString(), fullyQualifiedName);
                 String methodName = amd.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
-                        Primitives.PRIMITIVES.voidParameterizedType, true, true);
+                        PRIMITIVES.voidParameterizedType, true, true);
                 methodInfo.inspect(amd, subContext);
 
                 builder.addMethod(methodInfo);
@@ -214,15 +207,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             // TODO we have arguments, class body
         });
         MethodInfo nameMethodInfo = new MethodInfo(this, "name", List.of(),
-                Primitives.PRIMITIVES.stringParameterizedType, false);
+                PRIMITIVES.stringParameterizedType, false);
         nameMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notModified.get())
-                .setReturnType(Primitives.PRIMITIVES.stringParameterizedType)
+                .setReturnType(PRIMITIVES.stringParameterizedType)
                 .build(nameMethodInfo));
 
         MethodInfo valueOfMethodInfo = new MethodInfo(this, "valueOf", List.of(),
-                Primitives.PRIMITIVES.stringParameterizedType, true);
-        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, Primitives.PRIMITIVES.stringParameterizedType, "name", 0);
+                PRIMITIVES.stringParameterizedType, true);
+        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .addAnnotation(expressionContext.typeContext.notNull.get())
                 .build(valueOfMethodInfo));
@@ -412,7 +405,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
                 String methodName = md.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
-                        Primitives.PRIMITIVES.voidParameterizedType, md.isStatic(), md.isDefault());
+                        PRIMITIVES.voidParameterizedType, md.isStatic(), md.isDefault());
                 methodInfo.inspect(isInterface, md, subContext);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
@@ -430,7 +423,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 }
             }
             if (!haveNonStaticNonDefaultsInSuperType) {
-                builder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
+                builder.addAnnotation(PRIMITIVES.functionalInterfaceAnnotationExpression);
             }
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
@@ -625,12 +618,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (AnnotationExpression annotation : annotations) {
             StringUtil.indent(sb, indent);
             sb.append(annotation.stream());
-            if(typeAnalysis.isSet()) {
+            if (typeAnalysis.isSet()) {
                 typeAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
             }
             sb.append("\n");
         }
-        if(typeAnalysis.isSet()) {
+        if (typeAnalysis.isSet()) {
             typeAnalysis.get().annotations.visit((annotation, present) -> {
                 if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                     StringUtil.indent(sb, indent);
@@ -693,36 +686,25 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             sb.append(suffix);
     }
 
-    private static final Set<String> PRIMITIVES = Set.of("boolean", "short", "int", "double", "float", "char", "byte", "long", "void");
-
-    private static final Set<String> NUMERIC_PRIMITIVES = Set.of("short", "int", "double", "float", "byte", "long");
-
-    private static final Set<String> PRIMITIVES_BOX = Set.of("java.lang.Short", "java.lang.Integer", "java.lang.Double",
-            "java.lang.Float", "java.lang.Character", "java.lang.Byte", "java.lang.Boolean",
-            "java.lang.Long", "java.lang.Void");
-
-    private static final Set<String> NUMERIC_PRIMITIVES_BOX = Set.of("java.lang.Short", "java.lang.Integer", "java.lang.Double",
-            "java.lang.Float", "java.lang.Byte", "java.lang.Long");
-
     public boolean isPrimitive() {
-        return PRIMITIVES.contains(fullyQualifiedName);
+        return PRIMITIVES.primitives.contains(this);
     }
 
     public boolean isPrimitiveOrBoxed() {
-        return isPrimitive() || PRIMITIVES_BOX.contains(fullyQualifiedName);
+        return isPrimitive() || PRIMITIVES.boxed.contains(this);
     }
 
     public boolean isNumericPrimitive() {
-        return NUMERIC_PRIMITIVES.contains(fullyQualifiedName);
+        return PRIMITIVES.numericPrimitives.contains(this);
     }
 
     public boolean isNumericPrimitiveBoxed() {
-        return isNumericPrimitive() || NUMERIC_PRIMITIVES_BOX.contains(fullyQualifiedName);
+        return isNumericPrimitive() || PRIMITIVES.numericBoxed.contains(this);
     }
 
     public boolean isJavaLang() {
         if (isPrimitive()) return true;
-        return fullyQualifiedName.startsWith("java.lang.");
+        return fullyQualifiedName.startsWith(Primitives.JAVA_LANG);
     }
 
     public Set<String> imports() {
@@ -837,7 +819,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         ParameterizedType parent;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectParameterizedType);
+            parent = Objects.requireNonNull(PRIMITIVES.objectParameterizedType);
         } else {
             parent = Objects.requireNonNull(parentPt);
         }
@@ -854,7 +836,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInfo parent;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(Primitives.PRIMITIVES.objectTypeInfo);
+            parent = Objects.requireNonNull(PRIMITIVES.objectTypeInfo);
             if (typeInspection.get().isClass()) {
                 list.add(parent);
             }
@@ -915,7 +897,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (override != null) {
                 result.add(override);
             }
-            if (superType.typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
+            if (superType.typeInfo != PRIMITIVES.objectTypeInfo) {
                 result.addAll(superType.typeInfo.recursiveOverridesCall(methodInfo, translationMapOfSuperType));
             }
         }
@@ -1012,23 +994,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
         boolean hasBeenDefined = hasBeenDefined();
+        if (this.typeAnalysis.isSet()) {
+            if (!overwrite)
+                throw new UnsupportedOperationException("Type analysis already set for " + fullyQualifiedName);
+        } else {
+            TypeAnalysis typeAnalysis = new TypeAnalysis(this);
+            this.typeAnalysis.set(typeAnalysis);
+        }
         typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
-        typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
+        //typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
         typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
-            methodInfo.methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInfo.methodInspection.get().annotations,
-                    typeContext, overwrite);
-            methodInfo.methodInspection.get().parameters.forEach(parameterInfo ->
-                    parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
-                            parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
+            methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined);
         });
         typeInspection.get().fields.forEach(fieldInfo -> {
-            fieldInfo.fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInfo.fieldInspection.get().annotations,
-                    typeContext, overwrite);
-            // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-            int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
-            if (fieldInfo.isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
-                fieldInfo.fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
-            }
+           fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined);
         });
     }
 
@@ -1053,7 +1032,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().typeNature == TypeNature.INTERFACE;
     }
 
-    public int minimalValueByDefinition(VariableProperty variableProperty) {
-        return Level.UNDEFINED;
+    public boolean isFunctionalInterface() {
+        if (typeInspection.get("isFunctionalInterface on " + fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
+            return false;
+        }
+        return typeInspection.get().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
     }
 }

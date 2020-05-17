@@ -63,11 +63,6 @@ public class TestTestExamples {
                 NOT_NULL,
                 NOT_MODIFIED);
     }
-    @Test
-    public void testBasics() throws IOException {
-        goTest("Basics", 0);
-    }
-
 
     @Test
     public void testEvaluateConstants() throws IOException {
@@ -99,12 +94,10 @@ public class TestTestExamples {
         goTest("InnerClass", 3);
     }
 
-
     @Test
     public void testLoopStatementChecks() throws IOException {
         goTest("LoopStatementChecks", 1);
     }
-
 
     @Test
     public void testMethodMustBeStatic() throws IOException {

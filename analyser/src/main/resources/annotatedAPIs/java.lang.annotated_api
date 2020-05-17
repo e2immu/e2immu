@@ -35,7 +35,7 @@ import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-@E2Immutable
+@E2Container
 public class Object {
     @NotNull
     protected Object clone() {
@@ -74,7 +74,7 @@ public class Object {
     }
 }
 
-@E2Immutable
+@E2Container
 public class StackTraceElement {
     public StackTraceElement(String declaringClass, String methodName, String fileName, int lineNumber) {
     }
@@ -210,7 +210,7 @@ public @interface Override {
 
 }
 
-@E2Immutable
+@E2Container
 public class Class {
     String descriptorString() {
     }
@@ -222,7 +222,7 @@ public interface CharSequence {
     int length();
 }
 
-@E2Immutable
+@E2Container
 @NotNull
 public class String implements CharSequence {
     public String() {
@@ -297,7 +297,7 @@ public class StringBuilder implements CharSequence, Comparable<StringBuilder>, S
     }
 }
 
-@E2Immutable
+@E2Container
 public class Integer {
     public static final int MAX_VALUE = 0x7fffffff;
     public static final int MIN_VALUE = 0x80000000;
@@ -305,7 +305,7 @@ public class Integer {
     int intValue() {}
 }
 
-@E2Immutable
+@E2Container
 public class Boolean {
     public static final boolean TRUE = true;
     public static final boolean FALSE = false;

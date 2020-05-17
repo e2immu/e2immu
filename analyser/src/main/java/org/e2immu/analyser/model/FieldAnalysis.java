@@ -28,10 +28,15 @@ public class FieldAnalysis extends Analysis {
 
     public final TypeInfo bestType;
     public final TypeInfo owner;
+    public final boolean isExplicitlyFinal;
+    public final ParameterizedType type;
 
-    public FieldAnalysis(TypeInfo bestType, TypeInfo owner) {
-        this.owner = owner;
-        this.bestType = bestType;
+    public FieldAnalysis(FieldInfo fieldInfo) {
+        super(fieldInfo.hasBeenDefined());
+        this.owner = fieldInfo.owner;
+        this.bestType = fieldInfo.type.bestTypeInfo();
+        isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
+        type = fieldInfo.type;
     }
 
     // if the field turns out to be effectively final, it can have a value
@@ -78,5 +83,36 @@ public class FieldAnalysis extends Analysis {
             default:
         }
         return super.getProperty(variableProperty);
+    }
+
+    @Override
+    public int minimalValue(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_MODIFIED:
+                if (type.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
+                TypeInfo bestInfo = type.bestTypeInfo();
+                if (bestInfo != null && Level.haveTrueAt(bestInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
+                    // in an @E2Immutable class, all fields are @NotModified, so no need to write this
+                    return Level.TRUE;
+                }
+                return Level.UNDEFINED;
+            case NOT_NULL:
+                if (type.isPrimitive()) return Level.TRUE;
+                return Level.UNDEFINED;
+            case FINAL:
+                if (isExplicitlyFinal) return Level.TRUE;
+                if (Level.haveTrueAt(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE)) {
+                    // in an @E1Immutable class, all fields are effectively final, so no need to write this
+                    return Level.TRUE;
+                }
+                return Level.UNDEFINED;
+            case IMMUTABLE:
+            case CONTAINER:
+                if (Level.haveTrueAt(type.getProperty(variableProperty), Level.E2IMMUTABLE))
+                    return variableProperty.best;
+
+            default:
+        }
+        return Level.UNDEFINED;
     }
 }

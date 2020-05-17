@@ -28,12 +28,16 @@ import org.e2immu.annotation.AnnotationType;
 import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 public abstract class Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
+    public final boolean hasBeenDefined;
+
+    protected Analysis(boolean hasBeenDefined) {
+        this.hasBeenDefined = hasBeenDefined;
+    }
 
     // part of the streaming process, purely based on the annotations map
     public void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
@@ -68,7 +72,7 @@ public abstract class Analysis {
     }
 
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY);
+        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY: Level.FALSE);
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -87,7 +91,9 @@ public abstract class Analysis {
         properties.improve(variableProperty, i);
     }
 
-    public void transferPropertiesToAnnotations(TypeContext typeContext, ToIntFunction<VariableProperty> minimalValue) {
+    public abstract int minimalValue(VariableProperty variableProperty);
+
+    public void transferPropertiesToAnnotations(TypeContext typeContext) {
         ImmutableMap.Builder<VariableProperty, AnnotationExpression> mapBuilder = new ImmutableMap.Builder<>();
         mapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
         mapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
@@ -103,7 +109,7 @@ public abstract class Analysis {
             VariableProperty variableProperty = entry.getKey();
             AnnotationExpression annotationExpression = entry.getValue();
             int value = getProperty(variableProperty);
-            int minimal = minimalValue.applyAsInt(variableProperty);
+            int minimal = minimalValue(variableProperty);
             if (value == Level.FALSE) {
                 annotations.put(annotationExpression, false);
             } else if (value == Level.TRUE && value > minimal) {
@@ -115,8 +121,8 @@ public abstract class Analysis {
         int container = getProperty(VariableProperty.CONTAINER);
         boolean haveContainer = container == Level.TRUE;
         boolean noContainer = container == Level.FALSE;
-        int minContainer = minimalValue.applyAsInt(VariableProperty.CONTAINER);
-        int minImmutable = minimalValue.applyAsInt(VariableProperty.IMMUTABLE);
+        int minContainer = minimalValue(VariableProperty.CONTAINER);
+        int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
 
         if (noContainer) annotations.put(typeContext.container.get(), false);
         int immutable = getProperty(VariableProperty.IMMUTABLE);
@@ -141,7 +147,7 @@ public abstract class Analysis {
         } else if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
 
         // not null
-        int minNotNull = minimalValue.applyAsInt(VariableProperty.NOT_NULL);
+        int minNotNull = minimalValue(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
         int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
         if (notNull2 == Level.TRUE) {
@@ -268,7 +274,7 @@ public abstract class Analysis {
     protected static final ElementType[] NOT_NULL_WHERE_ALL = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
     protected static final ElementType[] NOT_NULL_WHERE_TYPE = {ElementType.TYPE};
 
-    protected  List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+    protected List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_TYPE);
         return Arrays.stream(elements).collect(Collectors.toList());
     }

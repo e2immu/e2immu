@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.expr.*;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotModified;
@@ -422,7 +421,7 @@ public class ExpressionContext {
                     typeInfo = rhs.returnType().typeInfo;
                 } else if (rhs instanceof NullConstant) {
                     typeInfo = lhs.returnType().typeInfo;
-                } else if (lhs.returnType().isPrimitiveOrStringNotVoid() || rhs.returnType().isPrimitiveOrStringNotVoid()) {
+                } else if (lhs.returnType().allowsForOperators() || rhs.returnType().allowsForOperators()) {
                     ParameterizedType widestType = Primitives.PRIMITIVES.widestType(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())
                         throw new UnsupportedOperationException("? for " + lhs.returnType() + " and " + rhs.returnType());

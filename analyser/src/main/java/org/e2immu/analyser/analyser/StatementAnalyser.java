@@ -56,7 +56,6 @@ public class StatementAnalyser {
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
 
-
     public StatementAnalyser(TypeContext typeContext, MethodInfo methodInfo) {
         this.typeContext = typeContext;
         this.methodAnalysis = methodInfo.methodAnalysis.get();

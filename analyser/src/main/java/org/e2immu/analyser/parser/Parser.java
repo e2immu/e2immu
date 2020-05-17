@@ -25,6 +25,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.upload.AnnotationUploader;
+import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,6 +113,8 @@ public class Parser {
         // sort the types according to dependencies
         // within each type, sort the methods
         // phase 3: analyse all the types
+        Primitives.PRIMITIVES.inspectBoxed();
+        checkTypeAnalysisOfLoadedObjects();
 
         TypeAnalyser typeAnalyser = new TypeAnalyser(globalTypeContext);
         for (SortedType sortedType : sortedTypes) {
@@ -136,6 +139,17 @@ public class Parser {
         }
         return sortedTypes;
     }
+
+    private void checkTypeAnalysisOfLoadedObjects() {
+        globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
+            for (TypeInfo typeInfo : list) {
+                if (typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !typeInfo.typeAnalysis.isSet()) {
+                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext, false);
+                }
+            }
+        });
+    }
+
 
     // only meant to be used in tests!!
     public TypeContext getTypeContext() {

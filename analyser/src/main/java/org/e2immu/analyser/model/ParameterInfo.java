@@ -87,7 +87,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public boolean hasBeenDefined() {
-        return parameterInspection.get().owner.hasBeenDefined();
+        MethodInfo owner = parameterInspection.get().owner;
+        // owner == null means a parameter of an inline lambda expression, which can have properties!
+        return owner == null || owner.hasBeenDefined();
     }
 
     @Override
@@ -179,20 +181,5 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.NONE_PURE;
-    }
-
-    public int minimalValueByDefinition(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.NOT_NULL) {
-            MethodInfo owner = parameterInspection.get().owner;
-            if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
-                return Level.TRUE;
-        }
-        if (variableProperty == VariableProperty.NOT_MODIFIED) {
-            return parameterizedType.isNotModifiedByDefinition() ? Level.TRUE : Level.UNDEFINED;
-        }
-        if (variableProperty == VariableProperty.CONTAINER || variableProperty == VariableProperty.IMMUTABLE) {
-            return parameterizedType.isE2ContainerByDefinition() ? variableProperty.best : Level.UNDEFINED;
-        }
-        return Level.UNDEFINED;
     }
 }

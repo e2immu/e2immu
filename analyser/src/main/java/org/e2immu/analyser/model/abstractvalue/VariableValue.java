@@ -84,7 +84,7 @@ public class VariableValue implements Value {
         }
         if (variableProperty == VariableProperty.NOT_MODIFIED) {
             ParameterizedType type = variable.parameterizedType();
-            if (type.isNotModifiedByDefinition()) return Level.TRUE;
+            if (type.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
         }
         if (variable instanceof ParameterInfo) {
             return ((ParameterInfo) variable).parameterAnalysis.get().getProperty(variableProperty);
@@ -110,13 +110,12 @@ public class VariableValue implements Value {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
         boolean e2ImmuType;
         if (typeInfo != null) {
-            e2ImmuType = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE;
+            e2ImmuType = Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
         } else {
             e2ImmuType = false;
         }
         boolean e2Immu = (bestCase || differentType) && e2ImmuType;
-        if (e2Immu || variable.parameterizedType().isPrimitiveOrStringNotVoid()) return Set.of();
-        return Set.of(variable);
+        return e2Immu ? Set.of() : Set.of(variable);
     }
 
     @Override

@@ -18,14 +18,10 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.util.Lazy;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 
@@ -39,31 +35,39 @@ public class Primitives {
 
     public final TypeInfo intTypeInfo = new TypeInfo("int");
     public final ParameterizedType intParameterizedType = intTypeInfo.asParameterizedType();
+    public final TypeInfo integerTypeInfo = new TypeInfo("java.lang.Integer");
 
     public final TypeInfo charTypeInfo = new TypeInfo("char");
     public final ParameterizedType charParameterizedType = charTypeInfo.asParameterizedType();
+    public final TypeInfo characterTypeInfo = new TypeInfo("java.lang.Character");
 
     public final TypeInfo booleanTypeInfo = new TypeInfo("boolean");
     public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asParameterizedType();
+    public final TypeInfo boxedBooleanTypeInfo = new TypeInfo("java.lang.Boolean");
 
     public final TypeInfo longTypeInfo = new TypeInfo("long");
     public final ParameterizedType longParameterizedType = longTypeInfo.asParameterizedType();
+    public final TypeInfo boxedLongTypeInfo = new TypeInfo("java.lang.Long");
 
     public final TypeInfo shortTypeInfo = new TypeInfo("short");
     public final ParameterizedType shortParameterizedType = shortTypeInfo.asParameterizedType();
+    public final TypeInfo boxedShortTypeInfo = new TypeInfo("java.lang.Short");
 
     public final TypeInfo byteTypeInfo = new TypeInfo("byte");
     public final ParameterizedType byteParameterizedType = byteTypeInfo.asParameterizedType();
+    public final TypeInfo boxedByteTypeInfo = new TypeInfo("java.lang.Byte");
 
     public final TypeInfo doubleTypeInfo = new TypeInfo("double");
     public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asParameterizedType();
+    public final TypeInfo boxedDoubleTypeInfo = new TypeInfo("java.lang.Double");
 
     public final TypeInfo floatTypeInfo = new TypeInfo("float");
     public final ParameterizedType floatParameterizedType = floatTypeInfo.asParameterizedType();
-
+    public final TypeInfo boxedFloatTypeInfo = new TypeInfo("java.lang.Float");
 
     public final TypeInfo voidTypeInfo = new TypeInfo("void");
     public final ParameterizedType voidParameterizedType = voidTypeInfo.asParameterizedType();
+    public final TypeInfo boxedVoidTypeInfo = new TypeInfo("java.lang.Void");
 
     public final TypeInfo stringTypeInfo = new TypeInfo(JAVA_LANG, "String");
     public final ParameterizedType stringParameterizedType = stringTypeInfo.asParameterizedType();
@@ -169,17 +173,35 @@ public class Primitives {
     public final Map<String, TypeInfo> primitiveByName = new HashMap<>();
     public final Map<String, TypeInfo> typeByName = new HashMap<>();
 
+    public final Set<TypeInfo> boxed = Set.of(boxedBooleanTypeInfo, boxedByteTypeInfo, boxedDoubleTypeInfo, boxedFloatTypeInfo,
+            boxedLongTypeInfo, boxedShortTypeInfo, boxedVoidTypeInfo, integerTypeInfo, characterTypeInfo);
+
+    public final Set<TypeInfo> primitives = Set.of(booleanTypeInfo, byteTypeInfo, doubleTypeInfo, floatTypeInfo,
+            longTypeInfo, shortTypeInfo, voidTypeInfo, intTypeInfo, charTypeInfo);
+
+    public final Set<TypeInfo> numericPrimitives = Set.of(shortTypeInfo, intTypeInfo, doubleTypeInfo, floatTypeInfo, byteTypeInfo, longTypeInfo);
+
+    public final Set<TypeInfo> numericBoxed = Set.of(boxedShortTypeInfo, integerTypeInfo, boxedDoubleTypeInfo,
+            boxedFloatTypeInfo, boxedLongTypeInfo, boxedByteTypeInfo);
+
+
     public Primitives() {
-        for (TypeInfo ti : List.of(intTypeInfo, charTypeInfo, booleanTypeInfo,
-                longTypeInfo, shortTypeInfo, byteTypeInfo, doubleTypeInfo, floatTypeInfo, voidTypeInfo)) {
+        for (TypeInfo ti : primitives) {
             ti.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .build(false, ti));
             primitiveByName.put(ti.simpleName, ti);
+            ti.typeAnalysis.set(new TypeAnalysis(ti));
+            ti.typeAnalysis.get().properties.put(VariableProperty.CONTAINER, Level.TRUE);
+            ti.typeAnalysis.get().properties.put(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
+            ti.typeAnalysis.get().properties.put(VariableProperty.NOT_MODIFIED, Level.TRUE);
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, functionalInterface)) {
+            typeByName.put(ti.simpleName, ti);
+        }
+        for (TypeInfo ti : boxed) {
             typeByName.put(ti.simpleName, ti);
         }
 
@@ -277,5 +299,17 @@ public class Primitives {
             return assignPlusOperatorInt;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public void inspectBoxed() {
+        for (TypeInfo ti : boxed) {
+            if (!ti.hasBeenInspected()) {
+                ti.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                        .setPackageName(JAVA_LANG)
+                        .setTypeNature(TypeNature.CLASS)
+                        .build(false, ti));
+                primitiveByName.put(ti.simpleName, ti);
+            }
+        }
     }
 }

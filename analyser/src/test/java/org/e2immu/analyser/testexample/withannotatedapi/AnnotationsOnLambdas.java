@@ -37,6 +37,9 @@ public class AnnotationsOnLambdas {
         BiFunction<Integer, T, String> method = (i, t) -> {
             return i + t.toString();
         };
+    }
+
+    static class Example8<T> {
         BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
             @Override
             public String apply(Integer i, T t) {

@@ -423,7 +423,7 @@ public class FieldAnalyser {
 
     public void check(FieldInfo fieldInfo) {
         // before we check, we copy the properties into annotations
-        fieldInfo.fieldAnalysis.get().transferPropertiesToAnnotations(typeContext, fieldInfo::minimalValueByDefinition);
+        fieldInfo.fieldAnalysis.get().transferPropertiesToAnnotations(typeContext);
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 

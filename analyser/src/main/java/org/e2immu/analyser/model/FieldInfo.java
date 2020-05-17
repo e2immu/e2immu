@@ -104,13 +104,13 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             Set<TypeInfo> annotationsSeen = new HashSet<>();
             fieldInspection.get().annotations.forEach(ae -> {
                 sb.append(ae.stream());
-                if(fieldAnalysis.isSet()) {
+                if (fieldAnalysis.isSet()) {
                     fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen, sb);
                 }
                 sb.append("\n");
                 StringUtil.indent(sb, indent);
             });
-            if(fieldAnalysis.isSet()) {
+            if (fieldAnalysis.isSet()) {
                 fieldAnalysis.get().annotations.visit((annotation, present) -> {
                     if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                         sb.append(annotation.stream());
@@ -170,32 +170,25 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public int minimalValueByDefinition(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case NOT_MODIFIED:
-                if (type.isNotModifiedByDefinition()) return Level.TRUE;
-                TypeInfo bestInfo = type.bestTypeInfo();
-                if (bestInfo != null && Level.value(bestInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
-                    // in an @E2Immutable class, all fields are @NotModified, so no need to write this
-                    return Level.TRUE;
-                }
-                return Level.UNDEFINED;
-            case NOT_NULL:
-                if (type.isPrimitive()) return Level.TRUE;
-                return Level.UNDEFINED;
-            case FINAL:
-                if (isExplicitlyFinal()) return Level.TRUE;
-                if (Level.value(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE) == Level.TRUE) {
-                    // in an @E1Immutable class, all fields are effectively final, so no need to write this
-                    return Level.TRUE;
-                }
-                return Level.UNDEFINED;
-            case IMMUTABLE:
-            case CONTAINER:
-                if (type.isE2ContainerByDefinition()) return variableProperty.best;
-
-            default:
+    public void copyAnnotationsIntoFieldAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
+        if (fieldAnalysis.isSet()) {
+            if (!overwrite)
+                throw new UnsupportedOperationException("Field analysis already set for " + fullyQualifiedName());
+        } else {
+            FieldAnalysis fieldAnalysis = new FieldAnalysis(this);
+            this.fieldAnalysis.set(fieldAnalysis);
         }
-        return Level.UNDEFINED;
+        fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInspection.get().annotations,
+                typeContext, overwrite);
+        if (fieldInspection.get().initialiser.isSet() &&
+                fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null) {
+            fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod.typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite);
+        }
+
+        // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
+        int effectivelyFinal = fieldAnalysis.get().getProperty(VariableProperty.FINAL);
+        if (isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
+            fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
+        }
     }
 }

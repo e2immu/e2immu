@@ -57,7 +57,7 @@ public class MethodAnalyser {
 
     public void check(MethodInfo methodInfo) {
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(typeContext, methodInfo::minimalValueByDefinition);
+        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(typeContext);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 

@@ -24,6 +24,7 @@ import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -371,35 +372,19 @@ public class ParameterizedType {
         return typeInfo != null && typeInfo.isPrimitive();
     }
 
-    private static final Set<String> primitiveStringNotVoid = Set.of(
-            "int", "double", "float", "boolean", "short", "byte", "char", "long",
-            "java.lang.Character", "java.lang.Boolean", "java.lang.Short", "java.lang.Byte",
-            "java.lang.Integer", "java.lang.Double", "java.lang.Float", "java.lang.Long",
-            "java.lang.String");
-
     public boolean isVoid() {
-        if (typeInfo == null) return false;
-        return typeInfo.fullyQualifiedName.equals("void") || typeInfo.fullyQualifiedName.equals("java.lang.Void");
+        return typeInfo == Primitives.PRIMITIVES.voidTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedVoidTypeInfo;
     }
 
-    public boolean isPrimitiveOrStringNotVoid() {
-        return typeInfo != null && primitiveStringNotVoid.contains(typeInfo.fullyQualifiedName);
+    public boolean allowsForOperators() {
+        if (isVoid()) return false;
+        if (typeInfo == null) return false;
+        return Primitives.PRIMITIVES.primitives.contains(typeInfo)
+                || Primitives.PRIMITIVES.boxed.contains(typeInfo)
+                || typeInfo == Primitives.PRIMITIVES.stringTypeInfo;
     }
 
     // ******************************************************************************************************
-
-    public Map<NamedType, ParameterizedType> typeParameterMap(ParameterizedType concreteType) {
-        if (!parameters.isEmpty() && !concreteType.parameters.isEmpty()) {
-            ImmutableMap.Builder<NamedType, ParameterizedType> builder = new ImmutableMap.Builder<>();
-            for (int i = 0; i < parameters.size(); i++) {
-                builder.putAll(parameters.get(i).typeParameterMap(concreteType.parameters.get(i)));
-            }
-        }
-        if (isTypeParameter() && concreteType.isType()) {
-            return Map.of(typeParameter, concreteType);
-        }
-        return Map.of();
-    }
 
     // make a map from the type's abstract parameters to its concrete ones
     public Map<NamedType, ParameterizedType> initialTypeParameterMap() {
@@ -564,22 +549,19 @@ public class ParameterizedType {
     }
 
     private boolean checkBoxing(TypeInfo primitiveType) {
-        String fqn = typeInfo.fullyQualifiedName;
-        return primitiveType == Primitives.PRIMITIVES.longTypeInfo && "java.lang.Long".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.intTypeInfo && "java.lang.Integer".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.shortTypeInfo && "java.lang.Short".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.byteTypeInfo && "java.lang.Byte".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.charTypeInfo && "java.lang.Character".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.booleanTypeInfo && "java.lang.Boolean".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.floatTypeInfo && "java.lang.Float".equals(fqn) ||
-                primitiveType == Primitives.PRIMITIVES.doubleTypeInfo && "java.lang.Double".equals(fqn);
+        return primitiveType == Primitives.PRIMITIVES.longTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedLongTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.intTypeInfo && typeInfo == Primitives.PRIMITIVES.integerTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.shortTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedShortTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.byteTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedByteTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.charTypeInfo && typeInfo == Primitives.PRIMITIVES.characterTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.booleanTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedBooleanTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.floatTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedFloatTypeInfo ||
+                primitiveType == Primitives.PRIMITIVES.doubleTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedDoubleTypeInfo;
     }
 
     public boolean isFunctionalInterface() {
-        if (typeInfo == null || typeInfo.typeInspection.get("isFunctionalInterface on " + typeInfo.fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
-            return false;
-        }
-        return typeInfo.typeInspection.get().annotations.contains(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
+        if (typeInfo == null) return false;
+        return typeInfo.isFunctionalInterface();
     }
 
     public boolean isUnboundParameterType() {
@@ -623,21 +605,13 @@ public class ParameterizedType {
         return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 
-    public boolean isEnum() {
-        return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM;
-    }
-
-    public boolean isAnnotation() {
-        return typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ANNOTATION;
-    }
-
-    public boolean isNotModifiedByDefinition() {
-        return isE2ContainerByDefinition() || isFunctionalInterface() || isUnboundParameterType();
-    }
-
-    public boolean isE2ContainerByDefinition() {
-        return isPrimitive() || isEnum() || isAnnotation() ||
-                typeInfo != null && ("java.lang.String".equals(typeInfo.fullyQualifiedName) || "java.lang.Object".equals(typeInfo.fullyQualifiedName));
+    public int getProperty(VariableProperty variableProperty) {
+        TypeInfo bestType = bestTypeInfo();
+        if (bestType != null) {
+            return bestType.typeAnalysis.get().getProperty(variableProperty);
+        }
+        if (isUnboundParameterType() && variableProperty == VariableProperty.NOT_MODIFIED) return Level.TRUE;
+        return Level.FALSE;
     }
 
     public TypeInfo bestTypeInfo() {

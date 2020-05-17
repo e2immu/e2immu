@@ -18,19 +18,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
-
-import java.util.Map;
-import java.util.Objects;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -44,7 +37,7 @@ public class ParameterAnalyser {
 
     public void check(ParameterInfo parameterInfo) {
         // before we check, we copy the properties into annotations
-        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(typeContext, parameterInfo::minimalValueByDefinition);
+        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(typeContext);
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
