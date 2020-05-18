@@ -62,8 +62,8 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
 
         ArrayValue arrayValue = new ArrayValue(values);
         visitor.visit(this, evaluationContext, arrayValue);

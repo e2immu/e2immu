@@ -20,13 +20,17 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.google.common.collect.Sets;
+import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
@@ -34,6 +38,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
+import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
+import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class Assignment implements Expression {
 
@@ -136,16 +145,68 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        if (!(target instanceof VariableExpression) && !(target instanceof ArrayAccess)) {
-            // we evaluate if there is a more complex expression, like a.b.c (FieldAccess) or so
-            // otherwise, we want to avoid a visit on the variable
-            target.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Variable at;
+        if (target instanceof ArrayAccess) {
+            ArrayAccess arrayAccess = (ArrayAccess) target;
+            Value array = arrayAccess.expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+            Value indexValue = arrayAccess.index.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+            String name = ArrayAccess.dependentVariableName(array, indexValue);
+            at = evaluationContext.ensureArrayVariable(arrayAccess, name);
+            log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
+        } else {
+            target.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
+            at = target.assignmentTarget().orElseThrow();
+            log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
         }
-        Value resultOfExpression = value.evaluate(evaluationContext, visitor);
+
+        // we pass on forwardEvaluation (could be that we require not null)
+        Value resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+        doAssignmentWork(evaluationContext, at, resultOfExpression);
         visitor.visit(this, evaluationContext, resultOfExpression);
         // we let the assignment code decide what to do; we'll read the value of the variable afterwards
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
         return evaluationContext.currentValue(assignmentTarget);
+    }
+
+    private void doAssignmentWork(EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
+        MethodInfo methodInfo = evaluationContext.getCurrentMethod();
+        TypeContext typeContext = evaluationContext.getTypeContext();
+        NumberedStatement statement = evaluationContext.getCurrentStatement();
+
+        // see if we need to raise an error (writing to fields outside our class, etc.)
+        if (at instanceof FieldReference) {
+            FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
+            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+            // only change fields of "our" class, otherwise, raise error
+            if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
+                if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
+                    typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
+                    fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
+                }
+                return;
+            }
+
+            // even inside our class, there are limitations; potentially raise error
+            if (StatementAnalyser.checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, evaluationContext)) {
+                return;
+            }
+        } else if (at instanceof ParameterInfo) {
+            if (!statement.errorValue.isSet()) {
+                typeContext.addMessage(Message.Severity.ERROR, "Assignment to parameter " + at.detailedString());
+                statement.errorValue.set(true);
+                return;
+            }
+        }
+        evaluationContext.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
+
+        // connect the value to the assignment target
+        if (resultOfExpression != NO_VALUE) {
+            Set<Variable> linkToBestCase = resultOfExpression.linkedVariables(true, evaluationContext);
+            Set<Variable> linkToWorstCase = resultOfExpression.linkedVariables(false, evaluationContext);
+            log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
+                    Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
+            evaluationContext.linkVariables(at, linkToBestCase, linkToWorstCase);
+        }
     }
 }

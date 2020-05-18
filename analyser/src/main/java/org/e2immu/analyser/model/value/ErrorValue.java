@@ -30,6 +30,10 @@ public class ErrorValue implements Value {
         return new ErrorValue("null pointer exception", alternative);
     }
 
+    public static ErrorValue potentialNullPointerException(Value alternative) {
+        return new ErrorValue("potential null pointer exception", alternative);
+    }
+
     public static ErrorValue unnecessaryMethodCall(Value alternative) {
         return new ErrorValue("Unnecessary method call", alternative);
     }

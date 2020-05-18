@@ -62,8 +62,8 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value v = scope.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value v = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value result;
         if (v instanceof ArrayValue) {
             ArrayValue arrayValue = (ArrayValue) v;

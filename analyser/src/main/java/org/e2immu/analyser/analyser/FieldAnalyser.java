@@ -71,7 +71,7 @@ public class FieldAnalyser {
                 } else {
                     localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
                 }
-                value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR);
+                value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR, ForwardEvaluationInfo.DEFAULT);
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
                 haveInitialiser = true;
             } else {

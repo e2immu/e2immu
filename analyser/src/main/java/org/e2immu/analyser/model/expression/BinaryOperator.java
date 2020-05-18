@@ -81,9 +81,11 @@ public class BinaryOperator implements Expression {
     // NOTE: we're not visiting here!
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value l = lhs.evaluate(evaluationContext, visitor);
-        Value r = rhs.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        ForwardEvaluationInfo forward = isEquality() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
+
+        Value l = lhs.evaluate(evaluationContext, visitor, forward);
+        Value r = rhs.evaluate(evaluationContext, visitor, forward);
         if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
 
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject) {
@@ -172,6 +174,13 @@ public class BinaryOperator implements Expression {
             return StringValue.concat(l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
+    }
+
+    private boolean isEquality() {
+        return operator == Primitives.PRIMITIVES.equalsOperatorInt ||
+                operator == Primitives.PRIMITIVES.equalsOperatorObject ||
+                operator == Primitives.PRIMITIVES.notEqualsOperatorObject ||
+                operator == Primitives.PRIMITIVES.notEqualsOperatorInt;
     }
 
     @NotNull

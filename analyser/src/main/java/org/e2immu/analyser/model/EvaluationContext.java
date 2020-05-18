@@ -18,9 +18,11 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -35,6 +37,7 @@ public interface EvaluationContext {
 
     // can be null, in evaluation of lambda expressions
     MethodInfo getCurrentMethod();
+    NumberedStatement getCurrentStatement();
 
     @NotNull
     TypeInfo getCurrentType();
@@ -72,8 +75,8 @@ public interface EvaluationContext {
 
     @NotNull
     VariableValue newVariableValue(@NotNull Variable variable);
-    // create a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
 
+    // obtain a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
     @NotNull
     Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies);
 
@@ -85,4 +88,11 @@ public interface EvaluationContext {
 
     // merge "up", explicitly called for Lambda blocks and expressions
     void merge(EvaluationContext child);
+
+    void markRead(Variable variable);
+
+    void markRead(String variableName);
+
+    DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name);
+    void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
 }

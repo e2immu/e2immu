@@ -18,7 +18,10 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -34,10 +37,17 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value v = evaluationContext.currentValue(variable);
-        visitor.visit(this, evaluationContext, v);
-        return v;
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value value = evaluationContext.currentValue(variable);
+        if (!forwardEvaluationInfo.isAssignmentTarget()) {
+            evaluationContext.markRead(variable);
+        }
+        if (forwardEvaluationInfo.isNotNull()) {
+            int notNull = value.getProperty(evaluationContext, VariableProperty.NOT_NULL);
+            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
+        }
+        visitor.visit(this, evaluationContext, value);
+        return value;
     }
 
     @Override
@@ -57,11 +67,6 @@ public class VariableExpression implements Expression {
 
     @Override
     public List<Variable> variables() {
-        return List.of(variable);
-    }
-
-    @Override
-    public List<Variable> variablesMarkRead() {
         return List.of(variable);
     }
 

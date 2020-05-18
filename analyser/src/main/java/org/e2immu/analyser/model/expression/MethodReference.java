@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
@@ -78,8 +79,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value value = scope.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value value = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value result;
 
         if (methodInfo.isConstructor) {
@@ -88,10 +89,25 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             result = new Instance(methodInfo.returnType(), methodInfo, List.of());
         } else {
             // normal method call, very similar to MethodCall.evaluate
-            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
-                Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
-                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                    result = singleValue;
+            int notNull = Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
+            if (forwardEvaluationInfo.isNotNull() && notNull == Level.FALSE) {
+                // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
+                result = ErrorValue.potentialNullPointerException(UnknownValue.UNKNOWN_VALUE);
+            } else {
+                if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+                    Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                    if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                        result = singleValue;
+                    } else {
+                        Value method = new MethodValue(methodInfo, value, List.of());
+                        if (value instanceof NullValue) {
+                            result = ErrorValue.nullPointerException(method);
+                        } else {
+                            result = method;
+                        }
+                    }
+                } else if (methodInfo.hasBeenDefined()) {
+                    result = UnknownValue.NO_VALUE; // delay, waiting
                 } else {
                     Value method = new MethodValue(methodInfo, value, List.of());
                     if (value instanceof NullValue) {
@@ -99,15 +115,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     } else {
                         result = method;
                     }
-                }
-            } else if (methodInfo.hasBeenDefined()) {
-                result = UnknownValue.NO_VALUE;
-            } else {
-                Value method = new MethodValue(methodInfo, value, List.of());
-                if (value instanceof NullValue) {
-                    result = ErrorValue.nullPointerException(method);
-                } else {
-                    result = method;
                 }
             }
         }

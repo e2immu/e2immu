@@ -13,17 +13,13 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
     public final Set<Variable> dependencies;
     public final String name;
-    public final Expression assignmentExpression;
 
     public DependentVariable(@NotNull ParameterizedType parameterizedType,  // the formal type
                              @NotNull1 Set<Variable> dependencies,         // all variables on which this one depends
-                             @NotNull String name,
-                             @NotNull Expression assignmentExpression) {    // from which we derive the concrete type
-        super(assignmentExpression == EmptyExpression.EMPTY_EXPRESSION ? parameterizedType :
-                parameterizedType.fillTypeParameters(assignmentExpression.returnType()));
+                             @NotNull String name) {    // from which we derive the concrete type
+        super(parameterizedType);
         this.parameterizedType = parameterizedType;
         this.dependencies = dependencies;
-        this.assignmentExpression = assignmentExpression;
         this.name = name;
     }
 
@@ -62,6 +58,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return assignmentExpression.sideEffect(sideEffectContext);
+        return SideEffect.LOCAL;
     }
 }

@@ -37,9 +37,9 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         // for now, casting will simply keep the value
-        return expression.evaluate(evaluationContext, visitor);
+        return expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
     }
 
     @Override

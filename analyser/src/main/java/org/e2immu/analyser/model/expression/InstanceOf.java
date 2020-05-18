@@ -42,8 +42,8 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value value = expression.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value value = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
         Value result;
         if (value instanceof UnknownValue) {
             result = value;

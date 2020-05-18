@@ -58,16 +58,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value result;
         if (objectValue instanceof NullValue) {
             result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);
         } else {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
-            List<Value> parameters = parameterExpressions.stream()
-                    .map(pe -> pe.evaluate(evaluationContext, visitor)).collect(Collectors.toList());
+            List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
             if (methodAnalysis.singleReturnValue.isSet()) {
                 Value singleValue = methodAnalysis.singleReturnValue.get();

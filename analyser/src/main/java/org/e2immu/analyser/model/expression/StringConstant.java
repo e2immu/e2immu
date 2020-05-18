@@ -36,7 +36,7 @@ public class StringConstant implements Expression, Constant<String> {
     public final StringValue constant;
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return constant;
     }
 

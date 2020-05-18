@@ -18,9 +18,11 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
@@ -100,6 +102,11 @@ public class TestAbstractValue {
         }
 
         @Override
+        public NumberedStatement getCurrentStatement() {
+            return null;
+        }
+
+        @Override
         public TypeInfo getCurrentType() {
             throw new UnsupportedOperationException();
         }
@@ -157,6 +164,26 @@ public class TestAbstractValue {
         @Override
         public void merge(EvaluationContext child) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void markRead(Variable variable) {
+            // nothing here
+        }
+
+        @Override
+        public void markRead(String variableName) {
+
+        }
+
+        @Override
+        public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name) {
+            return null;
+        }
+
+        @Override
+        public void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
+
         }
     };
 

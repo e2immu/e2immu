@@ -47,7 +47,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             if ("checkArray2".equals(methodInfo.name) && "2".equals(statementId)) {
                 if ("integers".equals(variableName)) {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED)); // integers=, NOT integers[i]=
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // integers[i]
+                    Assert.assertEquals(1, (int) properties.get(VariableProperty.READ));
                     Assert.assertNull(properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
                     Assert.assertEquals(3, (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT)); // because in scope side
                 } else if ("i".equals(variableName)) {

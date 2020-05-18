@@ -60,7 +60,7 @@ public class UnevaluatedMethodCall implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return UnknownValue.UNKNOWN_VALUE;
         //throw new UnsupportedOperationException();
     }

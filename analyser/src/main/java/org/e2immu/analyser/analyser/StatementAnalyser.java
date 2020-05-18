@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -32,13 +31,10 @@ import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -77,6 +73,7 @@ public class StatementAnalyser {
         try {
             while (statement != null) {
                 String statementId = statement.streamIndices();
+                variableProperties.setCurrentStatement(statement);
                 if (computeVariablePropertiesOfStatement(statement, variableProperties)) {
                     changes = true;
                 }
@@ -535,17 +532,23 @@ public class StatementAnalyser {
                         encounterUnevaluated.set(true);
                     }
                     VariableProperties lvp = (VariableProperties) localVariableProperties;
-                    doAssignmentTargetsAndInputVariables(localExpression, lvp, continueAfterError, statement);
-                    doImplicitNullCheck(statement, localExpression, lvp);
+
+                    if (expression instanceof MethodCall)
+                        checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
+                                variableProperties);
+                    else if (expression instanceof MethodReference)
+                        checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
+                                variableProperties);
+
                     if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
-                });
+                }, ForwardEvaluationInfo.DEFAULT);
         if (statement.statement instanceof ExpressionAsStatement && expression instanceof MethodCall) {
             checkUnusedReturnValue((MethodCall) expression, statement);
         } else if (statement.statement instanceof ForEachStatement) {
             // TODO: should be part of the evaluation, maybe via forward properties? there will be more @NotNull situations
             for (Variable variable : expression.variables()) {
                 log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
-                variableOccursInNotNullContext(statement, variable, variableProperties, Level.TRUE);
+                variableOccursInNotNullContext(variable, variableProperties, Level.TRUE);
             }
             if (expression instanceof MethodCall) {
                 MethodInfo methodCalled = ((MethodCall) expression).methodInfo;
@@ -586,94 +589,12 @@ public class StatementAnalyser {
         }
     }
 
-    /**
-     * We need to directly set "READ" for fields outside the construction phase
-     *
-     * @param expression         the current expression evaluated. Note that sub-expressions may have been analysed before
-     * @param variableProperties the evaluation context
-     * @param value              the result of the evaluation
-     */
-    private void doAssignmentTargetsAndInputVariables(Expression expression,
-                                                      VariableProperties variableProperties,
-                                                      Value value,
-                                                      NumberedStatement statement) {
-        if (expression instanceof Assignment) {
-            Assignment assignment = (Assignment) expression;
-            Variable at;
-            if (assignment.target instanceof ArrayAccess) {
-                ArrayAccess arrayAccess = (ArrayAccess) assignment.target;
-                at = variableProperties.newArrayVariable(arrayAccess, assignment.value);
-                log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
-            } else {
-                at = assignment.target.assignmentTarget().orElseThrow();
-                log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
-            }
-            // see if we need to raise an error (writing to fields outside our class, etc.)
-            if (at instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
-                FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-                // only change fields of "our" class, otherwise, raise error
-                if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
-                    if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
-                        typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
-                        fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
-                    }
-                    return;
-                }
-
-                // even inside our class, there are limitations; potentially raise error
-                if (checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, variableProperties)) {
-                    return;
-                }
-            } else if (at instanceof ParameterInfo) {
-                if (!statement.errorValue.isSet()) {
-                    typeContext.addMessage(Message.Severity.ERROR, "Assignment to parameter " + at.detailedString());
-                    statement.errorValue.set(true);
-                    return;
-                }
-            }
-            variableProperties.assignmentBasics(at, value, assignment.value != EmptyExpression.EMPTY_EXPRESSION);
-
-            // connect the value to the assignment target
-            if (value != NO_VALUE) {
-                Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
-                Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
-                log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
-                        Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
-                variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
-            }
-
-        }
-
-        // we keep track of the visits, so that variablesMarkRead is only returned 1x
-        for (Variable variable : expression.variablesMarkRead()) {
-            if (variable instanceof This) {
-                if (!methodAnalysis.thisRead.isSet()) {
-                    log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
-                    methodAnalysis.thisRead.set(true);
-                }
-            } else {
-                variableProperties.markRead(variable);
-            }
-        }
-
-        if (expression instanceof ArrayAccess) {
-            // there are variables at the Value level, not at the expression level
-            variableProperties.markRead((ArrayAccess) expression);
-        }
-        if (expression instanceof MethodCall)
-            checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
-                    variableProperties);
-        else if (expression instanceof MethodReference)
-            checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
-                    variableProperties);
-    }
 
     /**
      * @param methodCalled       the method that is being called
      * @param variableProperties context
      */
-    private void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, VariableProperties variableProperties) {
+    public static void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodCalled, EvaluationContext variableProperties) {
         if (methodCalled.isConstructor) return;
         TypeInfo currentType = variableProperties.getCurrentType();
         if (methodCalled.typeInfo == currentType) return;
@@ -691,7 +612,7 @@ public class StatementAnalyser {
         boolean error = notModified != Level.TRUE;
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
-            typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
+            variableProperties.getTypeContext().addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
                     " is not allowed to call non-@NotModified method " + methodCalled.distinguishingName());
         }
     }
@@ -701,8 +622,8 @@ public class StatementAnalyser {
      * @param variableProperties context
      * @return true if the assignment is illegal
      */
-    private boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldReference assignmentTarget,
-                                                                       VariableProperties variableProperties) {
+    public static boolean checkForIllegalAssignmentIntoNestedOrEnclosingType(FieldReference assignmentTarget,
+                                                                             EvaluationContext variableProperties) {
         MethodInfo currentMethod = variableProperties.getCurrentMethod();
         MethodAnalysis currentMethodAnalysis = currentMethod.methodAnalysis.get();
         FieldInfo fieldInfo = assignmentTarget.fieldInfo;
@@ -720,20 +641,13 @@ public class StatementAnalyser {
             error = !(owner.isRecord() && currentType.isAnEnclosingTypeOf(owner));
         }
         if (error) {
-            typeContext.addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
+            variableProperties.getTypeContext().addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
                     " is not allowed to assign to field " + fieldInfo.fullyQualifiedName());
         }
         currentMethodAnalysis.errorAssigningToFieldOutsideType.put(fieldInfo, error);
         return error;
     }
 
-    private void doImplicitNullCheck(NumberedStatement currentStatement,
-                                     Expression expression,
-                                     VariableProperties variableProperties) {
-        for (Variable variable : expression.variablesInScopeSide()) {
-            variableOccursInNotNullContext(currentStatement, variable, variableProperties, Level.TRUE);
-        }
-    }
 
     // the rest of the code deals with the effect of a method call on the variable properties
     // no annotations are set here, only variable properties
@@ -794,16 +708,18 @@ public class StatementAnalyser {
             Variable v = ((VariableExpression) parameterExpression).variable;
             int notNull = Level.value(parameterInDefinition.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
             if (notNull != Level.FALSE) {
-                return variableOccursInNotNullContext(currentStatement, v, variableProperties, notNull);
+                return variableOccursInNotNullContext(v, variableProperties, notNull);
             }
         }
         return false;
     }
 
-    private boolean variableOccursInNotNullContext(NumberedStatement currentStatement,
-                                                   Variable variable,
-                                                   VariableProperties variableProperties,
-                                                   int notNullContext) { // DELAY or TRUE
+    public static boolean variableOccursInNotNullContext(Variable variable,
+                                                         EvaluationContext evaluationContext,
+                                                         int notNullContext) { // DELAY or TRUE
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
+        NumberedStatement currentStatement = evaluationContext.getCurrentStatement();
+
         if (variable instanceof This) return false; // nothing to be done here
         // the variable has already been created, if relevant
         if (!variableProperties.isKnown(variable)) return false;
@@ -821,9 +737,9 @@ public class StatementAnalyser {
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
         int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
         if (notNull == Level.FALSE && !currentStatement.errorValue.isSet()) {
-            typeContext.addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
+            evaluationContext.getTypeContext().addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
                     + variable.detailedString() + " in statement "
-                    + currentStatement.streamIndices() + " of " + methodInfo.name);
+                    + currentStatement.streamIndices() + " of " + evaluationContext.getCurrentMethod().name);
             currentStatement.errorValue.set(true);
             return true;
         }

@@ -53,7 +53,7 @@ public class IntConstant implements Expression, Constant<Integer> {
 
     @Override
     @NotNull
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return constant;
     }
 

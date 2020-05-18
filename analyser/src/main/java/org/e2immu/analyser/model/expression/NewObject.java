@@ -19,16 +19,14 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class NewObject implements HasParameterExpressions {
@@ -107,21 +105,44 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value value;
         if (arrayInitializer != null) {
             List<Value> values = arrayInitializer.expressions.stream()
-                    .map(e -> e.evaluate(evaluationContext, visitor))
+                    .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
             value = new ArrayValue(values);
         } else {
-            List<Value> parameterValues = parameterExpressions.stream()
-                    .map(pe -> pe.evaluate(evaluationContext, visitor))
-                    .collect(Collectors.toList());
+            List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             value = new Instance(parameterizedType, constructor, parameterValues);
         }
         visitor.visit(this, evaluationContext, value);
         return value;
+    }
+
+    static List<Value> transform(List<Expression> parameterExpressions,
+                                 EvaluationContext evaluationContext,
+                                 EvaluationVisitor visitor,
+                                 MethodInfo methodInfo) {
+        List<Value> parameterValues = new ArrayList<>();
+        int i = 0;
+        for (Expression parameterExpression : parameterExpressions) {
+            ForwardEvaluationInfo forward;
+            if (methodInfo != null) {
+                ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
+                if (Level.haveTrueAt(parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL)) {
+                    forward = ForwardEvaluationInfo.NOT_NULL;
+                } else {
+                    forward = ForwardEvaluationInfo.DEFAULT;
+                }
+            } else {
+                forward = ForwardEvaluationInfo.DEFAULT;
+            }
+            Value parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
+            parameterValues.add(parameterValue);
+            i++;
+        }
+        return parameterValues;
     }
 
     @Override

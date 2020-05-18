@@ -39,7 +39,7 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new ClassValue(parameterizedType);
     }
 

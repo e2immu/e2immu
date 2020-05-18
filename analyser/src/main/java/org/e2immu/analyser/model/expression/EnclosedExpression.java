@@ -50,7 +50,7 @@ public class EnclosedExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        return inner.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return inner.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
     }
 }

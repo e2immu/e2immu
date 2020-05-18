@@ -92,4 +92,8 @@ public interface Value extends Comparable<Value> {
     default Set<Variable> variables() {
         return Set.of();
     }
+
+    default boolean isNotNotNull0(EvaluationContext evaluationContext) {
+        return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.FALSE;
+    }
 }

@@ -88,8 +88,8 @@ public class FieldAccess implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value scope = expression.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value scope = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value currentValue = evaluationContext.currentValue(variable);
         Value value;
         if (scope instanceof NullValue) {

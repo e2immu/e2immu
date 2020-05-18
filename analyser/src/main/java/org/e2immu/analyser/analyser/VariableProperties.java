@@ -49,6 +49,7 @@ class VariableProperties implements EvaluationContext {
 
     private Value conditional; // any conditional added to this block
     private boolean guaranteedToBeReachedInCurrentBlock = true;
+    private NumberedStatement currentStatement;
 
     // all the rest is final
 
@@ -120,6 +121,15 @@ class VariableProperties implements EvaluationContext {
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
+    }
+
+    @Override
+    public NumberedStatement getCurrentStatement() {
+        return currentStatement;
+    }
+
+    public void setCurrentStatement(NumberedStatement currentStatement) {
+        this.currentStatement = currentStatement;
     }
 
     @Override
@@ -352,7 +362,7 @@ class VariableProperties implements EvaluationContext {
             return recordField.type.defaultValue();
         }
         return initialiser.evaluate(this, (p1, p2, p3, p4) -> {
-        });// completely outside the context, but we should try
+        }, ForwardEvaluationInfo.DEFAULT);// completely outside the context, but we should try
     }
 
     private static Expression computeInitialiser(FieldInfo recordField) {
@@ -693,6 +703,7 @@ class VariableProperties implements EvaluationContext {
         return master;
     }
 
+    @Override
     public void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
         // assignment to local variable: could be that we're in the block where it was created, then nothing happens
         // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
@@ -750,14 +761,16 @@ class VariableProperties implements EvaluationContext {
         return conditional;
     }
 
-    void markRead(Variable variable) {
+    @Override
+    public void markRead(Variable variable) {
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.markRead();
     }
 
-    void markRead(ArrayAccess arrayAccess) {
-        AboutVariable aboutVariable = find(arrayAccess.dependentVariableName(this));
-        if(aboutVariable != null) {
+    @Override
+    public void markRead(String variableName) {
+        AboutVariable aboutVariable = find(variableName);
+        if (aboutVariable != null) {
             aboutVariable.markRead();
         }
     }
@@ -767,8 +780,7 @@ class VariableProperties implements EvaluationContext {
         String name = ArrayAccess.dependentVariableName(array, indexValue);
         AboutVariable aboutVariable = find(name);
         if (aboutVariable != null) return aboutVariable.getCurrentValue();
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
-                ImmutableSet.copyOf(dependencies), name, EmptyExpression.EMPTY_EXPRESSION);
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name);
         if (!isKnown(dependentVariable)) {
             createLocalVariableOrParameter(dependentVariable);
         }
@@ -780,18 +792,16 @@ class VariableProperties implements EvaluationContext {
      * easy to work with. Only when method has no side effects, and a, b stay identical, we could do something about this
      *
      * @param arrayAccess the input, consisting of two expressions
-     * @param value       the assignment value
      * @return a new type of variable which is dependent on other variables; as soon as one is assigned to, this one
      * loses its meaning
      */
 
-    public DependentVariable newArrayVariable(ArrayAccess arrayAccess, Expression value) {
+    @Override
+    public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name) {
         Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
         dependencies.addAll(arrayAccess.index.variables());
         ParameterizedType parameterizedType = arrayAccess.expression.returnType();
-        String name = arrayAccess.dependentVariableName(this);
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
-                ImmutableSet.copyOf(dependencies), name, value);
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name);
         if (!isKnown(dependentVariable)) {
             createLocalVariableOrParameter(dependentVariable);
         }

@@ -19,8 +19,10 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
@@ -72,9 +74,10 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        Value array = expression.evaluate(evaluationContext, visitor);
-        Value indexValue = index.evaluate(evaluationContext, visitor);
+    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value array = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+        Value indexValue = index.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+
         Value value;
         if (array instanceof ArrayValue && indexValue instanceof NumericValue) {
             int intIndex = (indexValue).toInt().value;
@@ -87,6 +90,14 @@ public class ArrayAccess implements Expression {
             Set<Variable> dependencies = new HashSet<>(expression.variables());
             dependencies.addAll(index.variables());
             value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies);
+
+            if (!forwardEvaluationInfo.isAssignmentTarget()) {
+                evaluationContext.markRead(dependentVariableName(array, indexValue));
+            }
+        }
+        // e.g.: callSomeMethod(line = reader.nextLine()) assignment inside @NotNull method parameter
+        if (forwardEvaluationInfo.isNotNull() && value.isNotNotNull0(evaluationContext)) {
+            value = ErrorValue.potentialNullPointerException(value);
         }
         visitor.visit(this, evaluationContext, value);
         return value;
@@ -104,10 +115,5 @@ public class ArrayAccess implements Expression {
 
     public static String dependentVariableName(Value array, Value index) {
         return array.asString() + "[" + index.asString() + "]";
-    }
-
-    public String dependentVariableName(EvaluationContext evaluationContext) {
-        return dependentVariableName(expression.evaluate(evaluationContext, EvaluationVisitor.NO_VISITOR),
-                index.evaluate(evaluationContext, EvaluationVisitor.NO_VISITOR));
     }
 }

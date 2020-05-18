@@ -43,7 +43,7 @@ public interface Expression {
     int precedence();
 
     @NotModified
-    Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor);
+    Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
     @E2Container
@@ -71,13 +71,6 @@ public interface Expression {
     @NotModified
     // TODO immutable
     default List<Variable> variables() {
-        return List.of();
-    }
-
-    @NotModified
-    @Independent
-    @E2Immutable
-    default List<Variable> variablesMarkRead() {
         return List.of();
     }
 
