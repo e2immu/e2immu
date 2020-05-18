@@ -32,6 +32,8 @@ import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +135,7 @@ public class StatementAnalyser {
                 }
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
-            if (escapesViaException && uselessAssignments(variableProperties)) changes = true;
+            if (uselessAssignments(variableProperties)) changes = true;
 
             if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
                 log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
@@ -596,9 +598,16 @@ public class StatementAnalyser {
                                                       NumberedStatement statement) {
         if (expression instanceof Assignment) {
             Assignment assignment = (Assignment) expression;
-            Variable at = assignment.target.assignmentTarget().orElseThrow();
-            log(VARIABLE_PROPERTIES, "Assign value of {} to {}", at.detailedString(), value);
-
+            Variable at;
+            if (assignment.target instanceof ArrayAccess) {
+                ArrayAccess arrayAccess = (ArrayAccess) assignment.target;
+                at = newArrayVariable(variableProperties, arrayAccess, assignment.value);
+                log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
+            } else {
+                at = assignment.target.assignmentTarget().orElseThrow();
+                log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
+            }
+            // see if we need to raise an error (writing to fields outside our class, etc.)
             if (at instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
                 FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
@@ -624,6 +633,7 @@ public class StatementAnalyser {
             }
             variableProperties.assignmentBasics(at, value, assignment.value != EmptyExpression.EMPTY_EXPRESSION);
 
+            // connect the value to the assignment target
             if (value != NO_VALUE) {
                 Set<Variable> linkToBestCase = value.linkedVariables(true, variableProperties);
                 Set<Variable> linkToWorstCase = value.linkedVariables(false, variableProperties);
@@ -650,6 +660,30 @@ public class StatementAnalyser {
         else if (expression instanceof MethodReference)
             checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
                     variableProperties);
+    }
+
+    /**
+     * here we have multiple situations, we could have something like method(a,b)[3], which will not be
+     * easy to work with. Only when method has no side effects, and a, b stay identical, we could do something about this
+     *
+     * @param arrayAccess the input, consisting of two expressions
+     * @param value
+     * @return a new type of variable which is dependent on other variables; as soon as one is assigned to, this one
+     * loses its meaning
+     */
+
+    private DependentVariable newArrayVariable(VariableProperties variableProperties, ArrayAccess arrayAccess, Expression value) {
+        Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
+        dependencies.addAll(arrayAccess.index.variables());
+        ParameterizedType parameterizedType = arrayAccess.expression.returnType();
+        String standardizedName = arrayAccess.expression.evaluate(variableProperties, EvaluationVisitor.NO_VISITOR).asString() + "["
+                + arrayAccess.index.evaluate(variableProperties, EvaluationVisitor.NO_VISITOR) + "]";
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
+                ImmutableSet.copyOf(dependencies), standardizedName, value);
+        if (!variableProperties.isKnown(dependentVariable)) {
+            variableProperties.createLocalVariableOrParameter(dependentVariable);
+        }
+        return dependentVariable;
     }
 
     /**

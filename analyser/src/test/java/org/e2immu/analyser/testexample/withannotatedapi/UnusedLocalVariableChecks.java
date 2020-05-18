@@ -19,10 +19,12 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 // NOTE: this one relies on String.toLowerCase() being annotated @NotNull
 
+@E2Container
 public class UnusedLocalVariableChecks {
 
     // ERROR 3: private field b is not read outside constructors

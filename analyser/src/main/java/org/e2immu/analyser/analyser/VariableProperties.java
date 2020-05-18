@@ -275,7 +275,7 @@ class VariableProperties implements EvaluationContext {
     @Override
     public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
-        if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo) {
+        if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
             Value resetValue = new VariableValue(this, variable, variable.name());
             internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, SINGLE_COPY);
         } else {

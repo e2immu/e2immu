@@ -54,7 +54,30 @@ The `variable` will always faithfully be the inspected variable.
 The `name` will point to the location in the local map.
 We probably will need to store some more info.
 
-==== Not null
+=== Arrays
 
-Evaluation will also contain a forward not-null requirement.
-The good thing about such a forward requirement is that the correct actions or error messages can be raised.
+Consider assignment to elements in an array.
+We should treat them exactly in the same ways as we treat record fields: if `a` is an array, then initialisation and element assignments are assignments to two different variables, one dependent on the other for its existence:
+
+[source,java]
+----
+int[] a = new int[3];
+a[0]=1;
+a[1]=2;
+if(a[0] == 0) { ... } // should raise an error (evaluation of condition to constant)
+----
+
+The extra complication are assignments in loops:
+
+[source,java]
+----
+for(int i=0; i<a.length; i++) a[i]=10;
+----
+Here, we would ideally see that `i` traverses the whole array.
+Then, there are _arbitrary_ assignments like
+[source,java]
+----
+int index=magicFormula();
+a[index] += 1;
+----
+As long as `index` stays unmodified, we can create a temporary variable.
