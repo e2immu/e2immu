@@ -75,7 +75,7 @@ public interface EvaluationContext {
     // create a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
 
     @NotNull
-    VariableValue newArrayVariableValue(Value array, Value indexValue);
+    Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies);
 
     // delegation
     int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);

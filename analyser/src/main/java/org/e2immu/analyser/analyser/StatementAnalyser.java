@@ -38,6 +38,7 @@ import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -601,7 +602,7 @@ public class StatementAnalyser {
             Variable at;
             if (assignment.target instanceof ArrayAccess) {
                 ArrayAccess arrayAccess = (ArrayAccess) assignment.target;
-                at = newArrayVariable(variableProperties, arrayAccess, assignment.value);
+                at = variableProperties.newArrayVariable(arrayAccess, assignment.value);
                 log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
             } else {
                 at = assignment.target.assignmentTarget().orElseThrow();
@@ -642,17 +643,23 @@ public class StatementAnalyser {
                 variableProperties.linkVariables(at, linkToBestCase, linkToWorstCase);
             }
 
-        } else {
-            for (Variable variable : expression.variables()) {
-                if (variable instanceof This) {
-                    if (!methodAnalysis.thisRead.isSet()) {
-                        log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
-                        methodAnalysis.thisRead.set(true);
-                    }
-                } else {
-                    variableProperties.markRead(variable);
+        }
+
+        // we keep track of the visits, so that variablesMarkRead is only returned 1x
+        for (Variable variable : expression.variablesMarkRead()) {
+            if (variable instanceof This) {
+                if (!methodAnalysis.thisRead.isSet()) {
+                    log(ASSIGNMENT, "Mark that '{}' has been read in {}", variable.detailedString(), methodInfo.distinguishingName());
+                    methodAnalysis.thisRead.set(true);
                 }
+            } else {
+                variableProperties.markRead(variable);
             }
+        }
+
+        if (expression instanceof ArrayAccess) {
+            // there are variables at the Value level, not at the expression level
+            variableProperties.markRead((ArrayAccess) expression);
         }
         if (expression instanceof MethodCall)
             checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
@@ -660,30 +667,6 @@ public class StatementAnalyser {
         else if (expression instanceof MethodReference)
             checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
                     variableProperties);
-    }
-
-    /**
-     * here we have multiple situations, we could have something like method(a,b)[3], which will not be
-     * easy to work with. Only when method has no side effects, and a, b stay identical, we could do something about this
-     *
-     * @param arrayAccess the input, consisting of two expressions
-     * @param value
-     * @return a new type of variable which is dependent on other variables; as soon as one is assigned to, this one
-     * loses its meaning
-     */
-
-    private DependentVariable newArrayVariable(VariableProperties variableProperties, ArrayAccess arrayAccess, Expression value) {
-        Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
-        dependencies.addAll(arrayAccess.index.variables());
-        ParameterizedType parameterizedType = arrayAccess.expression.returnType();
-        String standardizedName = arrayAccess.expression.evaluate(variableProperties, EvaluationVisitor.NO_VISITOR).asString() + "["
-                + arrayAccess.index.evaluate(variableProperties, EvaluationVisitor.NO_VISITOR) + "]";
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
-                ImmutableSet.copyOf(dependencies), standardizedName, value);
-        if (!variableProperties.isKnown(dependentVariable)) {
-            variableProperties.createLocalVariableOrParameter(dependentVariable);
-        }
-        return dependentVariable;
     }
 
     /**

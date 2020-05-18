@@ -61,6 +61,11 @@ public class VariableExpression implements Expression {
     }
 
     @Override
+    public List<Variable> variablesMarkRead() {
+        return List.of(variable);
+    }
+
+    @Override
     public Optional<Variable> assignmentTarget() {
         return Optional.of(variable);
     }

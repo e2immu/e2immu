@@ -22,15 +22,15 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
+/**
+ * We do not override variablesMarkRead(), because both the array and the index will be read in the initial
+ * evaluations; so an empty list is what is needed.
+ */
 public class ArrayAccess implements Expression {
 
     public final Expression expression;
@@ -84,9 +84,11 @@ public class ArrayAccess implements Expression {
             }
             value = arrayValue.values.get(intIndex);
         } else {
-            value = evaluationContext.newArrayVariableValue(array, indexValue);
+            Set<Variable> dependencies = new HashSet<>(expression.variables());
+            dependencies.addAll(index.variables());
+            value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies);
         }
-        //visitor.visit(expression, evaluationContext, value);
+        visitor.visit(this, evaluationContext, value);
         return value;
     }
 
@@ -98,5 +100,14 @@ public class ArrayAccess implements Expression {
     @Override
     public List<Variable> variables() {
         return ListUtil.immutableConcat(expression.variables(), index.variables());
+    }
+
+    public static String dependentVariableName(Value array, Value index) {
+        return array.asString() + "[" + index.asString() + "]";
+    }
+
+    public String dependentVariableName(EvaluationContext evaluationContext) {
+        return dependentVariableName(expression.evaluate(evaluationContext, EvaluationVisitor.NO_VISITOR),
+                index.evaluate(evaluationContext, EvaluationVisitor.NO_VISITOR));
     }
 }

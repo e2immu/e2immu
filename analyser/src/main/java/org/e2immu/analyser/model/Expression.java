@@ -20,9 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +71,13 @@ public interface Expression {
     @NotModified
     // TODO immutable
     default List<Variable> variables() {
+        return List.of();
+    }
+
+    @NotModified
+    @Independent
+    @E2Immutable
+    default List<Variable> variablesMarkRead() {
         return List.of();
     }
 

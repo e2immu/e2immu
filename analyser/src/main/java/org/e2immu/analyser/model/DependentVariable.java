@@ -17,15 +17,14 @@ public class DependentVariable extends VariableWithConcreteReturnType {
 
     public DependentVariable(@NotNull ParameterizedType parameterizedType,  // the formal type
                              @NotNull1 Set<Variable> dependencies,         // all variables on which this one depends
-                             @NotNull String standardizedName,
+                             @NotNull String name,
                              @NotNull Expression assignmentExpression) {    // from which we derive the concrete type
-        super(parameterizedType.fillTypeParameters(assignmentExpression.returnType()));
-        assert assignmentExpression != EmptyExpression.EMPTY_EXPRESSION;
+        super(assignmentExpression == EmptyExpression.EMPTY_EXPRESSION ? parameterizedType :
+                parameterizedType.fillTypeParameters(assignmentExpression.returnType()));
         this.parameterizedType = parameterizedType;
         this.dependencies = dependencies;
         this.assignmentExpression = assignmentExpression;
-
-        name = standardizedName + "(" + dependencies.stream().map(Variable::name).sorted().collect(Collectors.joining(",")) + ")";
+        this.name = name;
     }
 
     @Override

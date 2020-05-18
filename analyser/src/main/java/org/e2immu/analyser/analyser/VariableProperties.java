@@ -19,9 +19,11 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.TypeContext;
@@ -33,7 +35,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AboutVariable.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
@@ -474,11 +475,6 @@ class VariableProperties implements EvaluationContext {
         return new VariableValue(this, variable, aboutVariable.name);
     }
 
-    @Override
-    public VariableValue newArrayVariableValue(Value array, Value indexValue) {
-        throw new UnsupportedOperationException(); // TODO goal is to make a local variable with a combined name
-    }
-
     public Variable switchToValueVariable(Variable variable) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return variable;
@@ -756,8 +752,49 @@ class VariableProperties implements EvaluationContext {
 
     void markRead(Variable variable) {
         AboutVariable aboutVariable = findComplain(variable);
-        aboutVariable.removeProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
-        int read = aboutVariable.getProperty(VariableProperty.READ);
-        aboutVariable.setProperty(VariableProperty.READ, Level.nextLevelTrue(read, 1));
+        aboutVariable.markRead();
+    }
+
+    void markRead(ArrayAccess arrayAccess) {
+        AboutVariable aboutVariable = find(arrayAccess.dependentVariableName(this));
+        if(aboutVariable != null) {
+            aboutVariable.markRead();
+        }
+    }
+
+    @Override
+    public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies) {
+        String name = ArrayAccess.dependentVariableName(array, indexValue);
+        AboutVariable aboutVariable = find(name);
+        if (aboutVariable != null) return aboutVariable.getCurrentValue();
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
+                ImmutableSet.copyOf(dependencies), name, EmptyExpression.EMPTY_EXPRESSION);
+        if (!isKnown(dependentVariable)) {
+            createLocalVariableOrParameter(dependentVariable);
+        }
+        return currentValue(dependentVariable);
+    }
+
+    /**
+     * here we have multiple situations, we could have something like method(a,b)[3], which will not be
+     * easy to work with. Only when method has no side effects, and a, b stay identical, we could do something about this
+     *
+     * @param arrayAccess the input, consisting of two expressions
+     * @param value       the assignment value
+     * @return a new type of variable which is dependent on other variables; as soon as one is assigned to, this one
+     * loses its meaning
+     */
+
+    public DependentVariable newArrayVariable(ArrayAccess arrayAccess, Expression value) {
+        Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
+        dependencies.addAll(arrayAccess.index.variables());
+        ParameterizedType parameterizedType = arrayAccess.expression.returnType();
+        String name = arrayAccess.dependentVariableName(this);
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType,
+                ImmutableSet.copyOf(dependencies), name, value);
+        if (!isKnown(dependentVariable)) {
+            createLocalVariableOrParameter(dependentVariable);
+        }
+        return dependentVariable;
     }
 }

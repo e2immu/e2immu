@@ -137,7 +137,7 @@ public class Assignment implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor) {
-        if (!(target instanceof VariableExpression)) {
+        if (!(target instanceof VariableExpression) && !(target instanceof ArrayAccess)) {
             // we evaluate if there is a more complex expression, like a.b.c (FieldAccess) or so
             // otherwise, we want to avoid a visit on the variable
             target.evaluate(evaluationContext, visitor);

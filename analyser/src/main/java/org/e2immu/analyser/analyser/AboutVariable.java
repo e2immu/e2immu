@@ -83,12 +83,13 @@ class AboutVariable {
         properties.put(variableProperty, value);
     }
 
-    void removeProperty(VariableProperty variableProperty) {
-        properties.remove(variableProperty);
-    }
-
     public Map<VariableProperty, Integer> properties() {
         return ImmutableMap.copyOf(properties);
     }
 
+    public void markRead() {
+        properties.remove(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
+        int read = getProperty(VariableProperty.READ);
+        setProperty(VariableProperty.READ, Level.nextLevelTrue(read, 1));
+    }
 }

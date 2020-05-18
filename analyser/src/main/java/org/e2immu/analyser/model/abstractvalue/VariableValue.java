@@ -65,6 +65,11 @@ public class VariableValue implements Value {
     }
 
     @Override
+    public String asString() {
+        return name;
+    }
+
+    @Override
     public int compareTo(Value o) {
         if (o == UnknownValue.UNKNOWN_VALUE) return -1;
         if (o instanceof VariableValue) return name.compareTo(((VariableValue) o).name);

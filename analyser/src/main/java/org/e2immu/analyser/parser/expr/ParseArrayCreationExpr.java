@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -59,6 +60,8 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));
+        constructor.methodAnalysis.set(new MethodAnalysis(constructor));
+        constructor.methodAnalysis.get().properties.put(VariableProperty.INDEPENDENT, Level.TRUE);
         return constructor;
     }
 

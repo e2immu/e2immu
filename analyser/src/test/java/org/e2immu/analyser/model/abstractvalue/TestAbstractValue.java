@@ -33,7 +33,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -141,7 +140,7 @@ public class TestAbstractValue {
         }
 
         @Override
-        public VariableValue newArrayVariableValue(Value array, Value indexValue) {
+        public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies) {
             throw new UnsupportedOperationException();
         }
 
