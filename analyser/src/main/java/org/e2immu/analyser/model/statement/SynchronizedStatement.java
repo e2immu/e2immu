@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -34,7 +35,7 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     public SynchronizedStatement(Expression expression,
                                  Block block) {
-        super(expression);
+        super(expression, ForwardEvaluationInfo.NOT_NULL);
         Objects.requireNonNull(block);
         // elseBlock may be absent
         this.block = block;
@@ -54,7 +55,9 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setExpression(expression)
+        return new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementsExecutedAtLeastOnce(v -> true)
                 .setNoBlockMayBeExecuted(false)
                 .setStatements(block).build();

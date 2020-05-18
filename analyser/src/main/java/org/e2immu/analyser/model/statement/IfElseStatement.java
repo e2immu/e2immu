@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -35,7 +36,7 @@ public class IfElseStatement extends StatementWithExpression {
     public IfElseStatement(Expression expression,
                            Block ifBlock,
                            Block elseBlock) {
-        super(expression);
+        super(expression, ForwardEvaluationInfo.NOT_NULL);
         this.ifBlock = ifBlock;
         this.elseBlock = elseBlock;
     }
@@ -61,7 +62,11 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression).setStatements(ifBlock).setStatementsExecutedAtLeastOnce(v -> false);
+        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setStatements(ifBlock)
+                .setStatementsExecutedAtLeastOnce(v -> false);
         if (elseBlock != Block.EMPTY_BLOCK) {
             builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementsExecutedAtLeastOnce(v -> false)

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
@@ -80,6 +81,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+
         Value value = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value result;
 
@@ -89,8 +92,12 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             result = new Instance(methodInfo.returnType(), methodInfo, List.of());
         } else {
             // normal method call, very similar to MethodCall.evaluate
-            int notNull = Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
-            if (forwardEvaluationInfo.isNotNull() && notNull == Level.FALSE) {
+
+            // check the not-null aspect
+            int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+            int forwardNotNull = Level.value(forwardEvaluationInfo.getNotNull(), Level.NOT_NULL);
+
+            if (forwardNotNull == Level.TRUE && notNull == Level.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
                 result = ErrorValue.potentialNullPointerException(UnknownValue.UNKNOWN_VALUE);
             } else {

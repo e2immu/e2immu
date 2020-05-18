@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
@@ -29,17 +30,19 @@ import java.util.Set;
 
 public abstract class StatementWithExpression implements Statement {
     public final Expression expression;
+    public final ForwardEvaluationInfo forwardEvaluationInfo;
 
-    protected StatementWithExpression(Expression expression) {
+    protected StatementWithExpression(Expression expression, ForwardEvaluationInfo forwardEvaluationInfo) {
         this.expression = Objects.requireNonNull(expression);
-        //if (expression instanceof UnevaluatedMethodCall || expression instanceof UnevaluatedLambdaExpression) {
-        //    throw new UnsupportedOperationException("?");
-        //}
+        this.forwardEvaluationInfo = forwardEvaluationInfo;
     }
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setExpression(expression).build();
+        return new CodeOrganization.Builder()
+                .setForwardEvaluationInfo(forwardEvaluationInfo)
+                .setExpression(expression)
+                .build();
     }
 
     @Override

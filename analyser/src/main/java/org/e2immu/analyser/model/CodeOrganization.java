@@ -27,6 +27,7 @@ public class CodeOrganization {
     public final List<Expression> initialisers; // try, for   (example: int i=0; )
     public final LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
     public final Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
+    public final ForwardEvaluationInfo forwardEvaluationInfo; // info on the expression to be evaluated
     public final List<Expression> updaters; // for, explicit constructor invocation
 
     public final HasStatements statements;  // block in loops, statements or block in switch statement
@@ -41,7 +42,8 @@ public class CodeOrganization {
 
     private CodeOrganization(List<Expression> initialisers,
                              LocalVariable localVariableCreation,
-                             Expression expression,
+                             @NotNull Expression expression,
+                             @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
                              List<Expression> updaters,
                              HasStatements statements,
                              @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
@@ -50,6 +52,7 @@ public class CodeOrganization {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
+        this.forwardEvaluationInfo = Objects.requireNonNull(forwardEvaluationInfo);
         this.updaters = Objects.requireNonNull(updaters);
         this.statements = Objects.requireNonNull(statements);
         if (this.statements.getStatements().isEmpty() && this.statements != Block.EMPTY_BLOCK) {
@@ -76,6 +79,7 @@ public class CodeOrganization {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
         private LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
+        private ForwardEvaluationInfo forwardEvaluationInfo;
         private final List<Expression> updaters = new ArrayList<>(); // for
         private Predicate<Value> statementsExecutedAtLeastOnce;
         private HasStatements statements;  // block in loops, statements or block in switch statement
@@ -84,6 +88,11 @@ public class CodeOrganization {
 
         public Builder setExpression(Expression expression) {
             this.expression = expression;
+            return this;
+        }
+
+        public Builder setForwardEvaluationInfo(ForwardEvaluationInfo forwardEvaluationInfo) {
+            this.forwardEvaluationInfo = forwardEvaluationInfo;
             return this;
         }
 
@@ -127,6 +136,7 @@ public class CodeOrganization {
             return new CodeOrganization(ImmutableList.copyOf(initialisers),
                     localVariableCreation,
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
+                    forwardEvaluationInfo == null ? ForwardEvaluationInfo.DEFAULT : forwardEvaluationInfo,
                     ImmutableList.copyOf(updaters),
                     statements == null ? Block.EMPTY_BLOCK : statements,
                     statementsExecutedAtLeastOnce == null ? v -> false : statementsExecutedAtLeastOnce,

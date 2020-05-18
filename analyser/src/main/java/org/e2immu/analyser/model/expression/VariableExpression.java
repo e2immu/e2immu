@@ -42,10 +42,11 @@ public class VariableExpression implements Expression {
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             evaluationContext.markRead(variable);
         }
-        if (forwardEvaluationInfo.isNotNull()) {
-            int notNull = value.getProperty(evaluationContext, VariableProperty.NOT_NULL);
-            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
+        if (forwardEvaluationInfo.getNotNull() != Level.FALSE) {
+            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, forwardEvaluationInfo.getNotNull());
         }
+        StatementAnalyser.markContentModified(evaluationContext, variable, forwardEvaluationInfo.getNotModified());
+
         visitor.visit(this, evaluationContext, value);
         return value;
     }

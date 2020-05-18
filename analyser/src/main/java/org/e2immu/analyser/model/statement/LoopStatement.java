@@ -1,9 +1,6 @@
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 
 import java.util.Objects;
@@ -15,7 +12,7 @@ public abstract class LoopStatement extends StatementWithExpression {
     public final Predicate<Value> statementsExecutedAtLeastOnce;
 
     protected LoopStatement(String label, Expression condition, Block block, Predicate<Value> statementsExecutedAtLeastOnce) {
-        super(condition);
+        super(condition, ForwardEvaluationInfo.NOT_NULL);
         this.label = label;
         this.block = Objects.requireNonNull(block);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
@@ -25,7 +22,9 @@ public abstract class LoopStatement extends StatementWithExpression {
     public CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder()
                 .setStatementsExecutedAtLeastOnce(statementsExecutedAtLeastOnce)
-                .setExpression(expression).setStatements(block).build();
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setStatements(block).build();
     }
 
     @Override

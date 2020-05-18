@@ -19,9 +19,11 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.util.ListUtil;
@@ -96,8 +98,8 @@ public class ArrayAccess implements Expression {
             }
         }
         // e.g.: callSomeMethod(line = reader.nextLine()) assignment inside @NotNull method parameter
-        if (forwardEvaluationInfo.isNotNull() && value.isNotNotNull0(evaluationContext)) {
-            value = ErrorValue.potentialNullPointerException(value);
+        if (forwardEvaluationInfo.getNotNull() != Level.FALSE && value instanceof VariableValue) {
+            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, forwardEvaluationInfo.getNotNull());
         }
         visitor.visit(this, evaluationContext, value);
         return value;

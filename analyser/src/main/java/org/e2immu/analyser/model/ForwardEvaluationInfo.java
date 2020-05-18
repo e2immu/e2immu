@@ -1,56 +1,59 @@
 package org.e2immu.analyser.model;
 
+import java.util.StringJoiner;
+
 public interface ForwardEvaluationInfo {
 
-    boolean isNotNull();
+    int getNotNull();
+
+    int getNotModified();
 
     boolean isAssignmentTarget();
 
-    ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo() {
+    class ForwardEvaluationInfoContainer implements ForwardEvaluationInfo {
+        public final int notNull;
+        public final boolean assignmentTarget;
+        public final int notModified;
+
+        public ForwardEvaluationInfoContainer(int notNull, int notModified, boolean assignmentTarget) {
+            this.notNull = notNull;
+            this.notModified = notModified;
+            this.assignmentTarget = assignmentTarget;
+        }
+
         @Override
-        public boolean isNotNull() {
-            return false;
+        public int getNotNull() {
+            return notNull;
+        }
+
+        @Override
+        public int getNotModified() {
+            return notModified;
         }
 
         @Override
         public boolean isAssignmentTarget() {
-            return false;
-        }
-    };
-
-    ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfo() {
-        @Override
-        public boolean isNotNull() {
-            return false;
+            return assignmentTarget;
         }
 
         @Override
-        public boolean isAssignmentTarget() {
-            return true;
+        public String toString() {
+            return new StringJoiner(", ", ForwardEvaluationInfoContainer.class.getSimpleName() + "[", "]")
+                    .add("notNull=" + notNull)
+                    .add("assignmentTarget=" + assignmentTarget)
+                    .add("notModified=" + notModified)
+                    .toString();
         }
-    };
+    }
 
-    ForwardEvaluationInfo ASSIGNMENT_TARGET_NOT_NULL = new ForwardEvaluationInfo() {
-        @Override
-        public boolean isNotNull() {
-            return true;
-        }
+    ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfoContainer(Level.FALSE, Level.DELAY, false);
 
-        @Override
-        public boolean isAssignmentTarget() {
-            return true;
-        }
-    };
+    // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
+    ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfoContainer(Level.FALSE, Level.DELAY, true);
 
-    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo() {
-        @Override
-        public boolean isNotNull() {
-            return true;
-        }
+    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfoContainer(Level.TRUE, Level.DELAY, false);
 
-        @Override
-        public boolean isAssignmentTarget() {
-            return false;
-        }
-    };
+    static ForwardEvaluationInfo create(int notNull, int notModified) {
+        return new ForwardEvaluationInfoContainer(notNull, notModified, false);
+    }
 }

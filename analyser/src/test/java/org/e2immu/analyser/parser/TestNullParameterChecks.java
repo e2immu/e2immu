@@ -45,7 +45,9 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 return;
             }
             if ("NullParameterChecks.this.s".equals(variableName)) {
-                LOGGER.info("Properties of this.s it iteration {} are {}, value {}", iteration, properties, currentValue);
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
+                Assert.assertNull(properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // field, does not need to be read
                 return;
             }
             Assert.fail();

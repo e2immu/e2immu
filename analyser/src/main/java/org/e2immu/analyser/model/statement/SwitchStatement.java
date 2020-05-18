@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -13,7 +14,7 @@ public class SwitchStatement extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatement(Expression selector, List<SwitchEntry> switchEntries) {
-        super(selector);
+        super(selector, ForwardEvaluationInfo.NOT_NULL);
         this.switchEntries = ImmutableList.copyOf(switchEntries);
     }
 
@@ -41,7 +42,9 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().setExpression(expression);
+        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
         boolean haveNoDefault = switchEntries.stream().allMatch(switchEntry -> switchEntry.isNotDefault());
         builder.setNoBlockMayBeExecuted(haveNoDefault);

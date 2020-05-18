@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -34,7 +35,7 @@ import java.util.List;
 public class ExpressionAsStatement extends StatementWithExpression {
 
     public ExpressionAsStatement(Expression expression) {
-        super(expression);
+        super(expression, ForwardEvaluationInfo.DEFAULT);
     }
 
     @Override

@@ -129,12 +129,25 @@ public class NewObject implements HasParameterExpressions {
         for (Expression parameterExpression : parameterExpressions) {
             ForwardEvaluationInfo forward;
             if (methodInfo != null) {
-                ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-                if (Level.haveTrueAt(parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL)) {
-                    forward = ForwardEvaluationInfo.NOT_NULL;
+                List<ParameterInfo> params = methodInfo.methodInspection.get().parameters;
+                ParameterInfo parameterInfo;
+                if (i >= params.size()) {
+                    ParameterInfo lastParameter = params.get(params.size() - 1);
+                    if (lastParameter.parameterInspection.get().varArgs) {
+                        parameterInfo = lastParameter;
+                    } else {
+                        throw new UnsupportedOperationException("?");
+                    }
                 } else {
-                    forward = ForwardEvaluationInfo.DEFAULT;
+                    parameterInfo = params.get(i);
                 }
+                // not modified
+                int notModified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+                int notModifiedValue = notModified == Level.DELAY ? Level.compose(Level.TRUE, 0) :
+                        Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
+                // not null
+                int notNull = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+                forward = ForwardEvaluationInfo.create(notNull, notModified);
             } else {
                 forward = ForwardEvaluationInfo.DEFAULT;
             }

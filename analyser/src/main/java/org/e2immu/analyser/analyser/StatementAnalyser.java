@@ -244,7 +244,7 @@ public class StatementAnalyser {
                 variableProperties.createLocalVariableOrParameter(lvr, newLocalVariableProperties);
             }
             try {
-                EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement);
+                EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);
                 if (result.changes) changes = true;
             } catch (RuntimeException rte) {
                 LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statement);
@@ -268,7 +268,7 @@ public class StatementAnalyser {
 
         // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
         for (Expression updater : codeOrganization.updaters) {
-            EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement);
+            EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);
             if (result.changes) changes = true;
         }
 
@@ -280,7 +280,7 @@ public class StatementAnalyser {
         } else {
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(codeOrganization.expression,
-                        variableProperties, statement);
+                        variableProperties, statement, codeOrganization.forwardEvaluationInfo);
                 if (result.changes) changes = true;
                 value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
             } catch (RuntimeException rte) {
@@ -407,7 +407,7 @@ public class StatementAnalyser {
             } else {
                 // real expression
                 EvaluationResult result = computeVariablePropertiesOfExpression(subStatements.expression,
-                        variableProperties, statement);
+                        variableProperties, statement, subStatements.forwardEvaluationInfo);
                 valueForSubStatement = result.value;
                 if (result.changes) changes = true;
                 conditions.add(valueForSubStatement);
@@ -510,9 +510,11 @@ public class StatementAnalyser {
 
     private EvaluationResult computeVariablePropertiesOfExpression(Expression expression,
                                                                    VariableProperties variableProperties,
-                                                                   NumberedStatement statement) {
+                                                                   NumberedStatement statement,
+                                                                   ForwardEvaluationInfo forwardEvaluationInfo) {
         AtomicBoolean changes = new AtomicBoolean();
         AtomicBoolean encounterUnevaluated = new AtomicBoolean();
+
         Value value = expression.evaluate(variableProperties,
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     // local changes come from analysing lambda blocks as methods
@@ -531,41 +533,10 @@ public class StatementAnalyser {
                     if (continueAfterError == NO_VALUE) {
                         encounterUnevaluated.set(true);
                     }
-                    VariableProperties lvp = (VariableProperties) localVariableProperties;
+                }, forwardEvaluationInfo);
 
-                    if (expression instanceof MethodCall)
-                        checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodCall) expression).methodInfo,
-                                variableProperties);
-                    else if (expression instanceof MethodReference)
-                        checkForIllegalMethodUsageIntoNestedOrEnclosingType(((MethodReference) expression).methodInfo,
-                                variableProperties);
-
-                    if (analyseCallsWithParameters(statement, localExpression, lvp)) changes.set(true);
-                }, ForwardEvaluationInfo.DEFAULT);
         if (statement.statement instanceof ExpressionAsStatement && expression instanceof MethodCall) {
             checkUnusedReturnValue((MethodCall) expression, statement);
-        } else if (statement.statement instanceof ForEachStatement) {
-            // TODO: should be part of the evaluation, maybe via forward properties? there will be more @NotNull situations
-            for (Variable variable : expression.variables()) {
-                log(VARIABLE_PROPERTIES, "Set variable {} to permanently not null: in forEach statement", variable.detailedString());
-                variableOccursInNotNullContext(variable, variableProperties, Level.TRUE);
-            }
-            if (expression instanceof MethodCall) {
-                MethodInfo methodCalled = ((MethodCall) expression).methodInfo;
-                if (methodCalled != variableProperties.getCurrentMethod()) { // not a recursive call
-                    int notNull = methodCalled.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-                    if (notNull == Level.DELAY) encounterUnevaluated.set(true);
-                    else if (notNull == Level.FALSE) {
-                        if (!statement.errorValue.isSet()) {
-                            typeContext.addMessage(Message.Severity.ERROR, "Result of method call can be null in a @NotNull situation: " +
-                                    methodCalled.distinguishingName() + " in " +
-                                    statement.streamIndices() + ", " +
-                                    variableProperties.getCurrentMethod().distinguishingName());
-                            statement.errorValue.set(true);
-                        }
-                    }
-                }
-            }
         }
         return new EvaluationResult(changes.get(), encounterUnevaluated.get(), value);
     }
@@ -652,82 +623,20 @@ public class StatementAnalyser {
     // the rest of the code deals with the effect of a method call on the variable properties
     // no annotations are set here, only variable properties
 
-    private boolean analyseCallsWithParameters(NumberedStatement currentStatement, Expression expression, VariableProperties variableProperties) {
-        if (expression instanceof HasParameterExpressions) {
-            HasParameterExpressions call = (HasParameterExpressions) expression;
-            // we also need to exclude recursive calls from this analysis
-            if (call.getMethodInfo() != null && call.getMethodInfo() != variableProperties.getCurrentMethod()) {
-                return analyseCallWithParameters(currentStatement, call, variableProperties);
-            }
-        }
-        return false;
-    }
-
-    private boolean analyseCallWithParameters(NumberedStatement currentStatement,
-                                              HasParameterExpressions call,
-                                              VariableProperties variableProperties) {
-        boolean changes = false;
-        if (call instanceof MethodCall) analyseMethodCallObject((MethodCall) call, variableProperties);
-        int parameterIndex = 0;
-        List<ParameterInfo> params = call.getMethodInfo().methodInspection.get().parameters;
-        if (call.getParameterExpressions().size() > 0 && params.size() == 0) {
-            throw new UnsupportedOperationException("Method " + call.getMethodInfo().fullyQualifiedName() +
-                    " has no parameters, but I have " + call.getParameterExpressions().size());
-        }
-        for (Expression e : call.getParameterExpressions()) {
-            ParameterInfo parameterInDefinition;
-            if (parameterIndex >= params.size()) {
-                ParameterInfo lastParameter = params.get(params.size() - 1);
-                if (lastParameter.parameterInspection.get().varArgs) {
-                    parameterInDefinition = lastParameter;
-                } else {
-                    throw new UnsupportedOperationException("?");
-                }
-            } else {
-                parameterInDefinition = params.get(parameterIndex);
-            }
-            if (analyseCallParameter(currentStatement, parameterInDefinition, e, variableProperties)) changes = true;
-            parameterIndex++;
-        }
-        return changes;
-    }
-
-    private boolean analyseCallParameter(NumberedStatement currentStatement,
-                                         ParameterInfo parameterInDefinition,
-                                         Expression parameterExpression,
-                                         VariableProperties variableProperties) {
-        // not modified
-        int notModified = parameterInDefinition.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
-        int value = notModified == Level.DELAY ? Level.compose(Level.TRUE, 0) :
-                Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
-
-        recursivelyMarkContentModified(parameterExpression, variableProperties, value);
-
-        // null not allowed; not a recursive call so no knowledge about the parameter as a variable
-        if (parameterExpression instanceof VariableExpression) {
-            Variable v = ((VariableExpression) parameterExpression).variable;
-            int notNull = Level.value(parameterInDefinition.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
-            if (notNull != Level.FALSE) {
-                return variableOccursInNotNullContext(v, variableProperties, notNull);
-            }
-        }
-        return false;
-    }
-
-    public static boolean variableOccursInNotNullContext(Variable variable,
-                                                         EvaluationContext evaluationContext,
-                                                         int notNullContext) { // DELAY or TRUE
+    public static void variableOccursInNotNullContext(Variable variable,
+                                                      EvaluationContext evaluationContext,
+                                                      int notNullContext) { // DELAY or TRUE
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         NumberedStatement currentStatement = evaluationContext.getCurrentStatement();
 
-        if (variable instanceof This) return false; // nothing to be done here
+        if (variable instanceof This) return; // nothing to be done here
         // the variable has already been created, if relevant
-        if (!variableProperties.isKnown(variable)) return false;
+        if (!variableProperties.isKnown(variable)) return;
 
         // check null conditionals
         if (variableProperties.getNullConditionals(false).contains(variable)) {
             // we're in an explicit != null situation for this variable
-            return false;
+            return;
         }
 
         // mark that we need @NotNull on this variable, no delay situation
@@ -741,43 +650,20 @@ public class StatementAnalyser {
                     + variable.detailedString() + " in statement "
                     + currentStatement.streamIndices() + " of " + evaluationContext.getCurrentMethod().name);
             currentStatement.errorValue.set(true);
-            return true;
         }
-        return false;
     }
 
-    private void analyseMethodCallObject(MethodCall methodCall, VariableProperties variableProperties) {
-        // not modified
-        SideEffect sideEffect = methodCall.methodInfo.sideEffect();
-        boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
 
-        int value;
-        if (sideEffect == SideEffect.DELAYED) {
-            value = Level.compose(Level.TRUE, 0);
-        } else {
-            value = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1); // 0=delayed level, 1=actual modification level
-        }
-        recursivelyMarkContentModified(methodCall.object, variableProperties, value);
-    }
-
-    private void recursivelyMarkContentModified(Expression expression, VariableProperties variableProperties, int value) {
-        Variable variable;
-        if (expression instanceof VariableExpression) {
-            variable = expression.variables().get(0);
-        } else if (expression instanceof FieldAccess) {
-            FieldAccess fieldAccess = (FieldAccess) expression;
-            recursivelyMarkContentModified(fieldAccess.expression, variableProperties, value);
-            variable = fieldAccess.variable;
-        } else {
-            return;
-        }
+    public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int notModifiedValue) {
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
+            int value = notModifiedValue == Level.DELAY ? 1 : notModifiedValue == Level.TRUE ? 2 : 3;
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
             variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED, value);
         } else {
-            log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified {}: {}", value, variable.detailedString());
+            log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }
     }
 }

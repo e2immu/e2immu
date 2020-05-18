@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
@@ -59,7 +60,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+        StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+
+        // not modified
+        SideEffect sideEffect = methodInfo.sideEffect();
+        boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
+        int notModified;
+        if (sideEffect == SideEffect.DELAYED) {
+            notModified = Level.compose(Level.TRUE, 0);
+        } else {
+            notModified = safeMethod ? Level.TRUE: Level.FALSE;
+        }
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModified));
+
         Value result;
         if (objectValue instanceof NullValue) {
             result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);

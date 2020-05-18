@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -29,7 +30,7 @@ import org.e2immu.analyser.util.StringUtil;
 public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
-        super(expression);
+        super(expression, ForwardEvaluationInfo.NOT_NULL);
     }
 
     @Override

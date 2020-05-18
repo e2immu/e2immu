@@ -48,7 +48,7 @@ public class NullConstant implements Expression, Constant<Object> {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        if (forwardEvaluationInfo.isNotNull()) {
+        if (forwardEvaluationInfo.getNotNull() == Level.TRUE) {
             visitor.visit(this, evaluationContext, ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE));
         }
         return NullValue.NULL_VALUE;

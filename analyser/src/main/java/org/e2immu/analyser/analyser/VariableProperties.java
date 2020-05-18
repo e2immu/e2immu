@@ -101,12 +101,16 @@ class VariableProperties implements EvaluationContext {
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, methodInfo, conditional, uponUsingConditional,
+        return new VariableProperties(this, methodInfo, null, conditional, uponUsingConditional,
                 methodInfo.isSynchronized(),
                 guaranteedToBeReachedByParentStatement);
     }
 
-    private VariableProperties(VariableProperties parent, MethodInfo currentMethod, Value conditional, Runnable uponUsingConditional,
+    private VariableProperties(VariableProperties parent,
+                               MethodInfo currentMethod,
+                               NumberedStatement currentStatement,
+                               Value conditional,
+                               Runnable uponUsingConditional,
                                boolean inSyncBlock,
                                boolean guaranteedToBeReachedByParentStatement) {
         this.iteration = parent.iteration;
@@ -116,6 +120,7 @@ class VariableProperties implements EvaluationContext {
         this.conditional = conditional;
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
+        this.currentStatement = currentStatement;
         this.currentType = parent.currentType;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
@@ -162,7 +167,7 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional,
+        return new VariableProperties(this, currentMethod, currentStatement, conditional, uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -170,7 +175,7 @@ class VariableProperties implements EvaluationContext {
     @Override
     public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, currentMethod, conditional, uponUsingConditional,
+        return new VariableProperties(this, currentMethod, currentStatement, conditional, uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -729,9 +734,9 @@ class VariableProperties implements EvaluationContext {
         }
         if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
 
-        // those 2 are set even if there was no real assignment; you should not create a local variable without
-        // assignment, and never use it
-        aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
+        if (!(at instanceof FieldReference)) {
+            aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
+        }
         aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                 Level.fromBool(guaranteedToBeReached(aboutVariable)));
     }
@@ -763,6 +768,12 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void markRead(Variable variable) {
+        if (variable instanceof This) {
+            if (currentMethod != null && !currentMethod.methodAnalysis.get().thisRead.isSet()) {
+                currentMethod.methodAnalysis.get().thisRead.set(true);
+            }
+            return;
+        }
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.markRead();
     }

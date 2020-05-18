@@ -33,7 +33,7 @@ import org.e2immu.analyser.util.StringUtil;
 public class ReturnStatement extends StatementWithExpression {
 
     public ReturnStatement(Expression expression) {
-        super(expression);
+        super(expression, ForwardEvaluationInfo.DEFAULT);
     }
 
     @Override
