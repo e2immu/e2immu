@@ -147,7 +147,8 @@ public class NewObject implements HasParameterExpressions {
                         Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
                 // not null
                 int notNull = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-                forward = ForwardEvaluationInfo.create(notNull, notModified);
+
+                forward = ForwardEvaluationInfo.create(notNull, notModifiedValue);
             } else {
                 forward = ForwardEvaluationInfo.DEFAULT;
             }

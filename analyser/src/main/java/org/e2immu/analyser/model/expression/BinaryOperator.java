@@ -82,7 +82,7 @@ public class BinaryOperator implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        ForwardEvaluationInfo forward = isEquality() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
+        ForwardEvaluationInfo forward = allowsForNullOperands() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
 
         Value l = lhs.evaluate(evaluationContext, visitor, forward);
         Value r = rhs.evaluate(evaluationContext, visitor, forward);
@@ -176,11 +176,12 @@ public class BinaryOperator implements Expression {
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }
 
-    private boolean isEquality() {
+    private boolean allowsForNullOperands() {
         return operator == Primitives.PRIMITIVES.equalsOperatorInt ||
                 operator == Primitives.PRIMITIVES.equalsOperatorObject ||
                 operator == Primitives.PRIMITIVES.notEqualsOperatorObject ||
-                operator == Primitives.PRIMITIVES.notEqualsOperatorInt;
+                operator == Primitives.PRIMITIVES.notEqualsOperatorInt ||
+                operator == Primitives.PRIMITIVES.plusOperatorString;
     }
 
     @NotNull

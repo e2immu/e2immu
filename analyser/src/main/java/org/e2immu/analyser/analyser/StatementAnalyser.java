@@ -654,12 +654,11 @@ public class StatementAnalyser {
     }
 
 
-    public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int notModifiedValue) {
+    public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
-            int value = notModifiedValue == Level.DELAY ? 1 : notModifiedValue == Level.TRUE ? 2 : 3;
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
             variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED, value);
         } else {

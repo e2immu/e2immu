@@ -45,7 +45,9 @@ public class VariableExpression implements Expression {
         if (forwardEvaluationInfo.getNotNull() != Level.FALSE) {
             StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, forwardEvaluationInfo.getNotNull());
         }
-        StatementAnalyser.markContentModified(evaluationContext, variable, forwardEvaluationInfo.getNotModified());
+        if(forwardEvaluationInfo.getNotModified() >= Level.TRUE) {
+            StatementAnalyser.markContentModified(evaluationContext, variable, forwardEvaluationInfo.getNotModified());
+        }
 
         visitor.visit(this, evaluationContext, value);
         return value;

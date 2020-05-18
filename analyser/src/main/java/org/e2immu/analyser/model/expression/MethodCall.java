@@ -65,13 +65,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // not modified
         SideEffect sideEffect = methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int notModified;
+        int notModifiedValue;
         if (sideEffect == SideEffect.DELAYED) {
-            notModified = Level.compose(Level.TRUE, 0);
+            notModifiedValue = Level.compose(Level.TRUE, 0);
         } else {
-            notModified = safeMethod ? Level.TRUE: Level.FALSE;
+            notModifiedValue = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1);
         }
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModified));
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModifiedValue));
 
         Value result;
         if (objectValue instanceof NullValue) {
