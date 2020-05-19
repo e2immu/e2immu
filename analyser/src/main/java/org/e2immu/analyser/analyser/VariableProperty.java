@@ -68,6 +68,7 @@ public enum VariableProperty {
     ONLY("@Only"),
     OUTPUT("@Output"),
     SINGLETON("@Singleton"),
+    SIZE("@Size"), // the int value is for "min"+"equals", not for "max"
     UTILITY_CLASS("@UtilityClass");
 
     public final String name;

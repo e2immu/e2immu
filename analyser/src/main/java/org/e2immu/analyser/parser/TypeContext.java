@@ -72,6 +72,7 @@ public class TypeContext {
     public final Lazy<AnnotationExpression> only = new Lazy<>(() -> create(Only.class));
     public final Lazy<AnnotationExpression> output = new Lazy<>(() -> create(Output.class));
     public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
+    public final Lazy<AnnotationExpression> size = new Lazy<>(() -> create(Size.class));
     public final Lazy<AnnotationExpression> utilityClass = new Lazy<>(() -> create(UtilityClass.class));
 
     public TypeContext() {
