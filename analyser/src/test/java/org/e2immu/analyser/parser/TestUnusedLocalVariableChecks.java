@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     public TestUnusedLocalVariableChecks() {
@@ -22,6 +23,18 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         // ERROR: t.trim() result is not used
         if ("method1".equals(methodInfo.name) && "2".equals(statement.streamIndices())) {
             Assert.assertTrue(statement.errorValue.get());
+        }
+
+        if ("method2".equals(methodInfo.name)) {
+            if (Set.of("1", "1.0.0.0.0", "1.0.0.0.1").contains(statement.streamIndices())) {
+                Assert.assertTrue(statement.errorValue.get()); // if switches
+            }
+        }
+
+        if ("method3".equals(methodInfo.name)) {
+            if ("1.0.1".equals(statement.streamIndices())) {
+                Assert.assertTrue(statement.errorValue.get()); // if switches
+            }
         }
     };
 
@@ -69,11 +82,17 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         // ERROR: Unused variable "a"
+        // ERROR: useless assignment to "a" as well
         if ("UnusedLocalVariableChecks".equals(methodInfo.name)) {
             Assert.assertEquals(1L,
                     methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
             Assert.assertEquals("a", methodAnalysis.unusedLocalVariables.stream()
                     .findFirst().orElseThrow().getKey().name);
+
+            Assert.assertEquals(1L,
+                    methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("a", methodAnalysis.uselessAssignments.stream()
+                    .findFirst().orElseThrow().getKey().name());
         }
 
         if ("method1".equals(methodInfo.name)) {
@@ -83,13 +102,21 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals("s", methodAnalysis.unusedLocalVariables.stream()
                     .findFirst().orElseThrow().getKey().name);
 
+            // but NO useless assignment anymore
+            Assert.assertEquals(0L,
+                    methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+
             // ERROR: method should be static
             Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticStatement.get());
-
         }
-
         if ("checkArray2".equals(methodInfo.name)) {
             Assert.assertEquals(1L, methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+        }
+        if ("checkForEach".equals(methodInfo.name)) {
+            Assert.assertEquals(1L,
+                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("loopVar", methodAnalysis.unusedLocalVariables.stream()
+                    .findFirst().orElseThrow().getKey().name);
         }
     };
 
@@ -102,7 +129,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("UnusedLocalVariableChecks", 6, new DebugConfiguration.Builder()
+        testClass("UnusedLocalVariableChecks", 12, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

@@ -27,22 +27,23 @@ import org.e2immu.annotation.NotNull;
 @E2Container
 public class UnusedLocalVariableChecks {
 
-    // ERROR 3: private field b is not read outside constructors
+    // ERROR 1: private field b is not read outside constructors
     private boolean b;
 
     public UnusedLocalVariableChecks() {
         int a = 0;
-        // ERROR 5: private variable a is not used
+        // ERROR 2+3: private variable a is not used, useless assignment
         b = true;
     }
 
-    // ERROR 1: method1 should be marked static
+    // ERROR 4: method1 should be marked static
     private void method1(String t) {
         String s;
-        // ERROR 2: local variable s is not used
+        // ERROR 5: local variable s is not used
         if (t.length() < 19) {
             return;
         }
+        // ERROR 6: ignoring result of method call
         t.trim();
     }
 
@@ -57,13 +58,13 @@ public class UnusedLocalVariableChecks {
         int[] integers = {1, 2, 3};
         int i = 0;
         integers[i] = 3;
-        // ERROR: assignment is not used
+        // ERROR 7: assignment is not used
     }
 
     private static void checkForEach() {
         int[] integers = {1, 2, 3};
         for (int loopVar : integers) {
-            // ERROR 4: loopVar is not used
+            // ERROR 8: loopVar is not used
             System.out.println("hello!");
         }
     }
@@ -73,13 +74,15 @@ public class UnusedLocalVariableChecks {
         return a.toLowerCase();
     }
 
-    private static String checkDoubleMethod(String param) {
+    private static String method2(String param) {
         String b = someMethod(param);
-        // ERROR: if statement evaluates to constant
+        // ERROR 9: if statement evaluates to constant
         if (b == null) {
             if (param.contains("a")) { // the fact that this one evaluates to constant is caused by the previous error
+                // ERROR 10: Unnecessary method call
                 String a = someMethod("xzy").toString();
-                // ERROR: if statement evaluates to constant; error hidden by unnecessary method call toString()
+                // ERROR 11: if statement evaluates to constant; error is not hidden by unnecessary method call toString()
+                // because toString() is @NotNull
                 if (a == null) {
                     return b + "c";
                 }
@@ -88,11 +91,11 @@ public class UnusedLocalVariableChecks {
         return "c";
     }
 
-    private static String checkDoubleMethod2(String param) {
+    private static String method3(String param) {
         String b = someMethod(param);
         if (param.contains("a")) {
             String a = someMethod("xzy");
-            // ERROR: if statement evaluates to constant
+            // ERROR 12: if statement evaluates to constant
             if (a == null) {
                 return b + "c";
             }

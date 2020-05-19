@@ -774,12 +774,13 @@ class VariableProperties implements EvaluationContext {
             }
             int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
             aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
-        }
-        if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
 
-        aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
-        aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
-                Level.fromBool(guaranteedToBeReached(aboutVariable)));
+            aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
+            aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
+                    Level.fromBool(guaranteedToBeReached(aboutVariable)));
+
+            if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
+        }
     }
 
     public boolean guaranteedToBeReached(AboutVariable aboutVariable) {
