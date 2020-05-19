@@ -79,20 +79,17 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     // works for a select number of properties, simplifies some code in method analyser
 
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case NOT_NULL:
-            case CONTAINER:
-            case IMMUTABLE:
-                return returnValue.isSet() ? returnValue.get().getPropertyOutsideContext(variableProperty) : Level.DELAY;
-
-            case FLUENT:
-                if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
-                return ((ReturnStatement) statement).fluent();
-            case IDENTITY:
-                if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
-                return ReturnStatement.identity(((ReturnStatement) statement).expression);
-            default:
-                throw new UnsupportedOperationException("?? not implemented for property " + variableProperty);
+        if (VariableProperty.RETURN_VALUE_PROPERTIES.contains(variableProperty)) {
+            return returnValue.isSet() ? returnValue.get().getPropertyOutsideContext(variableProperty) : Level.DELAY;
         }
+        if (variableProperty == VariableProperty.FLUENT) {
+            if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
+            return ((ReturnStatement) statement).fluent();
+        }
+        if (variableProperty == VariableProperty.IDENTITY) {
+            if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
+            return ReturnStatement.identity(((ReturnStatement) statement).expression);
+        }
+        throw new UnsupportedOperationException("?? not implemented for property " + variableProperty);
     }
 }

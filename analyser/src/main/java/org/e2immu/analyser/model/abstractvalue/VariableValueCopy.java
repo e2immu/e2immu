@@ -42,14 +42,11 @@ public class VariableValueCopy implements Value {
     private final Set<Variable> linkedVariablesBest;
     private final Set<Variable> linkedVariablesWorst;
 
-    private static final VariableProperty[] PROPERTIES = {VariableProperty.IMMUTABLE, VariableProperty.CONTAINER, VariableProperty.NOT_NULL,
-            VariableProperty.CONTENT_MODIFIED};
-
     public VariableValueCopy(VariableValue original, EvaluationContext evaluationContext) {
         this.variable = original.variable;
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
-        for (VariableProperty property : PROPERTIES) {
+        for (VariableProperty property :VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, original.getProperty(evaluationContext, property));
         }
         copiedProperties = builder.build();

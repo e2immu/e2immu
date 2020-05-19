@@ -329,7 +329,7 @@ class VariableProperties implements EvaluationContext {
                 fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
             } else {
                 // the difference now is that absence of info means that the property is false
-                for (VariableProperty variableProperty : PROPS_OF_INSTANCE) {
+                for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
                     int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, Level.FALSE);
                     aboutVariable.setProperty(variableProperty, value);
                 }
@@ -415,12 +415,11 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    private static final VariableProperty[] PROPS_OF_INSTANCE = {VariableProperty.NOT_NULL, IMMUTABLE, VariableProperty.CONTAINER};
 
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
     private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
         aboutVariable.setCurrentValue(aboutVariable.resetValue);
-        for (VariableProperty variableProperty : PROPS_OF_INSTANCE) {
+        for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
             aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
         }
 

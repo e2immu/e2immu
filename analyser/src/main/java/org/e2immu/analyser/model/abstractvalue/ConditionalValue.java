@@ -53,9 +53,8 @@ public class ConditionalValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty ||
-                VariableProperty.CONTAINER == variableProperty ||
-                VariableProperty.IMMUTABLE == variableProperty) {
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
+                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
             int notNullTrue = ifTrue.getProperty(evaluationContext, variableProperty);
             int notNullFalse = ifFalse.getProperty(evaluationContext, variableProperty);
             return Level.worst(notNullTrue, notNullFalse);
@@ -65,8 +64,8 @@ public class ConditionalValue implements Value {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty || VariableProperty.CONTAINER == variableProperty ||
-                VariableProperty.IMMUTABLE == variableProperty) {
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
+                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
             int notNullTrue = ifTrue.getPropertyOutsideContext(variableProperty);
             int notNullFalse = ifFalse.getPropertyOutsideContext(variableProperty);
             return Level.worst(notNullTrue, notNullFalse);

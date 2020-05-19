@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 
+import java.util.Set;
+
 public enum VariableProperty {
     // can be read multiple times
     READ("read", true, Level.compose(Level.TRUE, 1)),
@@ -91,4 +93,13 @@ public enum VariableProperty {
         return name;
     }
 
+    public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);
+    public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE);
+
+    public final static Set<VariableProperty> INSTANCE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE);
+
+    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, CONTENT_MODIFIED);
+
+    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
+            Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, IDENTITY, FLUENT); // but not CONTENT_MODIFIED
 }

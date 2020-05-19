@@ -1,6 +1,5 @@
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Size;
 

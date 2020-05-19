@@ -183,19 +183,12 @@ public class MethodAnalyser {
         return true;
     }
 
-    private final VariableProperty[] PROPERTIES_OF_RETURN_STATEMENTS = new VariableProperty[]{
-            VariableProperty.IDENTITY,
-            VariableProperty.FLUENT,
-            VariableProperty.NOT_NULL,
-            VariableProperty.CONTAINER,
-            VariableProperty.IMMUTABLE};
-
     private boolean propertiesOfReturnStatements(EvaluationContext evaluationContext,
                                                  List<NumberedStatement> returnStatements,
                                                  MethodInfo methodInfo,
                                                  MethodAnalysis methodAnalysis) {
         boolean changes = false;
-        for (VariableProperty variableProperty : PROPERTIES_OF_RETURN_STATEMENTS) {
+        for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
             if (propertyOfReturnStatements(evaluationContext, variableProperty, returnStatements, methodInfo, methodAnalysis))
                 changes = true;
         }

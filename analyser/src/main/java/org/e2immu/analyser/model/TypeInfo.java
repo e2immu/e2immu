@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -1007,7 +1008,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined);
         });
         typeInspection.get().fields.forEach(fieldInfo -> {
-           fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined);
+            fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined);
         });
     }
 
@@ -1037,5 +1038,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             return false;
         }
         return typeInspection.get().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
+    }
+
+    public boolean hasSize() {
+        if (typeInspection.get().methods.stream().anyMatch(mi ->
+                returnsIntOrLong(mi) && mi.getAnalysis().getProperty(VariableProperty.SIZE) != Level.DELAY))
+            return true;
+        return superTypes().stream().anyMatch(TypeInfo::hasSize);
+    }
+
+    private static boolean returnsIntOrLong(MethodInfo methodInfo) {
+        TypeInfo returnType = methodInfo.returnType().typeInfo;
+        return returnType == PRIMITIVES.integerTypeInfo || returnType == PRIMITIVES.intTypeInfo ||
+                returnType == PRIMITIVES.longTypeInfo || returnType == PRIMITIVES.boxedLongTypeInfo;
     }
 }

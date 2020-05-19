@@ -133,12 +133,13 @@ public class Instance implements Value {
             return bestType == null ? Level.TRUE :
                     Math.max(Level.TRUE, bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
-        if (VariableProperty.CONTAINER == variableProperty || VariableProperty.IMMUTABLE == variableProperty) {
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
+                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
             return bestType == null ? Level.FALSE :
                     Math.max(Level.FALSE, bestType.typeAnalysis.get().getProperty(variableProperty));
         }
 
         // @NotModified should not be asked here
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Asking for "+variableProperty);
     }
 }

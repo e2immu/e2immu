@@ -49,6 +49,7 @@ public class MethodAnalysis extends Analysis {
             case FLUENT:
             case IDENTITY:
             case INDEPENDENT:
+            case SIZE:
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_MODIFIED:
                 int typeNotModified = typeInfo.typeAnalysis.get().getProperty(variableProperty);

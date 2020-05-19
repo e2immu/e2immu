@@ -62,8 +62,8 @@ public class NullValue extends ConstantValue implements Constant<Object> {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL) return FALSE;
-        if (variableProperty == VariableProperty.CONTAINER) return TRUE;
-        if (variableProperty == VariableProperty.IMMUTABLE) return VariableProperty.IMMUTABLE.best;
-        throw new UnsupportedOperationException("Asking for");
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return TRUE;
+        if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return TRUE;
+        throw new UnsupportedOperationException("Asking for " + variableProperty);
     }
 }

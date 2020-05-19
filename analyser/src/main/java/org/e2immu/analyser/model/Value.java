@@ -40,13 +40,16 @@ import java.util.Set;
  */
 public interface Value extends Comparable<Value> {
 
-    default boolean isConstant() { return false; }
+    default boolean isConstant() {
+        return false;
+    }
 
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;
-        if (VariableProperty.CONTAINER == variableProperty) return Level.TRUE;
-        if (VariableProperty.IMMUTABLE == variableProperty) return VariableProperty.IMMUTABLE.best;
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
+        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // constants are not null
+        if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
+
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 

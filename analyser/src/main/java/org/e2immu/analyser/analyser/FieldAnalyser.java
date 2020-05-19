@@ -44,7 +44,6 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class FieldAnalyser {
     private final TypeContext typeContext;
-    private static final VariableProperty[] DYNAMIC_PROPERTIES = {VariableProperty.IMMUTABLE, VariableProperty.CONTAINER};
 
     public FieldAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -98,7 +97,7 @@ public class FieldAnalyser {
 
         // STEP 5: Dynamic type annotations
         // dynamic type annotations come before @NotModified, because any E2Immutable type cannot be modified anyway.
-        for (VariableProperty property : DYNAMIC_PROPERTIES) {
+        for (VariableProperty property : VariableProperty.DYNAMIC_TYPE_PROPERTY) {
             if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeAccessedFromOutsideThisType, typeInspection))
                 changes = true;
         }

@@ -101,32 +101,30 @@ public class MethodValue implements Value {
             return variableProperty.best;
         }
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        switch (variableProperty) {
-            case NOT_NULL:
-            case IMMUTABLE:
-            case CONTAINER:
-                int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-                if (identity == Level.DELAY) return Level.DELAY;
-                int firstParameter;
-                if (identity == Level.TRUE) {
-                    Value valueFirst = parameters.get(0);
-                    firstParameter = valueFirst.getProperty(evaluationContext, VariableProperty.NOT_NULL);
-                } else {
-                    firstParameter = Level.FALSE;
-                }
-                int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-                if (fluent == Level.DELAY) return Level.DELAY;
-                int valueOfType;
-                if (fluent == Level.TRUE) {
-                    valueOfType = methodInfo.typeInfo.typeAnalysis.get().getProperty(variableProperty);
-                } else {
-                    valueOfType = Level.FALSE;
-                }
-                int valueOfMethod = methodAnalysis.getProperty(variableProperty);
-                if (valueOfMethod == Level.DELAY) return Level.DELAY;
-                return Level.best(valueOfType, Level.best(firstParameter, valueOfMethod));
+        if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty) ||
+                VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) {
 
-            default:
+            int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+            if (identity == Level.DELAY) return Level.DELAY;
+            int firstParameter;
+            if (identity == Level.TRUE) {
+                Value valueFirst = parameters.get(0);
+                firstParameter = valueFirst.getProperty(evaluationContext, variableProperty);
+            } else {
+                firstParameter = Level.FALSE;
+            }
+            int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
+            if (fluent == Level.DELAY) return Level.DELAY;
+            int valueOfType;
+            if (fluent == Level.TRUE) {
+                valueOfType = methodInfo.typeInfo.typeAnalysis.get().getProperty(variableProperty);
+            } else {
+                valueOfType = Level.FALSE;
+            }
+            int valueOfMethod = methodAnalysis.getProperty(variableProperty);
+            if (valueOfMethod == Level.DELAY) return Level.DELAY;
+            return Level.best(valueOfType, Level.best(firstParameter, valueOfMethod));
+
         }
         return methodAnalysis.getProperty(variableProperty);
     }

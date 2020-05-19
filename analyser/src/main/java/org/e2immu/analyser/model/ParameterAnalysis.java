@@ -45,7 +45,7 @@ public class ParameterAnalysis extends Analysis {
                         .getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
-            case NOT_MODIFIED:
+            case NOT_MODIFIED: {
                 if (parameterizedType.isUnboundParameterType()) return Level.TRUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
@@ -53,6 +53,7 @@ public class ParameterAnalysis extends Analysis {
                     return Level.TRUE;
                 }
                 break;
+            }
             case IMMUTABLE:
             case CONTAINER:
                 return Level.FALSE; // no assignment, so no way of knowing
