@@ -78,7 +78,7 @@ public interface EvaluationContext {
 
     // obtain a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
     @NotNull
-    Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies);
+    Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable);
 
     // delegation
     int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);
@@ -93,6 +93,6 @@ public interface EvaluationContext {
 
     void markRead(String variableName);
 
-    DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name);
+    DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable);
     void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
 }

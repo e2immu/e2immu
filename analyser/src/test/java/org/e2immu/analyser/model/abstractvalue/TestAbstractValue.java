@@ -147,7 +147,7 @@ public class TestAbstractValue {
         }
 
         @Override
-        public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies) {
+        public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable) {
             throw new UnsupportedOperationException();
         }
 
@@ -177,7 +177,7 @@ public class TestAbstractValue {
         }
 
         @Override
-        public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name) {
+        public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
             return null;
         }
 

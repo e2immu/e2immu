@@ -556,7 +556,11 @@ class VariableProperties implements EvaluationContext {
                 .forEach(vp -> vp.variableProperties.entrySet().stream()
                         .filter(e -> ASSIGNED_NOT_LOCAL_VAR.test(e.getValue()))
                         .forEach(e -> SMapList.addWithArrayList(contextsPerVariable, e.getKey(), vp)));
-        log(VARIABLE_PROPERTIES, "Copying back assignment properties of {}", contextsPerVariable.keySet());
+        log(VARIABLE_PROPERTIES, "Copying back assignment and properties of {}", contextsPerVariable.keySet());
+
+        // first, assignments and @NotNull
+        Set<String> movedUp = new HashSet<>();
+
         for (Map.Entry<String, List<VariableProperties>> entry : contextsPerVariable.entrySet()) {
             String name = entry.getKey();
             List<VariableProperties> assignmentContexts = trimContexts(entry.getValue());
@@ -566,6 +570,7 @@ class VariableProperties implements EvaluationContext {
             if (movedUpFirstOne) {
                 localAv = assignmentContexts.stream().map(vp -> vp.variableProperties.get(name)).findFirst().orElseThrow();
                 variableProperties.put(name, localAv);
+                movedUp.add(name);
                 assignmentContexts.remove(0);
                 boolean done = assignmentContexts.isEmpty();
                 log(VARIABLE_PROPERTIES, "--- variable {}: had to make a local copy; done? {}", name, done);
@@ -579,15 +584,15 @@ class VariableProperties implements EvaluationContext {
             String copied = atLeastOneAssignmentGuaranteedToBeReached ? "copied" : "merged";
             log(VARIABLE_PROPERTIES, "--- variable {}: properties " + copied + " into parent context", name);
 
-            // now copy all the properties; this will be property per property
+            // now copy the properties that are linked to the assignment
             boolean includeThis = noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
 
             for (VariableProperty variableProperty : WORST) {
                 IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, variableProperty);
-                int worstValue = intStream
-                        .peek(i -> log(VARIABLE_PROPERTIES, "Have value {}", i))
-                        .min().orElse(Level.DELAY);
-                localAv.setProperty(variableProperty, worstValue);
+                int worstValue = intStream.min().orElse(Level.DELAY);
+                if (worstValue > Level.DELAY) {
+                    localAv.setProperty(variableProperty, worstValue);
+                }
             }
 
             if (!atLeastOneAssignmentGuaranteedToBeReached || assignmentContexts.size() > 1) {
@@ -598,10 +603,12 @@ class VariableProperties implements EvaluationContext {
                 localAv.setCurrentValue(singleValue);
             }
         }
-        // so now we've dealt with all the variables which were assigned.
+
+        // so now we've dealt with all the variables which were assigned. copying back properties
+
         Set<String> allVariableNames = evaluationContextsGathered.stream()
                 .flatMap(ec -> ec.variableProperties.keySet().stream()).collect(Collectors.toSet());
-        log(VARIABLE_PROPERTIES, "Coping back read properties of {}", allVariableNames);
+        log(VARIABLE_PROPERTIES, "Coping back other properties of {}", allVariableNames);
         for (String name : allVariableNames) {
             AboutVariable localAv = variableProperties.get(name);
             boolean movedUpFirstOne = localAv == null;
@@ -611,15 +618,30 @@ class VariableProperties implements EvaluationContext {
                         .map(vp -> vp.variableProperties.get(name)).findFirst().orElseThrow();
                 variableProperties.put(name, localAv);
             }
+            boolean notMovedUp = !movedUpFirstOne && !movedUp.contains(name);
+
+            // copying the BEST properties, relatively straightforward
+
             for (VariableProperty variableProperty : BEST) {
                 IntStream intStream = streamBuilder(evaluationContextsGathered, name, true, movedUpFirstOne, variableProperty);
                 int bestValue = intStream.max().orElse(Level.DELAY);
-                localAv.setProperty(variableProperty, bestValue);
+                if (bestValue > Level.DELAY) {
+                    localAv.setProperty(variableProperty, bestValue);
+                }
             }
+
+            // finally, copying those where we may need to increment (READ, ASSIGNED)
+            // this is more complicated: we do an increment over those that are guaranteed to be executed, followed by a BEST
+
             for (VariableProperty variableProperty : INCREMENT_LEVEL) {
-                IntStream intStream = streamBuilder(evaluationContextsGathered, name, true, movedUpFirstOne, variableProperty);
-                int increasedValue = intStream.reduce(Level.DELAY, (v1, v2) -> Level.nextLevelTrue(Level.best(v1, v2), 1));
-                localAv.setProperty(variableProperty, increasedValue);
+                boolean includeThis = notMovedUp && localAv.haveProperty(variableProperty);
+                IntStream intStreamInc = streamBuilderInc(evaluationContextsGathered, name, includeThis, variableProperty);
+                int increasedValue = intStreamInc.reduce(Level.DELAY, (v1, v2) -> Level.nextLevelTrue(Level.best(v1, v2), 1));
+                IntStream intStreamBest = streamBuilderBest(increasedValue, evaluationContextsGathered, name, variableProperty);
+                int bestValue = intStreamBest.max().orElse(Level.DELAY);
+                if (bestValue > Level.DELAY) {
+                    localAv.setProperty(variableProperty, bestValue);
+                }
             }
         }
     }
@@ -641,6 +663,33 @@ class VariableProperties implements EvaluationContext {
                 && first.variableProperties.get(name).getProperty(LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED) == Level.TRUE;
     }
 
+    // go over those that are only potentially executed;  READ, ASSIGNED
+    private IntStream streamBuilderBest(int bestValue,
+                                        List<VariableProperties> evaluationContexts,
+                                        String name,
+                                        VariableProperty variableProperty) {
+        IntStream s1 = IntStream.of(bestValue);
+        IntStream s2 = evaluationContexts.stream()
+                .filter(ec -> ec.variableProperties.containsKey(name)) // for more efficiency: in the assignment case, this filter is not needed
+                .filter(ec -> !ec.guaranteedToBeReachedByParentStatement)
+                .mapToInt(ec -> ec.variableProperties.get(name).getProperty(variableProperty));
+        return IntStream.concat(s1, s2);
+    }
+
+    // do the existing one, if it's there, and those guaranteed to be executed; READ, ASSIGNED
+    private IntStream streamBuilderInc(List<VariableProperties> evaluationContexts,
+                                       String name,
+                                       boolean includeThis,
+                                       VariableProperty variableProperty) {
+        IntStream s1 = evaluationContexts.stream()
+                .filter(ec -> ec.variableProperties.containsKey(name)) // for more efficiency: in the assignment case, this filter is not needed
+                .filter(ec -> ec.guaranteedToBeReachedByParentStatement)
+                .mapToInt(ec -> ec.variableProperties.get(name).getProperty(variableProperty));
+        IntStream s2 = includeThis ? IntStream.of(getPropertyPotentiallyFromCurrentValue(name, variableProperty)) : IntStream.of();
+        return IntStream.concat(s1, s2);
+    }
+
+    // for those in WORST and BEST set
     private IntStream streamBuilder(List<VariableProperties> evaluationContexts,
                                     String name,
                                     boolean includeThis,
@@ -648,20 +697,20 @@ class VariableProperties implements EvaluationContext {
                                     VariableProperty variableProperty) {
         IntStream s1 = evaluationContexts.stream()
                 .filter(ec -> ec.variableProperties.containsKey(name)) // for more efficiency: in the assignment case, this filter is not needed
-                .mapToInt(ec -> getPropertyPotentiallyFromCurrentValue(ec, name, variableProperty));
+                .mapToInt(ec -> ec.getPropertyPotentiallyFromCurrentValue(name, variableProperty));
         IntStream s2 = includeThis
-                ? IntStream.of(getPropertyPotentiallyFromCurrentValue(this, name, variableProperty))
+                ? IntStream.of(getPropertyPotentiallyFromCurrentValue(name, variableProperty))
                 : IntStream.of();
         return IntStream.concat(movedUpFirstOne ? s1.skip(1) : s1, s2);
     }
 
     private static final EnumSet<VariableProperty> ON_VALUE = EnumSet.of(VariableProperty.NOT_NULL, IMMUTABLE, VariableProperty.CONTAINER);
 
-    private int getPropertyPotentiallyFromCurrentValue(VariableProperties context, String name, VariableProperty variableProperty) {
+    private int getPropertyPotentiallyFromCurrentValue(String name, VariableProperty variableProperty) {
         if (ON_VALUE.contains(variableProperty)) {
-            return context.variableProperties.get(name).getCurrentValue().getProperty(context, variableProperty);
+            return variableProperties.get(name).getCurrentValue().getProperty(this, variableProperty);
         }
-        return context.variableProperties.get(name).getProperty(variableProperty);
+        return variableProperties.get(name).getProperty(variableProperty);
     }
 
     public boolean isKnown(Variable variable) {
@@ -734,9 +783,7 @@ class VariableProperties implements EvaluationContext {
         }
         if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
 
-        if (!(at instanceof FieldReference)) {
-            aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
-        }
+        aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
         aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                 Level.fromBool(guaranteedToBeReached(aboutVariable)));
     }
@@ -787,11 +834,12 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies) {
+    public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable) {
         String name = ArrayAccess.dependentVariableName(array, indexValue);
         AboutVariable aboutVariable = find(name);
         if (aboutVariable != null) return aboutVariable.getCurrentValue();
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name);
+        String arrayName = arrayVariable == null ? null : variableName(arrayVariable);
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
         if (!isKnown(dependentVariable)) {
             createLocalVariableOrParameter(dependentVariable);
         }
@@ -808,14 +856,29 @@ class VariableProperties implements EvaluationContext {
      */
 
     @Override
-    public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name) {
+    public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
         Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
         dependencies.addAll(arrayAccess.index.variables());
         ParameterizedType parameterizedType = arrayAccess.expression.returnType();
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name);
+        String arrayName = arrayVariable == null ? null : variableName(arrayVariable);
+        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
         if (!isKnown(dependentVariable)) {
             createLocalVariableOrParameter(dependentVariable);
         }
         return dependentVariable;
+    }
+
+    public boolean isLocalVariable(AboutVariable aboutVariable) {
+        if (aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE) return true;
+        if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.getProperty(VariableProperty.CREATED) == Level.TRUE)
+            return true;
+        if (aboutVariable.variable instanceof DependentVariable) {
+            DependentVariable dependentVariable = (DependentVariable) aboutVariable.variable;
+            if (dependentVariable.arrayName != null) {
+                AboutVariable avArray = find(dependentVariable.arrayName);
+                return avArray != null && isLocalVariable(avArray);
+            }
+        }
+        return false;
     }
 }

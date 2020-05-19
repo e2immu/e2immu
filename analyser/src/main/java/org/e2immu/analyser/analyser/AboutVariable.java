@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.model.DependentVariable;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -11,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 class AboutVariable {
+
     enum FieldReferenceState {
         EFFECTIVELY_FINAL_DELAYED,
         SINGLE_COPY,
@@ -91,5 +93,10 @@ class AboutVariable {
         properties.remove(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
         int read = getProperty(VariableProperty.READ);
         setProperty(VariableProperty.READ, Level.nextLevelTrue(read, 1));
+    }
+
+    boolean haveProperty(VariableProperty variableProperty) {
+        Integer i = properties.get(variableProperty);
+        return i != null && i != Level.DELAY;
     }
 }

@@ -133,7 +133,7 @@ public class StatementAnalyser {
                 }
             }
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
-            if (uselessAssignments(variableProperties)) changes = true;
+            if (uselessAssignments(variableProperties, escapesViaException, neverContinues)) changes = true;
 
             if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
                 log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
@@ -187,19 +187,37 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private boolean uselessAssignments(VariableProperties variableProperties) {
+    /**
+     * We recognize the following situations, looping over the local variables:
+     * <ul>
+     *     <li>NYR + CREATED at the same level</li>
+     *     <li>NYR + local variable created higher up + EXIT (return stmt, anything beyond the level of the CREATED)</li>
+     *     <li>NYR + escape</li>
+     * </ul>
+     *
+     * @param variableProperties context
+     * @return if an error was generated
+     */
+    private boolean uselessAssignments(VariableProperties variableProperties,
+                                       boolean escapesViaException,
+                                       boolean neverContinuesBecauseOfReturn) {
         boolean changes = false;
         // we run at the local level
         List<String> toRemove = new ArrayList<>();
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
-                if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
-                    methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
-                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                            ", assignment to variable " + aboutVariable.name + " is not used");
-                    changes = true;
+                boolean useless = escapesViaException ||
+                        neverContinuesBecauseOfReturn && variableProperties.isLocalVariable(aboutVariable) ||
+                        aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE;
+                if (useless) {
+                    if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
+                        methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
+                        typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
+                                ", assignment to variable " + aboutVariable.name + " is not used");
+                        changes = true;
+                    }
+                    if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
                 }
-                if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
             }
         }
         if (!toRemove.isEmpty()) {

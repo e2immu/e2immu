@@ -91,7 +91,8 @@ public class ArrayAccess implements Expression {
         } else {
             Set<Variable> dependencies = new HashSet<>(expression.variables());
             dependencies.addAll(index.variables());
-            value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies);
+            Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue)expression).variable: null;
+            value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
 
             if (!forwardEvaluationInfo.isAssignmentTarget()) {
                 evaluationContext.markRead(dependentVariableName(array, indexValue));

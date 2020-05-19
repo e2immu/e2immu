@@ -13,14 +13,17 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
     public final Set<Variable> dependencies;
     public final String name;
+    public final String arrayName;
 
     public DependentVariable(@NotNull ParameterizedType parameterizedType,  // the formal type
                              @NotNull1 Set<Variable> dependencies,         // all variables on which this one depends
-                             @NotNull String name) {    // from which we derive the concrete type
+                             @NotNull String name,
+                             String arrayName) {     // can be null!
         super(parameterizedType);
         this.parameterizedType = parameterizedType;
         this.dependencies = dependencies;
         this.name = name;
+        this.arrayName = arrayName;
     }
 
     @Override
