@@ -98,6 +98,6 @@ public class FieldAccess implements Expression {
             value = currentValue;
         }
         visitor.visit(this, evaluationContext, value);
-        return value;
+        return evaluationContext.checkError(value);
     }
 }

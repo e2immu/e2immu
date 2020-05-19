@@ -25,7 +25,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
@@ -880,5 +882,23 @@ class VariableProperties implements EvaluationContext {
             }
         }
         return false;
+    }
+
+    @Override
+    public Value checkError(Value value) {
+        if (!(value instanceof ErrorValue)) return value;
+        ErrorValue errorValue = (ErrorValue) value;
+        NumberedStatement statement = getCurrentStatement();
+        if (statement != null) {
+            if (!statement.errorValue.isSet()) {
+                getTypeContext().addMessage(Message.Severity.ERROR,
+                        "Error " + value + " in method " + getCurrentMethod().fullyQualifiedName() +
+                                " statement " + statement.streamIndices());
+                statement.errorValue.set(true);
+            }
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented: should be in fieldInfo, I presume (current field)");
+        }
+        return errorValue.alternative;
     }
 }

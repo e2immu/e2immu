@@ -62,16 +62,6 @@ public class TestTestExamples extends CommonTestRunner {
     }
 
     @Test
-    public void testEvaluateConstants() throws IOException {
-        testClass("EvaluateConstants", 4);
-    }
-
-    @Test
-    public void testEvaluationErrors() throws IOException {
-        testClass("EvaluationErrors", 2);
-    }
-
-    @Test
     public void testFieldResolution() throws IOException {
         testClass("FieldResolution", 0);
     }
@@ -119,11 +109,6 @@ public class TestTestExamples extends CommonTestRunner {
     @Test
     public void testTypeParameters() throws IOException {
         testClass("TypeParameters", 0);
-    }
-
-    @Test
-    public void testUtilityClassChecks() throws IOException {
-        testClass("UtilityClassChecks", 1);
     }
 
 }

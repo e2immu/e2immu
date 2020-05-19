@@ -537,18 +537,7 @@ public class StatementAnalyser {
                 (localExpression, localVariableProperties, intermediateValue, localChanges) -> {
                     // local changes come from analysing lambda blocks as methods
                     if (localChanges) changes.set(true);
-                    Value continueAfterError;
-                    if (intermediateValue instanceof ErrorValue) {
-                        if (!statement.errorValue.isSet()) {
-                            typeContext.addMessage(Message.Severity.ERROR,
-                                    "Error " + intermediateValue + " in method " + methodInfo.fullyQualifiedName() + " statement " + statement.streamIndices());
-                            statement.errorValue.set(true);
-                        }
-                        continueAfterError = ((ErrorValue) intermediateValue).alternative;
-                    } else {
-                        continueAfterError = intermediateValue;
-                    }
-                    if (continueAfterError == NO_VALUE) {
+                    if (intermediateValue == NO_VALUE) {
                         encounterUnevaluated.set(true);
                     }
                 }, forwardEvaluationInfo);

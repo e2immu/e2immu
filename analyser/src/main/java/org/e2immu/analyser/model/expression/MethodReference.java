@@ -126,6 +126,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             }
         }
         visitor.visit(this, evaluationContext, result);
-        return result;
+        return evaluationContext.checkError(result);
     }
 }

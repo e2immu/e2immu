@@ -185,6 +185,11 @@ public class TestAbstractValue {
         public void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
 
         }
+
+        @Override
+        public Value checkError(Value value) {
+            return null;
+        }
     };
 
     static final Variable va = createVariable("a");

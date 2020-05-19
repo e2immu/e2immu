@@ -104,14 +104,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
                         ParameterizedType type = objectValue.type();
                         if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                            return ErrorValue.unnecessaryMethodCall(result);
+                            result = ErrorValue.unnecessaryMethodCall(result);
                         }
                     }
                 }
             }
         }
         visitor.visit(this, evaluationContext, result);
-        return result;
+        return evaluationContext.checkError(result);
     }
 
     @Override

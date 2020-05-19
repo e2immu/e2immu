@@ -95,4 +95,6 @@ public interface EvaluationContext {
 
     DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable);
     void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
+
+    Value checkError(Value value);
 }

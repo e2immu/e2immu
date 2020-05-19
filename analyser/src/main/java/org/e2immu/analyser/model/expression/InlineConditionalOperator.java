@@ -49,12 +49,6 @@ public class InlineConditionalOperator implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value c = conditional.evaluate(evaluationContext, evaluationVisitor, ForwardEvaluationInfo.NOT_NULL);
 
-        if (c instanceof BoolValue) {
-            Value error = ErrorValue.inlineConditionalEvaluatesToConstant(UnknownValue.UNKNOWN_VALUE);
-            evaluationVisitor.visit(this, evaluationContext, error);
-            return error;
-        }
-
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         EvaluationContext copyForThen = evaluationContext.child(c, null, false);
         Value t = ifTrue.evaluate(copyForThen, evaluationVisitor, forwardEvaluationInfo);
@@ -62,9 +56,15 @@ public class InlineConditionalOperator implements Expression {
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
-        Value res = new ConditionalValue(c, t, f);
+        Value res;
+        if (c instanceof BoolValue) {
+            boolean first = ((BoolValue) c).value;
+            res = ErrorValue.inlineConditionalEvaluatesToConstant(first ? t : f);
+        } else {
+            res = new ConditionalValue(c, t, f);
+        }
         evaluationVisitor.visit(this, evaluationContext, res);
-        return res;
+        return evaluationContext.checkError(res);
     }
 
     @Override

@@ -20,12 +20,11 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.google.common.collect.Sets;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
@@ -139,10 +138,10 @@ public class BinaryOperator implements Expression {
             return ProductValue.product(l, r);
         }
         if (operator == Primitives.PRIMITIVES.divideOperatorInt) {
-            return DivideValue.divide(l, r);
+            return evaluationContext.checkError(DivideValue.divide(l, r));
         }
         if (operator == Primitives.PRIMITIVES.remainderOperatorInt) {
-            return RemainderValue.remainder(l, r);
+            return evaluationContext.checkError(RemainderValue.remainder(l, r));
         }
         if (operator == Primitives.PRIMITIVES.lessEqualsOperatorInt) {
             return GreaterThanZeroValue.less(l, r, true);

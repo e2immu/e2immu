@@ -48,10 +48,14 @@ public class NullConstant implements Expression, Constant<Object> {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        Value result;
         if (forwardEvaluationInfo.getNotNull() == Level.TRUE) {
-            visitor.visit(this, evaluationContext, ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE));
+            result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);
+        } else {
+            result = NullValue.NULL_VALUE;
         }
-        return NullValue.NULL_VALUE;
+        visitor.visit(this, evaluationContext, result);
+        return evaluationContext.checkError(result);
     }
 
     @Override
