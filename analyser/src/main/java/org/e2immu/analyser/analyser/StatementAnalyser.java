@@ -110,6 +110,10 @@ public class StatementAnalyser {
                 if (statement.escapes.isSet() && statement.escapes.get()) escapesViaException = true;
                 statement = statement.next.get().orElse(null);
             }
+            // at the end, at the top level, there is a return, even if it is implicit
+            boolean atTopLevel = variableProperties.depth == 0;
+            if (atTopLevel) neverContinues = true;
+
             if (!startStatement.neverContinues.isSet()) {
                 log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
                 startStatement.neverContinues.set(neverContinues);

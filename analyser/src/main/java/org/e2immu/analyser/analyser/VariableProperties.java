@@ -66,6 +66,7 @@ class VariableProperties implements EvaluationContext {
 
     // the rest should be not modified
 
+    final int depth;
     final int iteration;
     final DebugConfiguration debugConfiguration;
     final VariableProperties parent;
@@ -79,16 +80,23 @@ class VariableProperties implements EvaluationContext {
 
     private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
 
+    // in type analyser, for fields
     public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
         this(typeContext, currentType, iteration, debugConfiguration, null);
     }
 
+    // in type analyser, for methods
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
         this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod);
     }
 
-    private VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
+    private VariableProperties(TypeContext typeContext,
+                               TypeInfo currentType,
+                               int iteration,
+                               DebugConfiguration debugConfiguration,
+                               MethodInfo currentMethod) {
         this.iteration = iteration;
+        this.depth = 0;
         this.debugConfiguration = debugConfiguration;
         this.parent = null;
         conditional = null;
@@ -103,12 +111,13 @@ class VariableProperties implements EvaluationContext {
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, methodInfo, null, conditional, uponUsingConditional,
+        return new VariableProperties(this, depth, methodInfo, null, conditional, uponUsingConditional,
                 methodInfo.isSynchronized(),
                 guaranteedToBeReachedByParentStatement);
     }
 
     private VariableProperties(VariableProperties parent,
+                               int depth,
                                MethodInfo currentMethod,
                                NumberedStatement currentStatement,
                                Value conditional,
@@ -116,6 +125,7 @@ class VariableProperties implements EvaluationContext {
                                boolean inSyncBlock,
                                boolean guaranteedToBeReachedByParentStatement) {
         this.iteration = parent.iteration;
+        this.depth = depth;
         this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
@@ -169,7 +179,7 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, currentMethod, currentStatement, conditional, uponUsingConditional,
+        return new VariableProperties(this, depth + 1, currentMethod, currentStatement, conditional, uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -177,7 +187,7 @@ class VariableProperties implements EvaluationContext {
     @Override
     public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, currentMethod, currentStatement, conditional, uponUsingConditional,
+        return new VariableProperties(this, depth + 1, currentMethod, currentStatement, conditional, uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }

@@ -152,7 +152,7 @@ public class Assignment implements Expression {
             Value array = arrayAccess.expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
             Value indexValue = arrayAccess.index.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
             String name = ArrayAccess.dependentVariableName(array, indexValue);
-            Variable arrayVariable = arrayAccess.expression instanceof VariableValue ? ((VariableValue) arrayAccess.expression).variable : null;
+            Variable arrayVariable = arrayAccess.expression instanceof VariableExpression ? ((VariableExpression) arrayAccess.expression).variable : null;
             at = evaluationContext.ensureArrayVariable(arrayAccess, name, arrayVariable);
             log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
         } else {
