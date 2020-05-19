@@ -173,7 +173,7 @@ public class MethodAnalyser {
             value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of());
         }
         methodAnalysis.singleReturnValue.set(value);
-        boolean isConstant = value instanceof Constant;
+        boolean isConstant = value.isConstant();
         AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
         methodAnalysis.annotations.put(constantAnnotation, isConstant);
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);

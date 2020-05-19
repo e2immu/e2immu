@@ -345,7 +345,7 @@ public class StatementAnalyser {
         Value valueAfterCheckingForConstant;
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
-            if (combinedWithConditional instanceof Constant) {
+            if (combinedWithConditional.isConstant()) {
                 if (!statement.errorValue.isSet()) {
                     typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
                             ", if/switch conditional in " + statement.streamIndices() + " evaluates to constant");

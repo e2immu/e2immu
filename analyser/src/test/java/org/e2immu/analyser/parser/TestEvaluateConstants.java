@@ -8,6 +8,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class TestEvaluateConstants extends CommonTestRunner {
             if("print2".equals(methodInfo.name)) {
                 Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.isSet());
                 Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
-                Assert.assertTrue(singleReturnValue instanceof Constant); // inline conditional works as advertised
+                Assert.assertTrue(singleReturnValue instanceof StringValue); // inline conditional works as advertised
             }
         }
     };

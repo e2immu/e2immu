@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class ClassValue implements Value, Constant<ParameterizedType> {
+public class ClassValue extends ConstantValue implements Constant<ParameterizedType> {
     public final ParameterizedType value;
 
     public ClassValue(ParameterizedType value) {

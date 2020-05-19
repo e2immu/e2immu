@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class FloatValue implements Constant<Float>, NumericValue {
+public class FloatValue extends ConstantValue implements Constant<Float>, NumericValue {
     public final float value;
 
     public FloatValue(float value) {

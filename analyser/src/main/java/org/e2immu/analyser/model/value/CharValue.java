@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class CharValue implements Value, Constant<Character> {
+public class CharValue extends ConstantValue implements Constant<Character> {
     public final char value;
 
     public CharValue(char value) {

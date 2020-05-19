@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class LongValue implements Constant<Long>, NumericValue {
+public class LongValue extends ConstantValue implements Constant<Long>, NumericValue {
     public final long value;
 
     public LongValue(long value) {

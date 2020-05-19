@@ -40,6 +40,8 @@ import java.util.Set;
  */
 public interface Value extends Comparable<Value> {
 
+    default boolean isConstant() { return false; }
+
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE;

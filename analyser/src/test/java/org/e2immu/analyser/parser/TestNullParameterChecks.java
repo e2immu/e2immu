@@ -47,7 +47,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("NullParameterChecks.this.s".equals(variableName)) {
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
-                Assert.assertNull(properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // field, does not need to be read
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // even field will have this
                 return;
             }
             Assert.fail();
@@ -62,7 +62,8 @@ public class TestNullParameterChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.compose(Level.FALSE, 1), (int) properties.get(VariableProperty.CONTENT_MODIFIED));
                     Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.READ));
                 } else if ("NullParameterChecks.this.s".equals(variableName)) {
-                    Assert.assertTrue(Level.haveTrueAt(properties.get(VariableProperty.ASSIGNED), 1));
+                    // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.ASSIGNED));
                 } else Assert.fail();
             }
         }

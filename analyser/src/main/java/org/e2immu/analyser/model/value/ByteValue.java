@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class ByteValue implements Value, Constant<Byte>, NumericValue {
+public class ByteValue extends ConstantValue implements Constant<Byte>, NumericValue {
     public final byte value;
 
     public ByteValue(byte value) {

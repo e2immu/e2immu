@@ -25,7 +25,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.List;
 import java.util.Objects;
 
-public class StringValue implements Value, Constant<String> {
+public class StringValue extends ConstantValue implements Constant<String> {
     public final String value;
 
     public StringValue(String value) {
@@ -33,14 +33,10 @@ public class StringValue implements Value, Constant<String> {
     }
 
     public static Value concat(Value l, Value r) {
-        if (accept(l) && accept(r)) {
+        if (l.isConstant() && r.isConstant()) {
             return new StringValue(l.asString() + r.asString());
         }
         return Instance.newStringInstance();
-    }
-
-    private static boolean accept(Value v) {
-        return v instanceof Constant;
     }
 
     @Override

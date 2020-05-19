@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class IntValue implements Constant<Integer>, NumericValue {
+public class IntValue extends ConstantValue implements Constant<Integer>, NumericValue {
     public static final IntValue ZERO_VALUE = new IntValue(0);
     public static final IntValue TWO_VALUE = new IntValue(2);
 

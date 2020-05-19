@@ -27,7 +27,7 @@ import org.e2immu.analyser.model.Value;
 import static org.e2immu.analyser.model.Level.FALSE;
 import static org.e2immu.analyser.model.Level.TRUE;
 
-public class NullValue implements Value, Constant<Object> {
+public class NullValue extends ConstantValue implements Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
 
     private NullValue() {

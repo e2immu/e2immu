@@ -26,7 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 
-public class ShortValue implements Value, Constant<Short>, NumericValue {
+public class ShortValue extends ConstantValue implements Constant<Short>, NumericValue {
     public final short value;
 
     public ShortValue(short value) {

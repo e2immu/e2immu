@@ -232,7 +232,7 @@ public class FieldAnalyser {
         if (consistentValue == NO_VALUE) return false; // delay
 
         Value valueToSet;
-        boolean isConstant = consistentValue instanceof Constant;
+        boolean isConstant = consistentValue.isConstant();
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
 
         if (isConstant) {

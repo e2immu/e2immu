@@ -20,6 +20,9 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.annotation.NotNull;
+
+import java.util.Objects;
 
 public class ErrorValue implements Value {
     public static ErrorValue divisionByZero(Value alternative) {
@@ -45,9 +48,14 @@ public class ErrorValue implements Value {
     public final String msg;
     public final Value alternative;
 
-    private ErrorValue(String msg, Value alternative) {
+    private ErrorValue(String msg, @NotNull Value alternative) {
         this.msg = msg;
-        this.alternative = alternative;
+        this.alternative = Objects.requireNonNull(alternative);
+    }
+
+    @Override
+    public boolean isConstant() {
+        return alternative.isConstant();
     }
 
     @Override
