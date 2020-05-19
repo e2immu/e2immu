@@ -53,6 +53,7 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 
 public class TypeAnalyser {
+    public static final int POST_ANALYSIS = 100;
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
     private final TypeContext typeContext;
@@ -106,7 +107,7 @@ public class TypeAnalyser {
                         " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
     }
 
-    public void analyse(SortedType sortedType, DebugConfiguration debugConfiguration) {
+    public void analyse(SortedType sortedType, DebugConfiguration debugConfiguration, boolean postAnalysis) {
         TypeInfo typeInfo = sortedType.typeInfo;
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
@@ -116,19 +117,20 @@ public class TypeAnalyser {
             log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
             changes = false;
 
-            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, cnt, debugConfiguration);
+            int iteration = postAnalysis ? POST_ANALYSIS + cnt : cnt;
+            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, iteration, debugConfiguration);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(typeContext, cnt, debugConfiguration, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(typeContext, iteration, debugConfiguration, (MethodInfo) member);
 
                     for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
-                        methodAnalyserVisitor.visit(cnt, (MethodInfo) member);
+                        methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
                     }
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                     for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
-                        methodAnalyserVisitor.visit(cnt, (MethodInfo) member);
+                        methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
                     }
 
                 } else {
@@ -137,28 +139,28 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(typeContext, cnt, debugConfiguration,
+                            VariableProperties methodProperties = new VariableProperties(typeContext, iteration, debugConfiguration,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
 
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
-                                methodAnalyserVisitor.visit(cnt, fieldInitialiser.implementationOfSingleAbstractMethod);
+                                methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
                             }
                             if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                 changes = true;
                             }
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
-                                methodAnalyserVisitor.visit(cnt, fieldInitialiser.implementationOfSingleAbstractMethod);
+                                methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
                             }
                         }
                     }
 
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.beforeFieldAnalyserVisitors) {
-                        fieldAnalyserVisitor.visit(cnt, fieldInfo);
+                        fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
-                        fieldAnalyserVisitor.visit(cnt, fieldInfo);
+                        fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
                 }
             }
@@ -203,7 +205,7 @@ public class TypeAnalyser {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
 
-            analyse(sortedType, debugConfiguration);
+            analyse(sortedType, debugConfiguration, true);
             check(sortedType); // we're not checking at top level!
         }
         log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",

@@ -120,7 +120,7 @@ public class Parser {
         TypeAnalyser typeAnalyser = new TypeAnalyser(globalTypeContext);
         for (SortedType sortedType : sortedTypes) {
             try {
-                typeAnalyser.analyse(sortedType, configuration.debugConfiguration);
+                typeAnalyser.analyse(sortedType, configuration.debugConfiguration, false);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.typeInfo.fullyQualifiedName);
                 throw rte;

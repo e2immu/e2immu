@@ -134,7 +134,8 @@ public class FieldAnalyser {
                 }
                 return true;
             }
-        } else if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE) {
+        } else if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
+            // only react once we're certain the variable is not effectively final
             // error, unless we're in a record
             boolean record = fieldInfo.owner.isRecord();
             fieldAnalysis.fieldError.set(!record);
