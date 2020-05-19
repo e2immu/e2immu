@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
+import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -437,6 +438,7 @@ public class FieldAnalyser {
         check(fieldInfo, E2Container.class, typeContext.e2Container.get());
 
         CheckConstant.checkConstantForFields(typeContext, fieldInfo);
+        CheckSize.checkSizeForFields(typeContext, fieldInfo);
     }
 
     private void check(FieldInfo fieldInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

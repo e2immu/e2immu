@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
+import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -69,6 +70,7 @@ public class MethodAnalyser {
             check(methodInfo, Fluent.class, typeContext.fluent.get());
             check(methodInfo, Identity.class, typeContext.identity.get());
             CheckConstant.checkConstantForMethods(typeContext, methodInfo);
+            CheckSize.checkSizeForMethods(typeContext, methodInfo);
         }
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);

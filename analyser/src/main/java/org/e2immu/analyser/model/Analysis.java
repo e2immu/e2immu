@@ -72,7 +72,7 @@ public abstract class Analysis {
     }
 
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY: Level.FALSE);
+        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : Level.FALSE);
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -170,6 +170,34 @@ public abstract class Analysis {
             }
         }
 
+        // NOTE: the SIZE_COPY property is not generated
+
+        // size
+        int minSize = minimalValue(VariableProperty.SIZE);
+        int size = getProperty(VariableProperty.SIZE);
+        if (size > minSize) {
+            if (haveEquals(size)) {
+                annotations.put(sizeAnnotation(typeContext, "equals", sizeEquals(size)), true);
+            } else {
+                annotations.put(sizeAnnotation(typeContext, "min", sizeMin(size)), true);
+            }
+        }
+    }
+
+    public static boolean haveEquals(int size) {
+        return size % 2 == 0;
+    }
+
+    public static int sizeEquals(int size) {
+        return size / 2;
+    }
+
+    public static int sizeMin(int size) {
+        return (size + 1) / 2;
+    }
+
+    private AnnotationExpression sizeAnnotation(TypeContext typeContext, String parameter, int value) {
+        return typeContext.size.get().copyWith(parameter, value);
     }
 
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
@@ -235,6 +263,9 @@ public abstract class Analysis {
                     method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
                 } else if (typeContext.linked.get().typeInfo == t) {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
+                } else if (typeContext.size.get().typeInfo == t) {
+                    method.accept(VariableProperty.SIZE, extractSizeMin(annotationExpression));
+                    method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }
@@ -264,6 +295,34 @@ public abstract class Analysis {
             }
             method.accept(variableProperty, Level.compose(Level.TRUE, entry.getValue()));
         }
+    }
+
+    /**
+     * Values: -1 = min=0,nothing; 0 = equals 0; 1=min 1; 2 = equals 1; 3 = min 2; 4 = equals 2
+     *
+     * @param annotationExpression the annotation
+     * @return encoded value
+     */
+    public static int extractSizeMin(AnnotationExpression annotationExpression) {
+        Integer min = annotationExpression.extract("min", -1);
+        if (min > 0) {
+            // min = 0 means nothing; min = 1 means TRUE at level 0 (value 1), min = 2 means TRUE at level 1 (value 3)
+            return Level.compose(Level.TRUE, min - 1);
+        }
+        Integer equals = annotationExpression.extract("equals", -1);
+        if (equals >= 0) {
+            // equals 0 means FALSE at level 0, equals 1 means FALSE at level 1 (but TRUE at level 0)
+            return Level.compose(Level.FALSE, equals);
+        }
+        return -1;
+    }
+
+    public static int extractSizeCopy(AnnotationExpression annotationExpression) {
+        Boolean copy = annotationExpression.extract("copy", false);
+        if (copy) return 3; // TRUE at 1
+        Boolean copyMin = annotationExpression.extract("copyMin", false);
+        if (copyMin) return 1; // TRUE at 0
+        return -1; // UNDEFINED
     }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {

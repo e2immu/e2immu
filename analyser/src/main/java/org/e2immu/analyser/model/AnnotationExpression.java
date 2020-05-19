@@ -229,6 +229,11 @@ public class AnnotationExpression {
         return extract("test", false);
     }
 
+    public AnnotationExpression copyWith(String parameter, int value) {
+        MemberValuePair memberValuePair = new MemberValuePair(parameter, new IntConstant(value));
+        return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
+    }
+
     public static class AnnotationExpressionBuilder {
         private final TypeInfo typeInfo;
         private final List<Expression> expressions = new ArrayList<>();
