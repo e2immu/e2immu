@@ -243,17 +243,14 @@ class VariableProperties implements EvaluationContext {
             FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.TRUE) {
-                if(fieldReference.fieldInfo.hasBeenDefined()) {
-                    if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-                        resetValue = fieldAnalysis.effectivelyFinalValue.get();
-                    } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
-                        resetValue = UnknownValue.NO_VALUE; // delay
-                    } else {
-                        // undefined, will never get a value, but may have decent properties
-                        resetValue = new VariableValue(this, fieldReference, name);
-                    }
+                if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+                    resetValue = fieldAnalysis.effectivelyFinalValue.get();
+                } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
+                    resetValue = UnknownValue.NO_VALUE; // delay
                 } else {
-                    // some variable from a library... we need to set a value with properties
+                    // undefined, will never get a value, but may have decent properties
+                    // the properties will be copied from fieldAnalysis into properties in internalCreate
+                    resetValue = new VariableValue(this, fieldReference, name);
                 }
             } else {
                 // local variable situation
@@ -314,9 +311,21 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null,
                 Objects.requireNonNull(initialValue),
                 Objects.requireNonNull(resetValue), Objects.requireNonNull(fieldReferenceState));
+
+        // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
-            ((FieldReference) variable).fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
+            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            if (fieldInfo.hasBeenDefined()) {
+                fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
+            } else {
+                // the difference now is that absence of info means that the property is false
+                for (VariableProperty variableProperty : PROPS_OF_INSTANCE) {
+                    int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, Level.FALSE);
+                    aboutVariable.setProperty(variableProperty, value);
+                }
+            }
         }
+
         // copied over the existing one
         initialProperties.forEach(variableProperty -> aboutVariable.setProperty(variableProperty, Level.TRUE));
         if (variableProperties.put(name, aboutVariable) != null) {
