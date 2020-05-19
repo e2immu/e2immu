@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.NotNull;
 
@@ -56,6 +57,6 @@ public class TypeExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return UnknownValue.UNKNOWN_VALUE; // TODO we should have a type here?
+        return new TypeValue(parameterizedType);
     }
 }

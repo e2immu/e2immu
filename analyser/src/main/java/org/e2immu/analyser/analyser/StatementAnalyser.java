@@ -637,8 +637,12 @@ public class StatementAnalyser {
         NumberedStatement currentStatement = evaluationContext.getCurrentStatement();
 
         if (variable instanceof This) return; // nothing to be done here
+
         // the variable has already been created, if relevant
-        if (!variableProperties.isKnown(variable)) return;
+        if (!variableProperties.isKnown(variable)) {
+            if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
+            variableProperties.ensureVariable((FieldReference) variable);
+        }
 
         // check null conditionals
         if (variableProperties.getNullConditionals(false).contains(variable)) {

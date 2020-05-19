@@ -243,13 +243,17 @@ class VariableProperties implements EvaluationContext {
             FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.TRUE) {
-                if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    resetValue = fieldAnalysis.effectivelyFinalValue.get();
-                } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
-                    resetValue = UnknownValue.NO_VALUE; // delay
+                if(fieldReference.fieldInfo.hasBeenDefined()) {
+                    if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+                        resetValue = fieldAnalysis.effectivelyFinalValue.get();
+                    } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
+                        resetValue = UnknownValue.NO_VALUE; // delay
+                    } else {
+                        // undefined, will never get a value, but may have decent properties
+                        resetValue = new VariableValue(this, fieldReference, name);
+                    }
                 } else {
-                    // undefined, will never get a value, but may have decent properties
-                    resetValue = new VariableValue(this, fieldReference, name);
+                    // some variable from a library... we need to set a value with properties
                 }
             } else {
                 // local variable situation
@@ -274,7 +278,7 @@ class VariableProperties implements EvaluationContext {
             FieldReference fieldReference = (FieldReference) variable;
             // there are 3 cases: a field during construction phase, an effectively final field of the type we're analysing, and a field of a record
             if (fieldReference.scope == null) {
-                name = currentType.simpleName + "." + fieldReference.fieldInfo.name;
+                name = fieldReference.fieldInfo.fullyQualifiedName();
             } else if (fieldReference.scope instanceof This) {
                 name = ((This) fieldReference.scope).typeInfo.simpleName + ".this." + fieldReference.fieldInfo.name;
             } else {
@@ -301,28 +305,6 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    /*
-        } else {
-            // field; only three cases allowed:
-            // (1) a normal field during construction phase; acts like a local variable
-            // (2) a non-final field inside a synchronisation block; acts like a local variable temporarily
-            // (3) an effectively final field
-            FieldReference fieldReference = (FieldReference) variable;
-            boolean effectivelyFinal = fieldReference.fieldInfo.isEffectivelyFinal(typeContext) == Boolean.TRUE;
-            if (effectivelyFinal || inSyncBlock || fieldReference.scope == null || fieldReference.scope instanceof This) {
-                if (!effectivelyFinal && !inSyncBlock && notInConstructionPhase()) {
-                    throw new UnsupportedOperationException("Normal field is only in variable properties during construction phase: "
-                            + fieldReference.detailedString());
-                }
-                String name = nameOfField(fieldReference);
-                Value resetValue = new VariableValue(fieldReference, name);
-                internalCreate(variable, name, resetValue, resetValue, initialPropertiesAsSet);
-            } else {
-                throw new UnsupportedOperationException("?? cannot create other fields myself");
-            }
-        }
-    }
-*/
     private void internalCreate(Variable variable,
                                 String name,
                                 Value initialValue,
@@ -490,15 +472,6 @@ class VariableProperties implements EvaluationContext {
         }
         AboutVariable aboutVariable = findComplain(variable);
         return new VariableValue(this, variable, aboutVariable.name);
-    }
-
-    public Variable switchToValueVariable(Variable variable) {
-        AboutVariable aboutVariable = find(variable);
-        if (aboutVariable == null) return variable;
-        Value currentValue = aboutVariable.getCurrentValue();
-        if (currentValue instanceof VariableValue)
-            return ((VariableValue) currentValue).variable;
-        return variable;
     }
 
     public Set<Variable> getNullConditionals(boolean equalToNull) {

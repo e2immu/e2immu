@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+// used in a return statement, to freeze the properties
+
 public class VariableValueCopy implements Value {
     @NotNull
     public final Variable variable; // the variable of the inspection, as correct/large as possible
