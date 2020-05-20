@@ -113,3 +113,74 @@ Content modification is computed as:
 Decisions can be delayed when the `@NotModified` status of fields has not been computed yet
 * --> FA: based on `directContentModifications` and `fieldRead`, `@NotModifed` for fields can be set
 
+=== New text
+
+==== Statement specific analysis values
+
+* escapes? throw statement, propagated upwards
+* never continues? return statement or throws, propagated upwards
+* error?
+* return value
+
+==== Variable properties
+
+The statement analyser accumulates values for properties of variables while iterating over all the statements.
+
+Properties that are specific to the statement analyser:
+
+* NOT_YET_READ_AFTER_ASSIGNMENT: for useless assignment errors
+* LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED: needed for summarizing properties and assignments up one level; based on presence of `break`, `continue` and
+`return` statements
+* CREATED (indicates a local variable; we can probably do without -- presence should be enough)
+* ASSIGNED_IN_LOOP: values not to be taken too literally
+
+The following list are the assignment properties.
+When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValueCopy`, and stores it in the statement:
+
+* IMMUTABLE, CONTAINER: purely based on the annotations of the values (dynamic type property)
+* NOT_NULL, SIZE: dynamic type property + occurrence in conditions (if-statement, switch)
+
+Context properties, on all variables:
+
+* READ: 1 = read once, 3 = read multiple times
+* ASSIGNED: 1 = once, 3 = multiple times
+* DELAY_ON_METHOD_CALLS: 0 = no method calls, 1 = has method calls, with delay 3 = no delay.
+Only when this value is 3, do we know that all information is in.
+The following three properties then should have no DELAY values anymore:
+
+** IN_NOT_NULL_CONTEXT: highest @NotNull value encountered in parameters and scope, some statements
+** IN_SIZE_CONTEXT: highest @Size value encountered in formal parameters
+** CONTENT_MODIFIED: lowest @NotModified encountered in formal parameters
+
+==== Method analyser
+
+Preparation of method analysis:
+
+* details about statements in `numberedStatements`; the return statements are in `returnStatements`; the local methods in `localMethodsCalled`
+* summary information at inspection level: methods of own class reached, part of construction
+
+Results of method analysis:
+
+* summary of return values = a single value, and a number of properties
+** value is either a single return value if there is only one return statement, otherwise it is a method value.
+** The properties of the method value are the actual properties stored in the method analysis; INDEPENDENT, NOT_MODIFIED, IDENTITY, FLUENT, LINKED, CONSTANT, and all the properties that come with field assignments (ASSIGNED ~ single or multiple return values, SIZE, IMMUTABLE, CONTAINER, NOT_NULL)
+* summary of field assignment values and related properties
+** for each field, we will store a value which is either the "common assignment" or single assignment
+** with each value come the properties of that assignment: SIZE, IMMUTABLE, CONTAINER, NOT_NULL
+
+* summary of field usage properties: READ, ASSIGNED, CONTENT_MODIFIED, IN_NOT_NULL_CONTEXT, IN_SIZE_CONTEXT
+** CONTENT_MODIFIED is summarized using the link information, specific code
+** the other 3 are simply copied into the field's properties at method level
+
+* link information: fields linked to fields and variables, variables linked to fields and parameters, variables linked to the method result.
+Note again that links are based on modification information, not equality!
+* errors thrown
+** complain about missing `static` modifier
+** parameter assignments
+** unused local variables
+** useless assignments
+** assigning to fields outside type
+** calling modifying methods outside the type
+* others:
+** does the method create an object of itself?
+** `this` has been read
