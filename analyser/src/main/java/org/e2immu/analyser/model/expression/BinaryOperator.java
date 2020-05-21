@@ -84,9 +84,12 @@ public class BinaryOperator implements Expression {
         Value l = lhs.evaluate(evaluationContext, visitor, forward);
         Value r = rhs.evaluate(evaluationContext, visitor, forward);
         if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (operator == Primitives.PRIMITIVES.equalsOperatorObject) {
             if (l.equals(r)) return BoolValue.TRUE;
+
+            // HERE are the ==null checks
             if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
                     r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.FALSE;
@@ -102,6 +105,8 @@ public class BinaryOperator implements Expression {
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorObject) {
             if (l.equals(r)) return BoolValue.FALSE;
+
+            // HERE are the !=null checks
             if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
                     r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
@@ -122,8 +127,6 @@ public class BinaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.andOperatorBool) {
             return new AndValue().append(l, r);
         }
-
-        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         // from here on, straightforward operations
         if (operator == Primitives.PRIMITIVES.plusOperatorInt) {

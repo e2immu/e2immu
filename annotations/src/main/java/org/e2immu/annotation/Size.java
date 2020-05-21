@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
  * On: methods returning int or long: @Size means that this method returns the size of the collection
  * On: methods returning boolean:
  * - @Size(min = 1) returns true when size >= 1;
- * - @Size(max = 0) returns true when isEmpty
+ * - @Size(equals = 0) returns true when isEmpty
  * On: methods returning collections:
  * - @Size(copy = true) returns the same size as the collection
  * On: all modifying methods: this becomes the new @Size
@@ -51,7 +51,7 @@ public @interface Size {
 
     int min() default -1;
 
-    int equals() default -1;
+    int equals() default 0;
 
     boolean copy() default false;
 

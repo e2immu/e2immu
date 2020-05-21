@@ -247,7 +247,7 @@ class VariableProperties implements EvaluationContext {
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
             resetValue = UnknownValue.NO_VALUE; // delay
         } else if (fieldReferenceState == MULTI_COPY) {
-            resetValue = new UnknownFieldValue(fieldReference.fieldInfo);
+            resetValue = new VariableValue(this, fieldReference, name, true);
         } else {
             FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -507,7 +507,7 @@ class VariableProperties implements EvaluationContext {
 
     public Value evaluateWithConditional(Value value) {
         if (conditional == null) return value;
-        if (!(conditional instanceof UnknownValue)) {
+        if (!(conditional.isUnknown())) {
             return new AndValue().append(conditional, value);
         }
         return value;

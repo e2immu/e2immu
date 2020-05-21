@@ -1047,7 +1047,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return superTypes().stream().anyMatch(TypeInfo::hasSize);
     }
 
-    private static boolean returnsIntOrLong(MethodInfo methodInfo) {
+    public static boolean returnsIntOrLong(MethodInfo methodInfo) {
         TypeInfo returnType = methodInfo.returnType().typeInfo;
         return returnType == PRIMITIVES.integerTypeInfo || returnType == PRIMITIVES.intTypeInfo ||
                 returnType == PRIMITIVES.longTypeInfo || returnType == PRIMITIVES.boxedLongTypeInfo;

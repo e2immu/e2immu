@@ -24,9 +24,12 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -62,7 +65,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 
-        // not modified
+        // not modified on scope
         SideEffect sideEffect = methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
         int notModifiedValue;
@@ -71,23 +74,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             notModifiedValue = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1);
         }
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModifiedValue));
 
-        Value result;
+        // null-scope
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModifiedValue));
         if (objectValue instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
+        // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
+        // size
+        Value sizeShortCut = computeSize(objectValue, evaluationContext);
+        if (sizeShortCut != null) {
+            visitor.visit(this, evaluationContext, sizeShortCut);
+            return sizeShortCut;
+        }
+
+        Value result;
         if (methodAnalysis.singleReturnValue.isSet()) {
-            Value singleValue = methodAnalysis.singleReturnValue.get();
-            if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                result = singleValue;
-            } else {
-                result = new MethodValue(methodInfo, objectValue, parameters);
-            }
+            result = methodAnalysis.singleReturnValue.get();
         } else if (methodInfo.hasBeenDefined()) {
             // we will, at some point, analyse this method
             result = UnknownValue.NO_VALUE;
@@ -112,6 +119,33 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         visitor.visit(this, evaluationContext, result);
         return result;
+    }
+
+    private Value computeSize(Value objectValue, EvaluationContext evaluationContext) {
+        if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
+
+        int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+        if (requiredSize == Level.DELAY) return null;
+        // we have an @Size annotation on the method that we're calling
+        int sizeOfObject = objectValue.getProperty(evaluationContext, VariableProperty.SIZE);
+
+        // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
+        if (methodInfo.returnType().isBoolean()) {
+            if (sizeOfObject == Level.DELAY) return UnknownValue.NO_VALUE;
+            // there is an @Size annotation on a method returning a boolean...
+            evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+            return Analysis.compatibleSizes(sizeOfObject, requiredSize) ? BoolValue.TRUE : BoolValue.FALSE;
+        }
+
+        // SITUATION 2: @Size int size(): this method returns the size
+        if (TypeInfo.returnsIntOrLong(methodInfo)) {
+            if (sizeOfObject == Level.DELAY) return UnknownValue.NO_VALUE;
+            if (Analysis.haveEquals(sizeOfObject)) {
+                return new IntValue(Analysis.sizeEquals(sizeOfObject));
+            }
+            // TODO we should be able to return an IntValue with a condition
+        }
+        return null;
     }
 
     @Override

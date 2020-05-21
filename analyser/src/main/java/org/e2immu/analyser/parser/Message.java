@@ -59,6 +59,7 @@ public class Message {
     public static final String IGNORING_RESULT_OF_METHOD_CALL = "Ignoring result of method call";
     public static final String UNUSED_LOCAL_VARIABLE = "Unused local variable";
     public static final String USELESS_ASSIGNMENT = "Useless assignment";
+    public static final String METHOD_EVALUATES_TO_CONSTANT = "Method evaluates to constant";
 
     public static final String METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD = "Method is not allowed to call non-@NotModified method into nested or enclosing type";
     public static final String METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD = "Method is not allowed to assign to field";
@@ -93,6 +94,7 @@ public class Message {
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
+        map.put(METHOD_EVALUATES_TO_CONSTANT, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }

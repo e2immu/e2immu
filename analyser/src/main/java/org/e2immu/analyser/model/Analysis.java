@@ -184,6 +184,11 @@ public abstract class Analysis {
         }
     }
 
+    public static boolean compatibleSizes(int value, int required) {
+        if (haveEquals(required)) return value == required;
+        return value >= required;
+    }
+
     public static boolean haveEquals(int size) {
         return size % 2 == 0;
     }
@@ -309,12 +314,9 @@ public abstract class Analysis {
             // min = 0 means nothing; min = 1 means TRUE at level 0 (value 1), min = 2 means TRUE at level 1 (value 3)
             return Level.compose(Level.TRUE, min - 1);
         }
-        Integer equals = annotationExpression.extract("equals", -1);
-        if (equals >= 0) {
-            // equals 0 means FALSE at level 0, equals 1 means FALSE at level 1 (but TRUE at level 0)
-            return Level.compose(Level.FALSE, equals);
-        }
-        return -1;
+        Integer equals = annotationExpression.extract("equals", 0);
+        // equals 0 means FALSE at level 0, equals 1 means FALSE at level 1 (but TRUE at level 0)
+        return Level.compose(Level.FALSE, equals);
     }
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {

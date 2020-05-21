@@ -25,6 +25,7 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.PrimitiveValue;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -44,7 +45,6 @@ public class ParameterizedType {
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
-
 
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS;
@@ -641,5 +641,14 @@ public class ParameterizedType {
             throw new UnsupportedOperationException();
         }
         return NullValue.NULL_VALUE;
+    }
+
+    public boolean isBoolean() {
+        return typeInfo == Primitives.PRIMITIVES.boxedBooleanTypeInfo || Primitives.PRIMITIVES.booleanTypeInfo == typeInfo;
+    }
+
+    public boolean hasSize() {
+        TypeInfo bestType = bestTypeInfo();
+        return bestType != null && bestType.hasSize();
     }
 }

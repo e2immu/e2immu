@@ -36,13 +36,23 @@ public class VariableValue implements Value {
     @NotNull
     public final EvaluationContext evaluationContext;
 
+    // multiCopy means that due to absence of synchronisation, this non-final field's value cannot be correctly computed
+    public final boolean multiCopyNonFinalField;
 
     public VariableValue(@NotNull EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name) {
+        this(evaluationContext, variable, name, false);
+    }
+
+    public VariableValue(@NotNull EvaluationContext evaluationContext,
+                         @NotNull Variable variable,
+                         @NotNull String name,
+                         boolean multiCopyNonFinalField) {
         this.evaluationContext = evaluationContext;
         this.variable = variable;
         this.name = name;
+        this.multiCopyNonFinalField = multiCopyNonFinalField;
     }
 
     @Override
@@ -81,6 +91,11 @@ public class VariableValue implements Value {
     }
 
     @Override
+    public boolean isUnknown() {
+        return !multiCopyNonFinalField; // multiCopy non-final field has an unknown value at all times
+    }
+
+    @Override
     public boolean hasConstantProperties() {
         return false;
     }
@@ -115,6 +130,8 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+        if (multiCopyNonFinalField) return Set.of();
+
         boolean differentType = evaluationContext.getCurrentType() != variable.parameterizedType().typeInfo;
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
         boolean e2ImmuType;

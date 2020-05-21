@@ -130,7 +130,6 @@ Property-wise similar to constants are the operator values: AndValue, BitwiseAnd
 Then there are some marker values:
 
 No value:: temporary value to indicate that certain evaluations have not been concluded yet
-Unknown field value:: value of a field, but due to absence of synchronisation, we have no clue what the properties are.
 Unknown primitive:: unknown value with the properties of a non-null primitive value.
 TypeValue:: is not null, but is nothing else.
 
