@@ -48,6 +48,13 @@ public class ProductValue extends PrimitiveValue {
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof NumericValue && r instanceof NumericValue)
             return new IntValue(l.toInt().value * r.toInt().value);
+        if (l instanceof ConstrainedNumericValue && r instanceof NumericValue)
+            return ((ConstrainedNumericValue) l).product(((NumericValue) r).getNumber());
+        if (r instanceof ConstrainedNumericValue && l instanceof NumericValue)
+            return ((ConstrainedNumericValue) r).product(((NumericValue) l).getNumber());
+        if(r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
+            return ((ConstrainedNumericValue)l).product((ConstrainedNumericValue)r);
+        }
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;

@@ -24,4 +24,5 @@ public interface NumericValue extends Value {
 
     NumericValue negate();
 
+    Number getNumber();
 }

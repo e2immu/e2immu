@@ -37,6 +37,11 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public NumericValue negate() {
         return new IntValue(-value);
     }

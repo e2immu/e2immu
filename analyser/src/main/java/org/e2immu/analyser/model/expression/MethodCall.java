@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.ThisValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -75,50 +77,75 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             notModifiedValue = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1);
         }
 
-        // null-scope
+        // scope
         Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModifiedValue));
+
+        // null scope
         if (objectValue instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
-        // size
+        // @Size as method annotation
         Value sizeShortCut = computeSize(objectValue, evaluationContext);
         if (sizeShortCut != null) {
             visitor.visit(this, evaluationContext, sizeShortCut);
             return sizeShortCut;
         }
 
+        // @Identity as method annotation
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        Value identity = computeIdentity(methodAnalysis, parameters);
+        if (identity != null) {
+            visitor.visit(this, evaluationContext, identity);
+            return identity;
+        }
+
+        // @Fluent as method annotation
+        Value fluent = computeFluent(methodAnalysis, objectValue);
+        if (fluent != null) {
+            visitor.visit(this, evaluationContext, fluent);
+            return fluent;
+        }
+
         Value result;
         if (methodAnalysis.singleReturnValue.isSet()) {
+            // if this method was identity?
             result = methodAnalysis.singleReturnValue.get();
         } else if (methodInfo.hasBeenDefined()) {
             // we will, at some point, analyse this method
             result = UnknownValue.NO_VALUE;
         } else {
-            // method has NOT been defined, so we definitely do NOT delay
-            int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-            if (identity == Level.TRUE) {
-                result = parameters.get(0);
-            } else {
-                // we will never analyse this method
-                result = new MethodValue(methodInfo, objectValue, parameters);
+            // we will never analyse this method
+            result = new MethodValue(methodInfo, objectValue, parameters);
 
-                // simple example of a frequently recurring issue...
-                if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
-                    ParameterizedType type = objectValue.type();
-                    if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                        evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
-                    }
+            // simple example of a frequently recurring issue...
+            if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+                ParameterizedType type = objectValue.type();
+                if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
+                    evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
                 }
             }
         }
 
         visitor.visit(this, evaluationContext, result);
         return result;
+    }
+
+    private Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
+        int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
+        if (fluent == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE;
+        if (fluent != Level.TRUE) return null;
+        return scope;
+    }
+
+    private Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters) {
+        int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE; // delay
+        if (identity != Level.TRUE) return null;
+        return parameters.get(0);
     }
 
     private Value computeSize(Value objectValue, EvaluationContext evaluationContext) {
@@ -143,7 +170,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (Analysis.haveEquals(sizeOfObject)) {
                 return new IntValue(Analysis.sizeEquals(sizeOfObject));
             }
-            // TODO we should be able to return an IntValue with a condition
+            return ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.sizeMin(sizeOfObject), true);
         }
         return null;
     }

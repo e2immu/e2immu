@@ -39,6 +39,11 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public IntValue toInt() {
         if (value >= Integer.MIN_VALUE && value < Integer.MAX_VALUE) {
             return new IntValue((int) value);

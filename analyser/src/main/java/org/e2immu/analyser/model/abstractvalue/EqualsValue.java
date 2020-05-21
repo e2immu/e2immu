@@ -43,6 +43,8 @@ public class EqualsValue extends PrimitiveValue {
     public static Value equals(Value l, Value r) {
         if (l.equals(r)) return BoolValue.TRUE;
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+        if (l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r)) return BoolValue.FALSE;
+        if (r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l)) return BoolValue.FALSE;
         return new EqualsValue(l, r);
     }
 

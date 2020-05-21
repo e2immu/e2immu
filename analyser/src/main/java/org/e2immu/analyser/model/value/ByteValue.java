@@ -44,6 +44,11 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public String toString() {
         return value < 0 ? "(" + value + ")" : Byte.toString(value);
     }

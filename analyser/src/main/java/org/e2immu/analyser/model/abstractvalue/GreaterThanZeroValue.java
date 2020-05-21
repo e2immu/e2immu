@@ -48,6 +48,15 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         if (r instanceof NumericValue) {
             return new GreaterThanZeroValue(SumValue.sum(((NumericValue) r).negate(), l), allowEquals);
         }
+        if (r instanceof ConstrainedNumericValue) {
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) r;
+            if (cnv.rejectsGreaterThanZero(allowEquals)) {
+                return BoolValue.FALSE;
+            }
+            if (cnv.guaranteesGreaterThanZero(allowEquals)) {
+                return BoolValue.TRUE;
+            }
+        }
         return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r)), allowEquals);
     }
 

@@ -39,6 +39,11 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public IntValue toInt() {
         return new IntValue((int) value);
     }

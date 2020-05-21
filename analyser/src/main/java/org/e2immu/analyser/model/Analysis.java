@@ -323,8 +323,8 @@ public abstract class Analysis {
         Boolean copy = annotationExpression.extract("copy", false);
         if (copy) return 3; // TRUE at 1
         Boolean copyMin = annotationExpression.extract("copyMin", false);
-        if (copyMin) return 1; // TRUE at 0
-        return -1; // UNDEFINED
+        if (copyMin) return Level.TRUE; // TRUE at 0
+        return Level.FALSE; // FALSE
     }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {

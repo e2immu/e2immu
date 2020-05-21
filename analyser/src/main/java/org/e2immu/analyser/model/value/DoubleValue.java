@@ -39,6 +39,11 @@ public class DoubleValue extends ConstantValue implements Constant<Double>, Nume
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public IntValue toInt() {
         throw new UnsupportedOperationException("Cannot cast from double to int without loss");
     }

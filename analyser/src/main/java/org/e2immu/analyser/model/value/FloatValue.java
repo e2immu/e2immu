@@ -39,6 +39,11 @@ public class FloatValue extends ConstantValue implements Constant<Float>, Numeri
     }
 
     @Override
+    public Number getNumber() {
+        return value;
+    }
+
+    @Override
     public IntValue toInt() {
         throw new UnsupportedOperationException("Cannot cast from float to int");
     }

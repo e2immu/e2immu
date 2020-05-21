@@ -63,6 +63,9 @@ public class NegatedValue extends PrimitiveValue {
             List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
             return new OrValue().append(negated);
         }
+        if(v instanceof ConstrainedNumericValue) {
+            return ((ConstrainedNumericValue)v).negatedValue();
+        }
         return new NegatedValue(v);
     }
 

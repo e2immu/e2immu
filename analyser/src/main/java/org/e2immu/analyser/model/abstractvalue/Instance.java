@@ -122,6 +122,10 @@ public class Instance implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.SIZE) {
+            return MethodValue.checkSize(evaluationContext, constructor, constructorParameterValues);
+        }
+
         return getPropertyOutsideContext(variableProperty);
     }
 
@@ -139,8 +143,12 @@ public class Instance implements Value {
                     Math.max(Level.FALSE, bestType.typeAnalysis.get().getProperty(variableProperty));
         }
 
+        if (variableProperty == VariableProperty.SIZE) {
+            return MethodValue.checkSize(null, constructor, constructorParameterValues);
+        }
+
         // @NotModified should not be asked here
-        throw new UnsupportedOperationException("Asking for "+variableProperty);
+        throw new UnsupportedOperationException("Asking for " + variableProperty);
     }
 
     @Override
