@@ -25,8 +25,8 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatem
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -77,7 +77,7 @@ public class MethodAnalyser {
     private void check(MethodInfo methodInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(methodInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT: Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             typeContext.addMessage(error);
         });
     }
@@ -172,7 +172,8 @@ public class MethodAnalyser {
         if (returnStatements.size() == 1) {
             value = returnStatements.get(0).returnValue.get();
         } else {
-            value = new MethodValue(methodInfo, UnknownValue.UNKNOWN_VALUE, List.of());
+            // the object (2nd parameter) is not important here; it will not be used to compute properties
+            value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
         }
         methodAnalysis.singleReturnValue.set(value);
         boolean isConstant = value.isConstant();

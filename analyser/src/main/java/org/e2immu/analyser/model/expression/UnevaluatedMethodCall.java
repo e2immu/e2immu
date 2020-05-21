@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -61,7 +61,6 @@ public class UnevaluatedMethodCall implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return UnknownValue.UNKNOWN_VALUE;
-        //throw new UnsupportedOperationException();
+        return UnknownValue.NO_VALUE;
     }
 }

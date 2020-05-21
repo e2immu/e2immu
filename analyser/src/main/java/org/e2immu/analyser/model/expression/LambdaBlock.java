@@ -22,8 +22,10 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotNull;
@@ -86,6 +88,9 @@ public class LambdaBlock implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
+        Value result = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(null, null, false);
@@ -107,9 +112,9 @@ public class LambdaBlock implements Expression {
                 changes = true;
             }
             evaluationContext.merge(child);
-            visitor.visit(this, child, UnknownValue.UNKNOWN_VALUE, changes);
+            visitor.visit(this, child, result, changes);
         }
-        return UnknownValue.UNKNOWN_VALUE; // TODO we should create a method!! MethodValue(functionalType);
+        return result;
     }
 
     private ParameterizedType createFunctionalType(List<ParameterInfo> parameters, ParameterizedType returnType) {

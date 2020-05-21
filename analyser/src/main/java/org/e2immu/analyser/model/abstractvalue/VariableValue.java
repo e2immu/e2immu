@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -79,6 +78,11 @@ public class VariableValue implements Value {
             return compareTo(negatedValue.value);
         }
         return 1;
+    }
+
+    @Override
+    public boolean hasConstantProperties() {
+        return false;
     }
 
     @Override

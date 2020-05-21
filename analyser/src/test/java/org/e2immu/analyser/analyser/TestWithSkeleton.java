@@ -23,12 +23,9 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.EqualsValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
@@ -262,6 +259,6 @@ public class TestWithSkeleton {
         Assert.assertTrue(variableProperties.isKnown(setRef));
 
         Value currentValue = variableProperties.currentValue(setRef);
-        Assert.assertSame(currentValue, UnknownValue.UNKNOWN_VALUE);
+        Assert.assertTrue(currentValue instanceof UnknownFieldValue);
     }
 }

@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -8,16 +9,10 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Constant;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.CONSTANT;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class CheckConstant {
 

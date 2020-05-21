@@ -2,10 +2,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 
 import java.util.List;
 import java.util.Set;
@@ -13,10 +10,12 @@ import java.util.stream.Collectors;
 
 public class ArrayValue implements Value {
 
+    public final Value combinedValue;
     public final List<Value> values;
 
     public ArrayValue(List<Value> values) {
         this.values = ImmutableList.copyOf(values);
+        combinedValue = CombinedValue.create(values);
     }
 
     @Override
@@ -35,10 +34,12 @@ public class ArrayValue implements Value {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
-            int leastOfValues = values.stream().mapToInt(v -> v.getPropertyOutsideContext(variableProperty))
-                    .min().orElse(Level.UNDEFINED);
-            int levelOfValues = Level.level(leastOfValues);
+            int notNull = combinedValue.getPropertyOutsideContext(variableProperty);
+            int levelOfValues = Level.level(notNull);
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
+        }
+        if (VariableProperty.SIZE == variableProperty) {
+            return Analysis.sizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }
@@ -46,16 +47,18 @@ public class ArrayValue implements Value {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
-            int leastOfValues = values.stream().mapToInt(v -> v.getProperty(evaluationContext, variableProperty))
-                    .min().orElse(Level.UNDEFINED);
-            int levelOfValues = Level.level(leastOfValues);
+            int notNull = combinedValue.getProperty(evaluationContext, variableProperty);
+            int levelOfValues = Level.level(notNull);
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
+        }
+        if (VariableProperty.SIZE == variableProperty) {
+            return Analysis.sizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }
 
     @Override
     public Set<Variable> variables() {
-        return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
+        return combinedValue.variables();
     }
 }

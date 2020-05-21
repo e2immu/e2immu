@@ -27,7 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Objects;
 import java.util.Set;
 
-public class InstanceOfValue implements Value {
+public class InstanceOfValue extends PrimitiveValue {
     public final ParameterizedType parameterizedType;
     public final Variable variable;
 

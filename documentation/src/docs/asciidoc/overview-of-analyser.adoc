@@ -117,23 +117,22 @@ Decisions can be delayed when the `@NotModified` status of fields has not been c
 
 ==== Values with hard-wired properties
 
-Constants:: This group consists of primitive values, String, Class, Null.
+Constants:: This group consists of primitive values, StringValue, ClassValue, NullValue.
 The assignment properties are constant as well:
 
-** IMMUTABLE, CONTAINER are all at highest level
-** NOT_NULL all true except obviously for NullValue
-** SIZE, NOT_MODIFIED are not relevant
-** CONSTANT true by definition
+* IMMUTABLE, CONTAINER are all at highest level
+* NOT_NULL all true except obviously for NullValue
+* SIZE, NOT_MODIFIED are not relevant
+* CONSTANT true by definition
 
 Property-wise similar to constants are the operator values: AndValue, BitwiseAndValue, DivideValue, EqualsValue, GreaterThanZeroValue, InstanceOfValue, NegatedValue, OrValue, ProductValue, RemainderValue, SumValue.
 
 Then there are some marker values:
 
 No value:: temporary value to indicate that certain evaluations have not been concluded yet
+Unknown field value:: value of a field, but due to absence of synchronisation, we have no clue what the properties are.
 Unknown primitive:: unknown value with the properties of a non-null primitive value.
-Unknown value:: #TODO#
-
-TypeValue:: constant properties: is not null, but is nothing else.
+TypeValue:: is not null, but is nothing else.
 
 ==== Values with computed properties
 
@@ -144,6 +143,7 @@ By definition, it cannot be null.
 
 MethodValue:: the result of a method call.
 It has all the properties of its associated method, unless it is @Identity or @Fluent, in which case the properties are redirected to the first parameter or the type, respectively.
+Note that if methods return constants, it is the constant that is returned.
 
 ThisValue:: representing the current object.
 Like `Instance`, it has all the properties of the type that has been created.
@@ -152,10 +152,17 @@ By definition, it cannot be null.
 
 VariableValue::
 Value used during statement analysis.
+The correct type for fields as well: values are taken from field analysis, then put into variable properties.
 The statement analyser accumulates properties in the evaluation context.
 
 VariableValueCopy:: reference to a variable, but with a fixed set of properties.
 Is used as the summary of statement analysis: value of return statements, value of fields.
+
+CombinedValue:: when a value is a combination of other values.
+Properties are computed over the combination, using the correct operator (best, worst, ...)
+
+ConditionalValue:: value is the combination of the left or the right value, implemented using a combined value.
+ArrayValue:: array contents implemented using a combined value.
 
 ==== Statement specific analysis values
 

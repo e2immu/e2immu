@@ -18,15 +18,12 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -35,7 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class NegatedValue implements Value {
+public class NegatedValue extends PrimitiveValue {
     public static NegatedValue NOT_NULL = new NegatedValue(NullValue.NULL_VALUE);
 
     public final Value value;

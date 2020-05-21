@@ -48,6 +48,8 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
+    default boolean hasConstantProperties() { return true; }
+
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;

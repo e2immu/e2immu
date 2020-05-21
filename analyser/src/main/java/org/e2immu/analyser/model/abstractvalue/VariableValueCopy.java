@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -77,6 +76,11 @@ public class VariableValueCopy implements Value {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         return copiedProperties.getOrDefault(variableProperty, Level.DELAY);
+    }
+
+    @Override
+    public boolean hasConstantProperties() {
+        return true;
     }
 
     @Override

@@ -18,13 +18,8 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -127,6 +122,11 @@ public class MethodValue implements Value {
 
         }
         return methodAnalysis.getProperty(variableProperty);
+    }
+
+    @Override
+    public boolean hasConstantProperties() {
+        return false;
     }
 
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked

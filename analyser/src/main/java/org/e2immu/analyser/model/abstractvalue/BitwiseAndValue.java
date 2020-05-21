@@ -18,20 +18,18 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
 import java.util.Set;
 
-public class BitwiseAndValue implements Value {
+public class BitwiseAndValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
@@ -48,7 +46,7 @@ public class BitwiseAndValue implements Value {
             return new IntValue(l.toInt().value & r.toInt().value);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         return new BitwiseAndValue(l, r);
     }

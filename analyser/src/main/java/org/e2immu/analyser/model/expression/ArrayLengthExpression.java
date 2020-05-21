@@ -20,8 +20,9 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -69,7 +70,7 @@ public class ArrayLengthExpression implements Expression {
             ArrayValue arrayValue = (ArrayValue) v;
             result = new IntValue(arrayValue.values.size());
         } else {
-            result = UnknownValue.UNKNOWN_PRIMITIVE;
+            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         visitor.visit(this, evaluationContext, result);
         return result;

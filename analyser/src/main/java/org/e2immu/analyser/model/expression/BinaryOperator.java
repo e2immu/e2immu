@@ -20,11 +20,9 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
 import com.google.common.collect.Sets;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.*;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
@@ -125,7 +123,7 @@ public class BinaryOperator implements Expression {
             return new AndValue().append(l, r);
         }
 
-        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         // from here on, straightforward operations
         if (operator == Primitives.PRIMITIVES.plusOperatorInt) {

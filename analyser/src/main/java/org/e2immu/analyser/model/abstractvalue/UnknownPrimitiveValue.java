@@ -16,25 +16,12 @@
  *
  */
 
-package org.e2immu.analyser.model.value;
+package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 
-public class UnknownValue implements Value {
-    public static final UnknownValue UNKNOWN_VALUE = new UnknownValue("<unknown value>");
-    public static final UnknownValue UNKNOWN_PRIMITIVE = new UnknownValue("<unknown constant>");
-
-    // used if we don't know yet which value a variable will have
-    public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
-
-    private final String msg;
-
-    private UnknownValue(String msg) {
-        this.msg = msg;
-    }
+public class UnknownPrimitiveValue extends PrimitiveValue {
+    public static final UnknownPrimitiveValue UNKNOWN_PRIMITIVE = new UnknownPrimitiveValue();
 
     @Override
     public boolean isUnknown() {
@@ -49,16 +36,7 @@ public class UnknownValue implements Value {
 
     @Override
     public String toString() {
-        return msg;
+        return "<unknown primitive value>";
     }
 
-    @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return Level.FALSE;
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return Level.FALSE;
-    }
 }

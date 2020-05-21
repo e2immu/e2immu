@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 
@@ -99,27 +99,26 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             if (forwardNotNull == Level.TRUE && notNull == Level.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION);
-                result = UnknownValue.UNKNOWN_VALUE;
-            } else {
-                if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
-                    Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
-                    if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                        result = singleValue;
-                    } else {
-                        if (value instanceof NullValue) {
-                            evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
-                        }
-                        result = new MethodValue(methodInfo, value, List.of());
-                    }
-                } else if (methodInfo.hasBeenDefined()) {
-                    result = UnknownValue.NO_VALUE; // delay, waiting
+            }
+            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+                Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                    result = singleValue;
                 } else {
                     if (value instanceof NullValue) {
                         evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
                     result = new MethodValue(methodInfo, value, List.of());
                 }
+            } else if (methodInfo.hasBeenDefined()) {
+                result = UnknownValue.NO_VALUE; // delay, waiting
+            } else {
+                if (value instanceof NullValue) {
+                    evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+                }
+                result = new MethodValue(methodInfo, value, List.of());
             }
+
         }
         visitor.visit(this, evaluationContext, result);
         return result;

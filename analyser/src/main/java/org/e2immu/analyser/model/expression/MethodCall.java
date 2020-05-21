@@ -25,7 +25,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
@@ -76,41 +76,40 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Value result;
         if (objectValue instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
-            result = UnknownValue.UNKNOWN_VALUE;
-        } else {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        }
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
-            List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
+        List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
-            if (methodAnalysis.singleReturnValue.isSet()) {
-                Value singleValue = methodAnalysis.singleReturnValue.get();
-                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                    result = singleValue;
-                } else {
-                    result = new MethodValue(methodInfo, objectValue, parameters);
-                }
-            } else if (methodInfo.hasBeenDefined()) {
-                // we will, at some point, analyse this method
-                result = UnknownValue.NO_VALUE;
+        if (methodAnalysis.singleReturnValue.isSet()) {
+            Value singleValue = methodAnalysis.singleReturnValue.get();
+            if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
+                result = singleValue;
             } else {
-                // method has NOT been defined, so we definitely do NOT delay
-                int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-                if (identity == Level.TRUE) {
-                    result = parameters.get(0);
-                } else {
-                    // we will never analyse this method
-                    result = new MethodValue(methodInfo, objectValue, parameters);
+                result = new MethodValue(methodInfo, objectValue, parameters);
+            }
+        } else if (methodInfo.hasBeenDefined()) {
+            // we will, at some point, analyse this method
+            result = UnknownValue.NO_VALUE;
+        } else {
+            // method has NOT been defined, so we definitely do NOT delay
+            int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
+            if (identity == Level.TRUE) {
+                result = parameters.get(0);
+            } else {
+                // we will never analyse this method
+                result = new MethodValue(methodInfo, objectValue, parameters);
 
-                    // simple example of a frequently recurring issue...
-                    if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
-                        ParameterizedType type = objectValue.type();
-                        if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                            evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
-                        }
+                // simple example of a frequently recurring issue...
+                if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+                    ParameterizedType type = objectValue.type();
+                    if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
+                        evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
                     }
                 }
             }
         }
+
         visitor.visit(this, evaluationContext, result);
         return result;
     }

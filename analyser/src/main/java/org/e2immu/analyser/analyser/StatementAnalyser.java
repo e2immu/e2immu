@@ -27,7 +27,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -351,7 +351,7 @@ public class StatementAnalyser {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
-                valueAfterCheckingForConstant = UnknownValue.UNKNOWN_PRIMITIVE; // this should mess up most conditions
+                valueAfterCheckingForConstant = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // this should mess up most conditions
             } else {
                 valueAfterCheckingForConstant = value;
             }

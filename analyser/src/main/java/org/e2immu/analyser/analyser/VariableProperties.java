@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -247,7 +247,7 @@ class VariableProperties implements EvaluationContext {
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
             resetValue = UnknownValue.NO_VALUE; // delay
         } else if (fieldReferenceState == MULTI_COPY) {
-            resetValue = UnknownValue.UNKNOWN_VALUE;
+            resetValue = new UnknownFieldValue(fieldReference.fieldInfo);
         } else {
             FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);

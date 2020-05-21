@@ -18,12 +18,10 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -33,7 +31,7 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class OrValue implements Value {
+public class OrValue extends PrimitiveValue {
     public final List<Value> values;
 
     public OrValue() {
@@ -74,7 +72,7 @@ public class OrValue implements Value {
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
             log(CNF, "Return Instance in Or, found unknown value");
-            return UnknownValue.UNKNOWN_PRIMITIVE;
+            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         // STEP 4: loop
 

@@ -7,4 +7,9 @@ public abstract class ConstantValue implements Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public boolean hasConstantProperties() {
+        return true;
+    }
 }

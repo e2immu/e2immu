@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.annotation.E2Immutable;
 
 @E2Immutable

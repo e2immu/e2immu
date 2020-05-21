@@ -21,8 +21,9 @@ package org.e2immu.analyser.model.expression;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -75,18 +76,18 @@ public class UnaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.bitWiseNotOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(~((IntValue) v).value);
-            return UnknownValue.UNKNOWN_PRIMITIVE;
+            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == Primitives.PRIMITIVES.postfixDecrementOperatorInt
                 || operator == Primitives.PRIMITIVES.prefixDecrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value - 1);
-            return UnknownValue.UNKNOWN_PRIMITIVE;
+            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == Primitives.PRIMITIVES.postfixIncrementOperatorInt || operator == Primitives.PRIMITIVES.prefixIncrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value + 1);
-            return UnknownValue.UNKNOWN_PRIMITIVE;
+            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         throw new UnsupportedOperationException();
     }

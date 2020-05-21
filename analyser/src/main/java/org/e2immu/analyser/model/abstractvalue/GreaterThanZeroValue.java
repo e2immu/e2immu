@@ -18,18 +18,16 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Set;
 
-public class GreaterThanZeroValue implements Value {
+public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
     public final boolean allowEquals;
 
@@ -40,7 +38,7 @@ public class GreaterThanZeroValue implements Value {
 
     public static Value greater(Value l, Value r, boolean allowEquals) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
-        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
@@ -55,7 +53,7 @@ public class GreaterThanZeroValue implements Value {
 
     public static Value less(Value l, Value r, boolean allowEquals) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
-        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
                 return BoolValue.of(l.toInt().value <= r.toInt().value);

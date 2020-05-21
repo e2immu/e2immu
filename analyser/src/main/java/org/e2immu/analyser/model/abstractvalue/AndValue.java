@@ -19,13 +19,10 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
@@ -66,7 +63,7 @@ public class AndValue implements Value {
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
             log(CNF, "Return Unknown value in And, found Unknown value");
-            return UnknownValue.UNKNOWN_PRIMITIVE;
+            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
 
         // STEP 4: loop

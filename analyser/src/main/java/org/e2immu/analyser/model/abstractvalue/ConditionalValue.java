@@ -18,15 +18,13 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetUtil;
 
+import java.util.List;
 import java.util.Set;
 
 public class ConditionalValue implements Value {
@@ -34,11 +32,13 @@ public class ConditionalValue implements Value {
     public final Value condition;
     public final Value ifTrue;
     public final Value ifFalse;
+    public final Value combinedValue;
 
     public ConditionalValue(Value condition, Value ifTrue, Value ifFalse) {
         this.condition = condition;
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
+        combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
     }
 
     @Override
@@ -53,34 +53,21 @@ public class ConditionalValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
-                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
-            int notNullTrue = ifTrue.getProperty(evaluationContext, variableProperty);
-            int notNullFalse = ifFalse.getProperty(evaluationContext, variableProperty);
-            return Level.worst(notNullTrue, notNullFalse);
-        }
-        throw new UnsupportedOperationException("No info about " + variableProperty);
+        return combinedValue.getProperty(evaluationContext, variableProperty);
     }
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
-                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
-            int notNullTrue = ifTrue.getPropertyOutsideContext(variableProperty);
-            int notNullFalse = ifFalse.getPropertyOutsideContext(variableProperty);
-            return Level.worst(notNullTrue, notNullFalse);
-        }
-        throw new UnsupportedOperationException("No info about " + variableProperty);
+        return combinedValue.getPropertyOutsideContext(variableProperty);
     }
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        return SetUtil.immutableUnion(ifTrue.linkedVariables(bestCase, evaluationContext),
-                ifFalse.linkedVariables(bestCase, evaluationContext));
+        return combinedValue.variables();
     }
 
     @Override
     public Set<Variable> variables() {
-        return SetUtil.immutableUnion(condition.variables(), ifTrue.variables(), ifFalse.variables());
+        return SetUtil.immutableUnion(condition.variables(), combinedValue.variables());
     }
 }

@@ -142,4 +142,9 @@ public class Instance implements Value {
         // @NotModified should not be asked here
         throw new UnsupportedOperationException("Asking for "+variableProperty);
     }
+
+    @Override
+    public boolean hasConstantProperties() {
+        return false;
+    }
 }

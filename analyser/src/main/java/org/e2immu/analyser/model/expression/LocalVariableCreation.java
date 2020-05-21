@@ -20,9 +20,6 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;

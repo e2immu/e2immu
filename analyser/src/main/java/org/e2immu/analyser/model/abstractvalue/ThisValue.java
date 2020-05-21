@@ -29,6 +29,11 @@ public class ThisValue implements Value {
     }
 
     @Override
+    public boolean hasConstantProperties() {
+        return false;
+    }
+
+    @Override
     public ParameterizedType type() {
         return thisVariable.parameterizedType();
     }

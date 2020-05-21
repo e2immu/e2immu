@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -54,7 +54,7 @@ public class InstanceOf implements Expression {
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {
-            result = UnknownValue.UNKNOWN_PRIMITIVE; // no clue, too deep
+            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // no clue, too deep
         } else if (value instanceof ClassValue) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value));
         } else {

@@ -23,19 +23,16 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.CombinedValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
-import static org.e2immu.analyser.model.value.UnknownValue.UNKNOWN_VALUE;
+import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -203,49 +200,38 @@ public class FieldAnalyser {
             return false;
         // find the constructors where the value is set; if they're all set to the same value,
         // we can set the initial value; also take into account the value of the initialiser, if it is there
-        Value consistentValue = value;
+        List<Value> values = new LinkedList<>();
+        values.add(value);
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             for (MethodInfo method : typeInspection.methodsAndConstructors()) {
                 MethodAnalysis methodAnalysis = method.methodAnalysis.get();
                 if (methodAnalysis.fieldAssignments.getOtherwiseNull(fieldInfo) == Boolean.TRUE) {
                     if (methodAnalysis.fieldAssignmentValues.isSet(fieldInfo)) {
                         Value assignment = methodAnalysis.fieldAssignmentValues.get(fieldInfo);
-                        if (consistentValue == NO_VALUE) consistentValue = assignment;
-                        else if (!consistentValue.equals(assignment)) {
-                            log(CONSTANT, "Cannot set consistent value for field {}, have {} and {}",
-                                    fieldInfo.fullyQualifiedName(), consistentValue, assignment);
-                            fieldAnalysis.effectivelyFinalValue.set(UNKNOWN_VALUE);
-                            fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.FALSE);
-                            return true;
+                        if (assignment == NO_VALUE) {
+                            log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
+                            return false;
                         }
-                    } else {
-                        log(DELAYED, "Delay consistent value for field {}", fieldInfo.fullyQualifiedName());
-                        consistentValue = NO_VALUE;
-                        break;
                     }
                 }
             }
         }
-        if (consistentValue == NO_VALUE) return false; // delay
+        Value combinedValue = CombinedValue.create(values);
+        fieldAnalysis.effectivelyFinalValue.set(combinedValue);
+        fieldAnalysis.setProperty(VariableProperty.CONSTANT, combinedValue.isConstant());
 
-        Value valueToSet;
-        boolean isConstant = consistentValue.isConstant();
-        fieldAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
-
-        if (isConstant) {
-            valueToSet = consistentValue;
+        if (combinedValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
-            valueToSet = evaluationContext.newVariableValue(fieldReference);
             log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
             fieldAnalysis.annotations.put(typeContext.constant.get(), false);
         }
-        fieldAnalysis.effectivelyFinalValue.set(valueToSet);
+
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
-                fieldInfo.fullyQualifiedName(), consistentValue);
+                fieldInfo.fullyQualifiedName(), combinedValue);
         return true;
     }
 

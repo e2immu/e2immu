@@ -41,6 +41,11 @@ public class TypeValue implements Value {
     }
 
     @Override
+    public boolean hasConstantProperties() {
+        return true;
+    }
+
+    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return getPropertyOutsideContext(variableProperty);
     }
