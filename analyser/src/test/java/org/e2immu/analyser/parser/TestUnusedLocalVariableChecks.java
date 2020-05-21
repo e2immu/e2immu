@@ -107,7 +107,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                     methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
 
             // ERROR: method should be static
-            Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticStatement.get());
+            Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticModifier.get());
         }
         if ("checkArray2".equals(methodInfo.name)) {
             Assert.assertEquals(1L, methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());

@@ -102,9 +102,11 @@ public class TypeAnalyser {
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        typeInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Type " + typeInfo.fullyQualifiedName +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
+        typeInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+            Message error = Message.newMessage(new Location(typeInfo),
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+            typeContext.addMessage(error);
+        });
     }
 
     public void analyse(SortedType sortedType, DebugConfiguration debugConfiguration, boolean postAnalysis) {

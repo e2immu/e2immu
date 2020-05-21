@@ -154,7 +154,8 @@ public class InspectAnnotatedAPIs {
                 MethodInfo copy = copy(methodInfo, typeTo);
                 Set<MethodInfo> overrides = typeTo.overrides(copy, false);
                 if (overrides.isEmpty()) {
-                    globalTypeContext.addMessage(Message.Severity.ERROR, "Cannot find method " + distinguishingName + " in a supertype");
+                    Message error = Message.newMessage(new Location(methodInfo), Message.CANNOT_FIND_METHOD_IN_SUPER_TYPE, distinguishingName);
+                    globalTypeContext.addMessage(error);
                 } else {
                     log(MERGE_ANNOTATIONS, "Add copy of {}", distinguishingName);
                     res.add(copy);

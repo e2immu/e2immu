@@ -138,10 +138,10 @@ public class BinaryOperator implements Expression {
             return ProductValue.product(l, r);
         }
         if (operator == Primitives.PRIMITIVES.divideOperatorInt) {
-            return evaluationContext.checkError(DivideValue.divide(l, r));
+            return DivideValue.divide(evaluationContext, l, r);
         }
         if (operator == Primitives.PRIMITIVES.remainderOperatorInt) {
-            return evaluationContext.checkError(RemainderValue.remainder(l, r));
+            return RemainderValue.remainder(evaluationContext, l, r);
         }
         if (operator == Primitives.PRIMITIVES.lessEqualsOperatorInt) {
             return GreaterThanZeroValue.less(l, r, true);

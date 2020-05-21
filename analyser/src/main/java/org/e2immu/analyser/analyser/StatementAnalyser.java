@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;

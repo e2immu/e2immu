@@ -22,10 +22,10 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -41,9 +41,12 @@ public class DivideValue implements Value {
         this.rhs = rhs;
     }
 
-    public static Value divide(Value l, Value r) {
+    public static Value divide(EvaluationContext evaluationContext, Value l, Value r) {
         if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
-        if (r instanceof NumericValue && r.toInt().value == 0) return ErrorValue.divisionByZero(l);
+        if (r instanceof NumericValue && r.toInt().value == 0) {
+            evaluationContext.raiseError(Message.DIVISION_BY_ZERO);
+            return l;
+        }
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof IntValue && r instanceof IntValue)
             return new IntValue(l.toInt().value / r.toInt().value);

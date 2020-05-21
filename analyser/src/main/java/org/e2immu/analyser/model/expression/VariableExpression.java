@@ -19,9 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 

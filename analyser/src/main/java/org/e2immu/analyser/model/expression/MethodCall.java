@@ -24,9 +24,9 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -75,7 +75,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         Value result;
         if (objectValue instanceof NullValue) {
-            result = ErrorValue.nullPointerException(UnknownValue.UNKNOWN_VALUE);
+            evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+            result = UnknownValue.UNKNOWN_VALUE;
         } else {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
@@ -104,14 +105,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
                         ParameterizedType type = objectValue.type();
                         if (type != null && type.typeInfo != null && "java.lang.String".equals(type.typeInfo.fullyQualifiedName)) {
-                            result = ErrorValue.unnecessaryMethodCall(result);
+                            evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
                         }
                     }
                 }
             }
         }
         visitor.visit(this, evaluationContext, result);
-        return evaluationContext.checkError(result);
+        return result;
     }
 
     @Override

@@ -31,12 +31,14 @@ import java.util.Set;
 public interface EvaluationContext {
 
     int getIteration();
+
     DebugConfiguration getDebugConfiguration();
 
     // WHERE ARE WE??
 
     // can be null, in evaluation of lambda expressions
     MethodInfo getCurrentMethod();
+
     NumberedStatement getCurrentStatement();
 
     @NotNull
@@ -94,7 +96,8 @@ public interface EvaluationContext {
     void markRead(String variableName);
 
     DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable);
+
     void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
 
-    Value checkError(Value value);
+    void raiseError(String message);
 }

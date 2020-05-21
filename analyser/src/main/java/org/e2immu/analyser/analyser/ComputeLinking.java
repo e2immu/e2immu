@@ -298,8 +298,7 @@ public class ComputeLinking {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
                 boolean assigned = Level.haveTrueAt(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
                 if (assigned && !methodInfo.methodAnalysis.get().parameterAssignments.isSet(parameterInfo)) {
-                    typeContext.addMessage(Message.Severity.ERROR,
-                            "Parameter " + aboutVariable.name + " should not be assigned to");
+                    typeContext.addMessage(Message.newMessage(new Location(parameterInfo), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                     methodInfo.methodAnalysis.get().parameterAssignments.put(parameterInfo, true);
                     changes = true;
                 }

@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.ErrorValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -876,21 +875,18 @@ class VariableProperties implements EvaluationContext {
         return false;
     }
 
+    private Location location() {
+        if (currentStatement != null) return new Location(currentMethod, currentStatement.streamIndices());
+        if (currentMethod != null) return new Location(currentMethod);
+        return new Location(currentType);
+    }
+
     @Override
-    public Value checkError(Value value) {
-        if (!(value instanceof ErrorValue)) return value;
-        ErrorValue errorValue = (ErrorValue) value;
-        NumberedStatement statement = getCurrentStatement();
-        if (statement != null) {
-            if (!statement.errorValue.isSet()) {
-                getTypeContext().addMessage(Message.Severity.ERROR,
-                        "Error " + value + " in method " + getCurrentMethod().fullyQualifiedName() +
-                                " statement " + statement.streamIndices());
-                statement.errorValue.set(true);
-            }
-        } else {
-            throw new UnsupportedOperationException("Not yet implemented: should be in fieldInfo, I presume (current field)");
+    public void raiseError(String error) {
+        Message message = Message.newMessage(location(), error);
+        getTypeContext().addMessage(message);
+        if (currentStatement != null) {
+            currentStatement.errorValue.set(true);
         }
-        return errorValue.alternative;
     }
 }

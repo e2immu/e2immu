@@ -182,7 +182,7 @@ public class Assignment implements Expression {
             // only change fields of "our" class, otherwise, raise error
             if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
                 if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
-                    typeContext.addMessage(Message.Severity.ERROR, "Assigning to field outside the primary type: " + at.detailedString());
+                    typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
                     fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
                 }
                 return;
@@ -194,7 +194,7 @@ public class Assignment implements Expression {
             }
         } else if (at instanceof ParameterInfo) {
             if (!statement.errorValue.isSet()) {
-                typeContext.addMessage(Message.Severity.ERROR, "Assignment to parameter " + at.detailedString());
+                typeContext.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                 statement.errorValue.set(true);
                 return;
             }

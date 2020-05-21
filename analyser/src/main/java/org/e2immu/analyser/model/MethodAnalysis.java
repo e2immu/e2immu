@@ -103,7 +103,7 @@ public class MethodAnalysis extends Analysis {
 
     // if true, the method has no (non-static) method calls on the "this" scope
     public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
-    public final SetOnce<Boolean> complainedAboutMissingStaticStatement = new SetOnce<>();
+    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
 
     // produces an error
     public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();

@@ -115,6 +115,23 @@ Decisions can be delayed when the `@NotModified` status of fields has not been c
 
 === New text
 
+==== Different values
+
+Constants:: This group consists of primitives, String, Class, Null.
+The assignment properties are constant as well:
+
+** IMMUTABLE, CONTAINER are all at highest level
+** NOT_NULL all true except obviously for NullValue
+** SIZE, NOT_MODIFIED are not relevant
+** CONSTANT true by definition
+
+Then there are some marker values:
+
+Error:: temporary value used as a marker, for technical reasons only (we could get rid of this)
+No value:: temporary value to indicate that certain evaluations have not been concluded yet
+Unknown value:: value without properties, which means currently that it has the properties of a constant.
+So a better name would be #Unknown constant#.
+
 ==== Statement specific analysis values
 
 * escapes? throw statement, propagated upwards
@@ -184,3 +201,19 @@ Note again that links are based on modification information, not equality!
 * others:
 ** does the method create an object of itself?
 ** `this` has been read
+
+==== Field analyser
+
+Properties specific to fields are:
+
+* FINAL, and its final value
+
+Shared with the return value of methods:
+
+* LINKED as a debug property to check how modifications travel
+* CONSTANT
+* NOT_NULL
+* SIZE
+* IMMUTABLE
+* CONTAINER
+* NOT_MODIFIED

@@ -23,9 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.value.UnknownValue;
@@ -77,9 +75,11 @@ public class MethodAnalyser {
     }
 
     private void check(MethodInfo methodInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Method " + methodInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
+        methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+            Message error = Message.newMessage(new Location(methodInfo),
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT: Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+            typeContext.addMessage(error);
+        });
     }
 
     public boolean analyse(MethodInfo methodInfo, VariableProperties methodProperties) {
@@ -136,7 +136,7 @@ public class MethodAnalyser {
                 if (methodInfo.isStatic) {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
-                StaticModifier.detectMissingStaticStatement(typeContext, methodInfo, methodAnalysis);
+                StaticModifier.detectMissingStaticModifier(typeContext, methodInfo, methodAnalysis);
                 if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
             }
             return changes;

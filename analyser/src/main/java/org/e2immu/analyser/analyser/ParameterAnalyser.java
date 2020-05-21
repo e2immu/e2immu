@@ -18,12 +18,16 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Size;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -44,14 +48,17 @@ public class ParameterAnalyser {
         Lazy<String> where = new Lazy<>(() -> "In method " +
                 parameterInfo.parameterInspection.get().owner.fullyQualifiedName() + ", " +
                 parameterInfo.detailedString());
-
-        parameterInfo.error(NotModified.class, typeContext.notModified.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, where.get() +
-                        ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NotModified"));
-
-        parameterInfo.error(NotNull.class, typeContext.notNull.get()).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, where.get() +
-                        ": parameter should " + (mustBeAbsent ? "not " : "") + "be marked @NotNull"));
+        check(parameterInfo, NotModified.class, typeContext.notModified.get());
+        check(parameterInfo, NotNull.class, typeContext.notNull.get());
+        check(parameterInfo, Size.class, typeContext.size.get());
+        // TODO both for not null and size we need to check actual values!
     }
 
+    private void check(ParameterInfo parameterInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
+        parameterInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+            Message error = Message.newMessage(new Location(parameterInfo),
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+            typeContext.addMessage(error);
+        });
+    }
 }

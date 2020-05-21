@@ -23,8 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.ErrorValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
@@ -59,12 +58,13 @@ public class InlineConditionalOperator implements Expression {
         Value res;
         if (c instanceof BoolValue) {
             boolean first = ((BoolValue) c).value;
-            res = ErrorValue.inlineConditionalEvaluatesToConstant(first ? t : f);
+            evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+            res = first ? t : f;
         } else {
             res = new ConditionalValue(c, t, f);
         }
         evaluationVisitor.visit(this, evaluationContext, res);
-        return evaluationContext.checkError(res);
+        return res;
     }
 
     @Override
