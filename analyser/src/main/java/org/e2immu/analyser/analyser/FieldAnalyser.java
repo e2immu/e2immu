@@ -23,11 +23,9 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 
 import java.util.HashSet;
@@ -129,8 +127,7 @@ public class FieldAnalyser {
                 }
                 fieldAnalysis.fieldError.set(!readInMethods);
                 if (!readInMethods) {
-                    typeContext.addMessage(Message.Severity.ERROR, "Private field " + fieldInfo.fullyQualifiedName() +
-                            " is not read outside constructors");
+                    typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
                 }
                 return true;
             }
@@ -140,8 +137,7 @@ public class FieldAnalyser {
             boolean record = fieldInfo.owner.isRecord();
             fieldAnalysis.fieldError.set(!record);
             if (!record) {
-                typeContext.addMessage(Message.Severity.ERROR, "Non-private field " + fieldInfo.fullyQualifiedName() +
-                        " is not effectively final (@Final)");
+                typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
             } // else: nested private types can have fields the way they like it
             return true;
         }
@@ -310,9 +306,7 @@ public class FieldAnalyser {
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
         if (isFinal && fieldInfo.type.isRecordType()) {
-            typeContext.addMessage(Message.Severity.ERROR,
-                    "Effectively final field " + fieldInfo.fullyQualifiedName() +
-                            " is not allowed to be of a record type " + fieldInfo.type.detailedString());
+            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fieldInfo.fullyQualifiedName());
@@ -441,8 +435,10 @@ public class FieldAnalyser {
     }
 
     private void check(FieldInfo fieldInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        fieldInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent ->
-                typeContext.addMessage(Message.Severity.ERROR, "Field " + fieldInfo.fullyQualifiedName() +
-                        " should " + (mustBeAbsent ? "not " : "") + "be marked @" + annotation.getSimpleName()));
+        fieldInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+            Message error = Message.newMessage(new Location(fieldInfo),
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+            typeContext.addMessage(error);
+        });
     }
 }

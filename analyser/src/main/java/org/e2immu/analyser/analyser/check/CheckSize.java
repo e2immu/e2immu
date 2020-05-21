@@ -13,25 +13,28 @@ public class CheckSize {
     public static void checkSizeForMethods(TypeContext typeContext, MethodInfo methodInfo) {
         int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         AnnotationExpression optionalAnnotationExpression = methodInfo.hasTestAnnotation(Size.class).orElse(null);
-        String where = "Method " + methodInfo.distinguishingName();
-        checkSize(typeContext, size, optionalAnnotationExpression, where);
+        checkSize(typeContext, size, optionalAnnotationExpression, new Location(methodInfo));
     }
 
     public static void checkSizeForFields(TypeContext typeContext, FieldInfo fieldInfo) {
         int size = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.SIZE);
         AnnotationExpression optionalAnnotationExpression = fieldInfo.hasTestAnnotation(Size.class).orElse(null);
-        String where = "Field " + fieldInfo.fullyQualifiedName();
-        checkSize(typeContext, size, optionalAnnotationExpression, where);
+        checkSize(typeContext, size, optionalAnnotationExpression, new Location(fieldInfo));
     }
 
-    private static void checkSize(TypeContext typeContext, int size, AnnotationExpression annotationExpression, String where) {
+    public static void checkSizeForParameters(TypeContext typeContext, ParameterInfo parameterInfo) {
+        int size = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
+        AnnotationExpression optionalAnnotationExpression = parameterInfo.hasTestAnnotation(Size.class).orElse(null);
+        checkSize(typeContext, size, optionalAnnotationExpression, new Location(parameterInfo));
+    }
+
+    private static void checkSize(TypeContext typeContext, int size, AnnotationExpression annotationExpression, Location where) {
         if (annotationExpression == null) return; // nothing to verify
         AnnotationType annotationType = annotationExpression.extract("type", null);
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
 
         if (mustBeAbsent && size != Level.DELAY) {
-            typeContext.addMessage(Message.Severity.ERROR, where +
-                    " has a @Size property, but the annotation claims there should not be one");
+            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT));
             return;
         }
         int sizeMin = annotationExpression.extract("min", -1);
@@ -39,12 +42,11 @@ public class CheckSize {
             if (!Analysis.haveEquals(size)) {
                 int haveMin = Analysis.sizeMin(size);
                 if (haveMin != sizeMin) {
-                    typeContext.addMessage(Message.Severity.ERROR, where +
-                            " claims @Size(min = " + sizeMin + "), but have @Size(min = " + haveMin + ")");
+                    typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_MIN_VALUE,
+                            "have " + haveMin + ", requires " + sizeMin));
                 }
             } else {
-                typeContext.addMessage(Message.Severity.ERROR, where +
-                        " claims @Size(min = " + sizeMin + "), but have no minimum value");
+                typeContext.addMessage(Message.newMessage(where, Message.SIZE_MIN_MISSING));
             }
             return;
         }
@@ -53,12 +55,11 @@ public class CheckSize {
             if (Analysis.haveEquals(size)) {
                 int haveEquals = Analysis.sizeEquals(size);
                 if (haveEquals != sizeEquals) {
-                    typeContext.addMessage(Message.Severity.ERROR, where +
-                            " claims @Size(equals = " + sizeEquals + "), but have @Size(equals = " + haveEquals + ")");
+                    typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_EQUALS_VALUE,
+                            "have " + haveEquals + ", requires " + sizeEquals));
                 }
             } else {
-                typeContext.addMessage(Message.Severity.ERROR, where +
-                        " claims @Size(equals = " + sizeEquals + "), but have no exact value");
+                typeContext.addMessage(Message.newMessage(where, Message.SIZE_EQUALS_MISSING));
             }
         }
     }

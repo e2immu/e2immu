@@ -889,4 +889,13 @@ class VariableProperties implements EvaluationContext {
             currentStatement.errorValue.set(true);
         }
     }
+
+    @Override
+    public void raiseError(String error, String extra) {
+        Message message = Message.newMessage(location(), error, extra);
+        getTypeContext().addMessage(message);
+        if (currentStatement != null) {
+            currentStatement.errorValue.set(true);
+        }
+    }
 }

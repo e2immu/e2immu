@@ -187,8 +187,13 @@ public class TestAbstractValue {
         }
 
         @Override
-        public Value checkError(Value value) {
-            return null;
+        public void raiseError(String message) {
+
+        }
+
+        @Override
+        public void raiseError(String message, String extra) {
+            
         }
     };
 

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodInfo;
@@ -49,9 +50,8 @@ public class ParameterAnalyser {
                 parameterInfo.parameterInspection.get().owner.fullyQualifiedName() + ", " +
                 parameterInfo.detailedString());
         check(parameterInfo, NotModified.class, typeContext.notModified.get());
-        check(parameterInfo, NotNull.class, typeContext.notNull.get());
-        check(parameterInfo, Size.class, typeContext.size.get());
-        // TODO both for not null and size we need to check actual values!
+        check(parameterInfo, NotNull.class, typeContext.notNull.get()); // TODO check @NotNull1, 2
+        CheckSize.checkSizeForParameters(typeContext, parameterInfo);
     }
 
     private void check(ParameterInfo parameterInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

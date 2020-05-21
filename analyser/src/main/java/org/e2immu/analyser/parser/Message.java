@@ -35,6 +35,7 @@ public class Message {
     public static final String DIVISION_BY_ZERO = "Division by zero";
     public static final String NULL_POINTER_EXCEPTION = "Null pointer exception";
     public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT = "Inline conditional evaluates to constant";
+    public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
     public static final String UNNECESSARY_METHOD_CALL = "Unnecessary method call";
@@ -46,6 +47,21 @@ public class Message {
 
     public static final String ANNOTATION_UNEXPECTEDLY_PRESENT = "Annotation should be absent";
     public static final String ANNOTATION_ABSENT = "Annotation missing";
+    public static final String SIZE_MIN_MISSING = "@Size annotation, min value missing";
+    public static final String SIZE_WRONG_MIN_VALUE = "@Size annotation, wrong min value";
+    public static final String SIZE_EQUALS_MISSING = "@Size annotation, equals value missing";
+    public static final String SIZE_WRONG_EQUALS_VALUE = "@Size annotation, wrong equals value";
+    public static final String WRONG_CONSTANT = "@Constant annotation, wrong value";
+    public static final String PRIVATE_FIELD_NOT_READ = "Private field not read outside constructors";
+    public static final String NON_PRIVATE_FIELD_NOT_FINAL = "Non-private field is not effectively final (@Final)";
+    public static final String EFFECTIVELY_FINAL_FIELD_NOT_RECORD = "Effectively final field is not allowed to be of a record type";
+
+    public static final String IGNORING_RESULT_OF_METHOD_CALL = "Ignoring result of method call";
+    public static final String UNUSED_LOCAL_VARIABLE = "Unused local variable";
+    public static final String USELESS_ASSIGNMENT = "Useless assignment";
+
+    public static final String METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD = "Method is not allowed to call non-@NotModified method into nested or enclosing type";
+    public static final String METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD = "Method is not allowed to assign to field";
 
     public static final Map<String, Severity> SEVERITY_MAP;
 
@@ -54,10 +70,30 @@ public class Message {
         map.put(DIVISION_BY_ZERO, Severity.ERROR);
         map.put(NULL_POINTER_EXCEPTION, Severity.ERROR);
         map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
+        map.put(CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
         map.put(CANNOT_FIND_METHOD_IN_SUPER_TYPE, Severity.ERROR);
+        map.put(METHOD_SHOULD_BE_MARKED_STATIC, Severity.ERROR);
+        map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
+        map.put(PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO, Severity.ERROR);
+
+        map.put(ANNOTATION_ABSENT, Severity.ERROR);
+        map.put(ANNOTATION_UNEXPECTEDLY_PRESENT, Severity.ERROR);
+        map.put(SIZE_EQUALS_MISSING, Severity.ERROR);
+        map.put(SIZE_MIN_MISSING, Severity.ERROR);
+        map.put(SIZE_WRONG_EQUALS_VALUE, Severity.ERROR);
+        map.put(SIZE_WRONG_MIN_VALUE, Severity.ERROR);
+        map.put(WRONG_CONSTANT, Severity.ERROR);
+        map.put(PRIVATE_FIELD_NOT_READ, Severity.ERROR);
+        map.put(NON_PRIVATE_FIELD_NOT_FINAL, Severity.ERROR);
+        map.put(EFFECTIVELY_FINAL_FIELD_NOT_RECORD, Severity.ERROR);
+        map.put(USELESS_ASSIGNMENT, Severity.ERROR);
+        map.put(UNUSED_LOCAL_VARIABLE, Severity.ERROR);
+        map.put(METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, Severity.ERROR);
 
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
+        map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
+
         SEVERITY_MAP = map.build();
     }
 

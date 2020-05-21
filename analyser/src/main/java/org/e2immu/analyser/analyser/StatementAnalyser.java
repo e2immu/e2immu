@@ -181,8 +181,7 @@ public class StatementAnalyser {
                 LocalVariable localVariable = ((LocalVariableReference) aboutVariable.variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
                     methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                            ", local variable " + localVariable.name + " is not used");
+                    typeContext.addMessage(Message.newMessage(new Location(methodInfo), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
                     changes = true;
                 }
             }
@@ -215,8 +214,7 @@ public class StatementAnalyser {
                 if (useless) {
                     if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                         methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
-                        typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                                ", assignment to variable " + aboutVariable.name + " is not used");
+                        typeContext.addMessage(Message.newMessage(new Location(methodInfo), Message.USELESS_ASSIGNMENT, aboutVariable.name));
                         changes = true;
                     }
                     if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
@@ -350,8 +348,7 @@ public class StatementAnalyser {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional.isConstant()) {
                 if (!statement.errorValue.isSet()) {
-                    typeContext.addMessage(Message.Severity.ERROR, "In method " + methodInfo.fullyQualifiedName() +
-                            ", if/switch conditional in " + statement.streamIndices() + " evaluates to constant");
+                    typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
                 valueAfterCheckingForConstant = UnknownValue.UNKNOWN_VALUE; // this should mess up most conditions
@@ -564,8 +561,8 @@ public class StatementAnalyser {
             case SIDE_EFFECT:
                 return; // nothing to be done about these
             default:
-                typeContext.addMessage(Message.Severity.ERROR, "Ignoring result of method call at " +
-                        statement.streamIndices() + " in method " + methodInfo.distinguishingName());
+                typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
+                        Message.IGNORING_RESULT_OF_METHOD_CALL));
                 statement.errorValue.set(true);
         }
     }
@@ -593,8 +590,7 @@ public class StatementAnalyser {
         boolean error = notModified != Level.TRUE;
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
-            variableProperties.getTypeContext().addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
-                    " is not allowed to call non-@NotModified method " + methodCalled.distinguishingName());
+            variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
         }
     }
 
@@ -622,8 +618,7 @@ public class StatementAnalyser {
             error = !(owner.isRecord() && currentType.isAnEnclosingTypeOf(owner));
         }
         if (error) {
-            variableProperties.getTypeContext().addMessage(Message.Severity.ERROR, "Method " + currentMethod.distinguishingName() +
-                    " is not allowed to assign to field " + fieldInfo.fullyQualifiedName());
+            variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD, fieldInfo.name);
         }
         currentMethodAnalysis.errorAssigningToFieldOutsideType.put(fieldInfo, error);
         return error;
@@ -660,9 +655,7 @@ public class StatementAnalyser {
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
         int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
         if (notNull == Level.FALSE && !currentStatement.errorValue.isSet()) {
-            evaluationContext.getTypeContext().addMessage(Message.Severity.ERROR, "Potential null-pointer exception involving "
-                    + variable.detailedString() + " in statement "
-                    + currentStatement.streamIndices() + " of " + evaluationContext.getCurrentMethod().name);
+            evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
             currentStatement.errorValue.set(true);
         }
     }

@@ -100,4 +100,5 @@ public interface EvaluationContext {
     void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
 
     void raiseError(String message);
+    void raiseError(String message, String extra);
 }

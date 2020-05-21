@@ -63,7 +63,7 @@ public class CheckConstant {
         checkConstant(typeContext,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().annotations,
-                "Field " + fieldInfo.fullyQualifiedName());
+                new Location(fieldInfo));
     }
 
     public static void checkConstantForMethods(TypeContext typeContext, MethodInfo methodInfo) {
@@ -72,10 +72,10 @@ public class CheckConstant {
         checkConstant(typeContext,
                 singleReturnValue,
                 methodInfo.methodInspection.get().annotations,
-                "Method " + methodInfo.fullyQualifiedName());
+                new Location(methodInfo));
     }
 
-    private static void checkConstant(TypeContext typeContext, Value singleReturnValue, List<AnnotationExpression> annotations, String who) {
+    private static void checkConstant(TypeContext typeContext, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
 
         // NOTE: the reason we do not check @Constant in the same way is that there can be many types
         // of constants, and we have not yet provided them all in @Constant. At the same time,
@@ -86,18 +86,18 @@ public class CheckConstant {
         boolean haveConstantValue = singleReturnValue instanceof org.e2immu.analyser.model.Constant;
         if (toTest.verifyAbsent) {
             if (haveConstantValue) {
-                typeContext.addMessage(Message.Severity.ERROR, who + " returns a constant, but the annotation claims it does not");
+                typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Constant"));
             }
             return;
         }
         if (!haveConstantValue) {
-            typeContext.addMessage(Message.Severity.ERROR, who + " does not return a constant, but the annotation claims it does");
+            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_ABSENT, "@Constant"));
             return;
         }
         if (toTest.valueToTest != null && !toTest.valueToTest.equals(singleReturnValue)) {
-            typeContext.addMessage(Message.Severity.ERROR, who + ": expected constant return value '" +
+            typeContext.addMessage(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
                     toTest.valueToTest + "' of type " + toTest.valueToTest.getClass().getSimpleName() +
-                    ", got " + singleReturnValue);
+                    ", found " + singleReturnValue));
         }
     }
 
