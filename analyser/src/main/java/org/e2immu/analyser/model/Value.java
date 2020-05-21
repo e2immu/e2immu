@@ -44,6 +44,10 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
+    default boolean isUnknown() {
+        return false;
+    }
+
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;

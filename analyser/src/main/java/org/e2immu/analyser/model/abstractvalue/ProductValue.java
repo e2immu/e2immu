@@ -52,8 +52,7 @@ public class ProductValue implements Value {
             return new IntValue(l.toInt().value * r.toInt().value);
 
         // any unknown lingering
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
 
         if (r instanceof SumValue) {
             SumValue sum = (SumValue) r;

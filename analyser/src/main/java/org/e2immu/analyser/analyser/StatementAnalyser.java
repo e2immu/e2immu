@@ -351,7 +351,7 @@ public class StatementAnalyser {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
-                valueAfterCheckingForConstant = UnknownValue.UNKNOWN_VALUE; // this should mess up most conditions
+                valueAfterCheckingForConstant = UnknownValue.UNKNOWN_PRIMITIVE; // this should mess up most conditions
             } else {
                 valueAfterCheckingForConstant = value;
             }

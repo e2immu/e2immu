@@ -54,7 +54,7 @@ public class InstanceOf implements Expression {
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {
-            result = UnknownValue.UNKNOWN_VALUE; // no clue, too deep
+            result = UnknownValue.UNKNOWN_PRIMITIVE; // no clue, too deep
         } else if (value instanceof ClassValue) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value));
         } else {

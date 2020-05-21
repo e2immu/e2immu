@@ -192,8 +192,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     public void addToConditional(Value value) {
-        if (value != UnknownValue.UNKNOWN_VALUE) {
-            if (conditional == UnknownValue.UNKNOWN_VALUE || conditional == null) conditional = value;
+        if (!value.isUnknown()) {
+            if (conditional.isUnknown() || conditional == null) conditional = value;
             else {
                 if (conditional instanceof AndValue) {
                     conditional = ((AndValue) conditional).append(value);

@@ -40,8 +40,7 @@ public class GreaterThanZeroValue implements Value {
 
     public static Value greater(Value l, Value r, boolean allowEquals) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
 
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
@@ -56,7 +55,7 @@ public class GreaterThanZeroValue implements Value {
 
     public static Value less(Value l, Value r, boolean allowEquals) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE) return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
                 return BoolValue.of(l.toInt().value <= r.toInt().value);

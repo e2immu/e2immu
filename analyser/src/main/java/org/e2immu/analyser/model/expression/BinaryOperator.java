@@ -125,7 +125,7 @@ public class BinaryOperator implements Expression {
             return new AndValue().append(l, r);
         }
 
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE) return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
 
         // from here on, straightforward operations
         if (operator == Primitives.PRIMITIVES.plusOperatorInt) {

@@ -111,13 +111,13 @@ Content modification is computed as:
 * statement analyser: `CONTENT_MODIFIED` property is set for all variables
 * --> MA, `summarizeModification` for linked variables (linked according to the dependency graph) is computed based on the `CONTENT_MODIFIED` property, and set in `directContentModification` for fields and `@NotModified` for parameters.
 Decisions can be delayed when the `@NotModified` status of fields has not been computed yet
-* --> FA: based on `directContentModifications` and `fieldRead`, `@NotModifed` for fields can be set
+* --> FA: based on `directContentModifications` and `fieldRead`, `@NotModified` for fields can be set
 
 === New text
 
-==== Different values
+==== Values with hard-wired properties
 
-Constants:: This group consists of primitives, String, Class, Null.
+Constants:: This group consists of primitive values, String, Class, Null.
 The assignment properties are constant as well:
 
 ** IMMUTABLE, CONTAINER are all at highest level
@@ -125,12 +125,37 @@ The assignment properties are constant as well:
 ** SIZE, NOT_MODIFIED are not relevant
 ** CONSTANT true by definition
 
+Property-wise similar to constants are the operator values: AndValue, BitwiseAndValue, DivideValue, EqualsValue, GreaterThanZeroValue, InstanceOfValue, NegatedValue, OrValue, ProductValue, RemainderValue, SumValue.
+
 Then there are some marker values:
 
-Error:: temporary value used as a marker, for technical reasons only (we could get rid of this)
 No value:: temporary value to indicate that certain evaluations have not been concluded yet
-Unknown value:: value without properties, which means currently that it has the properties of a constant.
-So a better name would be #Unknown constant#.
+Unknown primitive:: unknown value with the properties of a non-null primitive value.
+Unknown value:: #TODO#
+
+TypeValue:: constant properties: is not null, but is nothing else.
+
+==== Values with computed properties
+
+Instance:: only ever the result of a new object expression.
+It has all the properties of the type that has been created.
+It is never evaluated inside a context.
+By definition, it cannot be null.
+
+MethodValue:: the result of a method call.
+It has all the properties of its associated method, unless it is @Identity or @Fluent, in which case the properties are redirected to the first parameter or the type, respectively.
+
+ThisValue:: representing the current object.
+Like `Instance`, it has all the properties of the type that has been created.
+It is never evaluated inside a context.
+By definition, it cannot be null.
+
+VariableValue::
+Value used during statement analysis.
+The statement analyser accumulates properties in the evaluation context.
+
+VariableValueCopy:: reference to a variable, but with a fixed set of properties.
+Is used as the summary of statement analysis: value of return statements, value of fields.
 
 ==== Statement specific analysis values
 

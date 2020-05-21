@@ -44,8 +44,7 @@ public class EqualsValue implements Value {
 
     public static Value equals(Value l, Value r) {
         if (l.equals(r)) return BoolValue.TRUE;
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
         return new EqualsValue(l, r);
     }
 

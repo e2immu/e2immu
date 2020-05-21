@@ -66,7 +66,7 @@ public class AndValue implements Value {
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
             log(CNF, "Return Unknown value in And, found Unknown value");
-            return UnknownValue.UNKNOWN_VALUE;
+            return UnknownValue.UNKNOWN_PRIMITIVE;
         }
 
         // STEP 4: loop

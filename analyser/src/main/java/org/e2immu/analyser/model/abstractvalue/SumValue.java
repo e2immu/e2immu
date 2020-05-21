@@ -51,8 +51,7 @@ public class SumValue implements Value {
             return new IntValue(l.toInt().value + r.toInt().value);
 
         // any unknown lingering
-        if (l == UnknownValue.UNKNOWN_VALUE || r == UnknownValue.UNKNOWN_VALUE)
-            return UnknownValue.UNKNOWN_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return UnknownValue.UNKNOWN_PRIMITIVE;
 
         // a + x*a
         if (l instanceof ProductValue && ((ProductValue) l).lhs instanceof NumericValue &&

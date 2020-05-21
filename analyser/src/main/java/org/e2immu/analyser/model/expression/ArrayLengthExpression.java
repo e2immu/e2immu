@@ -69,7 +69,7 @@ public class ArrayLengthExpression implements Expression {
             ArrayValue arrayValue = (ArrayValue) v;
             result = new IntValue(arrayValue.values.size());
         } else {
-            result = UnknownValue.UNKNOWN_VALUE;
+            result = UnknownValue.UNKNOWN_PRIMITIVE;
         }
         visitor.visit(this, evaluationContext, result);
         return result;

@@ -53,8 +53,7 @@ public class NegatedValue implements Value {
         if (v instanceof NumericValue) {
             return ((NumericValue) v).negate();
         }
-        if (v == UnknownValue.UNKNOWN_VALUE)
-            return UnknownValue.UNKNOWN_VALUE;
+        if (v.isUnknown()) return v;
 
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {

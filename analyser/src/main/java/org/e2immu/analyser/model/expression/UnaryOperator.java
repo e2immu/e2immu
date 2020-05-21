@@ -63,8 +63,7 @@ public class UnaryOperator implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value v = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
-        if (v == UnknownValue.UNKNOWN_VALUE) return v;
-        if (v == UnknownValue.NO_VALUE) return v;
+        if (v.isUnknown()) return v;
 
         if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
                 operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {
@@ -76,18 +75,18 @@ public class UnaryOperator implements Expression {
         if (operator == Primitives.PRIMITIVES.bitWiseNotOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(~((IntValue) v).value);
-            return UnknownValue.UNKNOWN_VALUE;
+            return UnknownValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == Primitives.PRIMITIVES.postfixDecrementOperatorInt
                 || operator == Primitives.PRIMITIVES.prefixDecrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value - 1);
-            return UnknownValue.UNKNOWN_VALUE;
+            return UnknownValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == Primitives.PRIMITIVES.postfixIncrementOperatorInt || operator == Primitives.PRIMITIVES.prefixIncrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value + 1);
-            return UnknownValue.UNKNOWN_VALUE;
+            return UnknownValue.UNKNOWN_PRIMITIVE;
         }
         throw new UnsupportedOperationException();
     }

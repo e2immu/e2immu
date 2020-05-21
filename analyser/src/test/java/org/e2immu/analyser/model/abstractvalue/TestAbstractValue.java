@@ -193,7 +193,7 @@ public class TestAbstractValue {
 
         @Override
         public void raiseError(String message, String extra) {
-            
+
         }
     };
 
