@@ -115,7 +115,35 @@ Decisions can be delayed when the `@NotModified` status of fields has not been c
 
 === New text
 
-==== Values with hard-wired properties
+==== Value booleans
+
+Constant:: a value is constant when it represents a Java literal constant.
+This includes `null` and `.class`.
+HasConstantProperties:: the properties of the value hav been fully computed, they do not depend on other objects
+Unknown:: the unknown property of a value specifies that operators cannot be computed on it.
+There are a number of situations:
++
+* a `VariableValue` of a non-final field cannot participate in conditionals.
+#TODO# it can participate in some, but not in most:
++
+----
+if(field == 3) { assert field == 3; } // this assertion should fail
+----
++
+but if we know that such a field is @NotNull because ALL of its assignments are @NotNull, then
++
+----
+if(field != null) {
+----
++
+should render an error for contstant evaluation.
+
+* it is of type `UnknownPrimitiveValue`, `CombinedValue`.
+#TODO# why is CombinedValue unknown?
+
+As soon as one operand is unknown, operators preserve this property.
+
+==== Values with constant properties
 
 Constants:: This group consists of primitive values, StringValue, ClassValue, NullValue.
 The assignment properties are constant as well:
@@ -127,10 +155,14 @@ The assignment properties are constant as well:
 
 Property-wise similar to constants are the operator values: AndValue, BitwiseAndValue, DivideValue, EqualsValue, GreaterThanZeroValue, InstanceOfValue, NegatedValue, OrValue, ProductValue, RemainderValue, SumValue.
 
+ConstrainedNumericValue:: a numeric value between lower and upper bounds.
+Used to indicate that the size of a collection is at least 1, for example.
+
 Then there are some marker values:
 
 No value:: temporary value to indicate that certain evaluations have not been concluded yet
 Unknown primitive:: unknown value with the properties of a non-null primitive value.
+Used as the end result of many operators when one of the operands is unknown.
 TypeValue:: is not null, but is nothing else.
 
 ==== Values with computed properties
@@ -140,14 +172,22 @@ It has all the properties of the type that has been created.
 It is never evaluated inside a context.
 By definition, it cannot be null.
 
-MethodValue:: the result of a method call.
-It has all the properties of its associated method, unless it is @Identity or @Fluent, in which case the properties are redirected to the first parameter or the type, respectively.
+MethodValue:: the result of a method call, unless
++
+--
+* it is @Identity, in which case the value of the first parameter is returned
+* it is @Fluent, in which case the object or scope of the method call is returned
+* it has a single return value of a type different from `MethodValue`.
+The typical example is a constant.
+
+The method value has all the properties of its associated method, unless it is @Identity or @Fluent, in which case a method value is not present.
 Note that if methods return constants, it is the constant that is returned.
+--
 
 ThisValue:: representing the current object.
 Like `Instance`, it has all the properties of the type that has been created.
 It is never evaluated inside a context.
-By definition, it cannot be null.
+#TODO# By definition, it cannot be null.
 
 VariableValue::
 Value used during statement analysis.
@@ -179,7 +219,6 @@ Properties that are specific to the statement analyser:
 * NOT_YET_READ_AFTER_ASSIGNMENT: for useless assignment errors
 * LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED: needed for summarizing properties and assignments up one level; based on presence of `break`, `continue` and
 `return` statements
-* CREATED (indicates a local variable; we can probably do without -- presence should be enough)
 * ASSIGNED_IN_LOOP: values not to be taken too literally
 
 The following list are the assignment properties.
@@ -206,6 +245,9 @@ Preparation of method analysis:
 
 * details about statements in `numberedStatements`; the return statements are in `returnStatements`; the local methods in `localMethodsCalled`
 * summary information at inspection level: methods of own class reached, part of construction
+
+#TODO# We currently use `thisRead` and `localMethodsCalled` to compute the @NotModifed property of the method.
+We could do this is a better way by allowing variable properties to be computed for This as well.
 
 Results of method analysis:
 

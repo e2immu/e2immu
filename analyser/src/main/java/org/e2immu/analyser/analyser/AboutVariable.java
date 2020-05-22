@@ -1,10 +1,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.model.DependentVariable;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.annotation.NotNull;
 
@@ -98,5 +95,9 @@ class AboutVariable {
     boolean haveProperty(VariableProperty variableProperty) {
         Integer i = properties.get(variableProperty);
         return i != null && i != Level.DELAY;
+    }
+
+    boolean isLocalVariable() {
+        return variable instanceof LocalVariableReference;
     }
 }

@@ -173,7 +173,7 @@ public class StatementAnalyser {
         boolean changes = false;
         // we run at the local level
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
-            if (aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE
+            if (aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariable()
                     && !Level.haveTrueAt(aboutVariable.getProperty(VariableProperty.READ), 0)) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
@@ -210,7 +210,7 @@ public class StatementAnalyser {
             if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
                 boolean useless = escapesViaException ||
                         neverContinuesBecauseOfReturn && variableProperties.isLocalVariable(aboutVariable) ||
-                        aboutVariable.isNotLocalCopy() && aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE;
+                        aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariable();
                 if (useless) {
                     if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                         methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
@@ -235,9 +235,9 @@ public class StatementAnalyser {
 
         VariableProperty[] newLocalVariableProperties;
         if (statement.statement instanceof LoopStatement) {
-            newLocalVariableProperties = new VariableProperty[]{VariableProperty.CREATED, VariableProperty.ASSIGNED_IN_LOOP};
+            newLocalVariableProperties = new VariableProperty[]{VariableProperty.ASSIGNED_IN_LOOP};
         } else {
-            newLocalVariableProperties = new VariableProperty[]{VariableProperty.CREATED};
+            newLocalVariableProperties = new VariableProperty[0];
         }
 
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10

@@ -33,7 +33,6 @@ public class TestIfStatementChecks extends CommonTestRunner {
         if (methodInfo.name.equals("method4") && "res".equals(variableName)) {
             if ("0".equals(statementId)) {
                 Assert.assertNull(properties.get(VariableProperty.CONTENT_MODIFIED));
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.CREATED));
                 Assert.assertNull(properties.get(VariableProperty.READ)); // nothing that points to not null
             } else if ("1.0.0".equals(statementId) || "1.1.0".equals(statementId)) {
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));

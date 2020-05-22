@@ -65,13 +65,11 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                     Assert.assertEquals(3, (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT)); // because in scope side
                 } else if ("i".equals(variableName)) {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.READ));
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.CREATED));
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
 
                     // the standardized name is the evaluation value of expression and index, in this particular case, both constants
                 } else if ("{1,2,3}[0]".equals(variableName)) {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                    Assert.assertNull(properties.get(VariableProperty.CREATED));
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
                 } else Assert.fail();
             }

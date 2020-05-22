@@ -533,7 +533,7 @@ class VariableProperties implements EvaluationContext {
     // then we get rid of those that are local variables created at the lower level; all the rest stays
     private static final Predicate<AboutVariable> ASSIGNED_NOT_LOCAL_VAR = aboutVariable ->
             Level.value(aboutVariable.getProperty(ASSIGNED), 0) == Level.TRUE &&
-                    (aboutVariable.getProperty(CREATED) != Level.TRUE || aboutVariable.isLocalCopy());
+                    (!aboutVariable.isLocalVariable() || aboutVariable.isLocalCopy());
 
     /**
      * So we have a number of sub-contexts all at the same level, some guaranteed to be executed,
@@ -862,8 +862,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     public boolean isLocalVariable(AboutVariable aboutVariable) {
-        if (aboutVariable.getProperty(VariableProperty.CREATED) == Level.TRUE) return true;
-        if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.getProperty(VariableProperty.CREATED) == Level.TRUE)
+        if (aboutVariable.isLocalVariable()) return true;
+        if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.isLocalVariable())
             return true;
         if (aboutVariable.variable instanceof DependentVariable) {
             DependentVariable dependentVariable = (DependentVariable) aboutVariable.variable;
