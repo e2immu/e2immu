@@ -46,6 +46,7 @@ public class Level {
 
     public static final int FALSE = 0;
     public static final int TRUE = 1;
+    public static final int TRUE_LEVEL_1 = 3;
 
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator AND = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.min(i, j);
@@ -139,11 +140,6 @@ public class Level {
     public static int best(int i, int j) {
         if (better(i, j)) return i;
         return j;
-    }
-
-    public static int worst(int i, int j) {
-        if (better(i, j)) return j;
-        return i;
     }
 
     public static int fromBool(boolean b) {

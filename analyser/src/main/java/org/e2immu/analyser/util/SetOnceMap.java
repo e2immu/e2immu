@@ -48,6 +48,14 @@ public class SetOnceMap<K, V> extends Freezable {
         return Objects.requireNonNull(map.get(k));
     }
 
+    @NotNull
+    public V getOrElse(K k, @NotNull V v) {
+        if (isSet(k)) {
+            return Objects.requireNonNull(map.get(k));
+        }
+        return Objects.requireNonNull(v);
+    }
+
     public V getOtherwiseNull(K k) {
         return map.get(k);
     }
@@ -55,7 +63,7 @@ public class SetOnceMap<K, V> extends Freezable {
     public boolean isSet(K k) {
         return map.containsKey(k);
     }
-    
+
     public boolean isEmpty() {
         return map.isEmpty();
     }

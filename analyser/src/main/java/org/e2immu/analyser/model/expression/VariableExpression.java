@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
@@ -40,12 +41,15 @@ public class VariableExpression implements Expression {
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             evaluationContext.markRead(variable);
         }
-        if (forwardEvaluationInfo.getNotNull() != Level.FALSE) {
-            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, forwardEvaluationInfo.getNotNull());
+        int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+        if (notNull != Level.FALSE) {
+            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
         }
-        if(forwardEvaluationInfo.getNotModified() >= Level.TRUE) {
-            StatementAnalyser.markContentModified(evaluationContext, variable, forwardEvaluationInfo.getNotModified());
-        }
+        int notModified = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED);
+        StatementAnalyser.markContentModified(evaluationContext, variable, notModified);
+
+        int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
+        StatementAnalyser.markSize(evaluationContext, variable, size);
 
         visitor.visit(this, evaluationContext, value);
         return value;

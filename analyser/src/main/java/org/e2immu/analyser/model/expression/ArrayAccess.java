@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -89,7 +90,7 @@ public class ArrayAccess implements Expression {
         } else {
             Set<Variable> dependencies = new HashSet<>(expression.variables());
             dependencies.addAll(index.variables());
-            Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue)expression).variable: null;
+            Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue) expression).variable : null;
             value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
 
             if (!forwardEvaluationInfo.isAssignmentTarget()) {
@@ -97,8 +98,10 @@ public class ArrayAccess implements Expression {
             }
         }
         // e.g.: callSomeMethod(line = reader.nextLine()) assignment inside @NotNull method parameter
-        if (forwardEvaluationInfo.getNotNull() != Level.FALSE && value instanceof VariableValue) {
-            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, forwardEvaluationInfo.getNotNull());
+
+        // TODO what does this do here?
+        if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) >= Level.TRUE && value instanceof VariableValue) {
+            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
         }
         visitor.visit(this, evaluationContext, value);
         return value;

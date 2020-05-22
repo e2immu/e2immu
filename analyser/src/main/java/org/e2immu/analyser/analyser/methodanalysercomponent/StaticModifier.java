@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser.methodanalysercomponent;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.parser.Message;
@@ -78,9 +79,9 @@ public class StaticModifier {
         if (!methodAnalysis.complainedAboutMissingStaticModifier.isSet()) {
             if (!methodInfo.isStatic) {
                 // we need to check if there's fields being read/assigned/
-                if (emptyOrStaticIfTrue(methodAnalysis.fieldRead) &&
-                        emptyOrStaticIfTrue(methodAnalysis.fieldAssignments) &&
-                        (!methodAnalysis.thisRead.isSet() || !methodAnalysis.thisRead.get()) &&
+                if (absentUnlessStatic(methodAnalysis, VariableProperty.READ) &&
+                        absentUnlessStatic(methodAnalysis, VariableProperty.ASSIGNED) &&
+                        (methodAnalysis.thisSummary.properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation &&
                         methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
@@ -93,9 +94,7 @@ public class StaticModifier {
         }
     }
 
-    private static boolean emptyOrStaticIfTrue(SetOnceMap<FieldInfo, Boolean> map) {
-        if (map.isEmpty()) return true;
-        return map.stream().allMatch(e -> !e.getValue() || e.getKey().isStatic());
+    private static boolean absentUnlessStatic(MethodAnalysis methodAnalysis, VariableProperty variableProperty) {
+        return methodAnalysis.fieldSummaries.stream().allMatch(e -> e.getValue().properties.getOtherwise(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
     }
-
 }

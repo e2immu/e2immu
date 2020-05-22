@@ -94,7 +94,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
             // check the not-null aspect
             int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-            int forwardNotNull = Level.value(forwardEvaluationInfo.getNotNull(), Level.NOT_NULL);
+            int forwardNotNull = Level.value(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL);
 
             if (forwardNotNull == Level.TRUE && notNull == Level.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...

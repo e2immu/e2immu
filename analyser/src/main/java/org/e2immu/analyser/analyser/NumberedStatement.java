@@ -35,13 +35,10 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<List<NumberedStatement>> blocks = new SetOnce<>();
     public SetOnce<Boolean> neverContinues = new SetOnce<>(); // returns, or escapes; set at the beginning of a block
     public SetOnce<Boolean> escapes = new SetOnce<>(); // escapes, on the beginning of a block
-    public SetOnce<Value> returnValue = new SetOnce<>(); // if returns, whether not null or not
     public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
 
     // a set of break and continue statements in sub-blocks of this statement
     public SetOnce<List<BreakOrContinueStatement>> breakAndContinueStatements = new SetOnce<>();
-    public SetOnce<Set<Variable>> variablesLinkedToReturnValue = new SetOnce<>();
-
     public SetOnce<Set<Variable>> existingVariablesAssignedInLoop = new SetOnce<>();
 
     public final int[] indices;
@@ -77,7 +74,8 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     }
 
     // works for a select number of properties, simplifies some code in method analyser
-
+    // GOES INTO TRANSFER PROPERTY OF RETURN VALUE
+    /*
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.RETURN_VALUE_PROPERTIES.contains(variableProperty)) {
             return returnValue.isSet() ? returnValue.get().getPropertyOutsideContext(variableProperty) : Level.DELAY;
@@ -92,4 +90,6 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
         }
         throw new UnsupportedOperationException("?? not implemented for property " + variableProperty);
     }
+
+     */
 }

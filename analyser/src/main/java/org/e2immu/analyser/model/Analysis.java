@@ -184,23 +184,6 @@ public abstract class Analysis {
         }
     }
 
-    public static boolean compatibleSizes(int value, int required) {
-        if (haveEquals(required)) return value == required;
-        return value >= required;
-    }
-
-    public static boolean haveEquals(int size) {
-        return size % 2 == 0;
-    }
-
-    public static int sizeEquals(int size) {
-        return size / 2;
-    }
-
-    public static int sizeMin(int size) {
-        return (size + 1) / 2;
-    }
-
     private AnnotationExpression sizeAnnotation(TypeContext typeContext, String parameter, int value) {
         return typeContext.size.get().copyWith(parameter, value);
     }
@@ -303,7 +286,7 @@ public abstract class Analysis {
     }
 
     /**
-     * Values: -1 = min=0,nothing; 0 = equals 0; 1=min 1; 2 = equals 1; 3 = min 2; 4 = equals 2
+     * Values: -1 = absent; 0 = min=0,nothing;  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2
      *
      * @param annotationExpression the annotation
      * @return encoded value
@@ -311,21 +294,39 @@ public abstract class Analysis {
     public static int extractSizeMin(AnnotationExpression annotationExpression) {
         Integer min = annotationExpression.extract("min", -1);
         if (min > 0) {
-            // min = 0 means nothing; min = 1 means TRUE at level 0 (value 1), min = 2 means TRUE at level 1 (value 3)
-            return Level.compose(Level.TRUE, min - 1);
+            // min = 0 means nothing; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
+            return Level.compose(Level.FALSE, min);
         }
         Integer equals = annotationExpression.extract("equals", 0);
-        // equals 0 means FALSE at level 0, equals 1 means FALSE at level 1 (but TRUE at level 0)
-        return Level.compose(Level.FALSE, equals);
+        // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
+        return Level.compose(Level.TRUE, equals);
     }
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {
         Boolean copy = annotationExpression.extract("copy", false);
-        if (copy) return 3; // TRUE at 1
+        if (copy) return Level.TRUE_LEVEL_1;
         Boolean copyMin = annotationExpression.extract("copyMin", false);
-        if (copyMin) return Level.TRUE; // TRUE at 0
-        return Level.FALSE; // FALSE
+        if (copyMin) return Level.TRUE;
+        return Level.FALSE;
     }
+
+    public static boolean compatibleSizes(int value, int required) {
+        if (haveEquals(required)) return value == required;
+        return value >= required;
+    }
+
+    public static boolean haveEquals(int size) {
+        return size % 2 == 1;
+    }
+
+    public static int sizeEquals(int size) {
+        return size / 2;
+    }
+
+    public static int sizeMin(int size) {
+        return size / 2;
+    }
+
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {
         Integer current = map.get(elementType);
@@ -338,5 +339,14 @@ public abstract class Analysis {
     protected List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_TYPE);
         return Arrays.stream(elements).collect(Collectors.toList());
+    }
+
+    public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {
+        Map<VariableProperty, Integer> res = new HashMap<>();
+        for (VariableProperty property : properties) {
+            int value = getProperty(property);
+            res.put(property, value);
+        }
+        return res;
     }
 }

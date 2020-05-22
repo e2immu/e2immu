@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
@@ -47,7 +48,7 @@ public class NullConstant implements Expression, Constant<Object> {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        if (forwardEvaluationInfo.getNotNull() == Level.TRUE) {
+        if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) >= Level.TRUE) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
         Value result = NullValue.NULL_VALUE;

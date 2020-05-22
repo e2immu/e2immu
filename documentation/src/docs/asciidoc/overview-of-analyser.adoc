@@ -231,8 +231,8 @@ Context properties, on all variables:
 
 * READ: 1 = read once, 3 = read multiple times
 * ASSIGNED: 1 = once, 3 = multiple times
-* DELAY_ON_METHOD_CALLS: 0 = no method calls, 1 = has method calls, with delay 3 = no delay.
-Only when this value is 3, do we know that all information is in.
+* METHOD_DELAY: -1 = no method calls, 0 = has method calls, with delay 1 = no delay.
+Only when this value is 1, do we know that all information is in.
 The following three properties then should have no DELAY values anymore:
 
 ** IN_NOT_NULL_CONTEXT: highest @NotNull value encountered in parameters and scope, some statements
@@ -246,14 +246,15 @@ Preparation of method analysis:
 * details about statements in `numberedStatements`; the return statements are in `returnStatements`; the local methods in `localMethodsCalled`
 * summary information at inspection level: methods of own class reached, part of construction
 
-#TODO# We currently use `thisRead` and `localMethodsCalled` to compute the @NotModifed property of the method.
-We could do this is a better way by allowing variable properties to be computed for This as well.
-
 Results of method analysis:
 
 * summary of return values = a single value, and a number of properties
 ** value is either a single return value if there is only one return statement, otherwise it is a method value.
 ** The properties of the method value are the actual properties stored in the method analysis; INDEPENDENT, NOT_MODIFIED, IDENTITY, FLUENT, LINKED, CONSTANT, and all the properties that come with field assignments (ASSIGNED ~ single or multiple return values, SIZE, IMMUTABLE, CONTAINER, NOT_NULL)
+
+* summary of activity on `this`.
+Properties that are important are: READ, METHOD_DELAY
+
 * summary of field assignment values and related properties
 ** for each field, we will store a value which is either the "common assignment" or single assignment
 ** with each value come the properties of that assignment: SIZE, IMMUTABLE, CONTAINER, NOT_NULL
@@ -261,6 +262,7 @@ Results of method analysis:
 * summary of field usage properties: READ, ASSIGNED, CONTENT_MODIFIED, IN_NOT_NULL_CONTEXT, IN_SIZE_CONTEXT
 ** CONTENT_MODIFIED is summarized using the link information, specific code
 ** the other 3 are simply copied into the field's properties at method level
+
 
 * link information: fields linked to fields and variables, variables linked to fields and parameters, variables linked to the method result.
 Note again that links are based on modification information, not equality!
@@ -273,7 +275,6 @@ Note again that links are based on modification information, not equality!
 ** calling modifying methods outside the type
 * others:
 ** does the method create an object of itself?
-** `this` has been read
 
 ==== Field analyser
 
@@ -290,3 +291,36 @@ Shared with the return value of methods:
 * IMMUTABLE
 * CONTAINER
 * NOT_MODIFIED
+
+In the field analyser, the minimum is computed over the assignments of the following properties:
+CONTAINER, IMMUTABLE, SIZE (which works fine with >=, but not with two different = mixed), NOT_NULL
+
+For NOT_MODIFIED: we use READ to see if we need to look at this method-field combination.
+If READ, then NOT_MODIFIED in DELAY means waiting.
+
+=== Delays
+
+Statement analyser will delay evaluation using NO_VALUE; also requires all method info to be present (METHOD_DELAY).
+
+Properties that do not have a delay: READ, ASSIGNED, METHOD_DELAY
+
+Method properties that rely on METHOD_DELAY before they are fixed: NOT_MODIFIED, SIZE, NOT_NULL
+
+=== Levels
+
+Levels can be improved (value increased) but not decreased in the same map.
+
+[options=header]
+|===
+| value | READ      | SIZE              | NOT_NULL | IMMUTABLE | METHOD_DELAY    | FINAL
+| -1 | absent       |  absent  | delay    | delay | no methods      | delay
+| 0  | not read^*^     | >= 0 (no info)       | false    | not E1 | methods, delay  | not final
+| 1  | read once    | = 0 (empty)  | @NotNull | E1 | delays solved   | final
+| 2  |              | >= 1  (not empty)              | NN, not NN1^*^ | E1, not E2 |    |
+| 3  | read multiple times | = 1       | @NotNull1 | E2 | |
+| 4  |              | >= 2               | | | |
+| 5  |              | = 2              | | | |
+|===
+
+The ones with an asterisk ^*^ are optional, and unlikely to be set by the analyser.
+

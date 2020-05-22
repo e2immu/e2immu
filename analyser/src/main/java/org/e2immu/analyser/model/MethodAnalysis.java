@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -95,48 +96,13 @@ public class MethodAnalysis extends Analysis {
         return Level.UNDEFINED;
     }
 
-    // used to check that in a utility class, no objects of the class itself are created
-    public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
+
+    // ************** LOCAL STORAGE
 
     // not to be stored. later, move to separate class...
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
-    // if true, the method has no (non-static) method calls on the "this" scope
-    public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
-    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
-
-    // produces an error
-    public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();
-
-    // used in the computation of effectively final fields
-    public final SetOnceMap<FieldInfo, Boolean> fieldAssignments = new SetOnceMap<>();
-    public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>();
-
-    // used in the computation of content modification of fields
-    public final SetOnceMap<Variable, Boolean> contentModifications = new SetOnceMap<>();
-    // ignoring field assignments for @NotNull computation because of breaking symmetry field <-> parameter
-    public final SetOnceMap<FieldInfo, Boolean> ignoreFieldAssignmentForNotNull = new SetOnceMap<>();
-
-    public final SetOnceMap<FieldInfo, Boolean> fieldRead = new SetOnceMap<>();
-    public final SetOnce<Boolean> thisRead = new SetOnce<>();
-
-    // produces a warning
-    public final SetOnceMap<LocalVariable, Boolean> unusedLocalVariables = new SetOnceMap<>();
-    public final SetOnceMap<Variable, Boolean> uselessAssignments = new SetOnceMap<>();
-
-    // end product of the dependency analysis of linkage between the variables in a method
-    // if A links to B, and A is modified, then B must be too.
-    // In other words, if A->B, then B cannot be @NotModified unless A is too
-
-    // valid as soon as fieldAssignments is set, and currently only used to compute @Linked annotations
-    public final SetOnceMap<Variable, Set<Variable>> fieldsLinkedToFieldsAndVariables = new SetOnceMap<>();
-
-    // this one is the marker that says that links have been established
-    public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
-
-    public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
-
-    public final SetOnce<Value> singleReturnValue = new SetOnce<>();
+    public final SetOnce<List<NumberedStatement>> returnStatements = new SetOnce<>();
 
     /**
      * this one contains all own methods called from this method, and the transitive closure.
@@ -146,13 +112,48 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
     public final SetOnce<Boolean> partOfConstruction = new SetOnce<>();
 
-    // once we know the dynamic type annotations, we can convert this to annotations on the fields
-    public final SetOnce<Boolean> dynamicTypeAnnotationsAdded = new SetOnce<>();
+    // ************** VARIOUS ODDS AND ENDS
+    // used to check that in a utility class, no objects of the class itself are created
+    public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
 
-    // when an assignment to a field is blocked
+    // if true, the method has no (non-static) method calls on the "this" scope
+    public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
+
+    // ************** ERRORS
+
+    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
+    public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();
+    public final SetOnceMap<LocalVariable, Boolean> unusedLocalVariables = new SetOnceMap<>();
+    public final SetOnceMap<Variable, Boolean> uselessAssignments = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 
-    public final SetOnce<Set<MethodInfo>> localMethodsCalled = new SetOnce<>();
-    public final SetOnce<List<NumberedStatement>> returnStatements = new SetOnce<>();
+    // ************** SUMMARIES
+    // in combination with the properties in the super class, this forms the knowledge about the method itself
+    public final SetOnce<Value> singleReturnValue = new SetOnce<>();
+
+    public final TransferValue thisSummary = new TransferValue();
+    public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
+    public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
+
+    /*
+    // used in the computation of effectively final fields
+    public final SetOnceMap<FieldInfo, Boolean> fieldAssignments = new SetOnceMap<>(); // -> ASSIGNED in transfer value
+    public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>(); // -> Value in transfer value
+
+    // used in the computation of content modification of fields
+    public final SetOnceMap<Variable, Boolean> contentModifications = new SetOnceMap<>(); // -> VP.NOT_MODIFIED
+    // ignoring field assignments for @NotNull computation because of breaking symmetry field <-> parameter
+    public final SetOnceMap<FieldInfo, Boolean> ignoreFieldAssignmentForNotNull = new SetOnceMap<>(); // should disappear
+
+    public final SetOnceMap<FieldInfo, Boolean> fieldRead = new SetOnceMap<>(); // -> READ in transfer value
+*/
+
+    // ************** LINKING
+
+    // this one is the marker that says that links have been established
+    public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
+
+    public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
+
 }

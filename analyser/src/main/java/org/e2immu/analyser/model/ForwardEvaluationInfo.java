@@ -1,34 +1,29 @@
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.analyser.VariableProperty;
+
+import java.util.Map;
 import java.util.StringJoiner;
 
 public interface ForwardEvaluationInfo {
 
-    int getNotNull();
-
-    int getNotModified();
+    int getProperty(VariableProperty variableProperty);
 
     boolean isAssignmentTarget();
 
     class ForwardEvaluationInfoContainer implements ForwardEvaluationInfo {
-        public final int notNull;
         public final boolean assignmentTarget;
-        public final int notModified;
+        public final Map<VariableProperty, Integer> properties;
 
-        public ForwardEvaluationInfoContainer(int notNull, int notModified, boolean assignmentTarget) {
-            this.notNull = notNull;
-            this.notModified = notModified;
+        public ForwardEvaluationInfoContainer(Map<VariableProperty, Integer> properties, boolean assignmentTarget) {
+            this.properties = ImmutableMap.copyOf(properties);
             this.assignmentTarget = assignmentTarget;
         }
 
         @Override
-        public int getNotNull() {
-            return notNull;
-        }
-
-        @Override
-        public int getNotModified() {
-            return notModified;
+        public int getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, Level.DELAY);
         }
 
         @Override
@@ -39,21 +34,20 @@ public interface ForwardEvaluationInfo {
         @Override
         public String toString() {
             return new StringJoiner(", ", ForwardEvaluationInfoContainer.class.getSimpleName() + "[", "]")
-                    .add("notNull=" + notNull)
                     .add("assignmentTarget=" + assignmentTarget)
-                    .add("notModified=" + notModified)
+                    .add("properties=" + properties)
                     .toString();
         }
     }
 
-    ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfoContainer(Level.FALSE, Level.DELAY, false);
+    ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.FALSE), false);
 
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
-    ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfoContainer(Level.FALSE, Level.DELAY, true);
+    ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.FALSE), true);
 
-    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfoContainer(Level.TRUE, Level.DELAY, false);
+    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.FALSE), false);
 
-    static ForwardEvaluationInfo create(int notNull, int notModified) {
-        return new ForwardEvaluationInfoContainer(notNull, notModified, false);
+    static ForwardEvaluationInfo create(Map<VariableProperty, Integer> properties) {
+        return new ForwardEvaluationInfoContainer(properties, false);
     }
 }

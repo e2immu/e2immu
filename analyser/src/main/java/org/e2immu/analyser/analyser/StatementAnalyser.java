@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -317,20 +316,28 @@ public class StatementAnalyser {
         // PART 5: checks for ReturnStatement
 
         if (statement.statement instanceof ReturnStatement) {
+            String statementId = statement.streamIndices();
+            TransferValue transferValue;
+            if (methodAnalysis.returnStatementSummaries.isSet(statementId)) {
+                transferValue = methodAnalysis.returnStatementSummaries.get(statementId);
+            } else {
+                transferValue = new TransferValue();
+                methodAnalysis.returnStatementSummaries.put(statementId, transferValue);
+            }
             if (value == null) {
-                if (!statement.variablesLinkedToReturnValue.isSet())
-                    statement.variablesLinkedToReturnValue.set(Set.of());
-                if (!statement.returnValue.isSet()) statement.returnValue.set(NO_VALUE);
+                if (!transferValue.linkedVariables.isSet())
+                    transferValue.linkedVariables.set(Set.of());
+                if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
             } else if (value != NO_VALUE) {
                 Set<Variable> vars = value.linkedVariables(true, variableProperties);
-                if (!statement.variablesLinkedToReturnValue.isSet()) {
-                    statement.variablesLinkedToReturnValue.set(vars);
+                if (!transferValue.linkedVariables.isSet()) {
+                    transferValue.linkedVariables.set(vars);
                 }
-                if (!statement.returnValue.isSet()) {
+                if (!transferValue.value.isSet()) {
                     if (value instanceof VariableValue) {
-                        statement.returnValue.set(new VariableValueCopy((VariableValue) value, variableProperties));
+                        transferValue.value.set(new VariableValueCopy((VariableValue) value, variableProperties));
                     } else {
-                        statement.returnValue.set(value);
+                        transferValue.value.set(value);
                     }
                 }
             } else {
@@ -650,7 +657,7 @@ public class StatementAnalyser {
 
         // mark that we need @NotNull on this variable, no delay situation
         int valueToSet = Level.compose(Level.TRUE, Level.DELAY == notNullContext ? 0 : 1);
-        variableProperties.addProperty(variable, VariableProperty.IN_NOT_NULL_CONTEXT, valueToSet);
+        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, valueToSet);
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
         int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
@@ -660,6 +667,12 @@ public class StatementAnalyser {
         }
     }
 
+    public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
+        if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
+        variableProperties.addProperty(variable, VariableProperty.SIZE, value);
+        // TODO check that improvement is the right direction
+    }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
@@ -667,7 +680,7 @@ public class StatementAnalyser {
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
-            variableProperties.addProperty(variable, VariableProperty.CONTENT_MODIFIED, value);
+            variableProperties.addProperty(variable, VariableProperty.NOT_MODIFIED, value);
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

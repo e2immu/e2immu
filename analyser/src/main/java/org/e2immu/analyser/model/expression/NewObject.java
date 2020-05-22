@@ -142,13 +142,8 @@ public class NewObject implements HasParameterExpressions {
                     parameterInfo = params.get(i);
                 }
                 // not modified
-                int notModified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
-                int notModifiedValue = notModified == Level.DELAY ? Level.compose(Level.TRUE, 0) :
-                        Level.compose(notModified == Level.TRUE ? Level.FALSE : Level.TRUE, 1);
-                // not null
-                int notNull = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-
-                forward = ForwardEvaluationInfo.create(notNull, notModifiedValue);
+                Map<VariableProperty, Integer> map = parameterInfo.parameterAnalysis.get().getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                forward = ForwardEvaluationInfo.create(map);
             } else {
                 forward = ForwardEvaluationInfo.DEFAULT;
             }

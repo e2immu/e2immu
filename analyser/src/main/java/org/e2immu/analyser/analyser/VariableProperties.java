@@ -291,7 +291,8 @@ class VariableProperties implements EvaluationContext {
                 name = fieldReference.scope.name() + "." + fieldReference.fieldInfo.name;
             }
         } else if (variable instanceof This) {
-            return null; // will be ignored
+            This thisVariable = (This) variable;
+            name = thisVariable.typeInfo.simpleName + ".this";
         } else {
             // parameter, local variable
             name = variable.name();
@@ -471,9 +472,6 @@ class VariableProperties implements EvaluationContext {
     @Override
     @NotNull
     public Value currentValue(Variable variable) {
-        if (variable instanceof This) {
-            return new ThisValue((This) variable);
-        }
         AboutVariable aboutVariable = findComplain(variable);
         if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) {
             return aboutVariable.resetValue;
@@ -525,8 +523,10 @@ class VariableProperties implements EvaluationContext {
         copyBackLocalCopies(List.of((VariableProperties) child), false);
     }
 
-    private static final VariableProperty[] BEST = {CONTENT_MODIFIED};
-    private static final VariableProperty[] WORST = {VariableProperty.NOT_NULL};
+    private static final VariableProperty[] BEST = {SIZE};
+    private static final VariableProperty[] WORST_IN_ASSIGNMENT = {VariableProperty.NOT_NULL};
+    private static final VariableProperty[] WORST = {VariableProperty.NOT_MODIFIED};
+
     private static final VariableProperty[] INCREMENT_LEVEL = {READ, ASSIGNED};
 
     // first we only keep those that have been assigned at the lower level
@@ -579,7 +579,7 @@ class VariableProperties implements EvaluationContext {
             // now copy the properties that are linked to the assignment
             boolean includeThis = noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
 
-            for (VariableProperty variableProperty : WORST) {
+            for (VariableProperty variableProperty : WORST_IN_ASSIGNMENT) {
                 IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, variableProperty);
                 int worstValue = intStream.min().orElse(Level.DELAY);
                 if (worstValue > Level.DELAY) {
@@ -619,6 +619,16 @@ class VariableProperties implements EvaluationContext {
                 int bestValue = intStream.max().orElse(Level.DELAY);
                 if (bestValue > Level.DELAY) {
                     localAv.setProperty(variableProperty, bestValue);
+                }
+            }
+
+            // copying the WORST properties, relatively straightforward
+
+            for (VariableProperty variableProperty : WORST) {
+                IntStream intStream = streamBuilder(evaluationContextsGathered, name, true, movedUpFirstOne, variableProperty);
+                int worstValue = intStream.min().orElse(Level.DELAY);
+                if (worstValue > Level.DELAY) {
+                    localAv.setProperty(variableProperty, worstValue);
                 }
             }
 
@@ -717,9 +727,6 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
-        if (variable instanceof This) {
-            return ThisValue.getProperty(((This) variable).typeInfo, variableProperty);
-        }
         AboutVariable aboutVariable = findComplain(variable);
         if (VariableProperty.NOT_NULL.equals(variableProperty)) {
             if (getNullConditionals(false).contains(variable)) {
@@ -808,12 +815,6 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void markRead(Variable variable) {
-        if (variable instanceof This) {
-            if (currentMethod != null && !currentMethod.methodAnalysis.get().thisRead.isSet()) {
-                currentMethod.methodAnalysis.get().thisRead.set(true);
-            }
-            return;
-        }
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.markRead();
     }

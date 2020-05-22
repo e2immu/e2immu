@@ -25,7 +25,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.ThisValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -70,15 +69,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // not modified on scope
         SideEffect sideEffect = methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int notModifiedValue;
-        if (sideEffect == SideEffect.DELAYED) {
-            notModifiedValue = Level.compose(Level.TRUE, 0);
-        } else {
-            notModifiedValue = Level.compose(safeMethod ? Level.FALSE : Level.TRUE, 1);
-        }
+        int notModifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.TRUE : Level.FALSE;
 
         // scope
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Level.TRUE, notModifiedValue));
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Map.of(
+                VariableProperty.NOT_NULL, Level.TRUE,
+                VariableProperty.NOT_MODIFIED, notModifiedValue)));
 
         // null scope
         if (objectValue instanceof NullValue) {

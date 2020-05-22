@@ -28,12 +28,6 @@ public enum VariableProperty {
 
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
-    // multi-level: level 0 = seen, level 1 = modifications
-    CONTENT_MODIFIED("content modified", true, Level.compose(Level.TRUE, 1)),
-
-    // multi-level: level 0 = method info has been delayed, level 1 = null context
-    IN_NOT_NULL_CONTEXT("not-null context", true, Level.compose(Level.TRUE, 1)),
-
     // assigned multiple times
     ASSIGNED("assigned", true, Level.compose(Level.TRUE, 1)),
 
@@ -91,12 +85,15 @@ public enum VariableProperty {
         return name;
     }
 
+    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
+    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, SIZE, IMMUTABLE, CONTAINER);
+
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);
     public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE);
 
     public final static Set<VariableProperty> INSTANCE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE);
 
-    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, CONTENT_MODIFIED);
+    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, NOT_MODIFIED);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, IDENTITY, FLUENT); // but not CONTENT_MODIFIED
