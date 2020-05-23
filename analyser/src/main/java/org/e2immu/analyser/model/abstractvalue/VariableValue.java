@@ -92,7 +92,7 @@ public class VariableValue implements Value {
 
     @Override
     public boolean isUnknown() {
-        return !multiCopyNonFinalField; // multiCopy non-final field has an unknown value at all times
+        return multiCopyNonFinalField; // multiCopy non-final field has an unknown value at all times
     }
 
     @Override

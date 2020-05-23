@@ -139,6 +139,7 @@ public class MethodAnalyser {
                 StaticModifier.detectMissingStaticModifier(typeContext, methodInfo, methodAnalysis);
                 if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
             }
+            if (parameterAnalyser.analyse(methodProperties)) changes = true;
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
@@ -199,9 +200,19 @@ public class MethodAnalyser {
                                                MethodAnalysis methodAnalysis) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY) return false;
+        boolean fluentOrIdentity = variableProperty == VariableProperty.FLUENT || variableProperty == VariableProperty.IDENTITY;
 
+        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> fluentOrIdentity ?
+                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY :
+                !entry.getValue().value.isSet());
+        if (delays) {
+            log(DELAYED, "Return statement value not yet set");
+            return false;
+        }
         IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
+                .mapToInt(entry -> fluentOrIdentity ?
+                        entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) :
+                        entry.getValue().value.get().getPropertyOutsideContext(variableProperty));
         int value = variableProperty == VariableProperty.SIZE ?
                 safeMinimum(typeContext, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);
@@ -217,7 +228,7 @@ public class MethodAnalyser {
 
     static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {
         return intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
-            if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 >= 0 && v2 >= 0 && v1 != v2) {
+            if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 != v2) {
                 typeContext.addMessage(Message.newMessage(location, Message.INCOMPATIBLE_SIZE_REQUIREMENTS,
                         "Equal to " + Analysis.sizeEquals(v1) + ", equal to " + Analysis.sizeEquals(v2)));
             }
@@ -311,7 +322,12 @@ public class MethodAnalyser {
 
         // PART 2: check parameters
         List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
-        boolean parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream().map(e -> e.getValue().linkedVariables.get())
+        boolean parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream()
+                .peek(e -> {
+                    if (!e.getValue().linkedVariables.isSet())
+                        LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
+                })
+                .map(e -> e.getValue().linkedVariables.get())
                 .allMatch(set -> Collections.disjoint(set, parameters));
 
         // conclusion

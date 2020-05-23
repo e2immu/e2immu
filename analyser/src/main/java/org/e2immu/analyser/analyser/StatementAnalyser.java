@@ -110,7 +110,9 @@ public class StatementAnalyser {
             }
             // at the end, at the top level, there is a return, even if it is implicit
             boolean atTopLevel = variableProperties.depth == 0;
-            if (atTopLevel) neverContinues = true;
+            if (atTopLevel) {
+                neverContinues = true;
+            }
 
             if (!startStatement.neverContinues.isSet()) {
                 log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
@@ -323,6 +325,8 @@ public class StatementAnalyser {
             } else {
                 transferValue = new TransferValue();
                 methodAnalysis.returnStatementSummaries.put(statementId, transferValue);
+                int fluent = (((ReturnStatement) statement.statement).fluent());
+                transferValue.properties.put(VariableProperty.FLUENT, fluent);
             }
             if (value == null) {
                 if (!transferValue.linkedVariables.isSet())
@@ -339,6 +343,10 @@ public class StatementAnalyser {
                     } else {
                         transferValue.value.set(value);
                     }
+                }
+                if (transferValue.properties.getOtherwise(VariableProperty.IDENTITY, Level.DELAY) == Level.DELAY) {
+                    int identity = ReturnStatement.identity(((ReturnStatement) statement.statement).expression);
+                    transferValue.properties.put(VariableProperty.IDENTITY, identity);
                 }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
@@ -485,40 +493,6 @@ public class StatementAnalyser {
                 .collect(Collectors.toSet());
     }
 
-    Set<MethodInfo> computeLocalMethodsCalled(List<NumberedStatement> statements) {
-        Set<MethodInfo> result = new HashSet<>();
-        for (NumberedStatement statement : statements) {
-            CodeOrganization codeOrganization = statement.statement.codeOrganization();
-            Predicate<MethodInfo> accept = mi -> mi != methodInfo && mi.typeInfo == methodInfo.typeInfo && !mi.isConstructor;
-            result.addAll(codeOrganization.findExpressionRecursivelyInStatements(MethodCall.class)
-                    .filter(mc -> accept.test(mc.methodInfo))
-                    .map(mc -> mc.methodInfo)
-                    .collect(Collectors.toSet()));
-            result.addAll(codeOrganization.findExpressionRecursivelyInStatements(MethodReference.class)
-                    .filter(mc -> accept.test(mc.methodInfo))
-                    .map(mc -> mc.methodInfo)
-                    .collect(Collectors.toSet()));
-        }
-        return ImmutableSet.copyOf(result);
-    }
-
-    public List<NumberedStatement> extractReturnStatements(NumberedStatement startStatement) {
-        List<NumberedStatement> result = new ArrayList<>();
-        NumberedStatement statement = startStatement;
-        while (true) {
-            if (statement.statement instanceof ReturnStatement) {
-                result.add(statement);
-                return result;
-            }
-            for (NumberedStatement block : statement.blocks.get()) {
-                result.addAll(extractReturnStatements(block));
-            }
-            if (statement.next.get().isEmpty()) break;
-            statement = statement.next.get().get();
-        }
-        return result;
-    }
-
     // recursive evaluation of an Expression
 
     private static class EvaluationResult {
@@ -646,7 +620,7 @@ public class StatementAnalyser {
         // the variable has already been created, if relevant
         if (!variableProperties.isKnown(variable)) {
             if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
-            variableProperties.ensureVariable((FieldReference) variable);
+            variableProperties.ensureThisVariable((FieldReference) variable);
         }
 
         // check null conditionals
@@ -669,14 +643,14 @@ public class StatementAnalyser {
 
     public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
+        if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
         variableProperties.addProperty(variable, VariableProperty.SIZE, value);
         // TODO check that improvement is the right direction
     }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        if (variable instanceof FieldReference) variableProperties.ensureVariable((FieldReference) variable);
+        if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
@@ -685,4 +659,22 @@ public class StatementAnalyser {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }
     }
+
+    public static void markMethodCalled(EvaluationContext evaluationContext, Variable variable, int methodCalled) {
+        if (methodCalled == Level.TRUE) {
+            VariableProperties variableProperties = (VariableProperties) evaluationContext;
+            if (variable instanceof This) {
+                variableProperties.addProperty(variable, VariableProperty.METHOD_CALLED, methodCalled);
+            } else if (variable.concreteReturnType().typeInfo == variableProperties.currentType) {
+                This thisVariable = new This(variableProperties.currentType);
+                variableProperties.addProperty(thisVariable, VariableProperty.METHOD_CALLED, methodCalled);
+            }
+        }
+    }
+
+    public static void markMethodDelay(EvaluationContext evaluationContext, Variable variable, int methodDelay) {
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
+        variableProperties.addProperty(variable, VariableProperty.METHOD_DELAY, methodDelay);
+    }
+
 }

@@ -58,38 +58,27 @@ public class TestBasics extends CommonTestRunner {
 
                 return;
             }
-            if (iteration == 1) {
+            if (iteration == 1 || iteration == 2) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-                Assert.assertEquals(Level.DELAY, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                return;
-            }
-            if (iteration == 2) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
-            }
+            } // TODO check if we need the 2nd iteration
         }
         Assert.fail();
     };
 
     FieldAnalyserVisitor afterFieldAnalyserVisitor = (iteration, fieldInfo) -> {
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-
         if ("explicitlyFinal".equals(fieldInfo.name)) {
             if (iteration == 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
-                Assert.assertEquals(Level.DELAY, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                return;
-            }
-            if (iteration == 1 || iteration == 2) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                return;
             }
         }
-        Assert.fail();
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId,
@@ -101,7 +90,7 @@ public class TestBasics extends CommonTestRunner {
                 LOGGER.info("Properties after 1 iteration are {}", properties);
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
                 Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.FINAL));
 
                 Assert.assertEquals(new StringValue("abc"), currentValue);
@@ -120,12 +109,23 @@ public class TestBasics extends CommonTestRunner {
         Assert.fail();
     };
 
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("getExplicitlyFinal".equals(methodInfo.name)) {
+                MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
+            }
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("Basics", 0, new DebugConfiguration.Builder()
                 .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

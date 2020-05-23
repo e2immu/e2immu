@@ -193,7 +193,7 @@ class VariableProperties implements EvaluationContext {
 
     public void addToConditional(Value value) {
         if (!value.isUnknown()) {
-            if (conditional.isUnknown() || conditional == null) conditional = value;
+            if (conditional == null || conditional.isUnknown()) conditional = value;
             else {
                 if (conditional instanceof AndValue) {
                     conditional = ((AndValue) conditional).append(value);
@@ -214,11 +214,13 @@ class VariableProperties implements EvaluationContext {
             return aboutVariable;
         }
         if (variable instanceof FieldReference) {
-            ensureVariable((FieldReference) variable);
-            AboutVariable aboutVariable2ndAttempt = find(variable);
-            if (aboutVariable2ndAttempt != null) {
-                return aboutVariable2ndAttempt;
-            }
+            ensureThisVariable((FieldReference) variable);
+        } else if (variable instanceof This) {
+            ensureThisVariable((This) variable);
+        }
+        AboutVariable aboutVariable2ndAttempt = find(variable);
+        if (aboutVariable2ndAttempt != null) {
+            return aboutVariable2ndAttempt;
         }
         throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
@@ -239,7 +241,7 @@ class VariableProperties implements EvaluationContext {
         return null;
     }
 
-    public void ensureVariable(FieldReference fieldReference) {
+    public void ensureThisVariable(FieldReference fieldReference) {
         String name = variableName(fieldReference);
         if (find(name) != null) return;
         Value resetValue;
@@ -267,6 +269,13 @@ class VariableProperties implements EvaluationContext {
             }
         }
         internalCreate(fieldReference, name, resetValue, resetValue, Set.of(), fieldReferenceState);
+    }
+
+    public void ensureThisVariable(This thisVariable) {
+        String name = variableName(thisVariable);
+        if (find(name) != null) return;
+        VariableValue resetValue = new VariableValue(this, thisVariable, name);
+        internalCreate(thisVariable, name, resetValue, resetValue, Set.of(), SINGLE_COPY);
     }
 
     private AboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
@@ -483,7 +492,7 @@ class VariableProperties implements EvaluationContext {
     public VariableValue newVariableValue(Variable variable) {
         if (variable instanceof This) throw new UnsupportedOperationException();
         if (variable instanceof FieldReference) {
-            ensureVariable((FieldReference) variable);
+            ensureThisVariable((FieldReference) variable);
         }
         AboutVariable aboutVariable = findComplain(variable);
         return new VariableValue(this, variable, aboutVariable.name);

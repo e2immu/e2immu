@@ -17,7 +17,7 @@ public class TestSize {
 
     @Test
     public void testSize() {
-        Assert.assertTrue(Analysis.haveEquals(-1));
+        Assert.assertFalse(Analysis.haveEquals(-1));
 
         Assert.assertEquals(0, Analysis.sizeMin(0));
         Assert.assertFalse(Analysis.haveEquals(0));

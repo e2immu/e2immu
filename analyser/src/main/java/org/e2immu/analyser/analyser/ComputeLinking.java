@@ -175,6 +175,12 @@ public class ComputeLinking {
                         methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));
             }
         });
+        // set all the linkedVariables for fields not in the dependency graph
+        methodAnalysis.fieldSummaries.stream().filter(e -> !e.getValue().linkedVariables.isSet())
+                .forEach(e -> {
+                    e.getValue().linkedVariables.set(Set.of());
+                    log(LINKED_VARIABLES, "Clear linked variables of {} in {}", e.getKey().name, methodInfo.distinguishingName());
+                });
         log(LINKED_VARIABLES, "Set variablesLinkedToFieldsAndParameters to true for {}", methodInfo.fullyQualifiedName());
         methodAnalysis.variablesLinkedToFieldsAndParameters.set(variablesLinkedToFieldsAndParameters);
         return true;
@@ -232,7 +238,7 @@ public class ComputeLinking {
             int notModified = methodProperties.getProperty(variable, VariableProperty.NOT_MODIFIED);
             int methodDelay = methodProperties.getProperty(variable, VariableProperty.METHOD_DELAY);
             if (notModified == Level.FALSE) return Level.FALSE;
-            if (methodDelay != Level.FALSE) hasDelays = true;
+            if (methodDelay == Level.TRUE) hasDelays = true;
         }
         return hasDelays ? Level.DELAY : Level.TRUE;
     }

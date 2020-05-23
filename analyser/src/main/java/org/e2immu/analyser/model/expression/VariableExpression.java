@@ -51,6 +51,12 @@ public class VariableExpression implements Expression {
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
         StatementAnalyser.markSize(evaluationContext, variable, size);
 
+        int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
+         StatementAnalyser.markMethodCalled(evaluationContext, variable, methodCalled);
+
+         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
+         StatementAnalyser.markMethodDelay(evaluationContext, variable, methodDelay);
+
         visitor.visit(this, evaluationContext, value);
         return value;
     }

@@ -70,10 +70,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         SideEffect sideEffect = methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
         int notModifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.TRUE : Level.FALSE;
+        int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
 
         // scope
         Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Map.of(
                 VariableProperty.NOT_NULL, Level.TRUE,
+                VariableProperty.METHOD_CALLED, Level.TRUE,
+                VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.NOT_MODIFIED, notModifiedValue)));
 
         // null scope
@@ -91,8 +94,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return sizeShortCut;
         }
 
-        // @Identity as method annotation
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        checkForwardRequirements(methodAnalysis, forwardEvaluationInfo, evaluationContext);
+
+        // @Identity as method annotation
         Value identity = computeIdentity(methodAnalysis, parameters);
         if (identity != null) {
             visitor.visit(this, evaluationContext, identity);
@@ -128,6 +133,25 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         visitor.visit(this, evaluationContext, result);
         return result;
+    }
+
+    private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {
+        // compliance with current requirements
+        int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+        if (requiredNotNull >= Level.TRUE) {
+            int currentNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+            if (currentNotNull == Level.FALSE) {
+                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION);
+            }
+        }
+        // TODO not modified requirements on result of method call? may be tricky
+        int requiredSize = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
+        if (requiredSize > Level.FALSE) {
+            int currentSize = methodAnalysis.getProperty(VariableProperty.SIZE);
+            if (!Analysis.compatibleSizes(currentSize, requiredSize)) {
+                evaluationContext.raiseError(Message.POTENTIAL_SIZE_PROBLEM);
+            }
+        }
     }
 
     private Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {

@@ -239,11 +239,18 @@ The following three properties then should have no DELAY values anymore:
 ** IN_SIZE_CONTEXT: highest @Size value encountered in formal parameters
 ** CONTENT_MODIFIED: lowest @NotModified encountered in formal parameters
 
+==== Method delay
+
+On scope, based on the SideEffect computation, which has a delay.
+On parameters, based on the `NOT_NULL`, `SIZE`, `NOT_MODIFIED` properties.
+This means that these values must be present, and not delayed.
+In the case of methods that have not been defined, this is not a problem, given that the default value is `FALSE`.
+
 ==== Link computer
 
 Order of operation:
 
-. Copy `READ`, `ASSIGNED` and `METHOD_CALLED`into field summaries, and summary of `this`.
+. Copy `READ`, `ASSIGNED` and `METHOD_CALLED` into field summaries, and summary of `this`.
 This only happens in the first round.
 . Ensure that, once different from `NO_VALUE`, the field summary contains the value of assigned fields.
 It is important to note that we do not copy the properties
@@ -258,7 +265,6 @@ It sets `variablesLinkedToFieldsAndParameters`, and the field summaries' `linked
 The algorithm runs over clusters of linked variables, where the fields and parameters are of interest.
 Per cluster, it computes a single `NOT_MODIFIED` value, which is delayed when `METHOD_DELAY` is explicitly on (`Level.FALSE`).
 In the case of fields, a delay can be overridden when the field is not `READ` in the method.
-#TODO: METHOD_DELAY is currently on variable, will need clever implementation#
 
 . update the variables linked to the method result, and set the `LINKED` property.
 The algorithm iterates over all `linkedVariables` in the `methodAnalysis.returnStatementSummaries`, and delays when these have not been set yet.
@@ -319,6 +325,13 @@ Once available, it first considers the `NOT_MODIFIED` property of fields.
 If any field's content has been modified, the result is false.
 To determine the result, it studies the `NOT_MODIFIED` property of `this`, on combination with the `METHODS_CALLED` property.
 The combination of the two properties allows us to make the distinction between no method calls, and a delay on method calls.
+. call the parameter analyser
+
+==== Parameter analyser
+
+The parameter analyser is a bit of an appendage to the method analyser.
+However, it is important it does not delay the properties `NOT_NULL`, `NOT_MODIFIED`, `SIZE` unnecessarily.
+The link computer takes care of the property `NOT_MODIFIED`.
 
 ==== Field analyser
 
@@ -348,11 +361,12 @@ Summarizing, the field analyses delays on
 
 === Delays
 
-Statement analyser will delay evaluation using NO_VALUE; also requires all method info to be present (METHOD_DELAY).
+Statement analyser will delay evaluation using `NO_VALUE`.
 
-Properties that do not have a delay: READ, ASSIGNED, METHOD_DELAY
+Properties that do not have a conventional delay: `READ`, `ASSIGNED`, `METHOD_CALLED`.
 
-Method properties that rely on METHOD_DELAY before they are fixed: NOT_MODIFIED, SIZE, NOT_NULL
+The property `METHOD_DELAY` is a special one, in the sense that it keeps track of properties of methods called themselves being delayed.
+Method properties that rely on `METHOD_DELAY` before they are fixed: `NOT_MODIFIED`, SIZE, NOT_NULL. #TODO is this correct for SIZE, NN?#
 
 === Levels
 
@@ -360,14 +374,17 @@ Levels can be improved (value increased) but not decreased in the same map.
 
 [options=header]
 |===
-| value | READ      | SIZE              | NOT_NULL | IMMUTABLE | METHOD_DELAY    | FINAL
-| -1 | absent       |  absent  | delay    | delay | no methods      | delay
-| 0  | not read^*^     | >= 0 (no info)       | false    | not E1 | methods, delay  | not final
-| 1  | read once    | = 0 (empty)  | @NotNull | E1 | delays solved   | final
-| 2  |              | >= 1  (not empty)              | NN, not NN1^*^ | E1, not E2 |    |
-| 3  | read multiple times | = 1       | @NotNull1 | E2 | |
-| 4  |              | >= 2               | | | |
-| 5  |              | = 2              | | | |
+| property | -1 | 0 | 1 | 2 | 3 | 4 | 5
+
+| READ | absent | not read^*^ | read once | | read multiple times | |
+| ASSIGNED | absent | not assigned^*^ | assigned once | | assigned multiple times |  |
+| METHOD_DELAY | no methods | methods, no delay | methods, delay | | | |
+| METHOD_CALLED | absent | | method calls | | | |
+| NOT_MODIFIED | delay | modifications | not modified | | | |
+| FINAL | delay | not final | final | | | |
+| IMMUTABLE | delay | not E1 | E1Immutable | E1, not E2 | E2Immutable | |
+| SIZE | delay | >= 0 (no info) | = 0 (empty) | >= 1 (not empty) | = 1 | >= 2 | = 2
+| NOT_NULL | delay | false | @NotNull | NN, not NN1^*^ | @NotNull1 | NN1, not NN2^*^ | @NotNull2
 |===
 
 The ones with an asterisk ^*^ are optional, and unlikely to be set by the analyser.

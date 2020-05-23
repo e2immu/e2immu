@@ -250,8 +250,10 @@ public class FieldAnalyser {
         if (fieldAnalysis.variablesLinkedToMe.isSet()) return false;
 
         boolean allDefined = typeInspection.constructorAndMethodStream()
-                .allMatch(m -> !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
-                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet());
+                .allMatch(m ->
+                        m.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet() && (
+                                !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
+                                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet()));
         if (!allDefined) return false;
 
         Set<Variable> links = new HashSet<>();
@@ -260,7 +262,7 @@ public class FieldAnalyser {
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet())
                 .forEach(m -> links.addAll(m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.get()));
         fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
-        log(LINKED_VARIABLES, "Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
+        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
 
         // explicitly adding the annotation here; it will not be inspected.
         AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(typeContext, links);

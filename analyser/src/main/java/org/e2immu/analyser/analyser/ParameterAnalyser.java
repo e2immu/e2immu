@@ -61,4 +61,16 @@ public class ParameterAnalyser {
             typeContext.addMessage(error);
         });
     }
+
+    /**
+     * The goal is to ensure that NOT_NULL and SIZE are not unnecessarily delayed. NOT_MODIFIED will be set by the link computer
+     * as soon as possible.
+     *
+     * @param methodProperties evaluation context
+     * @return true if changes were made
+     */
+    public boolean analyse(VariableProperties methodProperties) {
+        // TODO
+        return false;
+    }
 }

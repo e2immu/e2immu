@@ -141,8 +141,11 @@ public class NewObject implements HasParameterExpressions {
                 } else {
                     parameterInfo = params.get(i);
                 }
-                // not modified
+                // NOT_NULL, NOT_MODIFIED, SIZE
                 Map<VariableProperty, Integer> map = parameterInfo.parameterAnalysis.get().getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                if (map.containsValue(Level.DELAY)) {
+                    map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
+                }
                 forward = ForwardEvaluationInfo.create(map);
             } else {
                 forward = ForwardEvaluationInfo.DEFAULT;

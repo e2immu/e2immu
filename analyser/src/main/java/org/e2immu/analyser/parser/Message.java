@@ -38,6 +38,7 @@ public class Message {
     public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
+    public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
     public static final String UNNECESSARY_METHOD_CALL = "Unnecessary method call";
 
     public static final String CANNOT_FIND_METHOD_IN_SUPER_TYPE = "Cannot find method in super type";
@@ -96,6 +97,7 @@ public class Message {
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(METHOD_EVALUATES_TO_CONSTANT, Severity.WARN);
+        map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }
