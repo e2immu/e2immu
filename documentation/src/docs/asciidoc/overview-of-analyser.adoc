@@ -239,11 +239,39 @@ The following three properties then should have no DELAY values anymore:
 ** IN_SIZE_CONTEXT: highest @Size value encountered in formal parameters
 ** CONTENT_MODIFIED: lowest @NotModified encountered in formal parameters
 
+==== Link computer
+
+Order of operation:
+
+. Copy `READ`, `ASSIGNED` and `METHOD_CALLED`into field summaries, and summary of `this`.
+This only happens in the first round.
+. Ensure that, once different from `NO_VALUE`, the field summary contains the value of assigned fields.
+It is important to note that we do not copy the properties
+`IMMUTABLE`, `CONTAINER`, `NOT_NULL`, and `SIZE`.
+The field analyser will obtain them from the assigned value.
+
+. Establish links between variables.
+This algorithm kicks in when the best case and worst case dependency graphs between variables collide, and no variables have remained unevaluated (`NO_VALUE`).
+It sets `variablesLinkedToFieldsAndParameters`, and the field summaries' `linkedVariables` set.
+
+. Compute content modification based on the established links.
+The algorithm runs over clusters of linked variables, where the fields and parameters are of interest.
+Per cluster, it computes a single `NOT_MODIFIED` value, which is delayed when `METHOD_DELAY` is explicitly on (`Level.FALSE`).
+In the case of fields, a delay can be overridden when the field is not `READ` in the method.
+#TODO: METHOD_DELAY is currently on variable, will need clever implementation#
+
+. update the variables linked to the method result, and set the `LINKED` property.
+The algorithm iterates over all `linkedVariables` in the `methodAnalysis.returnStatementSummaries`, and delays when these have not been set yet.
+Inside the set of linked variables, it relies on `variablesLinkedToMe` for fields, and `variablesLinkedToFieldsAndParameters` for local variables.
+Especially the former may contribute to delaying.
+
+. check for parameter assignments, by studying the `ASSIGNED` property on parameters occurring in the evaluation context.
+
 ==== Method analyser
 
 Preparation of method analysis:
 
-* details about statements in `numberedStatements`; the return statements are in `returnStatements`; the local methods in `localMethodsCalled`
+* details about statements in `numberedStatements`; information about return statements will be stored in `methodAnalysis.returnStatementSummaries`
 * summary information at inspection level: methods of own class reached, part of construction
 
 Results of method analysis:
@@ -252,8 +280,6 @@ Results of method analysis:
 ** value is either a single return value if there is only one return statement, otherwise it is a method value.
 ** The properties of the method value are the actual properties stored in the method analysis; INDEPENDENT, NOT_MODIFIED, IDENTITY, FLUENT, LINKED, CONSTANT, and all the properties that come with field assignments (ASSIGNED ~ single or multiple return values, SIZE, IMMUTABLE, CONTAINER, NOT_NULL)
 
-* summary of activity on `this`.
-Properties that are important are: READ, METHOD_DELAY
 
 * summary of field assignment values and related properties
 ** for each field, we will store a value which is either the "common assignment" or single assignment
@@ -276,27 +302,49 @@ Note again that links are based on modification information, not equality!
 * others:
 ** does the method create an object of itself?
 
+Order of operation:
+
+. compute `@Independent`, as soon as `ComputeLinking` has filled up `variablesLinkedToFieldsAndParameters`.
+The latter is an indication that `variablesLinkedToMethodResult` is available, as are the `linkedVariables` in all the `fieldSummaries`.
+. compute `IMMUTABLE`, `CONTAINER`, `NOT_NULL`, `SIZE`, `IDENTITY`, `FLUENT` and their corresponding annotations, based on the `returnStatementSummaries`.
+The algorithm computes the lowest available value.
+If this value turns out to be `DELAY`, then it delays the computation.
+This means that the statement analyser must write out the values for each of these at some point!
+The algorithm writes the results in the `methodAnalysis` 's properties map.
+. compute `singleReturnValue` and `@Constant`, based on the `returnStatementSummaries`.
+. compute `@NotModified`.
+The algorithm first checks for assignments using `fieldSummaries`, `ASSIGNMENT` property.
+That hurdle passed, it must wait for `variablesLinkedToFieldsAndParameters`.
+Once available, it first considers the `NOT_MODIFIED` property of fields.
+If any field's content has been modified, the result is false.
+To determine the result, it studies the `NOT_MODIFIED` property of `this`, on combination with the `METHODS_CALLED` property.
+The combination of the two properties allows us to make the distinction between no method calls, and a delay on method calls.
+
 ==== Field analyser
 
-Properties specific to fields are:
+Order of operation:
 
-* FINAL, and its final value
+. evaluate initialiser if present
+. determine `@Final`, based on `methodAnalysis.fieldSummaries`, `ASSIGNED` property, unless explicitly final
+. if `@Final` determined, determine the final value, based on `methodAnalysis.fieldSummaries`, `ASSIGNED` and `value`.
+Store in `fieldAnalysis.effectivelyFinalValue`.
+Compute `@Constant`.
+. if `@Final` determined, compute `@Size`, `@NotNull`, `@E2Immutable` and `@Container` based on the same properties in `methodAnalysis.fieldSummaries` and the properties of the initialiser.
+The same code handles all four properties in turn.
+The algorithm computes the minimum value over the assignments and initialiser of the corresponding property in the field summary.
+In the case of `@Size`, incompatible equals restrictions may cause an error.
+. compute `@NotModified` based on the `READ` and `NOT_MODIFIED` properties.
+We delay when `READ` is available, but `NOT_MODIFIED` is not.
+. compute `@Linked` and store the result in `fieldAnalysis.variablesLinkedToMe`.
+The algorithm computes the union of all `fieldSummaries.linkedVariables` sets.
+. check for errors: unused fields, based on absense of `READ`, and non-final non-private fields
 
-Shared with the return value of methods:
+Summarizing, the field analyses delays on
 
-* LINKED as a debug property to check how modifications travel
-* CONSTANT
-* NOT_NULL
-* SIZE
-* IMMUTABLE
-* CONTAINER
-* NOT_MODIFIED
-
-In the field analyser, the minimum is computed over the assignments of the following properties:
-CONTAINER, IMMUTABLE, SIZE (which works fine with >=, but not with two different = mixed), NOT_NULL
-
-For NOT_MODIFIED: we use READ to see if we need to look at this method-field combination.
-If READ, then NOT_MODIFIED in DELAY means waiting.
+. `ASSIGNED` in `fieldSummaries`, which is available after the first round of method analysis
+. `value` in `fieldSummaries`, which may take multiple iterations
+. `NOT_MODIFIED` after `READ` is available in the second round.
+. `linkedVariables` in `fieldSummaries`, which should take as long as `value`
 
 === Delays
 

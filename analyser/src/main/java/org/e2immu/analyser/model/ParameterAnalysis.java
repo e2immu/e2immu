@@ -78,22 +78,6 @@ public class ParameterAnalysis extends Analysis {
         return Level.UNDEFINED;
     }
 
-    public boolean notModified(Boolean directContentModification) {
-        if (directContentModification != null) {
-            boolean notModified = !directContentModification;
-            if (getProperty(VariableProperty.NOT_MODIFIED) == Level.DELAY) {
-                log(NOT_MODIFIED, "Mark {} " + (notModified ? "" : "NOT") + " @NotModified",
-                        logName);
-                setProperty(VariableProperty.NOT_MODIFIED, notModified);
-                return true;
-            }
-        } else {
-            log(DELAYED, "Delaying setting parameter @NotModified on {}", logName);
-        }
-
-        return false;
-    }
-
     public boolean notNull(Boolean notNull) {
         if (notNull != null) {
             if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {

@@ -21,6 +21,7 @@ package org.e2immu.analyser.util;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
+import org.e2immu.annotation.Size;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class SetOnceMap<K, V> extends Freezable {
     private final Map<K, V> map = new HashMap<>();
 
     @Only(before = "freeze")
+    @Size(min = 1)
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);
         Objects.requireNonNull(v);
@@ -48,12 +50,9 @@ public class SetOnceMap<K, V> extends Freezable {
         return Objects.requireNonNull(map.get(k));
     }
 
-    @NotNull
-    public V getOrElse(K k, @NotNull V v) {
-        if (isSet(k)) {
-            return Objects.requireNonNull(map.get(k));
-        }
-        return Objects.requireNonNull(v);
+    @Size
+    public int size() {
+        return map.size();
     }
 
     public V getOtherwiseNull(K k) {
@@ -64,6 +63,7 @@ public class SetOnceMap<K, V> extends Freezable {
         return map.containsKey(k);
     }
 
+    @Size(equals = 0)
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -72,6 +72,7 @@ public class SetOnceMap<K, V> extends Freezable {
         map.forEach(consumer);
     }
 
+    @Size(copy = true)
     public Stream<Map.Entry<K, V>> stream() {
         return map.entrySet().stream();
     }

@@ -92,11 +92,11 @@ public class FieldAnalyser {
                 changes = true;
         }
 
-        // STEP 6: @NotModified
+        // STEP 5: @NotModified
         if (analyseNotModified(fieldInfo, fieldAnalysis, fieldCanBeWrittenFromOutsideThisType, typeInspection))
             changes = true;
 
-        // STEP 7: @Linked, variablesLinkedToMe
+        // STEP 6: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
 
         if (fieldErrors(fieldInfo, fieldAnalysis)) changes = true;
@@ -181,13 +181,7 @@ public class FieldAnalyser {
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
         IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
         IntStream combined = IntStream.concat(assignments, initialiser);
-        int conclusion = property == VariableProperty.SIZE ? combined.reduce(Integer.MAX_VALUE, (v1, v2) -> {
-            if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 >= 0 && v2 >= 0 && v1 != v2) {
-                typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.INCOMPATIBLE_SIZE_REQUIREMENTS,
-                        "Equal to " + Analysis.sizeEquals(v1) + ", equal to " + Analysis.sizeEquals(v2)));
-            }
-            return Math.min(v1, v2);
-        }) : combined.min().orElse(Level.FALSE);
+        int conclusion = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(Level.FALSE);
         if (conclusion == Level.DELAY) {
             log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
             return false;

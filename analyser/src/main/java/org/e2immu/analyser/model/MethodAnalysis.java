@@ -132,7 +132,7 @@ public class MethodAnalysis extends Analysis {
     // in combination with the properties in the super class, this forms the knowledge about the method itself
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
 
-    public final TransferValue thisSummary = new TransferValue();
+    public final SetOnce<TransferValue> thisSummary = new SetOnce<>();
     public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
 
@@ -156,4 +156,12 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
+    public TransferValue ensureTransferValue(FieldInfo fieldInfo) {
+        if (fieldSummaries.isSet(fieldInfo)) {
+            return fieldSummaries.get(fieldInfo);
+        }
+        TransferValue tv = new TransferValue();
+        fieldSummaries.put(fieldInfo, tv);
+        return tv;
+    }
 }

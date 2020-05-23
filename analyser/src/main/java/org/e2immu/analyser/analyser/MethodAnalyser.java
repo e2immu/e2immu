@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -126,12 +127,11 @@ public class MethodAnalyser {
                 changes = true;
 
             if (!methodInfo.isConstructor) {
-                List<NumberedStatement> returnStatements = methodAnalysis.returnStatements.get();
-                if (!returnStatements.isEmpty()) {
-                    if (propertiesOfReturnStatements(methodProperties, returnStatements, methodInfo, methodAnalysis))
+                if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
+                    if (propertiesOfReturnStatements(methodInfo, methodAnalysis))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
-                    if (methodIsConstant(returnStatements, methodInfo, methodAnalysis)) changes = true;
+                    if (methodIsConstant(methodInfo, methodAnalysis)) changes = true;
                 }
                 if (methodInfo.isStatic) {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
@@ -160,17 +160,17 @@ public class MethodAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private boolean methodIsConstant(List<NumberedStatement> returnStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean methodIsConstant(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.singleReturnValue.isSet()) return false;
 
-        boolean allReturnValuesSet = returnStatements.stream().allMatch(ns -> ns.returnValue.isSet());
+        boolean allReturnValuesSet = methodAnalysis.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
         if (!allReturnValuesSet) {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return false;
         }
         Value value;
-        if (returnStatements.size() == 1) {
-            value = returnStatements.get(0).returnValue.get();
+        if (methodAnalysis.returnStatementSummaries.size() == 1) {
+            value = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
         } else {
             // the object (2nd parameter) is not important here; it will not be used to compute properties
             value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
@@ -184,27 +184,27 @@ public class MethodAnalyser {
         return true;
     }
 
-    private boolean propertiesOfReturnStatements(EvaluationContext evaluationContext,
-                                                 List<NumberedStatement> returnStatements,
-                                                 MethodInfo methodInfo,
+    private boolean propertiesOfReturnStatements(MethodInfo methodInfo,
                                                  MethodAnalysis methodAnalysis) {
         boolean changes = false;
         for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            if (propertyOfReturnStatements(evaluationContext, variableProperty, returnStatements, methodInfo, methodAnalysis))
+            if (propertyOfReturnStatements(variableProperty, methodInfo, methodAnalysis))
                 changes = true;
         }
         return changes;
     }
 
-    private boolean propertyOfReturnStatements(EvaluationContext evaluationContext,
-                                               VariableProperty variableProperty,
-                                               List<NumberedStatement> returnStatements,
+    private boolean propertyOfReturnStatements(VariableProperty variableProperty,
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
-        if (!variableProperty.canImprove && currentValue != Level.DELAY) return false;
+        if (currentValue != Level.DELAY) return false;
 
-        int value = returnStatements.stream().mapToInt(ns -> ns.getProperty(evaluationContext, variableProperty)).min().orElse(Level.DELAY);
+        IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
+        int value = variableProperty == VariableProperty.SIZE ?
+                safeMinimum(typeContext, new Location(methodInfo), stream) :
+                stream.min().orElse(Level.DELAY);
         if (value == Level.DELAY) {
             log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
             return false;
@@ -215,11 +215,23 @@ public class MethodAnalyser {
         return true;
     }
 
+    static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {
+        return intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
+            if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 >= 0 && v2 >= 0 && v1 != v2) {
+                typeContext.addMessage(Message.newMessage(location, Message.INCOMPATIBLE_SIZE_REQUIREMENTS,
+                        "Equal to " + Analysis.sizeEquals(v1) + ", equal to " + Analysis.sizeEquals(v2)));
+            }
+            return Math.min(v1, v2);
+        });
+    }
+
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.DELAY) return false;
 
         // first step, check that no fields are being assigned
-        boolean fieldAssignments = methodAnalysis.fieldAssignments.stream().anyMatch(Map.Entry::getValue);
+        boolean fieldAssignments = methodAnalysis.fieldSummaries.stream()
+                .map(Map.Entry::getValue)
+                .anyMatch(tv -> tv.properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, Level.FALSE);
@@ -231,38 +243,30 @@ public class MethodAnalyser {
                     methodInfo.distinguishingName());
             return false;
         }
-        boolean isNotModified = methodAnalysis.contentModifications
-                .stream()
-                .filter(e -> e.getKey() instanceof FieldReference)
-                .noneMatch(Map.Entry::getValue);
+        boolean isNotModified = methodAnalysis.fieldSummaries.stream().map(Map.Entry::getValue)
+                .allMatch(tv -> tv.properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) == Level.TRUE);
         if (!isNotModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
-                    methodAnalysis.contentModifications.stream().filter(e -> e.getKey() instanceof FieldReference)
-                            .filter(Map.Entry::getValue).map(e -> e.getKey().detailedString()).collect(Collectors.toList());
+                    methodAnalysis.fieldSummaries.stream()
+                            .filter(e -> e.getValue().properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) != Level.TRUE)
+                            .map(e -> e.getKey().fullyQualifiedName()).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (isNotModified) {
-            int allMethodCallsNotModified = methodAnalysis.localMethodsCalled.get().stream()
-                    .mapToInt(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED))
-                    .min().orElse(Level.TRUE); // true when there are none
-            if (allMethodCallsNotModified == Level.DELAY) {
-                log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
-                        methodInfo.distinguishingName());
-                return false;
-            }
-            isNotModified = allMethodCallsNotModified == Level.TRUE;
-            if (isLogEnabled(NOT_MODIFIED)) {
+            boolean localMethodsCalled = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_CALLED, Level.DELAY) == Level.TRUE;
+            if (localMethodsCalled) {
+                int thisNotModified = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY);
+
+                if (thisNotModified == Level.DELAY) {
+                    log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
+                            methodInfo.distinguishingName());
+                    return false;
+                }
+                isNotModified = thisNotModified == Level.TRUE;
                 log(NOT_MODIFIED, "Mark method {} as {}@NotModified", methodInfo.distinguishingName(),
                         isNotModified ? "" : "NOT ");
-                if (!isNotModified) {
-                    List<String> offendingCalls = methodAnalysis.localMethodsCalled.get().stream()
-                            .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED) == Level.FALSE)
-                            .map(MethodInfo::distinguishingName)
-                            .collect(Collectors.toList());
-                    log(NOT_MODIFIED, "Offending method calls are to: {}", offendingCalls);
-                }
-            }
+            } // else: no local methods called, we should be good
         } // else: already false, why should we analyse this?
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, isNotModified);
@@ -306,9 +310,9 @@ public class MethodAnalyser {
         }
 
         // PART 2: check parameters
-
-        boolean parametersIndependentOfFields = methodAnalysis.fieldsLinkedToFieldsAndVariables.stream()
-                .allMatch(e -> Collections.disjoint(e.getValue(), methodInfo.methodInspection.get().parameters));
+        List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
+        boolean parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream().map(e -> e.getValue().linkedVariables.get())
+                .allMatch(set -> Collections.disjoint(set, parameters));
 
         // conclusion
 

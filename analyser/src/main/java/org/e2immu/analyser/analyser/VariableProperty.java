@@ -38,6 +38,12 @@ public enum VariableProperty {
     // this variable is changing inside a loop; do not read its value
     ASSIGNED_IN_LOOP("in loop"),
 
+    // single simple purpose: on `this` to see if local methods have been called
+    METHOD_CALLED("method called"),
+
+    // purpose: goes to true when all methods involved in the computation have been "evaluated"
+    METHOD_DELAY("method delay"),
+
     // the ones corresponding to annotations
 
     NOT_NULL("@NotNull", true, Level.compose(Level.TRUE, Level.NOT_NULL_2)),
@@ -84,6 +90,8 @@ public enum VariableProperty {
     public String toString() {
         return name;
     }
+
+    public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
 
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
     public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, SIZE, IMMUTABLE, CONTAINER);
