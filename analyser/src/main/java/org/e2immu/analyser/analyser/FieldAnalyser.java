@@ -77,13 +77,14 @@ public class FieldAnalyser {
             value = NO_VALUE;
             haveInitialiser = true;
         }
+        boolean fieldSummariesNotYetSet = fieldProperties.iteration == 0;
 
         // STEP 2: EFFECTIVELY FINAL: @E1Immutable
-        if (analyseFinal(fieldInfo, fieldAnalysis, value, fieldCanBeWrittenFromOutsideThisType, typeInspection))
+        if (analyseFinal(fieldInfo, fieldAnalysis, value, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
         // STEP 3: EFFECTIVELY FINAL VALUE, and @Constant
-        if (analyseFinalValue(fieldInfo, fieldAnalysis, value, haveInitialiser, typeInspection))
+        if (analyseFinalValue(fieldInfo, fieldAnalysis, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
         // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: SIZE, NOT_NULL, IMMUTABLE, CONTAINER (min over assignments)
@@ -93,21 +94,22 @@ public class FieldAnalyser {
         }
 
         // STEP 5: @NotModified
-        if (analyseNotModified(fieldInfo, fieldAnalysis, fieldCanBeWrittenFromOutsideThisType, typeInspection))
+        if (analyseNotModified(fieldInfo, fieldAnalysis, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
         // STEP 6: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
 
-        if (fieldErrors(fieldInfo, fieldAnalysis)) changes = true;
+        if (fieldErrors(fieldInfo, fieldAnalysis, fieldSummariesNotYetSet)) changes = true;
         return changes;
     }
 
-    private boolean fieldErrors(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+    private boolean fieldErrors(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis, boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.fieldError.isSet()) return false;
 
         if (fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
+                if (fieldSummariesNotYetSet) return false;
                 List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
                 int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
                         .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
@@ -197,7 +199,8 @@ public class FieldAnalyser {
                                       FieldAnalysis fieldAnalysis,
                                       Value value,
                                       boolean haveInitialiser,
-                                      TypeInspection typeInspection) {
+                                      TypeInspection typeInspection,
+                                      boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
             return false;
 
@@ -210,6 +213,7 @@ public class FieldAnalyser {
             values.add(value);
         }
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
+            if (fieldSummariesNotYetSet) return false;
             for (MethodInfo method : typeInspection.methodsAndConstructors()) {
                 MethodAnalysis methodAnalysis = method.methodAnalysis.get();
                 if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
@@ -274,7 +278,8 @@ public class FieldAnalyser {
                                  FieldAnalysis fieldAnalysis,
                                  Value value,
                                  boolean fieldCanBeWrittenFromOutsideThisType,
-                                 TypeInspection typeInspection) {
+                                 TypeInspection typeInspection,
+                                 boolean fieldSummariesNotYetPresent) {
         if (Level.UNDEFINED != fieldAnalysis.getProperty(VariableProperty.FINAL)) return false;
         boolean isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         if (isExplicitlyFinal) {
@@ -283,6 +288,7 @@ public class FieldAnalyser {
                     fieldInfo.fullyQualifiedName(), value);
             return true;
         }
+        if (fieldSummariesNotYetPresent) return false;
         int isAssignedOutsideConstructors = typeInspection.methods.stream()
                 .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
@@ -307,7 +313,8 @@ public class FieldAnalyser {
     private boolean analyseNotModified(FieldInfo fieldInfo,
                                        FieldAnalysis fieldAnalysis,
                                        boolean fieldCanBeWrittenFromOutsideThisType,
-                                       TypeInspection typeInspection) {
+                                       TypeInspection typeInspection,
+                                       boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.UNDEFINED) return false;
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
@@ -315,6 +322,7 @@ public class FieldAnalyser {
             log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
             return false;
         }
+        if (fieldSummariesNotYetSet) return false;
         // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
         boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||

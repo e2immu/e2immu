@@ -223,8 +223,11 @@ public class ComputeLinking {
                     } else {
                         log(NOT_MODIFIED, "Mark {} " + (summary == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
                                 linkedVariable.detailedString(), methodInfo.distinguishingName());
-                        parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, summary);
-                        changes = true;
+                        int currentNotModified = parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+                        if (currentNotModified == Level.DELAY) {
+                            parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, summary);
+                            changes = true;
+                        }
                     }
                 }
             }
