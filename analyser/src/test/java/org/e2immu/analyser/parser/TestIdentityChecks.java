@@ -33,15 +33,15 @@ public class TestIdentityChecks extends CommonTestRunner {
                                                                  variable, currentValue, properties) -> {
         if (methodInfo.name.equals("idem") && "s".equals(variableName)) {
             if ("0".equals(statementId)) {
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.CONTENT_MODIFIED));
+                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED));
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(3, (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT));
+                Assert.assertEquals(3, (int) properties.get(VariableProperty.NOT_NULL));
             } else if ("1".equals(statementId)) {
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.CONTENT_MODIFIED));
+                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED));
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(3, (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT));
+                Assert.assertEquals(3, (int) properties.get(VariableProperty.NOT_NULL));
             } else Assert.fail();
         }
     };

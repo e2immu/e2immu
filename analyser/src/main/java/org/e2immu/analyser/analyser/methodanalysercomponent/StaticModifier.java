@@ -81,7 +81,7 @@ public class StaticModifier {
                 // we need to check if there's fields being read/assigned/
                 if (absentUnlessStatic(methodAnalysis, VariableProperty.READ) &&
                         absentUnlessStatic(methodAnalysis, VariableProperty.ASSIGNED) &&
-                        (methodAnalysis.thisSummary.properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                        (methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation &&
                         methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {

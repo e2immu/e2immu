@@ -29,10 +29,10 @@ public class TestFinalChecks extends CommonTestRunner {
                                                                  variable, currentValue, properties) -> {
         if (methodInfo.name.equals("setS4") && "s4".equals(variableName)) {
             if ("0".equals(statementId)) {
-                Assert.assertNull(properties.get(VariableProperty.CONTENT_MODIFIED)); // no method was called on parameter s4
+                Assert.assertNull(properties.get(VariableProperty.NOT_MODIFIED)); // no method was called on parameter s4
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertNull(properties.get(VariableProperty.IN_NOT_NULL_CONTEXT)); // nothing that points to not null
+                Assert.assertNull(properties.get(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
     };

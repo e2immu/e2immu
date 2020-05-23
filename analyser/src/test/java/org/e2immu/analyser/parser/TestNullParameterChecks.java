@@ -40,8 +40,8 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("s".equals(variableName)) {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", iteration, properties, currentValue);
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.CONTENT_MODIFIED)); //FALSE at level 1
-                Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.IN_NOT_NULL_CONTEXT));
+                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED)); //FALSE at level 1
+                Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.NOT_NULL));
                 return;
             }
             if ("NullParameterChecks.this.s".equals(variableName)) {
@@ -59,7 +59,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
             } else if ("0".equals(statementId)) {
                 if ("s".equals(variableName)) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
-                    Assert.assertEquals(Level.compose(Level.FALSE, 1), (int) properties.get(VariableProperty.CONTENT_MODIFIED));
+                    Assert.assertEquals(Level.compose(Level.FALSE, 1), (int) properties.get(VariableProperty.NOT_MODIFIED));
                     Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.READ));
                 } else if ("NullParameterChecks.this.s".equals(variableName)) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
