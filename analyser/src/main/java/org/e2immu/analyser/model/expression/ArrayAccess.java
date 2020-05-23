@@ -97,11 +97,10 @@ public class ArrayAccess implements Expression {
                 evaluationContext.markRead(dependentVariableName(array, indexValue));
             }
         }
-        // e.g.: callSomeMethod(line = reader.nextLine()) assignment inside @NotNull method parameter
 
-        // TODO what does this do here?
-        if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) >= Level.TRUE && value instanceof VariableValue) {
-            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
+        int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+        if (notNullRequired >= Level.TRUE && value instanceof VariableValue) {
+            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, notNullRequired);
         }
         visitor.visit(this, evaluationContext, value);
         return value;

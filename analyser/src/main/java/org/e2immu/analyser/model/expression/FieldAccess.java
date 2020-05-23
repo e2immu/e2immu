@@ -91,7 +91,7 @@ public class FieldAccess implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (notNull != Level.FALSE) {
+        if (notNull >= Level.TRUE) {
             StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
         }
 

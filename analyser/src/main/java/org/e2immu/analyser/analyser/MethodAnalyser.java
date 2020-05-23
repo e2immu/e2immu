@@ -229,7 +229,7 @@ public class MethodAnalyser {
     static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {
         return intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
             if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 != v2) {
-                typeContext.addMessage(Message.newMessage(location, Message.INCOMPATIBLE_SIZE_REQUIREMENTS,
+                typeContext.addMessage(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
                         "Equal to " + Analysis.sizeEquals(v1) + ", equal to " + Analysis.sizeEquals(v2)));
             }
             return Math.min(v1, v2);

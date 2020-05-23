@@ -102,11 +102,6 @@ public class TestTestExamples extends CommonTestRunner {
     }
 
     @Test
-    public void testTryStatementChecks() throws IOException {
-        testClass("TryStatementChecks", 1);
-    }
-
-    @Test
     public void testTypeParameters() throws IOException {
         testClass("TypeParameters", 0);
     }

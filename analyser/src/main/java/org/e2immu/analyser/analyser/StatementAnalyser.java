@@ -453,7 +453,7 @@ public class StatementAnalyser {
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                subContext.createLocalVariableOrParameter(lvr, VariableProperty.NOT_NULL);
+                subContext.createLocalVariableOrParameter(lvr, VariableProperty.NOT_NULL, VariableProperty.READ);
             }
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
@@ -611,7 +611,7 @@ public class StatementAnalyser {
 
     public static void variableOccursInNotNullContext(Variable variable,
                                                       EvaluationContext evaluationContext,
-                                                      int notNullContext) { // DELAY or TRUE
+                                                      int notNullContext) { // at least TRUE
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         NumberedStatement currentStatement = evaluationContext.getCurrentStatement();
 
@@ -629,16 +629,14 @@ public class StatementAnalyser {
             return;
         }
 
-        // mark that we need @NotNull on this variable, no delay situation
-        int valueToSet = Level.compose(Level.TRUE, Level.DELAY == notNullContext ? 0 : 1);
-        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, valueToSet);
-
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
         int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
-        if (notNull == Level.FALSE && !currentStatement.errorValue.isSet()) {
+        if (notNull == Level.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
-            currentStatement.errorValue.set(true);
         }
+
+        // only NOW mark that we need @NotNull on this variable, no delay situation
+        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, notNullContext);
     }
 
     public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {

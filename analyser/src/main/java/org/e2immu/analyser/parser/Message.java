@@ -61,7 +61,6 @@ public class Message {
     public static final String UNUSED_LOCAL_VARIABLE = "Unused local variable";
     public static final String USELESS_ASSIGNMENT = "Useless assignment";
     public static final String METHOD_EVALUATES_TO_CONSTANT = "Method evaluates to constant";
-    public static final String INCOMPATIBLE_SIZE_REQUIREMENTS = "Incompatible size requirements";
 
     public static final String METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD = "Method is not allowed to call non-@NotModified method into nested or enclosing type";
     public static final String METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD = "Method is not allowed to assign to field";
@@ -114,7 +113,7 @@ public class Message {
 
     public static Message newMessage(Location location, String message, String extra) {
         Severity severity = SEVERITY_MAP.get(message);
-        if (severity == null) throw new UnsupportedOperationException();
+        if (severity == null) throw new UnsupportedOperationException("Need severity for "+message);
         return new Message(severity, location, message + ": " + extra);
     }
 

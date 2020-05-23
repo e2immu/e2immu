@@ -7,6 +7,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.CombinedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,16 +24,17 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             (iteration, methodInfo, statementId, variableName, variable, currentValue, properties) -> {
                 if ("toString".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
                     if (iteration == 0) {
-                        Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                     if (iteration == 1) {
-                        Assert.assertTrue(currentValue instanceof VariableValue);
+                        // VV -> CombinedValue to freeze the properties
+                        Assert.assertTrue(currentValue instanceof CombinedValue);
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                 }
                 if ("debug".equals(methodInfo.name) && "java.lang.System.out".equals(variableName)) {
                     Assert.assertTrue(currentValue instanceof VariableValue);
-                    Assert.assertEquals(0, (int) properties.get(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                 }
             };
 
