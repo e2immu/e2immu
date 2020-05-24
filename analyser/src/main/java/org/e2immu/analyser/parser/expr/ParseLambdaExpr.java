@@ -28,10 +28,12 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.VariableContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
@@ -92,12 +94,33 @@ public class ParseLambdaExpr {
         ParameterizedType inferredReturnType = Primitives.PRIMITIVES.voidParameterizedType; // TODO
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}", functionalType);
-        return new LambdaBlock(parameters, block, functionalType);
+        return new LambdaBlock(parameters, block, functionalType, createFunctionalType(expressionContext.enclosingType,
+                expressionContext.typeContext, parameters, functionalType));
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
     // the return type as functional type of importance
     private static Expression partiallyParse(LambdaExpr lambdaExpr) {
         return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()), lambdaExpr.getExpressionBody().isPresent() ? true : null);
+    }
+
+    private static ParameterizedType createFunctionalType(TypeInfo enclosingType,
+                                                          TypeContext typeContext,
+                                                          List<ParameterInfo> parameters,
+                                                          ParameterizedType returnType) {
+        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
+        TypeAnalysis typeAnalysis = new TypeAnalysis(typeInfo);
+        typeInfo.typeAnalysis.set(typeAnalysis);
+        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
+        typeInspectionBuilder.setTypeNature(TypeNature.INTERFACE);
+        typeInspectionBuilder.setEnclosingType(enclosingType);
+        typeInspectionBuilder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
+        MethodInfo methodInfo = new MethodInfo(typeInfo, "apply", false);
+        MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
+        methodInspectionBuilder.setReturnType(returnType);
+        typeInspectionBuilder.addMethod(methodInfo);
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
+        // TODO this is the absolute minimum to recognize the type + method as functional interface. More needs to be done
+        return typeInfo.asParameterizedType();
     }
 }

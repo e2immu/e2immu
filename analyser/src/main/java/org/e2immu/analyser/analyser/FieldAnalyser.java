@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.CombinedValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -227,6 +228,16 @@ public class FieldAnalyser {
                         }
                     }
                 }
+            }
+        }
+        if (values.size() == 1 && values.get(0) instanceof VariableValue) {
+            VariableValue variableValue = (VariableValue) values.get(0);
+            if (variableValue.variable instanceof ParameterInfo) {
+                ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
+                parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
+                log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+            } else {
+                log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
             }
         }
         Value combinedValue = CombinedValue.create(values);

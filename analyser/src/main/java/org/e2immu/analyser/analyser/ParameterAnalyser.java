@@ -19,10 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckSize;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
@@ -70,7 +67,24 @@ public class ParameterAnalyser {
      * @return true if changes were made
      */
     public boolean analyse(VariableProperties methodProperties) {
-        // TODO
+        for (ParameterInfo parameterInfo : methodProperties.getCurrentMethod().methodInspection.get().parameters) {
+            ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
+            if (parameterAnalysis.assignedToField.isSet()) {
+                FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
+                FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
+                    int inField = fieldAnalysis.getProperty(variableProperty);
+                    if (inField != Level.DELAY) {
+                        int inParameter = parameterAnalysis.getProperty(variableProperty);
+                        if (inField > inParameter) {
+                            parameterAnalysis.setProperty(variableProperty, inField);
+                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                                    fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
+                        }
+                    }
+                }
+            }
+        }
         return false;
     }
 }

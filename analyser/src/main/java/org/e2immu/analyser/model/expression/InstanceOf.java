@@ -44,11 +44,21 @@ public class InstanceOf implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value value = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+        return localEvaluation(evaluationContext, visitor, value);
+    }
+
+    private Value localEvaluation(EvaluationContext evaluationContext, EvaluationVisitor visitor, Value value) {
         Value result;
-        if (value instanceof UnknownValue) {
-            result = value;
+        if (value.isUnknown()) {
+            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof NullValue) {
             result = BoolValue.FALSE;
+        } else if (value instanceof CombinedValue) {
+            CombinedValue combinedValue = (CombinedValue) value;
+            if (combinedValue.values.size() == 1) {
+                return localEvaluation(evaluationContext, visitor, combinedValue.values.get(0));
+            }
+            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof VariableValue) {
             result = new InstanceOfValue(((VariableValue) value).variable, parameterizedType);
         } else if (value instanceof Instance) {

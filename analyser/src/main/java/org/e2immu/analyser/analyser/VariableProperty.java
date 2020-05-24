@@ -94,6 +94,8 @@ public enum VariableProperty {
     public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
 
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
+    public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = FORWARD_PROPERTIES_ON_PARAMETERS;
+
     public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, SIZE, IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);

@@ -44,11 +44,12 @@ public class LambdaBlock implements Expression {
 
     public LambdaBlock(@NotNull List<ParameterInfo> parameters,
                        @NotNull Block block,
-                       @NotNull ParameterizedType returnType) {
+                       @NotNull ParameterizedType returnType,
+                       @NotNull ParameterizedType functionalType) {
         this.block = Objects.requireNonNull(block);
         this.parameters = Objects.requireNonNull(parameters);
         this.returnType = Objects.requireNonNull(returnType);
-        functionalType = createFunctionalType(parameters, returnType);
+        this.functionalType = Objects.requireNonNull(functionalType);
     }
 
     // this is a functional interface
@@ -115,11 +116,5 @@ public class LambdaBlock implements Expression {
             visitor.visit(this, child, result, changes);
         }
         return result;
-    }
-
-    private ParameterizedType createFunctionalType(List<ParameterInfo> parameters, ParameterizedType returnType) {
-        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
-        return typeInfo.asParameterizedType();
-        // TODO this should be expanded greatly to be correct, but for now we only need the uniqueness
     }
 }

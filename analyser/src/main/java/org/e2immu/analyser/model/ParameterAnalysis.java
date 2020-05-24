@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.util.SetOnce;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -29,6 +30,8 @@ public class ParameterAnalysis extends Analysis {
     private final ParameterizedType parameterizedType;
     private final MethodInfo owner; // can be null, for lambda expressions
     private final String logName;
+
+    public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined());
@@ -69,6 +72,7 @@ public class ParameterAnalysis extends Analysis {
                 if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE;
                 break;
+            case SIZE:
             case NOT_MODIFIED:
             case CONTAINER:
             case IMMUTABLE:
