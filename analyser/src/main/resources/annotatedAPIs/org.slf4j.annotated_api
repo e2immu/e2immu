@@ -31,17 +31,25 @@ import org.e2immu.annotation.NotNull;
 public interface Logger {
     final public String ROOT_LOGGER_NAME = "ROOT";
 
-    public void info(@NotNull String s, Object... objects) {
-    }
-
-    public void warn(@NotNull String s, Object... objects) {
-    }
-
-    public void error(@NotNull String s, Object... objects) {
+    /*
+    The reason we want to add @NotModified on the methods, is that these
+    modifications are outside of the scope of what we're interested in.
+    (STATIC_SIDE_EFFECTS_ONLY)
+     */
+    @NotModified
+    public void info(@NotNull String s, @NotModified Object... objects) {
     }
 
     @NotModified
-    public void debug(@NotNull String s, Object... objects) {
+    public void warn(@NotNull String s, @NotModified Object... objects) {
+    }
+
+    @NotModified
+    public void error(@NotNull String s, @NotModified Object... objects) {
+    }
+
+    @NotModified
+    public void debug(@NotNull String s, @NotModified Object... objects) {
     }
 
     @NotModified

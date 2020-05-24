@@ -20,14 +20,17 @@ package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IdentityChecks {
+    @NotNull
     static final Logger LOGGER = LoggerFactory.getLogger(IdentityChecks.class);
 
     @Identity
     @NotModified
+    @NotNull
     public static String idem(String s) {
         LOGGER.debug(s);
         return s;
@@ -42,6 +45,7 @@ public class IdentityChecks {
 
     @Identity
     @NotModified
+    @NotNull
     public static String idem3(String s) {
         LOGGER.debug(s);
         if ("a".equals(s)) {

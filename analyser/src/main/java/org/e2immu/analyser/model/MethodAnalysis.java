@@ -92,6 +92,9 @@ public class MethodAnalysis extends Analysis {
                 break;
             case NOT_NULL:
                 if (returnType.isPrimitive()) return Level.TRUE;
+                break;
+            case SIZE:
+                return 1;
         }
         return Level.UNDEFINED;
     }

@@ -1,11 +1,13 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,24 +35,30 @@ public class TestIdentityChecks extends CommonTestRunner {
                                                                  variable, currentValue, properties) -> {
         if (methodInfo.name.equals("idem") && "s".equals(variableName)) {
             if ("0".equals(statementId)) {
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED));
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 2x
+                // strings are @NM by definition
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(3, (int) properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
             } else if ("1".equals(statementId)) {
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_MODIFIED));
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(3, (int) properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
             } else Assert.fail();
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("idem".equals(methodInfo.name) && iteration >= 0) {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        if ("idem".equals(methodInfo.name)) {
+
+            TransferValue tv = methodAnalysis.returnStatementSummaries.get("1");
+            Assert.assertFalse(tv.properties.isSet(VariableProperty.NOT_MODIFIED));
+
             // @NotModified decided straight away, @Identity as well
-            Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED));
-            Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+            Assert.assertEquals(1, methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+            Assert.assertEquals(1, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         }
     };
 
