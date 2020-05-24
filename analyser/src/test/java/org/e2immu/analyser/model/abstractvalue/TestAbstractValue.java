@@ -208,11 +208,11 @@ public class TestAbstractValue {
 
     @Test
     public void test() {
-        Value notA = NegatedValue.negate(a);
+        Value notA = NegatedValue.negate(a, true);
         Assert.assertEquals("not (a)", notA.toString());
-        Value notA2 = NegatedValue.negate(a);
+        Value notA2 = NegatedValue.negate(a, true);
         Assert.assertEquals(notA, notA2);
-        Assert.assertEquals(a, NegatedValue.negate(notA));
+        Assert.assertEquals(a, NegatedValue.negate(notA, true));
 
         Assert.assertEquals(a, new AndValue().append(a, a));
         Assert.assertEquals(notA, new AndValue().append(notA, notA));
@@ -244,7 +244,7 @@ public class TestAbstractValue {
     @Test
     public void testMoreComplicatedAnd() {
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
-        Value v = new AndValue().append(d, a, NegatedValue.negate(b), new OrValue().append(NegatedValue.negate(a), b), c);
+        Value v = new AndValue().append(d, a, NegatedValue.negate(b, true), new OrValue().append(NegatedValue.negate(a, true), b), c);
         Assert.assertEquals(BoolValue.FALSE, v);
     }
 
@@ -281,7 +281,7 @@ public class TestAbstractValue {
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
-        Value andValue = new AndValue().append(v, NegatedValue.negate(v2));
+        Value andValue = new AndValue().append(v, NegatedValue.negate(v2, true));
         Assert.assertEquals("(null == a and not (null == b))", andValue.toString());
         Map<Variable, Boolean> nullClausesAnd = andValue.individualNullClauses();
         Assert.assertEquals(2, nullClausesAnd.size());
@@ -291,7 +291,7 @@ public class TestAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a));
+        Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a), true);
         Assert.assertEquals("not (null == a)", v.toString());
         Map<Variable, Boolean> nullClauses = v.individualNullClauses();
         Assert.assertEquals(1, nullClauses.size());
@@ -314,8 +314,8 @@ public class TestAbstractValue {
 
     @Test
     public void testCNFWithNot() {
-        Value notB = NegatedValue.negate(b);
-        Value notC = NegatedValue.negate(c);
+        Value notB = NegatedValue.negate(b, true);
+        Value notC = NegatedValue.negate(c, true);
         Value or = new OrValue().append(new AndValue().append(a, notB), new AndValue().append(notC, d));
         Assert.assertEquals(EXPECTED2, or.toString());
         or = new OrValue().append(new AndValue().append(notB, a), new AndValue().append(d, notC));
@@ -329,7 +329,7 @@ public class TestAbstractValue {
 
     @Test
     public void testForSwitchStatement() {
-        Value v = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b), new OrValue().append(a, b));
+        Value v = new AndValue().append(NegatedValue.negate(a, true), NegatedValue.negate(b, true), new OrValue().append(a, b));
         Assert.assertEquals(BoolValue.FALSE, v);
 
         Value cIsA = EqualsValue.equals(new CharValue('a'), c);
@@ -338,7 +338,7 @@ public class TestAbstractValue {
 
         Value cIsB = EqualsValue.equals(new CharValue('b'), c);
 
-        Value v2 = new AndValue().append(NegatedValue.negate(cIsA), NegatedValue.negate(cIsB), new OrValue().append(cIsA, cIsB));
+        Value v2 = new AndValue().append(NegatedValue.negate(cIsA, true), NegatedValue.negate(cIsB, true), new OrValue().append(cIsA, cIsB));
         Assert.assertEquals(BoolValue.FALSE, v2);
     }
 

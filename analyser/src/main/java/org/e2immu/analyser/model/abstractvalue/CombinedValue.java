@@ -1,7 +1,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.annotation.Size;
@@ -36,6 +38,16 @@ public class CombinedValue implements Value {
             if (value.hasConstantProperties() || value instanceof CombinedValue) return value;
         }
         return new CombinedValue(ImmutableList.copyOf(values));
+    }
+
+    @Override
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        return values.stream().mapToInt(value -> value.getPropertyOutsideContext(variableProperty)).min().orElse(Level.DELAY);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return values.stream().mapToInt(value -> value.getProperty(evaluationContext, variableProperty)).min().orElse(Level.DELAY);
     }
 
     @Override

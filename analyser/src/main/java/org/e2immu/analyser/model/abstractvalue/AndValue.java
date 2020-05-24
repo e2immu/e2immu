@@ -104,7 +104,7 @@ public class AndValue implements Value {
                 if (value instanceof OrValue) {
                     boolean allAroundInNegativeWay = true;
                     for (Value value1 : components(value)) {
-                        Value negated1 = NegatedValue.negate(value1);
+                        Value negated1 = NegatedValue.negate(value1, true);
                         boolean found = false;
                         for (int pos2 = 0; pos2 < concat.size(); pos2++) {
                             if (pos2 != pos && negated1.equals(concat.get(pos2))) {
@@ -123,7 +123,7 @@ public class AndValue implements Value {
                 // more complicated variant: (A || B) && (A || !B)
                 List<Value> components = components(value);
                 for (Value value1 : components) {
-                    Value negated1 = NegatedValue.negate(value1);
+                    Value negated1 = NegatedValue.negate(value1, true);
                     for (int i = 0; i < pos; i++) {
                         List<Value> components2 = components(concat.get(i));
                         for (Value value2 : components2) {

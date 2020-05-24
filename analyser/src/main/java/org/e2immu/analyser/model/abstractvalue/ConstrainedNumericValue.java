@@ -25,7 +25,7 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     public ConstrainedNumericValue(ParameterizedType type, double lowerBound, double upperBound, boolean allowEquals) {
         this.upperBound = upperBound;
         this.lowerBound = lowerBound;
-        assert upperBound < MAX || lowerBound > MIN;
+        assert upperBound >= lowerBound;
         this.allowEquals = allowEquals;
         this.type = type;
     }
@@ -38,12 +38,23 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     @Override
     public String asString() {
         if (upperBound == MAX) {
-            return allowEquals ? "?>=" + lowerBound : "?>" + lowerBound;
+            String lb = nice(lowerBound);
+            return allowEquals ? "?>=" + lb : "?>" + lb;
         }
         if (lowerBound == MIN) {
-            return allowEquals ? "?<=" + upperBound : "?<" + upperBound;
+            String ub = nice(upperBound);
+            return allowEquals ? "?<=" + ub : "?<" + ub;
         }
-        return allowEquals ? lowerBound + "<=?<=" + upperBound : lowerBound + "<?<" + upperBound;
+        String lb = nice(lowerBound);
+        String ub = nice(upperBound);
+        return allowEquals ? lb + "<=?<=" + ub : lb + "<?<" + ub;
+    }
+
+    private String nice(double v) {
+        if (type.typeInfo == Primitives.PRIMITIVES.floatTypeInfo || type.typeInfo == Primitives.PRIMITIVES.doubleTypeInfo) {
+            return Double.toString(v);
+        }
+        return Long.toString((long) v);
     }
 
     public boolean rejects(Value r) {
@@ -77,8 +88,35 @@ public class ConstrainedNumericValue extends PrimitiveValue {
 
     // if lb <= x <= ub, what is -x?
     // -ub <= x <= -lb
-    public ConstrainedNumericValue negatedValue() {
+    public ConstrainedNumericValue numericNegatedValue() {
         return new ConstrainedNumericValue(type, -upperBound, -lowerBound, allowEquals);
+    }
+
+    public Value booleanNegatedValue(boolean valuesOfProperties) {
+        if (valuesOfProperties) {
+            // there is always, implicitly or explicitly, a lower bound of 0
+            // the type is always integer
+            assert type.typeInfo == Primitives.PRIMITIVES.intTypeInfo;
+            if (lowerBound > 0) {
+                return new ConstrainedNumericValue(type, allowEquals ? -1 : 0, lowerBound, !allowEquals);
+            }
+            return ConstrainedNumericValue.lowerBound(type, upperBound, !allowEquals);
+        }
+        if (upperBound == MAX && lowerBound == MIN) {
+            // nothing allowed
+            return new ConstrainedNumericValue(type, 0.0, 0.0, false);
+        }
+        if (upperBound == lowerBound) {
+            // everything allowed
+            return ConstrainedNumericValue.lowerBound(type, MIN, allowEquals);
+        }
+        if (upperBound != MAX && lowerBound != MIN) {
+            // combination
+            return new AndValue().append(ConstrainedNumericValue.lowerBound(type, lowerBound, allowEquals).booleanNegatedValue(false),
+                    ConstrainedNumericValue.upperBound(type, upperBound, allowEquals).booleanNegatedValue(false));
+        }
+        if (upperBound != MAX) return ConstrainedNumericValue.lowerBound(type, upperBound, !allowEquals);
+        return ConstrainedNumericValue.upperBound(type, lowerBound, !allowEquals);
     }
 
     public Value sum(Number number) {

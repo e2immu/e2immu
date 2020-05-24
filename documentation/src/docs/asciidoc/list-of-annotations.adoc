@@ -803,12 +803,61 @@ The annotation always implies <<nullnotallowed-annotation>>, for obvious reasons
 
 A classical example is the `toArray` method in `java.util.Collection`, which would otherwise violate the container contract:
 
-[source]
+[source,java]
 ----
 @NotNull
 @Independent
 <T> T[] toArray(@Output T[] a);
 ----
+
+[#size-annotation]
+=== `@Size`
+
+A type becomes _sizable_ when it has at least one method returning an `int` or a `long`, annotated with `@Size`.
+It is this method that will return the size of the type.
+In practice, we're looking at the `size()` method of the collection classes:
+[source,java]
+----
+@Size
+int size();
+----
+
+Non-modifying methods that can have their value explained:
+[source,java]
+----
+@Size(equals = 0)
+boolean isEmpty();
+
+@Size(min = 1)
+boolean isNotEmpty();
+----
+
+Non-modifying methods that return a sizable object can have their value explained as well:
+[source,java]
+----
+@Size(equals = 2)
+Set<Integer> returnSetOf2();
+----
+
+A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement.
+[source,java]
+----
+void doSomethingWithNonEmptyCollection(@Size(min = 1) Collection<T> ts) {
+    if(ts.isEmpty()) throw new UnsupportedOperationException();
+}
+----
+
+In modifying methods, the annotation has a different meaning:
+[source,java]
+----
+@Size(equals = 0)
+void clear(); // empties the collection
+
+@Size(min = 1)
+boolean add(T t); // after adding, there will be at least one element in the collection
+----
+
+
 
 [#utilityclass-annotation]
 === `@UtilityClass`

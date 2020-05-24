@@ -111,14 +111,14 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r));
+            return NegatedValue.negate(EqualsValue.equals(l, r), true);
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorInt) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r));
+            return NegatedValue.negate(EqualsValue.equals(l, r), true);
         }
 
         if (operator == Primitives.PRIMITIVES.orOperatorBool) {
@@ -133,7 +133,7 @@ public class BinaryOperator implements Expression {
             return SumValue.sum(l, r);
         }
         if (operator == Primitives.PRIMITIVES.minusOperatorInt) {
-            return SumValue.sum(l, NegatedValue.negate(r));
+            return SumValue.sum(l, NegatedValue.negate(r, false));
         }
         if (operator == Primitives.PRIMITIVES.multiplyOperatorInt) {
             return ProductValue.product(l, r);

@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.CombinedValue;
+import org.e2immu.analyser.model.abstractvalue.ParameterValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
@@ -31,6 +32,7 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -240,7 +242,11 @@ public class FieldAnalyser {
                 log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
             }
         }
-        Value combinedValue = CombinedValue.create(values);
+        List<Value> transformed = values.stream()
+                .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
+                        new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
+                .collect(Collectors.toList());
+        Value combinedValue = CombinedValue.create(transformed);
         fieldAnalysis.effectivelyFinalValue.set(combinedValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, combinedValue.isConstant());
 

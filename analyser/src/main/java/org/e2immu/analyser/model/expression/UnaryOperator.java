@@ -68,7 +68,7 @@ public class UnaryOperator implements Expression {
 
         if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
                 operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {
-            return NegatedValue.negate(v);
+            return NegatedValue.negate(v, true);
         }
         if (operator == Primitives.PRIMITIVES.unaryPlusOperatorInt) {
             return v;

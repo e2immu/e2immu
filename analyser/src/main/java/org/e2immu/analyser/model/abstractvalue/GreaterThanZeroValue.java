@@ -57,7 +57,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 return BoolValue.TRUE;
             }
         }
-        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r)), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r, true)), allowEquals);
     }
 
     public static Value less(Value l, Value r, boolean allowEquals) {
@@ -72,7 +72,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         if (l instanceof NumericValue) {
             return new GreaterThanZeroValue(SumValue.sum(((NumericValue) l).negate(), r), allowEquals);
         }
-        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), r), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l, true), r), allowEquals);
     }
 
     @Override

@@ -1,12 +1,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,7 +44,13 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
-
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+            if ("method1".equals(methodInfo.name)) {
+                TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
+                Assert.assertNotNull(tv);
+                Assert.assertEquals(Level.compose(Level.TRUE, Level.NOT_NULL_1), tv.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Analysis.encodeSizeEquals(1), tv.properties.get(VariableProperty.SIZE)); // (1)
+            }
         }
     };
 

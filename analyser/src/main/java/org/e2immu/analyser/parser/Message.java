@@ -36,6 +36,7 @@ public class Message {
     public static final String NULL_POINTER_EXCEPTION = "Null pointer exception";
     public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT = "Inline conditional evaluates to constant";
     public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
+    public static final String EMPTY_LOOP = "Empty loop";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
     public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
@@ -72,6 +73,7 @@ public class Message {
         map.put(DIVISION_BY_ZERO, Severity.ERROR);
         map.put(NULL_POINTER_EXCEPTION, Severity.ERROR);
         map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
+        map.put(EMPTY_LOOP, Severity.ERROR);
         map.put(CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
         map.put(CANNOT_FIND_METHOD_IN_SUPER_TYPE, Severity.ERROR);
         map.put(METHOD_SHOULD_BE_MARKED_STATIC, Severity.ERROR);

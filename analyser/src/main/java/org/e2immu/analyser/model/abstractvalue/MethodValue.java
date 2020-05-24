@@ -118,7 +118,7 @@ public class MethodValue implements Value {
                 return sizeOfValue;
             }
         }
-        return Level.DELAY;
+        return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
     }
 
     @Override

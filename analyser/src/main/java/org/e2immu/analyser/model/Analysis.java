@@ -286,6 +286,7 @@ public abstract class Analysis {
     }
 
     public static final int SIZE_NOT_EMPTY = 2;
+    public static final int SIZE_EMPTY = 1;
 
     /**
      * Values: -1 = absent; 0 = min=0,nothing;  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2

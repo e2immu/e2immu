@@ -10,12 +10,12 @@ import java.util.stream.Collectors;
 
 public class ArrayValue implements Value {
 
-    public final Value combinedValue;
+    public final Value combinedValue; // NO_VALUE when no values
     public final List<Value> values;
 
     public ArrayValue(List<Value> values) {
         this.values = ImmutableList.copyOf(values);
-        combinedValue = CombinedValue.create(values);
+        combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(values);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ArrayValue implements Value {
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
         }
         if (VariableProperty.SIZE == variableProperty) {
-            return Analysis.decodeSizeEquals(values.size());
+            return Analysis.encodeSizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }

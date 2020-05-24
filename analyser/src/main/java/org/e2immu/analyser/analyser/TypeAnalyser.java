@@ -425,6 +425,7 @@ public class TypeAnalyser {
             return true;
         }
 
+        boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
@@ -434,6 +435,7 @@ public class TypeAnalyser {
                     typeOfFirstParameter = methodInfo.returnType();
                 } else {
                     typeOfFirstParameter = parameters.get(0).parameterizedType;
+                    haveFirstParameter = true;
                 }
                 if (commonTypeOfFirstParameter == null) {
                     commonTypeOfFirstParameter = typeOfFirstParameter;
@@ -448,7 +450,7 @@ public class TypeAnalyser {
                 }
             }
         }
-        boolean isExtensionClass = commonTypeOfFirstParameter != null;
+        boolean isExtensionClass = commonTypeOfFirstParameter != null && haveFirstParameter;
         typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, isExtensionClass);
         log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName + " marked " + (isExtensionClass ? "" : "not ")
                 + "@ExtensionClass");

@@ -351,6 +351,13 @@ public class StatementAnalyser {
                     int identity = ReturnStatement.identity(((ReturnStatement) statement.statement).expression);
                     transferValue.properties.put(VariableProperty.IDENTITY, identity);
                 }
+                for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
+                    int v = value.getProperty(variableProperties, variableProperty);
+                    int current = transferValue.properties.getOtherwise(variableProperty, Level.DELAY);
+                    if (v > current) {
+                        transferValue.properties.put(variableProperty, v);
+                    }
+                }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
                         methodInfo.fullyQualifiedName(), statement.streamIndices());
@@ -380,6 +387,14 @@ public class StatementAnalyser {
         } else {
             uponUsingConditional = null;
             valueAfterCheckingForConstant = value;
+
+            if (statement.statement instanceof ForEachStatement) {
+                int size = valueAfterCheckingForConstant.getProperty(variableProperties, VariableProperty.SIZE);
+                if (size == Analysis.SIZE_EMPTY && !statement.errorValue.isSet()) {
+                    typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
+                    statement.errorValue.set(true);
+                }
+            }
         }
 
         // PART 7: the primary block, if it's there
@@ -409,7 +424,7 @@ public class StatementAnalyser {
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
             if (valueAfterCheckingForConstant != NO_VALUE && valueAfterCheckingForConstant != null) {
-                defaultCondition = NegatedValue.negate(valueAfterCheckingForConstant);
+                defaultCondition = NegatedValue.negate(valueAfterCheckingForConstant, true);
             }
 
             start = 1;
@@ -427,12 +442,12 @@ public class StatementAnalyser {
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                if (start == 1) valueForSubStatement = NegatedValue.negate(value);
+                if (start == 1) valueForSubStatement = NegatedValue.negate(value, true);
                 else {
                     if (conditions.isEmpty()) {
                         valueForSubStatement = BoolValue.TRUE;
                     } else {
-                        Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
+                        Value[] negated = conditions.stream().map(x -> NegatedValue.negate(x, true)).toArray(Value[]::new);
                         valueForSubStatement = new AndValue().append(negated);
                     }
                 }

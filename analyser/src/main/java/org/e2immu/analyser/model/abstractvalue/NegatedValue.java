@@ -41,7 +41,7 @@ public class NegatedValue extends PrimitiveValue {
         this.value = Objects.requireNonNull(value);
     }
 
-    public static Value negate(@NotNull Value v) {
+    public static Value negate(@NotNull Value v, boolean booleanContext) {
         Objects.requireNonNull(v);
         if (v instanceof BoolValue) {
             BoolValue boolValue = (BoolValue) v;
@@ -55,16 +55,20 @@ public class NegatedValue extends PrimitiveValue {
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {
             OrValue or = (OrValue) v;
-            Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
+            Value[] negated = or.values.stream().map(x -> negate(x, booleanContext)).toArray(Value[]::new);
             return new AndValue().append(negated);
         }
         if (v instanceof AndValue) {
             AndValue and = (AndValue) v;
-            List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
+            List<Value> negated = and.values.stream().map(x -> negate(x, booleanContext)).collect(Collectors.toList());
             return new OrValue().append(negated);
         }
-        if(v instanceof ConstrainedNumericValue) {
-            return ((ConstrainedNumericValue)v).negatedValue();
+        if (v instanceof ConstrainedNumericValue) {
+            if (booleanContext) {
+                // we don't explicitly know here if we're dealing with values of properties, or not...
+                return ((ConstrainedNumericValue) v).booleanNegatedValue(false);
+            }
+            return ((ConstrainedNumericValue) v).numericNegatedValue();
         }
         return new NegatedValue(v);
     }
