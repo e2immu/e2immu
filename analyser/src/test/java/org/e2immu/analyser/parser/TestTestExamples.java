@@ -77,16 +77,6 @@ public class TestTestExamples extends CommonTestRunner {
     }
 
     @Test
-    public void testMethodMustBeStatic() throws IOException {
-        testClass("MethodMustBeStatic", 0);
-    }
-
-    @Test
-    public void testMethodReferences() throws IOException {
-        testClass("MethodReferences", 0);
-    }
-
-    @Test
     public void testModifyParameterChecks() throws IOException {
         testClass("ModifyParameterChecks", 2);
     }
@@ -95,10 +85,4 @@ public class TestTestExamples extends CommonTestRunner {
     public void testSwitchStatementChecks() throws IOException {
         testClass("SwitchStatementChecks", 4);
     }
-
-    @Test
-    public void testTypeParameters() throws IOException {
-        testClass("TypeParameters", 0);
-    }
-
 }

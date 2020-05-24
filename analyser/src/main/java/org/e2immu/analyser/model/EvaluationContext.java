@@ -101,4 +101,6 @@ public interface EvaluationContext {
 
     void raiseError(String message);
     void raiseError(String message, String extra);
+
+    void markNotNull(Variable variable);
 }

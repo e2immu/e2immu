@@ -75,6 +75,7 @@ public class Message {
         map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
         map.put(EMPTY_LOOP, Severity.ERROR);
         map.put(CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
+        map.put(METHOD_EVALUATES_TO_CONSTANT, Severity.ERROR);
         map.put(CANNOT_FIND_METHOD_IN_SUPER_TYPE, Severity.ERROR);
         map.put(METHOD_SHOULD_BE_MARKED_STATIC, Severity.ERROR);
         map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
@@ -97,7 +98,6 @@ public class Message {
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
-        map.put(METHOD_EVALUATES_TO_CONSTANT, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
 
         SEVERITY_MAP = map.build();

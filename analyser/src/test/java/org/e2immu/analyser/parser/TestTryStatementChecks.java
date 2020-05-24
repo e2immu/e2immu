@@ -42,7 +42,7 @@ public class TestTryStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("TryStatementChecks", 1, new DebugConfiguration.Builder()
+        testClass("TryStatementChecks", 1, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

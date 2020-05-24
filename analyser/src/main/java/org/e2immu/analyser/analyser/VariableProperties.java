@@ -908,4 +908,10 @@ class VariableProperties implements EvaluationContext {
             currentStatement.errorValue.set(true);
         }
     }
+
+    @Override
+    public void markNotNull(Variable variable) {
+        AboutVariable aboutVariable = findComplain(variable);
+        aboutVariable.setProperty(VariableProperty.NOT_NULL, Level.TRUE);
+    }
 }

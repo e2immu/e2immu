@@ -15,31 +15,20 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                         variable, currentValue, properties) -> {
-
-    };
-
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement) {
-
-        }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if (fieldInfo.name.equals("intSet")) {
-                if (iteration == 0) {
-                }
-                if (iteration == 1) {
-
-                }
+            if("method1".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
+            if("method1bis".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
+            if("method1bis".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
         }
     };
-
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
@@ -56,10 +45,8 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SimpleSizeChecks", 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("SimpleSizeChecks", 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

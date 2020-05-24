@@ -141,7 +141,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (requiredNotNull >= Level.TRUE) {
             int currentNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
             if (currentNotNull == Level.FALSE) {
-                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION);
+                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method call " + methodInfo.distinguishingName());
             }
         }
         // TODO not modified requirements on result of method call? may be tricky

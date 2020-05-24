@@ -319,6 +319,7 @@ public abstract class Analysis {
     }
 
     public static boolean haveEquals(int size) {
+        if(size == Integer.MAX_VALUE) return false;
         return size % 2 == 1;
     }
 

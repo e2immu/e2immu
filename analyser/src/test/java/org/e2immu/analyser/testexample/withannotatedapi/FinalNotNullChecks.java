@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.*;
 
@@ -29,7 +29,7 @@ public class FinalNotNullChecks {
     @NotNull
     public final String input;
 
-    public FinalNotNullChecks(String param) {
+    public FinalNotNullChecks(@NotNull String param) {
         input = Objects.requireNonNull(param);
     }
 
@@ -38,8 +38,6 @@ public class FinalNotNullChecks {
         return input.trim();
     }
 
-    // remember that there is no information about the not-null-ness of System.out
-    // so we expect an error here
     public void debug() {
         System.out.println(input);
     }

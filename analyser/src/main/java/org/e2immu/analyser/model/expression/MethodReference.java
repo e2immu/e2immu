@@ -98,7 +98,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
             if (forwardNotNull == Level.TRUE && notNull == Level.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
-                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION);
+                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
             }
             if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
                 Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();

@@ -87,6 +87,11 @@ public class TestAbstractValue {
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
+        public void markNotNull(Variable variable) {
+
+        }
+
+        @Override
         public int getIteration() {
             return 0;
         }

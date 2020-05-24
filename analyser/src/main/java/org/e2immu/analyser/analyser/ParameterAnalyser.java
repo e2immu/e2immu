@@ -67,6 +67,22 @@ public class ParameterAnalyser {
      * @return true if changes were made
      */
     public boolean analyse(VariableProperties methodProperties) {
+        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
+            if (aboutVariable.variable instanceof ParameterInfo) {
+                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
+                    int inField = aboutVariable.getProperty(variableProperty);
+                    if (inField != Level.DELAY) {
+                        ParameterAnalysis parameterAnalysis = ((ParameterInfo) aboutVariable.variable).parameterAnalysis.get();
+                        int inParameter = parameterAnalysis.getProperty(variableProperty);
+                        if (inField > inParameter) {
+                            parameterAnalysis.setProperty(variableProperty, inField);
+                            log(ANALYSER, "Copying value {} parameter {} for property {}", inField,
+                                    aboutVariable.name, variableProperty);
+                        }
+                    }
+                }
+            }
+        }
         for (ParameterInfo parameterInfo : methodProperties.getCurrentMethod().methodInspection.get().parameters) {
             ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
             if (parameterAnalysis.assignedToField.isSet()) {

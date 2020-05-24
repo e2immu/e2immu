@@ -18,18 +18,28 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.UtilityClass;
 
 import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
+@ExtensionClass(of = String.class)
+@E2Container
 public class UtilityClassChecks {
 
+    @NotModified
     static void print(String s) {
         System.out.println(s); // ERROR (we don't have System.out in Annotated API here... so potential null pointer exception
     }
 
     @UtilityClass
+    @ExtensionClass(of = String.class)
+    @E2Container
     static class UtilityClass1 {
+
+        @NotModified
         static void hello(String s) {
             UtilityClassChecks.print(s);
         }

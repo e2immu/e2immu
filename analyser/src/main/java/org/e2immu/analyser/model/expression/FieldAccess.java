@@ -100,7 +100,7 @@ public class FieldAccess implements Expression {
         if (scope instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         } else if (scope.isNotNotNull0(evaluationContext)) {
-            evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION);
+            evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scope);
         }
         visitor.visit(this, evaluationContext, currentValue);
         return currentValue;

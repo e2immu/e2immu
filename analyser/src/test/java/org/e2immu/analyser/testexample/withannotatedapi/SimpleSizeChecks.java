@@ -23,7 +23,20 @@ public class SimpleSizeChecks {
     @Size(equals = 1)
     public static Set<String> method1() {
         Set<String> set = Set.of();
-        if (set.isEmpty()) { // ERROR: constant true evaluation
+        if (set.isEmpty()) { // ERROR: constant true evaluation / method returns constant (whichever is first)
+            System.out.println("Hello"); // should be no error, out has @NotNull
+        }
+        return Set.of("a");
+    }
+
+    @NotNull1
+    @E2Container
+    @NotModified
+    @Size(equals = 1)
+    public static Set<String> method1bis() {
+        Set<String> set = Set.of();
+        boolean isEmpty = set.isEmpty(); // ERROR: method returns constant
+        if (isEmpty) { // ERROR: constant true evaluation
             System.out.println("Hello"); // should be no error, out has @NotNull
         }
         return Set.of("a");

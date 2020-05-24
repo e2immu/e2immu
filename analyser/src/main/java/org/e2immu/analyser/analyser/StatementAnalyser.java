@@ -127,7 +127,7 @@ public class StatementAnalyser {
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
-                            if (((ParameterInfo) variable).parameterAnalysis.get().notNull(true)) changes = true;
+                            evaluationContext.markNotNull(variable);
                         }
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");

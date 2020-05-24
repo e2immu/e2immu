@@ -66,10 +66,14 @@ public abstract class CommonTestRunner {
     }
 
     protected void testClass(String className, int errorsToExpect) throws IOException {
-        testClass(className, errorsToExpect, new DebugConfiguration.Builder().build());
+        testClass(className, errorsToExpect, 0, new DebugConfiguration.Builder().build());
     }
 
     protected void testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+        testClass(className, errorsToExpect, 0, debugConfiguration);
+    }
+
+    protected void testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         String path = withAnnotatedAPIs ? "withannotatedapi." : "";
@@ -94,7 +98,8 @@ public abstract class CommonTestRunner {
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());
         }
-        Assert.assertEquals(errorsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
+        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
+        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.WARN).count());
     }
 
 }

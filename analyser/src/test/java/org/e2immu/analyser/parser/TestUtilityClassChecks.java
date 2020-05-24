@@ -28,7 +28,7 @@ public class TestUtilityClassChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("UtilityClassChecks", 1, new DebugConfiguration.Builder()
+        testClass("UtilityClassChecks", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

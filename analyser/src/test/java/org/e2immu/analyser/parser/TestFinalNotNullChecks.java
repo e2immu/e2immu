@@ -1,23 +1,18 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.CombinedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.Objects;
 
 public class TestFinalNotNullChecks extends CommonTestRunner {
     public TestFinalNotNullChecks() {
-        super(false);
+        super(true);
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor =
@@ -32,23 +27,58 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                 }
-                if ("debug".equals(methodInfo.name) && "java.lang.System.out".equals(variableName)) {
-                    Assert.assertTrue(currentValue instanceof VariableValue);
+                if ("FinalNotNullChecks".equals(methodInfo.name) && "param".equals(variableName)) {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                }
+                if ("FinalNotNullChecks".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
+                    if(iteration > 0) {
+                        Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                    }
                 }
             };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement) -> {
-        if ("debug".equals(methodInfo.name) && "0".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.get());
+    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
+        @Override
+        public void visit(TypeContext typeContext) {
+            TypeInfo objects = typeContext.getFullyQualified(Objects.class);
+            MethodInfo requireNonNull = objects.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
+                    1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
+            Assert.assertEquals(1, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(1, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+            ParameterInfo parameterInfo = requireNonNull.methodInspection.get().parameters.get(0);
+            Assert.assertEquals(1, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, FieldInfo fieldInfo) {
+            if (iteration == 0 && "input".equals(fieldInfo.name)) {
+                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
+            if (iteration >= 1 && "input".equals(fieldInfo.name)) {
+                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if(methodInfo.name.equals("FinalNotNullChecks")) {
+                ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
+                Assert.assertEquals(1, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
         }
     };
 
     @Test
     public void test() throws IOException {
-        testClass("FinalNotNullChecks", 1, new DebugConfiguration.Builder()
+        testClass("FinalNotNullChecks", 0, 0, new DebugConfiguration.Builder()
+                .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

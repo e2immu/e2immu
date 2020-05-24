@@ -92,7 +92,7 @@ public class FieldAnalyser {
 
         // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: SIZE, NOT_NULL, IMMUTABLE, CONTAINER (min over assignments)
         for (VariableProperty property : VariableProperty.FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS) {
-            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection))
+            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
                 changes = true;
         }
 
@@ -149,7 +149,8 @@ public class FieldAnalyser {
                                                  Value value,
                                                  boolean haveInitialiser,
                                                  boolean fieldCanBeWrittenFromOutsideThisType,
-                                                 TypeInspection typeInspection) {
+                                                 TypeInspection typeInspection,
+                                                 boolean fieldSummariesNotYetSet) {
         int currentValue = fieldAnalysis.getProperty(property);
         if (currentValue != Level.DELAY) return false; // already decided
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -165,6 +166,7 @@ public class FieldAnalyser {
             fieldAnalysis.setProperty(property, Level.FALSE); // in the case of size, FALSE means >= 0
             return true;
         }
+        if(fieldSummariesNotYetSet) return false;
 
         boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 // field is not present in the method
