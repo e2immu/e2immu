@@ -19,22 +19,22 @@ public class TestSize {
     public void testSize() {
         Assert.assertFalse(Analysis.haveEquals(-1));
 
-        Assert.assertEquals(0, Analysis.sizeMin(0));
+        Assert.assertEquals(0, Analysis.decodeSizeMin(0));
         Assert.assertFalse(Analysis.haveEquals(0));
 
-        Assert.assertEquals(0, Analysis.sizeEquals(1));
+        Assert.assertEquals(0, Analysis.decodeSizeEquals(1));
         Assert.assertTrue(Analysis.haveEquals(1));
 
-        Assert.assertEquals(1, Analysis.sizeMin(2));
+        Assert.assertEquals(1, Analysis.decodeSizeMin(2));
         Assert.assertFalse(Analysis.haveEquals(2));
 
-        Assert.assertEquals(1, Analysis.sizeEquals(3));
+        Assert.assertEquals(1, Analysis.decodeSizeEquals(3));
         Assert.assertTrue(Analysis.haveEquals(3));
 
-        Assert.assertEquals(2, Analysis.sizeMin(4));
+        Assert.assertEquals(2, Analysis.decodeSizeMin(4));
         Assert.assertFalse(Analysis.haveEquals(4));
 
-        Assert.assertEquals(2, Analysis.sizeEquals(5));
+        Assert.assertEquals(2, Analysis.decodeSizeEquals(5));
         Assert.assertTrue(Analysis.haveEquals(5));
     }
 }

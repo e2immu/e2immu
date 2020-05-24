@@ -136,6 +136,7 @@ public class StatementAnalyser {
                     }
                 }
             }
+            // order is important, because unused gets priority
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
             if (uselessAssignments(variableProperties, escapesViaException, neverContinues)) changes = true;
 
@@ -209,9 +210,11 @@ public class StatementAnalyser {
         List<String> toRemove = new ArrayList<>();
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
-                boolean useless = escapesViaException ||
+                boolean notAssignedInLoop = aboutVariable.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
+                // TODO at some point we will do better than "notAssignedInLoop"
+                boolean useless = escapesViaException || notAssignedInLoop && (
                         neverContinuesBecauseOfReturn && variableProperties.isLocalVariable(aboutVariable) ||
-                        aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariable();
+                                aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariable());
                 if (useless) {
                     if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                         methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);

@@ -177,9 +177,9 @@ public abstract class Analysis {
         int size = getProperty(VariableProperty.SIZE);
         if (size > minSize) {
             if (haveEquals(size)) {
-                annotations.put(sizeAnnotation(typeContext, "equals", sizeEquals(size)), true);
+                annotations.put(sizeAnnotation(typeContext, "equals", decodeSizeEquals(size)), true);
             } else {
-                annotations.put(sizeAnnotation(typeContext, "min", sizeMin(size)), true);
+                annotations.put(sizeAnnotation(typeContext, "min", decodeSizeMin(size)), true);
             }
         }
     }
@@ -285,6 +285,8 @@ public abstract class Analysis {
         }
     }
 
+    public static final int SIZE_NOT_EMPTY = 2;
+
     /**
      * Values: -1 = absent; 0 = min=0,nothing;  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2
      *
@@ -319,14 +321,17 @@ public abstract class Analysis {
         return size % 2 == 1;
     }
 
-    public static int sizeEquals(int size) {
+    public static int decodeSizeEquals(int size) {
         return size / 2;
     }
 
-    public static int sizeMin(int size) {
+    public static int decodeSizeMin(int size) {
         return size / 2;
     }
 
+    public static int encodeSizeEquals(int size) {
+        return 1 + size * 2;
+    }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {
         Integer current = map.get(elementType);

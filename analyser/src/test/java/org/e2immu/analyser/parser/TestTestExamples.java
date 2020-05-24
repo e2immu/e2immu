@@ -77,11 +77,6 @@ public class TestTestExamples extends CommonTestRunner {
     }
 
     @Test
-    public void testLoopStatementChecks() throws IOException {
-        testClass("LoopStatementChecks", 1);
-    }
-
-    @Test
     public void testMethodMustBeStatic() throws IOException {
         testClass("MethodMustBeStatic", 0);
     }

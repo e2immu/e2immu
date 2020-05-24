@@ -9,22 +9,11 @@ import java.util.function.Predicate;
 public abstract class LoopStatement extends StatementWithExpression {
     public final Block block;
     public final String label;
-    public final Predicate<Value> statementsExecutedAtLeastOnce;
 
-    protected LoopStatement(String label, Expression condition, Block block, Predicate<Value> statementsExecutedAtLeastOnce) {
+    protected LoopStatement(String label, Expression condition, Block block) {
         super(condition, ForwardEvaluationInfo.NOT_NULL);
         this.label = label;
         this.block = Objects.requireNonNull(block);
-        this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(statementsExecutedAtLeastOnce)
-                .setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setStatements(block).build();
     }
 
     @Override

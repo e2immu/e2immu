@@ -188,9 +188,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (TypeInfo.returnsIntOrLong(methodInfo)) {
             if (sizeOfObject == Level.DELAY) return UnknownValue.NO_VALUE;
             if (Analysis.haveEquals(sizeOfObject)) {
-                return new IntValue(Analysis.sizeEquals(sizeOfObject));
+                return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
-            return ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.sizeMin(sizeOfObject), true);
+            return ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeMin(sizeOfObject), true);
         }
         return null;
     }

@@ -19,9 +19,8 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.Sets;
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -34,13 +33,18 @@ public class ForEachStatement extends LoopStatement {
                             LocalVariable localVariable,
                             Expression expression,
                             Block block) {
-        super(label, expression, block, v -> v instanceof ArrayValue && !((ArrayValue) v).values.isEmpty());
+        super(label, expression, block);
         this.localVariable = localVariable;
     }
 
     @Override
     public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setLocalVariableCreation(localVariable).setExpression(expression).setStatements(block).build();
+        return new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE)>= Analysis.SIZE_NOT_EMPTY)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setLocalVariableCreation(localVariable)
+                .setExpression(expression)
+                .setStatements(block).build();
     }
 
     @Override

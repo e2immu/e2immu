@@ -18,7 +18,9 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ForwardEvaluationInfo;
 import org.e2immu.analyser.util.StringUtil;
 
 // @ContextClass
@@ -29,7 +31,16 @@ public class DoStatement extends LoopStatement {
     public DoStatement(String label,
                        Expression expression,
                        Block block) {
-        super(label, expression, block, v -> true);
+        super(label, expression, block);
+    }
+
+    @Override
+    public CodeOrganization codeOrganization() {
+        return new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setExpression(expression)
+                .setStatements(block).build();
     }
 
     @Override

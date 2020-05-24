@@ -39,7 +39,7 @@ public class ArrayValue implements Value {
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
         }
         if (VariableProperty.SIZE == variableProperty) {
-            return Analysis.sizeEquals(values.size());
+            return Analysis.encodeSizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }
@@ -52,7 +52,7 @@ public class ArrayValue implements Value {
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
         }
         if (VariableProperty.SIZE == variableProperty) {
-            return Analysis.sizeEquals(values.size());
+            return Analysis.decodeSizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }

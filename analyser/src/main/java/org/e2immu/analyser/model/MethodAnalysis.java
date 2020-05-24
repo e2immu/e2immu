@@ -102,8 +102,6 @@ public class MethodAnalysis extends Analysis {
     // not to be stored. later, move to separate class...
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
-    public final SetOnce<List<NumberedStatement>> returnStatements = new SetOnce<>();
-
     /**
      * this one contains all own methods called from this method, and the transitive closure.
      * we use this to compute effective finality: some methods are only called from constructors,

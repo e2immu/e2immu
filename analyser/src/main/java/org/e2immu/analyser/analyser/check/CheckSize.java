@@ -7,8 +7,6 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Size;
 
-import java.util.Optional;
-
 public class CheckSize {
     public static void checkSizeForMethods(TypeContext typeContext, MethodInfo methodInfo) {
         int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
@@ -40,7 +38,7 @@ public class CheckSize {
         int sizeMin = annotationExpression.extract("min", -1);
         if (sizeMin >= 1) {
             if (!Analysis.haveEquals(size)) {
-                int haveMin = Analysis.sizeMin(size);
+                int haveMin = Analysis.decodeSizeMin(size);
                 if (haveMin != sizeMin) {
                     typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_MIN_VALUE,
                             "have " + haveMin + ", requires " + sizeMin));
@@ -53,7 +51,7 @@ public class CheckSize {
         int sizeEquals = annotationExpression.extract("equals", -1);
         if (sizeEquals >= 0) {
             if (Analysis.haveEquals(size)) {
-                int haveEquals = Analysis.sizeEquals(size);
+                int haveEquals = Analysis.decodeSizeEquals(size);
                 if (haveEquals != sizeEquals) {
                     typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_EQUALS_VALUE,
                             "have " + haveEquals + ", requires " + sizeEquals));
