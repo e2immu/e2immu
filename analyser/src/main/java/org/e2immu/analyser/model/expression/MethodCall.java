@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -36,6 +37,9 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
     public final Expression object;
@@ -170,27 +174,85 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private Value computeSize(Value objectValue, EvaluationContext evaluationContext) {
         if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
+        int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+        if (notModified == Level.DELAY) {
+            return null; // ignore
+        }
+        if (notModified == Level.FALSE) {
+            return computeSizeModifyingMethod(objectValue, evaluationContext);
+        }
 
         int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-        if (requiredSize == Level.DELAY) return null;
+        if (requiredSize <= Level.FALSE) return null;
         // we have an @Size annotation on the method that we're calling
         int sizeOfObject = objectValue.getProperty(evaluationContext, VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         if (methodInfo.returnType().isBoolean()) {
-            if (sizeOfObject == Level.DELAY) return UnknownValue.NO_VALUE;
             // there is an @Size annotation on a method returning a boolean...
-            evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-            return Analysis.compatibleSizes(sizeOfObject, requiredSize) ? BoolValue.TRUE : BoolValue.FALSE;
+            if (sizeOfObject <= Level.FALSE) {
+                log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
+                return null;
+            }
+            // we have a requirement, and we have a size.
+            if (Analysis.haveEquals(requiredSize)) {
+                // we require a fixed size.
+                if (Analysis.haveEquals(sizeOfObject)) {
+                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
+                    return sizeOfObject == requiredSize ? BoolValue.TRUE : BoolValue.FALSE;
+                }
+                if (sizeOfObject > requiredSize) {
+                    log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
+                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    return BoolValue.FALSE;
+                }
+                log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
+                return null; // we want =3, but we have >= 2; could be anything
+            }
+            if (sizeOfObject > requiredSize) {
+                log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
+                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                return BoolValue.TRUE;
+            }
+            log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
+            return null;
         }
 
         // SITUATION 2: @Size int size(): this method returns the size
         if (TypeInfo.returnsIntOrLong(methodInfo)) {
-            if (sizeOfObject == Level.DELAY) return UnknownValue.NO_VALUE;
             if (Analysis.haveEquals(sizeOfObject)) {
+                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT); // TODO
                 return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
             return ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeMin(sizeOfObject), true);
+        }
+        return null;
+    }
+
+    private Value computeSizeModifyingMethod(Value objectValue, EvaluationContext evaluationContext) {
+        int sizeOfMethod = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+        List<Integer> sizeInParameters = methodInfo.methodInspection.get()
+                .parameters.stream()
+                .map(p -> p.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY))
+                .filter(v -> v > Level.FALSE)
+                .collect(Collectors.toList());
+        int numSizeInParameters = sizeInParameters.size();
+        boolean haveSizeOnMethod = sizeOfMethod > Level.FALSE;
+        if (numSizeInParameters == 0 && !haveSizeOnMethod) return null;
+        if (numSizeInParameters > 1) {
+            evaluationContext.raiseError(Message.MULTIPLE_SIZE_ANNOTATIONS);
+            return null;
+        }
+        int newSize = numSizeInParameters == 1 ? sizeInParameters.get(0) : sizeOfMethod;
+        int currentSize = objectValue.getProperty(evaluationContext, VariableProperty.SIZE);
+        if (newSize > currentSize && objectValue instanceof VariableValue) {
+            Variable variable = ((VariableValue) objectValue).variable;
+            evaluationContext.addProperty(variable, VariableProperty.SIZE, newSize);
+            log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variable.detailedString(), newSize,
+                    methodInfo.distinguishingName());
+        } else {
+            log(SIZE, "No effect of @Size annotation on modifying method call {}", methodInfo.distinguishingName());
         }
         return null;
     }

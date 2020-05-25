@@ -97,8 +97,8 @@ public class TestAbstractValue {
         }
 
         @Override
-        public DebugConfiguration getDebugConfiguration() {
-            return new DebugConfiguration.Builder().build();
+        public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
+
         }
 
         @Override

@@ -68,6 +68,7 @@ public class Logger {
         SIDE_EFFECT,
         CNF,
         DYNAMIC,
+        SIZE,
 
         INSPECT,
         ANALYSER,    // main analyser info

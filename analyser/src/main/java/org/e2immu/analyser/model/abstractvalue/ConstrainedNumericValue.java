@@ -1,5 +1,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -13,6 +15,10 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     public final double lowerBound;
     public final boolean allowEquals;
     public final ParameterizedType type;
+
+    public static ConstrainedNumericValue equalTo(ParameterizedType type, double value) {
+        return new ConstrainedNumericValue(type, value, value, true);
+    }
 
     public static ConstrainedNumericValue lowerBound(ParameterizedType type, double value, boolean allowEquals) {
         return new ConstrainedNumericValue(type, value, MAX, allowEquals);
@@ -171,5 +177,28 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         if (x == MIN || x == MAX) return x;
         if (y == MIN || y == MAX) return y;
         return x / y;
+    }
+
+    @Override
+    public int sizeRestriction() {
+        if (type.typeInfo != Primitives.PRIMITIVES.intTypeInfo) throw new UnsupportedOperationException();
+        if (allowEquals) {
+            boolean equals = Math.abs(lowerBound - upperBound) < 0.0000001;
+            if (equals) {
+                return Analysis.encodeSizeEquals((int) lowerBound);
+            }
+            if (lowerBound > 0 && upperBound == MAX) {
+                return Analysis.encodeSizeMin((int) lowerBound);
+            }
+            return Level.FALSE; // no decent value
+        }
+        boolean equals = lowerBound + 2 == upperBound;
+        if (equals) {
+            return Analysis.encodeSizeEquals((int) lowerBound + 1);
+        }
+        if (lowerBound >= 0 && upperBound == MAX) {
+            return Analysis.encodeSizeMin((int) lowerBound + 1);
+        }
+        return Level.FALSE;
     }
 }

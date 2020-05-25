@@ -154,11 +154,6 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public DebugConfiguration getDebugConfiguration() {
-        return debugConfiguration;
-    }
-
-    @Override
     public void linkVariables(Variable from, Set<Variable> toBestCase, Set<Variable> toWorstCase) {
         dependencyGraphBestCase.addNode(from, ImmutableList.copyOf(toBestCase));
         dependencyGraphWorstCase.addNode(from, ImmutableList.copyOf(toWorstCase));
@@ -390,6 +385,7 @@ class VariableProperties implements EvaluationContext {
         return EmptyExpression.EMPTY_EXPRESSION;
     }
 
+    @Override
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return;
@@ -499,12 +495,17 @@ class VariableProperties implements EvaluationContext {
     }
 
     public Set<Variable> getNullConditionals(boolean equalToNull) {
-        if (conditional != null) {
-            return conditional.individualNullClauses().entrySet()
-                    .stream().filter(e -> e.getValue() == equalToNull)
-                    .map(Map.Entry::getKey).collect(Collectors.toSet());
+        if (conditional == null) {
+            return Set.of();
         }
-        return Set.of();
+        return conditional.individualNullClauses().entrySet()
+                .stream().filter(e -> e.getValue() == equalToNull)
+                .map(Map.Entry::getKey).collect(Collectors.toSet());
+    }
+
+    public Map<Variable, Value> getSizeRestrictions() {
+        if (conditional == null) return Map.of();
+        return conditional.individualSizeRestrictions();
     }
 
     @Override
@@ -532,7 +533,7 @@ class VariableProperties implements EvaluationContext {
         copyBackLocalCopies(List.of((VariableProperties) child), false);
     }
 
-    private static final VariableProperty[] BEST = {SIZE};
+    private static final VariableProperty[] BEST = {VariableProperty.SIZE};
     private static final VariableProperty[] WORST_IN_ASSIGNMENT = {VariableProperty.NOT_NULL};
     private static final VariableProperty[] WORST = {VariableProperty.NOT_MODIFIED};
 

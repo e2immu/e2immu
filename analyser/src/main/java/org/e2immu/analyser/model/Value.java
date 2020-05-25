@@ -48,7 +48,9 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
-    default boolean hasConstantProperties() { return true; }
+    default boolean hasConstantProperties() {
+        return true;
+    }
 
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
@@ -96,15 +98,19 @@ public interface Value extends Comparable<Value> {
         return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.TRUE;
     }
 
-    default int isNotNull0OutsideContext() {
-        return Level.value(getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL);
-    }
-
     default Set<Variable> variables() {
         return Set.of();
     }
 
     default boolean isNotNotNull0(EvaluationContext evaluationContext) {
         return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.FALSE;
+    }
+
+    default Map<Variable, Value> individualSizeRestrictions() {
+        return Map.of();
+    }
+
+    default int sizeRestriction() {
+        return Level.FALSE;
     }
 }

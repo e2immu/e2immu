@@ -1,5 +1,6 @@
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
@@ -39,5 +40,14 @@ public class TestConstrainedNumericValue {
         ConstrainedNumericValue ge2 = ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, 2, false);
         Value pvNotGe2 = ge2.booleanNegatedValue(true);
         Assert.assertEquals("0<=?<=2", pvNotGe2.asString());
+    }
+
+    @Test
+    public void testEncodeSize() {
+        ConstrainedNumericValue cnv1 = ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, 0, false);
+        Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, cnv1.sizeRestriction());
+
+        ConstrainedNumericValue cnv2 = ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, 1, true);
+        Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, cnv2.sizeRestriction());
     }
 }

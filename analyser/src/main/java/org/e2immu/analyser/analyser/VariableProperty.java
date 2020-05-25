@@ -93,6 +93,8 @@ public enum VariableProperty {
 
     public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
 
+    // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
+    // NOT_MODIFIED == TRUE
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = FORWARD_PROPERTIES_ON_PARAMETERS;
 

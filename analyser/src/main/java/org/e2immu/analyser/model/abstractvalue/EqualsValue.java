@@ -18,11 +18,14 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -95,5 +98,21 @@ public class EqualsValue extends PrimitiveValue {
     @Override
     public Set<Variable> variables() {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
+    }
+
+    @Override
+    public Map<Variable, Value> individualSizeRestrictions() {
+        // constants always left, methods always right
+        if (lhs instanceof NumericValue && rhs instanceof MethodValue) {
+            MethodValue methodValue = (MethodValue) rhs;
+            if (methodValue.methodInfo.typeInfo.hasSize()) {
+                int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+                if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {
+                    VariableValue variableValue = (VariableValue) methodValue.object;
+                    return Map.of(variableValue.variable, this);
+                }
+            }
+        }
+        return Map.of();
     }
 }

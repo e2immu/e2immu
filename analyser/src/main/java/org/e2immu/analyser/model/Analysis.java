@@ -319,7 +319,7 @@ public abstract class Analysis {
     }
 
     public static boolean haveEquals(int size) {
-        if(size == Integer.MAX_VALUE) return false;
+        if (size == Integer.MAX_VALUE) return false;
         return size % 2 == 1;
     }
 
@@ -333,6 +333,10 @@ public abstract class Analysis {
 
     public static int encodeSizeEquals(int size) {
         return 1 + size * 2;
+    }
+
+    public static int encodeSizeMin(int size) {
+        return size * 2;
     }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {

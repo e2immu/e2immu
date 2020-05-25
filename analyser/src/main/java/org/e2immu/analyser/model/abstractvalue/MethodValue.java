@@ -20,12 +20,10 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodValue implements Value {
@@ -64,6 +62,7 @@ public class MethodValue implements Value {
     @Override
     public int compareTo(Value o) {
         if (o.isUnknown()) return -1;
+        if (o.isConstant()) return 1;
         if (o instanceof MethodValue) {
             MethodValue mv = (MethodValue) o;
             int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
@@ -185,5 +184,21 @@ public class MethodValue implements Value {
     @Override
     public ParameterizedType type() {
         return methodInfo.returnType();
+    }
+
+    @Override
+    public Map<Variable, Value> individualSizeRestrictions() {
+        if (methodInfo.typeInfo.hasSize()) {
+            int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+            int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+            if (size >= Level.TRUE && notModified == Level.TRUE && object instanceof VariableValue) {
+                VariableValue variableValue = (VariableValue) object;
+                ConstrainedNumericValue cnv = Analysis.haveEquals(size) ?
+                        ConstrainedNumericValue.equalTo(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeEquals(size)) :
+                        ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeMin(size), true);
+                return Map.of(variableValue.variable, cnv);
+            }
+        }
+        return Map.of();
     }
 }

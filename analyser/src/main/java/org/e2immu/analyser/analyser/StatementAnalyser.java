@@ -134,6 +134,20 @@ public class StatementAnalyser {
                             variableProperties.uponUsingConditional.run();
                         }
                     }
+                    Map<Variable, Value> individualSizeRestrictions = variableProperties.getSizeRestrictions();
+                    for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
+                        Variable variable = entry.getKey();
+                        Value negated =
+                                entry.getValue() instanceof ConstrainedNumericValue ?
+                                        ((ConstrainedNumericValue) entry.getValue()).booleanNegatedValue(true) :
+                                        NegatedValue.negate(entry.getValue(), true);
+                        log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
+                        int sizeRestriction = negated.sizeRestriction();
+                        if (variable instanceof ParameterInfo) {
+                            ((ParameterInfo) variable).parameterAnalysis.get().setProperty(VariableProperty.SIZE, sizeRestriction);
+                        }
+                        variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
+                    }
                 }
             }
             // order is important, because unused gets priority

@@ -19,6 +19,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
+import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.util.SetOnce;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -72,7 +74,12 @@ public class ParameterAnalysis extends Analysis {
                 if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE;
                 break;
+
             case SIZE:
+                int notModified = getProperty(VariableProperty.NOT_MODIFIED);
+                if (notModified != Level.TRUE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
+                return parameterizedType.getProperty(variableProperty);
+
             case NOT_MODIFIED:
             case CONTAINER:
             case IMMUTABLE:

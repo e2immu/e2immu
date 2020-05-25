@@ -823,11 +823,11 @@ In practice, we're looking at the `size()` method of the collection classes:
 int size();
 ----
 
-Non-modifying methods that can have their value explained:
+Non-modifying methods that return a boolean can have their value explained:
 
 [source,java]
 ----
-@Size(equals = 0)
+@Size(equals = 0) // or @Size, given that equals=0 is the default
 boolean isEmpty();
 
 @Size(min = 1)
@@ -839,7 +839,7 @@ Non-modifying methods that return a sizable object can have their value explaine
 [source,java]
 ----
 @Size(equals = 2)
-Set<Integer> returnSetOf2();
+Set<Integer> returnSetOf2(int i1, int i2) { return Set.of(i1, i2); }
 ----
 
 In modifying methods, the annotation describes how the size of the object in scope changes:
@@ -863,7 +863,7 @@ boolean addAll(@Size(copyMin = true) Collection<? extends E> collection);
 This indicates that after a call to `addAll`, the minimum size of the object combines with the current minimum.
 In other words, if the size of the argument is `size >= 2`, then the current object will also have `size >= 2` assuming it started with a `size >= i` with `0 \<= i \<= 2`.
 The analyser allows only one `copyMin` or `copyEquals` annotation per (modifying) method.
-A modifying method cannot have a `copyMin` or `copyEquals` annotation on a parameter, and a `@Size` annotation on the method at the same time.
+If a modifying method has a `copyMin` or `copyEquals` annotation on a parameter, then the potential `@Size` annotation on the method will be interpreted as size information on the return value.
 
 A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement, regardless the type of method:
 
@@ -875,6 +875,10 @@ static <T> Collection<T> requireNotEmpty(@Size(min = 1) Collection<T> ts) {
     return ts;
 }
 ----
+
+The analyser can infer `@Size` annotations on fields and return values of non-modifying methods.
+It can also infer `@Size` restriction on parameters (like the one in the above example).
+The analyser switches from restriction mode into size computation mode as soon as one modifying method has been applied to the sizable object.
 
 [#utilityclass-annotation]
 === `@UtilityClass`

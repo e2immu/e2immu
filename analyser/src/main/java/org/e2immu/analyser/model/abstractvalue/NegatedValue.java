@@ -104,6 +104,15 @@ public class NegatedValue extends PrimitiveValue {
     }
 
     @Override
+    public Map<Variable, Value> individualSizeRestrictions() {
+        return value.individualSizeRestrictions().entrySet()
+                .stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
+                        e.getValue() instanceof ConstrainedNumericValue ?
+                                ((ConstrainedNumericValue) e.getValue()).booleanNegatedValue(true) :
+                                NegatedValue.negate(e.getValue(), true)));
+    }
+
+    @Override
     public Set<Variable> variables() {
         return value.variables();
     }

@@ -30,4 +30,10 @@ public abstract class ConstantValue implements Value {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return getPropertyOutsideContext(variableProperty);
     }
+
+    @Override
+    public int compareTo(Value o) {
+        if (!(o.isConstant())) return -1;
+        return 0;
+    }
 }

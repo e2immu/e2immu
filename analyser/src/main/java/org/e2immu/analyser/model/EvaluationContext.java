@@ -32,8 +32,7 @@ public interface EvaluationContext {
 
     int getIteration();
 
-    DebugConfiguration getDebugConfiguration();
-
+     void addProperty(Variable variable, VariableProperty variableProperty, int value);
     // WHERE ARE WE??
 
     // can be null, in evaluation of lambda expressions

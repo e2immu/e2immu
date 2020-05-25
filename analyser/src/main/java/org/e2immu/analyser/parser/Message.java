@@ -66,6 +66,7 @@ public class Message {
     public static final String METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD = "Method is not allowed to call non-@NotModified method into nested or enclosing type";
     public static final String METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD = "Method is not allowed to assign to field";
 
+    public static final String MULTIPLE_SIZE_ANNOTATIONS = "Multiple @Size annotations in a modifying method";
     public static final String PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT = "Part of short-circuit expression evaluates to constant";
 
     public static final Map<String, Severity> SEVERITY_MAP;

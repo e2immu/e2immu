@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
 
 public interface NumericValue extends Value {
@@ -25,4 +26,9 @@ public interface NumericValue extends Value {
     NumericValue negate();
 
     Number getNumber();
+
+    @Override
+    default int sizeRestriction() {
+        return Analysis.encodeSizeEquals(getNumber().intValue());
+    }
 }
