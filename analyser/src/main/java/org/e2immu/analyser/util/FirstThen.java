@@ -34,9 +34,13 @@ import java.util.Objects;
  * @param <T> type of the final stage
  */
 
-@E1Container(after = "set")
+@E1Immutable(type = AnnotationType.VERIFY_ABSENT)
+@E1Container(type = AnnotationType.VERIFY_ABSENT) // later: after=set
+@Container
 public class FirstThen<S, T> {
+    @Linked(to = {"first"})
     private volatile S first;
+    @Linked(to = {"then"})
     private volatile T then;
 
     /**
@@ -67,7 +71,7 @@ public class FirstThen<S, T> {
      * @throws NullPointerException          when the final value is <code>null</code>
      * @throws UnsupportedOperationException when the object had already reached its final stage
      */
-    @Mark("set")
+    //@Mark("set")
     public void set(@NotNull T then) {
         Objects.requireNonNull(then);
         synchronized (this) {
@@ -85,7 +89,7 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    @Only(after = "set")
+    //@Only(after = "set")
     public S getFirst() {
         S local = first;
         if (local == null) throw new UnsupportedOperationException("Then has already been set");
@@ -100,7 +104,7 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    @Only(before = "set")
+    //@Only(before = "set")
     public T get() {
         T local = then;
         if (local == null) throw new UnsupportedOperationException("Not yet set");
@@ -116,7 +120,8 @@ public class FirstThen<S, T> {
      * or <code>T</code> respectively.
      */
     @Override
-    public boolean equals(Object o) {
+    @NotModified(type = AnnotationType.VERIFY_ABSENT) // automatically so because of Object
+    public boolean equals(@NotModified @NotNull(type = AnnotationType.VERIFY_ABSENT) Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FirstThen<?, ?> firstThen = (FirstThen<?, ?>) o;
@@ -130,6 +135,7 @@ public class FirstThen<S, T> {
      * @return a hash code based on the hash code of the initial or final value.
      */
     @Override
+    @NotModified(type = AnnotationType.VERIFY_ABSENT) // automatically so because of Object
     public int hashCode() {
         return Objects.hash(first, then);
     }

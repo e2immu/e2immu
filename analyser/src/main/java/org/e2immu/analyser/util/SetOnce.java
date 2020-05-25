@@ -28,6 +28,7 @@ public class SetOnce<T> {
 
     @Final(type = AnnotationType.VERIFY_ABSENT)
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @Linked(to={"t"})
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 

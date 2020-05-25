@@ -18,17 +18,15 @@
 
 package org.e2immu.analyser.testexample.withannotatedapi;
 
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Final;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.List;
 
+@E2Container
+@ExtensionClass(of = String.class)
 public class CyclicReferences {
 
-    @Final
     private String field1;
-    @Final
     private String field2;
 
     public CyclicReferences() {

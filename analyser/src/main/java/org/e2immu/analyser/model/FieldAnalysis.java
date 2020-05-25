@@ -116,6 +116,10 @@ public class FieldAnalysis extends Analysis {
             case CONTAINER:
                 if(type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE;
                 break;
+
+            case SIZE:
+                return 1;
+
         }
         return Level.UNDEFINED;
     }

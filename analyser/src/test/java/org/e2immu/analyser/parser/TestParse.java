@@ -64,11 +64,6 @@ public class TestParse {
     }
 
     @Test
-    public void testFirstThen() throws IOException {
-        goTest("FirstThen", 0);
-    }
-
-    @Test
     public void testLazy() throws IOException {
         goTest("Lazy", 0);
     }
@@ -76,11 +71,6 @@ public class TestParse {
     @Test
     public void testPair() throws IOException {
         goTest("Pair", 0);
-    }
-
-    @Test
-    public void testSetOnce() throws IOException {
-        goTest("SetOnce", 0);
     }
 
     @Test

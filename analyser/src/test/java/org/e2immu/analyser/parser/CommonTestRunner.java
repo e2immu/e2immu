@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.annotation.NotModified;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -40,6 +41,10 @@ public abstract class CommonTestRunner {
 
     protected CommonTestRunner(boolean withAnnotatedAPIs) {
         this.withAnnotatedAPIs = withAnnotatedAPIs;
+    }
+
+    protected CommonTestRunner() {
+        this.withAnnotatedAPIs = false;
     }
 
     @BeforeClass
@@ -90,6 +95,33 @@ public abstract class CommonTestRunner {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                         .build())
                 .build();
+        execute(configuration, errorsToExpect, warningsToExpect);
+    }
+
+    protected void tesUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+        Configuration configuration = new Configuration.Builder()
+                .setDebugConfiguration(debugConfiguration)
+                .setInputConfiguration(new InputConfiguration.Builder()
+                        .addSources("src/main/java")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.util." + className)
+                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
+                        .addClassPath("jmods/java.xml.jmod")
+                        .build())
+                .build();
+        execute(configuration, errorsToExpect, warningsToExpect);
+    }
+
+    private void execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
@@ -98,8 +130,10 @@ public abstract class CommonTestRunner {
         for (Message message : parser.getMessages()) {
             LOGGER.info(message.toString());
         }
-        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.ERROR).count());
-        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages().stream().filter(m -> m.severity == Message.Severity.WARN).count());
+        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages().stream()
+                .filter(m -> m.severity == Message.Severity.ERROR).count());
+        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages().stream()
+                .filter(m -> m.severity == Message.Severity.WARN).count());
     }
 
 }

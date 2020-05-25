@@ -123,7 +123,7 @@ public class FieldAnalyser {
                     log(DELAYED, "Not yet ready to decide on read outside constructors");
                     return false;
                 }
-                boolean notRead = readInMethods != Level.TRUE;
+                boolean notRead = readInMethods == Level.FALSE;
                 fieldAnalysis.fieldError.set(notRead);
                 if (notRead) {
                     typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));

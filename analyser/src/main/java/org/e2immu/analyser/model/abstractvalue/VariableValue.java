@@ -130,7 +130,7 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        if (multiCopyNonFinalField) return Set.of();
+        //if (multiCopyNonFinalField) return Set.of();
 
         boolean differentType = evaluationContext.getCurrentType() != variable.parameterizedType().typeInfo;
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();

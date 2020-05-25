@@ -58,13 +58,16 @@ public class TestBasics extends CommonTestRunner {
 
                 return;
             }
-            if (iteration == 1 || iteration == 2) {
+            if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+                return;
+
+            } else if (iteration == 2) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
-            } // TODO check if we need the 2nd iteration
+            }
         }
         Assert.fail();
     };
@@ -76,6 +79,8 @@ public class TestBasics extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+            }
+            if (iteration > 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
             }
         }
@@ -90,7 +95,7 @@ public class TestBasics extends CommonTestRunner {
                 LOGGER.info("Properties after 1 iteration are {}", properties);
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
                 Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.FINAL));
 
                 Assert.assertEquals(new StringValue("abc"), currentValue);
