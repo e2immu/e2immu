@@ -1042,7 +1042,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean hasSize() {
         if (typeInspection.get().methods.stream().anyMatch(mi ->
-                returnsIntOrLong(mi) && mi.getAnalysis().getProperty(VariableProperty.SIZE) != Level.DELAY))
+                returnsIntOrLong(mi) && mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE))
             return true;
         return superTypes().stream().anyMatch(TypeInfo::hasSize);
     }

@@ -66,6 +66,8 @@ public class Message {
     public static final String METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD = "Method is not allowed to call non-@NotModified method into nested or enclosing type";
     public static final String METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD = "Method is not allowed to assign to field";
 
+    public static final String PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT = "Part of short-circuit expression evaluates to constant";
+
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
@@ -94,6 +96,7 @@ public class Message {
         map.put(USELESS_ASSIGNMENT, Severity.ERROR);
         map.put(UNUSED_LOCAL_VARIABLE, Severity.ERROR);
         map.put(METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, Severity.ERROR);
+        map.put(PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT, Severity.ERROR);
 
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
@@ -115,7 +118,7 @@ public class Message {
 
     public static Message newMessage(Location location, String message, String extra) {
         Severity severity = SEVERITY_MAP.get(message);
-        if (severity == null) throw new UnsupportedOperationException("Need severity for "+message);
+        if (severity == null) throw new UnsupportedOperationException("Need severity for " + message);
         return new Message(severity, location, message + ": " + extra);
     }
 

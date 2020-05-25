@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
@@ -79,8 +80,15 @@ public class BinaryOperator implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        ForwardEvaluationInfo forward = allowsForNullOperands() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
+        // we need to handle the short-circuit operators differently
+        if (operator == Primitives.PRIMITIVES.orOperatorBool) {
+            return shortCircuit(evaluationContext, visitor, false);
+        }
+        if (operator == Primitives.PRIMITIVES.andOperatorBool) {
+            return shortCircuit(evaluationContext, visitor, true);
+        }
 
+        ForwardEvaluationInfo forward = allowsForNullOperands() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
         Value l = lhs.evaluate(evaluationContext, visitor, forward);
         Value r = rhs.evaluate(evaluationContext, visitor, forward);
         if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
@@ -119,13 +127,6 @@ public class BinaryOperator implements Expression {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
             return NegatedValue.negate(EqualsValue.equals(l, r), true);
-        }
-
-        if (operator == Primitives.PRIMITIVES.orOperatorBool) {
-            return new OrValue().append(List.of(l, r));
-        }
-        if (operator == Primitives.PRIMITIVES.andOperatorBool) {
-            return new AndValue().append(l, r);
         }
 
         // from here on, straightforward operations
@@ -174,6 +175,28 @@ public class BinaryOperator implements Expression {
             return StringValue.concat(l, r);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
+    }
+
+    private Value shortCircuit(EvaluationContext evaluationContext, EvaluationVisitor visitor, boolean and) {
+        ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
+
+        Value l = lhs.evaluate(evaluationContext, visitor, forward);
+        Value constant = and ? BoolValue.FALSE : BoolValue.TRUE;
+        if (l == constant) {
+            evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            return constant;
+        }
+        Value conditional = and ? l : NegatedValue.negate(l, true);
+        EvaluationContext child = evaluationContext.child(conditional, null, false);
+        Value r = rhs.evaluate(child, visitor, forward);
+        if (r == constant) {
+            evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            return constant;
+        }
+        if (and) {
+            return new AndValue().append(l, r);
+        }
+        return new OrValue().append(l, r);
     }
 
     private boolean allowsForNullOperands() {

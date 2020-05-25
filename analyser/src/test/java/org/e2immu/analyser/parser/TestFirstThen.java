@@ -19,29 +19,30 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class TestFirstThen extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestFirstThen.class);
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
 
             if ("getFirst".equals(methodInfo.name) && "FirstThen.this.first".equals(variableName)) {
-                Assert.assertEquals(Level.TRUE, (int)properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
+            }
+            if ("equals".equals(methodInfo.name) && "o".equals(variableName)) {
+                Assert.assertNull("At iteration " + iteration + " statement " + statementId,
+                        properties.get(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -50,11 +51,11 @@ public class TestFirstThen extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            if("getFirst".equals(methodInfo.name)) {
+            if ("getFirst".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             }
-            if("hashCode".equals(methodInfo.name)) {
+            if ("hashCode".equals(methodInfo.name)) {
                 Assert.assertEquals(2, methodAnalysis.fieldSummaries.size());
                 TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
