@@ -768,7 +768,7 @@ any use of these methods in user-land production code (non-test) will raise an e
 An annotation of `@Only` without parameters is made equivalent to `@Only(after=X)`, with `X` being the expression in the `after` parameter of the <<e2final-annotation>> or <<e2immutable-annotation>> annotation.
 
 .Excerpt from IoVertxCore.java
-[source]
+[source,java]
 ----
 @E2Final(after = "init")
 @NullNotAllowed
@@ -816,6 +816,7 @@ A classical example is the `toArray` method in `java.util.Collection`, which wou
 A type becomes _sizable_ when it has at least one method returning an `int` or a `long`, annotated with `@Size`.
 It is this method that will return the size of the type.
 In practice, we're looking at the `size()` method of the collection classes:
+
 [source,java]
 ----
 @Size
@@ -823,6 +824,7 @@ int size();
 ----
 
 Non-modifying methods that can have their value explained:
+
 [source,java]
 ----
 @Size(equals = 0)
@@ -833,21 +835,15 @@ boolean isNotEmpty();
 ----
 
 Non-modifying methods that return a sizable object can have their value explained as well:
+
 [source,java]
 ----
 @Size(equals = 2)
 Set<Integer> returnSetOf2();
 ----
 
-A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement.
-[source,java]
-----
-void doSomethingWithNonEmptyCollection(@Size(min = 1) Collection<T> ts) {
-    if(ts.isEmpty()) throw new UnsupportedOperationException();
-}
-----
+In modifying methods, the annotation describes how the size of the object in scope changes:
 
-In modifying methods, the annotation has a different meaning:
 [source,java]
 ----
 @Size(equals = 0)
@@ -857,7 +853,28 @@ void clear(); // empties the collection
 boolean add(T t); // after adding, there will be at least one element in the collection
 ----
 
+As a second option in modifying methods, we can transfer the size restriction of a parameter to the object itself:
 
+[source,java]
+----
+boolean addAll(@Size(copyMin = true) Collection<? extends E> collection);
+----
+
+This indicates that after a call to `addAll`, the minimum size of the object combines with the current minimum.
+In other words, if the size of the argument is `size >= 2`, then the current object will also have `size >= 2` assuming it started with a `size >= i` with `0 \<= i \<= 2`.
+The analyser allows only one `copyMin` or `copyEquals` annotation per (modifying) method.
+A modifying method cannot have a `copyMin` or `copyEquals` annotation on a parameter, and a `@Size` annotation on the method at the same time.
+
+A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement, regardless the type of method:
+
+[source,java]
+----
+@Identity
+static <T> Collection<T> requireNotEmpty(@Size(min = 1) Collection<T> ts) {
+    if(ts.isEmpty()) throw new UnsupportedOperationException();
+    return ts;
+}
+----
 
 [#utilityclass-annotation]
 === `@UtilityClass`
