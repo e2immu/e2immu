@@ -55,7 +55,7 @@ public class MethodValue implements Value {
 
     @Override
     public String toString() {
-        return methodInfo.fullyQualifiedName()
+        return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name
                 + parameters.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
     }
 

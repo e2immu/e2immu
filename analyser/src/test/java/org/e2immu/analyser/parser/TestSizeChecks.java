@@ -26,13 +26,16 @@ public class TestSizeChecks extends CommonTestRunner {
             if ("requireNotEmpty".equals(methodInfo.name) && "ts".equals(variableName)) {
                 if ("1".equals(statementId)) {
                     ParameterInfo parameterInfo = (ParameterInfo) variable;
-                    Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
+                    //      Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
                 }
             }
             if ("method2".equals(methodInfo.name) && "size2".equals(variableName)) {
                 if ("0".equals(statementId)) {
                     Assert.assertTrue(currentValue instanceof ConstrainedNumericValue);
                 }
+            }
+            if ("method3".equals(methodInfo.name) && "size3".equals(variableName) && "0".equals(statementId)) {
+                Assert.assertEquals("java.util.Collection.size(),?>=0", currentValue.toString());
             }
         }
     };
@@ -41,7 +44,10 @@ public class TestSizeChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("method3".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("?>0", conditional.toString());
+                Assert.assertEquals("java.util.Collection.size(),?>=0 > 0", conditional.toString());
+            }
+            if ("method3".equals(methodInfo.name) && "2.0.0".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("((-1) + java.util.Collection.size(),?>=0) >= 0", conditional.toString());
             }
         }
     };

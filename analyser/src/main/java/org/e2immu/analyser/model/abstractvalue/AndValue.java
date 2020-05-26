@@ -135,9 +135,30 @@ public class AndValue implements Value {
                         }
                     }
                 }
+                if (value instanceof EqualsValue && prev instanceof EqualsValue) {
+                    EqualsValue ev1 = (EqualsValue) prev;
+                    EqualsValue ev2 = (EqualsValue) value;
+                    // 3 == a && 4 == a
+                    if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                        return BoolValue.FALSE;
+                    }
+                }
+                boolean skip = false;
+
+                if (prev instanceof EqualsValue && value instanceof NegatedValue && ((NegatedValue) value).value instanceof EqualsValue) {
+                    EqualsValue ev1 = (EqualsValue) prev;
+                    EqualsValue ev2 = (EqualsValue) ((NegatedValue) value).value;
+                    // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
+                    if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                        skip = true;
+                    }
+                }
+                if (value instanceof GreaterThanZeroValue && prev instanceof EqualsValue) {
+
+                }
 
                 // A && A
-                if (value.equals(prev)) {
+                if (value.equals(prev) || skip) {
                     changes = true;
                 } else if (value instanceof OrValue) {
                     OrValue orValue = (OrValue) value;

@@ -45,19 +45,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 return BoolValue.of(l.toInt().value >= r.toInt().value);
             return BoolValue.of(l.toInt().value > r.toInt().value);
         }
-        if (r instanceof NumericValue) {
-            return new GreaterThanZeroValue(SumValue.sum(((NumericValue) r).negate(), l), allowEquals);
-        }
-        if (r instanceof ConstrainedNumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) r;
-            if (cnv.rejectsGreaterThanZero(allowEquals)) {
-                return BoolValue.FALSE;
-            }
-            if (cnv.guaranteesGreaterThanZero(allowEquals)) {
-                return BoolValue.TRUE;
-            }
-        }
-        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r, true)), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r, false)), allowEquals);
     }
 
     public static Value less(Value l, Value r, boolean allowEquals) {

@@ -42,28 +42,32 @@ public interface Value extends Comparable<Value> {
     int ORDER_CONSTANT_DOUBLE = 38;
     int ORDER_CONSTANT_CLASS = 39;
     int ORDER_CONSTANT_STRING = 40;
-    int ORDER_ARRAY = 42;
-    int ORDER_PRIMITIVE = 41;
-    int ORDER_INSTANCE_OF = 43;
-    int ORDER_PRODUCT = 45;
-    int ORDER_DIVIDE = 46;
-    int ORDER_REMAINDER = 47;
-    int ORDER_SUM = 48;
-    int ORDER_GEQ0 = 49;
-    int ORDER_AND = 50;
-    int ORDER_OR = 51;
-    int ORDER_EQUALS = 53;
-    int ORDER_NEGATED = 54;
-    int ORDER_BITWISE_AND = 55;
-    int ORDER_CONSTRAINED_NUMERIC_VALUE = 56;
-    int ORDER_CONDITIONAL = 60;
-    int ORDER_INSTANCE = 71;
-    int ORDER_METHOD = 70;
-    int ORDER_VARIABLE_VALUE = 80;
-    int ORDER_PARAMETER = 81;
-    int ORDER_COMBINED = 82;
-    int ORDER_TYPE = 90;
-    int ORDER_NO_VALUE = 100;
+    int ORDER_PRODUCT = 41;
+    int ORDER_DIVIDE = 42;
+    int ORDER_REMAINDER = 43;
+    int ORDER_SUM = 44;
+    int ORDER_BITWISE_AND = 45;
+
+    // variables, types
+    int ORDER_PRIMITIVE = 60;
+    int ORDER_ARRAY = 61;
+    int ORDER_CONSTRAINED_NUMERIC_VALUE = 62;
+    int ORDER_INSTANCE = 63;
+    int ORDER_METHOD = 64;
+    int ORDER_VARIABLE_VALUE = 65;
+    int ORDER_PARAMETER = 66;
+    int ORDER_COMBINED = 67;
+    int ORDER_TYPE = 68;
+    int ORDER_NO_VALUE = 69;
+    int ORDER_CONDITIONAL = 70;
+
+    // boolean operations
+    int ORDER_INSTANCE_OF = 81;
+    int ORDER_EQUALS = 82;
+    int ORDER_GEQ0 = 83;
+    int ORDER_NEGATED = 84;
+    int ORDER_OR = 85;
+    int ORDER_AND = 86;
 
     int order();
 

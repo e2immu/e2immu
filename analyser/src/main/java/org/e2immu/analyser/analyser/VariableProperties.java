@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -514,11 +515,18 @@ class VariableProperties implements EvaluationContext {
     }
 
     public Value evaluateWithConditional(Value value) {
-        if (conditional == null) return value;
-        if (!(conditional.isUnknown())) {
-            return new AndValue().append(conditional, value);
+        if (conditional == null || conditional.isUnknown()) return value;
+        // we take the conditional as a given, and see if the value agrees
+
+
+        // this one solves boolean problems; in a boolean context, there is no difference
+        // between the value and the conditional
+        Value result = new AndValue().append(conditional, value);
+        if (result.equals(conditional)) {
+            // constant true: adding the value has no effect at all
+            return BoolValue.TRUE;
         }
-        return value;
+        return result;
     }
 
     public void setGuaranteedToBeReachedInCurrentBlock(boolean guaranteedToBeReachedInCurrentBlock) {
