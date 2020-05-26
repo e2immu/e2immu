@@ -119,14 +119,14 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r), true);
+            return NegatedValue.negate(EqualsValue.equals(l, r));
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorInt) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r), true);
+            return NegatedValue.negate(EqualsValue.equals(l, r));
         }
 
         // from here on, straightforward operations
@@ -134,7 +134,7 @@ public class BinaryOperator implements Expression {
             return SumValue.sum(l, r);
         }
         if (operator == Primitives.PRIMITIVES.minusOperatorInt) {
-            return SumValue.sum(l, NegatedValue.negate(r, false));
+            return SumValue.sum(l, NegatedValue.negate(r));
         }
         if (operator == Primitives.PRIMITIVES.multiplyOperatorInt) {
             return ProductValue.product(l, r);
@@ -186,7 +186,7 @@ public class BinaryOperator implements Expression {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return constant;
         }
-        Value conditional = and ? l : NegatedValue.negate(l, true);
+        Value conditional = and ? l : NegatedValue.negate(l);
         EvaluationContext child = evaluationContext.child(conditional, null, false);
         Value r = rhs.evaluate(child, visitor, forward);
         if (r == constant) {

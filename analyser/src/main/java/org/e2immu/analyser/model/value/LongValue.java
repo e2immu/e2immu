@@ -86,6 +86,6 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.intParameterizedType;
+        return Primitives.PRIMITIVES.longParameterizedType;
     }
 }

@@ -14,6 +14,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 public class TestSizeChecks extends CommonTestRunner {
     public TestSizeChecks() {
@@ -26,7 +27,7 @@ public class TestSizeChecks extends CommonTestRunner {
             if ("requireNotEmpty".equals(methodInfo.name) && "ts".equals(variableName)) {
                 if ("1".equals(statementId)) {
                     ParameterInfo parameterInfo = (ParameterInfo) variable;
-                    //      Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
+                    Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
                 }
             }
             if ("method2".equals(methodInfo.name) && "size2".equals(variableName)) {
@@ -35,7 +36,7 @@ public class TestSizeChecks extends CommonTestRunner {
                 }
             }
             if ("method3".equals(methodInfo.name) && "size3".equals(variableName) && "0".equals(statementId)) {
-                Assert.assertEquals("java.util.Collection.size(),?>=0", currentValue.toString());
+                Assert.assertEquals("input3.size(),?>=0", currentValue.toString());
             }
         }
     };
@@ -43,23 +44,34 @@ public class TestSizeChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("method3".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("java.util.Collection.size(),?>=0 > 0", conditional.toString());
+            if ("method1".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
-            if ("method3".equals(methodInfo.name) && "2.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("((-1) + java.util.Collection.size(),?>=0) >= 0", conditional.toString());
+
+            if ("method2".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("Statement " + numberedStatement.streamIndices(), "((-1) + input2.size(),?>=0) >= 0", conditional.toString());
+            }
+            if ("method2".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("Statement " + numberedStatement.streamIndices(), "((-3) + input2.size(),?>=0) >= 0", conditional.toString());
+            }
+            if ("method2".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
+
+            if ("method3".equals(methodInfo.name) && Set.of("1", "2.0.0").contains(numberedStatement.streamIndices())) {
+                Assert.assertEquals("Statement " + numberedStatement.streamIndices(), "((-1) + input3.size(),?>=0) >= 0", conditional.toString());
+            }
+            if ("method3".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-            MethodInfo isEmpty = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("isEmpty")).findAny().orElseThrow();
-            int size = isEmpty.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-            Assert.assertEquals(Analysis.SIZE_EMPTY, size);
-        }
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        MethodInfo isEmpty = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("isEmpty")).findAny().orElseThrow();
+        int size = isEmpty.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+        Assert.assertEquals(Analysis.SIZE_EMPTY, size);
     };
 
     @Test

@@ -102,6 +102,11 @@ public interface Value extends Comparable<Value> {
         return true;
     }
 
+    default boolean isDiscreteType() {
+        ParameterizedType type = type();
+        return type != null && type.isDiscrete();
+    }
+
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;

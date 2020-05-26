@@ -41,7 +41,7 @@ public class NegatedValue extends PrimitiveValue {
         this.value = Objects.requireNonNull(value);
     }
 
-    public static Value negate(@NotNull Value v, boolean booleanContext) {
+    public static Value negate(@NotNull Value v) {
         Objects.requireNonNull(v);
         if (v instanceof BoolValue) {
             BoolValue boolValue = (BoolValue) v;
@@ -55,12 +55,12 @@ public class NegatedValue extends PrimitiveValue {
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {
             OrValue or = (OrValue) v;
-            Value[] negated = or.values.stream().map(x -> negate(x, booleanContext)).toArray(Value[]::new);
+            Value[] negated = or.values.stream().map(x -> negate(x)).toArray(Value[]::new);
             return new AndValue().append(negated);
         }
         if (v instanceof AndValue) {
             AndValue and = (AndValue) v;
-            List<Value> negated = and.values.stream().map(x -> negate(x, booleanContext)).collect(Collectors.toList());
+            List<Value> negated = and.values.stream().map(x -> negate(x)).collect(Collectors.toList());
             return new OrValue().append(negated);
         }
         if (v instanceof EqualsValue) {
@@ -69,6 +69,12 @@ public class NegatedValue extends PrimitiveValue {
                 Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals((NumericValue) equalsValue.lhs);
                 if (improve != null) return improve;
             }
+        }
+        if(v instanceof SumValue) {
+            return ((SumValue)v).negate();
+        }
+        if(v instanceof GreaterThanZeroValue) {
+            return ((GreaterThanZeroValue)v).negate();
         }
         return new NegatedValue(v);
     }
@@ -110,7 +116,7 @@ public class NegatedValue extends PrimitiveValue {
     @Override
     public Map<Variable, Value> individualSizeRestrictions() {
         return value.individualSizeRestrictions().entrySet()
-                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue(), true)));
+                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue())));
     }
 
     @Override

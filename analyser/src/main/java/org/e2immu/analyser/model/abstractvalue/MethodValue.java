@@ -53,9 +53,10 @@ public class MethodValue implements Value {
         return Objects.hash(object, methodInfo, parameters);
     }
 
+    // NOTE: toString() is NOT used for "official" purposes
     @Override
     public String toString() {
-        return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name
+        return object + "." + methodInfo.name
                 + parameters.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
     }
 

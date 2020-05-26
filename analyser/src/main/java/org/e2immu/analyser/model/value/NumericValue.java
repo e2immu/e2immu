@@ -18,10 +18,20 @@
 
 package org.e2immu.analyser.model.value;
 
+import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
 
 public interface NumericValue extends Value {
+
+    static Value intOrDouble(double b) {
+        if (DoubleMath.isMathematicalInteger(b)) {
+            long l = Math.round(b);
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l);
+            return new IntValue((int) l);
+        }
+        return new DoubleValue(b);
+    }
 
     NumericValue negate();
 

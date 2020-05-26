@@ -137,7 +137,7 @@ public class StatementAnalyser {
                     Map<Variable, Value> individualSizeRestrictions = variableProperties.getSizeRestrictions();
                     for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
                         Variable variable = entry.getKey();
-                        Value negated = NegatedValue.negate(entry.getValue(), true);
+                        Value negated = NegatedValue.negate(entry.getValue());
                         log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
                         int sizeRestriction = negated.sizeRestriction();
                         if (variable instanceof ParameterInfo) {
@@ -378,8 +378,7 @@ public class StatementAnalyser {
         // PART 6: checks for IfElse
 
         Runnable uponUsingConditional;
-
-        Value valueAfterCheckingForConstant;
+        
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional.isConstant()) {
@@ -387,20 +386,16 @@ public class StatementAnalyser {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
-                valueAfterCheckingForConstant = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // this should mess up most conditions
-            } else {
-                valueAfterCheckingForConstant = value;
-            }
+            } 
             uponUsingConditional = () -> {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
                 statement.errorValue.set(true);
             };
         } else {
             uponUsingConditional = null;
-            valueAfterCheckingForConstant = value;
 
             if (statement.statement instanceof ForEachStatement) {
-                int size = valueAfterCheckingForConstant.getProperty(variableProperties, VariableProperty.SIZE);
+                int size = value.getProperty(variableProperties, VariableProperty.SIZE);
                 if (size == Analysis.SIZE_EMPTY && !statement.errorValue.isSet()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
@@ -422,10 +417,10 @@ public class StatementAnalyser {
 
         if (codeOrganization.statements != Block.EMPTY_BLOCK) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(valueAfterCheckingForConstant);
+            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
 
             boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
-            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childInSyncBlock(valueAfterCheckingForConstant, uponUsingConditional,
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childInSyncBlock(value, uponUsingConditional,
                     inSyncBlock, statementsExecutedAtLeastOnce);
 
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
@@ -434,8 +429,8 @@ public class StatementAnalyser {
                     startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
-            if (valueAfterCheckingForConstant != NO_VALUE && valueAfterCheckingForConstant != null) {
-                defaultCondition = NegatedValue.negate(valueAfterCheckingForConstant, true);
+            if (value != NO_VALUE && value != null) {
+                defaultCondition = NegatedValue.negate(value);
             }
 
             start = 1;
@@ -453,12 +448,12 @@ public class StatementAnalyser {
 
             Value valueForSubStatement;
             if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                if (start == 1) valueForSubStatement = NegatedValue.negate(value, true);
+                if (start == 1) valueForSubStatement = NegatedValue.negate(value);
                 else {
                     if (conditions.isEmpty()) {
                         valueForSubStatement = BoolValue.TRUE;
                     } else {
-                        Value[] negated = conditions.stream().map(x -> NegatedValue.negate(x, true)).toArray(Value[]::new);
+                        Value[] negated = conditions.stream().map(x -> NegatedValue.negate(x)).toArray(Value[]::new);
                         valueForSubStatement = new AndValue().append(negated);
                     }
                 }

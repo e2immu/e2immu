@@ -651,4 +651,11 @@ public class ParameterizedType {
         TypeInfo bestType = bestTypeInfo();
         return bestType != null && bestType.hasSize();
     }
+
+    public boolean isDiscrete() {
+        return typeInfo == Primitives.PRIMITIVES.intTypeInfo || typeInfo == Primitives.PRIMITIVES.longTypeInfo ||
+                typeInfo == Primitives.PRIMITIVES.shortTypeInfo || typeInfo == Primitives.PRIMITIVES.byteTypeInfo ||
+                typeInfo == Primitives.PRIMITIVES.integerTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedLongTypeInfo ||
+                typeInfo == Primitives.PRIMITIVES.boxedShortTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedByteTypeInfo;
+    }
 }

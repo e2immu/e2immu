@@ -113,4 +113,9 @@ public class SumValue extends PrimitiveValue {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
     }
+
+    // -(lhs + rhs) = -lhs + -rhs
+    public Value negate() {
+        return SumValue.sum(NegatedValue.negate(lhs), NegatedValue.negate(rhs));
+    }
 }

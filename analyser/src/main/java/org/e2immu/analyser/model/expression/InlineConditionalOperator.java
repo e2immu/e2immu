@@ -52,7 +52,7 @@ public class InlineConditionalOperator implements Expression {
         EvaluationContext copyForThen = evaluationContext.child(c, null, false);
         Value t = ifTrue.evaluate(copyForThen, evaluationVisitor, forwardEvaluationInfo);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c, true), null, false);
+        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
         Value res;

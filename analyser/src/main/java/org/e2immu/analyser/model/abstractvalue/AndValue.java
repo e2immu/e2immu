@@ -49,7 +49,7 @@ public class AndValue implements Value {
     }
 
     private enum Action {
-        SKIP, DROP_PREV, FALSE, TRUE, ADD
+        SKIP, REPLACE, FALSE, TRUE, ADD
     }
 
     // we try to maintain a CNF
@@ -108,8 +108,8 @@ public class AndValue implements Value {
                     case ADD:
                         newConcat.add(value);
                         break;
-                    case DROP_PREV:
-                        newConcat.remove(newConcat.size() - 1);
+                    case REPLACE:
+                        newConcat.set(newConcat.size() - 1, value);
                         changes = true;
                         break;
                     case SKIP:
@@ -152,7 +152,7 @@ public class AndValue implements Value {
         if (value instanceof OrValue) {
             boolean allAroundInNegativeWay = true;
             for (Value value1 : components(value)) {
-                Value negated1 = NegatedValue.negate(value1, true);
+                Value negated1 = NegatedValue.negate(value1);
                 boolean found = false;
                 for (int pos2 = 0; pos2 < concat.size(); pos2++) {
                     if (pos2 != pos && negated1.equals(concat.get(pos2))) {
@@ -171,7 +171,7 @@ public class AndValue implements Value {
         // more complicated variant: (A || B) && (A || !B)
         List<Value> components = components(value);
         for (Value value1 : components) {
-            Value negated1 = NegatedValue.negate(value1, true);
+            Value negated1 = NegatedValue.negate(value1);
             for (int i = 0; i < pos; i++) {
                 List<Value> components2 = components(concat.get(i));
                 for (Value value2 : components2) {
@@ -246,7 +246,7 @@ public class AndValue implements Value {
 
                 // y != x && -b + x >= 0, in other words, x!=y && x >= b
                 if (ge.allowEquals && y < xb.b || !ge.allowEquals && y <= xb.b) {
-                    return Action.DROP_PREV;
+                    return Action.REPLACE;
                 }
             }
         }
@@ -258,7 +258,36 @@ public class AndValue implements Value {
             GreaterThanZeroValue ge2 = (GreaterThanZeroValue) value;
             GreaterThanZeroValue.XB xb2 = ge2.extract();
             if (xb1.x.equals(xb2.x)) {
-                // x>= b1 && x >= b2
+                // x>= b1 && x >= b2, with < or > on either
+                if (xb1.lessThan && xb2.lessThan) {
+                    // x <= b1 && x <= b2
+                    // (1) b1 > b2 -> keep b2
+                    if (xb1.b > xb2.b) return Action.REPLACE;
+                    // (2) b1 < b2 -> keep b1
+                    if (xb1.b < xb2.b) return Action.SKIP;
+                    if (ge1.allowEquals) return Action.REPLACE;
+                    return Action.SKIP;
+                }
+                if (!xb1.lessThan && !xb2.lessThan) {
+                    // x >= b1 && x >= b2
+                    // (1) b1 > b2 -> keep b1
+                    if (xb1.b > xb2.b) return Action.SKIP;
+                    // (2) b1 < b2 -> keep b2
+                    if (xb1.b < xb2.b) return Action.REPLACE;
+                    // (3) b1 == b2 -> > or >=
+                    if (ge1.allowEquals) return Action.REPLACE;
+                    return Action.SKIP;
+                }
+
+                // !xb1.lessThan: x >= b1 && x <= b2; otherwise: x <= b1 && x >= b2
+                if (xb1.b > xb2.b) return !xb1.lessThan ? Action.FALSE : Action.ADD;
+                if (xb1.b < xb2.b) return !xb1.lessThan ? Action.ADD : Action.FALSE;
+                if (ge1.allowEquals && ge2.allowEquals) {
+                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b), xb1.x);
+                    newConcat.set(newConcat.size() - 1, newValue);
+                    return Action.SKIP;
+                }
+                return Action.FALSE;
             }
         }
 

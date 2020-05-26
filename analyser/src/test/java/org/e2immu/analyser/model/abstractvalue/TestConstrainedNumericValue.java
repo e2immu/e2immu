@@ -22,9 +22,9 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
         Assert.assertTrue(eqGe0 instanceof EqualsValue);
         Assert.assertEquals("0 == i,?>=0", eqGe0.toString());
 
-        // now take the boolean complement
-        Value notEqGe0 = NegatedValue.negate(eqGe0, true);
-        Assert.assertEquals("i,?>=0 > 0", notEqGe0.toString());
+        // now take the boolean complement  NOT >=0 == >= 1
+        Value notEqGe0 = NegatedValue.negate(eqGe0);
+        Assert.assertEquals("((-1) + i,?>=0) >= 0", notEqGe0.toString());
     }
 
     @Test
@@ -35,8 +35,8 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
         Assert.assertEquals("1 == i,?>=1", eqGt1.toString());
 
         // now take the boolean complement
-        Value notEqGt1 = NegatedValue.negate(eqGt1, true);
-        Assert.assertEquals("((-1) + i,?>=1) > 0", notEqGt1.toString());
+        Value notEqGt1 = NegatedValue.negate(eqGt1);
+        Assert.assertEquals("((-2) + i,?>=1) >= 0", notEqGt1.toString());
     }
 
     @Test
@@ -47,7 +47,7 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
         Assert.assertEquals("2 == i,?>=0", eqGt1.toString());
 
         // now take the boolean complement
-        Value notEqGt1 = NegatedValue.negate(eqGt1, true);
+        Value notEqGt1 = NegatedValue.negate(eqGt1);
         Assert.assertEquals("not (2 == i,?>=0)", notEqGt1.toString());
     }
 

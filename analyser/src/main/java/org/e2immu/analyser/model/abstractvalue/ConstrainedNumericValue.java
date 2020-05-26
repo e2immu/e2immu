@@ -8,6 +8,8 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Objects;
+
 public class ConstrainedNumericValue extends PrimitiveValue {
     public static final double MIN = -Double.MAX_VALUE;
     public static final double MAX = Double.MAX_VALUE;
@@ -36,6 +38,22 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         this.value = value;
         ParameterizedType type = value.type();
         this.integer = type.typeInfo != Primitives.PRIMITIVES.floatTypeInfo && type.typeInfo != Primitives.PRIMITIVES.doubleTypeInfo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConstrainedNumericValue that = (ConstrainedNumericValue) o;
+        return Double.compare(that.upperBound, upperBound) == 0 &&
+                Double.compare(that.lowerBound, lowerBound) == 0 &&
+                integer == that.integer &&
+                value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(upperBound, lowerBound, value, integer);
     }
 
     @Override

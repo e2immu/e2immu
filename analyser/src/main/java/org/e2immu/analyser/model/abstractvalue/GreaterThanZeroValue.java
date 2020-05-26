@@ -25,11 +25,42 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
     public final boolean allowEquals;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GreaterThanZeroValue that = (GreaterThanZeroValue) o;
+        return allowEquals == that.allowEquals &&
+                value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, allowEquals);
+    }
+
+    // NOT (x >= 0) == x < 0  == (not x) > 0
+    // NOT (x > 0)  == x <= 0 == (not x) >= 0
+    // note that this one does not solve the int-problem where we always want to maintain allowEquals == True
+    public Value negate() {
+        if (value instanceof SumValue) {
+            SumValue sumValue = (SumValue) value;
+            if (sumValue.lhs instanceof NumericValue && sumValue.lhs.isDiscreteType()) {
+                // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
+                // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
+                Value minusSumPlusOne = NumericValue.intOrDouble(-(((NumericValue) sumValue.lhs).getNumber().doubleValue() + 1.0));
+                return new GreaterThanZeroValue(SumValue.sum(minusSumPlusOne, NegatedValue.negate(sumValue.rhs)), true);
+            }
+        }
+        return new GreaterThanZeroValue(NegatedValue.negate(value), !allowEquals);
+    }
 
     /**
      * if xNegated is false: -b + x >= 0 or x >= b
@@ -62,7 +93,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 } else {
                     x = v;
                     lessThan = false;
-                    b = ((NumericValue) NegatedValue.negate(sumValue.lhs, false)).getNumber().doubleValue();
+                    b = ((NumericValue) NegatedValue.negate(sumValue.lhs)).getNumber().doubleValue();
                 }
                 return new XB(x, b, lessThan);
             }
@@ -93,7 +124,17 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 return BoolValue.of(l.toInt().value >= r.toInt().value);
             return BoolValue.of(l.toInt().value > r.toInt().value);
         }
-        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r, false)), allowEquals);
+        if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
+            // 3 > x == 3 + (-x) > 0 transform to 2 >= x
+            Value lMinusOne = NumericValue.intOrDouble(((NumericValue) l).getNumber().doubleValue() - 1.0);
+            return new GreaterThanZeroValue(SumValue.sum(lMinusOne, NegatedValue.negate(r)), true);
+        }
+        if (r instanceof NumericValue && !allowEquals && r.isDiscreteType()) {
+            // x > 3 == -3 + x > 0 transform to x >= 4
+            Value minusRPlusOne = NumericValue.intOrDouble(-(((NumericValue) r).getNumber().doubleValue() + 1.0));
+            return new GreaterThanZeroValue(SumValue.sum(l, minusRPlusOne), true);
+        }
+        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r)), allowEquals);
     }
 
     public static Value less(Value l, Value r, boolean allowEquals) {
@@ -104,11 +145,21 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 return BoolValue.of(l.toInt().value <= r.toInt().value);
             return BoolValue.of(l.toInt().value < r.toInt().value);
         }
+        if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
+            // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
+            Value minusLPlusOne = NumericValue.intOrDouble(-(((NumericValue) l).getNumber().doubleValue() + 1.0));
+            return new GreaterThanZeroValue(SumValue.sum(minusLPlusOne, r), true);
+        }
+        if (r instanceof NumericValue && !allowEquals && r.isDiscreteType()) {
+            // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
+            Value rMinusOne = NumericValue.intOrDouble(((NumericValue) r).getNumber().doubleValue() - 1.0);
+            return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), rMinusOne), true);
+        }
         // l < r <=> l-r < 0 <=> -l+r > 0
         if (l instanceof NumericValue) {
             return new GreaterThanZeroValue(SumValue.sum(((NumericValue) l).negate(), r), allowEquals);
         }
-        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l, true), r), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), r), allowEquals);
     }
 
     @Override
