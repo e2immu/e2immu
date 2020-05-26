@@ -92,7 +92,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
         // @Size as method annotation
-        Value sizeShortCut = computeSize(objectValue, evaluationContext);
+        Value sizeShortCut = computeSize(objectValue, parameters, evaluationContext);
         if (sizeShortCut != null) {
             visitor.visit(this, evaluationContext, sizeShortCut);
             return sizeShortCut;
@@ -172,7 +172,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return parameters.get(0);
     }
 
-    private Value computeSize(Value objectValue, EvaluationContext evaluationContext) {
+    private Value computeSize(Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
         if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
         int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
         if (notModified == Level.DELAY) {
@@ -222,10 +222,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // SITUATION 2: @Size int size(): this method returns the size
         if (TypeInfo.returnsIntOrLong(methodInfo)) {
             if (Analysis.haveEquals(sizeOfObject)) {
-                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT); // TODO
                 return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
-            return ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeMin(sizeOfObject), true);
+            return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters),
+                    Analysis.decodeSizeMin(sizeOfObject));
         }
         return null;
     }

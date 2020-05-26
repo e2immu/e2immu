@@ -184,17 +184,28 @@ public class MethodValue implements Value {
 
     @Override
     public Map<Variable, Value> individualSizeRestrictions() {
-        if (methodInfo.typeInfo.hasSize()) {
+        MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
+        if (sizeMethod != null) {
             int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
             int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
             if (size >= Level.TRUE && notModified == Level.TRUE && object instanceof VariableValue) {
                 VariableValue variableValue = (VariableValue) object;
                 ConstrainedNumericValue cnv = Analysis.haveEquals(size) ?
-                        ConstrainedNumericValue.equalTo(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeEquals(size)) :
-                        ConstrainedNumericValue.lowerBound(Primitives.PRIMITIVES.intParameterizedType, Analysis.decodeSizeMin(size), true);
+                        ConstrainedNumericValue.equalTo(sizeMethod(sizeMethod), Analysis.decodeSizeEquals(size)) :
+                        ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), Analysis.decodeSizeMin(size));
                 return Map.of(variableValue.variable, cnv);
             }
         }
         return Map.of();
+    }
+
+    private MethodValue sizeMethod(MethodInfo sizeMethod) {
+        if (methodInfo.returnType().typeInfo == Primitives.PRIMITIVES.intTypeInfo) {
+            return this;
+        }
+        if (methodInfo.returnType().typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) {
+            return new MethodValue(sizeMethod, object, List.of());
+        }
+        throw new UnsupportedOperationException();
     }
 }

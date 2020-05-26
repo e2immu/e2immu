@@ -137,10 +137,7 @@ public class StatementAnalyser {
                     Map<Variable, Value> individualSizeRestrictions = variableProperties.getSizeRestrictions();
                     for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
                         Variable variable = entry.getKey();
-                        Value negated =
-                                entry.getValue() instanceof ConstrainedNumericValue ?
-                                        ((ConstrainedNumericValue) entry.getValue()).booleanNegatedValue(true) :
-                                        NegatedValue.negate(entry.getValue(), true);
+                        Value negated = NegatedValue.negate(entry.getValue(), true);
                         log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
                         int sizeRestriction = negated.sizeRestriction();
                         if (variable instanceof ParameterInfo) {

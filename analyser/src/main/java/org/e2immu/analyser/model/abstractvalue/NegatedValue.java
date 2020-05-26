@@ -70,13 +70,6 @@ public class NegatedValue extends PrimitiveValue {
                 if (improve != null) return improve;
             }
         }
-        if (v instanceof ConstrainedNumericValue) {
-            if (booleanContext) {
-                // we don't explicitly know here if we're dealing with values of properties, or not...
-                return ((ConstrainedNumericValue) v).booleanNegatedValue(false);
-            }
-            return ((ConstrainedNumericValue) v).numericNegatedValue();
-        }
         return new NegatedValue(v);
     }
 
@@ -117,10 +110,7 @@ public class NegatedValue extends PrimitiveValue {
     @Override
     public Map<Variable, Value> individualSizeRestrictions() {
         return value.individualSizeRestrictions().entrySet()
-                .stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                        e.getValue() instanceof ConstrainedNumericValue ?
-                                ((ConstrainedNumericValue) e.getValue()).booleanNegatedValue(true) :
-                                NegatedValue.negate(e.getValue(), true)));
+                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue(), true)));
     }
 
     @Override

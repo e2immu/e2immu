@@ -49,13 +49,6 @@ public class DivideValue extends PrimitiveValue {
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof IntValue && r instanceof IntValue)
             return new IntValue(l.toInt().value / r.toInt().value);
-        if (l instanceof ConstrainedNumericValue && r instanceof NumericValue)
-            return ((ConstrainedNumericValue) l).divide(((NumericValue) r).getNumber());
-        if (r instanceof ConstrainedNumericValue && l instanceof NumericValue)
-            return ((ConstrainedNumericValue) r).divide(((NumericValue) l).getNumber());
-        if (r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
-            return ((ConstrainedNumericValue) l).divide((ConstrainedNumericValue) r);
-        }
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;

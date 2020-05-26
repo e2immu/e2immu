@@ -47,13 +47,6 @@ public class SumValue extends PrimitiveValue {
         if (r instanceof NegatedValue && ((NegatedValue) r).value.equals(l)) return IntValue.ZERO_VALUE;
         if (l instanceof NumericValue && r instanceof NumericValue)
             return new IntValue(l.toInt().value + r.toInt().value);
-        if (l instanceof ConstrainedNumericValue && r instanceof NumericValue)
-            return ((ConstrainedNumericValue) l).sum(((NumericValue) r).getNumber());
-        if (r instanceof ConstrainedNumericValue && l instanceof NumericValue)
-            return ((ConstrainedNumericValue) r).sum(((NumericValue) l).getNumber());
-        if (r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
-            return ((ConstrainedNumericValue) l).sum((ConstrainedNumericValue) r);
-        }
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;

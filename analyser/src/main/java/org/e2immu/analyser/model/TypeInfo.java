@@ -1040,11 +1040,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
     }
 
+    public MethodInfo sizeMethod() {
+        MethodInfo methodInfo = typeInspection.get().methods.stream()
+                .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
+                .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
+                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE)
+                .findFirst().orElse(null);
+        if (methodInfo != null) {
+            return methodInfo;
+        }
+        return superTypes().stream().map(TypeInfo::sizeMethod).filter(Objects::nonNull).findFirst().orElse(null);
+    }
+
     public boolean hasSize() {
-        if (typeInspection.get().methods.stream().anyMatch(mi ->
-                returnsIntOrLong(mi) && mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE))
-            return true;
-        return superTypes().stream().anyMatch(TypeInfo::hasSize);
+        return sizeMethod() != null;
     }
 
     public static boolean returnsIntOrLong(MethodInfo methodInfo) {
