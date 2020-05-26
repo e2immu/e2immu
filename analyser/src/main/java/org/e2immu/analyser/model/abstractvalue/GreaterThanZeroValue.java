@@ -31,6 +31,54 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
     public final boolean allowEquals;
 
+    /**
+     * if xNegated is false: -b + x >= 0 or x >= b
+     * if xNegated is true: b - x >= 0 or x <= b
+     */
+    public static class XB {
+        public final Value x;
+        public final double b;
+        public final boolean lessThan; // if true, >= becomes <=
+
+        public XB(Value x, double b, boolean lessThan) {
+            this.x = x;
+            this.b = b;
+            this.lessThan = lessThan;
+        }
+    }
+
+    public XB extract() {
+        if (value instanceof SumValue) {
+            SumValue sumValue = (SumValue) value;
+            if (sumValue.lhs instanceof NumericValue) {
+                Value v = sumValue.rhs;
+                Value x;
+                boolean lessThan;
+                double b;
+                if (v instanceof NegatedValue) {
+                    x = ((NegatedValue) v).value;
+                    lessThan = true;
+                    b = ((NumericValue) sumValue.lhs).getNumber().doubleValue();
+                } else {
+                    x = v;
+                    lessThan = false;
+                    b = ((NumericValue) NegatedValue.negate(sumValue.lhs, false)).getNumber().doubleValue();
+                }
+                return new XB(x, b, lessThan);
+            }
+        }
+        Value x;
+        boolean lessThan;
+        if (value instanceof NegatedValue) {
+            x = ((NegatedValue) value).value;
+            lessThan = true;
+        } else {
+            x = value;
+            lessThan = false;
+        }
+        return new XB(x, 0.0d, lessThan);
+    }
+
     public GreaterThanZeroValue(Value value, boolean allowEquals) {
         this.value = value;
         this.allowEquals = allowEquals;

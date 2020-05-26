@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -45,6 +46,10 @@ public class AndValue implements Value {
 
     private AndValue(List<Value> values) {
         this.values = values;
+    }
+
+    private enum Action {
+        SKIP, DROP_PREV, FALSE, TRUE, ADD
     }
 
     // we try to maintain a CNF
@@ -94,83 +99,26 @@ public class AndValue implements Value {
             int pos = 0;
             for (Value value : concat) {
 
-                // this works because of sorting
-                // A && !A will always sit next to each other
-                if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
-                    log(CNF, "Return FALSE in And, found opposites for {}", value);
-                    return BoolValue.FALSE;
-                }
-
-                // A && !B && (!A || B)
-                if (value instanceof OrValue) {
-                    boolean allAroundInNegativeWay = true;
-                    for (Value value1 : components(value)) {
-                        Value negated1 = NegatedValue.negate(value1, true);
-                        boolean found = false;
-                        for (int pos2 = 0; pos2 < concat.size(); pos2++) {
-                            if (pos2 != pos && negated1.equals(concat.get(pos2))) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) allAroundInNegativeWay = false;
-                    }
-                    if (allAroundInNegativeWay) {
-                        log(CNF, "Return FALSE in And, found opposite for {}", value);
+                Action action = analyse(concat, pos, newConcat, prev, value);
+                switch (action) {
+                    case FALSE:
                         return BoolValue.FALSE;
-                    }
-                }
-
-                // more complicated variant: (A || B) && (A || !B)
-                List<Value> components = components(value);
-                for (Value value1 : components) {
-                    Value negated1 = NegatedValue.negate(value1, true);
-                    for (int i = 0; i < pos; i++) {
-                        List<Value> components2 = components(concat.get(i));
-                        for (Value value2 : components2) {
-                            if (negated1.equals(value2)) {
-                                log(CNF, "Return TRUE in And, found {} and {}", value2, value1);
-                                return BoolValue.TRUE;
-                            }
-                        }
-                    }
-                }
-                if (value instanceof EqualsValue && prev instanceof EqualsValue) {
-                    EqualsValue ev1 = (EqualsValue) prev;
-                    EqualsValue ev2 = (EqualsValue) value;
-                    // 3 == a && 4 == a
-                    if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
-                        return BoolValue.FALSE;
-                    }
-                }
-                boolean skip = false;
-
-                if (prev instanceof EqualsValue && value instanceof NegatedValue && ((NegatedValue) value).value instanceof EqualsValue) {
-                    EqualsValue ev1 = (EqualsValue) prev;
-                    EqualsValue ev2 = (EqualsValue) ((NegatedValue) value).value;
-                    // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
-                    if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
-                        skip = true;
-                    }
-                }
-                if (value instanceof GreaterThanZeroValue && prev instanceof EqualsValue) {
-
-                }
-
-                // A && A
-                if (value.equals(prev) || skip) {
-                    changes = true;
-                } else if (value instanceof OrValue) {
-                    OrValue orValue = (OrValue) value;
-                    if (orValue.values.size() == 1) {
-                        newConcat.add(orValue.values.get(0));
-                        changes = true;
-                    } else {
+                    case TRUE:
+                        return BoolValue.TRUE;
+                    case ADD:
                         newConcat.add(value);
-                    }
-                } else {
-                    newConcat.add(value);
+                        break;
+                    case DROP_PREV:
+                        newConcat.remove(newConcat.size() - 1);
+                        changes = true;
+                        break;
+                    case SKIP:
+                        changes = true;
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
                 }
+
                 prev = value;
                 pos++;
             }
@@ -187,6 +135,134 @@ public class AndValue implements Value {
         AndValue res = new AndValue(ImmutableList.copyOf(concat));
         log(CNF, "Constructed {}", res);
         return res;
+    }
+
+    private Action analyse(ArrayList<Value> concat, int pos, ArrayList<Value> newConcat, Value prev, Value value) {
+        // A && A
+        if (value.equals(prev)) return Action.SKIP;
+
+        // this works because of sorting
+        // A && !A will always sit next to each other
+        if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
+            log(CNF, "Return FALSE in And, found opposites for {}", value);
+            return Action.FALSE;
+        }
+
+        // A && !B && (!A || B)
+        if (value instanceof OrValue) {
+            boolean allAroundInNegativeWay = true;
+            for (Value value1 : components(value)) {
+                Value negated1 = NegatedValue.negate(value1, true);
+                boolean found = false;
+                for (int pos2 = 0; pos2 < concat.size(); pos2++) {
+                    if (pos2 != pos && negated1.equals(concat.get(pos2))) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) allAroundInNegativeWay = false;
+            }
+            if (allAroundInNegativeWay) {
+                log(CNF, "Return FALSE in And, found opposite for {}", value);
+                return Action.FALSE;
+            }
+        }
+
+        // more complicated variant: (A || B) && (A || !B)
+        List<Value> components = components(value);
+        for (Value value1 : components) {
+            Value negated1 = NegatedValue.negate(value1, true);
+            for (int i = 0; i < pos; i++) {
+                List<Value> components2 = components(concat.get(i));
+                for (Value value2 : components2) {
+                    if (negated1.equals(value2)) {
+                        log(CNF, "Return TRUE in And, found {} and {}", value2, value1);
+                        return Action.TRUE;
+                    }
+                }
+            }
+        }
+
+        if (value instanceof OrValue) {
+            OrValue orValue = (OrValue) value;
+            if (orValue.values.size() == 1) {
+                newConcat.add(orValue.values.get(0));
+                return Action.SKIP;
+            }
+            return Action.ADD;
+        }
+
+        if (prev instanceof EqualsValue) {
+            if (value instanceof EqualsValue) {
+                EqualsValue ev1 = (EqualsValue) prev;
+                EqualsValue ev2 = (EqualsValue) value;
+                // 3 == a && 4 == a
+                if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                    return Action.FALSE;
+                }
+            }
+
+            // EQ and NOT EQ
+            if (value instanceof NegatedValue && ((NegatedValue) value).value instanceof EqualsValue) {
+                EqualsValue ev1 = (EqualsValue) prev;
+                EqualsValue ev2 = (EqualsValue) ((NegatedValue) value).value;
+                // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
+                if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                    return Action.SKIP;
+                }
+            }
+
+            // GE and EQ (note: GE always comes after EQ)
+            if (value instanceof GreaterThanZeroValue) {
+                GreaterThanZeroValue ge = (GreaterThanZeroValue) value;
+                GreaterThanZeroValue.XB xb = ge.extract();
+                EqualsValue equalsValue = (EqualsValue) prev;
+                if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
+                    double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
+                    if (xb.lessThan) {
+                        // y==x and x <= b
+                        if (ge.allowEquals && y <= xb.b || !ge.allowEquals && y < xb.b) {
+                            return Action.SKIP;
+                        }
+                    } else {
+                        // y==x and x >= b
+                        if (ge.allowEquals && y >= xb.b || !ge.allowEquals && y > xb.b) {
+                            return Action.SKIP;
+                        }
+                    }
+                    return Action.FALSE;
+                }
+            }
+            return Action.ADD;
+        }
+
+        //  GE and NOT EQ
+        if (value instanceof GreaterThanZeroValue && prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue) {
+            GreaterThanZeroValue ge = (GreaterThanZeroValue) value;
+            GreaterThanZeroValue.XB xb = ge.extract();
+            EqualsValue equalsValue = (EqualsValue) ((NegatedValue) prev).value;
+            if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
+                double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
+
+                // y != x && -b + x >= 0, in other words, x!=y && x >= b
+                if (ge.allowEquals && y < xb.b || !ge.allowEquals && y <= xb.b) {
+                    return Action.DROP_PREV;
+                }
+            }
+        }
+
+        // GE and GE
+        if (value instanceof GreaterThanZeroValue && prev instanceof GreaterThanZeroValue) {
+            GreaterThanZeroValue ge1 = (GreaterThanZeroValue) prev;
+            GreaterThanZeroValue.XB xb1 = ge1.extract();
+            GreaterThanZeroValue ge2 = (GreaterThanZeroValue) value;
+            GreaterThanZeroValue.XB xb2 = ge2.extract();
+            if (xb1.x.equals(xb2.x)) {
+                // x>= b1 && x >= b2
+            }
+        }
+
+        return Action.ADD;
     }
 
     private List<Value> components(Value value) {
