@@ -37,6 +37,15 @@ public class TestSizeChecks extends CommonTestRunner {
         }
     };
 
+    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("method3".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("?>0", conditional.toString());
+            }
+        }
+    };
+
     TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
         @Override
         public void visit(TypeContext typeContext) {
@@ -51,6 +60,7 @@ public class TestSizeChecks extends CommonTestRunner {
     public void test() throws IOException {
         testClass("SizeChecks", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }

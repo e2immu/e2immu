@@ -53,7 +53,7 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement) {
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("method3bis".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.isSet());
             }

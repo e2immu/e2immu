@@ -915,4 +915,8 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.setProperty(VariableProperty.NOT_NULL, Level.TRUE);
     }
+
+    public Value getConditional() {
+        return conditional;
+    }
 }

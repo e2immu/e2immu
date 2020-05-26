@@ -85,7 +85,7 @@ public class StatementAnalyser {
                     });
                 }
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
-                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement);
+                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement, variableProperties.getConditional());
                 }
 
                 if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {

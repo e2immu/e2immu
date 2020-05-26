@@ -7,6 +7,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class TestEvaluationErrors extends CommonTestRunner {
      */
    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement) {
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if("testDivisionByZero".equals(methodInfo.name) ) {
                 if("1".equals(numberedStatement.streamIndices())) {
                     Assert.assertTrue(numberedStatement.errorValue.get());

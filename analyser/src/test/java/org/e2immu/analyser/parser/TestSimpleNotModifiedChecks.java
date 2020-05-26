@@ -3,10 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,7 +25,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement) {
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("add4".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
             //    Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception
             }

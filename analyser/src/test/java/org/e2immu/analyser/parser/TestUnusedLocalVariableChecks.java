@@ -19,7 +19,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUnusedLocalVariableChecks.class);
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement) -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement, conditional) -> {
         // ERROR: t.trim() result is not used
         if ("method1".equals(methodInfo.name) && "2".equals(statement.streamIndices())) {
             Assert.assertTrue(statement.errorValue.get());

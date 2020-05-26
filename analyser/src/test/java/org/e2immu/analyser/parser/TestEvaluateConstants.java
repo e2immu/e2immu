@@ -20,7 +20,7 @@ public class TestEvaluateConstants extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement) {
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("print".equals(methodInfo.name)) {
                 if ("0".equals(numberedStatement.streamIndices())) {
                     Assert.assertTrue(numberedStatement.errorValue.get()); // if conditional

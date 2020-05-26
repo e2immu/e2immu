@@ -18,7 +18,7 @@ public class TestUtilityClassChecks extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement) -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
         if ("print".equals(methodInfo.name)) {
             if ("0".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.get()); // potential null pointer exception

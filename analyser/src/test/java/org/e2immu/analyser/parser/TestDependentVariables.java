@@ -16,7 +16,7 @@ public class TestDependentVariables extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement) -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement, conditional) -> {
 
     };
 
