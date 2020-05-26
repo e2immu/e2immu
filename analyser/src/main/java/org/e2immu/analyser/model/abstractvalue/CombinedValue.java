@@ -6,8 +6,10 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,8 +58,13 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        return 0;
+    public int order() {
+        return ORDER_COMBINED;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return ListUtil.compare(values, ((CombinedValue) v).values);
     }
 
     @Override

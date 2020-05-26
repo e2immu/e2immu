@@ -63,6 +63,13 @@ public class NegatedValue extends PrimitiveValue {
             List<Value> negated = and.values.stream().map(x -> negate(x, booleanContext)).collect(Collectors.toList());
             return new OrValue().append(negated);
         }
+        if (v instanceof EqualsValue) {
+            EqualsValue equalsValue = (EqualsValue) v;
+            if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
+                Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals((NumericValue) equalsValue.lhs);
+                if (improve != null) return improve;
+            }
+        }
         if (v instanceof ConstrainedNumericValue) {
             if (booleanContext) {
                 // we don't explicitly know here if we're dealing with values of properties, or not...
@@ -92,9 +99,13 @@ public class NegatedValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (value.equals(o)) return 1; // I'm always AFTER my negated counterpart
-        return value.compareTo(o);
+    public int order() {
+        return ORDER_NEGATED;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return value.compareTo(((NegatedValue) v).value);
     }
 
     @Override

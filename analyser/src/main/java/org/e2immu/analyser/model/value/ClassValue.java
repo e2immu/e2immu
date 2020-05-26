@@ -39,16 +39,13 @@ public class ClassValue extends ConstantValue implements Constant<ParameterizedT
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o == this) return 0;
-        if (o instanceof ClassValue) return value.detailedString().compareTo(((ClassValue) o).value.detailedString());
-        return -1; // generally on the left
+    public int order() {
+        return ORDER_CONSTANT_CLASS;
     }
 
     @Override
-    public String asString() {
-        if (value.typeInfo != null) return value.typeInfo.fullyQualifiedName;
-        throw new UnsupportedOperationException();
+    public int internalCompareTo(Value v) {
+        return value.detailedString().compareTo(((ClassValue) v).value.detailedString());
     }
 
     @Override

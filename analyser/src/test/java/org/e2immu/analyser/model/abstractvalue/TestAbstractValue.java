@@ -304,7 +304,7 @@ public class TestAbstractValue {
     }
 
     public static final String EXPECTED = "((a or c) and (a or d) and (b or c) and (b or d))";
-    public static final String EXPECTED2 = "((a or not (c)) and (a or d) and (not (b) or not (c)) and (not (b) or d))";
+    public static final String EXPECTED2 = "((a or d) and (a or not (c)) and (d or not (b)) and (not (b) or not (c)))";
 
     @Test
     public void testCNF() {

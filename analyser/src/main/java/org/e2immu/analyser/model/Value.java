@@ -18,20 +18,12 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.EqualsValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotModified;
 
-import java.lang.annotation.Annotation;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -39,6 +31,60 @@ import java.util.Set;
  * Properties of variables are ALWAYS computed inside an evaluation context; properties of methods come from outside the scope only.
  */
 public interface Value extends Comparable<Value> {
+    int ORDER_CONSTANT_NULL = 30;
+    int ORDER_CONSTANT_BOOLEAN = 31;
+    int ORDER_CONSTANT_BYTE = 32;
+    int ORDER_CONSTANT_CHAR = 33;
+    int ORDER_CONSTANT_SHORT = 34;
+    int ORDER_CONSTANT_INT = 35;
+    int ORDER_CONSTANT_FLOAT = 36;
+    int ORDER_CONSTANT_LONG = 37;
+    int ORDER_CONSTANT_DOUBLE = 38;
+    int ORDER_CONSTANT_CLASS = 39;
+    int ORDER_CONSTANT_STRING = 40;
+    int ORDER_ARRAY = 42;
+    int ORDER_PRIMITIVE = 41;
+    int ORDER_INSTANCE_OF = 43;
+    int ORDER_PRODUCT = 45;
+    int ORDER_DIVIDE = 46;
+    int ORDER_REMAINDER = 47;
+    int ORDER_SUM = 48;
+    int ORDER_GEQ0 = 49;
+    int ORDER_AND = 50;
+    int ORDER_OR = 51;
+    int ORDER_EQUALS = 53;
+    int ORDER_NEGATED = 54;
+    int ORDER_BITWISE_AND = 55;
+    int ORDER_CONSTRAINED_NUMERIC_VALUE = 56;
+    int ORDER_CONDITIONAL = 60;
+    int ORDER_INSTANCE = 71;
+    int ORDER_METHOD = 70;
+    int ORDER_VARIABLE_VALUE = 80;
+    int ORDER_PARAMETER = 81;
+    int ORDER_COMBINED = 82;
+    int ORDER_TYPE = 90;
+    int ORDER_NO_VALUE = 100;
+
+    int order();
+
+    @Override
+    default int compareTo(Value v) {
+        // negations are always AFTER their argument
+        if (v instanceof NegatedValue && !(this instanceof NegatedValue)) {
+            return -1;
+        }
+        if (this instanceof NegatedValue && !(v instanceof NegatedValue)) {
+            return 1;
+        }
+        if (getClass() == v.getClass()) {
+            return internalCompareTo(v);
+        }
+        return order() - v.order();
+    }
+
+    default int internalCompareTo(Value v) {
+        return 0;
+    }
 
     default boolean isConstant() {
         return false;
@@ -66,10 +112,6 @@ public interface Value extends Comparable<Value> {
     }
 
     default IntValue toInt() {
-        throw new UnsupportedOperationException(this.getClass().toString());
-    }
-
-    default String asString() {
         throw new UnsupportedOperationException(this.getClass().toString());
     }
 

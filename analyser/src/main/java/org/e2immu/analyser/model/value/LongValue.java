@@ -57,17 +57,13 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof LongValue) return Long.compare(value, ((LongValue) o).value);
-        if (o instanceof IntValue) return Long.compare(value, ((IntValue) o).value);
-        if (o instanceof ByteValue) return Long.compare(value, ((ByteValue) o).value);
-        if (o instanceof ShortValue) return Long.compare(value, ((ShortValue) o).value);
-        return -1; // I'm on the left
+    public int order() {
+        return ORDER_CONSTANT_LONG;
     }
 
     @Override
-    public String asString() {
-        return Long.toString(value);
+    public int internalCompareTo(Value v) {
+        return (int) Math.signum(value - ((LongValue) v).value);
     }
 
     @Override

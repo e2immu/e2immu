@@ -47,4 +47,14 @@ public class SizeChecks {
         }
         return 4;
     }
+
+    @NotModified
+    static <T> int method3(@NotNull Collection<T> input3) {
+        int size3 = input3.size();
+        if (size3 == 0) return -1;
+        if (size3 >= 1) { // ERROR, constant evaluation
+            System.out.println("Always printed");
+        }
+        return 4;
+    }
 }

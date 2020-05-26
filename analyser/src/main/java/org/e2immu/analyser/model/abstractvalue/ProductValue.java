@@ -52,8 +52,8 @@ public class ProductValue extends PrimitiveValue {
             return ((ConstrainedNumericValue) l).product(((NumericValue) r).getNumber());
         if (r instanceof ConstrainedNumericValue && l instanceof NumericValue)
             return ((ConstrainedNumericValue) r).product(((NumericValue) l).getNumber());
-        if(r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
-            return ((ConstrainedNumericValue)l).product((ConstrainedNumericValue)r);
+        if (r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
+            return ((ConstrainedNumericValue) l).product((ConstrainedNumericValue) r);
         }
 
         // any unknown lingering
@@ -90,17 +90,18 @@ public class ProductValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof ProductValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((ProductValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((ProductValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_PRODUCT;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((ProductValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((ProductValue) v).rhs);
         }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+        return c;
     }
 
     @Override

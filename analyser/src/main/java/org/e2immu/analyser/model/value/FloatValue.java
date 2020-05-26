@@ -54,25 +54,20 @@ public class FloatValue extends ConstantValue implements Constant<Float>, Numeri
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof DoubleValue) return Double.compare(value, ((DoubleValue) o).value);
-        if (o instanceof FloatValue) return Float.compare(value, ((FloatValue) o).value);
-        if (o instanceof LongValue) return Double.compare(value, ((LongValue) o).value);
-        if (o instanceof IntValue) return Float.compare(value, ((IntValue) o).value);
-        if (o instanceof ByteValue) return Float.compare(value, ((ByteValue) o).value);
-        if (o instanceof ShortValue) return Float.compare(value, ((ShortValue) o).value);
-        return -1; // I'm on the left
+    public int order() {
+        return ORDER_CONSTANT_FLOAT;
     }
 
     @Override
-    public String asString() {
-        return Float.toString(value);
+    public int internalCompareTo(Value v) {
+        return (int) Math.signum(value - ((FloatValue) v).value);
     }
 
     @Override
     public Float getValue() {
         return value;
     }
+
 
     @Override
     public boolean equals(Object o) {

@@ -82,11 +82,13 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof GreaterThanZeroValue) {
-            return value.compareTo(((GreaterThanZeroValue) o).value);
-        }
-        return -1;
+    public int order() {
+        return ORDER_GEQ0;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return value.compareTo(((GreaterThanZeroValue) v).value);
     }
 
     @Override

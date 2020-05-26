@@ -51,16 +51,16 @@ public class InstanceOfValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof InstanceOfValue) {
-            int c = variable.name().compareTo(((InstanceOfValue) o).variable.name());
-            if (c == 0) c = parameterizedType.detailedString()
-                    .compareTo(((InstanceOfValue) o).parameterizedType.detailedString());
-            return c;
-        }
-        if (o instanceof VariableValue) return 1;
-        if (o instanceof MethodValue) return -1;
-        return -1;
+    public int order() {
+        return ORDER_INSTANCE_OF;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        int c = variable.name().compareTo(((InstanceOfValue) v).variable.name());
+        if (c == 0) c = parameterizedType.detailedString()
+                .compareTo(((InstanceOfValue) v).parameterizedType.detailedString());
+        return c;
     }
 
     @Override

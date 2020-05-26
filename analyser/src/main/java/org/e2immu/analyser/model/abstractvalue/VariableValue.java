@@ -70,24 +70,17 @@ public class VariableValue implements Value {
 
     @Override
     public String toString() {
-        return variable.detailedString();
+        return variable.name();
     }
 
     @Override
-    public String asString() {
-        return name;
+    public int order() {
+        return ORDER_VARIABLE_VALUE;
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o.isUnknown()) return -1;
-        if (o instanceof VariableValue) return name.compareTo(((VariableValue) o).name);
-        if (o instanceof NegatedValue) {
-            NegatedValue negatedValue = (NegatedValue) o;
-            if (equals(((NegatedValue) o).value)) return -1; // I'm always BEFORE my negation
-            return compareTo(negatedValue.value);
-        }
-        return 1;
+    public int internalCompareTo(Value v) {
+        return name.compareTo(((VariableValue) v).name);
     }
 
     @Override

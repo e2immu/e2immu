@@ -71,17 +71,18 @@ public class BitwiseAndValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof BitwiseAndValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((BitwiseAndValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((BitwiseAndValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_BITWISE_AND;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((BitwiseAndValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((BitwiseAndValue) v).rhs);
         }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+        return c;
     }
 
     @Override

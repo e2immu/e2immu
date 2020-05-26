@@ -42,13 +42,26 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        return 0;
+    public int order() {
+        return ORDER_CONDITIONAL;
     }
 
     @Override
-    public String asString() {
-        return condition.asString() + "?" + ifTrue.asString() + ":" + ifFalse.asString();
+    public int internalCompareTo(Value v) {
+        ConditionalValue cv = (ConditionalValue) v;
+        int c = condition.compareTo(cv.condition);
+        if (c == 0) {
+            c = ifTrue.compareTo(cv.ifTrue);
+        }
+        if (c == 0) {
+            c = ifFalse.compareTo(cv.ifFalse);
+        }
+        return c;
+    }
+
+    @Override
+    public String toString() {
+        return condition.toString() + "?" + ifTrue.toString() + ":" + ifFalse.toString();
     }
 
     @Override

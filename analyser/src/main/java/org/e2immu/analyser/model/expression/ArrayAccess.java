@@ -117,6 +117,6 @@ public class ArrayAccess implements Expression {
     }
 
     public static String dependentVariableName(Value array, Value index) {
-        return array.asString() + "[" + index.asString() + "]";
+        return array.toString() + "[" + index.toString() + "]";
     }
 }

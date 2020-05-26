@@ -54,18 +54,13 @@ public class DoubleValue extends ConstantValue implements Constant<Double>, Nume
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof DoubleValue) return Double.compare(value, ((DoubleValue) o).value);
-        if (o instanceof LongValue) return Double.compare(value, ((LongValue) o).value);
-        if (o instanceof IntValue) return Double.compare(value, ((IntValue) o).value);
-        if (o instanceof ByteValue) return Double.compare(value, ((ByteValue) o).value);
-        if (o instanceof ShortValue) return Double.compare(value, ((ShortValue) o).value);
-        return -1; // I'm on the left
+    public int order() {
+        return ORDER_CONSTANT_DOUBLE;
     }
 
     @Override
-    public String asString() {
-        return Double.toString(value);
+    public int internalCompareTo(Value v) {
+        return (int) Math.signum(value - ((DoubleValue) v).value);
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -203,19 +204,14 @@ public class AndValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof AndValue) {
-            AndValue andValue = (AndValue) o;
-            int c = values.size() - andValue.values.size();
-            if (c != 0) return c;
-            for (int i = 0; i < values.size(); i++) {
-                c = values.get(i).compareTo(andValue.values.get(i));
-                if (c != 0) return c;
-            }
-            return 0; // the same! will be removed in And...
-        }
-        if (o instanceof UnknownValue) return -1;
-        return 1;
+    public int order() {
+        return ORDER_AND;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        AndValue andValue = (AndValue) v;
+        return ListUtil.compare(values, andValue.values);
     }
 
     @Override

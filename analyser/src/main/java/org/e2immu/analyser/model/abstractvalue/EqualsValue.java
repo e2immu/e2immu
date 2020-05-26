@@ -57,15 +57,17 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof EqualsValue) {
-            int c = lhs.compareTo(((EqualsValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((EqualsValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_EQUALS;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        int c = lhs.compareTo(((EqualsValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((EqualsValue) v).rhs);
         }
-        return -1;
+        return c;
     }
 
     @Override

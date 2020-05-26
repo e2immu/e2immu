@@ -51,8 +51,8 @@ public class SumValue extends PrimitiveValue {
             return ((ConstrainedNumericValue) l).sum(((NumericValue) r).getNumber());
         if (r instanceof ConstrainedNumericValue && l instanceof NumericValue)
             return ((ConstrainedNumericValue) r).sum(((NumericValue) l).getNumber());
-        if(r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
-            return ((ConstrainedNumericValue)l).sum((ConstrainedNumericValue)r);
+        if (r instanceof ConstrainedNumericValue && l instanceof ConstrainedNumericValue) {
+            return ((ConstrainedNumericValue) l).sum((ConstrainedNumericValue) r);
         }
 
         // any unknown lingering
@@ -97,17 +97,18 @@ public class SumValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof SumValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((SumValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((SumValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_SUM;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((SumValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((SumValue) v).rhs);
         }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+        return c;
     }
 
     @Override

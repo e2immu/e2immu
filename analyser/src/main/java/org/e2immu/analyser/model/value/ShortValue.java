@@ -54,16 +54,13 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
     }
 
     @Override
-    public String asString() {
-        return Short.toString(value);
+    public int order() {
+        return ORDER_CONSTANT_SHORT;
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof IntValue) return value - ((IntValue) o).value;
-        if (o instanceof ByteValue) return value - ((ByteValue) o).value;
-        if (o instanceof ShortValue) return value - ((ShortValue) o).value;
-        return -1; // I'm on the left
+    public int internalCompareTo(Value v) {
+        return value - ((ShortValue) v).value;
     }
 
     @Override

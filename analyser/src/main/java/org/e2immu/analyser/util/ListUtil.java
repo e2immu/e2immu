@@ -19,10 +19,13 @@
 package org.e2immu.analyser.util;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 @ExtensionClass(of = List.class)
@@ -39,5 +42,17 @@ public class ListUtil {
             builder.addAll(list);
         }
         return builder.build();
+    }
+
+    public static <T extends Comparable<? super T>> int compare(List<T> values1, List<T> values2) {
+        Iterator<T> it2 = values2.iterator();
+        for (T t1 : values1) {
+            if (!it2.hasNext()) return 1;
+            T t2 = it2.next();
+            int c = t1.compareTo(t2);
+            if (c != 0) return c;
+        }
+        if (it2.hasNext()) return -1;
+        return 0;
     }
 }

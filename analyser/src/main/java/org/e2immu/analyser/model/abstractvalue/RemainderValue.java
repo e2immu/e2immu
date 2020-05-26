@@ -76,17 +76,18 @@ public class RemainderValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof RemainderValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((RemainderValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((RemainderValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_REMAINDER;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((RemainderValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((RemainderValue) v).rhs);
         }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+        return c;
     }
 
     @Override

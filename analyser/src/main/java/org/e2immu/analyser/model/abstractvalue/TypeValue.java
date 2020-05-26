@@ -19,19 +19,18 @@ public class TypeValue implements Value {
     }
 
     @Override
-    public String asString() {
+    public String toString() {
         return parameterizedType.detailedString();
     }
 
     @Override
-    public String toString() {
-        return asString();
+    public int order() {
+        return ORDER_TYPE;
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (this == o) return 0;
-        return 1;
+    public int internalCompareTo(Value v) {
+        return parameterizedType.detailedString().compareTo(((TypeValue) v).parameterizedType.detailedString());
     }
 
     @Override

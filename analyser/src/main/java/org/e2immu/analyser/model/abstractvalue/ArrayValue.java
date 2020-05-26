@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -19,16 +20,18 @@ public class ArrayValue implements Value {
     }
 
     @Override
-    public String asString() {
-        return "{" + values.stream().map(Value::asString).collect(Collectors.joining(",")) + "}";
+    public String toString() {
+        return "{" + values.stream().map(Value::toString).collect(Collectors.joining(",")) + "}";
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof ArrayValue) {
-            // TODO
-        }
-        return 0;
+    public int order() {
+        return ORDER_ARRAY;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return ListUtil.compare(values, ((ArrayValue) v).values);
     }
 
     @Override

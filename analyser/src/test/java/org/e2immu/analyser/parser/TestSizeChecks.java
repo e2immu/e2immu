@@ -49,7 +49,7 @@ public class TestSizeChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SizeChecks", 2, 0, new DebugConfiguration.Builder()
+        testClass("SizeChecks", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());

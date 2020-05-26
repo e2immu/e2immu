@@ -45,9 +45,8 @@ public class UnknownValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o == this) return 0;
-        return 1; // I'm always at the end
+    public int order() {
+        return ORDER_NO_VALUE;
     }
 
     @Override

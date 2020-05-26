@@ -172,19 +172,14 @@ public class OrValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof OrValue) {
-            OrValue orValue = (OrValue) o;
-            int c = values.size() - orValue.values.size();
-            if (c != 0) return c;
-            for (int i = 0; i < values.size(); i++) {
-                c = values.get(i).compareTo(orValue.values.get(i));
-                if (c != 0) return c;
-            }
-            return 0; // the same! will be removed in And...
-        }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+    public int order() {
+        return ORDER_OR;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        OrValue orValue = (OrValue) v;
+        return ListUtil.compare(values, orValue.values);
     }
 
     @Override

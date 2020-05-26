@@ -60,27 +60,23 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o.isUnknown()) return -1;
-        if (o.isConstant()) return 1;
-        if (o instanceof MethodValue) {
-            MethodValue mv = (MethodValue) o;
-            int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
+    public int order() {
+        return ORDER_METHOD;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        MethodValue mv = (MethodValue) v;
+        int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
+        if (c != 0) return c;
+        int i = 0;
+        while (i < parameters.size()) {
+            if (i >= mv.parameters.size()) return 1;
+            c = parameters.get(i).compareTo(mv.parameters.get(i));
             if (c != 0) return c;
-            int i = 0;
-            while (i < parameters.size()) {
-                if (i >= mv.parameters.size()) return 1;
-                c = parameters.get(i).compareTo(mv.parameters.get(i));
-                if (c != 0) return c;
-                i++;
-            }
-            return object.compareTo(mv.object);
+            i++;
         }
-        if (o instanceof NegatedValue) {
-            NegatedValue negatedValue = (NegatedValue) o;
-            return compareTo(negatedValue.value);
-        }
-        return 1;
+        return object.compareTo(mv.object);
     }
 
     @Override

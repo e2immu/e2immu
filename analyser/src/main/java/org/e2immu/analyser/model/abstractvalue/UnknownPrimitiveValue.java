@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.Value;
-
 public class UnknownPrimitiveValue extends PrimitiveValue {
     public static final UnknownPrimitiveValue UNKNOWN_PRIMITIVE = new UnknownPrimitiveValue();
 
@@ -29,14 +27,12 @@ public class UnknownPrimitiveValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o == this) return 0;
-        return 1; // I'm always at the end
-    }
-
-    @Override
     public String toString() {
         return "<unknown primitive value>";
     }
 
+    @Override
+    public int order() {
+        return ORDER_PRIMITIVE;
+    }
 }

@@ -34,7 +34,7 @@ public class StringValue extends ConstantValue implements Constant<String> {
 
     public static Value concat(Value l, Value r) {
         if (l.isConstant() && r.isConstant()) {
-            return new StringValue(l.asString() + r.asString());
+            return new StringValue(l.toString() + r.toString());
         }
         return Instance.newStringInstance();
     }
@@ -45,16 +45,13 @@ public class StringValue extends ConstantValue implements Constant<String> {
     }
 
     @Override
-    public String asString() {
-        return value;
+    public int order() {
+        return ORDER_CONSTANT_STRING;
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof StringValue) {
-            return value.compareTo(((StringValue) o).value);
-        }
-        return -1; // I'm on the left
+    public int internalCompareTo(Value v) {
+        return value.compareTo(((StringValue) v).value);
     }
 
     @Override

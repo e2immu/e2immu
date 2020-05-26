@@ -15,9 +15,14 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     public final double lowerBound;
     public final boolean allowEquals;
     public final ParameterizedType type;
+    public final boolean integer;
 
     public static ConstrainedNumericValue equalTo(ParameterizedType type, double value) {
         return new ConstrainedNumericValue(type, value, value, true);
+    }
+
+    public static ConstrainedNumericValue intLowerBound(double value, boolean allowEquals) {
+        return new ConstrainedNumericValue(Primitives.PRIMITIVES.intParameterizedType, value, MAX, allowEquals);
     }
 
     public static ConstrainedNumericValue lowerBound(ParameterizedType type, double value, boolean allowEquals) {
@@ -34,15 +39,16 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         assert upperBound >= lowerBound;
         this.allowEquals = allowEquals;
         this.type = type;
+        this.integer = type.typeInfo != Primitives.PRIMITIVES.floatTypeInfo && type.typeInfo != Primitives.PRIMITIVES.doubleTypeInfo;
     }
 
     @Override
-    public int compareTo(Value o) {
-        return 0;
+    public int order() {
+        return ORDER_CONSTRAINED_NUMERIC_VALUE;
     }
 
     @Override
-    public String asString() {
+    public String toString() {
         if (upperBound == MAX) {
             String lb = nice(lowerBound);
             return allowEquals ? "?>=" + lb : "?>" + lb;
@@ -57,10 +63,10 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     }
 
     private String nice(double v) {
-        if (type.typeInfo == Primitives.PRIMITIVES.floatTypeInfo || type.typeInfo == Primitives.PRIMITIVES.doubleTypeInfo) {
-            return Double.toString(v);
+        if (integer) {
+            return Long.toString((long) v);
         }
-        return Long.toString((long) v);
+        return Double.toString(v);
     }
 
     public boolean rejects(Value r) {
@@ -106,7 +112,7 @@ public class ConstrainedNumericValue extends PrimitiveValue {
             if (lowerBound > 0) {
                 return new ConstrainedNumericValue(type, allowEquals ? -1 : 0, lowerBound, !allowEquals);
             }
-            return ConstrainedNumericValue.lowerBound(type, upperBound, !allowEquals);
+            return lowerBound(type, upperBound, !allowEquals);
         }
         if (upperBound == MAX && lowerBound == MIN) {
             // nothing allowed
@@ -114,15 +120,15 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         }
         if (upperBound == lowerBound) {
             // everything allowed
-            return ConstrainedNumericValue.lowerBound(type, MIN, allowEquals);
+            return lowerBound(type, MIN, allowEquals);
         }
         if (upperBound != MAX && lowerBound != MIN) {
             // combination
-            return new AndValue().append(ConstrainedNumericValue.lowerBound(type, lowerBound, allowEquals).booleanNegatedValue(false),
-                    ConstrainedNumericValue.upperBound(type, upperBound, allowEquals).booleanNegatedValue(false));
+            return new AndValue().append(lowerBound(type, lowerBound, allowEquals).booleanNegatedValue(false),
+                    upperBound(type, upperBound, allowEquals).booleanNegatedValue(false));
         }
         if (upperBound != MAX) return ConstrainedNumericValue.lowerBound(type, upperBound, !allowEquals);
-        return ConstrainedNumericValue.upperBound(type, lowerBound, !allowEquals);
+        return upperBound(type, lowerBound, !allowEquals);
     }
 
     public Value sum(Number number) {
@@ -179,12 +185,15 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         return x / y;
     }
 
+    private static boolean equals(double x, double y) {
+        return Math.abs(x - y) < 0.0000001;
+    }
+
     @Override
     public int sizeRestriction() {
-        if (type.typeInfo != Primitives.PRIMITIVES.intTypeInfo) throw new UnsupportedOperationException();
+        if (!integer) throw new UnsupportedOperationException();
         if (allowEquals) {
-            boolean equals = Math.abs(lowerBound - upperBound) < 0.0000001;
-            if (equals) {
+            if (equals(lowerBound, upperBound)) {
                 return Analysis.encodeSizeEquals((int) lowerBound);
             }
             if (lowerBound > 0 && upperBound == MAX) {
@@ -200,5 +209,37 @@ public class ConstrainedNumericValue extends PrimitiveValue {
             return Analysis.encodeSizeMin((int) lowerBound + 1);
         }
         return Level.FALSE;
+    }
+
+    /*
+    situation: NOT(x == CNV), as in for example, NOT(0 == ?>=0).
+
+    0 == ?>=0 is not something that can be resolved. But the boolean complement can be resolved to ?>0
+     */
+
+    public Value notEquals(NumericValue numericValue) {
+        double x = numericValue.getNumber().doubleValue();
+        if (allowEquals) {
+            if (equals(x, lowerBound)) {
+                // not(x == ?>=x) -> ?>x
+                return lowerBound(type, lowerBound, false);
+            }
+            if (equals(x, upperBound)) {
+                // not(x == ?<=x) -> ?<x
+                return upperBound(type, upperBound, false);
+            }
+            return null;
+        }
+        if (integer) {
+            if (equals(x, lowerBound + 1)) {
+                // not(x+1 == ?>x)) ->  ?>x+1  (not (3 == ?>2) -> ?>3)
+                return lowerBound(type, lowerBound + 1, false);
+            }
+            if (equals(x, upperBound - 1)) {
+                // not(x-1 == ?<x) -> ?<x-1
+                return upperBound(type, upperBound - 1, false);
+            }
+        }
+        return null;
     }
 }

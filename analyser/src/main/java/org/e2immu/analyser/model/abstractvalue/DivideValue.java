@@ -84,17 +84,18 @@ public class DivideValue extends PrimitiveValue {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof DivideValue) {
-            // comparing 2 or values...compare lhs
-            int c = lhs.compareTo(((DivideValue) o).lhs);
-            if (c == 0) {
-                c = rhs.compareTo(((DivideValue) o).rhs);
-            }
-            return c;
+    public int order() {
+        return ORDER_DIVIDE;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((DivideValue) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((DivideValue) v).rhs);
         }
-        if (o instanceof UnknownValue) return -1;
-        return 1; // go to the back
+        return c;
     }
 
     @Override

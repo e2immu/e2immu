@@ -45,7 +45,7 @@ public class VariableValueCopy implements Value {
         this.variable = original.variable;
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
-        for (VariableProperty property :VariableProperty.RETURN_VALUE_PROPERTIES) {
+        for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, original.getProperty(evaluationContext, property));
         }
         copiedProperties = builder.build();
@@ -69,8 +69,13 @@ public class VariableValueCopy implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        throw new UnsupportedOperationException();
+    public int order() {
+        return ORDER_VARIABLE_VALUE;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return name.compareTo(((VariableValueCopy) v).name);
     }
 
     @Override

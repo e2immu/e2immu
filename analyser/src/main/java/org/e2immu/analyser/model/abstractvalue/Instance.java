@@ -63,14 +63,14 @@ public class Instance implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof Instance) {
-            return parameterizedType.detailedString()
-                    .compareTo(((Instance) o).parameterizedType.detailedString());
-        }
-        if (o instanceof VariableValue) return 1;
-        if (o instanceof MethodValue) return -1;
-        return -1;
+    public int order() {
+        return ORDER_INSTANCE;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return parameterizedType.detailedString()
+                .compareTo(((Instance) v).parameterizedType.detailedString());
     }
 
     @Override

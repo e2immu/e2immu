@@ -41,19 +41,17 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     }
 
     @Override
+    public int order() {
+        return ORDER_CONSTANT_BOOLEAN;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return Boolean.compare(value, ((BoolValue) v).value);
+    }
+
+    @Override
     public String toString() {
-        return Boolean.toString(value);
-    }
-
-    @Override
-    public int compareTo(Value o) {
-        if (o == TRUE && this == FALSE) return 1;
-        if (o == this) return 0;
-        return -1;
-    }
-
-    @Override
-    public String asString() {
         return Boolean.toString(value);
     }
 

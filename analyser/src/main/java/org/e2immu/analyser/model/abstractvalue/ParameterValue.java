@@ -13,8 +13,8 @@ public class ParameterValue implements Value {
     }
 
     @Override
-    public int compareTo(Value o) {
-        return 0;
+    public int order() {
+        return ORDER_PARAMETER;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ParameterValue implements Value {
     }
 
     @Override
-    public String asString() {
-        return "Link to parameter " + parameterInfo.detailedString();
+    public String toString() {
+        return "->" + parameterInfo.detailedString();
     }
 }

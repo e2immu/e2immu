@@ -34,19 +34,18 @@ public class CharValue extends ConstantValue implements Constant<Character> {
     }
 
     @Override
+    public int order() {
+        return ORDER_CONSTANT_CHAR;
+    }
+
+    @Override
     public String toString() {
         return "'" + value + "'";
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof CharValue) return value - ((CharValue) o).value;
-        return -1; // I'm on the left
-    }
-
-    @Override
-    public String asString() {
-        return toString();
+    public int internalCompareTo(Value v) {
+        return Character.compare(value, ((CharValue) v).value);
     }
 
     @Override

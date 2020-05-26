@@ -57,16 +57,13 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o instanceof IntValue) return value - ((IntValue) o).value;
-        if (o instanceof ByteValue) return value - ((ByteValue) o).value;
-        if (o instanceof ShortValue) return value - ((ShortValue) o).value;
-        return -1; // I'm on the left
+    public int internalCompareTo(Value v) {
+        return value - ((IntValue)v).value;
     }
 
     @Override
-    public String asString() {
-        return Integer.toString(value);
+    public int order() {
+        return ORDER_CONSTANT_INT;
     }
 
     @Override

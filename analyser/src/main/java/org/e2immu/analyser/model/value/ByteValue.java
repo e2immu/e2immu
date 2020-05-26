@@ -34,6 +34,16 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
     }
 
     @Override
+    public int order() {
+        return ORDER_CONSTANT_BYTE;
+    }
+
+    @Override
+    public int internalCompareTo(Value v) {
+        return value - ((ByteValue) v).value;
+    }
+
+    @Override
     public NumericValue negate() {
         return new IntValue(-value);
     }
@@ -51,19 +61,6 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
     @Override
     public String toString() {
         return value < 0 ? "(" + value + ")" : Byte.toString(value);
-    }
-
-    @Override
-    public int compareTo(Value o) {
-        if (o instanceof IntValue) return value - ((IntValue) o).value;
-        if (o instanceof ByteValue) return value - ((ByteValue) o).value;
-        if (o instanceof ShortValue) return value - ((ShortValue) o).value;
-        return -1; // I'm on the left
-    }
-
-    @Override
-    public String asString() {
-        return Byte.toString(value);
     }
 
     @Override

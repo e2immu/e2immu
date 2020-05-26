@@ -34,18 +34,12 @@ public class NullValue extends ConstantValue implements Constant<Object> {
     }
 
     @Override
-    public int compareTo(Value o) {
-        if (o == this) return 0;
-        return -1; // I'm always at the front
+    public int order() {
+        return ORDER_CONSTANT_NULL;
     }
 
     @Override
     public String toString() {
-        return "null";
-    }
-
-    @Override
-    public String asString() {
         return "null";
     }
 
