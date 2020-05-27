@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -191,10 +192,14 @@ public class MethodValue implements Value {
             int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
             if (size >= Level.TRUE && notModified == Level.TRUE && object instanceof VariableValue) {
                 VariableValue variableValue = (VariableValue) object;
-                ConstrainedNumericValue cnv = Analysis.haveEquals(size) ?
-                        ConstrainedNumericValue.equalTo(sizeMethod(sizeMethod), Analysis.decodeSizeEquals(size)) :
-                        ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), Analysis.decodeSizeMin(size));
-                return Map.of(variableValue.variable, cnv);
+                Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
+                Value comparison;
+                if (Analysis.haveEquals(size)) {
+                    comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv);
+                } else {
+                    comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true);
+                }
+                return Map.of(variableValue.variable, comparison);
             }
         }
         return Map.of();

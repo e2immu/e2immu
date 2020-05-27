@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -139,7 +137,7 @@ public class StatementAnalyser {
                         Variable variable = entry.getKey();
                         Value negated = NegatedValue.negate(entry.getValue());
                         log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
-                        int sizeRestriction = negated.sizeRestriction();
+                        int sizeRestriction = negated.encodedSizeRestriction();
                         if (variable instanceof ParameterInfo) {
                             ((ParameterInfo) variable).parameterAnalysis.get().setProperty(VariableProperty.SIZE, sizeRestriction);
                         }

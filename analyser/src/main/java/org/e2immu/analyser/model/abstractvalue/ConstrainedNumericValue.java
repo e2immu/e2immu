@@ -106,7 +106,7 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     }
 
     @Override
-    public int sizeRestriction() {
+    public int encodedSizeRestriction() {
         if (!integer) throw new UnsupportedOperationException();
 
         if (lowerBound == upperBound) {
@@ -140,25 +140,5 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         }
         return null;
 
-    }
-
-    // we want to know if an inequality x >= 0 or x > 0 evaluates to constant FALSE
-    public boolean rejectsGreaterThanZero(boolean allowEquals) {
-        if (allowEquals) {
-            // is x >= 0 rejected outright? we have v <= upperbound
-            return upperBound < 0;
-        }
-        // is x > 0 rejected outright? we have v <= upperbound
-        return upperBound <= 0;
-    }
-
-    // we want to know if an inequality x >= 0 or x > 0 evaluates to constant TRUE
-    public boolean guaranteesGreaterThanZero(boolean allowEquals) {
-        if (allowEquals) {
-            // is x >= 0 always accepted? we have v >= upperbound
-            return lowerBound >= 0;
-        }
-        // is x > 0 always accepted? we have v >= upperbound
-        return lowerBound > 0;
     }
 }

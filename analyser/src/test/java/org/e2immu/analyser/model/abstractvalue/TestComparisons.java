@@ -1,5 +1,6 @@
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
@@ -185,5 +186,15 @@ public class TestComparisons extends CommonAbstractValue {
         Assert.assertEquals(BoolValue.FALSE, and);
         Value and2 = new AndValue().append(iLe0, iGe0);
         Assert.assertEquals(BoolValue.FALSE, and2);
+    }
+
+    @Test
+    public void testSizeRestriction() {
+        Value iGe0 = GreaterThanZeroValue.greater(i, new IntValue(0), false);
+        Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, iGe0.encodedSizeRestriction());
+        Value iGe3 = GreaterThanZeroValue.greater(i, new IntValue(3), true);
+        Assert.assertEquals(Analysis.encodeSizeMin(3), iGe3.encodedSizeRestriction());
+        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Assert.assertEquals(Analysis.encodeSizeEquals(4), iEq4.encodedSizeRestriction());
     }
 }

@@ -161,7 +161,7 @@ public interface Value extends Comparable<Value> {
         return Map.of();
     }
 
-    default int sizeRestriction() {
+    default int encodedSizeRestriction() {
         return Level.FALSE;
     }
 }

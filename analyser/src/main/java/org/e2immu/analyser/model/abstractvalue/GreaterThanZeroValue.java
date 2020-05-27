@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -186,5 +187,14 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     @Override
     public Set<Variable> variables() {
         return value.variables();
+    }
+
+    @Override
+    public int encodedSizeRestriction() {
+        XB xb = extract();
+        if (!xb.lessThan) {
+            return Analysis.encodeSizeMin((int) xb.b);
+        }
+        return 0;
     }
 }

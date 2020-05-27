@@ -38,7 +38,7 @@ public interface NumericValue extends Value {
     Number getNumber();
 
     @Override
-    default int sizeRestriction() {
+    default int encodedSizeRestriction() {
         return Analysis.encodeSizeEquals(getNumber().intValue());
     }
 }

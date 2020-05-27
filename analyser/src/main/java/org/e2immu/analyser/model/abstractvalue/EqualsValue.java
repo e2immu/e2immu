@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -116,5 +113,14 @@ public class EqualsValue extends PrimitiveValue {
             }
         }
         return Map.of();
+    }
+
+    @Override
+    public int encodedSizeRestriction() {
+        if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
+            int size = ((NumericValue) lhs).getNumber().intValue();
+            return Analysis.encodeSizeEquals(size);
+        }
+        return 0;
     }
 }
