@@ -23,9 +23,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.CombinedValue;
-import org.e2immu.analyser.model.abstractvalue.ParameterValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -252,23 +250,13 @@ public class FieldAnalyser {
 
         // compute and set the combined value
 
-        List<Value> transformed = values.stream()
-                .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
-                        new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
-                .collect(Collectors.toList());
-        boolean allConstant = values.stream().allMatch(Value::isConstant);
-        Value combinedValue;
-        if (allConstant) {
-            combinedValue = CombinedValue.create(transformed);
-        } else {
-            combinedValue = fieldProperties.newVariableValue(fieldReference);
-        }
-        fieldAnalysis.effectivelyFinalValue.set(combinedValue);
-        fieldAnalysis.setProperty(VariableProperty.CONSTANT, combinedValue.isConstant());
+        Value effectivelyFinalValue = determineEffectivelyFinalValue(fieldReference, values);
+        fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
+        fieldAnalysis.setProperty(VariableProperty.CONSTANT, effectivelyFinalValue.isConstant());
 
         // check constant
 
-        if (combinedValue.isConstant()) {
+        if (effectivelyFinalValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
             fieldAnalysis.annotations.put(constantAnnotation, true);
@@ -279,8 +267,21 @@ public class FieldAnalyser {
         }
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
-                fieldInfo.fullyQualifiedName(), combinedValue);
+                fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
         return true;
+    }
+
+    private Value determineEffectivelyFinalValue(FieldReference fieldReference, List<Value> values) {
+        // List<Value> transformed = values.stream()
+        //        .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
+        //                 new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
+        //         .collect(Collectors.toList());
+        if (values.size() == 1) {
+            Value value = values.get(0);
+            if (value.isConstant() || value instanceof ParameterValue) return value;
+        }
+        Value combinedValue = CombinedValue.create(values);
+        return new FinalFieldValue(fieldReference, combinedValue);
     }
 
     private boolean analyseLinked(FieldInfo fieldInfo,

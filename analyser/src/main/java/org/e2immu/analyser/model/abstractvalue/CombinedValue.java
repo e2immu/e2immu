@@ -34,11 +34,6 @@ public class CombinedValue implements Value {
 
     public static Value create(@Size(min = 1) List<Value> values) {
         if (values.isEmpty()) throw new UnsupportedOperationException();
-        if (values.size() == 1) {
-            Value value = values.get(0);
-            if (value == UnknownValue.NO_VALUE) throw new UnsupportedOperationException();
-            if (value.isConstant() || value.hasConstantProperties() || value instanceof CombinedValue) return value;
-        }
         return new CombinedValue(ImmutableList.copyOf(values));
     }
 

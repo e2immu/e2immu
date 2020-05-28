@@ -38,8 +38,6 @@ public class Level {
         throw new UnsupportedOperationException();
     }
 
-    // levels are by default 0 (also @E1Immutable), 1 for @E2Immutable, @NotNull1, 2 for @NotNull2, @Immutable
-
     // these are the allowed values
     public static final int DELAY = -1;
     public static final int UNDEFINED = -1;

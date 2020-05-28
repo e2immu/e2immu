@@ -4,8 +4,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -24,16 +23,23 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
                 } else {
-                    Assert.assertTrue(currentValue instanceof VariableValue);
-                    VariableValue variableValue = (VariableValue) currentValue;
+                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("Example3.this.set3", currentValue.toString());
+                    Assert.assertEquals("set3 (of this keyword (of org.e2immu.analyser.testexample.withannotatedapi.SimpleNotModifiedChecks.Example3))", currentValue.toString());
                 }
             }
         }
-        if ("add4".equals(methodInfo.name) && "local4".equals(variableName) && "1".equals(statementId)) {
-            if (1 == iteration) {
-                //  Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+        if ("add4".equals(methodInfo.name) && "local4".equals(variableName)) {
+            if ("0".equals(statementId)) {
+                if (iteration == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
+                } else {
+                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) currentValue;
+                    Assert.assertTrue(variableValue.variable instanceof FieldReference);
+                    Assert.assertEquals("set4 (of this keyword (of org.e2immu.analyser.testexample.withannotatedapi.SimpleNotModifiedChecks.Example4))", currentValue.toString());
+                }
             }
         }
     };
@@ -42,7 +48,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("add4".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-                //    Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception
+                Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception
             }
         }
     };
@@ -65,9 +71,12 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 }
                 if (iteration == 1) {
                     Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                    //    Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().size());
-                    //     Assert.assertEquals("in4", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
                     Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+                    Assert.assertFalse(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+                }
+                if (iteration == 2) {
+                    Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().size());
+                    Assert.assertEquals("in4", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
                 }
             }
         }
@@ -95,6 +104,17 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, TypeInfo typeInfo) {
+            if(iteration == 1 && "Example4".equals(typeInfo.simpleName)) {
+                int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                Assert.assertEquals(Level.TRUE, Level.value(immutable, Level.E1IMMUTABLE));
+                Assert.assertEquals(Level.DELAY, Level.value(immutable, Level.E2IMMUTABLE));
+            }
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("SimpleNotModifiedChecks", 1, new DebugConfiguration.Builder()
@@ -103,6 +123,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

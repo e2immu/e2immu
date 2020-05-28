@@ -3,8 +3,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.CombinedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,7 +21,6 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                         Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                     if (iteration == 1) {
-                        Assert.assertTrue(currentValue instanceof VariableValue);
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                 }

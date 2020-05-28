@@ -147,6 +147,7 @@ public class Instance implements Value {
             return MethodValue.checkSize(null, constructor, constructorParameterValues);
         }
 
+        if(variableProperty == VariableProperty.NOT_MODIFIED) return Level.TRUE;
         // @NotModified should not be asked here
         throw new UnsupportedOperationException("Asking for " + variableProperty);
     }

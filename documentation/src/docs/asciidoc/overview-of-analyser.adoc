@@ -382,9 +382,9 @@ Levels can be improved (value increased) but not decreased in the same map.
 | METHOD_CALLED | absent | | method calls | | | |
 | NOT_MODIFIED | delay | modifications | not modified | | | |
 | FINAL | delay | not final | final | | | |
-| IMMUTABLE | delay | not E1 | E1Immutable | E1, not E2 | E2Immutable | |
+| IMMUTABLE | delay | not E1 | E1Immutable, delay E2 | E1, not E2 | E2Immutable | |
 | SIZE | delay | >= 0 (no info) | = 0 (empty) | >= 1 (not empty) | = 1 | >= 2 | = 2
-| NOT_NULL | delay | false | @NotNull | NN, not NN1^*^ | @NotNull1 | NN1, not NN2^*^ | @NotNull2
+| NOT_NULL | delay | false | @NotNull, delay NN1 | NN, not NN1 | @NotNull1, delay NN2 | NN1, not NN2 | @NotNull2
 |===
 
 The ones with an asterisk ^*^ are optional, and unlikely to be set by the analyser.

@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
@@ -166,6 +167,10 @@ public class TypeAnalyser {
                     }
                 }
             }
+
+            for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.beforeTypePropertyComputations) {
+                typeAnalyserVisitor.visit(iteration, typeInfo);
+            }
             // TODO at some point we will have overlapping qualities
             // this is caused by the fact that some knowledge may come later.
             // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
@@ -177,6 +182,11 @@ public class TypeAnalyser {
                 if (analyseExtensionClass(typeInfo)) changes = true;
                 if (analyseNotNull(typeInfo)) changes = true;
             }
+
+            for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.afterTypePropertyComputations) {
+                typeAnalyserVisitor.visit(iteration, typeInfo);
+            }
+
             cnt++;
             if (cnt > 10) {
                 throw new UnsupportedOperationException("?10 iterations needed?");
