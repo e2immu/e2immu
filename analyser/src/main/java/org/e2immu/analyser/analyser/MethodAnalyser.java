@@ -68,6 +68,13 @@ public class MethodAnalyser {
             check(methodInfo, NotNull.class, typeContext.notNull.get());
             check(methodInfo, Fluent.class, typeContext.fluent.get());
             check(methodInfo, Identity.class, typeContext.identity.get());
+
+            check(methodInfo, E1Immutable.class, typeContext.e1Immutable.get());
+            check(methodInfo, E1Container.class, typeContext.e1Container.get());
+            check(methodInfo, Container.class, typeContext.container.get());
+            check(methodInfo, E2Immutable.class, typeContext.e2Immutable.get());
+            check(methodInfo, E2Container.class, typeContext.e2Container.get());
+
             CheckConstant.checkConstantForMethods(typeContext, methodInfo);
             CheckSize.checkSizeForMethods(typeContext, methodInfo);
         }

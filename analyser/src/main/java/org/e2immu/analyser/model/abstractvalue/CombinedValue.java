@@ -37,7 +37,7 @@ public class CombinedValue implements Value {
         if (values.size() == 1) {
             Value value = values.get(0);
             if (value == UnknownValue.NO_VALUE) throw new UnsupportedOperationException();
-            if (value.hasConstantProperties() || value instanceof CombinedValue) return value;
+            if (value.isConstant() || value.hasConstantProperties() || value instanceof CombinedValue) return value;
         }
         return new CombinedValue(ImmutableList.copyOf(values));
     }

@@ -347,9 +347,9 @@ public abstract class Analysis {
     protected static final ElementType[] NOT_NULL_WHERE_ALL = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
     protected static final ElementType[] NOT_NULL_WHERE_TYPE = {ElementType.TYPE};
 
-    protected List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+    protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_TYPE);
-        return Arrays.stream(elements).collect(Collectors.toList());
+        return Arrays.stream(elements).collect(Collectors.toSet());
     }
 
     public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {

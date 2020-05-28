@@ -25,6 +25,7 @@ import org.e2immu.analyser.util.SetOnce;
 import java.lang.annotation.ElementType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -43,9 +44,9 @@ public class TypeAnalysis extends Analysis {
 
     public final SetOnce<Boolean> doNotAllowDelaysOnNotModified = new SetOnce<>();
 
-    protected List<ElementType> extractWhere(AnnotationExpression annotationExpression) {
+    protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_ALL);
-        return Arrays.stream(elements).collect(Collectors.toList());
+        return Arrays.stream(elements).collect(Collectors.toSet());
     }
 
     @Override

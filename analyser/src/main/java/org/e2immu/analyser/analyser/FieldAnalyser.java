@@ -87,7 +87,7 @@ public class FieldAnalyser {
             changes = true;
 
         // STEP 3: EFFECTIVELY FINAL VALUE, and @Constant
-        if (analyseFinalValue(fieldInfo, fieldAnalysis, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
+        if (analyseFinalValue(fieldInfo, fieldAnalysis, fieldReference, fieldProperties, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
         // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: SIZE, NOT_NULL, IMMUTABLE, CONTAINER (min over assignments)
@@ -166,7 +166,7 @@ public class FieldAnalyser {
             fieldAnalysis.setProperty(property, Level.FALSE); // in the case of size, FALSE means >= 0
             return true;
         }
-        if(fieldSummariesNotYetSet) return false;
+        if (fieldSummariesNotYetSet) return false;
 
         boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 // field is not present in the method
@@ -202,6 +202,8 @@ public class FieldAnalyser {
 
     private boolean analyseFinalValue(FieldInfo fieldInfo,
                                       FieldAnalysis fieldAnalysis,
+                                      FieldReference fieldReference,
+                                      VariableProperties fieldProperties,
                                       Value value,
                                       boolean haveInitialiser,
                                       TypeInspection typeInspection,
@@ -254,7 +256,13 @@ public class FieldAnalyser {
                 .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
                         new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
                 .collect(Collectors.toList());
-        Value combinedValue = CombinedValue.create(transformed);
+        boolean allConstant = values.stream().allMatch(Value::isConstant);
+        Value combinedValue;
+        if (allConstant) {
+            combinedValue = CombinedValue.create(transformed);
+        } else {
+            combinedValue = fieldProperties.newVariableValue(fieldReference);
+        }
         fieldAnalysis.effectivelyFinalValue.set(combinedValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, combinedValue.isConstant());
 
