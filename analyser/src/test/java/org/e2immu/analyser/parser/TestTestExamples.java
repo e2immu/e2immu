@@ -80,9 +80,4 @@ public class TestTestExamples extends CommonTestRunner {
     public void testModifyParameterChecks() throws IOException {
         testClass("ModifyParameterChecks", 2);
     }
-
-    @Test
-    public void testSwitchStatementChecks() throws IOException {
-        testClass("SwitchStatementChecks", 4);
-    }
 }

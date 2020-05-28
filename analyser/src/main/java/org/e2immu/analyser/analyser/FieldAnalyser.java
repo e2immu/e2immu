@@ -234,6 +234,9 @@ public class FieldAnalyser {
                 }
             }
         }
+
+        // field linked to parameter
+
         if (values.size() == 1 && values.get(0) instanceof VariableValue) {
             VariableValue variableValue = (VariableValue) values.get(0);
             if (variableValue.variable instanceof ParameterInfo) {
@@ -244,6 +247,9 @@ public class FieldAnalyser {
                 log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
             }
         }
+
+        // compute and set the combined value
+
         List<Value> transformed = values.stream()
                 .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
                         new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
@@ -251,6 +257,8 @@ public class FieldAnalyser {
         Value combinedValue = CombinedValue.create(transformed);
         fieldAnalysis.effectivelyFinalValue.set(combinedValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, combinedValue.isConstant());
+
+        // check constant
 
         if (combinedValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection

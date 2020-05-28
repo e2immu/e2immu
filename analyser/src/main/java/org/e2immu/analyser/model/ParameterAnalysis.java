@@ -81,6 +81,14 @@ public class ParameterAnalysis extends Analysis {
                 return parameterizedType.getProperty(variableProperty);
 
             case NOT_MODIFIED:
+                if (parameterizedType.isUnboundParameterType()) return Integer.MAX_VALUE;
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE)) {
+                    return Integer.MAX_VALUE;
+                }
+                return Level.UNDEFINED;
+
             case CONTAINER:
             case IMMUTABLE:
                 return parameterizedType.getProperty(variableProperty);

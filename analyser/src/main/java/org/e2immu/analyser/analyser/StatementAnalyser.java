@@ -70,6 +70,11 @@ public class StatementAnalyser {
             while (statement != null) {
                 String statementId = statement.streamIndices();
                 variableProperties.setCurrentStatement(statement);
+
+                if(variableProperties.getConditional() == BoolValue.FALSE) {
+                    variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
+                }
+
                 if (computeVariablePropertiesOfStatement(statement, variableProperties)) {
                     changes = true;
                 }

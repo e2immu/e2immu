@@ -74,10 +74,10 @@ public interface Value extends Comparable<Value> {
     @Override
     default int compareTo(Value v) {
         // negations are always AFTER their argument
-        if (v instanceof NegatedValue && !(this instanceof NegatedValue)) {
+        if (v instanceof NegatedValue && this.equals(((NegatedValue) v).value)) {
             return -1;
         }
-        if (this instanceof NegatedValue && !(v instanceof NegatedValue)) {
+        if (this instanceof NegatedValue && v.equals(((NegatedValue) this).value)) {
             return 1;
         }
         if (getClass() == v.getClass()) {

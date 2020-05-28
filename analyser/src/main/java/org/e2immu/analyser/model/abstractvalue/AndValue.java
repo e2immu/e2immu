@@ -148,40 +148,76 @@ public class AndValue implements Value {
             return Action.FALSE;
         }
 
-        // A && !B && (!A || B)
+        // A && (!A || ...) ==> we can remove the !A
+        // if we keep doing this, the OrValue empties out, and we are in the situation:
+        // A && !B && (!A || B) ==> each of the components of an OR occur in negative form earlier on
+        // this is the more complicated form of A && !A
         if (value instanceof OrValue) {
-            boolean allAroundInNegativeWay = true;
-            for (Value value1 : components(value)) {
+            List<Value> remaining = new ArrayList<>(components(value));
+            Iterator<Value> iterator = remaining.iterator();
+            boolean changed = false;
+            while (iterator.hasNext()) {
+                Value value1 = iterator.next();
                 Value negated1 = NegatedValue.negate(value1);
                 boolean found = false;
-                for (int pos2 = 0; pos2 < concat.size(); pos2++) {
-                    if (pos2 != pos && negated1.equals(concat.get(pos2))) {
+                for (int pos2 = 0; pos2 < newConcat.size(); pos2++) {
+                    if (pos2 != pos && negated1.equals(newConcat.get(pos2))) {
                         found = true;
                         break;
                     }
                 }
-                if (!found) allAroundInNegativeWay = false;
+                if (found) {
+                    iterator.remove();
+                    changed = true;
+                }
             }
-            if (allAroundInNegativeWay) {
-                log(CNF, "Return FALSE in And, found opposite for {}", value);
-                return Action.FALSE;
+            if (changed) {
+                if (remaining.isEmpty()) {
+                    log(CNF, "Return FALSE in And, found opposite for {}", value);
+                    return Action.FALSE;
+                }
+                // replace
+                Value orValue = new OrValue().append(remaining);
+                newConcat.add(orValue);
+                return Action.SKIP;
             }
         }
 
-        // more complicated variant: (A || B) && (A || !B)
-        List<Value> components = components(value);
-        for (Value value1 : components) {
-            Value negated1 = NegatedValue.negate(value1);
-            for (int i = 0; i < pos; i++) {
-                List<Value> components2 = components(concat.get(i));
-                for (Value value2 : components2) {
-                    if (negated1.equals(value2)) {
-                        log(CNF, "Return TRUE in And, found {} and {}", value2, value1);
-                        return Action.TRUE;
+        // the more complicated variant of A && A => A
+        // A && (A || xxx) ==> A
+        if (value instanceof OrValue) {
+            List<Value> components = components(value);
+            for (Value value1 : components) {
+                for (Value value2 : newConcat) {
+                    if (value1.equals(value2)) {
+                        return Action.SKIP;
                     }
                 }
             }
         }
+        // A || B &&  A || !B ==> A
+        if (value instanceof OrValue && prev instanceof OrValue) {
+            List<Value> components = components(value);
+            List<Value> prevComponents = components(prev);
+            List<Value> equal = new ArrayList<>();
+            boolean ok = true;
+            for (Value value1 : components) {
+                if (prevComponents.contains(value1)) {
+                    equal.add(value1);
+                } else if (!prevComponents.contains(NegatedValue.negate(value1))) {
+                    // not opposite, e.g. C
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok && !equal.isEmpty()) {
+                Value orValue = new OrValue().append(equal);
+                newConcat.set(newConcat.size() - 1, orValue);
+                return Action.SKIP;
+            }
+        }
+
+        // simplification of the OrValue
 
         if (value instanceof OrValue) {
             OrValue orValue = (OrValue) value;
@@ -191,6 +227,8 @@ public class AndValue implements Value {
             }
             return Action.ADD;
         }
+
+        // combinations with equality
 
         if (prev instanceof EqualsValue) {
             if (value instanceof EqualsValue) {

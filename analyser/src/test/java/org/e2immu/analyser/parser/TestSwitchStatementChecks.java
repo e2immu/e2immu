@@ -1,10 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
@@ -13,41 +10,23 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestEvaluationErrors extends CommonTestRunner {
-    public TestEvaluationErrors() {
+public class TestSwitchStatementChecks extends CommonTestRunner {
+    public TestSwitchStatementChecks() {
         super(false);
     }
 
-    /*
-     public static int testDivisionByZero() {
-        int i=0;
-        int j = 23 / i;
-        return j;
-    }
-
-    public static int testDeadCode() {
-        int i=1;
-        if(i != 1) {
-            return 2;
-        }
-        return 3;
-    }
-     */
    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if("testDivisionByZero".equals(methodInfo.name) ) {
-                if("1".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
-                if("1.0.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
+            if("method7".equals(methodInfo.name) ) {
                 if("2".equals(numberedStatement.streamIndices())) {
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
+                    Assert.assertTrue(numberedStatement.errorValue.get());
+                }
+                if("2.2.0".equals(numberedStatement.streamIndices())) {
+                    Assert.assertTrue(numberedStatement.errorValue.get());
                 }
             }
-            if("testDeadCode".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
+            if("method3".equals(methodInfo.name) && "0.2.0".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.get());
             }
         }
@@ -55,7 +34,7 @@ public class TestEvaluationErrors extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("EvaluationErrors", 3, new DebugConfiguration.Builder()
+        testClass("SwitchStatementChecks", 5, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

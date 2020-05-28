@@ -62,6 +62,7 @@ public class SimpleNotModifiedChecks {
         @NotModified(type = VERIFY_ABSENT)
         public Set<String> set3 = new HashSet<>();
 
+        @NotModified(type = VERIFY_ABSENT)
         public void add3(@NotNull String v) {
             Set<String> local3 = set3;
             local3.add(v);

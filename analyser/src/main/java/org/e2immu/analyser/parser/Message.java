@@ -37,6 +37,7 @@ public class Message {
     public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT = "Inline conditional evaluates to constant";
     public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
     public static final String EMPTY_LOOP = "Empty loop";
+    public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
     public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
@@ -83,6 +84,7 @@ public class Message {
         map.put(METHOD_SHOULD_BE_MARKED_STATIC, Severity.ERROR);
         map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
         map.put(PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO, Severity.ERROR);
+        map.put(UNREACHABLE_STATEMENT, Severity.ERROR);
 
         map.put(ANNOTATION_ABSENT, Severity.ERROR);
         map.put(ANNOTATION_UNEXPECTEDLY_PRESENT, Severity.ERROR);
@@ -97,6 +99,7 @@ public class Message {
         map.put(USELESS_ASSIGNMENT, Severity.ERROR);
         map.put(UNUSED_LOCAL_VARIABLE, Severity.ERROR);
         map.put(METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, Severity.ERROR);
+        map.put(METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD, Severity.ERROR);
         map.put(PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT, Severity.ERROR);
 
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);

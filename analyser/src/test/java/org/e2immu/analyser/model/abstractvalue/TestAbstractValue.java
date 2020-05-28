@@ -77,6 +77,12 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testMoreComplicatedAnd() {
+        Value aAndAOrB = new AndValue().append(a, new OrValue().append(a, b));
+        Assert.assertEquals(a, aAndAOrB);
+
+        Value aAndNotAOrB = new AndValue().append(a, new OrValue().append(NegatedValue.negate(a), b));
+        Assert.assertEquals("(a and b)", aAndNotAOrB.toString());
+
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
         Value v = new AndValue().append(d, a, NegatedValue.negate(b), new OrValue().append(NegatedValue.negate(a), b), c);
         Assert.assertEquals(BoolValue.FALSE, v);
