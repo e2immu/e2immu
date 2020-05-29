@@ -71,7 +71,7 @@ public class StatementAnalyser {
                 String statementId = statement.streamIndices();
                 variableProperties.setCurrentStatement(statement);
 
-                if(variableProperties.getConditional() == BoolValue.FALSE) {
+                if (variableProperties.getConditional() == BoolValue.FALSE) {
                     variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
                 }
 
@@ -143,10 +143,12 @@ public class StatementAnalyser {
                         Value negated = NegatedValue.negate(entry.getValue());
                         log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
                         int sizeRestriction = negated.encodedSizeRestriction();
-                        if (variable instanceof ParameterInfo) {
-                            ((ParameterInfo) variable).parameterAnalysis.get().setProperty(VariableProperty.SIZE, sizeRestriction);
+                        if (sizeRestriction > 0) { // if the complement is a meaningful restriction
+                            if (variable instanceof ParameterInfo) {
+                                ((ParameterInfo) variable).parameterAnalysis.get().setProperty(VariableProperty.SIZE, sizeRestriction);
+                            }
+                            variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
                         }
-                        variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
                     }
                 }
             }
@@ -381,7 +383,7 @@ public class StatementAnalyser {
         // PART 6: checks for IfElse
 
         Runnable uponUsingConditional;
-        
+
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional.isConstant()) {
@@ -389,7 +391,7 @@ public class StatementAnalyser {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
-            } 
+            }
             uponUsingConditional = () -> {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
                 statement.errorValue.set(true);

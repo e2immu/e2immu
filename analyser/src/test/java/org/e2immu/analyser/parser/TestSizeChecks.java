@@ -44,6 +44,10 @@ public class TestSizeChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("requireNotEmpty".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("0 == ts.size()", conditional.toString());
+            }
+
             if ("method1".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
@@ -64,6 +68,14 @@ public class TestSizeChecks extends CommonTestRunner {
             if ("method3".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
+
+            if ("method4".equals(methodInfo.name) && Set.of("0.0.0", "0.0.1").contains(numberedStatement.streamIndices())) {
+                // NOTE that we do not have "((-1) + input4.size(),?>=0) >= 0"
+                Assert.assertEquals("not (0 == input4.size())", conditional.toString());
+            }
+            if ("method4".equals(methodInfo.name) && "0.0.1".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
         }
     };
 
@@ -72,11 +84,16 @@ public class TestSizeChecks extends CommonTestRunner {
         MethodInfo isEmpty = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("isEmpty")).findAny().orElseThrow();
         int size = isEmpty.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         Assert.assertEquals(Analysis.SIZE_EMPTY, size);
+
+        TypeInfo map = typeContext.getFullyQualified(Map.class);
+        MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findAny().orElseThrow();
+        int sizeCopy = entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+        Assert.assertEquals(Level.TRUE_LEVEL_1, sizeCopy);
     };
 
     @Test
     public void test() throws IOException {
-        testClass("SizeChecks", 3, 0, new DebugConfiguration.Builder()
+        testClass("SizeChecks", 4, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)

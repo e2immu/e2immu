@@ -169,7 +169,10 @@ public class ComputeLinking {
 
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.set(fieldAndParameterDependencies);
+                if (!methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
+                    methodAnalysis.fieldSummaries.put(fieldInfo, new TransferValue());
+                }
+                methodAnalysis.fieldSummaries.get(fieldInfo).linkedVariables.set(fieldAndParameterDependencies);
                 changes.set(true);
                 log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.detailedString(),
                         methodInfo.fullyQualifiedName(), Variable.detailedString(fieldAndParameterDependencies));

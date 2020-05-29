@@ -3,6 +3,7 @@ package org.e2immu.analyser.testexample.withannotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.Collection;
+import java.util.Map;
 
 public class SizeChecks {
 
@@ -56,5 +57,15 @@ public class SizeChecks {
             System.out.println("Always printed");
         }
         return 4;
+    }
+
+    static <T> void method4(Map<T, Integer> input4) {
+        if (!input4.isEmpty()) {
+            Collection<Map.Entry<T, Integer>> entrySet = input4.entrySet();
+            // entrySet should NOT be empty, it has a @Size(copy = true)
+            if (entrySet.isEmpty()) {
+                System.out.println("Never printed");
+            }
+        }
     }
 }

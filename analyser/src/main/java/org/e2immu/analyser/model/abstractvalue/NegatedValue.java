@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -70,11 +71,11 @@ public class NegatedValue extends PrimitiveValue {
                 if (improve != null) return improve;
             }
         }
-        if(v instanceof SumValue) {
-            return ((SumValue)v).negate();
+        if (v instanceof SumValue) {
+            return ((SumValue) v).negate();
         }
-        if(v instanceof GreaterThanZeroValue) {
-            return ((GreaterThanZeroValue)v).negate();
+        if (v instanceof GreaterThanZeroValue) {
+            return ((GreaterThanZeroValue) v).negate();
         }
         return new NegatedValue(v);
     }
@@ -117,6 +118,14 @@ public class NegatedValue extends PrimitiveValue {
     public Map<Variable, Value> individualSizeRestrictions() {
         return value.individualSizeRestrictions().entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue())));
+    }
+
+    @Override
+    public int encodedSizeRestriction() {
+        int sub = value.encodedSizeRestriction();
+        if (sub == Analysis.SIZE_EMPTY) return Analysis.SIZE_NOT_EMPTY; // ==0 becomes >= 1
+        if (sub == Analysis.SIZE_NOT_EMPTY) return Analysis.SIZE_EMPTY; // >=1 becomes == 0
+        return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
     }
 
     @Override

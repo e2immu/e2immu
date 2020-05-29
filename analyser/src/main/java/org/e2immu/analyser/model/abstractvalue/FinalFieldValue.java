@@ -35,7 +35,7 @@ public class FinalFieldValue implements Value {
     private final Map<VariableProperty, Integer> copiedProperties;
 
     public FinalFieldValue(Variable variable, Value assignment) {
-        this.variable = variable;
+        this.variable = Objects.requireNonNull(variable);
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, assignment.getPropertyOutsideContext(property));
@@ -45,7 +45,10 @@ public class FinalFieldValue implements Value {
 
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FinalFieldValue that = (FinalFieldValue) o;
+        return variable.equals(that.variable);
     }
 
     @Override

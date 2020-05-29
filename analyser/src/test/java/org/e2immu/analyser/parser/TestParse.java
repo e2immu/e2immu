@@ -54,11 +54,6 @@ public class TestParse {
     }
 
     @Test
-    public void testDependencyGraph() throws IOException {
-        goTest("DependencyGraph", 0);
-    }
-
-    @Test
     public void testEither() throws IOException {
         goTest("Either", 0);
     }

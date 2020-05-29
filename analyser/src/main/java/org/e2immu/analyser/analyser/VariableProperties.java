@@ -129,7 +129,7 @@ class VariableProperties implements EvaluationContext {
         this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
-        this.conditional = conditional;
+        addToConditional(conditional);
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
@@ -187,8 +187,10 @@ class VariableProperties implements EvaluationContext {
                 guaranteedToBeReachedByParentStatement);
     }
 
+    // all conditionals added go via this method
+
     public void addToConditional(Value value) {
-        if (!value.isUnknown()) {
+        if (value != null && !value.isUnknown()) {
             if (conditional == null || conditional.isUnknown()) conditional = value;
             else {
                 if (conditional instanceof AndValue) {
@@ -802,7 +804,7 @@ class VariableProperties implements EvaluationContext {
             aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                     Level.fromBool(guaranteedToBeReached(aboutVariable)));
 
-            if (conditional != null) conditional = removeNullClausesInvolving(conditional, at);
+            if (conditional != null) conditional = removeClausesInvolving(conditional, at);
         }
     }
 
@@ -820,7 +822,9 @@ class VariableProperties implements EvaluationContext {
         return true;
     }
 
-    private static Value removeNullClausesInvolving(Value conditional, Variable variable) {
+    // null-clauses like if(a==null) a = ... (then the null-clause on a should go)
+    // same applies to size()... if(a.isEmpty()) a = ...
+    private static Value removeClausesInvolving(Value conditional, Variable variable) {
         Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
         if (toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
             return null;

@@ -90,7 +90,7 @@ public class VariableValueCopy implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        throw new UnsupportedOperationException(); // there is no valid context anymore
+        return getPropertyOutsideContext(variableProperty);
     }
 
     @Override

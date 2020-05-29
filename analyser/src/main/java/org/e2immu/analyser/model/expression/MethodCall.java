@@ -23,13 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -192,7 +189,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Level.FALSE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
-                return null;
+                return sizeMethodValue(objectValue, requiredSize);
             }
             // we have a requirement, and we have a size.
             if (Analysis.haveEquals(requiredSize)) {
@@ -208,7 +205,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     return BoolValue.FALSE;
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-                return null; // we want =3, but we have >= 2; could be anything
+                return sizeMethodValue(objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
             }
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
@@ -216,7 +213,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return BoolValue.TRUE;
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-            return null;
+            return sizeMethodValue(objectValue, requiredSize);
         }
 
         // SITUATION 2: @Size int size(): this method returns the size
@@ -228,6 +225,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Analysis.decodeSizeMin(sizeOfObject));
         }
         return null;
+    }
+
+    // instead of returning isEmpty(), we return size() == 0
+    // instead of returning isNotEmpty(), wer return size() >= 1
+    private Value sizeMethodValue(Value objectValue, int requiredSize) {
+        MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
+        MethodValue sizeMethod = new MethodValue(sizeMethodInfo, objectValue, List.of());
+        if (Analysis.haveEquals(requiredSize)) {
+            return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize)), sizeMethod);
+        }
+        return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
     }
 
     private Value computeSizeModifyingMethod(Value objectValue, EvaluationContext evaluationContext) {
