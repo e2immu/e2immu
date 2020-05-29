@@ -52,7 +52,7 @@ public class Location {
             return "method " + methodInfo.distinguishingName() + ", statement " + statementId;
         }
         if (parameterInfo != null) {
-            return "parameter" + parameterInfo.name + " of " + methodInfo.distinguishingName();
+            return "parameter " + parameterInfo.name + " of " + methodInfo.distinguishingName();
         }
         if (methodInfo != null) {
             return "method " + methodInfo.distinguishingName();

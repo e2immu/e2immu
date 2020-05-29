@@ -44,6 +44,9 @@ public class ComputeLinking {
             // this one can be delayed, it copies the field assignment values
             if (copyFieldAssignmentValue(methodInfo, methodProperties)) changes = true;
 
+            // SIZE, NOT_NULL into fieldSummaries
+            if (copyContextProperties(methodInfo, methodProperties)) changes = true;
+
             // this method computes, unless delayed, the values for
             // - linksComputed
             // - variablesLinkedToFieldsAndParameters
@@ -153,6 +156,12 @@ public class ComputeLinking {
             log(DELAYED, "Best and worst case dependency graph transitive terminal sets differ -- delaying establishing links");
             return false;
         }
+        boolean allFieldsFinalDetermined = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(fieldInfo ->
+                fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
+        if (!allFieldsFinalDetermined) {
+            log(DELAYED, "Delay, we don't know about final values for some fields");
+            return false;
+        }
         AtomicBoolean changes = new AtomicBoolean();
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
 
@@ -221,15 +230,20 @@ public class ComputeLinking {
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
                     ParameterAnalysis parameterAnalysis = ((ParameterInfo) linkedVariable).parameterAnalysis.get();
-                    if (summary == Level.DELAY) {
-                        log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());
+                    if (parameterAnalysis.assignedToField.isSet()) {
+                        log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
+                                linkedVariable.name(), parameterAnalysis.assignedToField.get().fullyQualifiedName(), summary);
                     } else {
-                        log(NOT_MODIFIED, "Mark {} " + (summary == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
-                                linkedVariable.detailedString(), methodInfo.distinguishingName());
-                        int currentNotModified = parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-                        if (currentNotModified == Level.DELAY) {
-                            parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, summary);
-                            changes = true;
+                        if (summary == Level.DELAY) {
+                            log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());
+                        } else {
+                            log(NOT_MODIFIED, "Mark {} " + (summary == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
+                                    linkedVariable.detailedString(), methodInfo.distinguishingName());
+                            int currentNotModified = parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+                            if (currentNotModified == Level.DELAY) {
+                                parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, summary);
+                                changes = true;
+                            }
                         }
                     }
                 }
@@ -288,7 +302,7 @@ public class ComputeLinking {
     }
 
     /**
-     * Goal is to copy properties from the evaluation context into fieldSummaried, both for fields AND for `this`.
+     * Goal is to copy properties from the evaluation context into fieldSummarized, both for fields AND for `this`.
      * There cannot be a delay here.
      * Fields that are not mentioned in the evaluation context should not be present in the fieldSummaries.
      *
@@ -350,6 +364,41 @@ public class ComputeLinking {
                     changes = true;
                     tv.value.set(value);
                     // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
+                }
+            }
+        }
+        return changes;
+    }
+
+    // a DELAY should only be possible for good reasons
+    // context can generally only be delayed when there is a method delay
+
+    private static boolean copyContextProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
+        boolean changes = false;
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
+            Variable variable = aboutVariable.variable;
+            if (variable instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+                int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
+                boolean haveDelay = methodDelay == Level.TRUE || aboutVariable.getCurrentValue() == UnknownValue.NO_VALUE;
+                for (VariableProperty variableProperty : VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD) {
+                    int value = aboutVariable.getProperty(variableProperty);
+                    int current = tv.properties.getOtherwise(variableProperty, haveDelay ? Level.DELAY : Level.FALSE);
+                    if (value > current) {
+                        tv.properties.put(variableProperty, value);
+                        changes = true;
+                    }
+                }
+                int currentDelayResolved = tv.properties.getOtherwise(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY);
+                if (currentDelayResolved == Level.TRUE && !haveDelay) {
+                    log(DELAYED, "Delays on {} have been resolved", aboutVariable.name);
+                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, 3);
+                }
+                if (currentDelayResolved == Level.DELAY && haveDelay) {
+                    log(DELAYED, "Marking that delays need resolving on {}", aboutVariable.name);
+                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
             }
         }

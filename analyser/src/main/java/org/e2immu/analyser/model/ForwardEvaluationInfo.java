@@ -45,7 +45,7 @@ public interface ForwardEvaluationInfo {
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
     ForwardEvaluationInfo ASSIGNMENT_TARGET = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.FALSE), true);
 
-    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.FALSE), false);
+    ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfoContainer(Map.of(VariableProperty.NOT_NULL, Level.TRUE), false);
 
     static ForwardEvaluationInfo create(Map<VariableProperty, Integer> properties) {
         return new ForwardEvaluationInfoContainer(properties, false);

@@ -189,7 +189,7 @@ public class TypeAnalyser {
 
             cnt++;
             if (cnt > 10) {
-                throw new UnsupportedOperationException("?10 iterations needed?");
+                throw new UnsupportedOperationException("More than 10 iterations needed for type " + typeInfo.simpleName + "?");
             }
         }
 

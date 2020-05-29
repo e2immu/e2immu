@@ -43,9 +43,6 @@ public class ParameterAnalyser {
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
-        Lazy<String> where = new Lazy<>(() -> "In method " +
-                parameterInfo.parameterInspection.get().owner.fullyQualifiedName() + ", " +
-                parameterInfo.detailedString());
         check(parameterInfo, NotModified.class, typeContext.notModified.get());
         check(parameterInfo, NotNull.class, typeContext.notNull.get()); // TODO check @NotNull1, 2
         CheckSize.checkSizeForParameters(typeContext, parameterInfo);
@@ -69,7 +66,7 @@ public class ParameterAnalyser {
     public boolean analyse(VariableProperties methodProperties) {
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             if (aboutVariable.variable instanceof ParameterInfo) {
-                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
+                for (VariableProperty variableProperty : VariableProperty.FROM_PROPERTY_TO_PARAMETER) {
                     int inField = aboutVariable.getProperty(variableProperty);
                     if (inField != Level.DELAY) {
                         ParameterInfo parameterInfo = ((ParameterInfo) aboutVariable.variable);

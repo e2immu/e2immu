@@ -57,6 +57,9 @@ public class ParameterAnalysis extends Analysis {
                         Level.E2IMMUTABLE)) {
                     return Level.TRUE;
                 }
+                if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                    return Level.TRUE;
+                }
                 break;
             }
             case IMMUTABLE:
@@ -85,6 +88,9 @@ public class ParameterAnalysis extends Analysis {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE)) {
+                    return Integer.MAX_VALUE;
+                }
+                if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Integer.MAX_VALUE;
                 }
                 return Level.UNDEFINED;

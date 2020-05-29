@@ -37,7 +37,14 @@ public class VariableExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        processVariable(variable, evaluationContext, forwardEvaluationInfo);
+
         Value value = evaluationContext.currentValue(variable);
+        visitor.visit(this, evaluationContext, value);
+        return value;
+    }
+
+    static void processVariable(Variable variable, EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             evaluationContext.markRead(variable);
         }
@@ -52,13 +59,10 @@ public class VariableExpression implements Expression {
         StatementAnalyser.markSize(evaluationContext, variable, size);
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-         StatementAnalyser.markMethodCalled(evaluationContext, variable, methodCalled);
+        StatementAnalyser.markMethodCalled(evaluationContext, variable, methodCalled);
 
-         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-         StatementAnalyser.markMethodDelay(evaluationContext, variable, methodDelay);
-
-        visitor.visit(this, evaluationContext, value);
-        return value;
+        int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
+        StatementAnalyser.markMethodDelay(evaluationContext, variable, methodDelay);
     }
 
     @Override

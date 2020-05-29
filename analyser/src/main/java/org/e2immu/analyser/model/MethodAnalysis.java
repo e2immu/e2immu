@@ -157,12 +157,4 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    public TransferValue ensureTransferValue(FieldInfo fieldInfo) {
-        if (fieldSummaries.isSet(fieldInfo)) {
-            return fieldSummaries.get(fieldInfo);
-        }
-        TransferValue tv = new TransferValue();
-        fieldSummaries.put(fieldInfo, tv);
-        return tv;
-    }
 }

@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -180,22 +181,57 @@ public class FieldAnalyser {
             return false;
         }
 
+        boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
+
+        // compute the value of the assignments
+        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, property, allDelaysResolved);
+        if (valueFromAssignment == Level.DELAY) {
+            log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+
+        // for NOT_NULL and SIZE we also need to look at fieldSummaries properties if there is NO assignment
+        int valueFromContext;
+        if (VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD.contains(property)) {
+            valueFromContext = computeValueFromContext(typeInspection, fieldInfo, property, allDelaysResolved);
+            if (valueFromContext == Level.DELAY) {
+                log(DELAYED, "Delaying property {} on {}, context property delay", property, fieldInfo.fullyQualifiedName());
+                return false; // delay
+            }
+        } else valueFromContext = Level.DELAY;
+
+        int finalValue = Math.max(valueFromAssignment, valueFromContext);
+        log(DYNAMIC, "Set property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(), finalValue);
+        fieldAnalysis.setProperty(property, finalValue);
+        return true;
+    }
+
+    private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
+        return typeInspection.constructorAndMethodStream().filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+                .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY)
+                        == Level.TRUE);// TRUE indicates that there are delays
+    }
+
+    private int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {
+        IntStream contextRestrictions = typeInspection.constructorAndMethodStream()
+                .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(property, Level.DELAY));
+        int result = contextRestrictions.max().orElse(Level.DELAY);
+        if (result == Level.DELAY && allDelaysResolved) return Level.FALSE;
+        return result;
+    }
+
+    private int computeValueFromAssignment(TypeInspection typeInspection, FieldInfo fieldInfo, boolean haveInitialiser, Value value,
+                                           VariableProperty property, boolean allDelaysResolved) {
         IntStream assignments = typeInspection.constructorAndMethodStream()
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.isSet())
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
         IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
         IntStream combined = IntStream.concat(assignments, initialiser);
-        int conclusion = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(Level.FALSE);
-        if (conclusion == Level.DELAY) {
-            log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
-            return false;
-        }
-        // still possible that the reduce did not see any value...
-        int finalValue = conclusion == Integer.MAX_VALUE ? Level.FALSE : conclusion;
-        log(DYNAMIC, "Set property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(), finalValue);
-        fieldAnalysis.setProperty(property, finalValue);
-        return true;
+        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(Level.FALSE);
+        if (result == Level.DELAY && allDelaysResolved) return Level.FALSE;
+        return result;
     }
 
     private boolean analyseFinalValue(FieldInfo fieldInfo,

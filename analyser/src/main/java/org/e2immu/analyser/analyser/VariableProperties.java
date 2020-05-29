@@ -396,6 +396,17 @@ class VariableProperties implements EvaluationContext {
         if (current < value) {
             aboutVariable.setProperty(variableProperty, value);
         }
+
+        Value currentValue = aboutVariable.getCurrentValue();
+        Variable other;
+        if (currentValue instanceof VariableValue) {
+            other = ((VariableValue) currentValue).variable;
+        } else if (currentValue instanceof FinalFieldValue) {
+            other = ((FinalFieldValue) currentValue).variable;
+        } else return;
+        if(!variable.equals(other)) {
+            addProperty(other, variableProperty, value);
+        }
     }
 
     private static List<String> variableNamesOfLocalRecordVariables(AboutVariable aboutVariable) {
@@ -426,7 +437,12 @@ class VariableProperties implements EvaluationContext {
 
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
     private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
-        aboutVariable.setCurrentValue(aboutVariable.resetValue);
+        // this breaks and infinite NO_VALUE cycle
+        if(aboutVariable.resetValue != UnknownValue.NO_VALUE) {
+            aboutVariable.setCurrentValue(aboutVariable.resetValue);
+        } else {
+            aboutVariable.setCurrentValue(instance);
+        }
         for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
             aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
         }

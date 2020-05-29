@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 
+import java.util.List;
 import java.util.Set;
 
 public enum VariableProperty {
@@ -43,6 +44,8 @@ public enum VariableProperty {
 
     // purpose: goes to true when all methods involved in the computation have been "evaluated"
     METHOD_DELAY("method delay"),
+    // continuation of METHOD_DELAY from variable properties into field summaries
+    METHOD_DELAY_RESOLVED("method delay"),
 
     // the ones corresponding to annotations
 
@@ -92,11 +95,13 @@ public enum VariableProperty {
     }
 
     public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
+    public final static Set<VariableProperty> CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD = Set.of(SIZE, NOT_NULL);
 
     // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
     // NOT_MODIFIED == TRUE
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
-    public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = FORWARD_PROPERTIES_ON_PARAMETERS;
+    public final static Set<VariableProperty> FROM_PROPERTY_TO_PARAMETER = Set.of(NOT_NULL, SIZE);
+    public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, NOT_MODIFIED, SIZE);
 
     public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, SIZE, IMMUTABLE, CONTAINER);
 

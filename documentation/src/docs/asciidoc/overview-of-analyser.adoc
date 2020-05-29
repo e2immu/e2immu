@@ -224,8 +224,8 @@ Properties that are specific to the statement analyser:
 The following list are the assignment properties.
 When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValueCopy`, and stores it in the statement:
 
-* IMMUTABLE, CONTAINER: purely based on the annotations of the values (dynamic type property)
-* NOT_NULL, SIZE: dynamic type property + occurrence in conditions (if-statement, switch)
+* `IMMUTABLE`, `CONTAINER`: purely based on the annotations of the values (dynamic type property)
+* `NOT_NULL`, `SIZE`: dynamic type property + occurrence in conditions (if-statement, switch)
 
 Context properties, on all variables:
 
@@ -235,9 +235,9 @@ Context properties, on all variables:
 Only when this value is 1, do we know that all information is in.
 The following three properties then should have no DELAY values anymore:
 
-** IN_NOT_NULL_CONTEXT: highest @NotNull value encountered in parameters and scope, some statements
-** IN_SIZE_CONTEXT: highest @Size value encountered in formal parameters
-** CONTENT_MODIFIED: lowest @NotModified encountered in formal parameters
+** `NOT_NULL`: highest `@NotNull` value encountered in parameters and scope, some statements
+** `SIZE`: highest `@Size` value encountered in formal parameters
+** `NOT_MODIFIED`: lowest `@NotModified` encountered in formal parameters
 
 ==== Method delay
 
@@ -248,7 +248,8 @@ In the case of methods that have not been defined, this is not a problem, given 
 
 ==== Link computer
 
-Order of operation:
+The link computer works at the method level.
+The order of operation is:
 
 . Copy `READ`, `ASSIGNED` and `METHOD_CALLED` into field summaries, and summary of `this`.
 This only happens in the first round.
@@ -289,12 +290,12 @@ Results of method analysis:
 
 * summary of field assignment values and related properties
 ** for each field, we will store a value which is either the "common assignment" or single assignment
-** with each value come the properties of that assignment: SIZE, IMMUTABLE, CONTAINER, NOT_NULL
+** with each value come the properties of that assignment: `SIZE`, `IMMUTABLE`, `CONTAINER`, `NOT_NULL`
 
-* summary of field usage properties: READ, ASSIGNED, CONTENT_MODIFIED, IN_NOT_NULL_CONTEXT, IN_SIZE_CONTEXT
-** CONTENT_MODIFIED is summarized using the link information, specific code
-** the other 3 are simply copied into the field's properties at method level
-
+* summary of field usage properties: READ, ASSIGNED, METHOD_CALLED, NOT_MODIFIED, NOT_NULL, SIZE
+** We summarize `NOT_MODIFIED` using the link information, specific code
+** the first 3 (`READ`, `ASSIGNED`, `METHOD_CALLED`) are simply copied into the field's properties at method level
+** The properties `NOT_NULL` and `SIZE`  occur both in a context and in an assignment.
 
 * link information: fields linked to fields and variables, variables linked to fields and parameters, variables linked to the method result.
 Note again that links are based on modification information, not equality!
@@ -365,8 +366,8 @@ Statement analyser will delay evaluation using `NO_VALUE`.
 
 Properties that do not have a conventional delay: `READ`, `ASSIGNED`, `METHOD_CALLED`.
 
-The property `METHOD_DELAY` is a special one, in the sense that it keeps track of properties of methods called themselves being delayed.
-Method properties that rely on `METHOD_DELAY` before they are fixed: `NOT_MODIFIED`, SIZE, NOT_NULL. #TODO is this correct for SIZE, NN?#
+The property `METHOD_DELAY` is a special one, in the sense that it tracks delays of properties of method called.
+The method's `fieldSummmaries` properties that rely on `METHOD_DELAY` before they are fixed, are the context properties: `NOT_MODIFIED`, `SIZE`, `NOT_NULL`.
 
 === Levels
 
@@ -389,3 +390,24 @@ Levels can be improved (value increased) but not decreased in the same map.
 
 The ones with an asterisk ^*^ are optional, and unlikely to be set by the analyser.
 
+=== Indirect access to fields
+
+In the methods of type `T`, accessing field `f` is generally done using scope `this`.
+However, it is also possible to access `f` through a different variable of type `T`:
+
+[source,java]
+----
+class T {
+    Set<String> set;
+    public void add(T t, String s) {
+        set.add(s); // <1>
+        t.set.add(s); // <2>
+    }
+}
+----
+<1> normal access to the field `set`
+<2> indirect access to the field `set`.
+This statement causes a `NOT_NULL==Level.TRUE` on `t`, but adds a `NOT_MODIFIED==Level.FALSE` to `set`.
+
+The method `copyContextProperties` in `ComputeLinking` takes care of `SIZE`, `NOT_NULL`.
+The method `copyFieldAssignmentValue` in the same type handles the assignment properties and value.

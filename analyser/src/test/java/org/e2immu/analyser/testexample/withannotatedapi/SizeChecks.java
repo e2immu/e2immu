@@ -63,7 +63,7 @@ public class SizeChecks {
         if (!input4.isEmpty()) {
             Collection<Map.Entry<T, Integer>> entrySet = input4.entrySet();
             // entrySet should NOT be empty, it has a @Size(copy = true)
-            if (entrySet.isEmpty()) {
+            if (entrySet.isEmpty()) { // ERROR, constant evaluation
                 System.out.println("Never printed");
             }
         }
