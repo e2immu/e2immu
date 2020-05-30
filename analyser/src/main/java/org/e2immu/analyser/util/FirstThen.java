@@ -120,8 +120,8 @@ public class FirstThen<S, T> {
      * or <code>T</code> respectively.
      */
     @Override
-    @NotModified(type = AnnotationType.VERIFY_ABSENT) // automatically so because of Object
-    public boolean equals(@NotModified @NotNull(type = AnnotationType.VERIFY_ABSENT) Object o) {
+    @NotModified(type = AnnotationType.VERIFY_ABSENT) // @NotModified inherited from Object
+    public boolean equals(@NotNull(type = AnnotationType.VERIFY_ABSENT) Object o) { // o is @NotModified because of Object
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FirstThen<?, ?> firstThen = (FirstThen<?, ?>) o;

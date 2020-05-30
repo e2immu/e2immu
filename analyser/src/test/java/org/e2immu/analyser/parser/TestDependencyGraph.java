@@ -43,12 +43,12 @@ public class TestDependencyGraph extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("sorted".equals(methodInfo.name) && "3.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("not (toDo.isEmpty())", conditional.toString());
+                Assert.assertEquals("not (0 == toDo.size())", conditional.toString());
                 Map<Variable, Value> isr = conditional.individualSizeRestrictions();
                 Assert.assertEquals(1, isr.size());
                 Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
                 Assert.assertEquals("toDo", entry.getKey().name());
-                Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", entry.getValue().toString());
+                Assert.assertEquals("not (0 == toDo.size())", entry.getValue().toString());
             }
             // we have to make sure that there is no "Empty loop" error raised
             if ("sorted".equals(methodInfo.name) && "3.0.1".equals(numberedStatement.streamIndices())) {

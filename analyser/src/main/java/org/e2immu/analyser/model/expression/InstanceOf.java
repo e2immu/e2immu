@@ -59,12 +59,8 @@ public class InstanceOf implements Expression {
                 return localEvaluation(evaluationContext, visitor, combinedValue.values.get(0));
             }
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
-        } else if (value instanceof VariableValue) {
-            result = new InstanceOfValue(((VariableValue) value).variable, parameterizedType);
-        } else if (value instanceof ParameterValue) {
-            result = new InstanceOfValue(((ParameterValue) value).parameterInfo, parameterizedType);
-        } else if (value instanceof FinalFieldValue) {
-            result = new InstanceOfValue(((FinalFieldValue) value).variable, parameterizedType);
+        } else if (value instanceof ValueWithVariable) {
+            result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType);
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
         } else if (value instanceof MethodValue) {

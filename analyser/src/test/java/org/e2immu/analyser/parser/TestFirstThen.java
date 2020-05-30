@@ -33,6 +33,15 @@ import java.util.Objects;
 
 public class TestFirstThen extends CommonTestRunner {
 
+    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("equals".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("(o.getClass() == this.getClass() and not (null == o) and not (o == this))", conditional.toString());
+            }
+        }
+    };
+
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
@@ -41,8 +50,9 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
             }
             if ("equals".equals(methodInfo.name) && "o".equals(variableName)) {
-                Assert.assertNull("At iteration " + iteration + " statement " + statementId,
-                        properties.get(VariableProperty.NOT_NULL));
+                if ("2".equals(statementId)) {
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                }
             }
         }
     };
@@ -60,6 +70,10 @@ public class TestFirstThen extends CommonTestRunner {
                 TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
+            }
+            if ("equals".equals(methodInfo.name)) {
+                ParameterInfo o = methodInfo.methodInspection.get().parameters.get(0);
+                Assert.assertEquals(Level.TRUE, o.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED));
             }
         }
     };
@@ -80,6 +94,7 @@ public class TestFirstThen extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

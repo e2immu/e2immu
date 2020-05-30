@@ -16,7 +16,7 @@
  *
  */
 
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.ExtensionClass;
@@ -31,7 +31,7 @@ public class UtilityClassChecks {
 
     @NotModified
     static void print(String s) {
-        System.out.println(s); // ERROR (we don't have System.out in Annotated API here... so potential null pointer exception
+        System.out.println(s);
     }
 
     @UtilityClass

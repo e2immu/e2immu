@@ -57,6 +57,7 @@ public class MethodAnalysis extends Analysis {
                 if (typeNotModified == Level.TRUE) return typeNotModified;
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_NULL:
+                if (returnType.isPrimitive()) return Level.TRUE;
                 int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
             case IMMUTABLE:

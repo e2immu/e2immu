@@ -129,7 +129,7 @@ class VariableProperties implements EvaluationContext {
         this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
-        addToConditional(conditional);
+        this.conditional = conditional;
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
@@ -174,7 +174,8 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, depth + 1, currentMethod, currentStatement, conditional, uponUsingConditional,
+        return new VariableProperties(this, depth + 1, currentMethod,
+                currentStatement, combineWithConditional(conditional), uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -182,24 +183,23 @@ class VariableProperties implements EvaluationContext {
     @Override
     public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, depth + 1, currentMethod, currentStatement, conditional, uponUsingConditional,
+
+        return new VariableProperties(this, depth + 1, currentMethod, currentStatement,
+                combineWithConditional(conditional), uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
 
     // all conditionals added go via this method
 
-    public void addToConditional(Value value) {
-        if (value != null && !value.isUnknown()) {
-            if (conditional == null || conditional.isUnknown()) conditional = value;
-            else {
-                if (conditional instanceof AndValue) {
-                    conditional = ((AndValue) conditional).append(value);
-                } else {
-                    conditional = new AndValue().append(conditional, value);
-                }
-            }
+    public Value combineWithConditional(Value value) {
+        if (value == null || value.isUnknown()) return conditional;
+        if (conditional == null || conditional.isUnknown()) return value;
+
+        if (conditional instanceof AndValue) {
+            return ((AndValue) conditional).append(value);
         }
+        return new AndValue().append(conditional, value);
     }
 
     public Collection<AboutVariable> variableProperties() {
@@ -336,7 +336,7 @@ class VariableProperties implements EvaluationContext {
                 fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
             } else {
                 // the difference now is that absence of info means that the property is false
-                for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
+                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                     int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, Level.FALSE);
                     aboutVariable.setProperty(variableProperty, value);
                 }
@@ -398,13 +398,9 @@ class VariableProperties implements EvaluationContext {
         }
 
         Value currentValue = aboutVariable.getCurrentValue();
-        Variable other;
-        if (currentValue instanceof VariableValue) {
-            other = ((VariableValue) currentValue).variable;
-        } else if (currentValue instanceof FinalFieldValue) {
-            other = ((FinalFieldValue) currentValue).variable;
-        } else return;
-        if(!variable.equals(other)) {
+        if (!(currentValue instanceof ValueWithVariable)) return;
+        Variable other = ((ValueWithVariable) currentValue).variable;
+        if (!variable.equals(other)) {
             addProperty(other, variableProperty, value);
         }
     }
@@ -438,7 +434,7 @@ class VariableProperties implements EvaluationContext {
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
     private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
         // this breaks and infinite NO_VALUE cycle
-        if(aboutVariable.resetValue != UnknownValue.NO_VALUE) {
+        if (aboutVariable.resetValue != UnknownValue.NO_VALUE) {
             aboutVariable.setCurrentValue(aboutVariable.resetValue);
         } else {
             aboutVariable.setCurrentValue(instance);
@@ -946,5 +942,9 @@ class VariableProperties implements EvaluationContext {
 
     public Value getConditional() {
         return conditional;
+    }
+
+    public void addToConditional(Value value) {
+        conditional = combineWithConditional(value);
     }
 }

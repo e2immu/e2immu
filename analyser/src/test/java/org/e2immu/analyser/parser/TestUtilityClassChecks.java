@@ -15,20 +15,20 @@ import java.io.IOException;
 
 public class TestUtilityClassChecks extends CommonTestRunner {
     public TestUtilityClassChecks() {
-        super(false);
+        super(true);
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
         if ("print".equals(methodInfo.name)) {
             if ("0".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.get()); // potential null pointer exception
+                Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception, because we know 'out'
             }
         }
     };
 
     @Test
     public void test() throws IOException {
-        testClass("UtilityClassChecks", 0, 1, new DebugConfiguration.Builder()
+        testClass("UtilityClassChecks", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

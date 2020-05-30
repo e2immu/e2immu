@@ -314,7 +314,7 @@ public class FieldAnalyser {
         //         .collect(Collectors.toList());
         if (values.size() == 1) {
             Value value = values.get(0);
-            if (value.isConstant() || value instanceof ParameterValue) return value;
+            if (value.isConstant()) return value;
         }
         Value combinedValue = CombinedValue.create(values);
         return new FinalFieldValue(fieldReference, combinedValue);

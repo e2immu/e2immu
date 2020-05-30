@@ -25,9 +25,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 import java.util.Set;
 
-public class VariableValue implements Value {
-    @NotNull
-    public final Variable variable; // the variable of the inspection, as correct/large as possible
+public class VariableValue extends ValueWithVariable {
 
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
@@ -49,8 +47,8 @@ public class VariableValue implements Value {
                          @NotNull Variable variable,
                          @NotNull String name,
                          boolean multiCopyNonFinalField) {
+        super(variable);
         this.evaluationContext = evaluationContext;
-        this.variable = variable;
         this.name = name;
         this.multiCopyNonFinalField = multiCopyNonFinalField;
     }
@@ -61,26 +59,6 @@ public class VariableValue implements Value {
         if (o == null || getClass() != o.getClass()) return false;
         VariableValue that = (VariableValue) o;
         return evaluationContext.equals(variable, that.variable);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(variable);
-    }
-
-    @Override
-    public String toString() {
-        return variable.name();
-    }
-
-    @Override
-    public int order() {
-        return ORDER_VARIABLE_VALUE;
-    }
-
-    @Override
-    public int internalCompareTo(Value v) {
-        return name.compareTo(((VariableValue) v).name);
     }
 
     @Override
@@ -135,15 +113,5 @@ public class VariableValue implements Value {
         }
         boolean e2Immu = (bestCase || differentType) && e2ImmuType;
         return e2Immu ? Set.of() : Set.of(variable);
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return variable.concreteReturnType();
-    }
-
-    @Override
-    public Set<Variable> variables() {
-        return Set.of(variable);
     }
 }

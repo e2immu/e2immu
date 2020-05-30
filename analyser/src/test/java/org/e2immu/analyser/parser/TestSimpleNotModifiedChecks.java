@@ -26,7 +26,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertTrue(currentValue instanceof FinalFieldValue);
                     FinalFieldValue variableValue = (FinalFieldValue) currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set3 (of this keyword (of org.e2immu.analyser.testexample.withannotatedapi.SimpleNotModifiedChecks.Example3))", currentValue.toString());
+                    Assert.assertEquals("set3", currentValue.toString());
                 }
             }
         }
@@ -38,7 +38,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertTrue(currentValue instanceof FinalFieldValue);
                     FinalFieldValue variableValue = (FinalFieldValue) currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set4 (of this keyword (of org.e2immu.analyser.testexample.withannotatedapi.SimpleNotModifiedChecks.Example4))", currentValue.toString());
+                    Assert.assertEquals("set4", currentValue.toString());
                 }
             }
             if ("1".equals(statementId)) {

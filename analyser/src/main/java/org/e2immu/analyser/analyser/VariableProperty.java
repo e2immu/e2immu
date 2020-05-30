@@ -109,6 +109,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE);
 
     public final static Set<VariableProperty> INSTANCE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE);
+    public final static Set<VariableProperty> FROM_FIELD_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, IGNORE_MODIFICATIONS);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, NOT_MODIFIED);
     public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE);

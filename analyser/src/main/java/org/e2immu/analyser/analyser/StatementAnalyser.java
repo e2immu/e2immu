@@ -651,11 +651,19 @@ public class StatementAnalyser {
             if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
             variableProperties.ensureThisVariable((FieldReference) variable);
         }
-
+        Set<Variable> nullConditionals = variableProperties.getNullConditionals(false);
         // check null conditionals
-        if (variableProperties.getNullConditionals(false).contains(variable)) {
+        if (nullConditionals.contains(variable)) {
             // we're in an explicit != null situation for this variable
             return;
+        }
+        Value currentValue = evaluationContext.currentValue(variable);
+        if (currentValue instanceof ValueWithVariable) {
+            Variable other = ((ValueWithVariable) currentValue).variable;
+            if (nullConditionals.contains(other)) {
+                // we're in an explicit != null situation for this variable
+                return;
+            }
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error

@@ -28,14 +28,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class FinalFieldValue implements Value {
-    @NotNull
-    public final Variable variable; // the variable of the inspection, as correct/large as possible
+public class FinalFieldValue extends ValueWithVariable {
 
     private final Map<VariableProperty, Integer> copiedProperties;
 
     public FinalFieldValue(Variable variable, Value assignment) {
-        this.variable = Objects.requireNonNull(variable);
+        super(variable);
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, assignment.getPropertyOutsideContext(property));
@@ -49,26 +47,6 @@ public class FinalFieldValue implements Value {
         if (o == null || getClass() != o.getClass()) return false;
         FinalFieldValue that = (FinalFieldValue) o;
         return variable.equals(that.variable);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(variable);
-    }
-
-    @Override
-    public String toString() {
-        return variable.detailedString();
-    }
-
-    @Override
-    public int order() {
-        return ORDER_VARIABLE_VALUE;
-    }
-
-    @Override
-    public int internalCompareTo(Value v) {
-        return variable.name().compareTo(((FinalFieldValue) v).variable.name());
     }
 
     @Override
@@ -86,18 +64,4 @@ public class FinalFieldValue implements Value {
         return getPropertyOutsideContext(variableProperty);
     }
 
-    @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        return Set.of(variable);
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return variable.concreteReturnType();
-    }
-
-    @Override
-    public Set<Variable> variables() {
-        return Set.of(variable);
-    }
 }

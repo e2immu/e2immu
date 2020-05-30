@@ -1,10 +1,14 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotNull;
+
 public class InnerClass {
 
+    @NotNull
     private final String outerField;
 
-    public InnerClass(String outerField) {
+    public InnerClass(@NotNull String outerField) {
+        if(outerField == null) throw new NullPointerException();
         this.outerField = outerField;
     }
 

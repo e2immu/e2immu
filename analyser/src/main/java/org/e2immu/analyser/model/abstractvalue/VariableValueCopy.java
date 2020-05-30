@@ -30,10 +30,7 @@ import java.util.Set;
 
 // used in a return statement, to freeze the properties
 
-public class VariableValueCopy implements Value {
-    @NotNull
-    public final Variable variable; // the variable of the inspection, as correct/large as possible
-
+public class VariableValueCopy extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
@@ -42,7 +39,7 @@ public class VariableValueCopy implements Value {
     private final Set<Variable> linkedVariablesWorst;
 
     public VariableValueCopy(VariableValue original, EvaluationContext evaluationContext) {
-        this.variable = original.variable;
+        super(original.variable);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
@@ -56,26 +53,6 @@ public class VariableValueCopy implements Value {
     @Override
     public boolean equals(Object o) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(variable);
-    }
-
-    @Override
-    public String toString() {
-        return variable.detailedString();
-    }
-
-    @Override
-    public int order() {
-        return ORDER_VARIABLE_VALUE;
-    }
-
-    @Override
-    public int internalCompareTo(Value v) {
-        return name.compareTo(((VariableValueCopy) v).name);
     }
 
     @Override
@@ -96,15 +73,5 @@ public class VariableValueCopy implements Value {
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return bestCase ? linkedVariablesBest : linkedVariablesWorst;
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return variable.concreteReturnType();
-    }
-
-    @Override
-    public Set<Variable> variables() {
-        return Set.of(variable);
     }
 }
