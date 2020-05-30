@@ -85,16 +85,6 @@ public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
     }
 
     @Test
-    public void testNotModifiedChecks() throws IOException {
-        testClass("NotModifiedChecks", 0);
-    }
-
-    @Test
-    public void testNotModifiedChecks2() throws IOException {
-        testClass("NotModifiedChecks2", 0);
-    }
-
-    @Test
     public void testStaticImports() throws IOException {
         testClass("StaticImports", 0);
     }

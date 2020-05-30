@@ -116,8 +116,8 @@ public class FieldAnalyser {
                 int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
                         .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
                         .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo)) // field seen
-                        .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY))
-                        .max().orElse(Level.DELAY);
+                        .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.FALSE))
+                        .max().orElse(Level.FALSE);
                 if (readInMethods == Level.DELAY) {
                     log(DELAYED, "Not yet ready to decide on read outside constructors");
                     return false;

@@ -43,7 +43,7 @@ public class UnusedLocalVariableChecks {
         if (t.length() < 19) {
             return;
         }
-        // ERROR 6: ignoring result of method call
+        // WARNING 1: ignoring result of method call
         t.trim();
     }
 
@@ -78,15 +78,7 @@ public class UnusedLocalVariableChecks {
         String b = someMethod(param);
         // ERROR 9: if statement evaluates to constant
         if (b == null) {
-            if (param.contains("a")) { // the fact that this one evaluates to constant is caused by the previous error
-                // ERROR 10: Unnecessary method call
-                String a = someMethod("xzy").toString();
-                // ERROR 11: if statement evaluates to constant; error is not hidden by unnecessary method call toString()
-                // because toString() is @NotNull
-                if (a == null) {
-                    return b + "c";
-                }
-            }
+            return "a";
         }
         return "c";
     }

@@ -13,7 +13,7 @@ public class InnerClass {
     }
 
     class SubClass {
-        private final String innerField;
+        private final String innerField; // this one causes an error (private field not read outside constructors)
 
         SubClass(String innerField) {
             this.innerField = innerField + outerField.charAt(0);
@@ -74,8 +74,9 @@ public class InnerClass {
         }
     }
 
+    // ERROR method should be marked static
     public void doAssignmentIntoNestedType(String s) {
         SubClassAssignmentFromEnclosing a = new SubClassAssignmentFromEnclosing();
-        a.willBeAssignedFromOutside = s; // ERROR
+        a.willBeAssignedFromOutside = s; // ERROR not allowed to assign
     }
 }

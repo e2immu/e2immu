@@ -26,13 +26,13 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
 
         if ("method2".equals(methodInfo.name)) {
-            if (Set.of("1", "1.0.0.0.0", "1.0.0.0.1").contains(statement.streamIndices())) {
+            if (Set.of("1", "1.0.0").contains(statement.streamIndices())) {
                 Assert.assertTrue(statement.errorValue.get()); // if switches
             }
         }
 
         if ("method3".equals(methodInfo.name)) {
-            if ("1.0.1".equals(statement.streamIndices())) {
+            if (Set.of("1.0.1", "1.0.1.0.0").contains(statement.streamIndices())) {
                 Assert.assertTrue(statement.errorValue.get()); // if switches
             }
         }
@@ -127,7 +127,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("UnusedLocalVariableChecks", 12, new DebugConfiguration.Builder()
+        testClass("UnusedLocalVariableChecks", 11, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
