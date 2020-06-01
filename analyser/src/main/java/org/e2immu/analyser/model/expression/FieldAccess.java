@@ -92,7 +92,7 @@ public class FieldAccess implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableExpression.processVariable(variable, evaluationContext, forwardEvaluationInfo);
 
-        Value scope = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+        Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyEnsureNotNull());
         Value currentValue = evaluationContext.currentValue(variable);
         if (scope instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);

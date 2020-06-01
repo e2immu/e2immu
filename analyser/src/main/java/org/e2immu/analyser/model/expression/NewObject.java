@@ -146,7 +146,7 @@ public class NewObject implements HasParameterExpressions {
                 if (map.containsValue(Level.DELAY)) {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
                 }
-                forward = ForwardEvaluationInfo.create(map);
+                forward = new ForwardEvaluationInfo(map, false);
             } else {
                 forward = ForwardEvaluationInfo.DEFAULT;
             }

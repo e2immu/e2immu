@@ -204,14 +204,22 @@ public class ComputeLinking {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
-        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
+        // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
+        List<AboutVariable> aboutVariables = new ArrayList<>(methodProperties.variableProperties());
+        for (AboutVariable aboutVariable : aboutVariables) {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(methodAnalysis.variablesLinkedToFieldsAndParameters.get(),
                     aboutVariable.variable);
             int summary = summarizeModification(methodProperties, linkedVariables);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
                     FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
-                    TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+                    TransferValue tv;
+                    if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
+                        tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+                    } else {
+                        tv = new TransferValue();
+                        methodAnalysis.fieldSummaries.put(fieldInfo, tv);
+                    }
                     int modified = tv.properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
                     if (modified == Level.DELAY) {
                         // break the delay in case the variable is not even read

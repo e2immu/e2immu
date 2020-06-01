@@ -40,7 +40,7 @@ public class MethodAnalysis extends Analysis {
     public final TypeInfo typeInfo;
 
     public MethodAnalysis(MethodInfo methodInfo) {
-        super(methodInfo.hasBeenDefined());
+        super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.overrides = methodInfo.typeInfo.overrides(methodInfo, true);
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();

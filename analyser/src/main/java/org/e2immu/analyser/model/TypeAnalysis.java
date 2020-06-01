@@ -36,7 +36,7 @@ public class TypeAnalysis extends Analysis {
     public final TypeInfo typeInfo;
 
     public TypeAnalysis(TypeInfo typeInfo) {
-        super(typeInfo.hasBeenDefined());
+        super(typeInfo.hasBeenDefined(), typeInfo.simpleName);
         this.typeInfo = typeInfo;
     }
 

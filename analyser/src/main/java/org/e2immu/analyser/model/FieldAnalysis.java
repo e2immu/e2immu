@@ -35,7 +35,7 @@ public class FieldAnalysis extends Analysis {
     public final ParameterizedType type;
 
     public FieldAnalysis(FieldInfo fieldInfo) {
-        super(fieldInfo.hasBeenDefined());
+        super(fieldInfo.hasBeenDefined(), fieldInfo.name);
         this.owner = fieldInfo.owner;
         this.bestType = fieldInfo.type.bestTypeInfo();
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();

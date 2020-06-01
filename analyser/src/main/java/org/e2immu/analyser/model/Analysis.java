@@ -35,8 +35,10 @@ public abstract class Analysis {
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final boolean hasBeenDefined;
+    public final String simpleName; // for debugging purposes
 
-    protected Analysis(boolean hasBeenDefined) {
+    protected Analysis(boolean hasBeenDefined, String simpleName) {
+        this.simpleName = simpleName;
         this.hasBeenDefined = hasBeenDefined;
     }
 

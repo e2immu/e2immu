@@ -74,11 +74,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
 
         // scope
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.create(Map.of(
+        Value objectValue = computedScope.evaluate(evaluationContext, visitor, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.NOT_NULL, Level.TRUE,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
-                VariableProperty.MODIFIED, modifiedValue)));
+                VariableProperty.MODIFIED, modifiedValue), false));
 
         // null scope
         if (objectValue instanceof NullValue) {

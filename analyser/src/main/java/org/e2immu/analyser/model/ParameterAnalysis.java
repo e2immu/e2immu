@@ -40,7 +40,7 @@ public class ParameterAnalysis extends Analysis {
     public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
-        super(parameterInfo.hasBeenDefined());
+        super(parameterInfo.hasBeenDefined(), parameterInfo.name);
         this.owner = parameterInfo.parameterInspection.get().owner;
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
