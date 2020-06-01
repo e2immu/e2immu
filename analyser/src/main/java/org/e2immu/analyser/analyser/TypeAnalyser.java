@@ -234,6 +234,21 @@ public class TypeAnalyser {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return false;
 
+        boolean fieldsReady = typeInfo.typeInspection.get().fields.stream().allMatch(
+                fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE ||
+                        fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+        if (!fieldsReady) {
+            log(DELAYED, "Delaying container, need assignedToField to be set");
+            return false;
+        }
+        boolean allReady = typeInfo.typeInspection.get().constructorAndMethodStream().allMatch(
+                m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
+                        !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
+                                parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));
+        if (!allReady) {
+            log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
+            return false;
+        }
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {

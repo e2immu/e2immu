@@ -923,12 +923,6 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    @Override
-    public void markNotNull(Variable variable) {
-        AboutVariable aboutVariable = findComplain(variable);
-        aboutVariable.setProperty(VariableProperty.NOT_NULL, Level.TRUE);
-    }
-
     public Value getConditional() {
         return conditional;
     }

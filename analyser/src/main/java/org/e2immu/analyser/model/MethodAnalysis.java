@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @NotNull
 public class MethodAnalysis extends Analysis {
@@ -58,7 +59,11 @@ public class MethodAnalysis extends Analysis {
             case IDENTITY:
             case INDEPENDENT:
             case SIZE:
+                return getPropertyCheckOverrides(variableProperty);
             case MODIFIED:
+                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
+                    return Level.FALSE;
+                }
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_NULL:
                 if (returnType.isPrimitive()) return Level.TRUE;
@@ -107,6 +112,19 @@ public class MethodAnalysis extends Analysis {
                 return 1;
         }
         return Level.UNDEFINED;
+    }
+
+    @Override
+    public int maximalValue(VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case INDEPENDENT:
+            case MODIFIED:
+                IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
+                IntStream overrideTypes = overrides.stream().mapToInt(mi -> !mi.isPrivate() && Level.haveTrueAt(mi.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) ? Level.FALSE : Level.DELAY);
+                int max = IntStream.concat(overrideTypes, overrideValues).max().orElse(Level.DELAY);
+                if (max == Level.FALSE) return Level.TRUE;
+        }
+        return Integer.MAX_VALUE;
     }
 
     @Override

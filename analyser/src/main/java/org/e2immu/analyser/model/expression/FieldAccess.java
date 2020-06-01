@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
@@ -92,7 +90,7 @@ public class FieldAccess implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         VariableExpression.processVariable(variable, evaluationContext, forwardEvaluationInfo);
 
-        Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyEnsureNotNull());
+        Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyModificationEnsureNotNull());
         Value currentValue = evaluationContext.currentValue(variable);
         if (scope instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);

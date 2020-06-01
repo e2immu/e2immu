@@ -130,8 +130,9 @@ public class StatementAnalyser {
                     for (Variable variable : nullVariables) {
                         log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
                         if (variable instanceof ParameterInfo) {
-                            evaluationContext.markNotNull(variable);
+                            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
                         }
+                        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, Level.TRUE);
                         if (variableProperties.uponUsingConditional != null) {
                             log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                             variableProperties.uponUsingConditional.run();
@@ -145,7 +146,7 @@ public class StatementAnalyser {
                         int sizeRestriction = negated.encodedSizeRestriction();
                         if (sizeRestriction > 0) { // if the complement is a meaningful restriction
                             if (variable instanceof ParameterInfo) {
-                                ((ParameterInfo) variable).parameterAnalysis.get().setProperty(VariableProperty.SIZE, sizeRestriction);
+                                ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
                             }
                             variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
                         }
@@ -674,13 +675,20 @@ public class StatementAnalyser {
 
         // only NOW mark that we need @NotNull on this variable, no delay situation
         variableProperties.addProperty(variable, VariableProperty.NOT_NULL, notNullContext);
+        //
+        // directly set if true
+        if (variable instanceof ParameterInfo) {
+            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, notNullContext);
+        }
     }
 
     public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
         variableProperties.addProperty(variable, VariableProperty.SIZE, value);
-        // TODO check that improvement is the right direction
+        if (variable instanceof ParameterInfo) {
+            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, value);
+        }
     }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
@@ -690,6 +698,9 @@ public class StatementAnalyser {
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
             variableProperties.addProperty(variable, VariableProperty.MODIFIED, value);
+            if (variable instanceof ParameterInfo) {
+                ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.MODIFIED, value);
+            }
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

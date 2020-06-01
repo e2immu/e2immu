@@ -19,16 +19,40 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 public class TestSetOnce extends CommonTestRunner {
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+            if ("overwrite".equals(methodInfo.name) && "t".equals(variableName) && "0".equals(statementId)) {
+           //     Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, FieldInfo fieldInfo) {
+            if ("t".equals(fieldInfo.name) && iteration > 0) {
+                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+
+            }
+        }
+    };
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
@@ -53,6 +77,8 @@ public class TestSetOnce extends CommonTestRunner {
     public void test() throws IOException {
         tesUtilClass("SetOnce", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

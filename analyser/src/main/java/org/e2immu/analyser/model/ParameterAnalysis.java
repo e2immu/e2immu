@@ -38,6 +38,7 @@ public class ParameterAnalysis extends Analysis {
     private final String logName;
 
     public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
+    public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
@@ -66,7 +67,7 @@ public class ParameterAnalysis extends Analysis {
                         Level.E2IMMUTABLE)) {
                     return Level.FALSE;
                 }
-                if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
                 }
                 break;
@@ -99,7 +100,7 @@ public class ParameterAnalysis extends Analysis {
                         Level.E2IMMUTABLE)) {
                     return Integer.MAX_VALUE;
                 }
-                if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Integer.MAX_VALUE;
                 }
                 return Level.UNDEFINED;
@@ -121,7 +122,7 @@ public class ParameterAnalysis extends Analysis {
                     Level.E2IMMUTABLE)) {
                 return Level.TRUE;
             }
-            if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+            if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                 return Level.TRUE;
             }
         }

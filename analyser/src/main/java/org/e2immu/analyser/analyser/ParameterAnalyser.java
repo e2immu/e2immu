@@ -67,42 +67,35 @@ public class ParameterAnalyser {
      * @return true if changes were made
      */
     public boolean analyse(VariableProperties methodProperties) {
-        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
-            if (aboutVariable.variable instanceof ParameterInfo) {
-                for (VariableProperty variableProperty : VariableProperty.FROM_PROPERTY_TO_PARAMETER) {
-                    int inField = aboutVariable.getProperty(variableProperty);
-                    if (inField != Level.DELAY) {
-                        ParameterInfo parameterInfo = ((ParameterInfo) aboutVariable.variable);
-                        ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
-                        int inParameter = parameterAnalysis.getProperty(variableProperty);
-                        if (inField > inParameter && verifySizeNotModified(variableProperty, parameterInfo, parameterAnalysis)) {
-                            parameterAnalysis.setProperty(variableProperty, inField);
-                            log(ANALYSER, "Copying value {} parameter {} for property {}", inField,
-                                    aboutVariable.name, variableProperty);
-                        }
-                    }
-                }
-            }
-        }
+        boolean changed = false;
         for (ParameterInfo parameterInfo : methodProperties.getCurrentMethod().methodInspection.get().parameters) {
             ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
             if (parameterAnalysis.assignedToField.isSet()) {
                 FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
                 FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+                boolean delays = false;
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
                     int inField = fieldAnalysis.getProperty(variableProperty);
                     if (inField != Level.DELAY) {
                         int inParameter = parameterAnalysis.getProperty(variableProperty);
                         if (inField > inParameter && verifySizeNotModified(variableProperty, parameterInfo, parameterAnalysis)) {
-                            parameterAnalysis.setProperty(variableProperty, inField);
                             log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
+                            parameterAnalysis.setProperty(variableProperty, inField);
+                            changed = true;
                         }
+                    } else {
+                        delays = true;
                     }
+                }
+                if (!delays && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
+                    log(ANALYSER, "No delays anymore on copying from field to parameter");
+                    parameterAnalysis.copiedFromFieldToParameters.set(true);
+                    changed = true;
                 }
             }
         }
-        return false;
+        return changed;
     }
 
     /**

@@ -39,11 +39,6 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.MODIFIED));
                 }
             }
-            if ("NotModifiedChecks".equals(methodInfo.name)) {
-                if ("list".equals(variableName) && "1".equals(statementId)) {
-                    Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
-                }
-            }
         }
     };
 
@@ -52,10 +47,21 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("NotModifiedChecks".equals(methodInfo.name)) {
                 ParameterAnalysis list = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
+                ParameterAnalysis set2 = methodInfo.methodInspection.get().parameters.get(1).parameterAnalysis.get();
+                ParameterAnalysis set3 = methodInfo.methodInspection.get().parameters.get(2).parameterAnalysis.get();
+                ParameterAnalysis set4 = methodInfo.methodInspection.get().parameters.get(3).parameterAnalysis.get();
+
                 if (iteration == 0) {
                     Assert.assertFalse(list.assignedToField.isSet());
                 } else {
                     Assert.assertTrue(list.assignedToField.isSet());
+                }
+                if (iteration >= 2) {
+                    Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertTrue(set3.assignedToField.isSet());
+                    Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
+                    Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
                 }
             }
         }
@@ -67,6 +73,11 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             if ("c0".equals(fieldInfo.name)) {
                 if (iteration >= 2) {
                     Assert.assertEquals(0, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                }
+            }
+            if ("s0".equals(fieldInfo.name)) {
+                if (iteration >= 2) {
+                    Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
                 }
             }
         }

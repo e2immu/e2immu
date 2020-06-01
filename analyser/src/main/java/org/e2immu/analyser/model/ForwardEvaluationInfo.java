@@ -39,9 +39,10 @@ public class ForwardEvaluationInfo {
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(Map.of(VariableProperty.NOT_NULL, Level.TRUE), false);
 
-    public ForwardEvaluationInfo copyEnsureNotNull() {
-        Map<VariableProperty, Integer> map = new HashMap<>(properties);
+    public ForwardEvaluationInfo copyModificationEnsureNotNull() {
+        Map<VariableProperty, Integer> map = new HashMap<>();
+        map.put(VariableProperty.MODIFIED, properties.getOrDefault(VariableProperty.MODIFIED, Level.DELAY));
         map.put(VariableProperty.NOT_NULL, Level.TRUE);
-        return new ForwardEvaluationInfo(map, assignmentTarget);
+        return new ForwardEvaluationInfo(map, false);
     }
 }

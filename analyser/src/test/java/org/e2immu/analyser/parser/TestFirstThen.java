@@ -70,6 +70,10 @@ public class TestFirstThen extends CommonTestRunner {
                 TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
+
+                if(iteration>0) {
+                    Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+                }
             }
             if ("equals".equals(methodInfo.name)) {
                 ParameterInfo o = methodInfo.methodInspection.get().parameters.get(0);

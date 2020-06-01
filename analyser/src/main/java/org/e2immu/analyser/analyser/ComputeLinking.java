@@ -387,11 +387,11 @@ public class ComputeLinking {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
+            int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
+            boolean haveDelay = methodDelay == Level.TRUE || aboutVariable.getCurrentValue() == UnknownValue.NO_VALUE;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
-                int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
-                boolean haveDelay = methodDelay == Level.TRUE || aboutVariable.getCurrentValue() == UnknownValue.NO_VALUE;
                 for (VariableProperty variableProperty : VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD) {
                     int value = aboutVariable.getProperty(variableProperty);
                     int current = tv.properties.getOtherwise(variableProperty, haveDelay ? Level.DELAY : Level.FALSE);
@@ -411,6 +411,7 @@ public class ComputeLinking {
                 }
             }
         }
+
         return changes;
     }
 }

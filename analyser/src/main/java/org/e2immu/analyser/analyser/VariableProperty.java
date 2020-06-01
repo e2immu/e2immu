@@ -60,7 +60,7 @@ public enum VariableProperty {
     FINAL("@Final", false, Level.TRUE, 0, 1),
     CONTAINER("@Container", false, 1, 0, 1),
     IMMUTABLE("@Immutable", true, Level.compose(Level.TRUE, Level.E2IMMUTABLE), 0, 1),
-    MODIFIED("@Modified", false, Level.TRUE, 1, 0),
+    MODIFIED("@Modified", true, Level.TRUE, 1, 0),
     INDEPENDENT("@Independent", false, Level.TRUE, 0, 1),
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
