@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.AnnotationType;
 
 import java.lang.annotation.ElementType;
@@ -71,8 +72,14 @@ public abstract class Analysis {
         return null;
     }
 
+    public abstract AnnotationMode annotationMode();
+
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : Level.FALSE);
+        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+    }
+
+    protected int getPropertyAsIs(VariableProperty variableProperty, int orElse) {
+        return properties.getOtherwise(variableProperty, orElse);
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -91,7 +98,13 @@ public abstract class Analysis {
         properties.improve(variableProperty, i);
     }
 
-    public abstract int minimalValue(VariableProperty variableProperty);
+    public int minimalValue(VariableProperty variableProperty) {
+        return Level.UNDEFINED;
+    }
+
+    public int maximalValue(VariableProperty variableProperty) {
+        return Integer.MAX_VALUE;
+    }
 
     public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext);
 
@@ -103,7 +116,7 @@ public abstract class Analysis {
         minMapBuilder.put(VariableProperty.INDEPENDENT, typeContext.independent.get());
         minMapBuilder.put(VariableProperty.UTILITY_CLASS, typeContext.utilityClass.get());
         minMapBuilder.put(VariableProperty.EXTENSION_CLASS, typeContext.extensionClass.get());
-        minMapBuilder.put(VariableProperty.NOT_MODIFIED, typeContext.notModified.get());
+        minMapBuilder.put(VariableProperty.MODIFIED, typeContext.modified.get());
         minMapBuilder.put(VariableProperty.OUTPUT, typeContext.output.get());
         minMapBuilder.put(VariableProperty.SINGLETON, typeContext.singleton.get());
 
@@ -123,7 +136,12 @@ public abstract class Analysis {
             VariableProperty variableProperty = entry.getKey();
             AnnotationExpression annotationExpression = entry.getValue();
             int value = getProperty(variableProperty);
-            annotations.put(annotationExpression, value != Level.TRUE);
+            int maximal = maximalValue(variableProperty);
+            if (value == Level.TRUE) {
+                annotations.put(annotationExpression, false);
+            } else if (value == Level.FALSE && Level.TRUE < maximal) {
+                annotations.put(annotationExpression, true);
+            }
         }
 
         // container and immutable
@@ -267,9 +285,9 @@ public abstract class Analysis {
                 } else if (typeContext.notNull2.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 2));
                 } else if (typeContext.notModified.get().typeInfo == t) {
-                    method.accept(VariableProperty.NOT_MODIFIED, Level.TRUE);
+                    method.accept(VariableProperty.MODIFIED, Level.FALSE);
                 } else if (typeContext.modified.get().typeInfo == t) {
-                    method.accept(VariableProperty.NOT_MODIFIED, Level.FALSE);
+                    method.accept(VariableProperty.MODIFIED, Level.TRUE);
                 } else if (typeContext.effectivelyFinal.get().typeInfo == t) {
                     method.accept(VariableProperty.FINAL, Level.TRUE);
                 } else if (typeContext.variableField.get().typeInfo == t) {

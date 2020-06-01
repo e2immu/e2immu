@@ -212,19 +212,19 @@ public class ComputeLinking {
                 if (linkedVariable instanceof FieldReference) {
                     FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
                     TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
-                    int notModified = tv.properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY);
-                    if (notModified == Level.DELAY) {
+                    int modified = tv.properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
+                    if (modified == Level.DELAY) {
                         // break the delay in case the variable is not even read
-                        int fieldNotModified;
+                        int fieldModified;
                         if (summary == Level.DELAY && tv.properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) {
-                            fieldNotModified = Level.FALSE;
-                        } else fieldNotModified = summary;
-                        if (fieldNotModified == Level.DELAY) {
+                            fieldModified = Level.FALSE; // TODO should this be TRUE? absence of information
+                        } else fieldModified = summary;
+                        if (fieldModified == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());
                         } else {
-                            log(NOT_MODIFIED, "Mark {} " + (fieldNotModified == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
+                            log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
                                     linkedVariable.detailedString(), methodInfo.distinguishingName());
-                            tv.properties.put(VariableProperty.NOT_MODIFIED, fieldNotModified);
+                            tv.properties.put(VariableProperty.MODIFIED, fieldModified);
                             changes = true;
                         }
                     }
@@ -237,11 +237,12 @@ public class ComputeLinking {
                         if (summary == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());
                         } else {
-                            log(NOT_MODIFIED, "Mark {} " + (summary == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
-                                    linkedVariable.detailedString(), methodInfo.distinguishingName());
-                            int currentNotModified = parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-                            if (currentNotModified == Level.DELAY) {
-                                parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED, summary);
+                            log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.detailedString(),
+                                    summary == Level.TRUE ? "@Modified" : "@NotModified",
+                                    methodInfo.distinguishingName());
+                            int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
+                            if (currentModified == Level.DELAY) {
+                                parameterAnalysis.setProperty(VariableProperty.MODIFIED, summary);
                                 changes = true;
                             }
                         }
@@ -255,12 +256,12 @@ public class ComputeLinking {
     private int summarizeModification(VariableProperties methodProperties, Set<Variable> linkedVariables) {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
-            int notModified = methodProperties.getProperty(variable, VariableProperty.NOT_MODIFIED);
+            int modified = methodProperties.getProperty(variable, VariableProperty.MODIFIED);
             int methodDelay = methodProperties.getProperty(variable, VariableProperty.METHOD_DELAY);
-            if (notModified == Level.FALSE) return Level.FALSE;
+            if (modified == Level.TRUE) return Level.TRUE;
             if (methodDelay == Level.TRUE) hasDelays = true;
         }
-        return hasDelays ? Level.DELAY : Level.TRUE;
+        return hasDelays ? Level.DELAY : Level.FALSE;
     }
 
     private static Set<Variable> allVariablesLinkedToIncludingMyself(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,

@@ -98,7 +98,7 @@ public class TestWithSkeleton {
         MethodInfo setOf = set.getMethodOrConstructorByDistinguishingName("java.util.Set.of()");
         MethodAnalysis setOfAnalysis = setOf.methodAnalysis.get();
         Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.CONTAINER));
-        Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+        Assert.assertEquals(FALSE, setOfAnalysis.getProperty(VariableProperty.MODIFIED));
         Assert.assertEquals(Level.compose(TRUE, NOT_NULL_1), setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
         Assert.assertEquals(TRUE, value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
 

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
 
@@ -46,6 +47,11 @@ public class ParameterAnalysis extends Analysis {
     }
 
     @Override
+    public AnnotationMode annotationMode() {
+        return owner.typeInfo.typeAnalysis.get().annotationMode();
+    }
+
+    @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
@@ -53,15 +59,15 @@ public class ParameterAnalysis extends Analysis {
                         .getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
-            case NOT_MODIFIED: {
-                if (parameterizedType.isUnboundParameterType()) return Level.TRUE;
+            case MODIFIED: {
+                if (parameterizedType.isUnboundParameterType()) return Level.FALSE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE)) {
-                    return Level.TRUE;
+                    return Level.FALSE;
                 }
                 if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                    return Level.TRUE;
+                    return Level.FALSE;
                 }
                 break;
             }
@@ -82,11 +88,11 @@ public class ParameterAnalysis extends Analysis {
                 break;
 
             case SIZE:
-                int notModified = getProperty(VariableProperty.NOT_MODIFIED);
-                if (notModified != Level.TRUE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
+                int modified = getProperty(VariableProperty.MODIFIED);
+                if (modified != Level.FALSE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
                 return parameterizedType.getProperty(variableProperty);
 
-            case NOT_MODIFIED:
+            case MODIFIED:
                 if (parameterizedType.isUnboundParameterType()) return Integer.MAX_VALUE;
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
@@ -107,8 +113,24 @@ public class ParameterAnalysis extends Analysis {
     }
 
     @Override
+    public int maximalValue(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.MODIFIED) {
+            if (parameterizedType.isUnboundParameterType()) return Level.TRUE;
+            TypeInfo bestType = parameterizedType.bestTypeInfo();
+            if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                    Level.E2IMMUTABLE)) {
+                return Level.TRUE;
+            }
+            if (owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                return Level.TRUE;
+            }
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
     public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
-        return Map.of(VariableProperty.NOT_MODIFIED, typeContext.modified.get());
+        return Map.of(VariableProperty.MODIFIED, typeContext.notModified.get());
     }
 
     public boolean notNull(Boolean notNull) {

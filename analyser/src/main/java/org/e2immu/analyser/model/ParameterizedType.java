@@ -610,7 +610,7 @@ public class ParameterizedType {
         if (bestType != null) {
             return bestType.typeAnalysis.get().getProperty(variableProperty);
         }
-        if (isUnboundParameterType() && variableProperty == VariableProperty.NOT_MODIFIED) return Level.TRUE;
+        if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
         return Level.FALSE;
     }
 

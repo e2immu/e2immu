@@ -555,9 +555,8 @@ class VariableProperties implements EvaluationContext {
         copyBackLocalCopies(List.of((VariableProperties) child), false);
     }
 
-    private static final VariableProperty[] BEST = {VariableProperty.SIZE};
+    private static final VariableProperty[] BEST = {VariableProperty.SIZE, MODIFIED};
     private static final VariableProperty[] WORST_IN_ASSIGNMENT = {VariableProperty.NOT_NULL};
-    private static final VariableProperty[] WORST = {VariableProperty.NOT_MODIFIED};
 
     private static final VariableProperty[] INCREMENT_LEVEL = {READ, ASSIGNED};
 
@@ -651,16 +650,6 @@ class VariableProperties implements EvaluationContext {
                 int bestValue = intStream.max().orElse(Level.DELAY);
                 if (bestValue > Level.DELAY) {
                     localAv.setProperty(variableProperty, bestValue);
-                }
-            }
-
-            // copying the WORST properties, relatively straightforward
-
-            for (VariableProperty variableProperty : WORST) {
-                IntStream intStream = streamBuilder(evaluationContextsGathered, name, true, movedUpFirstOne, variableProperty);
-                int worstValue = intStream.min().orElse(Level.DELAY);
-                if (worstValue > Level.DELAY) {
-                    localAv.setProperty(variableProperty, worstValue);
                 }
             }
 

@@ -106,13 +106,13 @@ public class ParameterAnalyser {
     }
 
     /**
-     * we only copy SIZE when it is also NOT_MODIFIED!
+     * we only copy SIZE when it is also not MODIFIED!
      */
     private static boolean verifySizeNotModified(VariableProperty variableProperty, ParameterInfo parameterInfo, ParameterAnalysis parameterAnalysis) {
         if (variableProperty != VariableProperty.SIZE) return true;
-        int notModified = parameterAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
-        boolean accept = notModified == Level.TRUE;
-        log(SIZE, "To copy the SIZE property on {}, we look at NOT_MODIFIED. Copy? {}", parameterInfo.detailedString(), accept);
+        int modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
+        boolean accept = modified != Level.TRUE;
+        log(SIZE, "To copy the SIZE property on {}, we look at MODIFIED. Copy? {}", parameterInfo.detailedString(), accept);
         return accept;
     }
 }

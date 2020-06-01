@@ -52,8 +52,8 @@ public class VariableExpression implements Expression {
         if (notNull >= Level.TRUE) {
             StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
         }
-        int notModified = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED);
-        StatementAnalyser.markContentModified(evaluationContext, variable, notModified);
+        int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
+        StatementAnalyser.markContentModified(evaluationContext, variable, modified);
 
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
         StatementAnalyser.markSize(evaluationContext, variable, size);

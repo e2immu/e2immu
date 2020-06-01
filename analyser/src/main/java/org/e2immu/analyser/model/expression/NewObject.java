@@ -164,11 +164,11 @@ public class NewObject implements HasParameterExpressions {
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
 
         if (constructor != null) {
-            int notModified = constructor.allParametersNotModified();
-            if (notModified == Level.TRUE && params.lessThan(SideEffect.SIDE_EFFECT)) {
+            int modified = constructor.atLeastOneParameterModified();
+            if (modified == Level.FALSE && params.lessThan(SideEffect.SIDE_EFFECT)) {
                 return SideEffect.STATIC_ONLY;
             }
-            if (notModified == Level.DELAY) return SideEffect.DELAYED;
+            if (modified == Level.DELAY) return SideEffect.DELAYED;
         }
 
         return params;

@@ -70,7 +70,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // not modified on scope
         SideEffect sideEffect = methodInfo.sideEffect();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int notModifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.TRUE : Level.FALSE;
+        int modifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.FALSE : Level.TRUE;
         int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
 
         // scope
@@ -78,7 +78,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.NOT_NULL, Level.TRUE,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
-                VariableProperty.NOT_MODIFIED, notModifiedValue)));
+                VariableProperty.MODIFIED, modifiedValue)));
 
         // null scope
         if (objectValue instanceof NullValue) {
@@ -171,11 +171,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private Value computeSize(Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
         if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
-        int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
-        if (notModified == Level.DELAY) {
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.DELAY) {
             return null; // ignore
         }
-        if (notModified == Level.FALSE) {
+        if (modified == Level.TRUE) {
             return computeSizeModifyingMethod(objectValue, evaluationContext);
         }
 

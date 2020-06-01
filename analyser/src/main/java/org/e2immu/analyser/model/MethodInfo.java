@@ -375,10 +375,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public SideEffect sideEffect() {
-        int notModified = methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+        int modified = methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         int typeE2Immutable = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if (typeE2Immutable != Level.TRUE && notModified == Level.DELAY) return SideEffect.DELAYED;
-        if (typeE2Immutable == Level.TRUE || notModified == Level.TRUE) {
+        if (typeE2Immutable != Level.TRUE && modified == Level.DELAY) return SideEffect.DELAYED;
+        if (typeE2Immutable == Level.TRUE || modified == Level.FALSE) {
             if (isStatic) {
                 if (isVoid()) {
                     return SideEffect.STATIC_ONLY;
@@ -411,10 +411,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return name;
     }
 
-    public int allParametersNotModified() {
+    public int atLeastOneParameterModified() {
         return methodInspection.get().parameters.stream()
-                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED))
-                .min().orElse(Level.TRUE);
+                .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED))
+                .max().orElse(Level.FALSE);
     }
 
     public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {

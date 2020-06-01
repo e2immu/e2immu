@@ -429,3 +429,21 @@ The method `copyFieldAssignmentValue` in the same type handles the assignment pr
 | @E1Immutable | @Mutable | Some fields are not final
 | @E2Immutable | @ExternallyMutable | All fields are final, but the objects can be modified from the outside
 |===
+
+In defensive mode, objects are
+
+* @Modified unless specified @NotModified (MODIFIED=#1# default)
+* @Dependent unless specified @Independent (INDEPENDENT=0 default)
+* @Variable unless specified @Final (FINAL=0 default)
+* @Nullable unless specified @NotNull, @NotNull1, @NotNull2 (NOT_NULL=0 default)
+* @ModifiesArguments unless @Container (CONTAINER=0 default)
+* @Mutable unless specified @E1Immutable or @E2Immutable (IMMUTABLE=0 default)
+
+In offensive mode, objects are
+
+* @NotModified unless explicitly @Modified (MODIFIED=#0#)
+* @Independent unless explicitly @Dependent (INDEPENDENT=1)
+* @Final unless explicitly @Variable (FINAL=1 default)
+* @NotNull unless explicitly @Nullable (NOT_NULL=1)
+* @Container unless explicitly @ModifiesArguments (CONTAINER=1)
+* @E1Immutable unless explicitly @Mutable (IMMUTABLE=1)

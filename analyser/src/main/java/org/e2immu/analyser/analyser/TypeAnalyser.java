@@ -237,10 +237,10 @@ public class TypeAnalyser {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    int notModified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
-                    if (notModified == Level.DELAY) return false; // cannot yet decide
-                    if (notModified == Level.FALSE) {
-                        log(CONTAINER, "{} is not a @Container: {} in {} does not have a @NotModified annotation",
+                    int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                    if (modified == Level.DELAY) return false; // cannot yet decide
+                    if (modified == Level.TRUE) {
+                        log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo.fullyQualifiedName,
                                 parameterInfo.detailedString(),
                                 methodInfo.distinguishingName());
@@ -309,14 +309,14 @@ public class TypeAnalyser {
                 return false;
             }
             if (e2immutable == Level.FALSE) {
-                int notModified = fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED);
+                int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
 
-                if (notModified == Level.DELAY) {
+                if (modified == Level.DELAY) {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
                     return false;
                 }
-                if (notModified == Level.FALSE) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also not @NotModified",
+                if (modified == Level.TRUE) {
+                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
                     typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                     return true;

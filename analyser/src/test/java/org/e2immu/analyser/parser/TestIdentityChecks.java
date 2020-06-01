@@ -36,12 +36,12 @@ public class TestIdentityChecks extends CommonTestRunner {
         if (methodInfo.name.equals("idem") && "s".equals(variableName)) {
             if ("0".equals(statementId)) {
                 // strings are @NM by definition
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
             } else if ("1".equals(statementId)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
@@ -54,10 +54,10 @@ public class TestIdentityChecks extends CommonTestRunner {
         if ("idem".equals(methodInfo.name)) {
 
             TransferValue tv = methodAnalysis.returnStatementSummaries.get("1");
-            Assert.assertFalse(tv.properties.isSet(VariableProperty.NOT_MODIFIED));
+            Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
 
             // @NotModified decided straight away, @Identity as well
-            Assert.assertEquals(1, methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED));
+            Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
             Assert.assertEquals(1, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         }
     };

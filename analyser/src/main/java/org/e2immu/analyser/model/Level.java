@@ -45,6 +45,7 @@ public class Level {
     public static final int FALSE = 0;
     public static final int TRUE = 1;
     public static final int TRUE_LEVEL_1 = 3;
+    public static final int TRUE_LEVEL_2 = 5;
 
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator AND = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.min(i, j);

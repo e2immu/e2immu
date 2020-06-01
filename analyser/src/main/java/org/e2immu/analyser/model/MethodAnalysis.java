@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -46,16 +47,18 @@ public class MethodAnalysis extends Analysis {
     }
 
     @Override
+    public AnnotationMode annotationMode() {
+        return typeInfo.typeAnalysis.get().annotationMode();
+    }
+
+    @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case FLUENT:
             case IDENTITY:
             case INDEPENDENT:
             case SIZE:
-                return getPropertyCheckOverrides(variableProperty);
-            case NOT_MODIFIED:
-                int typeNotModified = typeInfo.typeAnalysis.get().getProperty(variableProperty);
-                if (typeNotModified == Level.TRUE) return typeNotModified;
+            case MODIFIED:
                 return getPropertyCheckOverrides(variableProperty);
             case NOT_NULL:
                 if (returnType.isPrimitive()) return Level.TRUE;
@@ -74,9 +77,14 @@ public class MethodAnalysis extends Analysis {
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
-        IntStream mine = IntStream.of(super.getProperty(variableProperty));
-        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getProperty(variableProperty));
-        return IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
+        IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty, Level.DELAY));
+        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
+        int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
+        if (max == Level.DELAY) {
+            // no information found in the whole hierarchy
+            return variableProperty.valueWhenAbsent(annotationMode());
+        }
+        return max;
     }
 
     @Override
@@ -104,7 +112,7 @@ public class MethodAnalysis extends Analysis {
     @Override
     public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
         return Map.of(
-                VariableProperty.NOT_MODIFIED, typeContext.modified.get(),
+                VariableProperty.MODIFIED, typeContext.notModified.get(),
                 VariableProperty.INDEPENDENT, typeContext.dependent.get());
     }
 

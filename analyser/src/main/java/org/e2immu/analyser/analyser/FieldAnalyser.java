@@ -386,7 +386,7 @@ public class FieldAnalyser {
                                        boolean fieldCanBeWrittenFromOutsideThisType,
                                        TypeInspection typeInspection,
                                        boolean fieldSummariesNotYetSet) {
-        if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.UNDEFINED) return false;
+        if (fieldAnalysis.getProperty(VariableProperty.MODIFIED) != Level.UNDEFINED) return false;
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
         if (e2immutable == Level.DELAY) {
@@ -398,18 +398,16 @@ public class FieldAnalyser {
         boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE ||
-                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) != Level.DELAY);
+                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) != Level.DELAY);
 
         if (allContentModificationsDefined) {
-            boolean notModified =
-                    !fieldCanBeWrittenFromOutsideThisType &&
-                            typeInspection.constructorAndMethodStream()
-                                    .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                                    .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY) >= Level.TRUE)
-                                    .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) == Level.FALSE);
-            fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED, notModified);
-            log(NOT_MODIFIED, "Mark field {} as " + (notModified ? "" : "not ") +
-                    "@NotModified", fieldInfo.fullyQualifiedName());
+            boolean modified = fieldCanBeWrittenFromOutsideThisType ||
+                    typeInspection.constructorAndMethodStream()
+                            .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+                            .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY) >= Level.TRUE)
+                            .anyMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
+            log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
             return true;
         }
         log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",

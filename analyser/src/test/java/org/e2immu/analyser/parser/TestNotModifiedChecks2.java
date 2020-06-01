@@ -26,10 +26,10 @@ public class TestNotModifiedChecks2 extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
             if ("add".equals(methodInfo.name) && "theSet".equals(variableName)) {
                 if("1".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 }
                 if("2".equals(statementId)) {
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.NOT_MODIFIED));
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
                 }
             }
         }

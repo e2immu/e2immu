@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,11 @@ public class FieldAnalysis extends Analysis {
         this.bestType = fieldInfo.type.bestTypeInfo();
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         type = fieldInfo.type;
+    }
+
+    @Override
+    public AnnotationMode annotationMode() {
+        return owner.typeAnalysis.get().annotationMode();
     }
 
     // if the field turns out to be effectively final, it can have a value
@@ -60,10 +66,11 @@ public class FieldAnalysis extends Analysis {
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case NOT_MODIFIED:
-                if (bestType == null) return Level.TRUE; // we cannot modify because we cannot even execute a method
+            case MODIFIED:
+                if (bestType == null) return Level.FALSE; // we cannot modify because we cannot even execute a method
                 int e2Immutable = Level.value(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-                if (e2Immutable != Level.FALSE) return e2Immutable;
+                if (e2Immutable == Level.DELAY) return e2Immutable;
+                if (e2Immutable == Level.TRUE) return Level.FALSE;
                 break;
 
             case NOT_NULL:
@@ -86,20 +93,39 @@ public class FieldAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
+
+    @Override
+    public int maximalValue(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.MODIFIED) {
+            if (type.isUnboundParameterType()) return Level.TRUE;
+            if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                    Level.E2IMMUTABLE)) {
+                return Level.TRUE;
+            }
+            if (owner.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                return Level.TRUE;
+            }
+        }
+        return Integer.MAX_VALUE;
+    }
+
     @Override
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case NOT_MODIFIED:
-                if (type.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
-                TypeInfo bestInfo = type.bestTypeInfo();
-                if (bestInfo != null && Level.haveTrueAt(bestInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
-                    // in an @E2Immutable class, all fields are @NotModified, so no need to write this
-                    return Level.TRUE;
-                }
-                break;
             case NOT_NULL:
                 if (type.isPrimitive()) return Level.TRUE;
                 break;
+
+            case MODIFIED:
+                if (type.isUnboundParameterType()) return Integer.MAX_VALUE;
+                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                        Level.E2IMMUTABLE)) {
+                    return Integer.MAX_VALUE;
+                }
+                if (owner.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                    return Integer.MAX_VALUE;
+                }
+                return Level.UNDEFINED;
 
             case FINAL:
                 if (isExplicitlyFinal) return Level.TRUE;
@@ -116,7 +142,7 @@ public class FieldAnalysis extends Analysis {
                 break;
 
             case CONTAINER:
-                if(type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE;
+                if (type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE;
                 break;
 
             case SIZE:
@@ -129,7 +155,7 @@ public class FieldAnalysis extends Analysis {
     @Override
     public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
         return Map.of(
-                VariableProperty.NOT_MODIFIED, typeContext.modified.get(),
+                VariableProperty.MODIFIED, typeContext.notModified.get(),
                 VariableProperty.FINAL, typeContext.variableField.get());
     }
 }

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.AnnotationMode;
 
 import java.lang.annotation.ElementType;
 import java.util.Arrays;
@@ -39,6 +40,11 @@ public class TypeAnalysis extends Analysis {
         this.typeInfo = typeInfo;
     }
 
+    @Override
+    public AnnotationMode annotationMode() {
+        return typeInfo.typeInspection.get().annotationMode;
+    }
+
     // to avoid repetitions
     public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
 
@@ -47,11 +53,6 @@ public class TypeAnalysis extends Analysis {
     protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_ALL);
         return Arrays.stream(elements).collect(Collectors.toSet());
-    }
-
-    @Override
-    public int minimalValue(VariableProperty variableProperty) {
-        return Level.UNDEFINED;
     }
 
     @Override

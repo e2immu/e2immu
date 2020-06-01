@@ -24,8 +24,7 @@ import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +64,8 @@ public class TypeInspection extends Inspection {
     public final List<TypeInfo> allTypesInPrimaryType;
     public final TypeModifier access;
 
+    public final AnnotationMode annotationMode;
+
     private TypeInspection(boolean hasBeenDefined,
                            TypeInfo typeInfo,
                            Either<String, TypeInfo> packageNameOrEnclosingType,
@@ -101,6 +102,28 @@ public class TypeInspection extends Inspection {
         else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
+
+        if(hasBeenDefined) {
+            annotationMode = annotationMode(annotations);
+        } else {
+            annotationMode = AnnotationMode.DEFENSIVE; // does not matter what we put here
+        }
+    }
+
+    private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(
+            Modified.class.getCanonicalName(),
+            Nullable.class.getCanonicalName(),
+            Dependent.class.getCanonicalName(),
+            Mutable.class.getCanonicalName(),
+            ModifiesArguments.class.getCanonicalName(),
+            org.e2immu.annotation.Variable.class.getCanonicalName());
+
+    private static AnnotationMode annotationMode(List<AnnotationExpression> annotations) {
+        for(AnnotationExpression ae: annotations) {
+            String fqn = ae.typeInfo.fullyQualifiedName;
+            if(OFFENSIVE_ANNOTATIONS.contains(fqn)) return AnnotationMode.OFFENSIVE;
+        }
+        return AnnotationMode.DEFENSIVE;
     }
 
     public boolean isClass() {

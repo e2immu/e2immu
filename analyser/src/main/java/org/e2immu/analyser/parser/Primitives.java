@@ -78,6 +78,10 @@ public class Primitives {
     public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypeTypeInfo, "VERIFY_ABSENT", annotationTypeTypeInfo);
     public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypeTypeInfo, "CONTRACT", annotationTypeTypeInfo);
 
+    public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
+    public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypeTypeInfo, "DEFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeOffensive= new FieldInfo(annotationTypeTypeInfo, "OFFENSIVE", annotationModeTypeInfo);
+
     public final TypeInfo functionalInterface = new TypeInfo("java.lang.FunctionalInterface");
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
             AnnotationExpression.fromAnalyserExpressions(functionalInterface, List.of());
@@ -195,50 +199,54 @@ public class Primitives {
             ti.typeAnalysis.set(new TypeAnalysis(ti));
             ti.typeAnalysis.get().properties.put(VariableProperty.CONTAINER, Level.TRUE);
             ti.typeAnalysis.get().properties.put(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
-            ti.typeAnalysis.get().properties.put(VariableProperty.NOT_MODIFIED, Level.TRUE);
+            ti.typeAnalysis.get().properties.put(VariableProperty.MODIFIED, Level.FALSE);
         }
 
-        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, functionalInterface)) {
+        for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, annotationModeTypeInfo, functionalInterface)) {
             typeByName.put(ti.simpleName, ti);
         }
         for (TypeInfo ti : boxed) {
             typeByName.put(ti.simpleName, ti);
         }
 
-        MethodInfo valueOf = new MethodInfo(annotationTypeTypeInfo, "valueOf", true);
-        ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
-        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
-                .build(valueOf));
-        valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .setReturnType(annotationTypeTypeInfo)
-                .addParameter(valueOf1)
-                .addModifier(MethodModifier.PUBLIC)
-                .build(valueOf));
-        MethodInfo name = new MethodInfo(annotationTypeTypeInfo, "name", false);
-        name.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .setReturnType(stringTypeInfo)
-                .addModifier(MethodModifier.PUBLIC)
-                .build(name));
-        annotationTypeTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
-                .setPackageName(ORG_E2IMMU_ANNOTATION)
-                .setTypeNature(TypeNature.ENUM)
-                .addTypeModifier(TypeModifier.PUBLIC)
-                .addField(annotationTypeComputed)
-                .addField(annotationTypeContract)
-                .addField(annotationTypeVerify)
-                .addField(annotationTypeVerifyAbsent)
-                .addMethod(valueOf)
-                .addMethod(name)
-                .build(false, annotationTypeTypeInfo));
-        for (FieldInfo fieldInfo : new FieldInfo[]{annotationTypeComputed, annotationTypeContract, annotationTypeVerify, annotationTypeVerifyAbsent}) {
-            fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
-                    .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
-                    .build());
-        }
+        processEnum(annotationTypeTypeInfo, List.of(annotationTypeComputed, annotationTypeContract, annotationTypeVerify, annotationTypeVerifyAbsent));
+        processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
+
         functionalInterface.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .build(false, functionalInterface));
+    }
+
+    private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
+        MethodInfo valueOf = new MethodInfo(typeInfo, "valueOf", true);
+        ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
+        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
+                .build(valueOf));
+        valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .setReturnType(typeInfo)
+                .addParameter(valueOf1)
+                .addModifier(MethodModifier.PUBLIC)
+                .build(valueOf));
+        MethodInfo name = new MethodInfo(typeInfo, "name", false);
+        name.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .setReturnType(stringTypeInfo)
+                .addModifier(MethodModifier.PUBLIC)
+                .build(name));
+        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder()
+                .setPackageName(ORG_E2IMMU_ANNOTATION)
+                .setTypeNature(TypeNature.ENUM)
+                .addTypeModifier(TypeModifier.PUBLIC)
+
+                .addMethod(valueOf)
+                .addMethod(name);
+        for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
+        for (FieldInfo fieldInfo : fields) {
+            fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
+                    .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
+                    .build());
+        }
     }
 
     public ParameterizedType widestType(ParameterizedType t1, ParameterizedType t2) {

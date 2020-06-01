@@ -189,8 +189,8 @@ public class MethodValue implements Value {
         MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
         if (sizeMethod != null) {
             int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-            int notModified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
-            if (size >= Level.TRUE && notModified == Level.TRUE && object instanceof VariableValue) {
+            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            if (size >= Level.TRUE && modified == Level.FALSE && object instanceof VariableValue) {
                 VariableValue variableValue = (VariableValue) object;
                 Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
                 Value comparison;

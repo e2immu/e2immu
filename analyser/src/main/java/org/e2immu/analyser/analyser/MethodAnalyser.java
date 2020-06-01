@@ -251,50 +251,50 @@ public class MethodAnalyser {
     }
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.getProperty(VariableProperty.NOT_MODIFIED) != Level.DELAY) return false;
+        if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return false;
 
-        // first step, check that no fields are being assigned
+        // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.fieldSummaries.stream()
                 .map(Map.Entry::getValue)
                 .anyMatch(tv -> tv.properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) >= Level.TRUE);
         if (fieldAssignments) {
-            log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, Level.FALSE);
+            log(NOT_MODIFIED, "Method {} cannot be @NotModified/is @Modified: fields are being assigned", methodInfo.distinguishingName());
+            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
-        // second step, check that no fields are modified
+        // second step, check that fields modifications
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-            log(DELAYED, "Method {}: Not deciding on @NotModified yet, delaying because linking not computed",
+            log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
                     methodInfo.distinguishingName());
             return false;
         }
-        boolean isNotModified = methodAnalysis.fieldSummaries.stream().map(Map.Entry::getValue)
-                .allMatch(tv -> tv.properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) == Level.TRUE);
-        if (!isNotModified && isLogEnabled(NOT_MODIFIED)) {
+        boolean isModified = methodAnalysis.fieldSummaries.stream().map(Map.Entry::getValue)
+                .anyMatch(tv -> tv.properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE);
+        if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
                     methodAnalysis.fieldSummaries.stream()
-                            .filter(e -> e.getValue().properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY) != Level.TRUE)
+                            .filter(e -> e.getValue().properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE)
                             .map(e -> e.getKey().fullyQualifiedName()).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
-        if (isNotModified) {
+        if (!isModified) {
             boolean localMethodsCalled = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_CALLED, Level.DELAY) == Level.TRUE;
             if (localMethodsCalled) {
-                int thisNotModified = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.NOT_MODIFIED, Level.DELAY);
+                int thisModified = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
 
-                if (thisNotModified == Level.DELAY) {
+                if (thisModified == Level.DELAY) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
                     return false;
                 }
-                isNotModified = thisNotModified == Level.TRUE;
-                log(NOT_MODIFIED, "Mark method {} as {}@NotModified", methodInfo.distinguishingName(),
-                        isNotModified ? "" : "NOT ");
-            } // else: no local methods called, we should be good
-        } // else: already false, why should we analyse this?
+                isModified = thisModified == Level.TRUE;
+                log(NOT_MODIFIED, "Mark method {} as {}", methodInfo.distinguishingName(),
+                        isModified ? "@Modified" : "@NotModified");
+            }
+        } // else: already true, so no need to look at this
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(VariableProperty.NOT_MODIFIED, isNotModified);
+        methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified);
         return true;
     }
 

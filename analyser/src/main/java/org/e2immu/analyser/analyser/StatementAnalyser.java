@@ -594,10 +594,10 @@ public class StatementAnalyser {
         if (currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
             return;
         }
-        int notModified = methodCalled.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED);
+        int modified = methodCalled.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.get().doNotAllowDelaysOnNotModified.isSet();
-        if (allowDelays && notModified == Level.DELAY) return; // delaying
-        boolean error = notModified != Level.TRUE;
+        if (allowDelays && modified == Level.DELAY) return; // delaying
+        boolean error = modified == Level.TRUE;
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
             variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
@@ -689,7 +689,7 @@ public class StatementAnalyser {
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
-            variableProperties.addProperty(variable, VariableProperty.NOT_MODIFIED, value);
+            variableProperties.addProperty(variable, VariableProperty.MODIFIED, value);
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

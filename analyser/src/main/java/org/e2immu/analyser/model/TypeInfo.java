@@ -1044,7 +1044,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         MethodInfo methodInfo = typeInspection.get().methods.stream()
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
-                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE)
+                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
                 .findFirst().orElse(null);
         if (methodInfo != null) {
             return methodInfo;

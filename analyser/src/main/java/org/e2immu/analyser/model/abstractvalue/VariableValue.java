@@ -77,9 +77,9 @@ public class VariableValue extends ValueWithVariable {
             if (variable.parameterizedType().isPrimitive()) return Level.TRUE;
             if (variable instanceof This) return Level.TRUE;
         }
-        if (variableProperty == VariableProperty.NOT_MODIFIED) {
+        if (variableProperty == VariableProperty.MODIFIED) {
             ParameterizedType type = variable.parameterizedType();
-            if (type.getProperty(VariableProperty.NOT_MODIFIED) == Level.TRUE) return Level.TRUE;
+            if (type.getProperty(VariableProperty.MODIFIED) == Level.FALSE) return Level.FALSE;
         }
         if (variable instanceof ParameterInfo) {
             return ((ParameterInfo) variable).parameterAnalysis.get().getProperty(variableProperty);

@@ -40,7 +40,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("s".equals(variableName)) {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", iteration, properties, currentValue);
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-                Assert.assertEquals(2, (int) properties.get(VariableProperty.NOT_MODIFIED)); //FALSE at level 1
+                Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED)); //FALSE at level 1
                 Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.NOT_NULL));
                 return;
             }
@@ -59,7 +59,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
             } else if ("0".equals(statementId)) {
                 if ("s".equals(variableName)) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
-                    Assert.assertEquals(Level.compose(Level.FALSE, 1), (int) properties.get(VariableProperty.NOT_MODIFIED));
+                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                     Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.READ));
                 } else if ("NullParameterChecks.this.s".equals(variableName)) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
@@ -81,7 +81,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 .methods.stream().filter(mi -> "requireNonNull".equals(mi.name) &&
                         1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
-        Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_MODIFIED));
+        Assert.assertEquals(Level.FALSE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
     };
 
