@@ -80,7 +80,7 @@ public class MethodAnalysis extends Analysis {
         IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty, Level.DELAY));
         IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
         int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
-        if (max == Level.DELAY) {
+        if (max == Level.DELAY && !hasBeenDefined) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());
         }

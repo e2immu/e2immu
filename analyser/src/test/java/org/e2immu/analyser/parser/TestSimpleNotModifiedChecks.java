@@ -6,6 +6,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -116,6 +117,13 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
         @Override
         public void visit(int iteration, FieldInfo fieldInfo) {
+            if (fieldInfo.name.equals("set2")) {
+                if (iteration == 0 || iteration == 1) {
+                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                } else {
+                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                }
+            }
             if (fieldInfo.name.equals("set3")) {
                 if (iteration == 0) {
                     Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
@@ -163,9 +171,15 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("size".equals(methodInfo.name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
-                Assert.assertTrue(methodInfo.methodAnalysis.get().returnStatementSummaries.isSet("0"));
-                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
-                Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
+                if (iteration > 0) {
+                    FieldInfo set2 = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                    Assert.assertEquals("set2", set2.name);
+                    TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(set2);
+                    Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
+                }
+                if(iteration > 1) {
+                    Assert.assertEquals(0, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                }
             }
             if ("Example4".equals(methodInfo.name)) {
                 ParameterInfo in4 = methodInfo.methodInspection.get().parameters.get(0);
@@ -208,7 +222,9 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         @Override
         public void visit(TypeContext typeContext) {
             TypeInfo set = typeContext.getFullyQualified(Set.class);
+            Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode);
             MethodInfo add = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
+            Assert.assertFalse(add.methodAnalysis.get().hasBeenDefined);
             Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
             MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();

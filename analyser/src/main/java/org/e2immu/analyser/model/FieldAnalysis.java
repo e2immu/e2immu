@@ -102,9 +102,6 @@ public class FieldAnalysis extends Analysis {
                     Level.E2IMMUTABLE)) {
                 return Level.TRUE;
             }
-            if (owner.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                return Level.TRUE;
-            }
         }
         return Integer.MAX_VALUE;
     }
@@ -120,9 +117,6 @@ public class FieldAnalysis extends Analysis {
                 if (type.isUnboundParameterType()) return Integer.MAX_VALUE;
                 if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                         Level.E2IMMUTABLE)) {
-                    return Integer.MAX_VALUE;
-                }
-                if (owner.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Integer.MAX_VALUE;
                 }
                 return Level.UNDEFINED;
