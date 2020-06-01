@@ -40,10 +40,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 }
             }
             if ("NotModifiedChecks".equals(methodInfo.name)) {
-                if ("list".equals(variableName)) {
-                    if (iteration > 1) {
-                        Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
-                    }
+                if ("list".equals(variableName) && "1".equals(statementId)) {
+                    Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
                 }
             }
         }
@@ -67,7 +65,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, FieldInfo fieldInfo) {
             if ("c0".equals(fieldInfo.name)) {
-                if (iteration > 0) {
+                if (iteration >= 2) {
                     Assert.assertEquals(0, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
                 }
             }
