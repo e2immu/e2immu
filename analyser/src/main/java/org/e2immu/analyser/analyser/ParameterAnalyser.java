@@ -23,9 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Size;
+import org.e2immu.annotation.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -45,6 +43,11 @@ public class ParameterAnalyser {
 
         check(parameterInfo, NotModified.class, typeContext.notModified.get());
         check(parameterInfo, NotNull.class, typeContext.notNull.get()); // TODO check @NotNull1, 2
+
+        // opposites
+        check(parameterInfo, Nullable.class, typeContext.nullable.get());
+        check(parameterInfo, Modified.class, typeContext.modified.get());
+
         CheckSize.checkSizeForParameters(typeContext, parameterInfo);
     }
 

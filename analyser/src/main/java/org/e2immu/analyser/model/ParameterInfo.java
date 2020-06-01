@@ -26,6 +26,8 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 
 import java.util.*;
 
@@ -175,7 +177,10 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         Optional<AnnotationExpression> fromParameter = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromParameter.isPresent()) return fromParameter;
-        return parameterInspection.get().owner.typeInfo.hasTestAnnotation(annotation);
+        if (NotNull.class.equals(annotation)) {
+            return parameterInspection.get().owner.typeInfo.hasTestAnnotation(annotation);
+        }
+        return Optional.empty(); // do not copy from type!
     }
 
     @Override

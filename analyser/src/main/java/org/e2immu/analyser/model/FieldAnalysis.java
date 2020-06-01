@@ -19,9 +19,11 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 
+import java.util.Map;
 import java.util.Set;
 
 public class FieldAnalysis extends Analysis {
@@ -122,5 +124,12 @@ public class FieldAnalysis extends Analysis {
 
         }
         return Level.UNDEFINED;
+    }
+
+    @Override
+    public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
+        return Map.of(
+                VariableProperty.NOT_MODIFIED, typeContext.modified.get(),
+                VariableProperty.FINAL, typeContext.variableField.get());
     }
 }

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotNull;
@@ -100,6 +101,12 @@ public class MethodAnalysis extends Analysis {
         return Level.UNDEFINED;
     }
 
+    @Override
+    public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
+        return Map.of(
+                VariableProperty.NOT_MODIFIED, typeContext.modified.get(),
+                VariableProperty.INDEPENDENT, typeContext.dependent.get());
+    }
 
     // ************** LOCAL STORAGE
 

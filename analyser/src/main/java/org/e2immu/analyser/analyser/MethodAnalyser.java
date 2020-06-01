@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -77,6 +78,11 @@ public class MethodAnalyser {
 
             CheckConstant.checkConstantForMethods(typeContext, methodInfo);
             CheckSize.checkSizeForMethods(typeContext, methodInfo);
+
+            // opposites
+            check(methodInfo, Dependent.class, typeContext.dependent.get());
+            check(methodInfo, Modified.class, typeContext.modified.get());
+            check(methodInfo, Nullable.class, typeContext.nullable.get());
         }
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);

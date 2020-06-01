@@ -21,7 +21,10 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+
+import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -101,6 +104,11 @@ public class ParameterAnalysis extends Analysis {
             default:
         }
         return Level.UNDEFINED;
+    }
+
+    @Override
+    public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
+        return Map.of(VariableProperty.NOT_MODIFIED, typeContext.modified.get());
     }
 
     public boolean notNull(Boolean notNull) {

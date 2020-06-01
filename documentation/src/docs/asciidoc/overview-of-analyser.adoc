@@ -411,3 +411,21 @@ This statement causes a `NOT_NULL==Level.TRUE` on `t`, but adds a `NOT_MODIFIED=
 
 The method `copyContextProperties` in `ComputeLinking` takes care of `SIZE`, `NOT_NULL`.
 The method `copyFieldAssignmentValue` in the same type handles the assignment properties and value.
+
+=== Opposite annotations
+
+[options=header]
+|===
+
+| defensive | offensive  | Notes
+
+| @NotNull  | @Nullable | at level 0; no information about one level deeper
+| @NotNull1 | - | opposite not obvious to implement
+| @NotNull2 | - | opposite not obvious to implement
+| @NotModified | @Modified | content modification of parameters, methods and fields
+| @Independent | @Dependent | output is dependent
+| @Final | @Variable | field is variable
+| @Container | @ModifiesArguments | As soon as one parameter has @Modified
+| @E1Immutable | @Mutable | Some fields are not final
+| @E2Immutable | @ExternallyMutable | All fields are final, but the objects can be modified from the outside
+|===

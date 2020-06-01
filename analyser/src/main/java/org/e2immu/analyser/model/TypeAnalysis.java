@@ -19,12 +19,12 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.lang.annotation.ElementType;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,5 +52,10 @@ public class TypeAnalysis extends Analysis {
     @Override
     public int minimalValue(VariableProperty variableProperty) {
         return Level.UNDEFINED;
+    }
+
+    @Override
+    public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
+        return Map.of();
     }
 }

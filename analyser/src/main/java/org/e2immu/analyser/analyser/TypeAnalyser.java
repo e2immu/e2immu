@@ -100,6 +100,11 @@ public class TypeAnalyser {
         check(typeInfo, NotNull2.class, typeContext.notNull2.get());
         // TODO there's a "where" which complicates things!! check(typeInfo, NotModified.class, typeContext.e2Immutable.get());
         // already implemented for "reading", but not yet for checking
+
+        // opposites
+        check(typeInfo, Mutable.class, typeContext.mutable.get());
+        check(typeInfo, ExternallyMutable.class, typeContext.externallyMutable.get());
+        check(typeInfo, ModifiesArguments.class, typeContext.modifiesArguments.get());
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

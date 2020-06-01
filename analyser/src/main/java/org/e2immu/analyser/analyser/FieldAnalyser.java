@@ -23,15 +23,14 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -436,6 +435,11 @@ public class FieldAnalyser {
         check(fieldInfo, Container.class, typeContext.container.get());
         check(fieldInfo, E1Container.class, typeContext.e1Container.get());
         check(fieldInfo, E2Container.class, typeContext.e2Container.get());
+
+        // opposites
+        check(fieldInfo, org.e2immu.annotation.Variable.class, typeContext.variableField.get());
+        check(fieldInfo, Modified.class, typeContext.modified.get());
+        check(fieldInfo, Nullable.class, typeContext.nullable.get());
 
         CheckConstant.checkConstantForFields(typeContext, fieldInfo);
         CheckSize.checkSizeForFields(typeContext, fieldInfo);

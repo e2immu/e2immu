@@ -147,9 +147,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         Optional<AnnotationExpression> fromField = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromField.isPresent()) return fromField;
-        if (annotation.equals(NotNull.class) || annotation.equals(NotModified.class))
-            return owner.hasTestAnnotation(annotation);
-        // TODO check "where" on @NotModified
+        if (annotation.equals(NotNull.class)) return owner.hasTestAnnotation(annotation);
+        // TODO check "where" on @NotNull
         return Optional.empty();
     }
 

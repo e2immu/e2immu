@@ -93,19 +93,21 @@ public abstract class Analysis {
 
     public abstract int minimalValue(VariableProperty variableProperty);
 
-    public void transferPropertiesToAnnotations(TypeContext typeContext) {
-        ImmutableMap.Builder<VariableProperty, AnnotationExpression> mapBuilder = new ImmutableMap.Builder<>();
-        mapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
-        mapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
-        mapBuilder.put(VariableProperty.IDENTITY, typeContext.identity.get());
-        mapBuilder.put(VariableProperty.INDEPENDENT, typeContext.independent.get());
-        mapBuilder.put(VariableProperty.UTILITY_CLASS, typeContext.utilityClass.get());
-        mapBuilder.put(VariableProperty.EXTENSION_CLASS, typeContext.extensionClass.get());
-        mapBuilder.put(VariableProperty.NOT_MODIFIED, typeContext.notModified.get());
-        mapBuilder.put(VariableProperty.OUTPUT, typeContext.output.get());
-        mapBuilder.put(VariableProperty.SINGLETON, typeContext.singleton.get());
+    public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext);
 
-        for (Map.Entry<VariableProperty, AnnotationExpression> entry : mapBuilder.build().entrySet()) {
+    public void transferPropertiesToAnnotations(TypeContext typeContext) {
+        ImmutableMap.Builder<VariableProperty, AnnotationExpression> minMapBuilder = new ImmutableMap.Builder<>();
+        minMapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
+        minMapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
+        minMapBuilder.put(VariableProperty.IDENTITY, typeContext.identity.get());
+        minMapBuilder.put(VariableProperty.INDEPENDENT, typeContext.independent.get());
+        minMapBuilder.put(VariableProperty.UTILITY_CLASS, typeContext.utilityClass.get());
+        minMapBuilder.put(VariableProperty.EXTENSION_CLASS, typeContext.extensionClass.get());
+        minMapBuilder.put(VariableProperty.NOT_MODIFIED, typeContext.notModified.get());
+        minMapBuilder.put(VariableProperty.OUTPUT, typeContext.output.get());
+        minMapBuilder.put(VariableProperty.SINGLETON, typeContext.singleton.get());
+
+        for (Map.Entry<VariableProperty, AnnotationExpression> entry : minMapBuilder.build().entrySet()) {
             VariableProperty variableProperty = entry.getKey();
             AnnotationExpression annotationExpression = entry.getValue();
             int value = getProperty(variableProperty);
@@ -117,6 +119,13 @@ public abstract class Analysis {
             }
         }
 
+        for (Map.Entry<VariableProperty, AnnotationExpression> entry : oppositesMap(typeContext).entrySet()) {
+            VariableProperty variableProperty = entry.getKey();
+            AnnotationExpression annotationExpression = entry.getValue();
+            int value = getProperty(variableProperty);
+            annotations.put(annotationExpression, value != Level.TRUE);
+        }
+
         // container and immutable
         int container = getProperty(VariableProperty.CONTAINER);
         boolean haveContainer = container == Level.TRUE;
@@ -124,9 +133,20 @@ public abstract class Analysis {
         int minContainer = minimalValue(VariableProperty.CONTAINER);
         int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
 
-        if (noContainer) annotations.put(typeContext.container.get(), false);
+        boolean isType = this instanceof TypeAnalysis;
+        if (noContainer) {
+            annotations.put(typeContext.container.get(), false);
+        }
+        if (isType) {
+            annotations.put(typeContext.modifiesArguments.get(), noContainer);
+        }
+
         int immutable = getProperty(VariableProperty.IMMUTABLE);
         if (Level.haveTrueAt(immutable, Level.E2IMMUTABLE)) {
+            if (isType) {
+                annotations.put(typeContext.externallyMutable.get(), false);
+                annotations.put(typeContext.mutable.get(), false);
+            }
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
                     annotations.put(typeContext.e2Container.get(), true);
@@ -136,6 +156,10 @@ public abstract class Analysis {
                 if (immutable > minImmutable) annotations.put(typeContext.e2Immutable.get(), true);
             }
         } else if (Level.haveTrueAt(immutable, Level.E1IMMUTABLE)) {
+            if (isType) {
+                annotations.put(typeContext.externallyMutable.get(), true);
+                annotations.put(typeContext.mutable.get(), false);
+            }
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
                     annotations.put(typeContext.e1Container.get(), true);
@@ -144,7 +168,13 @@ public abstract class Analysis {
                 if (noContainer) annotations.put(typeContext.e1Container.get(), false);
                 if (immutable > minImmutable) annotations.put(typeContext.e1Immutable.get(), true);
             }
-        } else if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
+        } else {
+            if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
+            if (isType) {
+                annotations.put(typeContext.externallyMutable.get(), false);
+                annotations.put(typeContext.mutable.get(), true);
+            }
+        }
 
         // not null
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);
@@ -152,14 +182,18 @@ public abstract class Analysis {
         int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
         if (notNull2 == Level.TRUE) {
             if (notNull2 > minNotNull) annotations.put(typeContext.notNull2.get(), true);
+            if (!isType) annotations.put(typeContext.nullable.get(), false);
         } else {
             if (notNull2 == Level.FALSE) annotations.put(typeContext.notNull2.get(), false);
 
             int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
             if (notNull1 == Level.TRUE) {
                 if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
+                if (!isType) annotations.put(typeContext.nullable.get(), false);
             } else {
-                if (notNull1 == Level.FALSE) annotations.put(typeContext.notNull1.get(), false);
+                if (notNull1 == Level.FALSE) {
+                    annotations.put(typeContext.notNull1.get(), false);
+                }
                 int notNull0 = Level.value(notNull, Level.NOT_NULL);
                 if (notNull0 == Level.TRUE && notNull0 > minNotNull) {
                     annotations.put(typeContext.notNull.get(), true);
@@ -167,6 +201,7 @@ public abstract class Analysis {
                 if (notNull0 == Level.FALSE) {
                     annotations.put(typeContext.notNull.get(), false);
                 }
+                if (!isType) annotations.put(typeContext.nullable.get(), notNull0 != Level.TRUE);
             }
         }
 
@@ -207,16 +242,24 @@ public abstract class Analysis {
                 TypeInfo t = annotationExpression.typeInfo;
                 if (typeContext.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
+                } else if (typeContext.mutable.get().typeInfo == t) {
+                    immutable = 0;
                 } else if (typeContext.e2Immutable.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                 } else if (typeContext.e2Container.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                     container = true;
+                } else if (typeContext.externallyMutable.get().typeInfo == t) {
+                    immutable = 1;
                 } else if (typeContext.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
                 } else if (typeContext.container.get().typeInfo == t) {
                     container = true;
+                } else if (typeContext.modifiesArguments.get().typeInfo == t) {
+                    container = false;
+                } else if (typeContext.nullable.get().typeInfo == t) {
+                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, -1));
                 } else if (typeContext.notNull.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 0));
                 } else if (typeContext.notNull1.get().typeInfo == t) {
@@ -225,8 +268,12 @@ public abstract class Analysis {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 2));
                 } else if (typeContext.notModified.get().typeInfo == t) {
                     method.accept(VariableProperty.NOT_MODIFIED, Level.TRUE);
+                } else if (typeContext.modified.get().typeInfo == t) {
+                    method.accept(VariableProperty.NOT_MODIFIED, Level.FALSE);
                 } else if (typeContext.effectivelyFinal.get().typeInfo == t) {
                     method.accept(VariableProperty.FINAL, Level.TRUE);
+                } else if (typeContext.variableField.get().typeInfo == t) {
+                    method.accept(VariableProperty.FINAL, Level.FALSE);
                 } else if (typeContext.constant.get().typeInfo == t) {
                     method.accept(VariableProperty.CONSTANT, Level.TRUE);
                 } else if (typeContext.extensionClass.get().typeInfo == t) {
@@ -239,6 +286,8 @@ public abstract class Analysis {
                     method.accept(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
                 } else if (typeContext.independent.get().typeInfo == t) {
                     method.accept(VariableProperty.INDEPENDENT, Level.TRUE);
+                } else if (typeContext.dependent.get().typeInfo == t) {
+                    method.accept(VariableProperty.INDEPENDENT, Level.FALSE);
                 } else if (typeContext.mark.get().typeInfo == t) {
                     method.accept(VariableProperty.MARK, Level.TRUE);
                 } else if (typeContext.only.get().typeInfo == t) {
@@ -281,7 +330,7 @@ public abstract class Analysis {
                 default:
                     throw new UnsupportedOperationException();
             }
-            method.accept(variableProperty, Level.compose(Level.TRUE, entry.getValue()));
+            method.accept(variableProperty, entry.getValue() == -1 ? Level.FALSE : Level.compose(Level.TRUE, entry.getValue()));
         }
     }
 
