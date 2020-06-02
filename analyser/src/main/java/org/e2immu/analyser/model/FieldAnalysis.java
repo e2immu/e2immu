@@ -86,7 +86,9 @@ public class FieldAnalysis extends Analysis {
             case IMMUTABLE:
                 int immutableType = owner == bestType || bestType == null ? Level.FALSE :
                         bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                return Level.best(immutableType, super.getProperty(variableProperty));
+                int myProperty = super.getProperty(variableProperty);
+                if (myProperty == Level.DELAY) return Level.DELAY;
+                return Level.best(immutableType, myProperty);
 
             default:
         }

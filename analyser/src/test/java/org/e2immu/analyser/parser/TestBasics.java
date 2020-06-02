@@ -61,10 +61,10 @@ public class TestBasics extends CommonTestRunner {
             if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
-                Assert.assertEquals(Level.FALSE, fieldAnalysis.getProperty(VariableProperty.MODIFIED));
                 return;
 
             } else if (iteration == 2) {
+                Assert.assertEquals(Level.TRUE_LEVEL_1, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
@@ -78,10 +78,10 @@ public class TestBasics extends CommonTestRunner {
             if (iteration == 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
-                Assert.assertEquals(Level.FALSE, fieldAnalysis.getProperty(VariableProperty.MODIFIED));
             }
             if (iteration > 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE_LEVEL_1, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
             }
         }
     };

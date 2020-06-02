@@ -74,7 +74,9 @@ public class ParameterAnalysis extends Analysis {
             }
             case IMMUTABLE:
             case CONTAINER:
-                return Level.FALSE; // no assignment, so no way of knowing
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (bestType != null) return bestType.typeAnalysis.get().getProperty(variableProperty);
+                return Level.FALSE;
             default:
         }
         return super.getProperty(variableProperty);

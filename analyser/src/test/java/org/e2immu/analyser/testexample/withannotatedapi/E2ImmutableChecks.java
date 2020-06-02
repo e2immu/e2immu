@@ -81,12 +81,10 @@ public class E2ImmutableChecks {
         @Linked(type = AnnotationType.VERIFY_ABSENT)
         private final Set<String> set3;
 
-        @Independent
         public E2Container3(Set<String> set3Param) {
             set3 = new HashSet<>(set3Param); // not linked
         }
 
-        @Independent
         @E2Container
         public Set<String> getSet3() {
             return ImmutableSet.copyOf(set3);
@@ -98,33 +96,30 @@ public class E2ImmutableChecks {
     }
 
     @E2Immutable
-    static class WithSet {
+    @ModifiesArguments //  not a @Container!
+    static class E2Immutable4 {
         @E2Container
-        @NotModified(type = AnnotationType.VERIFY_ABSENT) // we don't write this because it is a E2Container
-        public final Set<String> strings;
+        public final Set<String> strings4;
 
         @Independent
-        public WithSet(@NotNull @NotModified Set<String> input) {
-            strings = ImmutableSet.copyOf(input);
+        public E2Immutable4(@NotNull @NotModified Set<String> input4) {
+            strings4 = ImmutableSet.copyOf(input4);
         }
 
         @E2Container
         @NotNull
-        @NotModified
         @Constant(type = AnnotationType.VERIFY_ABSENT)
-        @Independent
-        public Set<String> getStrings() {
-            return strings;
+        public Set<String> getStrings4() {
+            return strings4;
         }
 
         @Identity
         @Linked(type = AnnotationType.VERIFY_ABSENT)
-        @NotModified // we do not change the contents of the fields
         @Independent // what we return is independent of the fields' content
         @Constant(type = AnnotationType.VERIFY_ABSENT)
-        public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input) {
-            input.addAll(strings);
-            return input;
+        public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input4) {
+            input4.addAll(strings4);
+            return input4;
         }
     }
 }
