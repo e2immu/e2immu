@@ -41,8 +41,16 @@ public class MethodAnalysis extends Analysis {
     public final TypeInfo typeInfo;
 
     public MethodAnalysis(MethodInfo methodInfo) {
+        this(methodInfo, methodInfo.typeInfo.overrides(methodInfo, true));
+    }
+
+    public static MethodAnalysis newMethodAnalysisForLambdaBlocks(MethodInfo methodInfo) {
+        return new MethodAnalysis(methodInfo, Set.of());
+    }
+
+    private MethodAnalysis(MethodInfo methodInfo, Set<MethodInfo> overrides) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
-        this.overrides = methodInfo.typeInfo.overrides(methodInfo, true);
+        this.overrides = overrides;
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
     }

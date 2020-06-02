@@ -347,7 +347,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public ParameterizedType returnType() {
         return Objects.requireNonNull(hasBeenInspected() ? methodInspection.get().returnType :
-                returnTypeObserved, "Null return type for " + fullyQualifiedName());
+                returnTypeObserved, "Null return type for " + fullyQualifiedName() + ", inspected? " + hasBeenInspected());
     }
 
     @Override

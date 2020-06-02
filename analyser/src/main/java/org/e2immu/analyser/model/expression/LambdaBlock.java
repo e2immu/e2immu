@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.statement.Block;
@@ -90,7 +91,8 @@ public class LambdaBlock implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
-        Value result = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+        Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of());
+        //new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?

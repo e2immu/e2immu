@@ -30,11 +30,9 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.VariableContext;
+import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
@@ -107,7 +105,7 @@ public class ParseLambdaExpr {
     private static ParameterizedType createFunctionalType(TypeInfo enclosingType,
                                                           TypeContext typeContext,
                                                           List<ParameterInfo> parameters,
-                                                          ParameterizedType returnType) {
+                                                          @NotNull ParameterizedType returnType) {
         TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
         TypeAnalysis typeAnalysis = new TypeAnalysis(typeInfo);
         typeInfo.typeAnalysis.set(typeAnalysis);
@@ -117,7 +115,11 @@ public class ParseLambdaExpr {
         typeInspectionBuilder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
         MethodInfo methodInfo = new MethodInfo(typeInfo, "apply", false);
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
-        methodInspectionBuilder.setReturnType(returnType);
+        methodInspectionBuilder.setReturnType(Objects.requireNonNull(returnType));
+        methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
+        MethodAnalysis methodAnalysis = MethodAnalysis.newMethodAnalysisForLambdaBlocks(methodInfo);
+        methodInfo.methodAnalysis.set(methodAnalysis);
+
         typeInspectionBuilder.addMethod(methodInfo);
         typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
         // TODO this is the absolute minimum to recognize the type + method as functional interface. More needs to be done
