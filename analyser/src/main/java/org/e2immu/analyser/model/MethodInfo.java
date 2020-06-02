@@ -479,7 +479,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 inSuperType.typeParameter.index != inSubType.typeParameter.index) return true;
         ParameterizedType translated =
                 translationMap.get(inSuperType.typeParameter);
-        return translated == null || translated.typeParameter != inSubType.typeParameter;
+        if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
+        if (inSubType.isUnboundParameterType() && inSuperType.isUnboundParameterType()) return false;
+        if (inSubType.typeParameter.typeParameterInspection.isSet() && inSuperType.typeParameter.typeParameterInspection.isSet()) {
+            List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.typeParameterInspection.get().typeBounds;
+            List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.typeParameterInspection.get().typeBounds;
+            if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
+            int i = 0;
+            for (ParameterizedType typeBound : inSubType.typeParameter.typeParameterInspection.get().typeBounds) {
+                boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
+                if (different) return true;
+            }
+            return false;
+        }
+        throw new UnsupportedOperationException("? type parameter inspections not set");
     }
 
     @Override

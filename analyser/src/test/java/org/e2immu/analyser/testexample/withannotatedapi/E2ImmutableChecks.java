@@ -99,7 +99,6 @@ public class E2ImmutableChecks {
     static class WithSet {
         @E2Container
         @NotModified(type = AnnotationType.VERIFY_ABSENT) // we don't write this because it is a E2Container
-        @Final
         public final Set<String> strings;
 
         @Independent

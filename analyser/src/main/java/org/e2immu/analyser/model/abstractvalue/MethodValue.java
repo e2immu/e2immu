@@ -102,6 +102,7 @@ public class MethodValue implements Value {
     }
 
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
+        if (methodInfo == null) return Level.DELAY;
         if (!methodInfo.returnType().hasSize()) return Level.DELAY;
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
