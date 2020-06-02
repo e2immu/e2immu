@@ -47,6 +47,8 @@ public class ContainerChecks {
     }
 
     // second example: the add method breaks the contract
+    // however, the setter may never be called
+    // the @Size problem we've observed here is replicated in SizeChecks2
     @Container(type = VERIFY_ABSENT)
     static class Container2 {
 
@@ -71,7 +73,8 @@ public class ContainerChecks {
         } // ERROR
     }
 
-    // variant of the second example: the add method breaks the contract; this works easily because strings2b is final
+    // variant of the second example: the add method breaks the contract;
+    // this works easily because strings2b is final
     @Container(type = VERIFY_ABSENT)
     @ModifiesArguments
     static class Container2b {

@@ -32,7 +32,7 @@ public class CheckSize {
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
 
         if (mustBeAbsent && size != Level.DELAY) {
-            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT));
+            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Size"));
             return;
         }
         int sizeMin = annotationExpression.extract("min", -1);

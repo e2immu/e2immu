@@ -241,8 +241,6 @@ public class FieldAnalyser {
                                       boolean haveInitialiser,
                                       TypeInspection typeInspection,
                                       boolean fieldSummariesNotYetSet) {
-        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
-            return false;
 
         List<Value> values = new LinkedList<>();
         if (haveInitialiser) {
@@ -276,12 +274,19 @@ public class FieldAnalyser {
             VariableValue variableValue = (VariableValue) values.get(0);
             if (variableValue.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
-                parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
-                log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+                if(!parameterInfo.parameterAnalysis.get().assignedToField.isSet()) {
+                    parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
+                    log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+                }
             } else {
                 log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
             }
         }
+
+        // we could have checked this at the start, but then we'd miss the potential assignment between parameter and field
+
+        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
+            return false;
 
         // compute and set the combined value
 

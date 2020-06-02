@@ -81,12 +81,12 @@ public class CheckConstant {
         boolean haveConstantValue = singleReturnValue instanceof org.e2immu.analyser.model.Constant;
         if (toTest.verifyAbsent) {
             if (haveConstantValue) {
-                typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Constant"));
+                typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Constant"));
             }
             return;
         }
         if (!haveConstantValue) {
-            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_ABSENT, "@Constant"));
+            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_ABSENT, "Constant"));
             return;
         }
         if (toTest.valueToTest != null && !toTest.valueToTest.equals(singleReturnValue)) {
