@@ -110,19 +110,23 @@ public class ContainerChecks {
     static class Container3 {
 
         @NotModified(type = VERIFY_ABSENT)
-        private Set<String> strings;
+        @Modified
+        @Variable
+        @Nullable
+        private Set<String> strings3;
 
-        public void setStrings(@NotModified Set<String> strings) {
-            this.strings = new HashSet<>(strings);
+        public void setStrings3(Set<String> strings3param) {
+            this.strings3 = new HashSet<>(strings3param);
         }
 
-        public Set<String> getStrings() {
-            return strings;
+        public Set<String> getStrings3() {
+            return strings3;
         }
 
         // String is @NotModified because it is a context class
-        public void add(String string) {
-            if (strings != null) strings.add(string);
+        public void add(String s3) {
+            Set<String> set3 = strings3;
+            if (set3 != null) set3.add(s3);
         }
     }
 
@@ -131,7 +135,6 @@ public class ContainerChecks {
 
         @NotNull
         @Linked
-        @Final
         private final Set<String> strings4;
 
         public Container4(@NotNull Set<String> strings4Param) {
@@ -160,12 +163,12 @@ public class ContainerChecks {
         }
     }
 
-    @Container
+    @E1Container
     @NotNull
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
+        @Modified
         @Linked(type = VERIFY_ABSENT)
-        @Final
         private final List<String> list;
 
         @Independent
@@ -174,13 +177,13 @@ public class ContainerChecks {
         }
 
         @Independent
-        public Container5(@NotModified Collection<String> coll5) {
+        public Container5(Collection<String> coll5) {
             this();
             addAll(coll5);
         }
 
         @NotModified(type = VERIFY_ABSENT)
-        public void addAll(@NotModified Collection<String> collection) {
+        public void addAll(Collection<String> collection) {
             list.addAll(collection);
         }
 

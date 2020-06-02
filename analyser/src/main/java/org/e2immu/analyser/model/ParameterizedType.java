@@ -373,7 +373,8 @@ public class ParameterizedType {
     }
 
     public boolean isVoid() {
-        return typeInfo == Primitives.PRIMITIVES.voidTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedVoidTypeInfo;
+        return typeInfo == Primitives.PRIMITIVES.voidTypeInfo ||
+                typeInfo == Primitives.PRIMITIVES.boxedVoidTypeInfo;
     }
 
     public boolean allowsForOperators() {

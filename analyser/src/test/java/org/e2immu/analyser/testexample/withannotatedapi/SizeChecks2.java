@@ -2,6 +2,7 @@ package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.annotation.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class SizeChecks2 {
@@ -65,7 +66,7 @@ public class SizeChecks2 {
         private final Set<String> set3;
 
         public Test3(Set<String> set3) {
-            if(set3 == null || set3.isEmpty()) {
+            if (set3 == null || set3.isEmpty()) {
                 throw new UnsupportedOperationException();
             }
             this.set3 = set3;
@@ -75,6 +76,15 @@ public class SizeChecks2 {
             return set3;
         }
 
+    }
+
+    static class Test4 {
+
+        private final Set<String> set4;
+
+        public Test4(@Size(type = AnnotationType.VERIFY_ABSENT) Set<String> set4param) {
+            this.set4 = new HashSet<>(set4param);
+        }
     }
 }
 

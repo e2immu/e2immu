@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 
 public class TestContainerChecks extends CommonTestRunner {
@@ -28,6 +30,11 @@ public class TestContainerChecks extends CommonTestRunner {
                 }
                 if ("Container1.this.strings1".equals(variableName) && "1".equals(statementId)) {
                     Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                }
+            }
+            if ("setStrings3".equals(methodInfo.name)) {
+                if ("strings3param".equals(variableName) && "0".equals(statementId)) {
+                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 }
             }
         }
@@ -106,6 +113,23 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
+    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
+        @Override
+        public void visit(TypeContext typeContext) {
+            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+            MethodInfo forEach = collection.typeInspection.get().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
+            Assert.assertSame(Primitives.PRIMITIVES.voidTypeInfo, forEach.returnType().typeInfo);
+
+            TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
+            MethodInfo constructor1 = hashSet.typeInspection.get().constructors.stream()
+                    .filter(m -> m.methodInspection.get().parameters.size() == 1)
+                    .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+                    .findAny().orElseThrow();
+            ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
+            Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        }
+    };
+
 
     @Test
     public void test() throws IOException {
@@ -114,6 +138,7 @@ public class TestContainerChecks extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }
 
