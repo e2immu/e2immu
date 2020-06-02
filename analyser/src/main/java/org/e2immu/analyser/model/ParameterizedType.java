@@ -235,7 +235,12 @@ public class ParameterizedType {
 
     // from one type context into another one
     public ParameterizedType copy(TypeContext localTypeContext) {
-        TypeInfo newTypeInfo = typeInfo == null ? null : localTypeContext.typeStore.get(typeInfo.fullyQualifiedName);
+        TypeInfo newTypeInfo;
+        if (typeInfo == null || typeInfo.isPrimitive()) {
+            newTypeInfo = typeInfo;
+        } else {
+            newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName));
+        }
         List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
         TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.name, true);
         return new ParameterizedType(newTypeInfo, arrays, wildCard, newParameters, newTypeParameter);
