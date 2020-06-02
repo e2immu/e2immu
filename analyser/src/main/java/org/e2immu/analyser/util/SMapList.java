@@ -36,8 +36,6 @@ public class SMapList {
         return new HashMap<>();
     }
 
-    @NotNull
-    @Independent
     @NotModified
     @Constant(type = AnnotationType.VERIFY_ABSENT)
     public static <A, B> boolean addAll(Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
@@ -90,7 +88,6 @@ public class SMapList {
     }
 
     @NotNull
-    @Independent
     @NotModified
     @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
     @Constant(type = AnnotationType.VERIFY_ABSENT)
@@ -98,15 +95,14 @@ public class SMapList {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
-        List<B> set = map.get(a);
-        if (set == null) {
+        List<B> list = map.get(a);
+        if (list == null) {
             return List.of();
         }
-        return set;
+        return list;
     }
 
     @NotNull
-    @Independent
     public static <A, B> Map<A, List<B>> immutable(Map<A, List<B>> map) {
         Map<A, ImmutableList<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
@@ -117,8 +113,8 @@ public class SMapList {
     }
 
     @NotNull
-    @Independent
-    public static <A, B> Map<A, List<B>> copy(Map<A, List<B>> map) {
+    @NotModified
+    public static <A, B> Map<A, List<B>> copy(@NotNull Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> set = new LinkedList<>(e.getValue());

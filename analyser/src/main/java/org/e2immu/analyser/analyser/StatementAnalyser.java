@@ -400,7 +400,7 @@ public class StatementAnalyser {
         } else {
             uponUsingConditional = null;
 
-            if (statement.statement instanceof ForEachStatement) {
+            if (value != null && statement.statement instanceof ForEachStatement) {
                 int size = value.getProperty(variableProperties, VariableProperty.SIZE);
                 if (size == Analysis.SIZE_EMPTY && !statement.errorValue.isSet()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));

@@ -197,7 +197,7 @@ public abstract class Analysis {
             }
         }
 
-        boolean isConstructor = this instanceof MethodAnalysis && ((MethodAnalysis)this).returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+        boolean isConstructor = this instanceof MethodAnalysis && ((MethodAnalysis) this).returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
         boolean doNullable = !isType && !isConstructor;
 
         // not null
@@ -373,8 +373,15 @@ public abstract class Analysis {
             // min = 0 means nothing; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
             return Level.compose(Level.FALSE, min);
         }
+        Boolean copy = annotationExpression.extract("copy", false);
+        if (copy) return Level.DELAY;
+        Boolean copyMin = annotationExpression.extract("copyMin", false);
+        if (copyMin) return Level.DELAY;
+
         Integer equals = annotationExpression.extract("equals", 0);
         // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
+
+        // @Size is the default
         return Level.compose(Level.TRUE, equals);
     }
 

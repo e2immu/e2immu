@@ -341,6 +341,12 @@ class VariableProperties implements EvaluationContext {
                     aboutVariable.setProperty(variableProperty, value);
                 }
             }
+        } else if (variable instanceof ParameterInfo) {
+            ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
+            for(VariableProperty variableProperty: FROM_PARAMETER_TO_PROPERTIES) {
+                int value = parameterAnalysis.properties.getOtherwise(variableProperty, Level.FALSE);
+                aboutVariable.setProperty(variableProperty, value);
+            }
         }
 
         // copied over the existing one

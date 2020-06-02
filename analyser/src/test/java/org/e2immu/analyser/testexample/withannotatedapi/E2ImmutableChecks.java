@@ -101,7 +101,6 @@ public class E2ImmutableChecks {
         @E2Container
         public final Set<String> strings4;
 
-        @Independent
         public E2Immutable4(@NotNull @NotModified Set<String> input4) {
             strings4 = ImmutableSet.copyOf(input4);
         }
@@ -115,7 +114,6 @@ public class E2ImmutableChecks {
 
         @Identity
         @Linked(type = AnnotationType.VERIFY_ABSENT)
-        @Independent // what we return is independent of the fields' content
         @Constant(type = AnnotationType.VERIFY_ABSENT)
         public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input4) {
             input4.addAll(strings4);

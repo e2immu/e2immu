@@ -32,7 +32,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             }
             // no decision about immutable of "mingle" is ever made
             if ("input4".equals(variableName) && "1".equals(statementId) && "mingle".equals(methodInfo.name)) {
-                Assert.assertNull(properties.get(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(0, (int)properties.get(VariableProperty.IMMUTABLE));
             }
         }
     };
@@ -63,11 +63,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             // no decision about immutable of "mingle" is ever made
             if ("mingle".equals(methodInfo.name)) {
                 TransferValue transferValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
-                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(Level.FALSE, transferValue.properties.get(VariableProperty.IMMUTABLE));
                 Assert.assertEquals("input4", transferValue.value.get().toString());
                 Assert.assertTrue(transferValue.value.get() instanceof VariableValueCopy);
                 Assert.assertEquals(Level.FALSE, transferValue.value.get().getPropertyOutsideContext(VariableProperty.IMMUTABLE));
-                Assert.assertEquals(Level.DELAY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
             }
 
             if ("getSet3".equals(methodInfo.name)) {
