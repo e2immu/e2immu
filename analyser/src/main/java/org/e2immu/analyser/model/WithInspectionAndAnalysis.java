@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -57,5 +58,17 @@ public interface WithInspectionAndAnalysis {
             return mustBeAbsent; // error!!!
         }
         return Optional.empty(); // no error
+    }
+
+    default Optional<Boolean> error(Class<?> annotation, List<AnnotationExpression> expressions) {
+        Optional<Boolean> mustBeAbsent = hasTestAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
+        if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
+        for (AnnotationExpression expression : expressions) {
+            Boolean actual = getAnalysis().annotations.getOtherwiseNull(expression);
+            if (actual != null) {
+                return mustBeAbsent.get() == actual ? mustBeAbsent : Optional.empty();
+            }
+        }
+        return mustBeAbsent.get() ? Optional.empty() : mustBeAbsent;
     }
 }

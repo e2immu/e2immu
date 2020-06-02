@@ -154,6 +154,7 @@ public abstract class Analysis {
         int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
 
         boolean isType = this instanceof TypeAnalysis;
+
         if (noContainer) {
             annotations.put(typeContext.container.get(), false);
         }
@@ -196,20 +197,23 @@ public abstract class Analysis {
             }
         }
 
+        boolean isConstructor = this instanceof MethodAnalysis && ((MethodAnalysis)this).returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+        boolean doNullable = !isType && !isConstructor;
+
         // not null
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
         int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
         if (notNull2 == Level.TRUE) {
             if (notNull2 > minNotNull) annotations.put(typeContext.notNull2.get(), true);
-            if (!isType) annotations.put(typeContext.nullable.get(), false);
+            if (doNullable) annotations.put(typeContext.nullable.get(), false);
         } else {
             if (notNull2 == Level.FALSE) annotations.put(typeContext.notNull2.get(), false);
 
             int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
             if (notNull1 == Level.TRUE) {
                 if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
-                if (!isType) annotations.put(typeContext.nullable.get(), false);
+                if (doNullable) annotations.put(typeContext.nullable.get(), false);
             } else {
                 if (notNull1 == Level.FALSE) {
                     annotations.put(typeContext.notNull1.get(), false);
@@ -221,7 +225,7 @@ public abstract class Analysis {
                 if (notNull0 == Level.FALSE) {
                     annotations.put(typeContext.notNull.get(), false);
                 }
-                if (!isType) annotations.put(typeContext.nullable.get(), notNull0 != Level.TRUE);
+                if (doNullable) annotations.put(typeContext.nullable.get(), notNull0 != Level.TRUE);
             }
         }
 

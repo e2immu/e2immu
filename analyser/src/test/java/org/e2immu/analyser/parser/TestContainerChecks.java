@@ -133,7 +133,7 @@ public class TestContainerChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("ContainerChecks", 1, new DebugConfiguration.Builder()
+        testClass("ContainerChecks", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

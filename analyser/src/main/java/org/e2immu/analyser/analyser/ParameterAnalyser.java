@@ -25,6 +25,8 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
 
+import java.util.List;
+
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -42,13 +44,25 @@ public class ParameterAnalyser {
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
         check(parameterInfo, NotModified.class, typeContext.notModified.get());
-        check(parameterInfo, NotNull.class, typeContext.notNull.get()); // TODO check @NotNull1, 2
+        check(parameterInfo, NotNull.class, List.of(typeContext.notNull.get(),
+                typeContext.notNull1.get(),
+                typeContext.notNull2.get()));
+        check(parameterInfo, NotNull1.class, List.of(typeContext.notNull1.get(), typeContext.notNull2.get()));
+        check(parameterInfo, NotNull2.class, typeContext.notNull2.get());
 
         // opposites
         check(parameterInfo, Nullable.class, typeContext.nullable.get());
         check(parameterInfo, Modified.class, typeContext.modified.get());
 
         CheckSize.checkSizeForParameters(typeContext, parameterInfo);
+    }
+
+    private void check(ParameterInfo parameterInfo, Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
+        parameterInfo.error(annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
+            Message error = Message.newMessage(new Location(parameterInfo),
+                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
+            typeContext.addMessage(error);
+        });
     }
 
     private void check(ParameterInfo parameterInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

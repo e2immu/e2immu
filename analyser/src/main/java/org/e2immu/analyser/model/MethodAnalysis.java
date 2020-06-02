@@ -36,8 +36,8 @@ import java.util.stream.Stream;
 @NotNull
 public class MethodAnalysis extends Analysis {
 
-    private final Set<MethodInfo> overrides;
-    private final ParameterizedType returnType;
+    public final Set<MethodInfo> overrides;
+    public final ParameterizedType returnType;
     public final TypeInfo typeInfo;
 
     public MethodAnalysis(MethodInfo methodInfo) {
