@@ -348,9 +348,11 @@ public class TypeContext {
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
             recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, staticOnly);
         }
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight() && !typeInfo.isStatic()) {
+        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
+            // if I'm in a static subtype, I can only access the static methods of the enclosing type
             ParameterizedType enclosingType = typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().asParameterizedType();
-            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, enclosingType), result, visited, staticOnly);
+            boolean onlyStatic = staticOnly || typeInfo.isStatic();
+            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
         }
     }
 

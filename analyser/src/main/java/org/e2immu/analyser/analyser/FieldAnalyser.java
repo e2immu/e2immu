@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
@@ -274,7 +275,7 @@ public class FieldAnalyser {
             VariableValue variableValue = (VariableValue) values.get(0);
             if (variableValue.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
-                if(!parameterInfo.parameterAnalysis.get().assignedToField.isSet()) {
+                if (!parameterInfo.parameterAnalysis.get().assignedToField.isSet()) {
                     parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
                     log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
                 }
@@ -316,11 +317,16 @@ public class FieldAnalyser {
         //        .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
         //                 new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
         //         .collect(Collectors.toList());
-        if (values.size() == 1) {
+        Value combinedValue;
+        if (values.isEmpty()) {
+            combinedValue = NullValue.NULL_VALUE;
+        } else if (values.size() == 1) {
             Value value = values.get(0);
             if (value.isConstant()) return value;
+            combinedValue = value;
+        } else {
+            combinedValue = CombinedValue.create(values);
         }
-        Value combinedValue = CombinedValue.create(values);
         return new FinalFieldValue(fieldReference, combinedValue);
     }
 
