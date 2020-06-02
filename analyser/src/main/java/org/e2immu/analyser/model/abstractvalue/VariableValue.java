@@ -94,24 +94,4 @@ public class VariableValue extends ValueWithVariable {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return evaluationContext.getProperty(variable, variableProperty);
     }
-    /*
-    The difference between worst and best case here is that the worst case is guaranteed to be stable wrt. this evaluation.
-    (Independent of whether the value's type has been analysed or not; the critical point is that it is not being evaluated.)
-     */
-
-    @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        //if (multiCopyNonFinalField) return Set.of();
-
-        boolean differentType = evaluationContext.getCurrentType() != variable.parameterizedType().typeInfo;
-        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        boolean e2ImmuType;
-        if (typeInfo != null) {
-            e2ImmuType = Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        } else {
-            e2ImmuType = false;
-        }
-        boolean e2Immu = (bestCase || differentType) && e2ImmuType;
-        return e2Immu ? Set.of() : Set.of(variable);
-    }
 }

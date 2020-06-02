@@ -38,7 +38,7 @@ public class UnevaluatedMethodCall implements Expression {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Unevaluated: " + methodName);
     }
 
     @Override

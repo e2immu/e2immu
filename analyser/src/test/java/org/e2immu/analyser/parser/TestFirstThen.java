@@ -94,7 +94,7 @@ public class TestFirstThen extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        tesUtilClass("FirstThen", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass("FirstThen", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

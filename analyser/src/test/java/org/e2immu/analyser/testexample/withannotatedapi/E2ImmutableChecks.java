@@ -53,8 +53,10 @@ public class E2ImmutableChecks {
 
     @E2Container
     static class E2Container2 {
+        @Nullable
         public final E2Container2 parent2;
         public int level2;
+        @Nullable
         public final String value2;
 
         public E2Container2(String value) {
@@ -63,7 +65,7 @@ public class E2ImmutableChecks {
             this.value2 = value;
         }
 
-        public E2Container2(E2Container2 parent2Param, String valueParam2) {
+        public E2Container2(@NotNull E2Container2 parent2Param, String valueParam2) {
             this.parent2 = parent2Param;
             level2 = parent2Param.level2 + 2;
             this.value2 = valueParam2;

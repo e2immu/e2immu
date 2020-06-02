@@ -75,7 +75,7 @@ public class TestSetOnce extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        tesUtilClass("SetOnce", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass("SetOnce", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

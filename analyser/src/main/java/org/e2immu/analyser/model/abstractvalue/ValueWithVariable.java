@@ -1,9 +1,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -15,11 +13,15 @@ public abstract class ValueWithVariable implements Value {
     public final Variable variable;
 
     protected ValueWithVariable(@NotNull Variable variable) {
-        this.variable =  Objects.requireNonNull(variable);
+        this.variable = Objects.requireNonNull(variable);
     }
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        int immutable = typeInfo == null ? Level.FALSE : Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        boolean selfReferencing = typeInfo == evaluationContext.getCurrentType();
+        if (immutable == Level.TRUE || immutable == Level.DELAY && (bestCase || selfReferencing)) return Set.of();
         return Set.of(variable);
     }
 

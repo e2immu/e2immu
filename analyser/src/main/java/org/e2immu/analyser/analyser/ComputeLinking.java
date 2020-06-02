@@ -1,7 +1,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
@@ -52,7 +51,7 @@ public class ComputeLinking {
             // - variablesLinkedToFieldsAndParameters
             // - fieldsLinkedToFieldsAndVariables
             if (establishLinks(methodInfo, methodAnalysis, methodProperties)) changes = true;
-            if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(statements, methodInfo, methodAnalysis))
+            if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult(methodInfo, methodAnalysis))
                 changes = true;
 
             if (computeContentModifications(methodInfo, methodAnalysis, methodProperties)) changes = true;
@@ -76,8 +75,7 @@ public class ComputeLinking {
      sets variablesLinkedToMethodResult, and @Linked on or off dependent on whether the set is empty or not
     */
 
-    private boolean updateVariablesLinkedToMethodResult(List<NumberedStatement> numberedStatements,
-                                                        MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean updateVariablesLinkedToMethodResult(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
 
         if (methodAnalysis.variablesLinkedToMethodResult.isSet()) return false;
 

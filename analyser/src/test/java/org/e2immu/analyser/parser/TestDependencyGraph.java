@@ -30,12 +30,9 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 public class TestDependencyGraph extends CommonTestRunner {
 
@@ -70,7 +67,7 @@ public class TestDependencyGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        tesUtilClass("DependencyGraph", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass("DependencyGraph", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

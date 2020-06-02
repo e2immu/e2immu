@@ -98,7 +98,7 @@ public abstract class CommonTestRunner {
         execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected void tesUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+    protected void testUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(new InputConfiguration.Builder()

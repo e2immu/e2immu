@@ -338,12 +338,15 @@ public class TypeAnalyser {
                 }
 
                 // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
-
-                if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
-                            typeInfo.fullyQualifiedName, fieldInfo.name);
-                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                    return false;
+                if(fieldInfo.type.typeInfo != typeInfo) {
+                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
+                                typeInfo.fullyQualifiedName, fieldInfo.name);
+                        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                        return true;
+                    }
+                } else {
+                    log(E2IMMUTABLE, "Ignoring private modifier check of {}, self-referencing", fieldInfo.fullyQualifiedName());
                 }
             }
         }
@@ -360,7 +363,7 @@ public class TypeAnalyser {
                 log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                         typeInfo.fullyQualifiedName, methodInfo.name);
                 typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                return false;
+                return true;
             }
         }
 
