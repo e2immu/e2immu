@@ -34,15 +34,15 @@ public class ContainerChecks {
     @Container(type = VERIFY_ABSENT)
     static class Container1 {
 
-        private Set<String> strings;
+        private Set<String> strings1;
 
-        public void setStrings(@NotModified(type = VERIFY_ABSENT) Set<String> strings, String toAdd) {
-            this.strings = strings;
-            this.strings.add(toAdd);
+        public void setStrings1(@Modified Set<String> strings1param, String toAdd) {
+            this.strings1 = strings1param;
+            this.strings1.add(toAdd);
         }
 
-        public Set<String> getStrings() {
-            return strings;
+        public Set<String> getStrings1() {
+            return strings1;
         }
     }
 
@@ -50,21 +50,56 @@ public class ContainerChecks {
     @Container(type = VERIFY_ABSENT)
     static class Container2 {
 
-        private Set<String> strings;
+        @Linked(to = "strings2param")
+        @Modified
+        private Set<String> strings2;
 
-        public void setStrings(@NotModified(type = VERIFY_ABSENT) Set<String> strings) {
-            this.strings = strings;
+        @Modified
+        public void setStrings2(@Modified Set<String> strings2param) {
+            this.strings2 = strings2param;
         }
 
-        public Set<String> getStrings() {
-            return strings;
+        @NotModified
+        public Set<String> getStrings2() {
+            return strings2;
         }
 
-        // this method breaks the contract!
-        public void add(@NotNull String string2) {
-            strings.add(string2);
+        // this method breaks the contract, in a roundabout way
+        @Modified
+        public void add2(@NotNull String string2) {
+            strings2.add(string2);
         } // ERROR
     }
+
+    // variant of the second example: the add method breaks the contract; this works easily because strings2b is final
+    @Container(type = VERIFY_ABSENT)
+    @ModifiesArguments
+    static class Container2b {
+
+        @Linked(to = "strings2param")
+        @Modified
+        @Nullable
+        private final Set<String> strings2b;
+
+        @Modified
+        public Container2b(@Modified Set<String> strings2param) {
+            this.strings2b = strings2param;
+        }
+
+        @NotModified
+        public Set<String> getStrings2b() {
+            return strings2b;
+        }
+
+        // this method breaks the contract, in a roundabout way
+        @Modified
+        public void add2b(@NotNull String string2b) {
+            if (strings2b != null) {
+                strings2b.add(string2b);
+            }
+        }
+    }
+
 
     // third example: independent, so this one works
     // this is not a @Container @Final @NotModified, because strings can be set multiple times, and can be modified

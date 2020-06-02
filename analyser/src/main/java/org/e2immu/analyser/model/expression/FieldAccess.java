@@ -88,10 +88,10 @@ public class FieldAccess implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        VariableExpression.processVariable(variable, evaluationContext, forwardEvaluationInfo);
+        Value currentValue = evaluationContext.currentValue(variable);
+        VariableExpression.processVariable(variable, currentValue, evaluationContext, forwardEvaluationInfo);
 
         Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        Value currentValue = evaluationContext.currentValue(variable);
         if (scope instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         } else if (scope.isNotNotNull0(evaluationContext)) {

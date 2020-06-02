@@ -70,11 +70,6 @@ public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
     }
 
     @Test
-    public void testContainerChecks() throws IOException {
-        testClass("ContainerChecks", 1);
-    }
-
-    @Test
     public void testCyclicReferences() throws IOException {
         testClass("CyclicReferences", 0);
     }

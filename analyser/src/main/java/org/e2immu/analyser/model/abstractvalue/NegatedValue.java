@@ -110,7 +110,8 @@ public class NegatedValue extends PrimitiveValue {
 
     @Override
     public Map<Variable, Boolean> individualNullClauses() {
-        return value.individualNullClauses().entrySet()
+        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses();
+        return individualNullClauses.entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
     }
 

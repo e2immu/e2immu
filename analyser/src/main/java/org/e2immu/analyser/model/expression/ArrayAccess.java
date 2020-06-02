@@ -100,7 +100,7 @@ public class ArrayAccess implements Expression {
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNullRequired >= Level.TRUE && value instanceof VariableValue) {
-            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, evaluationContext, notNullRequired);
+            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, value, evaluationContext, notNullRequired);
         }
         visitor.visit(this, evaluationContext, value);
         return value;

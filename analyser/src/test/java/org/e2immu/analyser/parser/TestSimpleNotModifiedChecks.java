@@ -48,7 +48,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertEquals("set4", currentValue.toString());
                 }
             }
-            if ("1".equals(statementId)) {
+            if ("1".equals(statementId) && iteration > 0) {
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
             }
         }
@@ -90,7 +90,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
         if ("add6".equals(methodInfo.name) && "example6.set6".equals(variableName)) {
             Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-            Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            if (iteration > 1) Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
         }
         if ("Example6".equals(methodInfo.name) && "set6".equals(variableName) && "0".equals(statementId)) {
             if (iteration == 3) {
@@ -177,7 +177,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(set2);
                     Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
                 }
-                if(iteration > 1) {
+                if (iteration > 1) {
                     Assert.assertEquals(0, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
                 }
             }
@@ -209,9 +209,9 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
             if ("add6".equals(methodInfo.name)) {
                 FieldInfo set6 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("set6")).findAny().orElseThrow();
-                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().fieldSummaries.get(set6).properties.get(VariableProperty.NOT_NULL));
 
                 if (iteration >= 2) {
+                    Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().fieldSummaries.get(set6).properties.get(VariableProperty.NOT_NULL));
                     Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
                 }
             }

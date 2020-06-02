@@ -17,10 +17,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor =
             (iteration, methodInfo, statementId, variableName, variable, currentValue, properties) -> {
                 if ("toString".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
-                    if (iteration == 0) {
-                        Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
-                    }
-                    if (iteration == 1) {
+                    if (iteration >= 1) {
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                 }
@@ -28,7 +25,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                     Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                 }
                 if ("FinalNotNullChecks".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
-                    if(iteration > 0) {
+                    if(iteration > 1) {
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
                 }
@@ -53,7 +50,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             if (iteration == 0 && "input".equals(fieldInfo.name)) {
                 Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
-            if (iteration >= 1 && "input".equals(fieldInfo.name)) {
+            if (iteration >= 2 && "input".equals(fieldInfo.name)) {
                 Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }

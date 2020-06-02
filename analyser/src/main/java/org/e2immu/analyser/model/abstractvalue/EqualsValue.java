@@ -69,7 +69,7 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public Map<Variable, Boolean> individualNullClauses() {
-        return lhs instanceof NullValue && rhs instanceof VariableValue ? Map.of(((VariableValue) rhs).variable, true) :
+        return lhs instanceof NullValue && rhs instanceof ValueWithVariable ? Map.of(((ValueWithVariable) rhs).variable, true) :
                 Map.of();
     }
 

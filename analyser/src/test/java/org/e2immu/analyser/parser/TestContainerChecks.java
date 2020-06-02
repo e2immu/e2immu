@@ -1,0 +1,116 @@
+package org.e2immu.analyser.parser;
+
+import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Map;
+
+public class TestContainerChecks extends CommonTestRunner {
+    public TestContainerChecks() {
+        super(true);
+    }
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+            if ("setStrings1".equals(methodInfo.name)) {
+                if ("strings1param".equals(variableName) && "0".equals(statementId)) {
+                    Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+                }
+                if ("strings1param".equals(variableName) && "1".equals(statementId)) {
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                }
+                if ("Container1.this.strings1".equals(variableName) && "1".equals(statementId)) {
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                }
+            }
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("add2b".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
+                if (iteration == 0) {
+                    Assert.assertNull(conditional);
+                } else {
+                    Assert.assertEquals("not (null == strings2b)", conditional.toString());
+                }
+            }
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("setStrings1".equals(methodInfo.name)) {
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                Assert.assertEquals("strings1", strings.name);
+                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
+                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.ASSIGNED));
+            }
+            if ("getStrings1".equals(methodInfo.name)) {
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                Assert.assertEquals("strings1", strings.name);
+                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
+                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
+            }
+
+            if ("setStrings2".equals(methodInfo.name)) {
+                ParameterInfo strings2 = methodInfo.methodInspection.get().parameters.get(0);
+                Assert.assertEquals("strings2param", strings2.name);
+                if (iteration > 2) {
+                    //   Assert.assertTrue(strings2.parameterAnalysis.get().assignedToField.isSet());
+                }
+            }
+            if ("add2b".equals(methodInfo.name)) {
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                Assert.assertEquals("strings2b", strings.name);
+                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
+                Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(Level.TRUE_LEVEL_1, transferValue.properties.get(VariableProperty.READ));
+                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, FieldInfo fieldInfo) {
+            if ("strings1".equals(fieldInfo.name)) {
+                if (iteration == 0) {
+                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                } else {
+                    // setter may not have been called yet; there is no initialiser
+                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                }
+            }
+            if ("strings2".equals(fieldInfo.name)) {
+                if (iteration >= 1) {
+                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+                }
+            }
+        }
+    };
+
+
+    @Test
+    public void test() throws IOException {
+        testClass("ContainerChecks", 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+}

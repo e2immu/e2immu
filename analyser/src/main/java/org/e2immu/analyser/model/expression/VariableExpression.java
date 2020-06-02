@@ -37,20 +37,22 @@ public class VariableExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        processVariable(variable, evaluationContext, forwardEvaluationInfo);
-
         Value value = evaluationContext.currentValue(variable);
+        processVariable(variable, value, evaluationContext, forwardEvaluationInfo);
         visitor.visit(this, evaluationContext, value);
         return value;
     }
 
-    static void processVariable(Variable variable, EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+    static void processVariable(Variable variable,
+                                Value currentValue,
+                                EvaluationContext evaluationContext,
+                                ForwardEvaluationInfo forwardEvaluationInfo) {
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             evaluationContext.markRead(variable);
         }
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNull >= Level.TRUE) {
-            StatementAnalyser.variableOccursInNotNullContext(variable, evaluationContext, notNull);
+            StatementAnalyser.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
         StatementAnalyser.markContentModified(evaluationContext, variable, modified);

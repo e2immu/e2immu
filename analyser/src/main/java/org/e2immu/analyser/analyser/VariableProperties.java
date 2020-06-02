@@ -513,7 +513,8 @@ class VariableProperties implements EvaluationContext {
         if (conditional == null) {
             return Set.of();
         }
-        return conditional.individualNullClauses().entrySet()
+        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses();
+        return individualNullClauses.entrySet()
                 .stream().filter(e -> e.getValue() == equalToNull)
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
@@ -929,5 +930,20 @@ class VariableProperties implements EvaluationContext {
 
     public void addToConditional(Value value) {
         conditional = combineWithConditional(value);
+    }
+
+    public void mark(Variable variable, VariableProperty property, int value) {
+        addProperty(variable, property, value);
+        if (variable instanceof ParameterInfo) {
+            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(property, value);
+        }
+        Value current = currentValue(variable);
+        if (current instanceof VariableValue) {
+            VariableValue variableValue = (VariableValue) current;
+            addProperty(variableValue.variable, property, value);
+            if (variableValue.variable instanceof ParameterInfo) {
+                ((ParameterInfo) variableValue.variable).parameterAnalysis.get().improveProperty(property, value);
+            }
+        }
     }
 }

@@ -640,11 +640,11 @@ public class StatementAnalyser {
     // no annotations are set here, only variable properties
 
     public static void variableOccursInNotNullContext(Variable variable,
+                                                      Value currentValue,
                                                       EvaluationContext evaluationContext,
-                                                      int notNullContext) { // at least TRUE
+                                                      int notNullContext) { // at least TRUE, but could be more?
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        NumberedStatement currentStatement = evaluationContext.getCurrentStatement();
-
+        if (currentValue == NO_VALUE) return; // not yet
         if (variable instanceof This) return; // nothing to be done here
 
         // the variable has already been created, if relevant
@@ -658,7 +658,6 @@ public class StatementAnalyser {
             // we're in an explicit != null situation for this variable
             return;
         }
-        Value currentValue = evaluationContext.currentValue(variable);
         if (currentValue instanceof ValueWithVariable) {
             Variable other = ((ValueWithVariable) currentValue).variable;
             if (nullConditionals.contains(other)) {
@@ -668,27 +667,18 @@ public class StatementAnalyser {
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
-        int notNull = Level.value(variableProperties.getProperty(variable, VariableProperty.NOT_NULL), Level.NOT_NULL);
+        int notNull = Level.value(currentValue.getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL);
         if (notNull == Level.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
         }
 
-        // only NOW mark that we need @NotNull on this variable, no delay situation
-        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, notNullContext);
-        //
-        // directly set if true
-        if (variable instanceof ParameterInfo) {
-            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, notNullContext);
-        }
+        variableProperties.mark(variable, VariableProperty.NOT_NULL, notNullContext);
     }
 
     public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
-        variableProperties.addProperty(variable, VariableProperty.SIZE, value);
-        if (variable instanceof ParameterInfo) {
-            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, value);
-        }
+        variableProperties.mark(variable, VariableProperty.SIZE, value);
     }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
@@ -697,10 +687,7 @@ public class StatementAnalyser {
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
-            variableProperties.addProperty(variable, VariableProperty.MODIFIED, value);
-            if (variable instanceof ParameterInfo) {
-                ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.MODIFIED, value);
-            }
+            variableProperties.mark(variable, VariableProperty.MODIFIED, value);
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }
