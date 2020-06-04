@@ -40,10 +40,6 @@ public class AndValue implements Value {
         values = List.of();
     }
 
-    private AndValue(Value... values) {
-        this.values = List.of(values);
-    }
-
     private AndValue(List<Value> values) {
         this.values = values;
     }
@@ -396,5 +392,10 @@ public class AndValue implements Value {
 
     public Value removeClausesInvolving(Variable variable) {
         return new AndValue(values.stream().filter(value -> !value.variables().contains(variable)).collect(Collectors.toList()));
+    }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return values.stream().allMatch(Value::isExpressionOfParameters);
     }
 }

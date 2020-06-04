@@ -143,4 +143,9 @@ public class NegatedValue extends PrimitiveValue {
     public ParameterizedType type() {
         return value.type();
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return value.isExpressionOfParameters();
+    }
 }

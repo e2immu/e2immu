@@ -139,6 +139,10 @@ public class ConstrainedNumericValue extends PrimitiveValue {
             return GreaterThanZeroValue.less(this, numericValue, false);
         }
         return null;
+    }
 
+    @Override
+    public boolean isExpressionOfParameters() {
+        return value.isExpressionOfParameters();
     }
 }

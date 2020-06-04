@@ -37,4 +37,9 @@ public abstract class ConstantValue implements Value {
     public Value reEvaluate(Map<Value, Value> translation) {
         return this; // minor speedup + security, we're not allowed to mess with constants :-)
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return true;
+    }
 }

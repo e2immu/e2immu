@@ -197,4 +197,9 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         }
         return 0;
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return value.isExpressionOfParameters();
+    }
 }

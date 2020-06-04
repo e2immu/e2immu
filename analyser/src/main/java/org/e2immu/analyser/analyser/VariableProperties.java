@@ -821,13 +821,21 @@ class VariableProperties implements EvaluationContext {
         return BoolValue.TRUE == conditional || BoolValue.FALSE == conditional;
     }
 
+    // there is special consideration for parameters of inline values, which are NOT KNOWN to the variable properties map.
+    // findComplain would actually complain when a reEvaluation takes place.
     @Override
     public boolean equals(Variable variable, Variable other) {
-        AboutVariable av = findComplain(variable);
-        if (av.fieldReferenceState == MULTI_COPY) return false;
-        AboutVariable avOther = findComplain(other);
-        if (avOther.fieldReferenceState == MULTI_COPY) return false;
-        return av.name.equals(avOther.name);
+        String name = variableName(variable);
+        String nameOther = variableName(other);
+        if (!(variable instanceof ParameterInfo)) {
+            AboutVariable av = findComplain(variable);
+            if (av.fieldReferenceState == MULTI_COPY) return false;
+        }
+        if (!(other instanceof ParameterInfo)) {
+            AboutVariable avOther = findComplain(other);
+            if (avOther.fieldReferenceState == MULTI_COPY) return false;
+        }
+        return name.equals(nameOther);
     }
 
     private AboutVariable ensureLocalCopy(Variable variable) {

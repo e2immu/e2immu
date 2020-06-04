@@ -56,4 +56,8 @@ public abstract class ValueWithVariable implements Value {
         return variable.name().compareTo(((ValueWithVariable) v).variable.name());
     }
 
+    @Override
+    public boolean isExpressionOfParameters() {
+        return variable instanceof ParameterInfo;
+    }
 }

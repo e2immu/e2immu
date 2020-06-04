@@ -64,4 +64,9 @@ public class ArrayValue implements Value {
     public Set<Variable> variables() {
         return combinedValue.variables();
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
 }

@@ -123,4 +123,9 @@ public class EqualsValue extends PrimitiveValue {
         }
         return 0;
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
+    }
 }

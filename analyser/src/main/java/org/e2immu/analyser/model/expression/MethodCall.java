@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -121,7 +122,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Value result;
         if (methodAnalysis.singleReturnValue.isSet()) {
             // if this method was identity?
-            result = methodAnalysis.singleReturnValue.get();
+            Value srv = methodAnalysis.singleReturnValue.get();
+            if (srv instanceof InlineValue) {
+                result = srv.reEvaluate(translationMap(evaluationContext, parameters));
+            } else {
+                result = srv;
+            }
         } else if (methodInfo.hasBeenDefined()) {
             // we will, at some point, analyse this method
             result = UnknownValue.NO_VALUE;
@@ -140,6 +146,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         visitor.visit(this, evaluationContext, result);
         return result;
+    }
+
+    private Map<Value, Value> translationMap(EvaluationContext evaluationContext, List<Value> parameters) {
+        ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
+        int i = 0;
+        for (Value parameterValue : parameters) {
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
+            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
+            builder.put(vv, parameterValue);
+            i++;
+        }
+        return builder.build();
     }
 
     private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {

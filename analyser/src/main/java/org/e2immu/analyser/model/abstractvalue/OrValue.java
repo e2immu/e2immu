@@ -191,4 +191,9 @@ public class OrValue extends PrimitiveValue {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
 }

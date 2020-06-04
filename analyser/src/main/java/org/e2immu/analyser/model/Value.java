@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.annotation.NotModified;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -163,4 +164,6 @@ public interface Value extends Comparable<Value> {
         Value inMap = translation.get(this);
         return inMap == null ? this : inMap;
     }
+
+    default boolean isExpressionOfParameters() { return false; }
 }

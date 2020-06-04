@@ -125,4 +125,9 @@ public class SumValue extends PrimitiveValue {
     public Value negate() {
         return SumValue.sum(NegatedValue.negate(lhs), NegatedValue.negate(rhs));
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
+    }
 }

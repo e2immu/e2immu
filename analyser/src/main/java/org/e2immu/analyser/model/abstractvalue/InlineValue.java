@@ -35,4 +35,5 @@ public class InlineValue implements Value {
     public Value reEvaluate(Map<Value, Value> translation) {
         return value.reEvaluate(translation);
     }
+
 }

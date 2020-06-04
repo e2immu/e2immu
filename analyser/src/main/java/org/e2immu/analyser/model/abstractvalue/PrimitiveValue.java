@@ -14,6 +14,9 @@ public abstract class PrimitiveValue implements Value {
         if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // primitives are not null
         if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
 
+        if (VariableProperty.SIZE == variableProperty) return Level.FALSE; // no info
+        if (VariableProperty.MODIFIED == variableProperty) return Level.FALSE; // not modified
+
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 

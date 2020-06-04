@@ -23,7 +23,9 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.AnnotationType;
@@ -194,6 +196,13 @@ public class AnnotationExpression {
                 TypeExpression typeExpression = (TypeExpression) fieldAccess.expression;
                 return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.name());
             } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
+        }
+        if (expression instanceof UnaryOperator) {
+            UnaryOperator unaryOperator = ((UnaryOperator) expression);
+            if (unaryOperator.operator == Primitives.PRIMITIVES.unaryMinusOperatorInt && unaryOperator.expression instanceof IntConstant) {
+                IntConstant intConstant = (IntConstant) unaryOperator.expression;
+                return -intConstant.getValue();
+            }
         }
         throw new UnsupportedOperationException("Not implemented: " + expression.getClass());
     }

@@ -100,4 +100,9 @@ public class DivideValue extends PrimitiveValue {
     public Set<Variable> variables() {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
+    }
 }

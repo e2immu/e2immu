@@ -94,4 +94,5 @@ public class BitwiseAndValue extends PrimitiveValue {
     public Set<Variable> variables() {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
+
 }

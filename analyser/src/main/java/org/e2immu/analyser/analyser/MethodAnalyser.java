@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatem
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -187,8 +188,8 @@ public class MethodAnalyser {
             Value single = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
             if (single.isConstant()) {
                 value = single;
-            } else {
-                value = checkInlineFunction(single);
+            } else if (single.isExpressionOfParameters()) {
+                value = new InlineValue(methodInfo, single);
             }
         }
         // fallback
@@ -203,12 +204,6 @@ public class MethodAnalyser {
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
-    }
-
-    // returns null when we do not recognize an inline function
-
-    private Value checkInlineFunction(Value single) {
-        return null; // TODO
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,

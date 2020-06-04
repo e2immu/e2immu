@@ -83,4 +83,9 @@ public class ConditionalValue implements Value {
     public Set<Variable> variables() {
         return SetUtil.immutableUnion(condition.variables(), combinedValue.variables());
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return combinedValue.isExpressionOfParameters();
+    }
 }

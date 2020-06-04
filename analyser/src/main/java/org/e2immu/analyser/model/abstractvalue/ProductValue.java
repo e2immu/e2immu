@@ -113,4 +113,9 @@ public class ProductValue extends PrimitiveValue {
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
+    }
 }

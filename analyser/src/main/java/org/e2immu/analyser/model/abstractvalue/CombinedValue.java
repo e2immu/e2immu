@@ -70,4 +70,9 @@ public class CombinedValue implements Value {
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         return values.stream().flatMap(value -> value.linkedVariables(bestCase, evaluationContext).stream()).collect(Collectors.toSet());
     }
+
+    @Override
+    public boolean isExpressionOfParameters() {
+        return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
 }
