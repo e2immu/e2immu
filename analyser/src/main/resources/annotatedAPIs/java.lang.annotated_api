@@ -34,6 +34,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 @E2Container
 public class Object {
@@ -228,7 +229,27 @@ public class String implements CharSequence {
     public String() {
     }
 
+    @Size(copy = true)
+    IntStream chars() {
+    }
+
+    @Size(copyMin = true)
+    public String concat(String str) {
+    }
+
+    @Size
+    public int length() {
+    }
+
+    @Size(equals = 0)
+    public boolean isEmpty() {
+    }
+
     public int indexOf(int ch) {
+    }
+
+    @Size(copy = true)
+    public String intern() {
     }
 
     public int lastIndexOf(int ch) {
@@ -243,9 +264,11 @@ public class String implements CharSequence {
     public boolean startsWith(String s, int i) {
     }
 
+    @Size(copy = true)
     public String toLowerCase() {
     }
 
+    @Size(copy = true)
     public String toUpperCase() {
     }
 
@@ -302,7 +325,8 @@ public class Integer {
     public static final int MAX_VALUE = 0x7fffffff;
     public static final int MIN_VALUE = 0x80000000;
 
-    int intValue() {}
+    int intValue() {
+    }
 }
 
 @E2Container
@@ -310,7 +334,8 @@ public class Boolean {
     public static final boolean TRUE = true;
     public static final boolean FALSE = false;
 
-    boolean booleanValue() {}
+    boolean booleanValue() {
+    }
 }
 
 @UtilityClass
@@ -328,7 +353,7 @@ public class System {
     @IgnoreModifications
     public static final PrintStream err;
 
-    public static void arraycopy(@NotNull@NotModified Object src, int srcPos, @NotNull Object dest, int destPos, int length) {
+    public static void arraycopy(@NotNull @NotModified Object src, int srcPos, @NotNull Object dest, int destPos, int length) {
     }
 }
 

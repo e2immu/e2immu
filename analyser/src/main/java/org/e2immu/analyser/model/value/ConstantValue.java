@@ -24,7 +24,7 @@ public abstract class ConstantValue implements Value {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
         if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // primitives are not null
         if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
-
+        if (VariableProperty.MODIFIED == variableProperty) return Level.FALSE;
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 
