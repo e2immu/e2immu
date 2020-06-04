@@ -1,13 +1,11 @@
 package org.e2immu.analyser.parser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValueCopy;
+import org.e2immu.analyser.model.abstractvalue.VariableValuePlaceholder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,7 +13,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 // the @NotNull on value1 travels from isAbc to value1 to value as parameter of the constructor
 
@@ -65,8 +62,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 TransferValue transferValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertEquals(Level.FALSE, transferValue.properties.get(VariableProperty.IMMUTABLE));
                 Assert.assertEquals("input4", transferValue.value.get().toString());
-                Assert.assertTrue(transferValue.value.get() instanceof VariableValueCopy);
-                Assert.assertEquals(Level.FALSE, transferValue.value.get().getPropertyOutsideContext(VariableProperty.IMMUTABLE));
+                Assert.assertTrue(transferValue.value.get() instanceof VariableValuePlaceholder);
                 Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
             }
 

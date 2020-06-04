@@ -30,24 +30,17 @@ import java.util.Set;
 
 // used in a return statement, to freeze the properties
 
-public class VariableValueCopy extends ValueWithVariable {
+public class VariableValuePlaceholder extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
-    private final Map<VariableProperty, Integer> copiedProperties;
-    private final Set<Variable> linkedVariablesBest;
-    private final Set<Variable> linkedVariablesWorst;
-
-    public VariableValueCopy(VariableValue original, EvaluationContext evaluationContext) {
+    public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext) {
         super(original.variable);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, evaluationContext.getProperty(original, property));
         }
-        copiedProperties = builder.build();
-        linkedVariablesBest = ImmutableSet.copyOf(original.linkedVariables(true, evaluationContext));
-        linkedVariablesWorst = ImmutableSet.copyOf(original.linkedVariables(false, evaluationContext));
     }
 
     @Override
@@ -57,7 +50,7 @@ public class VariableValueCopy extends ValueWithVariable {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return copiedProperties.getOrDefault(variableProperty, Level.DELAY);
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -67,11 +60,11 @@ public class VariableValueCopy extends ValueWithVariable {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
+    throw new UnsupportedOperationException();
     }
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        return bestCase ? linkedVariablesBest : linkedVariablesWorst;
+        throw new UnsupportedOperationException();
     }
 }

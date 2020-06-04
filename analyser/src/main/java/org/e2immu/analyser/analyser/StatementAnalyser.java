@@ -359,7 +359,7 @@ public class StatementAnalyser {
                 }
                 if (!transferValue.value.isSet()) {
                     if (value instanceof VariableValue) {
-                        transferValue.value.set(new VariableValueCopy((VariableValue) value, variableProperties));
+                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties));
                     } else {
                         transferValue.value.set(value);
                     }

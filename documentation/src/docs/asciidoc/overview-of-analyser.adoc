@@ -222,7 +222,7 @@ Properties that are specific to the statement analyser:
 * ASSIGNED_IN_LOOP: values not to be taken too literally
 
 The following list are the assignment properties.
-When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValueCopy`, and stores it in the statement:
+When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValuePlaceholder`, and stores it in the statement:
 
 * `IMMUTABLE`, `CONTAINER`: purely based on the annotations of the values (dynamic type property)
 * `NOT_NULL`, `SIZE`: dynamic type property + occurrence in conditions (if-statement, switch)
@@ -447,3 +447,100 @@ In offensive mode, objects are
 * @NotNull unless explicitly @Nullable (NOT_NULL=1)
 * @Container unless explicitly @ModifiesArguments (CONTAINER=1)
 * @E1Immutable unless explicitly @Mutable (IMMUTABLE=1)
+
+=== New text on values and properties
+
+==== Values with constant properties
+
+Constants:: This group consists of primitive values, StringValue, ClassValue, NullValue
+Operator values:: AndValue, BitwiseAndValue, DivideValue, EqualsValue, GreaterThanZeroValue, InstanceOfValue, NegatedValue, OrValue, ProductValue, RemainderValue, SumValue.
+ConstrainedNumericValue:: a numeric value between lower and upper bounds.
+Used to indicate that the size of a collection is at least 1, for example.
+No value:: temporary value to indicate that certain evaluations have not been concluded yet
+Unknown primitive:: unknown value with the properties of a non-null primitive value.
+Used as the end result of many operators when one of the operands is unknown.
+TypeValue:: is not null, but is nothing else.
+
+==== Values referring to language constructs
+
+MethodValue:: the outcome of a method call.
+Returns property values directly from ``methodAnalysis``' properties, except when there are `@Size(copy = true)` or `@Size(copyMin = true)` annotations on one of the parameters, in which case the computation is delegated to the parameter value.
+
+Instance:: the outcome of a constructor call.
+Not null and not modified by definition.
+Dynamic type properties `CONTAINER` and `IMMUTABLE` are read from the type.
+Size property as in `MethodValue`.
+
+ConditionalValue::
+Value representing an inline conditional operation.
+Uses a `CombinedValue` helper internally.
+
+ArrayValue:: a value representing all the values of a literal array assignment construct.
+Is not null by default, but can have higher `NOT_NULL` values depending on the content.
+Defines `SIZE` as the number of values.
+Computes no other properties.
+The current implementation uses `CombinedValue` as a helper for the `NOT_NULL` computation.
+
+==== Values referring to variables
+
+VariableValue:: the value indicating that the values of all properties are to be found in the evaluation context
+
+FinalFieldValue:: the value representing a field with an effectively final value.
+It contains a frozen property-value map, taken from the value (possibly a `CombinedValue` helper) at construction time.
+Each time the statement analyser registers a field, it takes the values from this map and places them in the property-value map `AboutVariable`.
+
+VariableValuePlaceholder:: a value representing a variable in the `returnStatementSummaries`.
+Its properties will never be read.
+This value type exists to ensure that downstream code in the method analyser and link computer will never read the properties, because a variable value in a return statement is a frequent occurrence.
+
+==== Transfer values
+
+Transfer values objects exist to move information from statements via methods down to fields.
+They are very similar to a value (they hold properties, linked variables).
+Where they differ is that they can contain another value.
+
+We identify two types:
+
+`returnStatementSummaries`:: each return statement in a method will hold such a transfer value.
+The method analyser summarizes the following properties in the transfer value property-value map to `methodAnalysis`:
+`IMMUTABLE`, `CONTAINER`, `NOT_NULL`, `SIZE`, `IDENTITY`, `FLUENT`.
+Only when the transfer value's `value` object is constant, will the method analyser copy it into the single return value of the method.
+The alternative is a `MethodValue` object.
+
+`fieldSummaries`:: represents a field referred to in a method.
+From `properties`, the field analyser reads `READ`, `ASSIGNED`, `METHOD_DELAY_RESOLVED` and `MODIFIED`.
+From the `value`, the field analyser reads `NOT_NULL`, `IMMUTABLE`, `SIZE`, `CONTAINER`.
+Importantly, the analyser also reads `NOT_NULL` and `SIZE` from the properties in case there is no assignment.
+In this case, the two properties act as restrictions.
+The field analyser uses the `linkedVariables` to compute the `@Linked` annotation.
+
+==== Properties of variables
+
+There are two broad classes of properties: those associated with values, and those associated with variables.
+The ones associated with variables do not have a corresponding annotation.
+Their use is internal, either for marking when certain values have arrived, or for marking actions on the variables.
+The variable's property-value map in the evaluation contexts will be the only place that contains their values, with the exception of
+
+* `METHOD_DELAY_RESOLVED`, `READ`, `ASSIGNED` also occur in `fieldSummaries`
+* `METHOD_CALLED`, `METHOD_DELAY` also occur in `ForwardEvaluationInfo`
+
+The property `LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED` is specific to `VariableProperties`.
+The properties `NOT_YET_READ_AFTER_ASSIGNMENT`, `ASSIGNED_IN_LOOP` are specific to `VariableProperties` and the statement analyser.
+
+The properties `METHOD_CALLED`, `READ` and `ASSIGNED` travel from the statement analyser, via link computation and the method analyser, down to the field analyser.
+
+The property `METHOD_DELAY` is specific to the statement analyser, link computation, and a number of expressions.
+The property `METHOD_DELAY_RESOLVED` is specific to link computation and the field analyser.
+
+==== Properties of values
+
+The properties of values correspond to annotations.
+The properties of values can appear in the variable's property-value map:
+
+* `NOT_NULL` and `SIZE` can become restrictions on a parameter or field represented by a `VariableValue`
+* `MODIFIED` also acts as a marker on those variables appearing as the scope of a modifying method, or the argument modified by a method.
+
+Dynamic type properties normally associated with assignments, like `IMMUTABLE` and `CONTAINER`, should not appear in the variable's property-value map.
+They should always be read from the value.
+
+The properties `FLUENT` and `IDENTITY` are associated with a method, and cannot appear in the context of a variable.

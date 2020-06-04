@@ -614,23 +614,33 @@ class VariableProperties implements EvaluationContext {
             String copied = atLeastOneAssignmentGuaranteedToBeReached ? "copied" : "merged";
             log(VARIABLE_PROPERTIES, "--- variable {}: properties " + copied + " into parent context", name);
 
-            // now copy the properties that are linked to the assignment
-            boolean includeThis = noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
-
-            // TODO create a combined value if there was a value already, or if there is an assignment in every block
-            
-            IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, VariableProperty.NOT_NULL);
-            int worstValue = intStream.min().orElse(Level.DELAY);
-            if (worstValue > Level.DELAY) {
-                localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
-            }
 
             if (!atLeastOneAssignmentGuaranteedToBeReached || assignmentContexts.size() > 1) {
+                // the resulting value will be a variable value, so we must copy properties
+                // for the NOT_NULL property, we may want to skip certain contexts depending on the conditional if that conditional is relevant
+                // the example situation is
+                //  a = initialValue; if(a == null) a = valueContext1;
+                // in this particular case, for NOT_NULL only, we must skip the initialValue
+
+                // now copy the properties that are linked to the assignment
+                boolean includeThis = checkIfWithConditional(assignmentContexts) && noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
+
+                IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, VariableProperty.NOT_NULL);
+                int worstValue = intStream.min().orElse(Level.DELAY);
+                if (worstValue > Level.DELAY) {
+                    localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
+                }
+
                 localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name));
             } else {
+                // single context, guaranteed to be reached; include this has become irrelevant
                 Value singleValue = assignmentContexts.get(0).variableProperties.get(name).getCurrentValue();
                 log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
                 localAv.setCurrentValue(singleValue);
+                if (singleValue instanceof VariableValue) {
+                    int notNull = assignmentContexts.get(0).getProperty(singleValue, VariableProperty.NOT_NULL);
+                    localAv.setProperty(VariableProperty.NOT_NULL, notNull);
+                }
             }
         }
 
@@ -680,6 +690,12 @@ class VariableProperties implements EvaluationContext {
                 }
             }
         }
+    }
+
+    // return true if you want the original value to be taken into account for the NOT_NULL computation
+    // upon returning false, the value is only taken from the assignment contexts
+    private boolean checkIfWithConditional(List<VariableProperties> assignmentContexts) {
+        return true;// TODO
     }
 
     // we drop all contexts that come BEFORE one that is guaranteed to be executed

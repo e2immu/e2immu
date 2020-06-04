@@ -12,4 +12,9 @@ public class SimpleNotNullChecks {
         }
         return s1;
     }
+
+    @NotNull
+    public static String method2(String a2) {
+        return a2 == null ? "Was null..." : a2;
+    }
 }

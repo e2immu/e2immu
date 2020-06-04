@@ -182,15 +182,22 @@ public class MethodAnalyser {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return false;
         }
-        Value value;
+        Value constant;
         if (methodAnalysis.returnStatementSummaries.size() == 1) {
-            value = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
+            Value single = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
+            if (single.isConstant()) {
+                constant = single;
+            } else {
+                constant = null;
+            }
         } else {
-            // the object (2nd parameter) is not important here; it will not be used to compute properties
-            value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+            constant = null;
         }
+        boolean isConstant = constant != null;
+        Value value = isConstant ? constant :
+                // the object (2nd parameter) is not important here; it will not be used to compute properties
+                new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
         methodAnalysis.singleReturnValue.set(value);
-        boolean isConstant = value.isConstant();
         AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
         methodAnalysis.annotations.put(constantAnnotation, isConstant);
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
