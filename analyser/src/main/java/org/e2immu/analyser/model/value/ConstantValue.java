@@ -5,6 +5,8 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 
+import java.util.Map;
+
 public abstract class ConstantValue implements Value {
     @Override
     public boolean isConstant() {
@@ -29,5 +31,10 @@ public abstract class ConstantValue implements Value {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return getPropertyOutsideContext(variableProperty);
+    }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        return this; // minor speedup + security, we're not allowed to mess with constants :-)
     }
 }

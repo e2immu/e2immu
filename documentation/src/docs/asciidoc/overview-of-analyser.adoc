@@ -473,7 +473,7 @@ Size property as in `MethodValue`.
 
 ConditionalValue::
 Value representing an inline conditional operation.
-Uses a `CombinedValue` helper internally.
+It stores the value objects representing the condition, the `ifTrue` and the `ifFalse` side, and delays evaluation as much as possible.
 
 ArrayValue:: a value representing all the values of a literal array assignment construct.
 Is not null by default, but can have higher `NOT_NULL` values depending on the content.

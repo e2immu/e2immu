@@ -53,9 +53,9 @@ public interface Value extends Comparable<Value> {
     int ORDER_ARRAY = 61;
     int ORDER_CONSTRAINED_NUMERIC_VALUE = 62;
     int ORDER_INSTANCE = 63;
-    int ORDER_METHOD = 64;
-    int ORDER_VARIABLE_VALUE = 65;
-    int ORDER_PARAMETER = 66;
+    int ORDER_INLINE_METHOD = 64;
+    int ORDER_METHOD = 65;
+    int ORDER_VARIABLE_VALUE = 66;
     int ORDER_COMBINED = 67;
     int ORDER_TYPE = 68;
     int ORDER_NO_VALUE = 69;
@@ -157,5 +157,10 @@ public interface Value extends Comparable<Value> {
 
     default int encodedSizeRestriction() {
         return Level.FALSE;
+    }
+
+    default Value reEvaluate(Map<Value, Value> translation) {
+        Value inMap = translation.get(this);
+        return inMap == null ? this : inMap;
     }
 }

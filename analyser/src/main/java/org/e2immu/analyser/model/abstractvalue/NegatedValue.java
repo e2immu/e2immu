@@ -42,6 +42,11 @@ public class NegatedValue extends PrimitiveValue {
         this.value = Objects.requireNonNull(value);
     }
 
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value reValue = value.reEvaluate(translation);
+        return NegatedValue.negate(reValue);
+    }
+
     public static Value negate(@NotNull Value v) {
         Objects.requireNonNull(v);
         if (v instanceof BoolValue) {

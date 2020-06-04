@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -36,6 +37,12 @@ public class ProductValue extends PrimitiveValue {
     public ProductValue(Value lhs, Value rhs) {
         this.lhs = lhs;
         this.rhs = rhs;
+    }
+
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value reLhs = lhs.reEvaluate(translation);
+        Value reRhs = rhs.reEvaluate(translation);
+        return ProductValue.product(reLhs, reRhs);
     }
 
     // we try to maintain a sum of products

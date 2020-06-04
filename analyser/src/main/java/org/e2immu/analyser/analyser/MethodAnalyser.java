@@ -182,27 +182,33 @@ public class MethodAnalyser {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return false;
         }
-        Value constant;
+        Value value = null;
         if (methodAnalysis.returnStatementSummaries.size() == 1) {
             Value single = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
             if (single.isConstant()) {
-                constant = single;
+                value = single;
             } else {
-                constant = null;
+                value = checkInlineFunction(single);
             }
-        } else {
-            constant = null;
         }
-        boolean isConstant = constant != null;
-        Value value = isConstant ? constant :
-                // the object (2nd parameter) is not important here; it will not be used to compute properties
-                new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+        // fallback
+        if (value == null) {
+            // the object (2nd parameter) is not important here; it will not be used to compute properties
+            value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+        }
+        boolean isConstant = value.isConstant();
         methodAnalysis.singleReturnValue.set(value);
         AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
         methodAnalysis.annotations.put(constantAnnotation, isConstant);
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    // returns null when we do not recognize an inline function
+
+    private Value checkInlineFunction(Value single) {
+        return null; // TODO
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,
