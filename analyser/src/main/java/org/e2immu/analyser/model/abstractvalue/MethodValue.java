@@ -95,10 +95,7 @@ public class MethodValue implements Value {
         if (recursiveCall) {
             return variableProperty.best;
         }
-        if (variableProperty == VariableProperty.SIZE) {
-            return checkSize(evaluationContext, methodInfo, parameters);
-        }
-        return methodInfo.methodAnalysis.get().getProperty(variableProperty);
+        return getPropertyOutsideContext(variableProperty);
     }
 
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
@@ -111,7 +108,7 @@ public class MethodValue implements Value {
                 // copyEquals == True
                 Value value = parameters.get(parameterInfo.index);
                 int sizeOfValue = evaluationContext == null ? value.getPropertyOutsideContext(VariableProperty.SIZE) :
-                        value.getProperty(evaluationContext, VariableProperty.SIZE);
+                        evaluationContext.getProperty(value, VariableProperty.SIZE);
                 if (Analysis.haveEquals(sizeOfValue) && sizeCopy == 1) return sizeOfValue - 1;
                 return sizeOfValue;
             }

@@ -32,7 +32,7 @@ public interface EvaluationContext {
 
     int getIteration();
 
-     void addProperty(Variable variable, VariableProperty variableProperty, int value);
+    void addProperty(Variable variable, VariableProperty variableProperty, int value);
     // WHERE ARE WE??
 
     // can be null, in evaluation of lambda expressions
@@ -81,8 +81,15 @@ public interface EvaluationContext {
     @NotNull
     Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable);
 
-    // delegation
+    // delegation from VariableValue and analysers
     int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);
+
+    // to be called from getProperty() in value
+    int getProperty(@NotNull Value value, @NotNull VariableProperty variableProperty);
+
+    default boolean isNotNull0(Value value) {
+        return Level.value(getProperty(value, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.TRUE;
+    }
 
     // method of VariableValue
     boolean equals(@NotNull Variable variable, Variable other);
@@ -99,6 +106,7 @@ public interface EvaluationContext {
     void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
 
     void raiseError(String message);
+
     void raiseError(String message, String extra);
 
 }

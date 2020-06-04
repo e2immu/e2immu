@@ -158,6 +158,11 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return 0;
+        }
+
+        @Override
         public boolean equals(Variable variable, Variable other) {
             return variable.name().equals(other.name());
         }

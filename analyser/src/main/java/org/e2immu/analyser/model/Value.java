@@ -116,6 +116,8 @@ public interface Value extends Comparable<Value> {
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 
+    // only called from EvaluationContext.getProperty().
+    // Use that method as the general way of obtaining a value for a property from a Value object
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return getPropertyOutsideContext(variableProperty);
     }
@@ -145,16 +147,8 @@ public interface Value extends Comparable<Value> {
 
     // HELPERS, NO NEED TO IMPLEMENT
 
-    default boolean isNotNull0(EvaluationContext evaluationContext) {
-        return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.TRUE;
-    }
-
     default Set<Variable> variables() {
         return Set.of();
-    }
-
-    default boolean isNotNotNull0(EvaluationContext evaluationContext) {
-        return Level.value(getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.FALSE;
     }
 
     default Map<Variable, Value> individualSizeRestrictions() {

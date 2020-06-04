@@ -43,7 +43,7 @@ public class VariableValueCopy extends ValueWithVariable {
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
-            builder.put(property, original.getProperty(evaluationContext, property));
+            builder.put(property, evaluationContext.getProperty(original, property));
         }
         copiedProperties = builder.build();
         linkedVariablesBest = ImmutableSet.copyOf(original.linkedVariables(true, evaluationContext));

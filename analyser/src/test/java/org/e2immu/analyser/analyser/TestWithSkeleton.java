@@ -148,7 +148,7 @@ public class TestWithSkeleton {
 
         // remember that we do not copy the properties of the assigned value into the variable
         Assert.assertEquals(DELAY, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
-        Assert.assertEquals(FALSE, variableProperties.currentValue(localS).getProperty(variableProperties, VariableProperty.NOT_NULL));
+        Assert.assertEquals(FALSE, variableProperties.getProperty(variableProperties.currentValue(localS), VariableProperty.NOT_NULL));
     }
 
     private VariableProperties newVariableProperties(MethodInfo method) {
@@ -200,7 +200,7 @@ public class TestWithSkeleton {
         Value currentValue = variableProperties.currentValue(finalStringRef);
         Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof StringValue);
         Assert.assertEquals("this is the final value", ((StringValue) currentValue).value);
-        Assert.assertEquals(TRUE, currentValue.getProperty(variableProperties, VariableProperty.NOT_NULL));
+        Assert.assertEquals(TRUE, variableProperties.getProperty(currentValue, VariableProperty.NOT_NULL));
     }
 
     @Test

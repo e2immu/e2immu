@@ -331,7 +331,7 @@ public class StatementAnalyser {
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
-                ((ArrayValue) value).values.stream().allMatch(elementValue -> elementValue.isNotNull0(variableProperties))) {
+                ((ArrayValue) value).values.stream().allMatch(variableProperties::isNotNull0)) {
             variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.TRUE);
         }
 
@@ -369,7 +369,7 @@ public class StatementAnalyser {
                     transferValue.properties.put(VariableProperty.IDENTITY, identity);
                 }
                 for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
-                    int v = value.getProperty(variableProperties, variableProperty);
+                    int v = variableProperties.getProperty(value, variableProperty);
                     int current = transferValue.properties.getOtherwise(variableProperty, Level.DELAY);
                     if (v > current) {
                         transferValue.properties.put(variableProperty, v);
@@ -401,7 +401,7 @@ public class StatementAnalyser {
             uponUsingConditional = null;
 
             if (value != null && statement.statement instanceof ForEachStatement) {
-                int size = value.getProperty(variableProperties, VariableProperty.SIZE);
+                int size = variableProperties.getProperty(value, VariableProperty.SIZE);
                 if (size == Analysis.SIZE_EMPTY && !statement.errorValue.isSet()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
@@ -667,7 +667,7 @@ public class StatementAnalyser {
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
-        int notNull = Level.value(currentValue.getProperty(evaluationContext, VariableProperty.NOT_NULL), Level.NOT_NULL);
+        int notNull = Level.value(evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL), Level.NOT_NULL);
         if (notNull == Level.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
         }

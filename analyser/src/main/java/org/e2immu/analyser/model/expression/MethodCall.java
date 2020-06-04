@@ -96,7 +96,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        checkForwardRequirements(methodAnalysis, forwardEvaluationInfo, evaluationContext);
 
         // @Identity as method annotation
         Value identity = computeIdentity(methodAnalysis, parameters);
@@ -111,6 +110,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             visitor.visit(this, evaluationContext, fluent);
             return fluent;
         }
+        
+        checkForwardRequirements(methodAnalysis, forwardEvaluationInfo, evaluationContext);
 
         Value result;
         if (methodAnalysis.singleReturnValue.isSet()) {
@@ -182,7 +183,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         if (requiredSize <= Level.FALSE) return null;
         // we have an @Size annotation on the method that we're calling
-        int sizeOfObject = objectValue.getProperty(evaluationContext, VariableProperty.SIZE);
+        int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         if (methodInfo.returnType().isBoolean()) {
@@ -253,7 +254,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return null;
         }
         int newSize = numSizeInParameters == 1 ? sizeInParameters.get(0) : sizeOfMethod;
-        int currentSize = objectValue.getProperty(evaluationContext, VariableProperty.SIZE);
+        int currentSize = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
         if (newSize > currentSize && objectValue instanceof VariableValue) {
             Variable variable = ((VariableValue) objectValue).variable;
             evaluationContext.addProperty(variable, VariableProperty.SIZE, newSize);

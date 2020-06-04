@@ -50,7 +50,7 @@ public class ArrayValue implements Value {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
-            int notNull = combinedValue.getProperty(evaluationContext, variableProperty);
+            int notNull = evaluationContext.getProperty(combinedValue, variableProperty);
             int levelOfValues = Level.level(notNull);
             return Level.compose(Level.TRUE, levelOfValues + 1); // default = @NotNull level 0
         }

@@ -213,19 +213,15 @@ public class MethodAnalyser {
                                                MethodAnalysis methodAnalysis) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY) return false;
-        boolean fluentOrIdentity = variableProperty == VariableProperty.FLUENT || variableProperty == VariableProperty.IDENTITY;
 
-        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> fluentOrIdentity ?
-                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY :
-                !entry.getValue().value.isSet());
+        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
         if (delays) {
             log(DELAYED, "Return statement value not yet set");
             return false;
         }
         IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                .mapToInt(entry -> fluentOrIdentity ?
-                        entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) :
-                        entry.getValue().value.get().getPropertyOutsideContext(variableProperty));
+                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
         int value = variableProperty == VariableProperty.SIZE ?
                 safeMinimum(typeContext, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);

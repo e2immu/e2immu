@@ -62,6 +62,8 @@ public class TestSMapList extends CommonTestRunner {
                 // this is the one that needs to combine with the null conditional
                 TransferValue returnValue2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("3");
                 Assert.assertEquals(1, returnValue2.properties.get(VariableProperty.NOT_NULL));
+
+                Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -72,7 +74,7 @@ public class TestSMapList extends CommonTestRunner {
             TypeInfo map = typeContext.getFullyQualified(Map.class);
             MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
             Assert.assertEquals(Level.TRUE_LEVEL_1, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
-            Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE));
+            Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE)); // no idea, could be empty
         }
     };
 

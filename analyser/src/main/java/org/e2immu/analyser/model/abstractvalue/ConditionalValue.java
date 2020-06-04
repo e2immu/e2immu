@@ -66,7 +66,7 @@ public class ConditionalValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return combinedValue.getProperty(evaluationContext, variableProperty);
+        return evaluationContext.getProperty(combinedValue, variableProperty);
     }
 
     @Override

@@ -201,9 +201,11 @@ public interface Map<K, V> {
 
     static interface Entry<K, V> {
 
+        @NotNull
         @NotModified
         K getKey();
 
+        @NotNull
         @NotModified
         V getValue();
 

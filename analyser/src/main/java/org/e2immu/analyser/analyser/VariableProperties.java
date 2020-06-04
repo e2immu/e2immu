@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -343,7 +344,7 @@ class VariableProperties implements EvaluationContext {
             }
         } else if (variable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
-            for(VariableProperty variableProperty: FROM_PARAMETER_TO_PROPERTIES) {
+            for (VariableProperty variableProperty : FROM_PARAMETER_TO_PROPERTIES) {
                 int value = parameterAnalysis.properties.getOtherwise(variableProperty, Level.FALSE);
                 aboutVariable.setProperty(variableProperty, value);
             }
@@ -738,7 +739,7 @@ class VariableProperties implements EvaluationContext {
 
     private int getPropertyPotentiallyFromCurrentValue(String name, VariableProperty variableProperty) {
         if (ON_VALUE.contains(variableProperty)) {
-            return variableProperties.get(name).getCurrentValue().getProperty(this, variableProperty);
+            return getProperty(variableProperties.get(name).getCurrentValue(), variableProperty);
         }
         return variableProperties.get(name).getProperty(variableProperty);
     }
@@ -756,12 +757,47 @@ class VariableProperties implements EvaluationContext {
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
-        if (VariableProperty.NOT_NULL.equals(variableProperty)) {
-            if (getNullConditionals(false).contains(variable)) {
-                return Level.best(Level.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
+        if (VariableProperty.NOT_NULL.equals(variableProperty) && getNullConditionals(false).contains(variable)) {
+            return Level.best(Level.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
+        }
+        if (VariableProperty.SIZE.equals(variableProperty)) {
+            Value sizeRestriction = getSizeRestrictions().get(variable);
+            if (sizeRestriction != null) {
+                return sizeRestriction.encodedSizeRestriction();
             }
         }
         return aboutVariable.getProperty(variableProperty);
+    }
+
+    public int getProperty(Value value, VariableProperty variableProperty) {
+        if (value instanceof VariableValue) {
+            return getProperty(((VariableValue) value).variable, variableProperty);
+        }
+        // we need to call the getProperty on value, but check the local condition...
+        if (!(value instanceof Constant) && conditional != null && !conditionalInErrorState()) {
+            if (VariableProperty.NOT_NULL.equals(variableProperty)) {
+                // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
+                // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
+                Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value);
+                Value withConditional = combineWithConditional(equalsNull);
+                if (withConditional.equals(equalsNull)) return Level.FALSE; // we know == null
+                if (withConditional == BoolValue.FALSE) return Level.TRUE; // we know != null
+
+            } else if (VariableProperty.SIZE.equals(variableProperty)) {
+                // action: we try to extract a size restriction related to value
+                // if it's there, it needs translation into a size restriction
+                // TODO
+            }
+        }
+        // redirect to Value.getProperty()
+        // this is the only usage of this method; all other evaluation of a Value in an evaluation context
+        // must go via the current method
+        return value.getProperty(this, variableProperty);
+    }
+
+    // if this is the case, the method we'll use for null- and size-checking does not work anymore
+    private boolean conditionalInErrorState() {
+        return BoolValue.TRUE == conditional || BoolValue.FALSE == conditional;
     }
 
     @Override

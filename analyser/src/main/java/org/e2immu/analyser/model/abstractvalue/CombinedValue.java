@@ -44,7 +44,7 @@ public class CombinedValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return values.stream().mapToInt(value -> value.getProperty(evaluationContext, variableProperty)).min().orElse(Level.DELAY);
+        return values.stream().mapToInt(value -> evaluationContext.getProperty(value, variableProperty)).min().orElse(Level.DELAY);
     }
 
     @Override

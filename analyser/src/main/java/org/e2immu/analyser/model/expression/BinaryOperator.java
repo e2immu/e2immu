@@ -98,8 +98,8 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) return BoolValue.TRUE;
 
             // HERE are the ==null checks
-            if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
-                    r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
+            if (l == NullValue.NULL_VALUE && evaluationContext.isNotNull0(r) ||
+                    r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
                 return BoolValue.FALSE;
             }
             return EqualsValue.equals(l, r);
@@ -115,8 +115,8 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) return BoolValue.FALSE;
 
             // HERE are the !=null checks
-            if (l == NullValue.NULL_VALUE && r.isNotNull0(evaluationContext) ||
-                    r == NullValue.NULL_VALUE && l.isNotNull0(evaluationContext)) {
+            if (l == NullValue.NULL_VALUE && evaluationContext.isNotNull0(r) ||
+                    r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
                 return BoolValue.TRUE;
             }
             return NegatedValue.negate(EqualsValue.equals(l, r));
