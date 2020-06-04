@@ -11,3 +11,76 @@ In normal code to be analysed, the value is true when at least one method has a 
 For interfaces, value is false except for methods with a code block (which coincides with the `default` modifier), and fields with initialisers.
 
 The analyser treats enumerations as normal classes, and skips annotations.
+
+==== Null checks
+
+During statement analysis, evaluation context evaluates the `NOT_NULL` property of a variable on the current value.
+If this current value is a `VariableValue`, it considers the `properties` map.
+Otherwise, it will evaluate the `NOT_NULL` property on that `Value` object (method value, instance, ...).
+
+Consider
+
+[source,java]
+----
+String a = initialization();
+if(a == null) {
+  a = someExpression();
+}
+----
+
+If `initialization()` is not null, the analyser will raise an error.
+So we're proceeding on the basis that we know nothing about the nullity of that method call.
+
+If `someExpression()` is guaranteed to evaluate to not null, we want `a` to have the not null property after the `if` statement.
+The combination of the current value (the result of `initialization()`) and the potentially new value (`someExpression()`) will decide the future of the variable.
+This may look like
+
+* for the `NOT_NULL` property, look at `someExpression`
+* for all other properties, look at the combination of the two
+
+
+Following these rules, consider the simpler case:
+
+[source,java]
+----
+String a = initialization();
+if(a == null) {
+  a = someExpression();
+} else {
+  // here, we know a is not null, but that does not help
+  a = someOtherExpression();
+}
+----
+
+Unless we somehow keep track of both assignments, we will know nothing of the nullity of `a`.
+A `CombinedValue` containing `someExpression()` and `someOtherExpression()` seems the right way to go.
+If both evaluate to not null, `a` will have that property.
+
+Let's look at some potentially more complicated situations:
+
+[source,java]
+----
+boolean b = initOfB();
+String a = initialization();
+if(b) {
+  a = someExpression();
+} else {
+  // here, we know a is not null, but that does not help
+  a = someOtherExpression();
+}
+----
+
+Here, we have no way of knowing which of the two will be executed.
+
+[source,java]
+----
+boolean b = initOfB();
+String a = initialization();
+if(a == null && b) {
+  a = someExpression();
+}
+----
+
+What to do with this?
+Following the method above, we could use `someExpression` only for `NOT_NULL`, but only if `b` is true.
+Will this lead us too far?

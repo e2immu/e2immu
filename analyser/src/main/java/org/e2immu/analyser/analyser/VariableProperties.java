@@ -564,7 +564,6 @@ class VariableProperties implements EvaluationContext {
     }
 
     private static final VariableProperty[] BEST = {VariableProperty.SIZE, MODIFIED};
-    private static final VariableProperty[] WORST_IN_ASSIGNMENT = {VariableProperty.NOT_NULL};
 
     private static final VariableProperty[] INCREMENT_LEVEL = {READ, ASSIGNED};
 
@@ -618,12 +617,12 @@ class VariableProperties implements EvaluationContext {
             // now copy the properties that are linked to the assignment
             boolean includeThis = noBlockMayBeExecuted && !atLeastOneAssignmentGuaranteedToBeReached;
 
-            for (VariableProperty variableProperty : WORST_IN_ASSIGNMENT) {
-                IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, variableProperty);
-                int worstValue = intStream.min().orElse(Level.DELAY);
-                if (worstValue > Level.DELAY) {
-                    localAv.setProperty(variableProperty, worstValue);
-                }
+            // TODO create a combined value if there was a value already, or if there is an assignment in every block
+            
+            IntStream intStream = streamBuilder(assignmentContexts, name, includeThis, movedUpFirstOne, VariableProperty.NOT_NULL);
+            int worstValue = intStream.min().orElse(Level.DELAY);
+            if (worstValue > Level.DELAY) {
+                localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
             }
 
             if (!atLeastOneAssignmentGuaranteedToBeReached || assignmentContexts.size() > 1) {
