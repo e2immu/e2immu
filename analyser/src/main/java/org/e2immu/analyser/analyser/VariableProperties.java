@@ -667,7 +667,13 @@ class VariableProperties implements EvaluationContext {
             for (VariableProperty variableProperty : INCREMENT_LEVEL) {
                 boolean includeThis = notMovedUp && localAv.haveProperty(variableProperty);
                 IntStream intStreamInc = streamBuilderInc(evaluationContextsGathered, name, includeThis, variableProperty);
-                int increasedValue = intStreamInc.reduce(Level.DELAY, (v1, v2) -> Level.nextLevelTrue(Level.best(v1, v2), 1));
+                int increasedValue = intStreamInc.reduce(Level.DELAY, (v1, v2) -> {
+                    int best = Level.best(v1, v2);
+                    if (best == Level.TRUE) {
+                        return Level.nextLevelTrue(best, 1);
+                    }
+                    return best;
+                });
                 IntStream intStreamBest = streamBuilderBest(increasedValue, evaluationContextsGathered, name, variableProperty);
                 int bestValue = intStreamBest.max().orElse(Level.DELAY);
                 if (bestValue > Level.DELAY) {

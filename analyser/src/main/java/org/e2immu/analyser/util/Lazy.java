@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 public class Lazy<T> {
     @NotModified
     @NotNull
-    @Final
     @Linked(to = "supplierParam") // the parameter
     private final Supplier<T> supplier;
 

@@ -80,6 +80,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.MODIFIED, modifiedValue), false));
 
+        // no value (method call on field that does not have effective value yet)
+        if (objectValue == UnknownValue.NO_VALUE) {
+            return UnknownValue.NO_VALUE; // this will delay
+        }
+
         // null scope
         if (objectValue instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
@@ -110,7 +115,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             visitor.visit(this, evaluationContext, fluent);
             return fluent;
         }
-        
+
         checkForwardRequirements(methodAnalysis, forwardEvaluationInfo, evaluationContext);
 
         Value result;
