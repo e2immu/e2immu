@@ -19,9 +19,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,7 +38,16 @@ public class TestSetOnceMap extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("get".equals(methodInfo.name)) {
-                Assert.assertEquals("", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
+                Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.get()", srv.toString());
+                Assert.assertTrue("Have "+srv.getClass(), srv instanceof MethodValue);
+                Assert.assertEquals(Level.TRUE, Level.value(srv.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+
+                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
+                Assert.assertNotNull(tv);
+                Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.NOT_NULL));
+
+                Assert.assertEquals(Level.TRUE, Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
             }
 
         }

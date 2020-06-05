@@ -188,7 +188,7 @@ public class MethodAnalyser {
             Value single = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
             if (single.isConstant()) {
                 value = single;
-            } else if (single.isExpressionOfParameters()) {
+            } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {
                 value = new InlineValue(methodInfo, single);
             }
         }

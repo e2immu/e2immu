@@ -1,7 +1,11 @@
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.expression.MethodCall;
 
 import java.util.Map;
 import java.util.StringJoiner;
@@ -30,6 +34,16 @@ public class InlineValue implements Value {
     public int internalCompareTo(Value v) {
         InlineValue mv = (InlineValue) v;
         return methodInfo.distinguishingName().compareTo(mv.methodInfo.distinguishingName());
+    }
+
+    @Override
+    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        return value.getPropertyOutsideContext(variableProperty);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return value.getProperty(evaluationContext, variableProperty);
     }
 
     @Override
