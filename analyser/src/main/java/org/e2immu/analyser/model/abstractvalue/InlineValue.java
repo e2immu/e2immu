@@ -4,6 +4,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 
 import java.util.Map;
+import java.util.StringJoiner;
 
 /*
  can only be created as the single result value of a method
@@ -36,4 +37,8 @@ public class InlineValue implements Value {
         return value.reEvaluate(translation);
     }
 
+    @Override
+    public String toString() {
+        return value.toString();
+    }
 }

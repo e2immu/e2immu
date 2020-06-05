@@ -8,6 +8,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class ConstrainedNumericValue extends PrimitiveValue {
@@ -38,6 +39,13 @@ public class ConstrainedNumericValue extends PrimitiveValue {
         this.value = value;
         ParameterizedType type = value.type();
         this.integer = type.typeInfo != Primitives.PRIMITIVES.floatTypeInfo && type.typeInfo != Primitives.PRIMITIVES.doubleTypeInfo;
+    }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value re = value.reEvaluate(translation);
+        if (re.isConstant()) return re;
+        return new ConstrainedNumericValue(re, lowerBound, upperBound);
     }
 
     @Override

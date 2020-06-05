@@ -40,11 +40,26 @@ public class EqualsValue extends PrimitiveValue {
         this.rhs = swap ? lhs : rhs;
     }
 
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value reLhs = lhs.reEvaluate(translation);
+        Value reRhs = rhs.reEvaluate(translation);
+        return EqualsValue.equals(reLhs, reRhs);
+    }
+
     public static Value equals(Value l, Value r) {
         if (l.equals(r)) return BoolValue.TRUE;
+
+        if (l == NullValue.NULL_VALUE && r.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+            return BoolValue.FALSE;
+        if (r == NullValue.NULL_VALUE && l.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+            return BoolValue.FALSE;
+
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         if (l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r)) return BoolValue.FALSE;
         if (r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l)) return BoolValue.FALSE;
+
+
         return new EqualsValue(l, r);
     }
 

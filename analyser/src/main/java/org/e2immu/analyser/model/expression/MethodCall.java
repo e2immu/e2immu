@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -81,10 +82,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.MODIFIED, modifiedValue), false));
 
-        // no value (method call on field that does not have effective value yet)
-        if (objectValue == UnknownValue.NO_VALUE) {
-            return UnknownValue.NO_VALUE; // this will delay
-        }
 
         // null scope
         if (objectValue instanceof NullValue) {
@@ -94,10 +91,41 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
+        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters);
+
+        checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
+        visitor.visit(this, evaluationContext, result);
+
+        checkCommonErrors(evaluationContext, objectValue, parameters);
+
+        return result;
+    }
+
+    private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue, List<Value> parameters) {
+        // TODO simple example of a frequently recurring issue...
+        if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
+            ParameterizedType type = objectValue.type();
+            if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
+                evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
+            }
+        }
+    }
+
+    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
+        // no value (method call on field that does not have effective value yet)
+        if (objectValue == UnknownValue.NO_VALUE) {
+            return UnknownValue.NO_VALUE; // this will delay
+        }
+
+        // eval on constant, like "abc".length()
+        Value evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue, parameters);
+        if (evaluationOnConstant != null) {
+            return evaluationOnConstant;
+        }
+
         // @Size as method annotation
-        Value sizeShortCut = computeSize(objectValue, parameters, evaluationContext);
+        Value sizeShortCut = computeSize(methodInfo, objectValue, parameters, evaluationContext);
         if (sizeShortCut != null) {
-            visitor.visit(this, evaluationContext, sizeShortCut);
             return sizeShortCut;
         }
 
@@ -106,49 +134,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // @Identity as method annotation
         Value identity = computeIdentity(methodAnalysis, parameters);
         if (identity != null) {
-            visitor.visit(this, evaluationContext, identity);
             return identity;
         }
 
         // @Fluent as method annotation
         Value fluent = computeFluent(methodAnalysis, objectValue);
         if (fluent != null) {
-            visitor.visit(this, evaluationContext, fluent);
             return fluent;
         }
 
-        checkForwardRequirements(methodAnalysis, forwardEvaluationInfo, evaluationContext);
-
-        Value result;
         if (methodAnalysis.singleReturnValue.isSet()) {
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
             if (srv instanceof InlineValue) {
-                result = srv.reEvaluate(translationMap(evaluationContext, parameters));
-            } else {
-                result = srv;
+                return srv.reEvaluate(translationMap(evaluationContext, methodInfo, parameters));
             }
-        } else if (methodInfo.hasBeenDefined()) {
+            return srv;
+        }
+        if (methodInfo.hasBeenDefined()) {
             // we will, at some point, analyse this method
-            result = UnknownValue.NO_VALUE;
-        } else {
-            // we will never analyse this method
-            result = new MethodValue(methodInfo, objectValue, parameters);
-
-            // simple example of a frequently recurring issue...
-            if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
-                ParameterizedType type = objectValue.type();
-                if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
-                    evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
-                }
-            }
+            return UnknownValue.NO_VALUE;
         }
 
-        visitor.visit(this, evaluationContext, result);
-        return result;
+        // we will never analyse this method
+        return new MethodValue(methodInfo, objectValue, parameters);
     }
 
-    private Map<Value, Value> translationMap(EvaluationContext evaluationContext, List<Value> parameters) {
+    private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
+        if (!objectValue.isConstant()) return null;
+        // TODO simple example here, we can do a lot more with simple reflection
+        if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) && objectValue instanceof StringValue) {
+            return new IntValue(((StringValue) objectValue).value.length());
+        }
+        return null;
+    }
+
+    private static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
         ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
         int i = 0;
         for (Value parameterValue : parameters) {
@@ -179,65 +200,68 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
+    private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE;
         if (fluent != Level.TRUE) return null;
         return scope;
     }
 
-    private Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters) {
+    private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
         return parameters.get(0);
     }
 
-    private Value computeSize(Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
-        if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
+    private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
+        // if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
+        if(!methodInfo.typeInfo.hasSize()) return null;
+        
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             return null; // ignore
         }
         if (modified == Level.TRUE) {
-            return computeSizeModifyingMethod(objectValue, evaluationContext);
+            return computeSizeModifyingMethod(methodInfo, objectValue, evaluationContext);
         }
 
         int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         if (requiredSize <= Level.FALSE) return null;
         // we have an @Size annotation on the method that we're calling
-        int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
+        int sizeOfObject = evaluationContext != null ? evaluationContext.getProperty(objectValue, VariableProperty.SIZE) :
+                objectValue.getPropertyOutsideContext(VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Level.FALSE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
-                return sizeMethodValue(objectValue, requiredSize);
+                return sizeMethodValue(methodInfo, objectValue, requiredSize);
             }
             // we have a requirement, and we have a size.
             if (Analysis.haveEquals(requiredSize)) {
                 // we require a fixed size.
                 if (Analysis.haveEquals(sizeOfObject)) {
-                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
                     return sizeOfObject == requiredSize ? BoolValue.TRUE : BoolValue.FALSE;
                 }
                 if (sizeOfObject > requiredSize) {
                     log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
-                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     return BoolValue.FALSE;
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-                return sizeMethodValue(objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
+                return sizeMethodValue(methodInfo, objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
             }
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
-                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                 return BoolValue.TRUE;
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-            return sizeMethodValue(objectValue, requiredSize);
+            return sizeMethodValue(methodInfo, objectValue, requiredSize);
         }
 
         // SITUATION 2: @Size int size(): this method returns the size
@@ -253,7 +277,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // instead of returning isEmpty(), we return size() == 0
     // instead of returning isNotEmpty(), wer return size() >= 1
-    private Value sizeMethodValue(Value objectValue, int requiredSize) {
+    private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize) {
         MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
         MethodValue sizeMethod = new MethodValue(sizeMethodInfo, objectValue, List.of());
         if (Analysis.haveEquals(requiredSize)) {
@@ -262,7 +286,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
     }
 
-    private Value computeSizeModifyingMethod(Value objectValue, EvaluationContext evaluationContext) {
+    private static Value computeSizeModifyingMethod(MethodInfo methodInfo, Value objectValue, EvaluationContext evaluationContext) {
         int sizeOfMethod = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         List<Integer> sizeInParameters = methodInfo.methodInspection.get()
                 .parameters.stream()

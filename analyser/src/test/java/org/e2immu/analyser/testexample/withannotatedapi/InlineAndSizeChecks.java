@@ -18,11 +18,55 @@ public class InlineAndSizeChecks {
         return s == null ? -1 : s.length();
     }
 
+    private static int len2(String s) {
+        System.out.println("Computing the length of " + s);
+        return s == null ? -1 : s.length();
+    }
+
+    private static int len3(String s) {
+        System.out.println("Computing the length of " + s);
+        int t = s == null ? -1 : s.length();
+        System.out.println("Result is " + t);
+        return t;
+    }
+
+    private static int len4(String s) {
+        System.out.println("Computing the length of " + s);
+        int t;
+        if (s == null) t = -1;
+        else t = s.length();
+        return t;
+    }
+
+    private static int len5(String s) {
+        if (s == null) return -1;
+        return s.length();
+    }
+
+    private static int len6(String s) {
+        if (s == null) return -1;
+        int t = s.length();
+        System.out.println("Length is " + t);
+        return t;
+    }
+
+    @Constant(intValue = 3)
+    public static final int m0 = "abc".length();
+
     @Constant(intValue = 3)
     public static final int m1 = len("abc");
 
     @Constant(intValue = -1)
     public static final int m2 = len(null);
+
+    @Constant(intValue = -1)
+    public static final int m2_2 = len2(null);
+
+    @Constant(intValue = -1)
+    public static final int m2_3 = len3(null);
+
+
+    // TODO FUTURE WORK
 
     public static void method1(@NotNull String in1) {
         Objects.requireNonNull(in1);

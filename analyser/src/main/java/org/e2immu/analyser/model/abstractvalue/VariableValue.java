@@ -38,13 +38,16 @@ public class VariableValue extends ValueWithVariable {
     // multiCopy means that due to absence of synchronisation, this non-final field's value cannot be correctly computed
     public final boolean multiCopyNonFinalField;
 
-    public VariableValue(@NotNull EvaluationContext evaluationContext,
+    // evaluation context can be null in re-evaluations
+    // if it is null, our "equals" method will be straight on ParameterInfo objects
+
+    public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name) {
         this(evaluationContext, variable, name, false);
     }
 
-    public VariableValue(@NotNull EvaluationContext evaluationContext,
+    public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name,
                          boolean multiCopyNonFinalField) {
@@ -59,7 +62,10 @@ public class VariableValue extends ValueWithVariable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VariableValue that = (VariableValue) o;
-        return evaluationContext.equals(variable, that.variable);
+        if (evaluationContext != null) {
+            return evaluationContext.equals(variable, that.variable);
+        }
+        return variable.equals(that.variable);
     }
 
     @Override

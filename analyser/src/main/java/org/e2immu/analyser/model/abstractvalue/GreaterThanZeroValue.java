@@ -23,9 +23,11 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,6 +42,12 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         GreaterThanZeroValue that = (GreaterThanZeroValue) o;
         return allowEquals == that.allowEquals &&
                 value.equals(that.value);
+    }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value reValue = value.reEvaluate(translation);
+        return GreaterThanZeroValue.greater(reValue, IntValue.ZERO_VALUE, allowEquals);
     }
 
     @Override

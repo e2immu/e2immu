@@ -19,6 +19,11 @@ public class TypeValue implements Value {
     }
 
     @Override
+    public ParameterizedType type() {
+        return parameterizedType;
+    }
+
+    @Override
     public String toString() {
         return parameterizedType.detailedString();
     }

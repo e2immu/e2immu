@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
@@ -72,6 +73,13 @@ public class MethodValue implements Value {
         if (container == Level.TRUE) return true; // does not modify parameters
         return methodInfo.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
                 parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE);
+    }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(translation)).collect(Collectors.toList());
+        Value reObject = object.reEvaluate(translation);
+        return MethodCall.methodValue(null, methodInfo, reObject, reParams);
     }
 
     @Override

@@ -22,9 +22,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ConditionalValue implements Value {
@@ -39,6 +41,20 @@ public class ConditionalValue implements Value {
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
         combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
+    }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        Value reCondition = condition.reEvaluate(translation);
+        Value reTrue = ifTrue.reEvaluate(translation);
+        Value reFalse = ifFalse.reEvaluate(translation);
+        if (reCondition == BoolValue.TRUE) {
+            return reTrue;
+        }
+        if (reCondition == BoolValue.FALSE) {
+            return reFalse;
+        }
+        return new ConditionalValue(reCondition, reTrue, reFalse);
     }
 
     @Override
