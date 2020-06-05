@@ -196,4 +196,16 @@ public class OrValue extends PrimitiveValue {
     public boolean isExpressionOfParameters() {
         return values.stream().allMatch(Value::isExpressionOfParameters);
     }
+
+    @Override
+    public Map<Variable, Boolean> individualNullClauses() {
+        return values.stream().flatMap(v -> v.individualNullClauses().entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    @Override
+    public Map<Variable, Value> individualSizeRestrictions() {
+        return values.stream().flatMap(v -> v.individualSizeRestrictions().entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 }

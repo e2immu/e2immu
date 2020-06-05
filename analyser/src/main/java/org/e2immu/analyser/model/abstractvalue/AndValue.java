@@ -375,12 +375,6 @@ public class AndValue implements Value {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses() {
-        return values.stream().flatMap(v -> v.individualNullClauses().entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }

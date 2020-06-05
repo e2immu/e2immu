@@ -47,12 +47,7 @@ public class TestSMapList extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("3".equals(numberedStatement.streamIndices()) && "list".equals(methodInfo.name)) {
-                if(iteration == 0) {
-                    Assert.assertEquals("(not (null == map.get(a)) and not (null == a))", conditional.toString());
-                } else {
-                    // a != null has moved into the property
-                    Assert.assertEquals("not (null == map.get(a))", conditional.toString());
-                }
+                Assert.assertEquals("not (null == map.get(a))", conditional.toString());
             }
         }
     };

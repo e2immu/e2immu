@@ -61,7 +61,6 @@ public class SizeChecks2 {
     static class Test3 {
 
         @Size(min = 1)
-        @Final
         @NotNull
         private final Set<String> set3;
 

@@ -50,7 +50,7 @@ class VariableProperties implements EvaluationContext {
 
     // the following two variables can be assigned to as we progress through the statements
 
-    private Value conditional; // any conditional added to this block
+    public final ConditionalManager conditionalManager;
     private boolean guaranteedToBeReachedInCurrentBlock = true;
     private NumberedStatement currentStatement;
 
@@ -100,7 +100,7 @@ class VariableProperties implements EvaluationContext {
         this.depth = 0;
         this.debugConfiguration = debugConfiguration;
         this.parent = null;
-        conditional = null;
+        conditionalManager = new ConditionalManager(null);
         uponUsingConditional = null;
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
@@ -112,7 +112,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, depth, methodInfo, null, conditional, uponUsingConditional,
+        return new VariableProperties(this, depth, methodInfo, null, conditionalManager.getConditional(), uponUsingConditional,
                 methodInfo.isSynchronized(),
                 guaranteedToBeReachedByParentStatement);
     }
@@ -130,7 +130,7 @@ class VariableProperties implements EvaluationContext {
         this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
-        this.conditional = conditional;
+        this.conditionalManager = new ConditionalManager(conditional);
         this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
@@ -176,7 +176,7 @@ class VariableProperties implements EvaluationContext {
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
         return new VariableProperties(this, depth + 1, currentMethod,
-                currentStatement, combineWithConditional(conditional), uponUsingConditional,
+                currentStatement, conditionalManager.combineWithConditional(conditional), uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -186,22 +186,11 @@ class VariableProperties implements EvaluationContext {
                                    boolean guaranteedToBeReachedByParentStatement) {
 
         return new VariableProperties(this, depth + 1, currentMethod, currentStatement,
-                combineWithConditional(conditional), uponUsingConditional,
+                conditionalManager.combineWithConditional(conditional), uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
 
-    // all conditionals added go via this method
-
-    public Value combineWithConditional(Value value) {
-        if (value == null || value.isUnknown()) return conditional;
-        if (conditional == null || conditional.isUnknown()) return value;
-
-        if (conditional instanceof AndValue) {
-            return ((AndValue) conditional).append(value);
-        }
-        return new AndValue().append(conditional, value);
-    }
 
     public Collection<AboutVariable> variableProperties() {
         return variableProperties.values();
@@ -516,40 +505,12 @@ class VariableProperties implements EvaluationContext {
         return new VariableValue(this, variable, aboutVariable.name);
     }
 
-    public Set<Variable> getNullConditionals(boolean equalToNull) {
-        if (conditional == null) {
-            return Set.of();
-        }
-        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses();
-        return individualNullClauses.entrySet()
-                .stream().filter(e -> e.getValue() == equalToNull)
-                .map(Map.Entry::getKey).collect(Collectors.toSet());
-    }
-
-    public Map<Variable, Value> getSizeRestrictions() {
-        if (conditional == null) return Map.of();
-        return conditional.individualSizeRestrictions();
-    }
 
     @Override
     public TypeContext getTypeContext() {
         return typeContext;
     }
 
-    public Value evaluateWithConditional(Value value) {
-        if (conditional == null || conditional.isUnknown()) return value;
-        // we take the conditional as a given, and see if the value agrees
-
-
-        // this one solves boolean problems; in a boolean context, there is no difference
-        // between the value and the conditional
-        Value result = new AndValue().append(conditional, value);
-        if (result.equals(conditional)) {
-            // constant true: adding the value has no effect at all
-            return BoolValue.TRUE;
-        }
-        return result;
-    }
 
     public void setGuaranteedToBeReachedInCurrentBlock(boolean guaranteedToBeReachedInCurrentBlock) {
         this.guaranteedToBeReachedInCurrentBlock = guaranteedToBeReachedInCurrentBlock;
@@ -778,11 +739,11 @@ class VariableProperties implements EvaluationContext {
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
-        if (VariableProperty.NOT_NULL.equals(variableProperty) && getNullConditionals(false).contains(variable)) {
+        if (VariableProperty.NOT_NULL == variableProperty && conditionalManager.isNotNull(variable)) {
             return Level.best(Level.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
         }
         if (VariableProperty.SIZE.equals(variableProperty)) {
-            Value sizeRestriction = getSizeRestrictions().get(variable);
+            Value sizeRestriction = conditionalManager.getSizeRestrictions().get(variable);
             if (sizeRestriction != null) {
                 return sizeRestriction.encodedSizeRestriction();
             }
@@ -795,16 +756,10 @@ class VariableProperties implements EvaluationContext {
             return getProperty(((VariableValue) value).variable, variableProperty);
         }
         // we need to call the getProperty on value, but check the local condition...
-        if (!(value instanceof Constant) && conditional != null && !conditionalInErrorState()) {
+        if (!(value instanceof Constant) && conditionalManager.haveConditional() && !conditionalManager.conditionalInErrorState()) {
             if (VariableProperty.NOT_NULL.equals(variableProperty)) {
-                // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
-                // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-                Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value);
-                if (equalsNull == BoolValue.FALSE) return Level.TRUE;
-                Value withConditional = combineWithConditional(equalsNull);
-                if (withConditional == BoolValue.FALSE) return Level.TRUE; // we know != null
-                if (withConditional.equals(equalsNull)) return Level.FALSE; // we know == null
-
+                int notNull = conditionalManager.notNull(value);
+                if (notNull != Level.DELAY) return notNull;
             } else if (VariableProperty.SIZE.equals(variableProperty)) {
                 // action: we try to extract a size restriction related to value
                 // if it's there, it needs translation into a size restriction
@@ -817,10 +772,6 @@ class VariableProperties implements EvaluationContext {
         return value.getProperty(this, variableProperty);
     }
 
-    // if this is the case, the method we'll use for null- and size-checking does not work anymore
-    private boolean conditionalInErrorState() {
-        return BoolValue.TRUE == conditional || BoolValue.FALSE == conditional;
-    }
 
     // there is special consideration for parameters of inline values, which are NOT KNOWN to the variable properties map.
     // findComplain would actually complain when a reEvaluation takes place.
@@ -877,8 +828,7 @@ class VariableProperties implements EvaluationContext {
             aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
             aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                     Level.fromBool(guaranteedToBeReached(aboutVariable)));
-
-            if (conditional != null) conditional = removeClausesInvolving(conditional, at);
+            conditionalManager.variableReassigned(at);
         }
     }
 
@@ -894,19 +844,6 @@ class VariableProperties implements EvaluationContext {
         if (!guaranteedToBeReachedByParentStatement) return false;
         if (parent != null) return parent.recursivelyCheckGuaranteedToBeReachedByParent(name);
         return true;
-    }
-
-    // null-clauses like if(a==null) a = ... (then the null-clause on a should go)
-    // same applies to size()... if(a.isEmpty()) a = ...
-    private static Value removeClausesInvolving(Value conditional, Variable variable) {
-        Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
-        if (toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
-            return null;
-        }
-        if (conditional instanceof AndValue) {
-            return ((AndValue) conditional).removeClausesInvolving(variable);
-        }
-        return conditional;
     }
 
     @Override
@@ -994,14 +931,6 @@ class VariableProperties implements EvaluationContext {
             getTypeContext().addMessage(message);
             currentStatement.errorValue.set(true);
         }
-    }
-
-    public Value getConditional() {
-        return conditional;
-    }
-
-    public void addToConditional(Value value) {
-        conditional = combineWithConditional(value);
     }
 
     public void mark(Variable variable, VariableProperty property, int value) {

@@ -56,8 +56,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("method3".equals(methodInfo.name)) {
-                // @NotNull annotation missing (the return statement is not marked "unreachable", maybe we should do this???)
-                Assert.assertEquals(Level.DELAY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
             if ("method7".equals(methodInfo.name)) {
                 // @Constant annotation missing, but is marked as constant
@@ -69,7 +68,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SwitchStatementChecks", 4, new DebugConfiguration.Builder()
+        testClass("SwitchStatementChecks", 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

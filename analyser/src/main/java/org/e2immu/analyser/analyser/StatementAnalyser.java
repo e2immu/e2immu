@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -71,7 +72,7 @@ public class StatementAnalyser {
                 String statementId = statement.streamIndices();
                 variableProperties.setCurrentStatement(statement);
 
-                if (variableProperties.getConditional() == BoolValue.FALSE) {
+                if (variableProperties.conditionalManager.getConditional() == BoolValue.FALSE) {
                     variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
                 }
 
@@ -88,7 +89,7 @@ public class StatementAnalyser {
                     });
                 }
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
-                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement, variableProperties.getConditional());
+                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement, variableProperties.conditionalManager.getConditional());
                 }
 
                 if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {
@@ -126,31 +127,8 @@ public class StatementAnalyser {
                 startStatement.escapes.set(escapesViaException);
 
                 if (escapesViaException) {
-                    Set<Variable> nullVariables = variableProperties.getNullConditionals(true);
-                    for (Variable variable : nullVariables) {
-                        log(VARIABLE_PROPERTIES, "Escape with check not null on {}", variable.detailedString());
-                        if (variable instanceof ParameterInfo) {
-                            ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
-                        }
-                        variableProperties.addProperty(variable, VariableProperty.NOT_NULL, Level.TRUE);
-                        if (variableProperties.uponUsingConditional != null) {
-                            log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
-                            variableProperties.uponUsingConditional.run();
-                        }
-                    }
-                    Map<Variable, Value> individualSizeRestrictions = variableProperties.getSizeRestrictions();
-                    for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
-                        Variable variable = entry.getKey();
-                        Value negated = NegatedValue.negate(entry.getValue());
-                        log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
-                        int sizeRestriction = negated.encodedSizeRestriction();
-                        if (sizeRestriction > 0) { // if the complement is a meaningful restriction
-                            if (variable instanceof ParameterInfo) {
-                                ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
-                            }
-                            variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
-                        }
-                    }
+                    notNullEscapes(variableProperties, startStatement);
+                    sizeEscapes(variableProperties, startStatement);
                 }
             }
             // order is important, because unused gets priority
@@ -174,6 +152,53 @@ public class StatementAnalyser {
             throw rte;
         }
     }
+
+    private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
+        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true);
+        for (Variable nullVariable : nullVariables) {
+            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
+            if (nullVariable instanceof ParameterInfo) {
+                ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
+            }
+            // as a context property
+            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, Level.TRUE);
+            if (variableProperties.uponUsingConditional != null) {
+                log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                variableProperties.uponUsingConditional.run();
+            }
+            // now we need to make sure that there will not be an additional condition added after the if statement
+            // the not-null is already in the properties. we need to communicate this one level up.
+
+            // we're guarding because we can have these escapase for sizes as well
+            if (!startStatement.parent.removeVariablesFromConditional.isSet(nullVariable)) {
+                startStatement.parent.removeVariablesFromConditional.put(nullVariable, true);
+            }
+        }
+    }
+
+    private static void sizeEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
+        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions();
+        for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
+            Variable variable = entry.getKey();
+            Value negated = NegatedValue.negate(entry.getValue());
+            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
+            int sizeRestriction = negated.encodedSizeRestriction();
+            if (sizeRestriction > 0) { // if the complement is a meaningful restriction
+                if (variable instanceof ParameterInfo) {
+                    ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
+                }
+                variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
+                // now we need to make sure that there will not be an additional condition added after the if statement
+                // the not-null is already in the properties. we need to communicate this one level up.
+
+                // we're guarding because we can have these escapase for sizes as well
+                if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
+                    startStatement.parent.removeVariablesFromConditional.put(variable, true);
+                }
+            }
+        }
+    }
+
 
     private Collection<? extends BreakOrContinueStatement> filterBreakAndContinue(NumberedStatement statement,
                                                                                   List<BreakOrContinueStatement> statements) {
@@ -386,7 +411,7 @@ public class StatementAnalyser {
         Runnable uponUsingConditional;
 
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
-            Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
+            Value combinedWithConditional = variableProperties.conditionalManager.evaluateWithConditional(value);
             if (combinedWithConditional.isConstant()) {
                 if (!statement.inErrorState()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
@@ -395,7 +420,7 @@ public class StatementAnalyser {
             }
             uponUsingConditional = () -> {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
-                statement.errorValue.set(true);
+                if (!statement.errorValue.isSet()) statement.errorValue.set(true);
             };
         } else {
             uponUsingConditional = null;
@@ -509,7 +534,9 @@ public class StatementAnalyser {
         }
 
         if (allButLastSubStatementsEscape && defaultCondition != NO_VALUE) {
-            variableProperties.addToConditional(defaultCondition);
+            variableProperties.conditionalManager.addToConditional(defaultCondition);
+            statement.removeVariablesFromConditional.visit((toRemove, b) ->
+                    variableProperties.conditionalManager.variableReassigned(toRemove));
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
         }
 
@@ -652,27 +679,15 @@ public class StatementAnalyser {
             if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
             variableProperties.ensureThisVariable((FieldReference) variable);
         }
-        Set<Variable> nullConditionals = variableProperties.getNullConditionals(false);
-        // check null conditionals
-        if (nullConditionals.contains(variable)) {
-            // we're in an explicit != null situation for this variable
-            return;
-        }
-        if (currentValue instanceof ValueWithVariable) {
-            Variable other = ((ValueWithVariable) currentValue).variable;
-            if (nullConditionals.contains(other)) {
-                // we're in an explicit != null situation for this variable
-                return;
-            }
-        }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
         int notNull = Level.value(evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL), Level.NOT_NULL);
         if (notNull == Level.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
+        } else if (notNull == Level.DELAY) {
+            // we only need to mark this in case of doubt (if we already know, we should not mark)
+            variableProperties.mark(variable, VariableProperty.NOT_NULL, notNullContext);
         }
-
-        variableProperties.mark(variable, VariableProperty.NOT_NULL, notNullContext);
     }
 
     public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {

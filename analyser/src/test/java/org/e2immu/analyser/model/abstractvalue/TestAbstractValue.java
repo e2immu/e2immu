@@ -121,9 +121,9 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
-        Value andValue = new AndValue().append(v, NegatedValue.negate(v2));
-        Assert.assertEquals("(null == a and not (null == b))", andValue.toString());
-        Map<Variable, Boolean> nullClausesAnd = andValue.individualNullClauses();
+        Value orValue = new OrValue().append(v, NegatedValue.negate(v2));
+        Assert.assertEquals("(null == a or not (null == b))", orValue.toString());
+        Map<Variable, Boolean> nullClausesAnd = orValue.individualNullClauses();
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
         Assert.assertEquals(false, nullClausesAnd.get(vb));

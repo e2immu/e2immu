@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Only;
-import org.e2immu.annotation.Size;
+import org.e2immu.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +26,9 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-@E2Container(after = "freeze")
+//@E2Container(after = "freeze")
+@E1Container
+@E2Immutable(type = AnnotationType.VERIFY_ABSENT)
 public class SetOnceMap<K, V> extends Freezable {
 
     private final Map<K, V> map = new HashMap<>();
