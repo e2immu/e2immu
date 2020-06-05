@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 public class NumberedStatement implements Comparable<NumberedStatement> {
     public final Statement statement;
+    public final NumberedStatement parent;
     public SetOnce<Optional<NumberedStatement>> next = new SetOnce<>();
     public SetOnce<List<NumberedStatement>> blocks = new SetOnce<>();
     public SetOnce<Boolean> neverContinues = new SetOnce<>(); // returns, or escapes; set at the beginning of a block
@@ -46,10 +47,12 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
 
     public NumberedStatement(@NotNull SideEffectContext sideEffectContext,
                              @NotNull Statement statement,
+                             NumberedStatement parent,
                              @NotNull @NotModified int[] indices) {
         this.indices = Objects.requireNonNull(indices);
         this.statement = Objects.requireNonNull(statement);
         sideEffect = statement.sideEffect(sideEffectContext);
+        this.parent = parent;
     }
 
     public String streamIndices() {
@@ -73,23 +76,9 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
         return 0;
     }
 
-    // works for a select number of properties, simplifies some code in method analyser
-    // GOES INTO TRANSFER PROPERTY OF RETURN VALUE
-    /*
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.RETURN_VALUE_PROPERTIES.contains(variableProperty)) {
-            return returnValue.isSet() ? returnValue.get().getPropertyOutsideContext(variableProperty) : Level.DELAY;
-        }
-        if (variableProperty == VariableProperty.FLUENT) {
-            if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
-            return ((ReturnStatement) statement).fluent();
-        }
-        if (variableProperty == VariableProperty.IDENTITY) {
-            if (!(statement instanceof ReturnStatement)) throw new UnsupportedOperationException();
-            return ReturnStatement.identity(((ReturnStatement) statement).expression);
-        }
-        throw new UnsupportedOperationException("?? not implemented for property " + variableProperty);
+    public boolean inErrorState() {
+        boolean parentInErrorState = parent != null && parent.inErrorState();
+        if (parentInErrorState) return true;
+        return errorValue.isSet() && errorValue.get();
     }
-
-     */
 }

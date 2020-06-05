@@ -107,6 +107,11 @@ public class MethodValue implements Value {
         if (variableProperty == VariableProperty.SIZE) {
             return checkSize(null, methodInfo, parameters);
         }
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            int fluent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
+            if (fluent == Level.TRUE) return Level.best(Level.TRUE,
+                    methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
         return methodInfo.methodAnalysis.get().getProperty(variableProperty);
     }
 

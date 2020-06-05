@@ -800,9 +800,10 @@ class VariableProperties implements EvaluationContext {
                 // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
                 // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
                 Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value);
+                if (equalsNull == BoolValue.FALSE) return Level.TRUE;
                 Value withConditional = combineWithConditional(equalsNull);
-                if (withConditional.equals(equalsNull)) return Level.FALSE; // we know == null
                 if (withConditional == BoolValue.FALSE) return Level.TRUE; // we know != null
+                if (withConditional.equals(equalsNull)) return Level.FALSE; // we know == null
 
             } else if (VariableProperty.SIZE.equals(variableProperty)) {
                 // action: we try to extract a size restriction related to value
@@ -979,7 +980,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void raiseError(String error) {
-        if (currentStatement != null && !currentStatement.errorValue.isSet()) {
+        if (currentStatement != null && !currentStatement.inErrorState()) {
             Message message = Message.newMessage(location(), error);
             getTypeContext().addMessage(message);
             currentStatement.errorValue.set(true);
@@ -988,7 +989,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void raiseError(String error, String extra) {
-        if (currentStatement != null && !currentStatement.errorValue.isSet()) {
+        if (currentStatement != null && !currentStatement.inErrorState()) {
             Message message = Message.newMessage(location(), error, extra);
             getTypeContext().addMessage(message);
             currentStatement.errorValue.set(true);

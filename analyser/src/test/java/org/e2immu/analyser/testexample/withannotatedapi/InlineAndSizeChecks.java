@@ -30,20 +30,30 @@ public class InlineAndSizeChecks {
         return t;
     }
 
+    // TODO near future work
+
     private static int len4(String s) {
-        System.out.println("Computing the length of " + s);
-        int t;
-        if (s == null) t = -1;
-        else t = s.length();
+        int t = -1;
+        if (s != null) t = s.length();
         return t;
     }
 
     private static int len5(String s) {
+        int t;
+        if (s == null) t = -1;
+        else {
+            System.out.println("Computing the length of " + s);
+            t = s.length();
+        }
+        return t;
+    }
+
+    private static int len6(String s) {
         if (s == null) return -1;
         return s.length();
     }
 
-    private static int len6(String s) {
+    private static int len7(String s) {
         if (s == null) return -1;
         int t = s.length();
         System.out.println("Length is " + t);

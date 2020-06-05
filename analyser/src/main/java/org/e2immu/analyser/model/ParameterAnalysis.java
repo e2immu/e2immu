@@ -67,7 +67,8 @@ public class ParameterAnalysis extends Analysis {
                         Level.E2IMMUTABLE)) {
                     return Level.FALSE;
                 }
-                if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                if (owner != null && !owner.isPrivate() &&
+                        owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
                 }
                 break;

@@ -103,7 +103,8 @@ public class LambdaBlock implements Expression {
             if (!numberedStatements.isSet()) {
                 List<NumberedStatement> numberedStatements = new LinkedList<>();
                 Stack<Integer> indices = new Stack<>();
-                recursivelyCreateNumberedStatements(block.statements,
+                recursivelyCreateNumberedStatements(null,
+                        block.statements,
                         indices,
                         numberedStatements,
                         new SideEffectContext(child.getCurrentMethod()));

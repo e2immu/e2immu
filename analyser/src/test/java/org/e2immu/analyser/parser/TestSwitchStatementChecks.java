@@ -38,14 +38,16 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
                     Assert.assertTrue(numberedStatement.errorValue.get());
                 }
                 if ("2.2.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
+                    Assert.assertTrue(numberedStatement.inErrorState());
+                    Assert.assertFalse(numberedStatement.errorValue.isSet());
                 }
             }
             if ("method3".equals(methodInfo.name) && "0.2.0".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.get()); // method evaluates to constant
             }
             if ("method3".equals(methodInfo.name) && "0.2.0.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.get()); // unreachable statement
+                Assert.assertTrue(numberedStatement.inErrorState());
+                Assert.assertFalse(numberedStatement.errorValue.isSet());
             }
         }
     };
@@ -67,7 +69,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SwitchStatementChecks", 6, new DebugConfiguration.Builder()
+        testClass("SwitchStatementChecks", 4, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

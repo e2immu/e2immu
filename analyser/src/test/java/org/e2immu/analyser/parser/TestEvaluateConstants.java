@@ -26,7 +26,8 @@ public class TestEvaluateConstants extends CommonTestRunner {
                     Assert.assertTrue(numberedStatement.errorValue.get()); // if conditional
                 }
                 if ("0.0.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get()); // unreachable statement
+                    Assert.assertTrue(numberedStatement.inErrorState());
+                    Assert.assertFalse(numberedStatement.errorValue.isSet());
                 }
             }
             if ("print2".equals(methodInfo.name)) {
@@ -55,7 +56,7 @@ public class TestEvaluateConstants extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("EvaluateConstants", 4, new DebugConfiguration.Builder()
+        testClass("EvaluateConstants", 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

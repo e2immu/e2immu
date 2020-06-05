@@ -114,7 +114,7 @@ public class MethodAnalyser {
         if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
             List<NumberedStatement> numberedStatements = new LinkedList<>();
             Stack<Integer> indices = new Stack<>();
-            CreateNumberedStatements.recursivelyCreateNumberedStatements(statements, indices, numberedStatements,
+            CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements,
                     new SideEffectContext(methodInfo));
             methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
             changes = true;

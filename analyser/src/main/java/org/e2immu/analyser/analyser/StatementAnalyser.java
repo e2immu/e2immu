@@ -388,7 +388,7 @@ public class StatementAnalyser {
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Value combinedWithConditional = variableProperties.evaluateWithConditional(value);
             if (combinedWithConditional.isConstant()) {
-                if (!statement.errorValue.isSet()) {
+                if (!statement.inErrorState()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
@@ -402,7 +402,7 @@ public class StatementAnalyser {
 
             if (value != null && statement.statement instanceof ForEachStatement) {
                 int size = variableProperties.getProperty(value, VariableProperty.SIZE);
-                if (size == Analysis.SIZE_EMPTY && !statement.errorValue.isSet()) {
+                if (size == Analysis.SIZE_EMPTY && !statement.inErrorState()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
                 }
@@ -459,7 +459,7 @@ public class StatementAnalyser {
                     if (conditions.isEmpty()) {
                         valueForSubStatement = BoolValue.TRUE;
                     } else {
-                        Value[] negated = conditions.stream().map(x -> NegatedValue.negate(x)).toArray(Value[]::new);
+                        Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
                         valueForSubStatement = new AndValue().append(negated);
                     }
                 }
@@ -560,7 +560,7 @@ public class StatementAnalyser {
     }
 
     private void checkUnusedReturnValue(MethodCall methodCall, NumberedStatement statement) {
-        if (statement.errorValue.isSet()) return;
+        if (statement.inErrorState()) return;
         if (methodCall.methodInfo.returnType().isVoid()) return;
         int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
         if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem

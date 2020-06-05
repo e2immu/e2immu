@@ -38,7 +38,7 @@ public class SMapList {
 
     @NotModified
     @Constant(type = AnnotationType.VERIFY_ABSENT)
-    public static <A, B> boolean addAll(Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
+    public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
             List<B> inDest = dest.get(e.getKey());
@@ -91,7 +91,7 @@ public class SMapList {
     @NotModified
     @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
     @Constant(type = AnnotationType.VERIFY_ABSENT)
-    public static <A, B> List<B> list(@NotNull Map<A, List<B>> map, @NotNull A a) {
+    public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }
@@ -103,7 +103,7 @@ public class SMapList {
     }
 
     @NotNull
-    public static <A, B> Map<A, List<B>> immutable(Map<A, List<B>> map) {
+    public static <A, B> Map<A, List<B>> immutable(@NotModified Map<A, List<B>> map) {
         Map<A, ImmutableList<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             ImmutableList<B> is = new ImmutableList.Builder<B>().addAll(e.getValue()).build();
@@ -114,7 +114,7 @@ public class SMapList {
 
     @NotNull
     @NotModified
-    public static <A, B> Map<A, List<B>> copy(@NotNull Map<A, List<B>> map) {
+    public static <A, B> Map<A, List<B>> copy(@NotNull @NotModified Map<A, List<B>> map) {
         Map<A, List<B>> tmp = new HashMap<>();
         for (Entry<A, List<B>> e : map.entrySet()) {
             List<B> set = new LinkedList<>(e.getValue());

@@ -189,7 +189,7 @@ public class Assignment implements Expression {
                 return;
             }
         } else if (at instanceof ParameterInfo) {
-            if (!statement.errorValue.isSet()) {
+            if (!statement.inErrorState()) {
                 typeContext.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                 statement.errorValue.set(true);
                 return;

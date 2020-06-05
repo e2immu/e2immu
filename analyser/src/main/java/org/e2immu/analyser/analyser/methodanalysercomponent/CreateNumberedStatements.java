@@ -17,7 +17,8 @@ import java.util.Stack;
 
 public class CreateNumberedStatements {
 
-    public static NumberedStatement recursivelyCreateNumberedStatements(@NotNull List<Statement> statements,
+    public static NumberedStatement recursivelyCreateNumberedStatements(NumberedStatement parent,
+                                                                        @NotNull List<Statement> statements,
                                                                         @NotNull Stack<Integer> indices,
                                                                         @NotNull List<NumberedStatement> numberedStatements,
                                                                         SideEffectContext sideEffectContext) {
@@ -25,7 +26,7 @@ public class CreateNumberedStatements {
         NumberedStatement first = null;
         NumberedStatement previous = null;
         for (Statement statement : statements) {
-            NumberedStatement numberedStatement = new NumberedStatement(sideEffectContext, statement, join(indices, statementIndex));
+            NumberedStatement numberedStatement = new NumberedStatement(sideEffectContext, statement, parent, join(indices, statementIndex));
             numberedStatements.add(numberedStatement);
             if (previous != null) previous.next.set(Optional.of(numberedStatement));
             previous = numberedStatement;
@@ -36,11 +37,11 @@ public class CreateNumberedStatements {
             List<NumberedStatement> blocks = new ArrayList<>();
             CodeOrganization codeOrganization = statement.codeOrganization();
             if (codeOrganization.statements != Block.EMPTY_BLOCK) {
-                blockIndex = createBlock(indices, numberedStatements, sideEffectContext, blockIndex, blocks, codeOrganization.statements);
+                blockIndex = createBlock(numberedStatement, indices, numberedStatements, sideEffectContext, blockIndex, blocks, codeOrganization.statements);
             }
             for (CodeOrganization subStatements : codeOrganization.subStatements) {
                 if (subStatements.statements != Block.EMPTY_BLOCK) {
-                    blockIndex = createBlock(indices, numberedStatements, sideEffectContext, blockIndex, blocks, subStatements.statements);
+                    blockIndex = createBlock(numberedStatement, indices, numberedStatements, sideEffectContext, blockIndex, blocks, subStatements.statements);
                 }
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
@@ -53,7 +54,8 @@ public class CreateNumberedStatements {
         return first;
     }
 
-    private static int createBlock(@NotNull Stack<Integer> indices,
+    private static int createBlock(NumberedStatement parent,
+                                   @NotNull Stack<Integer> indices,
                                    List<NumberedStatement> numberedStatements,
                                    SideEffectContext sideEffectContext,
                                    int blockIndex,
@@ -61,7 +63,7 @@ public class CreateNumberedStatements {
                                    @NotNull HasStatements statements) {
         indices.push(blockIndex);
         NumberedStatement firstOfBlock =
-                recursivelyCreateNumberedStatements(statements.getStatements(), indices, numberedStatements, sideEffectContext);
+                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements, sideEffectContext);
         blocks.add(firstOfBlock);
         indices.pop();
         return blockIndex + 1;

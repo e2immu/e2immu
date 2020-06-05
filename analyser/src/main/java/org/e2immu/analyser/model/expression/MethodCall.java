@@ -217,7 +217,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
         // if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
         if(!methodInfo.typeInfo.hasSize()) return null;
-        
+
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             return null; // ignore
