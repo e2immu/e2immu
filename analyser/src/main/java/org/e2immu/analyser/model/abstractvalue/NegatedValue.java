@@ -40,6 +40,7 @@ public class NegatedValue extends PrimitiveValue {
 
     private NegatedValue(@NotNull Value value) {
         this.value = Objects.requireNonNull(value);
+        if(value instanceof NegatedValue) throw new UnsupportedOperationException();
     }
 
     public Value reEvaluate(Map<Value, Value> translation) {
@@ -61,12 +62,12 @@ public class NegatedValue extends PrimitiveValue {
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue) {
             OrValue or = (OrValue) v;
-            Value[] negated = or.values.stream().map(x -> negate(x)).toArray(Value[]::new);
+            Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
             return new AndValue().append(negated);
         }
         if (v instanceof AndValue) {
             AndValue and = (AndValue) v;
-            List<Value> negated = and.values.stream().map(x -> negate(x)).collect(Collectors.toList());
+            List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
             return new OrValue().append(negated);
         }
         if (v instanceof EqualsValue) {
@@ -105,12 +106,12 @@ public class NegatedValue extends PrimitiveValue {
 
     @Override
     public int order() {
-        return ORDER_NEGATED;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int internalCompareTo(Value v) {
-        return value.compareTo(((NegatedValue) v).value);
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -46,7 +46,7 @@ public class TestConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("((a or b) and (not (a) or not (b)))", conditional.toString());
                 }
                 if ("2".equals(numberedStatement.streamIndices())) {
-                    Assert.assertEquals("(b and not (a))", conditional.toString());
+                    Assert.assertEquals("(not (a) and b)", conditional.toString());
                 }
                 if ("3".equals(numberedStatement.streamIndices())) {
                     Assert.assertEquals(BoolValue.FALSE, conditional);
@@ -75,7 +75,7 @@ public class TestConditionalChecks extends CommonTestRunner {
                     Assert.assertEquals("not (o == this)", conditional.toString());
                 }
                 if ("1".equals(numberedStatement.streamIndices())) {
-                    Assert.assertEquals("(o.getClass() == this.getClass() and not (null == o) and not (o == this))", conditional.toString());
+                    Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", conditional.toString());
                 }
                 ParameterInfo o = methodInfo.methodInspection.get().parameters.get(0);
                 Assert.assertEquals("Numbered statement: " + numberedStatement.streamIndices() + " iteration " + iteration,

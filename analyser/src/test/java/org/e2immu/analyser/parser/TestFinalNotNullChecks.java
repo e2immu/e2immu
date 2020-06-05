@@ -18,11 +18,11 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             (iteration, methodInfo, statementId, variableName, variable, currentValue, properties) -> {
                 if ("toString".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
                     if (iteration >= 1) {
-                        Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(1, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                     }
                 }
                 if ("FinalNotNullChecks".equals(methodInfo.name) && "param".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(1, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                 }
                 if ("FinalNotNullChecks".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
                     if(iteration > 1) {

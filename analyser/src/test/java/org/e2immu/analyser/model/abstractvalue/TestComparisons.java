@@ -52,8 +52,10 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testEqualsNotEquals() {
         Value iEq4 = EqualsValue.equals(i, new IntValue(4));
-        Value iEq3 = NegatedValue.negate(EqualsValue.equals(new IntValue(3), i));
-        Value and = new AndValue().append(iEq3, iEq4);
+        Assert.assertEquals("4 == i", iEq4.toString());
+        Value iNeq3 = NegatedValue.negate(EqualsValue.equals(new IntValue(3), i));
+        Assert.assertEquals("not (3 == i)", iNeq3.toString());
+        Value and = new AndValue().append(iNeq3, iEq4);
         Assert.assertEquals(iEq4, and);
     }
 

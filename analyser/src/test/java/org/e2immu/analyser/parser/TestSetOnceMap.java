@@ -20,17 +20,30 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.model.MethodInfo;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 
 public class TestSetOnceMap extends CommonTestRunner {
 
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("get".equals(methodInfo.name)) {
+                Assert.assertEquals("", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
+            }
+
+        }
+    };
+
 
     @Test
     public void test() throws IOException {
         testUtilClass("SetOnceMap", 0, 0, new DebugConfiguration.Builder()
-
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

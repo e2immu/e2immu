@@ -31,7 +31,7 @@ public class IdentityChecks {
     @Identity
     @NotModified
     @NotNull
-    public static String idem(String s) {
+    public static String idem(@NotNull String s) {
         LOGGER.debug(s);
         return s;
     }

@@ -66,7 +66,6 @@ public interface Value extends Comparable<Value> {
     int ORDER_INSTANCE_OF = 81;
     int ORDER_EQUALS = 82;
     int ORDER_GEQ0 = 83;
-    int ORDER_NEGATED = 84;
     int ORDER_OR = 85;
     int ORDER_AND = 86;
 
@@ -74,17 +73,27 @@ public interface Value extends Comparable<Value> {
 
     @Override
     default int compareTo(Value v) {
-        // negations are always AFTER their argument
-        if (v instanceof NegatedValue && this.equals(((NegatedValue) v).value)) {
-            return -1;
+        boolean thisNegated = this instanceof NegatedValue;
+        boolean vNegated = v instanceof NegatedValue;
+        Class<?> thisClass = thisNegated ? ((NegatedValue) this).value.getClass() : this.getClass();
+        Class<?> vClass = vNegated ? ((NegatedValue) v).value.getClass() : v.getClass();
+
+        // the negated value sits as close as possible to the original one
+        if (thisClass == vClass) {
+            if (thisNegated && !vNegated) {
+                int c = ((NegatedValue) this).value.internalCompareTo(v);
+                return c == 0 ? 1 : c;
+            }
+            if (!thisNegated && vNegated) {
+                int c = internalCompareTo(((NegatedValue) v).value);
+                return c == 0 ? -1 : c;
+            }
+            return thisNegated ? ((NegatedValue) this).value.internalCompareTo(((NegatedValue) v).value) :
+                    internalCompareTo(v);
         }
-        if (this instanceof NegatedValue && v.equals(((NegatedValue) this).value)) {
-            return 1;
-        }
-        if (getClass() == v.getClass()) {
-            return internalCompareTo(v);
-        }
-        return order() - v.order();
+        int thisOrder = thisNegated ? ((NegatedValue) this).value.order() : this.order();
+        int vOrder = vNegated ? ((NegatedValue) v).value.order() : v.order();
+        return thisOrder - vOrder;
     }
 
     default int internalCompareTo(Value v) {
@@ -165,5 +174,7 @@ public interface Value extends Comparable<Value> {
         return inMap == null ? this : inMap;
     }
 
-    default boolean isExpressionOfParameters() { return false; }
+    default boolean isExpressionOfParameters() {
+        return false;
+    }
 }

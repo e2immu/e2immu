@@ -20,17 +20,6 @@ public class TestIdentityChecks extends CommonTestRunner {
         super(true);
     }
 
-    /*
-
-    @Identity
-    @NotModified
-    public static String idem(String s) {
-        LOGGER.debug(s);
-        return s;
-    }
-
-     */
-
     StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId, variableName,
                                                                  variable, currentValue, properties) -> {
         if (methodInfo.name.equals("idem") && "s".equals(variableName)) {
@@ -39,12 +28,12 @@ public class TestIdentityChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(1, (int) currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             } else if ("1".equals(statementId)) {
                 Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(3, (int) properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(1, (int) currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             } else Assert.fail();
         }
     };

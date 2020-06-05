@@ -34,9 +34,10 @@ public class ContainerChecks {
     @Container(type = VERIFY_ABSENT)
     static class Container1 {
 
+        @Nullable
         private Set<String> strings1;
 
-        public void setStrings1(@Modified Set<String> strings1param, String toAdd) {
+        public void setStrings1(@Modified @NotNull Set<String> strings1param, String toAdd) {
             this.strings1 = strings1param;
             this.strings1.add(toAdd);
         }

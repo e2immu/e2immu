@@ -37,7 +37,7 @@ public class TestFirstThen extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("equals".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("(o.getClass() == this.getClass() and not (null == o) and not (o == this))", conditional.toString());
+                Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", conditional.toString());
             }
         }
     };

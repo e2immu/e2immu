@@ -95,7 +95,7 @@ public class AndValue implements Value {
             int pos = 0;
             for (Value value : concat) {
 
-                Action action = analyse(concat, pos, newConcat, prev, value);
+                Action action = analyse(pos, newConcat, prev, value);
                 switch (action) {
                     case FALSE:
                         return BoolValue.FALSE;
@@ -133,7 +133,7 @@ public class AndValue implements Value {
         return res;
     }
 
-    private Action analyse(ArrayList<Value> concat, int pos, ArrayList<Value> newConcat, Value prev, Value value) {
+    private Action analyse(int pos, ArrayList<Value> newConcat, Value prev, Value value) {
         // A && A
         if (value.equals(prev)) return Action.SKIP;
 
@@ -225,6 +225,18 @@ public class AndValue implements Value {
         }
 
         // combinations with equality
+
+        if (prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue) {
+            if (value instanceof EqualsValue) {
+                EqualsValue ev1 = (EqualsValue) ((NegatedValue) prev).value;
+                EqualsValue ev2 = (EqualsValue) value;
+                // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
+                if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                    newConcat.remove(newConcat.size()-1); // full replace
+                    return Action.ADD;
+                }
+            }
+        }
 
         if (prev instanceof EqualsValue) {
             if (value instanceof EqualsValue) {
