@@ -73,6 +73,10 @@ public class ConditionalManager {
     }
 
     public int notNull(Value value) {
+
+        // TODO to which extent is this correct ?
+
+
         // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
         // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
         Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value);
@@ -82,6 +86,12 @@ public class ConditionalManager {
         if (withConditional.equals(equalsNull)) return Level.FALSE; // we know == null
         return Level.DELAY;
     }
+
+    // return the size restriction on value represented by the current condition
+    public int sizeRestriction(Value value) {
+        throw new UnsupportedOperationException();
+    }
+
 
     public boolean isNotNull(Variable variable) {
         VariableValue vv = new VariableValue(null, variable, variable.name());

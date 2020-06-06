@@ -398,6 +398,13 @@ public abstract class Analysis {
         return value >= required;
     }
 
+    public static int joinSizeRestrictions(int v1, int v2) {
+        if(v1 == v2) return v1;
+        int min = Math.min(v1, v2);
+        if(haveEquals(min)) return min - 1;
+        return Math.min(v1, v2);
+    }
+
     public static boolean haveEquals(int size) {
         if (size == Integer.MAX_VALUE) return false;
         return size % 2 == 1;

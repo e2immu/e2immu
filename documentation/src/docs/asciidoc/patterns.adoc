@@ -1,0 +1,236 @@
+:source-language: java
+
+=== Patterns
+
+==== Why?
+
+Standarisation of code.
+Inlining when possible.
+
+==== Alternative value
+
+The following abstract construct
+
+.Example 1
+[source]
+----
+Object a = expensiveComputation(b);
+if(someCondition(a)) {
+  a = alternativeValue(c);
+}
+----
+
+is very often seen, for example in
+
+.Example 2
+[source]
+----
+Value v = map.get(key);
+if(v == null) {
+  v = defaultValue;
+}
+----
+
+Assuming the `expensiveComputation` is not modifying, this piece of code translates into the functional
+
+.Example 3
+[source]
+----
+Value v = condition(expensiveComputation(b)) ? expensiveComputation(b) : alternative(c);
+----
+
+which obviously is not workable at execution time because of the repetition of the expensive computation.
+Note that we have switched around the order, and take the positive side of the condition for the existing value.
+Much better is to involve an additional temporary variable:
+
+.Example 4
+[source]
+----
+Value inMap = map.get(key);
+Value v = condition(inMap) ? inMap : alternative(c);
+----
+
+If we recognize this pattern, and internally assign a special type of value to it, we can eliminate the temporary variable.
+This increases the amount of code that can be used for inlining.
+
+The value will be represented by a Python-like ternary operator
+
+.Syntax of AlternativeAssignmentValue
+[source]
+----
+x if someCondition(x) else y
+----
+
+The main differentiator is that `x` will be evaluated once.
+
+==== Joining return statements
+
+Consider the following pieces of code
+
+.Example 1
+[source]
+----
+if(s == null) return -1;
+return s.length;
+----
+
+.Example 2
+[source]
+----
+if(s == null) {
+    return -1;
+} else {
+    return s.length;
+}
+----
+
+.Example 3
+[source]
+----
+if(s == null) {
+    LOGGER.debug("The string s was null!");
+    return -1;
+} else {
+    return s.length;
+}
+----
+
+.Example 4
+[source]
+----
+return s == null ? -1: s.length;
+----
+
+For the purpose of the _single return value_ of the method, they are all functionally identical.
+There are good reasons to internally transform the code towards Example 4. The single criterion is that `s` is not modified between the condition and the return statement.
+When the code between condition and return statements is not modifying at all, it can be replaced by an inline operation.
+In Example 3 we see a `debug` statement which makes no modifications; it can be discarded functionally.
+However, the code in the following example cannot be replaced by the inline conditional, because `addToSet(s)` is modifying:
+
+.Example 5
+[source]
+----
+if(s == null) {
+    return -1;
+} else {
+    addToSet(s);
+    return s.length;
+}
+----
+
+The pattern can be extended to multiple exits:
+
+.Example6
+[source]
+----
+if(condition1) {
+  if(condition2) {
+    return a;
+  }
+  return b;
+}
+return c;
+----
+
+which will end up being written as
+
+.Example 7
+[source]
+----
+return condition1 ? (condition2 ? a : b) : c;
+----
+
+However, quite often there are gaps in conditions with respect to return statements, as in
+
+.Example 8
+[source]
+----
+if(condition1) {
+  if(condition2) {
+    addToSet(a);
+  } else {
+    return b;
+  }
+}
+return c;
+----
+
+which makes it a lot less clear-cut to extract a single return value.
+The code is functionally identical to
+
+.Example 9
+[source]
+----
+if(condition1 && condition2) addToSet(a);
+return condition1 && !condition2 ? b : c;
+----
+
+==== Trivial joining of return statements
+
+.Example 1
+[source]
+----
+if(conditionA) return x;
+if(conditionB) return x;
+----
+
+will be combined into
+
+.Result of joining in Example 1
+[source]
+----
+if(conditionA || conditionB) return x;
+----
+
+==== Reuse of local computation
+
+Closely related to the two patterns above is a reused computation:
+
+.Example 1
+[source]
+----
+Value v = someComputation(p);
+someCondition ? otherComputation(v) : thirdComputation(v)
+----
+
+Clearly if `someComputation` has no side effects, it can be substituted into the second expression.
+(This second expression could be anything, as long as `v` appears multiple times, and it is not modifying either.) Again we are interested in removing the local variable so that we can get rid of the variable assignment and can inline the second expression.
+
+What is the point?
+Before you know it, we're simply re-writing the method, and we could as well do that.
+The primary reason is standardization of code.
+
+* We're potentially eliminating or anonymizing a variable
+* We put the computation next to the place where it is used
+
+.Example 2
+[source]
+----
+Set<String> set = map.get(value);
+if(set == null) return 0;
+doSomeOtherThingNotRelatedToSet();
+LOGGER.log("Set is {}", set);
+return set.isEmpty() ? 0: countOccurrences(set, "b");
+----
+
+is functionally equivalent to
+
+.Result of transforming Example 2
+[source]
+----
+doSomeOtherThingNotRelatedToSet();
+return map.get(value) == null || map.get(value).isEmpty() ? 0 : countOccurrences(map.get(value), "b");
+----
+
+or
+
+.Result of transforming Example 2, special syntax
+[source]
+----
+doSomeOtherThingNotRelatedToSet();
+return {
+  Set<String> set = map.get(value);
+  set == null || set.isEmpty() ? 0 : countOccurrences(set, "b");
+}
+----
+

@@ -37,4 +37,26 @@ public class TestSize {
         Assert.assertEquals(2, Analysis.decodeSizeEquals(5));
         Assert.assertTrue(Analysis.haveEquals(5));
     }
+
+    @Test
+    public void testJoin1() {
+        int min1 = Analysis.encodeSizeMin(1);
+        Assert.assertEquals(2, min1);
+        int eq1 = Analysis.encodeSizeEquals(1);
+        Assert.assertEquals(3, eq1);
+        int eq2 = Analysis.encodeSizeEquals(2);
+        Assert.assertEquals(5, eq2);
+        Assert.assertEquals(2, Analysis.joinSizeRestrictions(3, 5));
+        Assert.assertEquals(2, Analysis.joinSizeRestrictions(5, 3));
+    }
+
+    @Test
+    public void testJoin2() {
+        int min1 = Analysis.encodeSizeMin(1);
+        Assert.assertEquals(2, min1);
+        int eq2 = Analysis.encodeSizeEquals(2);
+        Assert.assertEquals(5, eq2);
+        Assert.assertEquals(2, Analysis.joinSizeRestrictions(2, 5));
+        Assert.assertEquals(2, Analysis.joinSizeRestrictions(5, 2));
+    }
 }
