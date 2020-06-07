@@ -1,0 +1,51 @@
+=== Code blocks E2Immu
+
+We’re at the beginning and there is a lot of work.
+
+. Analyser.
+Focus on:
+.. Correctness + completeness, able to run own code -- *primary concern*
+.. Extension of standard analyser features (`@Size` is good example).
+Showing that we're on par with SonarQube and IntelliJ. -- *not all needed but good to improve code*
+.. Analysis of type usage and data paths -- *not yet started*
+.. Eventual immutability. Needs the previous point  -- *not yet started*
+... support for Spring
+... support for Vertx.io (`@NotNull1`, `@NotNull2`)
+.. Annotation of libraries
+... Via IntelliJ -- *to investigate*
+... Via Annotated API files -- *started*
+... By inspecting them via the analyser -- *need better analyser first*
+... Translation of JetBrains annotations -- *need a lot more*
+.. build library of equivalent constructs -- *critical for many objectives below*
+.. Colouring of code + educational aspect
+.. Rewriting of code + flexibility aspect
+.. Prediction of code constructs
+.. Duplication checking
+.. Duplicate fragment detection with heuristic methods
+.. Work towards valuable code analyser
+.. Work towards code metrics -- *probably not interested in this*
+.. Code translation to idiomatic Kotlin, Scala, …
+.. Large scale code modernising, e.g., move Java 4 code to Java 14
+. Editor plugins
+.. IntelliJ  -- *started*
+.. Eclipse
+.. Language server protocol, Visual Studio Code
+.. Eclipse Che (RedHat OpenShift). Pretty good as a web editor on OpenShift. Can take VS plugins (like sonarlint).
+.. AWS Cloud9 IDE
+. Editor support server
+.. Tomcat -- *vertx.io, started*
+.. Lambda + AWS DynamoDB
+. Project management
+.. file
+.. Vaadin app, deploy in AWS Elastic Beanstalk.
+Very useful for eventual immutability.
+. CI/CD
+.. Gradle plugin for command line analyser
+.. Gradle plugin for Lambda analyser
+.. Lambda for partial code analysis
+.. many other CI/CD systems
+. Extensive test suite
+. Manual, explanation *started*
+. Book, motivational text *started*
+. Website *Hugo*
+

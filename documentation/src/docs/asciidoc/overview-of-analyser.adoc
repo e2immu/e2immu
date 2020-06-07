@@ -544,3 +544,63 @@ Dynamic type properties normally associated with assignments, like `IMMUTABLE` a
 They should always be read from the value.
 
 The properties `FLUENT` and `IDENTITY` are associated with a method, and cannot appear in the context of a variable.
+
+==== Escape clauses
+
+Consider
+
+[source]
+----
+@NotNull
+@Identity
+public static <T> T requireNotNull(@NotNull T t) {
+  if(t == null) throw new NullPointerException();
+  return t;
+}
+----
+
+We want to be able to inline this method.
+The fact that the method is an identity makes this very easy.
+Somehow we need to attach the `@NotNull` to this inlined value.
+
+We will use a `PropertyWrapper` which wraps the value but pre-empts the property, in this particular case, `NOT_NULL`.
+
+==== Size restrictions
+
+The value system will try to reduce size restrictions as 'greater or equal to _x_', or 'equal to _x_'.
+This means that:
+
+[options=header]
+|===
+| original | is transformed into
+| `set.isEmpty()` | `set.size() == 0`
+| `!set.isEmpty()` | `set.size() >= 1`
+| `!(set.size() == 0)` | `set.size() >= 1`
+| `set.size() < 1` | `set.size() == 0`
+|===
+
+==== Wrappers
+
+We have three types of wrappers.
+
+. `NegatedValue`, which works on non-constant numeric or boolean values, always `NOT_NULL`.
+. `ConstrainedNumericValue`, which can wrap non-constant numeric values, always `NOT_NULL`.
+. `PropertyWrapper`, which can add the `NOT_NULL` or `SIZE` property.
+
+The `NegatedValue` wrapper can wrap the `ConstrainedNumericValue` wrapper; it must always be on the outside, so that
+
+[source]
+----
+set.size(),?>=0 + not (set.size(),?>=0)
+----
+
+can be resolved to 0.
+
+A `PropertyWrapper` wrapping `ConstrainedNumericValue` would only be relevant with `SIZE` but this can resolve itself using a new `ConstrainedNumericValue`:
+if `set.size(),?>=0` is wrapped with a `@Size(min = 3)` property on `set`, we can return `set.size(),?>=3`.
+Note that this only works with a minimum restriction, not an equals one, because otherwise `set.size()` would have been reduced to the value of that equals restriction.
+
+A `PropertyWrapper` wrapping a `NegatedValue` for `SIZE` without a `ConstrainedNumericValue` is not possible.
+
+Summarizing, the only wrapper combination possible is `NegatedValue(ConstrainedNumericValue(value))`.
+

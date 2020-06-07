@@ -2,10 +2,27 @@
 
 === Patterns
 
-==== Why?
+One of the ultimate goals of having a code analyser is to be able to improve the code.
+Because multiple people contribute to the same code base over a large span of time, different coding habits result in functionally equivalent, but visually different code.
+These visual differences may make it more difficult to spot errors: if a coder usually writes out loops instead of using streams, they find it more difficult (it will take fractionally more time) to grasp the meaning of a construct.
+The exact opposite will happen a lot as well: younger coders who grew up with Java 8 will find older pre-Java 5 code unpleasant to look at.
 
-Standarisation of code.
-Inlining when possible.
+Here are some more of these taste differences:
+
+* verbose versus compact code
+* use of iterators or `while` constructs where `for`-loops will work
+* unnecessary `else` statements when there is a `return` statement in the `if` part
+* unnecessary re-assignment to variables
+
+If the code analyser is able to make a compact internal representation, it can
+
+* _write out the same code in many equivalent ways_.
+* Conversely, it can _spot functionally identical code_ which looks very different in two or more places.
+* The internal representation is also _less language dependent_, which facilitates language converters.
+* it can evaluate the internal representation in case of constants, which catches a great many trivial bugs in the code, which in turn speeds up development
+
+For internal purposes, it is important to transform non-modifying code into functional statements (what we will call here _inlining_).
+The `@E2Immutable` and `@NotModified` annotations are crucial to increase the chances of being able to inline code.
 
 ==== Alternative value
 
@@ -234,3 +251,27 @@ return {
 }
 ----
 
+The obvious generalisation here is the _independent_ computation of multiple values to be used:
+
+.Independent computations
+[source]
+----
+{
+  Value v1 = someComputation(...)
+  Value v2 = someOtherComputationIndependentOfV1(...)
+  expressionWithV1AndV2MultipleTimesUsed()
+}
+----
+
+Standardization is again the greatest motivator: the analyser will determine an order of computation.
+It should be able to detect this independence, and thanks to the `@NotModified` annotations it knows when methods are modifying or not.
+
+==== Code fragment streams
+
+Thinking in terms of a code fragment stream, we obtain something like:
+
+----
+{f1.get(p0);v0==null||v0.size()==0?0:countOccurrences(v0,"b")}
+----
+
+The `countOccurrences` method could be expanded as well if it has no side effects.

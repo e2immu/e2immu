@@ -33,10 +33,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class NegatedValue extends PrimitiveValue {
+public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     public static NegatedValue NOT_NULL = new NegatedValue(NullValue.NULL_VALUE);
 
     public final Value value;
+
+    public Value getValue() {
+        return value;
+    }
+
+    @Override
+    public int wrapperOrder() {
+        return WRAPPER_ORDER_NEGATED;
+    }
 
     private NegatedValue(@NotNull Value value) {
         this.value = Objects.requireNonNull(value);

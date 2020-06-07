@@ -4,14 +4,13 @@ import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
 
-public class ConstrainedNumericValue extends PrimitiveValue {
+public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrapper {
     public static final double MIN = -Double.MAX_VALUE;
     public static final double MAX = Double.MAX_VALUE;
 
@@ -20,11 +19,28 @@ public class ConstrainedNumericValue extends PrimitiveValue {
     public final Value value;
     public final boolean integer;
 
+    @Override
+    public Value getValue() {
+        return value;
+    }
+
+    @Override
+    public int wrapperOrder() {
+        return WRAPPER_ORDER_CONSTRAINED_NUMERIC_VALUE;
+    }
+
     public static ConstrainedNumericValue equalTo(Value value, double upperAndLower) {
         return new ConstrainedNumericValue(value, upperAndLower, upperAndLower);
     }
 
     public static ConstrainedNumericValue lowerBound(Value value, double lowerBound) {
+
+        // this one reduces a PropertyWrapper with @Size(min = x) wrapped around a CNV
+        if (value instanceof ConstrainedNumericValue) {
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+            if (cnv.lowerBound >= lowerBound) return cnv; // nothing to do!
+            return new ConstrainedNumericValue(cnv.value, lowerBound, cnv.upperBound);
+        }
         return new ConstrainedNumericValue(value, lowerBound, MAX);
     }
 

@@ -20,6 +20,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
+import org.e2immu.analyser.model.abstractvalue.ValueComparator;
+import org.e2immu.analyser.model.abstractvalue.ValueWrapper;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.annotation.NotModified;
 
@@ -74,27 +77,7 @@ public interface Value extends Comparable<Value> {
 
     @Override
     default int compareTo(Value v) {
-        boolean thisNegated = this instanceof NegatedValue;
-        boolean vNegated = v instanceof NegatedValue;
-        Class<?> thisClass = thisNegated ? ((NegatedValue) this).value.getClass() : this.getClass();
-        Class<?> vClass = vNegated ? ((NegatedValue) v).value.getClass() : v.getClass();
-
-        // the negated value sits as close as possible to the original one
-        if (thisClass == vClass) {
-            if (thisNegated && !vNegated) {
-                int c = ((NegatedValue) this).value.internalCompareTo(v);
-                return c == 0 ? 1 : c;
-            }
-            if (!thisNegated && vNegated) {
-                int c = internalCompareTo(((NegatedValue) v).value);
-                return c == 0 ? -1 : c;
-            }
-            return thisNegated ? ((NegatedValue) this).value.internalCompareTo(((NegatedValue) v).value) :
-                    internalCompareTo(v);
-        }
-        int thisOrder = thisNegated ? ((NegatedValue) this).value.order() : this.order();
-        int vOrder = vNegated ? ((NegatedValue) v).value.order() : v.order();
-        return thisOrder - vOrder;
+        return ValueComparator.SINGLETON.compare(this, v);
     }
 
     default int internalCompareTo(Value v) {

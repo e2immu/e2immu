@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.parser.Message;
@@ -198,10 +199,23 @@ public class MethodAnalyser {
             value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
         }
         boolean isConstant = value.isConstant();
-        methodAnalysis.singleReturnValue.set(value);
-        AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
-        methodAnalysis.annotations.put(constantAnnotation, isConstant);
-        methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.TRUE);
+
+        Map<VariableProperty, Integer> map = new HashMap<>();
+        for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
+            int v = methodAnalysis.getProperty(property);
+            if (v != Level.DELAY) map.put(property, v);
+        }
+        Value potentiallyWrapped = PropertyWrapper.propertyWrapper(value, map);
+
+        methodAnalysis.singleReturnValue.set(potentiallyWrapped);
+        if (isConstant) {
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+            methodAnalysis.annotations.put(constantAnnotation, true);
+        } else {
+            methodAnalysis.annotations.put(typeContext.constant.get(), false);
+        }
+        methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
+
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
     }
