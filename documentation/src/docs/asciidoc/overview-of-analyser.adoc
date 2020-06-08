@@ -503,8 +503,9 @@ We identify two types:
 
 `returnStatementSummaries`:: each return statement in a method will hold such a transfer value.
 The method analyser summarizes the following properties in the transfer value property-value map to `methodAnalysis`:
-`IMMUTABLE`, `CONTAINER`, `NOT_NULL`, `SIZE`, `IDENTITY`, `FLUENT`.
-Only when the transfer value's `value` object is constant, will the method analyser copy it into the single return value of the method.
+`IMMUTABLE`, `CONTAINER`, `NOT_NULL`, `SIZE`, `SIZE_COPY`, `IDENTITY`, `FLUENT`.
+When the transfer value's `value` object is constant, will the method analyser copy it into the single return value of the method.
+When the method is static and there is only one return statement, and it is possible to in-line it, this will be done.
 The alternative is a `MethodValue` object.
 
 `fieldSummaries`:: represents a field referred to in a method.
