@@ -236,7 +236,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-        if (requiredSize <= Level.FALSE) return null;
+        if (requiredSize <= Analysis.NOT_A_SIZE) return null;
         // we have an @Size annotation on the method that we're calling
         int sizeOfObject = evaluationContext != null ? evaluationContext.getProperty(objectValue, VariableProperty.SIZE) :
                 objectValue.getPropertyOutsideContext(VariableProperty.SIZE);
@@ -244,7 +244,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
-            if (sizeOfObject <= Level.FALSE) {
+            if (sizeOfObject <= Analysis.IS_A_SIZE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
                 return sizeMethodValue(methodInfo, objectValue, requiredSize);
             }

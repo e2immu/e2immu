@@ -26,7 +26,7 @@ import java.util.Set;
 
 public enum VariableProperty {
     // can be read multiple times
-    READ("read", true, Level.TRUE_LEVEL_1, 0,0),
+    READ("read", true, Level.TRUE_LEVEL_1, 0, 0),
 
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
@@ -111,10 +111,9 @@ public enum VariableProperty {
     // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
     // NOT_MODIFIED == TRUE
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE);
-    public final static Set<VariableProperty> FROM_PROPERTY_TO_PARAMETER = Set.of(NOT_NULL, SIZE);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
 
-    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, SIZE, IMMUTABLE, CONTAINER);
+    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);
     public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE, SIZE_COPY);
@@ -125,7 +124,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER); // from the type
 
 
-    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, MODIFIED);
+    public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, MODIFIED);
     public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =

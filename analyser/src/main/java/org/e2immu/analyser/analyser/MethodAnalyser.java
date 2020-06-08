@@ -82,6 +82,8 @@ public class MethodAnalyser {
             check(methodInfo, Dependent.class, typeContext.dependent.get());
             check(methodInfo, Nullable.class, typeContext.nullable.get());
         }
+        check(methodInfo, Modified.class, typeContext.modified.get());
+
         CheckSize.checkSizeForMethods(typeContext, methodInfo);
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);
@@ -149,8 +151,9 @@ public class MethodAnalyser {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
                 StaticModifier.detectMissingStaticModifier(typeContext, methodInfo, methodAnalysis);
-                if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
             }
+            // even though all constructors should be modifying...
+            if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
 
             // size comes after modifications
             if (computeSize(methodInfo, methodAnalysis)) changes = true;

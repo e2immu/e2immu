@@ -99,6 +99,14 @@ public class FieldAnalyser {
         if (analyseNotModified(fieldInfo, fieldAnalysis, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
+        // STEP 6: @Size: we only set @Size on fields if we know the size cannot change
+        // for SIZE restrictions, we should set it..  TODO serious difference!
+        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.FALSE &&
+                analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                        fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
+
         // STEP 6: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
 

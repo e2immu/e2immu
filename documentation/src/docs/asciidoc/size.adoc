@@ -1,0 +1,126 @@
+:source-language: java
+
+=== The @Size annotation
+
+The @Size annotation tries to be simple and smart at the same time.
+It is only one annotation, with 4 arguments, but is pretty powerful.
+
+We will constrain sizes with single value, or with a lower bound.
+We will not constrain sizes to upper bounds.
+
+==== Types with a size
+
+A type has a size when there is at least one non-modifying, `int` or `long` returning method, annotated with `@Size(min=i)`:
+
+[source]
+----
+@Size(min = 0)
+public int size() { ... }
+----
+
+The analyser wraps the resulting value in a `ConstrainedNumericValue`, indicating that the result is always greater or equal to zero.
+
+==== @Size on methods
+
+On methods there are in total four ways of declaring or inferring `@Size` with the `min=x` or `equals=y` parameters:
+
+. on non-modifying methods returning an int or long type.
+This is essentially the propagation mechanism for the `size()` method, and types with size.
+Note that the minimum does not need to be 0, it can be higher (but not negative!).
+
+. on non-modifying methods returning a boolean type.
+The archetypal example is the `isEmpty()` method:
++
+[source]
+----
+@Size(equals = 0)
+public boolean isEmpty() { ... }
+----
+
+. on non-modifying methods returning a type with size, in which case the annotation indicates the size of the object returned
++
+[source]
+----
+@Size(min = 1)
+public Set<String> getSet() { return set; }
+----
+
+. on modifying methods, to indicate the effect of the modification:
++
+[source]
+----
+@Size(min = 1)
+public V put(K k, V v) { ... }
+----
++
+This annotation shows that after a `put` method, the size of the type cannot be 0.
+
+Combining the previous examples with
+
+[source]
+----
+@Size(equals = 0)
+public HashMap() { ... }
+----
+
+the analyser can spot that the following condition in the `if` statement always evaluates to `false`:
+
+[source]
+----
+Map<K, V> map = new HashMap<>();    // size is 0
+map.put(k, v);                      // size is minimally 1
+if(map.isEmpty()) { ... }           // equals = 0 fails
+----
+
+==== @Size requirements on parameters
+
+Consider the following example:
+
+.Example requireNotEmpty()
+[source]
+----
+@Size(min = 1)
+public <T> Collection<T> requireNotEmpty(@Size(min = 1) Collection<T> ts) {
+  if(ts.isEmpty()) throw new UnsupportedOperationException();
+  return ts;
+}
+----
+
+Similar to `@NotNull`, `@Size` becomes a minimum requirement here.
+The analyser can infer both annotations.
+
+
+The `@Size` annotation on the parameter is a size constraint, rather than a size tracker.
+Internally, we use `SIZE_RESTRICTION` rather than `SIZE` for this purpose.
+
+==== @Size propagation
+
+We expand the scope of the `@Size` annotation a little by indicating that the size of the type can be copied from the size of a parameter:
+
+[source]
+----
+public HashMap(@Size(copy = true) Map<K, V> source) { ... }
+----
+
+Here the annotation indicates that the size of the type will be the size of the parameter.
+The following condition in the `if` statement will evaluate to `true`:
+
+[source]
+----
+Map<String, Integer> map = Map.of("a", 1, "aa", 2); // fixed size of 2
+Map<String, Integer> hashMap = new HashMap<>(map);  // size copied, 2
+if(hashMap.size() == 2) { ... }
+----
+
+This type of propagation obviously only works for modifying methods, as it has to set the size of the type.
+
+For non-modifying methods, if the result of the return type can be derived from the type, `@Size(copy)` comes in handy as well:
+
+[source]
+
+----
+@Size(copy = true)
+public Stream<T> stream() { return set.stream(); }
+----
+
+Internally, we use the `SIZE_COPY` property to track the size of a value.
