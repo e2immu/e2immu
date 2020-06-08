@@ -26,7 +26,6 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Message;
@@ -78,12 +77,12 @@ public class MethodAnalyser {
                 check(methodInfo, E2Container.class, typeContext.e2Container.get());
                 CheckConstant.checkConstantForMethods(typeContext, methodInfo);
             }
-            CheckSize.checkSizeForMethods(typeContext, methodInfo);
 
             // opposites
             check(methodInfo, Dependent.class, typeContext.dependent.get());
             check(methodInfo, Nullable.class, typeContext.nullable.get());
         }
+        CheckSize.checkSizeForMethods(typeContext, methodInfo);
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);
     }
@@ -152,6 +151,11 @@ public class MethodAnalyser {
                 StaticModifier.detectMissingStaticModifier(typeContext, methodInfo, methodAnalysis);
                 if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
             }
+
+            // size comes after modifications
+            if (computeSize(methodInfo, methodAnalysis)) changes = true;
+
+
             if (parameterAnalyser.analyse(methodProperties)) changes = true;
             return changes;
         } catch (RuntimeException rte) {
@@ -227,20 +231,18 @@ public class MethodAnalyser {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY) return false;
 
-        int value = propagateSizeAnnotations(variableProperty, methodInfo, methodAnalysis);
-        if (value == Level.DELAY) {
-            boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                    entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
-            if (delays) {
-                log(DELAYED, "Return statement value not yet set");
-                return false;
-            }
-            IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                    .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
-            value = variableProperty == VariableProperty.SIZE ?
-                    safeMinimum(typeContext, new Location(methodInfo), stream) :
-                    stream.min().orElse(Level.DELAY);
+        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
+        if (delays) {
+            log(DELAYED, "Return statement value not yet set");
+            return false;
         }
+        IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
+        int value = variableProperty == VariableProperty.SIZE ?
+                safeMinimum(typeContext, new Location(methodInfo), stream) :
+                stream.min().orElse(Level.DELAY);
+
         if (value == Level.DELAY) {
             log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
             return false;
@@ -251,8 +253,90 @@ public class MethodAnalyser {
         return true;
     }
 
-    private int propagateSizeAnnotations(VariableProperty variableProperty, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (variableProperty != VariableProperty.SIZE || methodAnalysis.returnStatementSummaries.size() != 1) {
+    private boolean computeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        int maxValue = Math.max(methodAnalysis.getProperty(VariableProperty.SIZE), methodAnalysis.getProperty(VariableProperty.SIZE_COPY));
+        if (maxValue != Level.DELAY) return false;
+
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.DELAY) {
+            log(DELAYED, "Delaying @Size on {} because waiting for @Modified", methodInfo.distinguishingName());
+            return false;
+        }
+        if (modified == Level.FALSE) {
+            if (methodInfo.isConstructor) return false; // non-modifying constructor would be weird anyway
+            if (methodInfo.returnType().hasSize()) {
+                // non-modifying method that returns a type with @Size (like Collection, Map, ...)
+
+                // first try @Size(copy ...)
+                if (sizeCopyNonModifying(methodInfo, methodAnalysis)) return true;
+
+                // then try @Size(min, equals)
+                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                        entry.getValue().properties.getOtherwise(VariableProperty.SIZE, Level.DELAY) == Level.DELAY);
+                if (delays) {
+                    log(DELAYED, "Return statement value not yet set for @Size on {}", methodInfo.distinguishingName());
+                    return false;
+                }
+                IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                        .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimum(typeContext, new Location(methodInfo), stream));
+            }
+
+            // non-modifying method that defines @Size (size(), isEmpty())
+            return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, propagateSizeAnnotations(methodInfo, methodAnalysis));
+        }
+
+        // modifying method
+        // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
+        // the size copy will need to be written on the PARAMETER from which the copying has taken place
+        if (methodInfo.typeInfo.hasSize()) {
+            if (sizeCopyModifying(methodInfo, methodAnalysis)) return true;
+            return sizeModifying(methodInfo, methodAnalysis);
+
+        }
+        return false;
+    }
+
+    // return type has size, and method is not modifying
+
+    private boolean sizeCopyNonModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY) == Level.DELAY);
+        if (delays) {
+            log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
+            return false;
+        }
+        IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY));
+        int min = stream.min().orElse(Level.DELAY);
+        return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min);
+    }
+
+    // instead of writing the @Size(copy=) annotation to the method, we write it to the parameter that we are copying it from
+    // NOTE: this one also works for constructors!
+    private boolean sizeCopyModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        return false; // TODO NYI
+    }
+
+    // there is a modification that alters the @Size of this type (e.g. put() will cause a @Size(min = 1))
+    private boolean sizeModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        return false; // TODO NYI
+    }
+
+    private boolean writeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperty variableProperty, int value) {
+        if (value == Level.DELAY) {
+            log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
+            return false;
+        }
+        int currentValue = methodAnalysis.getProperty(variableProperty);
+        if (value <= currentValue) return false; // not improving.
+        log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
+        methodAnalysis.setProperty(variableProperty, value);
+        return true;
+    }
+
+    private int propagateSizeAnnotations(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (methodAnalysis.returnStatementSummaries.size() != 1) {
             return Level.DELAY;
         }
         Value value = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
@@ -283,14 +367,14 @@ public class MethodAnalyser {
                     }
                 }
             } else if (value instanceof GreaterThanZeroValue) {
-                GreaterThanZeroValue.XB xb = ((GreaterThanZeroValue)value).extract();
-                if(!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
+                GreaterThanZeroValue.XB xb = ((GreaterThanZeroValue) value).extract();
+                if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
                     ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
                     if (cnv.value instanceof MethodValue) {
                         MethodValue methodValue = (MethodValue) cnv.value;
                         MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                         if (methodValue.methodInfo == theSizeMethod) {
-                            return Analysis.encodeSizeMin((int)xb.b);
+                            return Analysis.encodeSizeMin((int) xb.b);
                         }
                     }
                 }

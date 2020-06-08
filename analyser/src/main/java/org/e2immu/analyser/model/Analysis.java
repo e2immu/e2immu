@@ -229,8 +229,6 @@ public abstract class Analysis {
             }
         }
 
-        // NOTE: the SIZE_COPY property is not generated
-
         // size
         int minSize = minimalValue(VariableProperty.SIZE);
         int size = getProperty(VariableProperty.SIZE);
@@ -241,6 +239,21 @@ public abstract class Analysis {
                 annotations.put(sizeAnnotation(typeContext, "min", decodeSizeMin(size)), true);
             }
         }
+
+        // size copy
+        int minSizeCopy = minimalValue(VariableProperty.SIZE_COPY);
+        int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
+        if (sizeCopy > minSizeCopy) {
+            if (sizeCopy == Level.TRUE) {
+                annotations.put(sizeAnnotationTrue(typeContext, "copyMin"), true);
+            } else if (sizeCopy == Level.TRUE_LEVEL_1) {
+                annotations.put(sizeAnnotationTrue(typeContext, "copy"), true);
+            }
+        }
+    }
+
+    private AnnotationExpression sizeAnnotationTrue(TypeContext typeContext, String parameter) {
+        return typeContext.size.get().copyWith(parameter, true);
     }
 
     private AnnotationExpression sizeAnnotation(TypeContext typeContext, String parameter, int value) {
