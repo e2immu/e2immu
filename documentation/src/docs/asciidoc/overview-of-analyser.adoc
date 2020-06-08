@@ -384,7 +384,7 @@ Levels can be improved (value increased) but not decreased in the same map.
 | NOT_MODIFIED | delay | modifications | not modified | | | |
 | FINAL | delay | not final | final | | | |
 | IMMUTABLE | delay | not E1 | E1Immutable, delay E2 | E1, not E2 | E2Immutable | |
-| SIZE | delay | >= 0 (no info) | = 0 (empty) | >= 1 (not empty) | = 1 | >= 2 | = 2
+| SIZE | delay | not a size | >= 0 (is a size) | = 0 (empty) | >= 1 (not empty) | = 1 | >= 2
 | NOT_NULL | delay | false | @NotNull, delay NN1 | NN, not NN1 | @NotNull1, delay NN2 | NN1, not NN2 | @NotNull2
 |===
 

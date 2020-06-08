@@ -74,7 +74,7 @@ public interface Collection<E> extends Iterable<E> {
     boolean removeAll(@NotNull1 Collection<?> c);
 
     @NotModified
-    @Size
+    @Size(min = 0)
     int size();
 
     @NotNull1
@@ -138,7 +138,7 @@ public interface List<E> extends Collection<E> {
     boolean removeAll(@NotNull1 Collection<?> c);
 
     @NotModified
-    @Size
+    @Size(min = 0)
     int size();
 
     @NotModified
@@ -229,7 +229,7 @@ public interface Map<K, V> {
     Collection<V> values();
 
     @NotModified
-    @Size
+    @Size(min = 0)
     int size();
 
     @NotModified
@@ -299,7 +299,7 @@ public class HashSet<E> implements Set<E> {
     }
 
     @NotModified
-    @Size
+    @Size(min = 0)
     public int size() {
     }
 }
@@ -345,7 +345,7 @@ public class LinkedList<E> implements List<E> {
     }
 
     @NotModified
-    @Size
+    @Size(min = 0)
     public int size() {
     }
 }

@@ -51,17 +51,19 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
                 Assert.assertEquals(Level.TRUE, Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
             }
-            if("isEmptyXX".equals(methodInfo.name)) {
+            if("isEmpty".equals(methodInfo.name)) {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
                 Assert.assertNotNull(tv);
                 Assert.assertEquals("0 == map.size(),?>=0", tv.value.get().toString());
-                Assert.assertEquals(Analysis.encodeSizeEquals(0), tv.properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
+
+                // there is no reason to have a @Size annotation on this expression
+                Assert.assertEquals(Level.DELAY, tv.properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
 
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.isEmpty()", srv.toString());
                 Assert.assertTrue("Have " + srv.getClass(), srv instanceof MethodValue);
                 // @Size(equals = 0)
-                Assert.assertEquals(Analysis.encodeSizeEquals(0), srv.getPropertyOutsideContext(VariableProperty.SIZE));
+                Assert.assertEquals(Analysis.SIZE_EMPTY,methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
             }
         }
     };

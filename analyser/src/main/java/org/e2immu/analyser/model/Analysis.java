@@ -358,12 +358,12 @@ public abstract class Analysis {
         }
     }
 
-    public static final int SIZE_NOT_EMPTY = 2;
-    public static final int SIZE_EMPTY = 1;
+    public static final int SIZE_NOT_EMPTY = 3;
+    public static final int SIZE_EMPTY = 2;
+    public static final int IS_A_SIZE = 1;
+    public static final int NOT_A_SIZE = 0;
 
     /**
-     * Values: -1 = absent; 0 = min=0,(is a size);  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2
-     *
      * Values: -1 = absent; 0 = NOT A SIZE; 1 = min=0,(is a size);  2 = equals 0 (empty) ; 3 = min 1 (not empty); 4 = equals 1; 5 = min 2; 6 = equals 2
      *
      * @param annotationExpression the annotation
@@ -373,7 +373,7 @@ public abstract class Analysis {
         Integer min = annotationExpression.extract("min", -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
-            return Level.compose(Level.FALSE, min);
+            return Level.compose(Level.TRUE, min);
         }
         Boolean copy = annotationExpression.extract("copy", false);
         if (copy) return Level.DELAY;
@@ -384,7 +384,7 @@ public abstract class Analysis {
         // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 
         // @Size is the default
-        return Level.compose(Level.TRUE, equals);
+        return Level.compose(Level.FALSE, equals + 1);
     }
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {
@@ -401,19 +401,19 @@ public abstract class Analysis {
     }
 
     public static int joinSizeRestrictions(int v1, int v2) {
-        if(v1 == v2) return v1;
+        if (v1 == v2) return v1;
         int min = Math.min(v1, v2);
-        if(haveEquals(min)) return min - 1;
+        if (haveEquals(min)) return min - 1;
         return Math.min(v1, v2);
     }
 
     public static boolean haveEquals(int size) {
         if (size == Integer.MAX_VALUE) return false;
-        return size % 2 == 1;
+        return size >= 2 && size % 2 == 0;
     }
 
     public static int decodeSizeEquals(int size) {
-        return size / 2;
+        return size / 2 - 1;
     }
 
     public static int decodeSizeMin(int size) {
@@ -421,11 +421,11 @@ public abstract class Analysis {
     }
 
     public static int encodeSizeEquals(int size) {
-        return 1 + size * 2;
+        return (1 + size) * 2;
     }
 
     public static int encodeSizeMin(int size) {
-        return size * 2;
+        return size * 2 + 1;
     }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {

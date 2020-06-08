@@ -26,7 +26,9 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -268,9 +270,30 @@ public class MethodAnalyser {
             // very specific situation, we see if the return statement is a predicate on a @Size method; if so we propagate that info
             // size restrictions are ALWAYS int == size() or -int + size() >= 0
             if (value instanceof EqualsValue) {
-
+                EqualsValue equalsValue = (EqualsValue) value;
+                if (equalsValue.lhs instanceof IntValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
+                    int i = ((IntValue) equalsValue.lhs).value;
+                    ConstrainedNumericValue cnv = (ConstrainedNumericValue) equalsValue.rhs;
+                    if (cnv.value instanceof MethodValue) {
+                        MethodValue methodValue = (MethodValue) cnv.value;
+                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
+                        if (methodValue.methodInfo == theSizeMethod) {
+                            return Analysis.encodeSizeEquals(i);
+                        }
+                    }
+                }
             } else if (value instanceof GreaterThanZeroValue) {
-
+                GreaterThanZeroValue.XB xb = ((GreaterThanZeroValue)value).extract();
+                if(!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
+                    ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
+                    if (cnv.value instanceof MethodValue) {
+                        MethodValue methodValue = (MethodValue) cnv.value;
+                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
+                        if (methodValue.methodInfo == theSizeMethod) {
+                            return Analysis.encodeSizeMin((int)xb.b);
+                        }
+                    }
+                }
             }
         }
         return Level.DELAY;

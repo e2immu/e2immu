@@ -285,12 +285,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     // instead of returning isEmpty(), we return size() == 0
-    // instead of returning isNotEmpty(), wer return size() >= 1
+    // instead of returning isNotEmpty(), we return size() >= 1
     private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize) {
         MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
         MethodValue sizeMethod = new MethodValue(sizeMethodInfo, objectValue, List.of());
         if (Analysis.haveEquals(requiredSize)) {
-            return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize)), sizeMethod);
+            ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
+            return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize)),
+                    constrainedSizeMethod);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
     }
