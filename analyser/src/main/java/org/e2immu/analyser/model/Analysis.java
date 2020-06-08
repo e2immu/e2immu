@@ -362,15 +362,17 @@ public abstract class Analysis {
     public static final int SIZE_EMPTY = 1;
 
     /**
-     * Values: -1 = absent; 0 = min=0,nothing;  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2
+     * Values: -1 = absent; 0 = min=0,(is a size);  1 = equals 0 (empty) ; 2 = min 1 (not empty); 3 = equals 1; 4 = min 2; 5 = equals 2
+     *
+     * Values: -1 = absent; 0 = NOT A SIZE; 1 = min=0,(is a size);  2 = equals 0 (empty) ; 3 = min 1 (not empty); 4 = equals 1; 5 = min 2; 6 = equals 2
      *
      * @param annotationExpression the annotation
      * @return encoded value
      */
     public static int extractSizeMin(AnnotationExpression annotationExpression) {
         Integer min = annotationExpression.extract("min", -1);
-        if (min > 0) {
-            // min = 0 means nothing; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
+        if (min >= 0) {
+            // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
             return Level.compose(Level.FALSE, min);
         }
         Boolean copy = annotationExpression.extract("copy", false);

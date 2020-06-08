@@ -25,10 +25,7 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatem
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
-import org.e2immu.analyser.model.abstractvalue.TypeValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -67,23 +64,22 @@ public class MethodAnalyser {
         check(methodInfo, Independent.class, typeContext.independent.get());
         check(methodInfo, NotModified.class, typeContext.notModified.get());
 
-        if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-            check(methodInfo, NotNull.class, typeContext.notNull.get());
-            check(methodInfo, Fluent.class, typeContext.fluent.get());
-            check(methodInfo, Identity.class, typeContext.identity.get());
-
-            check(methodInfo, E1Immutable.class, typeContext.e1Immutable.get());
-            check(methodInfo, E1Container.class, typeContext.e1Container.get());
-            check(methodInfo, Container.class, typeContext.container.get());
-            check(methodInfo, E2Immutable.class, typeContext.e2Immutable.get());
-            check(methodInfo, E2Container.class, typeContext.e2Container.get());
-
-            CheckConstant.checkConstantForMethods(typeContext, methodInfo);
+        if (!methodInfo.isConstructor) {
+            if (!methodInfo.isVoid()) {
+                check(methodInfo, NotNull.class, typeContext.notNull.get());
+                check(methodInfo, Fluent.class, typeContext.fluent.get());
+                check(methodInfo, Identity.class, typeContext.identity.get());
+                check(methodInfo, E1Immutable.class, typeContext.e1Immutable.get());
+                check(methodInfo, E1Container.class, typeContext.e1Container.get());
+                check(methodInfo, Container.class, typeContext.container.get());
+                check(methodInfo, E2Immutable.class, typeContext.e2Immutable.get());
+                check(methodInfo, E2Container.class, typeContext.e2Container.get());
+                CheckConstant.checkConstantForMethods(typeContext, methodInfo);
+            }
             CheckSize.checkSizeForMethods(typeContext, methodInfo);
 
             // opposites
             check(methodInfo, Dependent.class, typeContext.dependent.get());
-            check(methodInfo, Modified.class, typeContext.modified.get());
             check(methodInfo, Nullable.class, typeContext.nullable.get());
         }
 
@@ -200,14 +196,7 @@ public class MethodAnalyser {
         }
         boolean isConstant = value.isConstant();
 
-        Map<VariableProperty, Integer> map = new HashMap<>();
-        for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
-            int v = methodAnalysis.getProperty(property);
-            if (v != Level.DELAY) map.put(property, v);
-        }
-        Value potentiallyWrapped = PropertyWrapper.propertyWrapper(value, map);
-
-        methodAnalysis.singleReturnValue.set(potentiallyWrapped);
+        methodAnalysis.singleReturnValue.set(value);
         if (isConstant) {
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
             methodAnalysis.annotations.put(constantAnnotation, true);
@@ -236,17 +225,20 @@ public class MethodAnalyser {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY) return false;
 
-        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
-        if (delays) {
-            log(DELAYED, "Return statement value not yet set");
-            return false;
+        int value = propagateSizeAnnotations(variableProperty, methodInfo, methodAnalysis);
+        if (value == Level.DELAY) {
+            boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                    entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
+            if (delays) {
+                log(DELAYED, "Return statement value not yet set");
+                return false;
+            }
+            IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                    .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
+            value = variableProperty == VariableProperty.SIZE ?
+                    safeMinimum(typeContext, new Location(methodInfo), stream) :
+                    stream.min().orElse(Level.DELAY);
         }
-        IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
-        int value = variableProperty == VariableProperty.SIZE ?
-                safeMinimum(typeContext, new Location(methodInfo), stream) :
-                stream.min().orElse(Level.DELAY);
         if (value == Level.DELAY) {
             log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
             return false;
@@ -255,6 +247,33 @@ public class MethodAnalyser {
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
         methodAnalysis.setProperty(variableProperty, value);
         return true;
+    }
+
+    private int propagateSizeAnnotations(VariableProperty variableProperty, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (variableProperty != VariableProperty.SIZE || methodAnalysis.returnStatementSummaries.size() != 1) {
+            return Level.DELAY;
+        }
+        Value value = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
+        if (methodInfo.returnType().isDiscrete() && value instanceof ConstrainedNumericValue) {
+            // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+            if (cnv.value instanceof MethodValue) {
+                MethodValue methodValue = (MethodValue) cnv.value;
+                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
+                if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
+                    return Analysis.encodeSizeMin((int) cnv.lowerBound);
+                }
+            }
+        } else if (methodInfo.returnType().isBoolean()) {
+            // very specific situation, we see if the return statement is a predicate on a @Size method; if so we propagate that info
+            // size restrictions are ALWAYS int == size() or -int + size() >= 0
+            if (value instanceof EqualsValue) {
+
+            } else if (value instanceof GreaterThanZeroValue) {
+
+            }
+        }
+        return Level.DELAY;
     }
 
     static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {

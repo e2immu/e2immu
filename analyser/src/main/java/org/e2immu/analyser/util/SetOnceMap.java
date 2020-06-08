@@ -33,7 +33,7 @@ public class SetOnceMap<K, V> extends Freezable {
 
     private final Map<K, V> map = new HashMap<>();
 
-    @Only(before = "freeze")
+    //@Only(before = "freeze")
     @Size(min = 1)
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);
@@ -49,7 +49,7 @@ public class SetOnceMap<K, V> extends Freezable {
         return Objects.requireNonNull(map.get(k));
     }
 
-    @Size
+    @Size(min = 0)
     public int size() {
         return map.size();
     }

@@ -23,10 +23,12 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,23 +42,34 @@ public class TestSetOnceMap extends CommonTestRunner {
             if ("get".equals(methodInfo.name)) {
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.get()", srv.toString());
-                Assert.assertTrue("Have "+srv.getClass(), srv instanceof MethodValue);
+                Assert.assertTrue("Have " + srv.getClass(), srv instanceof MethodValue);
                 Assert.assertEquals(Level.TRUE, Level.value(srv.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
 
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertNotNull(tv);
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.NOT_NULL));
-
+                Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
                 Assert.assertEquals(Level.TRUE, Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
             }
+            if("isEmptyXX".equals(methodInfo.name)) {
+                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
+                Assert.assertNotNull(tv);
+                Assert.assertEquals("0 == map.size(),?>=0", tv.value.get().toString());
+                Assert.assertEquals(Analysis.encodeSizeEquals(0), tv.properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
 
+                Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.isEmpty()", srv.toString());
+                Assert.assertTrue("Have " + srv.getClass(), srv instanceof MethodValue);
+                // @Size(equals = 0)
+                Assert.assertEquals(Analysis.encodeSizeEquals(0), srv.getPropertyOutsideContext(VariableProperty.SIZE));
+            }
         }
     };
 
 
     @Test
     public void test() throws IOException {
-        testUtilClass("SetOnceMap", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass("SetOnceMap", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
