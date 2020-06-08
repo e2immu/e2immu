@@ -107,6 +107,9 @@ public class MethodValue implements Value {
         if (variableProperty == VariableProperty.SIZE) {
             return checkSize(null, methodInfo, parameters);
         }
+        if (variableProperty == VariableProperty.SIZE_COPY) {
+            return checkSizeCopy(methodInfo, parameters);
+        }
         if (variableProperty == VariableProperty.NOT_NULL) {
             int fluent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
             if (fluent == Level.TRUE) return Level.best(Level.TRUE,
@@ -126,10 +129,12 @@ public class MethodValue implements Value {
 
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
         if (methodInfo == null) return Level.DELAY;
-        if (!methodInfo.returnType().hasSize()) return Level.DELAY;
+        // the method either belongs to a type that has size, or it returns a type that has size
+        if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
+
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-            if (sizeCopy == Level.TRUE || sizeCopy == 3) {
+            if (sizeCopy == Level.TRUE || sizeCopy == Level.TRUE_LEVEL_1) {
                 // copyMin == True
                 // copyEquals == True
                 Value value = parameters.get(parameterInfo.index);
@@ -141,6 +146,22 @@ public class MethodValue implements Value {
         }
         return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
     }
+
+    public static int checkSizeCopy(MethodInfo methodInfo, List<Value> parameters) {
+        if (methodInfo == null) return Level.DELAY;
+        // the method either belongs to a type that has size, or it returns a type that has size
+        if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
+
+        // we give priority to the value of the parameters, rather than that of the method
+        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+            if (sizeCopy == Level.TRUE || sizeCopy == Level.TRUE_LEVEL_1) {
+                return sizeCopy;
+            }
+        }
+        return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+    }
+
 
     @Override
     public boolean hasConstantProperties() {
