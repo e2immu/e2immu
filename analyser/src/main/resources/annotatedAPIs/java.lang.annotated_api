@@ -237,7 +237,7 @@ public class String implements CharSequence {
     public String concat(String str) {
     }
 
-    @Size
+    @Size(min = 0)
     public int length() {
     }
 

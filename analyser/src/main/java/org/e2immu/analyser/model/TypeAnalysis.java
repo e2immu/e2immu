@@ -41,6 +41,11 @@ public class TypeAnalysis extends Analysis {
     }
 
     @Override
+    protected Location location() {
+        return new Location(typeInfo);
+    }
+
+    @Override
     public AnnotationMode annotationMode() {
         return typeInfo.typeInspection.get().annotationMode;
     }

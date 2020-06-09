@@ -41,7 +41,7 @@ public class Location {
     public Location(ParameterInfo parameterInfo) {
         this.parameterInfo = parameterInfo;
         this.methodInfo = parameterInfo.parameterInspection.get().owner;
-        this.typeInfo = this.methodInfo.typeInfo;
+        this.typeInfo = this.methodInfo == null ? null : this.methodInfo.typeInfo;
         this.statementId = null;
         this.fieldInfo = null;
     }
@@ -52,7 +52,7 @@ public class Location {
             return "method " + methodInfo.distinguishingName() + ", statement " + statementId;
         }
         if (parameterInfo != null) {
-            return "parameter " + parameterInfo.name + " of " + methodInfo.distinguishingName();
+            return "parameter " + parameterInfo.name + (methodInfo == null ? "in lambda" : " of " + methodInfo.distinguishingName());
         }
         if (methodInfo != null) {
             return "method " + methodInfo.distinguishingName();

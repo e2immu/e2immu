@@ -51,7 +51,7 @@ public @interface Size {
 
     int min() default -1;
 
-    int equals() default 0;
+    int equals() default -1;
 
     boolean copy() default false;
 

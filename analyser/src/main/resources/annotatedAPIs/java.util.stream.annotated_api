@@ -65,7 +65,7 @@ public class Collectors {
 @NotNull
 @E2Container
 public interface IntStream {
-    @Size
+    @Size(min = 0)
     long count();
 
     int sum();
@@ -86,7 +86,7 @@ public interface Stream<T> {
 
     static <T> Stream<T> of(@Size(copy = true) T... t);
 
-    @Size
+    @Size(min = 0)
     long count();
 
     @Size(copy = true)

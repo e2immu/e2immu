@@ -33,6 +33,7 @@ public class FieldAnalysis extends Analysis {
     public final TypeInfo owner;
     public final boolean isExplicitlyFinal;
     public final ParameterizedType type;
+    public final Location location;
 
     public FieldAnalysis(FieldInfo fieldInfo) {
         super(fieldInfo.hasBeenDefined(), fieldInfo.name);
@@ -40,6 +41,12 @@ public class FieldAnalysis extends Analysis {
         this.bestType = fieldInfo.type.bestTypeInfo();
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         type = fieldInfo.type;
+        location = new Location(fieldInfo);
+    }
+
+    @Override
+    protected Location location() {
+        return location;
     }
 
     @Override

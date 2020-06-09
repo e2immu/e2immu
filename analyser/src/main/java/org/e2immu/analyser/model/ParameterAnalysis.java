@@ -39,12 +39,19 @@ public class ParameterAnalysis extends Analysis {
 
     public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
     public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
+    public final Location location;
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
         this.owner = parameterInfo.parameterInspection.get().owner;
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
+        this.location = new Location(parameterInfo);
+    }
+
+    @Override
+    protected Location location() {
+        return location;
     }
 
     @Override

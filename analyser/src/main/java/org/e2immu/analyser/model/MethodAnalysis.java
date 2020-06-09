@@ -39,6 +39,7 @@ public class MethodAnalysis extends Analysis {
     public final Set<MethodInfo> overrides;
     public final ParameterizedType returnType;
     public final TypeInfo typeInfo;
+    public final Location location;
 
     public MethodAnalysis(MethodInfo methodInfo) {
         this(methodInfo, methodInfo.typeInfo.overrides(methodInfo, true));
@@ -53,6 +54,12 @@ public class MethodAnalysis extends Analysis {
         this.overrides = overrides;
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
+        location = new Location(methodInfo);
+    }
+
+    @Override
+    protected Location location() {
+        return location;
     }
 
     @Override

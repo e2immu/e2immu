@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -338,7 +339,7 @@ public abstract class Analysis {
                 } else if (typeContext.linked.get().typeInfo == t) {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
                 } else if (typeContext.size.get().typeInfo == t) {
-                    method.accept(VariableProperty.SIZE, extractSizeMin(annotationExpression));
+                    method.accept(VariableProperty.SIZE, extractSizeMin(typeContext, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
@@ -382,7 +383,7 @@ public abstract class Analysis {
      * @param annotationExpression the annotation
      * @return encoded value
      */
-    public static int extractSizeMin(AnnotationExpression annotationExpression) {
+    public int extractSizeMin(TypeContext typeContext, AnnotationExpression annotationExpression) {
         Integer min = annotationExpression.extract("min", -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
@@ -393,12 +394,19 @@ public abstract class Analysis {
         Boolean copyMin = annotationExpression.extract("copyMin", false);
         if (copyMin) return Level.DELAY;
 
-        Integer equals = annotationExpression.extract("equals", 0);
-        // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
+        Integer equals = annotationExpression.extract("equals", -1);
+        if(equals >= 0) {
+            // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 
-        // @Size is the default
-        return Level.compose(Level.FALSE, equals + 1);
+            // @Size is the default
+            return Level.compose(Level.FALSE, equals + 1);
+        }
+        // ignore! raise warning
+        typeContext.addMessage(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
+        return Level.DELAY;
     }
+
+    protected abstract Location location();
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {
         Boolean copy = annotationExpression.extract("copy", false);

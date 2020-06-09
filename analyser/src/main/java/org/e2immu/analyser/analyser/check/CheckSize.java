@@ -63,15 +63,17 @@ public class CheckSize {
             }
             return;
         }
-        int sizeEquals = annotationExpression.extract("equals", 0);
-        if (Analysis.haveEquals(size)) {
-            int haveEquals = Analysis.decodeSizeEquals(size);
-            if (haveEquals != sizeEquals) {
-                typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_EQUALS_VALUE,
-                        "have " + haveEquals + ", requires " + sizeEquals));
+        int sizeEquals = annotationExpression.extract("equals", -1);
+        if (sizeEquals >= 0) {
+            if (Analysis.haveEquals(size)) {
+                int haveEquals = Analysis.decodeSizeEquals(size);
+                if (haveEquals != sizeEquals) {
+                    typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_EQUALS_VALUE,
+                            "have " + haveEquals + ", requires " + sizeEquals));
+                }
+            } else {
+                typeContext.addMessage(Message.newMessage(where, Message.SIZE_EQUALS_MISSING));
             }
-        } else {
-            typeContext.addMessage(Message.newMessage(where, Message.SIZE_EQUALS_MISSING));
         }
     }
 }

@@ -56,6 +56,7 @@ public class Message {
     public static final String SIZE_WRONG_EQUALS_VALUE = "@Size annotation, wrong equals value";
     public static final String SIZE_COPY_MISSING = "@Size(copy = true) missing";
     public static final String SIZE_COPY_MIN_MISSING = "@Size(copyMin = true) missing";
+    public static final String SIZE_NEED_PARAMETER = "Need at least one parameter in the @Size annotation";
     public static final String WRONG_CONSTANT = "@Constant annotation, wrong value";
     public static final String PRIVATE_FIELD_NOT_READ = "Private field not read outside constructors";
     public static final String NON_PRIVATE_FIELD_NOT_FINAL = "Non-private field is not effectively final (@Final)";
@@ -96,6 +97,7 @@ public class Message {
         map.put(SIZE_WRONG_MIN_VALUE, Severity.ERROR);
         map.put(SIZE_COPY_MIN_MISSING, Severity.ERROR);
         map.put(SIZE_COPY_MISSING, Severity.ERROR);
+        map.put(SIZE_NEED_PARAMETER, Severity.ERROR);
         map.put(WRONG_CONSTANT, Severity.ERROR);
         map.put(PRIVATE_FIELD_NOT_READ, Severity.ERROR);
         map.put(NON_PRIVATE_FIELD_NOT_FINAL, Severity.ERROR);
