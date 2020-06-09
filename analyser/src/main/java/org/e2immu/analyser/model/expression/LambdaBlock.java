@@ -92,6 +92,7 @@ public class LambdaBlock implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
         Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of());
+        // important to note: MethodValue is the result of a method; we return an instance of the type
         //new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
 
         if (block != Block.EMPTY_BLOCK) {

@@ -26,6 +26,7 @@ public class TestSizeChecks extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
             if ("requireNotEmpty".equals(methodInfo.name) && "ts".equals(variableName)) {
                 if ("1".equals(statementId)) {
+                    // we check that the restriction has been passed on to the parameter
                     ParameterInfo parameterInfo = (ParameterInfo) variable;
                     Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
                 }
@@ -45,7 +46,7 @@ public class TestSizeChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("requireNotEmpty".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("0 == ts.size()", conditional.toString());
+                Assert.assertEquals("0 == ts.size(),?>=0", conditional.toString());
             }
 
             if ("method1".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
@@ -70,8 +71,7 @@ public class TestSizeChecks extends CommonTestRunner {
             }
 
             if ("method4".equals(methodInfo.name) && Set.of("0.0.0", "0.0.1").contains(numberedStatement.streamIndices())) {
-                // NOTE that we do not have "((-1) + input4.size(),?>=0) >= 0"
-                Assert.assertEquals("not (0 == input4.size())", conditional.toString());
+                Assert.assertEquals("((-1) + input4.size(),?>=0) >= 0", conditional.toString());
             }
             if ("method4".equals(methodInfo.name) && "0.0.1".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.isSet());

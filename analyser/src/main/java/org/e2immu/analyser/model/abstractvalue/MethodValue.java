@@ -44,10 +44,25 @@ public class MethodValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodValue that = (MethodValue) o;
-        return methodInfo.equals(that.methodInfo) &&
+        boolean sameMethod = methodInfo.equals(that.methodInfo) ||
+                checkSpecialCasesWhereDifferentMethodsAreEquals(methodInfo, that.methodInfo);
+        return sameMethod &&
                 parameters.equals(that.parameters) &&
                 object.equals(that.object) &&
                 methodInfo.sideEffect().atMost(SideEffect.NONE_CONTEXT);
+    }
+
+    /*
+     the interface and the implementation, or the interface and sub-interface
+     */
+    private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
+        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(m1, true);
+        if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
+        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(m2, true);
+        if (m1.typeInfo.isInterface() && overrides2.contains(m1)) return true;
+
+        // any other?
+        return false;
     }
 
     @Override

@@ -156,8 +156,7 @@ Both for `@NotNull` and `@Size` we observe that the annotation value of a _field
 . the maximum over all restrictions
 . combined with the minimum over all assignments
 
-If the maximum is lower than the minimum, errors will occur.
-If the maximum is higher than the minimum, the analyser takes the maximum.
+If the maximum over the restrictions is higher than the minimum over the assignments, restrictive annotations will be added.
 
 Because a parameter cannot be assigned to, its annotation value is always either intrinsic to the type, or a restriction.
 

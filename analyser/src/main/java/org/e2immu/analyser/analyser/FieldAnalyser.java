@@ -237,10 +237,6 @@ public class FieldAnalyser {
             return false; // delay
         }
 
-        if (valueFromContext > valueFromAssignment) {
-            log(NOT_NULL, "Problematic: assignments have lower value than requirements for @NotNull");
-            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_NULL_POINTER_EXCEPTION));
-        }
         int finalValue = Math.max(valueFromAssignment, valueFromContext);
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
         fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalValue);

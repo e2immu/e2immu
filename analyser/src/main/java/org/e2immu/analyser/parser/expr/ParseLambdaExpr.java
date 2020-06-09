@@ -86,7 +86,8 @@ public class ParseLambdaExpr {
             ParameterizedType inferredReturnType = expr.returnType();
             ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
             log(LAMBDA, "End parsing lambda as expression, inferred functional type {}", functionalType);
-            return new LambdaExpression(parameters, expr, functionalType);
+            return new LambdaExpression(parameters, expr, functionalType, createFunctionalType(expressionContext.enclosingType,
+                    expressionContext.typeContext, parameters, functionalType));
         }
         Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
         ParameterizedType inferredReturnType = Primitives.PRIMITIVES.voidParameterizedType; // TODO

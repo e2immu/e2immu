@@ -60,7 +60,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
             }
             if ("method7".equals(methodInfo.name)) {
                 // @Constant annotation missing, but is marked as constant
-                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONSTANT));
+                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONSTANT));
                 Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }

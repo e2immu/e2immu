@@ -52,7 +52,7 @@ public class TestContainerChecks extends CommonTestRunner {
             }
             // POTENTIAL NULL POINTER EXCEPTION
             if ("add2".equals(methodInfo.name) && "0".equals(numberedStatement.streamIndices())) {
-               // if (iteration > 0) Assert.assertTrue(numberedStatement.errorValue.isSet());
+                if (iteration > 0) Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
         }
     };
@@ -82,6 +82,13 @@ public class TestContainerChecks extends CommonTestRunner {
                 if (iteration > 2) {
                     //   Assert.assertTrue(strings2.parameterAnalysis.get().assignedToField.isSet());
                 }
+            }
+            if ("add2".equals(methodInfo.name) && iteration >= 1) {
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                Assert.assertEquals("strings2", strings.name);
+                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
+                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, transferValue.properties.get(VariableProperty.SIZE));
             }
             if ("add2b".equals(methodInfo.name)) {
                 FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);

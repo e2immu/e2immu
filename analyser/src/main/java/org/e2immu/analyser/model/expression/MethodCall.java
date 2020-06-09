@@ -288,13 +288,33 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // instead of returning isNotEmpty(), we return size() >= 1
     private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize) {
         MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
-        MethodValue sizeMethod = new MethodValue(sizeMethodInfo, objectValue, List.of());
+        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
             return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize)),
                     constrainedSizeMethod);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
+    }
+
+    // we normally return  objectValue.size();
+    // but if objectValue is a method itself, and that method preserves the size, then we remove that method
+    // object.entrySet().size() == object.size(); the entrySet() method has a @Size(copy = true) annotation
+    private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue) {
+        if (objectValue instanceof MethodValue) {
+            MethodValue methodValue = (MethodValue) objectValue;
+            if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.TRUE_LEVEL_1) {
+                // there must be a sizeMethod()
+                TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
+                if (typeInfo == null)
+                    throw new UnsupportedOperationException("Haze a @Size(copy = true) but the object type is not known?");
+                MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod();
+                if (sizeMethodInfoOnObject == null)
+                    throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
+                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of());
+            }
+        }
+        return new MethodValue(sizeMethodInfo, objectValue, List.of());
     }
 
     private static Value computeSizeModifyingMethod(MethodInfo methodInfo, Value objectValue, EvaluationContext evaluationContext) {

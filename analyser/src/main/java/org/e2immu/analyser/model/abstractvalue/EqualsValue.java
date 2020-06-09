@@ -116,9 +116,10 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public Map<Variable, Value> individualSizeRestrictions() {
-        // constants always left, methods always right
-        if (lhs instanceof NumericValue && rhs instanceof MethodValue) {
-            MethodValue methodValue = (MethodValue) rhs;
+        // constants always left, methods always right;
+        // methods for size should be wrapped with a ConstrainedNumericValue
+        if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) rhs).value instanceof MethodValue) {
+            MethodValue methodValue = (MethodValue) ((ConstrainedNumericValue) rhs).value;
             if (methodValue.methodInfo.typeInfo.hasSize()) {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {

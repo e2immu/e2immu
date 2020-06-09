@@ -20,6 +20,9 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -35,11 +38,13 @@ public class LambdaExpression implements Expression {
     public final Expression expression;
     public final List<ParameterInfo> parameters;
     public final ParameterizedType returnType;
+    public final ParameterizedType functionalType;
 
-    public LambdaExpression(List<ParameterInfo> parameters, Expression expression, ParameterizedType returnType) {
+    public LambdaExpression(List<ParameterInfo> parameters, Expression expression, ParameterizedType returnType, ParameterizedType functionalType) {
         this.expression = Objects.requireNonNull(expression);
         this.parameters = Objects.requireNonNull(parameters);
         this.returnType = Objects.requireNonNull(returnType);
+        this.functionalType = Objects.requireNonNull(functionalType);
     }
 
     // this is a functional interface
@@ -84,6 +89,8 @@ public class LambdaExpression implements Expression {
         Value v = expression.evaluate(childContext, visitor, forwardEvaluationInfo);
         evaluationContext.merge(childContext);
         visitor.visit(this, evaluationContext, v);
-        return v;
+
+        MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
+        return new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of());
     }
 }

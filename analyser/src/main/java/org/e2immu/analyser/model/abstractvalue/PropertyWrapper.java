@@ -93,7 +93,8 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public String toString() {
-        return value.toString() + "," + properties.keySet().stream().map(VariableProperty::toString).collect(Collectors.joining(","));
+        return value.toString() + "," + properties.keySet().stream()
+                .map(VariableProperty::toString).sorted().collect(Collectors.joining(","));
     }
 
 

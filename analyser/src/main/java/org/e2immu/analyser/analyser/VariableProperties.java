@@ -322,7 +322,7 @@ class VariableProperties implements EvaluationContext {
         // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            if (!fieldInfo.hasBeenDefined()) {
+            if (!fieldInfo.hasBeenDefined() || aboutVariable.resetValue instanceof VariableValue) {
                 //     // copy everything??? wh
                 //     fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
                 // } else {
@@ -438,11 +438,13 @@ class VariableProperties implements EvaluationContext {
         } else {
             aboutVariable.setCurrentValue(instance);
         }
-
-        //for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
-        //    aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
-        //}
-
+        // we can only copy the INSTANCE_PROPERTIES like NOT_NULL for VariableValues
+        // for other values, NOT_NULL in the properties means a restriction
+        if (aboutVariable.getCurrentValue() instanceof VariableValue) {
+            for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
+                aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
+            }
+        }
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
             for (String name : recordNames) {

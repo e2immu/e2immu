@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -68,7 +69,13 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 }
             }
         }
+        if ("method11Lambda".equals(methodInfo.name) && "supplier".equals(variableName) && "0".equals(statementId)) {
+            // value was an Instance, which gets translated to a VariableValue that is not null
+            Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof VariableValue);
+            Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+        }
         if ("method12LambdaBlock".equals(methodInfo.name) && "supplier".equals(variableName) && "0".equals(statementId)) {
+            // value was an Instance, which gets translated to a VariableValue that is not null
             Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof VariableValue);
             Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
         }

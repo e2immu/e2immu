@@ -190,7 +190,7 @@ public class StatementAnalyser {
                 // now we need to make sure that there will not be an additional condition added after the if statement
                 // the not-null is already in the properties. we need to communicate this one level up.
 
-                // we're guarding because we can have these escapase for sizes as well
+                // we're guarding because we can have these escapes for sizes as well
                 if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
                     startStatement.parent.removeVariablesFromConditional.put(variable, true);
                 }
