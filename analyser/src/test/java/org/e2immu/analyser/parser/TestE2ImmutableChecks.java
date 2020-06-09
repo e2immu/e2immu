@@ -25,11 +25,15 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
             if ("isAbc".equals(methodInfo.name) && "0".equals(statementId) && "E2Container1.this.value1".equals(variableName)) {
-                if (iteration > 0) Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                if (iteration == 1) {
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                } else {
+                    Assert.assertNull("At iteration " + iteration, properties.get(VariableProperty.NOT_NULL));
+                }
             }
             // no decision about immutable of "mingle" is ever made
             if ("input4".equals(variableName) && "1".equals(statementId) && "mingle".equals(methodInfo.name)) {
-                Assert.assertEquals(0, (int)properties.get(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(0, (int) properties.get(VariableProperty.IMMUTABLE));
             }
         }
     };

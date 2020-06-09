@@ -3,6 +3,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -17,8 +19,16 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor =
             (iteration, methodInfo, statementId, variableName, variable, currentValue, properties) -> {
                 if ("toString".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
-                    if (iteration >= 1) {
-                        Assert.assertEquals(1, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                    int notNull = currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+                    if (iteration == 0) {
+                        Assert.assertTrue(currentValue instanceof UnknownValue);
+                        Assert.assertEquals(Level.FALSE, notNull);
+                    } else if (iteration == 1) {
+                        Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                        Assert.assertEquals(Level.DELAY, notNull);
+                    } else {
+                        Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                        Assert.assertEquals(Level.TRUE, notNull);
                     }
                 }
                 if ("FinalNotNullChecks".equals(methodInfo.name) && "param".equals(variableName)) {

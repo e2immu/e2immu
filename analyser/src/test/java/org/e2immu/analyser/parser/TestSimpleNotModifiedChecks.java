@@ -48,8 +48,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertEquals("set4", currentValue.toString());
                 }
             }
-            if ("1".equals(statementId) && iteration > 0) {
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            if ("1".equals(statementId) && iteration > 1) {
+                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
         if ("add4".equals(methodInfo.name) && "Example4.this.set4".equals(variableName)) {
@@ -57,8 +57,10 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
                 } else {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
                     Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                    if (iteration > 1) {
+                        Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                    }
                 }
             }
         }
@@ -92,7 +94,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
         if ("add6".equals(methodInfo.name) && "example6.set6".equals(variableName)) {
             Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-            if (iteration > 1) Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            if (iteration > 1)
+                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
         if ("Example6".equals(methodInfo.name) && "set6".equals(variableName) && "0".equals(statementId)) {
             if (iteration == 3) {

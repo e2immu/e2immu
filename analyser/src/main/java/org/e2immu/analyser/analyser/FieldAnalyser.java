@@ -455,7 +455,7 @@ public class FieldAnalyser {
         } else {
             combinedValue = CombinedValue.create(values);
         }
-        return new FinalFieldValue(fieldReference, combinedValue);
+        return new FinalFieldValue(fieldReference);
     }
 
     private boolean analyseLinked(FieldInfo fieldInfo,

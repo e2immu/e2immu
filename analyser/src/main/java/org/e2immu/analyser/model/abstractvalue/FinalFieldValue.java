@@ -19,26 +19,17 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.annotation.NotNull;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 public class FinalFieldValue extends ValueWithVariable {
 
-    private final Map<VariableProperty, Integer> copiedProperties;
+    private final FieldAnalysis fieldAnalysis;
 
-    public FinalFieldValue(Variable variable, Value assignment) {
+    public FinalFieldValue(Variable variable) {
         super(variable);
-        ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
-        for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
-            builder.put(property, assignment.getPropertyOutsideContext(property));
-        }
-        copiedProperties = builder.build();
+        this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
     }
 
     @Override
@@ -51,7 +42,7 @@ public class FinalFieldValue extends ValueWithVariable {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return copiedProperties.getOrDefault(variableProperty, Level.DELAY);
+        return fieldAnalysis.getProperty(variableProperty);
     }
 
     @Override
@@ -61,7 +52,7 @@ public class FinalFieldValue extends ValueWithVariable {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
+        return fieldAnalysis.getProperty(variableProperty);
     }
 
 }

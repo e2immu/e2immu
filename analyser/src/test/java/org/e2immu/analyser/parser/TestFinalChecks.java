@@ -44,7 +44,11 @@ public class TestFinalChecks extends CommonTestRunner {
             } else if (iteration > 1) {
                 Assert.assertEquals("s1", currentValue.toString());
                 Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                Assert.assertEquals(Level.DELAY, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                if (iteration == 2) {
+                    Assert.assertEquals(Level.DELAY, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                } else {
+                    Assert.assertEquals(Level.FALSE, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                }
             }
         }
 
