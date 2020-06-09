@@ -66,6 +66,10 @@ public class TestSMapList extends CommonTestRunner {
 
                 Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
+            if("copy".equals(methodInfo.name)) {
+                TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
+                Assert.assertEquals(0, returnValue.properties.get(VariableProperty.IMMUTABLE));
+            }
         }
     };
 

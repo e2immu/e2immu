@@ -96,8 +96,6 @@ public class TestBasics extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
                 Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
                 Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.FINAL));
-
                 Assert.assertEquals(new StringValue("abc"), currentValue);
                 return;
             }
@@ -105,9 +103,7 @@ public class TestBasics extends CommonTestRunner {
                 LOGGER.info("Properties after 2 iterations are {}", properties);
                 Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
                 Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
-
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.FINAL));
+                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
                 return;
             }
         }

@@ -56,7 +56,7 @@ public class NullValue extends ConstantValue implements Constant<Object> {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL) return FALSE;
-        if (variableProperty == VariableProperty.SIZE) return FALSE; // min 0
+        if (variableProperty == VariableProperty.SIZE || variableProperty == VariableProperty.SIZE_COPY) return FALSE; // min 0
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return TRUE;
 
         // in combination with a non-null, FALSE can be overridden but can also work with another non-null that has FALSE

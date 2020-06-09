@@ -192,7 +192,10 @@ public class TestWithSkeleton {
         VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
-        Assert.assertEquals(TRUE, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        // DELAY here, we don't copy the properties anymore
+        Assert.assertEquals(DELAY, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertEquals(TRUE, finalString.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+
         Assert.assertTrue(variableProperties.isKnown(finalStringRef));
 
         VariableValue nvv = variableProperties.newVariableValue(finalStringRef);
@@ -214,7 +217,9 @@ public class TestWithSkeleton {
         VariableProperties variableProperties = newVariableProperties(testSkeleton);
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
-        Assert.assertEquals(TRUE, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertEquals(DELAY, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertEquals(TRUE, finalString.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+
         Assert.assertTrue(variableProperties.isKnown(finalStringRef));
 
         Value currentValue = variableProperties.currentValue(finalStringRef);
@@ -233,6 +238,8 @@ public class TestWithSkeleton {
         Assert.assertFalse(variableProperties.isKnown(finalStringRef));
 
         Assert.assertEquals(DELAY, variableProperties.getProperty(finalStringRef, VariableProperty.FINAL));
+        Assert.assertEquals(DELAY, finalString.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+
         Assert.assertTrue(variableProperties.isKnown(finalStringRef));
 
         Assert.assertTrue(variableProperties.equals(finalStringRef, finalStringRef));
@@ -256,7 +263,9 @@ public class TestWithSkeleton {
 
         Assert.assertFalse(variableProperties.equals(setRef, setRef)); // not even equal to itself!
 
-        Assert.assertEquals(FALSE, variableProperties.getProperty(setRef, VariableProperty.FINAL));
+        Assert.assertEquals(DELAY, variableProperties.getProperty(setRef, VariableProperty.FINAL));
+        Assert.assertEquals(FALSE, set.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+
         Assert.assertTrue(variableProperties.isKnown(setRef));
 
         Value currentValue = variableProperties.currentValue(setRef);

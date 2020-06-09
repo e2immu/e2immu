@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -400,6 +399,14 @@ public class StatementAnalyser {
                         transferValue.properties.put(variableProperty, v);
                     }
                 }
+                for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE) {
+                    int v = variableProperties.getProperty(value, variableProperty);
+                    if (v == Level.DELAY) v = Level.FALSE;
+                    int current = transferValue.properties.getOtherwise(variableProperty, Level.DELAY);
+                    if (v > current) {
+                        transferValue.properties.put(variableProperty, v);
+                    }
+                }
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
                         methodInfo.fullyQualifiedName(), statement.streamIndices());
@@ -686,14 +693,14 @@ public class StatementAnalyser {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
         } else if (notNull == Level.DELAY) {
             // we only need to mark this in case of doubt (if we already know, we should not mark)
-            variableProperties.mark(variable, VariableProperty.NOT_NULL, notNullContext);
+            variableProperties.addPropertyRestriction(variable, VariableProperty.NOT_NULL, notNullContext);
         }
     }
 
-    public static void markSize(EvaluationContext evaluationContext, Variable variable, int value) {
+    public static void markSizeRestriction(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
-        variableProperties.mark(variable, VariableProperty.SIZE, value);
+        variableProperties.addPropertyRestriction(variable, VariableProperty.SIZE, value);
     }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
@@ -702,7 +709,7 @@ public class StatementAnalyser {
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
-            variableProperties.mark(variable, VariableProperty.MODIFIED, value);
+            variableProperties.addPropertyRestriction(variable, VariableProperty.MODIFIED, value);
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

@@ -23,11 +23,15 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                 }
                 if ("FinalNotNullChecks".equals(methodInfo.name) && "param".equals(variableName)) {
                     Assert.assertEquals(1, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-                }
-                if ("FinalNotNullChecks".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
-                    if(iteration > 1) {
+                    int notNull = properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
+                    if (iteration == 0) {
+                        // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
                         Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_NULL));
                     }
+                }
+                // the variable has the value of param, which has received a @NotNull
+                if ("FinalNotNullChecks".equals(methodInfo.name) && "FinalNotNullChecks.this.input".equals(variableName)) {
+                    Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
                 }
             };
 
@@ -59,7 +63,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
-            if(methodInfo.name.equals("FinalNotNullChecks")) {
+            if (methodInfo.name.equals("FinalNotNullChecks")) {
                 ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
                 Assert.assertEquals(1, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }

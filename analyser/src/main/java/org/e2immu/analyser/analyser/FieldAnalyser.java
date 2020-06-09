@@ -89,29 +89,162 @@ public class FieldAnalyser {
         if (analyseFinalValue(fieldInfo, fieldAnalysis, fieldReference, fieldProperties, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
-        // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: SIZE, NOT_NULL, IMMUTABLE, CONTAINER (min over assignments)
+        // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: IMMUTABLE, CONTAINER (min over assignments)
         for (VariableProperty property : VariableProperty.FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS) {
-            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                    fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
                 changes = true;
         }
 
-        // STEP 5: @NotModified
+        // STEP 5: NOT NULL
+        if (analyseNotNull(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
+
+        // STEP 6: @NotModified
         if (analyseNotModified(fieldInfo, fieldAnalysis, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
-        // STEP 6: @Size: we only set @Size on fields if we know the size cannot change
-        // for SIZE restrictions, we should set it..  TODO serious difference!
+        // STEP 7: @Size
+        if (analyseSize(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
+
         int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.FALSE &&
                 analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
                         fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
-        // STEP 6: @Linked, variablesLinkedToMe
+        // STEP 8: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
 
+        // STEP 9: some ERRORS
         if (fieldErrors(fieldInfo, fieldAnalysis, fieldSummariesNotYetSet)) changes = true;
         return changes;
+    }
+
+    // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
+
+    private boolean analyseSize(FieldInfo fieldInfo,
+                                FieldAnalysis fieldAnalysis,
+                                Value value,
+                                boolean haveInitialiser,
+                                boolean fieldCanBeWrittenFromOutsideThisType,
+                                TypeInspection typeInspection,
+                                boolean fieldSummariesNotYetSet) {
+        int currentValue = fieldAnalysis.getProperty(VariableProperty.SIZE);
+        if (currentValue != Level.DELAY) return false; // already decided
+        if (!fieldInfo.type.hasSize()) {
+            log(SIZE, "No @Size annotation on {}, because the type has no size!", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
+            return true;
+        }
+        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (isFinal == Level.DELAY) {
+            log(DELAYED, "Delaying @Size on {} until we know about @Final", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || fieldCanBeWrittenFromOutsideThisType)) {
+            log(SIZE, "Field @Size cannot be {}: it is not @Final, and either not private, "
+                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
+            return true;
+        }
+        if (fieldSummariesNotYetSet) return false;
+
+        // now for the more serious restrictions... if the type is @E2Immu, we can have a @Size restriction (actually, size is constant!)
+        // if the field is @NotModified, and not exposed, then @Size is governed by the assignments and restrictions of the method.
+        // but if the field is exposed somehow, or modified in the type, we must stick to @Size(min >= 0) (we have a size)
+        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.DELAY) {
+            log(DELAYED, "Delaying @Size on {} until we know about @NotModified", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        if (modified == Level.TRUE) {
+            fieldAnalysis.setProperty(VariableProperty.SIZE, Analysis.IS_A_SIZE);
+            log(SIZE, "Setting @Size on {} to @Size(min = 0), meaning 'we have a @Size, but nothing else'", fieldInfo.fullyQualifiedName());
+            return true;
+        }
+        int immutable = Level.value(fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        if (immutable == Level.DELAY) {
+            log(DELAYED, "Delaying @Size on {} until we know about @E2Immutable", fieldInfo.fullyQualifiedName());
+            return true;
+        }
+        if (immutable == Level.FALSE) {
+            // TODO
+        }
+        if (someAssignmentValuesUndefined(VariableProperty.SIZE, fieldInfo, typeInspection)) return false;
+
+        boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
+
+        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, VariableProperty.SIZE, allDelaysResolved);
+        if (valueFromAssignment == Level.DELAY) {
+            log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+
+        int valueFromContext = computeValueFromContext(typeInspection, fieldInfo, VariableProperty.SIZE, allDelaysResolved);
+        if (valueFromContext == Level.DELAY) {
+            log(DELAYED, "Delaying property @NotNull on {}, context property delay", fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+
+        if (valueFromContext > valueFromAssignment) {
+            log(SIZE, "Problematic: assignments have lower value than requirements for @Size");
+            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_SIZE_PROBLEM));
+        }
+        int finalValue = Math.max(valueFromAssignment, valueFromContext);
+        log(SIZE, "Set property @Size on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
+        fieldAnalysis.setProperty(VariableProperty.SIZE, finalValue);
+        return true;
+    }
+
+
+    private boolean analyseNotNull(FieldInfo fieldInfo,
+                                   FieldAnalysis fieldAnalysis,
+                                   Value value,
+                                   boolean haveInitialiser,
+                                   boolean fieldCanBeWrittenFromOutsideThisType,
+                                   TypeInspection typeInspection,
+                                   boolean fieldSummariesNotYetSet) {
+        int currentValue = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if (currentValue != Level.DELAY) return false; // already decided
+        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (isFinal == Level.DELAY) {
+            log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser, "
+                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, Level.FALSE);
+            return true;
+        }
+        if (fieldSummariesNotYetSet) return false;
+
+        if (someAssignmentValuesUndefined(VariableProperty.NOT_NULL, fieldInfo, typeInspection)) return false;
+
+        boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
+
+        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, VariableProperty.NOT_NULL, allDelaysResolved);
+        if (valueFromAssignment == Level.DELAY) {
+            log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+
+        int valueFromContext = computeValueFromContext(typeInspection, fieldInfo, VariableProperty.NOT_NULL, allDelaysResolved);
+        if (valueFromContext == Level.DELAY) {
+            log(DELAYED, "Delaying property @NotNull on {}, context property delay", fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+
+        if (valueFromContext > valueFromAssignment) {
+            log(NOT_NULL, "Problematic: assignments have lower value than requirements for @NotNull");
+            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+        }
+        int finalValue = Math.max(valueFromAssignment, valueFromContext);
+        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
+        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalValue);
+        return true;
     }
 
     private boolean fieldErrors(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis, boolean fieldSummariesNotYetSet) {
@@ -166,15 +299,29 @@ public class FieldAnalyser {
             return false;
         }
         if (isFinal == Level.FALSE && (!fieldInfo.isPrivate()
-                || !haveInitialiser && property == VariableProperty.NOT_NULL
                 || fieldCanBeWrittenFromOutsideThisType)) {
-            log(NOT_NULL, "Field {} cannot be {}: it is not @Final, and either not private, or has no initialiser in the case of @NotNull,"
+            log(NOT_NULL, "Field {} cannot be {}: it is not @Final, and either not private, "
                     + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName(), property);
             fieldAnalysis.setProperty(property, Level.FALSE); // in the case of size, FALSE means >= 0
             return true;
         }
         if (fieldSummariesNotYetSet) return false;
+        if (someAssignmentValuesUndefined(property, fieldInfo, typeInspection)) return false;
 
+        boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
+
+        // compute the value of the assignments
+        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, property, allDelaysResolved);
+        if (valueFromAssignment == Level.DELAY) {
+            log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
+            return false; // delay
+        }
+        log(DYNAMIC, "Set property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(), valueFromAssignment);
+        fieldAnalysis.setProperty(property, valueFromAssignment);
+        return true;
+    }
+
+    private static boolean someAssignmentValuesUndefined(VariableProperty property, FieldInfo fieldInfo, TypeInspection typeInspection) {
         boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 // field is not present in the method
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
@@ -186,32 +333,9 @@ public class FieldAnalyser {
         if (!allAssignmentValuesDefined) {
             log(DELAYED, "Delaying property {} on field {}, not all assignment values defined",
                     property, fieldInfo.fullyQualifiedName());
-            return false;
+            return true;
         }
-
-        boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
-
-        // compute the value of the assignments
-        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, property, allDelaysResolved);
-        if (valueFromAssignment == Level.DELAY) {
-            log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
-            return false; // delay
-        }
-
-        // for NOT_NULL and SIZE we also need to look at fieldSummaries properties if there is NO assignment
-        int valueFromContext;
-        if (VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD.contains(property)) {
-            valueFromContext = computeValueFromContext(typeInspection, fieldInfo, property, allDelaysResolved);
-            if (valueFromContext == Level.DELAY) {
-                log(DELAYED, "Delaying property {} on {}, context property delay", property, fieldInfo.fullyQualifiedName());
-                return false; // delay
-            }
-        } else valueFromContext = Level.DELAY;
-
-        int finalValue = Math.max(valueFromAssignment, valueFromContext);
-        log(DYNAMIC, "Set property {} on field {} to value {}", property, fieldInfo.fullyQualifiedName(), finalValue);
-        fieldAnalysis.setProperty(property, finalValue);
-        return true;
+        return false;
     }
 
     private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {

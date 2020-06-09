@@ -322,9 +322,11 @@ class VariableProperties implements EvaluationContext {
         // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            if (fieldInfo.hasBeenDefined()) {
-                fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
-            } else {
+            if (!fieldInfo.hasBeenDefined()) {
+                //     // copy everything??? wh
+                //     fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
+                // } else {
+                // from libraries...
                 // the difference now is that absence of info means that the property is false
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                     int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, Level.FALSE);
@@ -333,6 +335,7 @@ class VariableProperties implements EvaluationContext {
             }
         } else if (variable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
+            // SIZE, NOT_NULL
             for (VariableProperty variableProperty : FROM_PARAMETER_TO_PROPERTIES) {
                 int value = parameterAnalysis.properties.getOtherwise(variableProperty, Level.FALSE);
                 aboutVariable.setProperty(variableProperty, value);
@@ -435,9 +438,10 @@ class VariableProperties implements EvaluationContext {
         } else {
             aboutVariable.setCurrentValue(instance);
         }
-        for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
-            aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
-        }
+
+        //for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
+        //    aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
+        //}
 
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
@@ -933,7 +937,7 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
-    public void mark(Variable variable, VariableProperty property, int value) {
+    public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
         addProperty(variable, property, value);
         if (variable instanceof ParameterInfo) {
             ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(property, value);

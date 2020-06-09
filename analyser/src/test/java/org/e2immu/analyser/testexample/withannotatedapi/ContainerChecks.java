@@ -55,10 +55,11 @@ public class ContainerChecks {
 
         @Linked(to = "strings2param")
         @Modified
+        @Nullable
         private Set<String> strings2;
 
         @Modified
-        public void setStrings2(@Modified Set<String> strings2param) {
+        public void setStrings2(@Modified @Nullable Set<String> strings2param) {
             this.strings2 = strings2param;
         }
 
@@ -71,7 +72,7 @@ public class ContainerChecks {
         @Modified
         public void add2(@NotNull String string2) {
             strings2.add(string2);
-        } // ERROR
+        } // ERROR potential null pointer exception
     }
 
     // variant of the second example: the add method breaks the contract;

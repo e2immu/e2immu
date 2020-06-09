@@ -4,9 +4,12 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -18,13 +21,6 @@ public class TestFinalChecks extends CommonTestRunner {
     public TestFinalChecks() {
         super(false);
     }
-    /*
-
-    public void setS4(String s4) {
-        this.s4 = s4;
-    }
-
-     */
 
     StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId, variableName,
                                                                  variable, currentValue, properties) -> {
@@ -36,6 +32,22 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertNull(properties.get(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
+
+        if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 2
+                && "FinalChecks.this.s1".equals(variableName)) {
+            if (iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
+            } else if (iteration == 1) {
+                Assert.assertEquals("instance type java.lang.String()", currentValue.toString());
+                Assert.assertEquals(Level.TRUE, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+            } else if (iteration > 1) {
+                Assert.assertEquals("s1", currentValue.toString());
+                Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                Assert.assertEquals(Level.DELAY, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+            }
+        }
+
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
@@ -47,6 +59,20 @@ public class TestFinalChecks extends CommonTestRunner {
             ParameterInfo s4 = methodInfo.methodInspection.get().parameters.get(0);
             Assert.assertEquals(Level.FALSE, s4.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
+
+        // there is no size restriction
+        if (iteration > 0) {
+            FieldInfo s1 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
+            if ("toString".equals(methodInfo.name)) {
+                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+            }
+            if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
+                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+            }
+            if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 2) {
+                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+            }
+        }
     };
 
     @Test
@@ -57,4 +83,11 @@ public class TestFinalChecks extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test2() {
+        String s1 = null;
+        String s2 = null;
+        String s3 = s1 + s2;
+        Assert.assertEquals("nullnull", s3);
+    }
 }

@@ -390,6 +390,8 @@ public class ComputeLinking {
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+
+                // SIZE, NOT_NULL
                 for (VariableProperty variableProperty : VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD) {
                     int value = aboutVariable.getProperty(variableProperty);
                     int current = tv.properties.getOtherwise(variableProperty, haveDelay ? Level.DELAY : Level.FALSE);

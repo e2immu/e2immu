@@ -113,7 +113,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
 
-    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(NOT_NULL, IMMUTABLE, CONTAINER);
+    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);
     public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE, SIZE_COPY);
@@ -125,7 +125,9 @@ public enum VariableProperty {
 
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, MODIFIED);
-    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
+
+    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of( NOT_NULL, SIZE, SIZE_COPY);
+    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE = Set.of(IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT); // but not CONTENT_MODIFIED, SIZE, have separate computation
