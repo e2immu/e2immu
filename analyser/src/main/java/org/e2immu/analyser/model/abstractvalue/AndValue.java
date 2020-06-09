@@ -232,7 +232,7 @@ public class AndValue implements Value {
                 EqualsValue ev2 = (EqualsValue) value;
                 // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
-                    newConcat.remove(newConcat.size()-1); // full replace
+                    newConcat.remove(newConcat.size() - 1); // full replace
                     return Action.ADD;
                 }
             }
@@ -403,5 +403,12 @@ public class AndValue implements Value {
     @Override
     public boolean isExpressionOfParameters() {
         return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
+
+    @Override
+    public Value nonIndividualCondition() {
+        // double checking we're not dealing with an And-clause of size 1
+        if (values.size() == 1) return values.get(0).nonIndividualCondition();
+        return this;
     }
 }

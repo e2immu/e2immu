@@ -251,6 +251,13 @@ public abstract class Analysis {
                 annotations.put(sizeAnnotationTrue(typeContext, "copy"), true);
             }
         }
+
+        // precondition
+        preconditionFromAnalysisToAnnotation(typeContext);
+    }
+
+    protected void preconditionFromAnalysisToAnnotation(TypeContext typeContext) {
+        // nothing to be done; override in method analysis
     }
 
     private AnnotationExpression sizeAnnotationTrue(TypeContext typeContext, String parameter) {
@@ -341,6 +348,9 @@ public abstract class Analysis {
                 } else if (typeContext.size.get().typeInfo == t) {
                     method.accept(VariableProperty.SIZE, extractSizeMin(typeContext, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
+                } else if (typeContext.precondition.get().typeInfo == t) {
+                    String value = annotationExpression.extract("value", "");
+                    writePrecondition(value);
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }
@@ -372,6 +382,10 @@ public abstract class Analysis {
         }
     }
 
+    protected void writePrecondition(String value) {
+        throw new UnsupportedOperationException(); // only for methods, please override
+    }
+
     public static final int SIZE_NOT_EMPTY = 3;
     public static final int SIZE_EMPTY = 2;
     public static final int IS_A_SIZE = 1;
@@ -395,7 +409,7 @@ public abstract class Analysis {
         if (copyMin) return Level.DELAY;
 
         Integer equals = annotationExpression.extract("equals", -1);
-        if(equals >= 0) {
+        if (equals >= 0) {
             // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 
             // @Size is the default

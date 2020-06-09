@@ -49,7 +49,7 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
     private NegatedValue(@NotNull Value value) {
         this.value = Objects.requireNonNull(value);
-        if(value instanceof NegatedValue) throw new UnsupportedOperationException();
+        if (value instanceof NegatedValue) throw new UnsupportedOperationException();
     }
 
     public Value reEvaluate(Map<Value, Value> translation) {
@@ -142,6 +142,11 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (sub == Analysis.SIZE_EMPTY) return Analysis.SIZE_NOT_EMPTY; // ==0 becomes >= 1
         if (sub == Analysis.SIZE_NOT_EMPTY) return Analysis.SIZE_EMPTY; // >=1 becomes == 0
         return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
+    }
+
+    @Override
+    public Value nonIndividualCondition() {
+        return value.nonIndividualCondition();
     }
 
     @Override

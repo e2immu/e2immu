@@ -161,4 +161,9 @@ public interface Value extends Comparable<Value> {
     default boolean isExpressionOfParameters() {
         return false;
     }
+
+    // sort of the opposite of the combination of individualSizeRestrictions() and individualNullClauses()
+    default Value nonIndividualCondition() {
+        return this;
+    }
 }

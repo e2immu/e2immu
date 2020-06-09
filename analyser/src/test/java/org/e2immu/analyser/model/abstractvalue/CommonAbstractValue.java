@@ -50,6 +50,7 @@ public abstract class CommonAbstractValue {
             public ParameterizedType parameterizedType() {
                 if (Set.of("a", "b", "c", "d").contains(name)) return Primitives.PRIMITIVES.booleanParameterizedType;
                 if (Set.of("i", "j", "k").contains(name)) return Primitives.PRIMITIVES.intParameterizedType;
+                if (Set.of("s", "t").contains(name)) return Primitives.PRIMITIVES.stringParameterizedType;
                 return null;
             }
 
@@ -218,5 +219,10 @@ public abstract class CommonAbstractValue {
     static final VariableValue i = new VariableValue(minimalEvaluationContext, vi, "i");
     static final VariableValue j = new VariableValue(minimalEvaluationContext, vj, "j");
     static final VariableValue k = new VariableValue(minimalEvaluationContext, vk, "k");
+
+    static final Variable vs = createVariable("s");
+    static final Variable vt = createVariable("t");
+    static final VariableValue s = new VariableValue(minimalEvaluationContext, vs, "s");
+    static final VariableValue t = new VariableValue(minimalEvaluationContext, vt, "t");
 
 }

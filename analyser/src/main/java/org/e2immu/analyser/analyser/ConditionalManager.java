@@ -124,4 +124,11 @@ public class ConditionalManager {
         }
         return conditional;
     }
+
+    // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
+    public Value escapeCondition() {
+        if (conditional == null) return null;
+        Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
+        return NegatedValue.negate(pre);
+    }
 }

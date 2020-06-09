@@ -208,4 +208,12 @@ public class OrValue extends PrimitiveValue {
         return values.stream().flatMap(v -> v.individualSizeRestrictions().entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+
+    @Override
+    public Value nonIndividualCondition() {
+        List<Value> nonIndividuals = values.stream().map(Value::nonIndividualCondition).filter(Objects::nonNull).collect(Collectors.toList());
+        if (nonIndividuals.size() == 0) return null;
+        if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
+        return new OrValue(nonIndividuals);
+    }
 }

@@ -132,6 +132,13 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
+    public Value nonIndividualCondition() {
+        if (!individualSizeRestrictions().isEmpty()) return null;
+        if (!individualNullClauses().isEmpty()) return null;
+        return this;
+    }
+
+    @Override
     public int encodedSizeRestriction() {
         if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
             int size = ((NumericValue) lhs).getNumber().intValue();

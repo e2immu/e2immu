@@ -209,4 +209,20 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
+    // ************** PRECONDITION
+
+    public final SetOnce<Value> precondition = new SetOnce<>();
+
+    @Override
+    protected void writePrecondition(String value) {
+        throw new UnsupportedOperationException(); //TODO not yet implemented--we'd have to parse our "value" language
+    }
+
+    @Override
+    protected void preconditionFromAnalysisToAnnotation(TypeContext typeContext) {
+        if (precondition.isSet()) {
+            AnnotationExpression ae = typeContext.precondition.get().copyWith("value", precondition.get().toString());
+            annotations.put(ae, true);
+        }
+    }
 }

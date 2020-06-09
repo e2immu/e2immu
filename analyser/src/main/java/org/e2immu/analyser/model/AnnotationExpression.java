@@ -20,7 +20,9 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.google.common.collect.ImmutableList;
+import javassist.expr.Expr;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -98,6 +100,9 @@ public class AnnotationExpression {
                 Expression value = expressionContext.parseExpression(mvp.getValue());
                 analyserExpressions.add(new org.e2immu.analyser.model.expression.MemberValuePair(mvp.getName().asString(), value));
             }
+        } else if (ae instanceof SingleMemberAnnotationExpr) {
+            Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue());
+            analyserExpressions = List.of(new MemberValuePair("value", value));
         } else analyserExpressions = List.of();
         expressions.set(analyserExpressions);
     }
@@ -245,6 +250,11 @@ public class AnnotationExpression {
 
     public AnnotationExpression copyWith(String parameter, boolean value) {
         MemberValuePair memberValuePair = new MemberValuePair(parameter, new BooleanConstant(value));
+        return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
+    }
+
+    public AnnotationExpression copyWith(String parameter, String value) {
+        MemberValuePair memberValuePair = new MemberValuePair(parameter, new StringConstant(value));
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 

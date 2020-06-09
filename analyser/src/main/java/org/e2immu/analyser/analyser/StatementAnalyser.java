@@ -128,6 +128,7 @@ public class StatementAnalyser {
                 if (escapesViaException) {
                     notNullEscapes(variableProperties, startStatement);
                     sizeEscapes(variableProperties, startStatement);
+                    precondition(variableProperties, startStatement);
                 }
             }
             // order is important, because unused gets priority
@@ -152,6 +153,29 @@ public class StatementAnalyser {
         }
     }
 
+    // whatever that has not been picked up by the notNull and the size escapes
+    private static void precondition(VariableProperties variableProperties, NumberedStatement startStatement) {
+        Value precondition = variableProperties.conditionalManager.escapeCondition();
+        if (precondition != null) {
+            log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
+            MethodAnalysis methodAnalysis = variableProperties.getCurrentMethod().methodAnalysis.get();
+            if (!methodAnalysis.precondition.isSet()) {
+                methodAnalysis.precondition.set(precondition);
+            }
+            if (variableProperties.uponUsingConditional != null) {
+                log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+                variableProperties.uponUsingConditional.run();
+            }
+            Set<Variable> variables = precondition.variables();
+            for (Variable variable : variables) {
+                // we're guarding because we can have these escapes for sizes as well
+                if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
+                    startStatement.parent.removeVariablesFromConditional.put(variable, true);
+                }
+            }
+        }
+    }
+
     private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
         Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true);
         for (Variable nullVariable : nullVariables) {
@@ -168,7 +192,7 @@ public class StatementAnalyser {
             // now we need to make sure that there will not be an additional condition added after the if statement
             // the not-null is already in the properties. we need to communicate this one level up.
 
-            // we're guarding because we can have these escapase for sizes as well
+            // we're guarding because we can have these escapes for sizes as well
             if (!startStatement.parent.removeVariablesFromConditional.isSet(nullVariable)) {
                 startStatement.parent.removeVariablesFromConditional.put(nullVariable, true);
             }
@@ -187,10 +211,15 @@ public class StatementAnalyser {
                     ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
                 }
                 variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
+                if (variableProperties.uponUsingConditional != null) {
+                    log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                    variableProperties.uponUsingConditional.run();
+                }
+
                 // now we need to make sure that there will not be an additional condition added after the if statement
                 // the not-null is already in the properties. we need to communicate this one level up.
 
-                // we're guarding because we can have these escapes for sizes as well
+                // we're guarding because we can have these escapes for not-nulls as well
                 if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
                     startStatement.parent.removeVariablesFromConditional.put(variable, true);
                 }

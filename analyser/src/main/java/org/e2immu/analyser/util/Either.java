@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
 import java.util.Objects;
 
@@ -35,10 +33,15 @@ import java.util.Objects;
  */
 @E1Container
 public class Either<A, B> {
+
+    @Nullable
     private final A left;
+    @Nullable
     private final B right;
 
-    private Either(A a, B b) {
+    @Precondition("not ((null == a) and (null == b))")
+    private Either(@Nullable A a, @Nullable B b) {
+        if ((a == null && b == null) || (a != null && b != null)) throw new UnsupportedOperationException();
         left = a;
         right = b;
     }

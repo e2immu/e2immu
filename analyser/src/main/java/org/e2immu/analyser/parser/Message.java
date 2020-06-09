@@ -73,6 +73,8 @@ public class Message {
     public static final String MULTIPLE_SIZE_ANNOTATIONS = "Multiple @Size annotations in a modifying method";
     public static final String PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT = "Part of short-circuit expression evaluates to constant";
 
+    public static final String WRONG_PRECONDITION = "Wrong precondition";
+
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
@@ -107,6 +109,7 @@ public class Message {
         map.put(METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, Severity.ERROR);
         map.put(METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD, Severity.ERROR);
         map.put(PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT, Severity.ERROR);
+        map.put(WRONG_PRECONDITION, Severity.ERROR);
 
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
