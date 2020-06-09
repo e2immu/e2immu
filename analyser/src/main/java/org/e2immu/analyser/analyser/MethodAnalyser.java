@@ -157,7 +157,7 @@ public class MethodAnalyser {
 
             // size comes after modifications
             if (computeSize(methodInfo, methodAnalysis)) changes = true;
-
+            if (computeSizeCopy(methodInfo, methodAnalysis)) changes = true;
 
             if (parameterAnalyser.analyse(methodProperties)) changes = true;
             return changes;
@@ -257,8 +257,8 @@ public class MethodAnalyser {
     }
 
     private boolean computeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        int maxValue = Math.max(methodAnalysis.getProperty(VariableProperty.SIZE), methodAnalysis.getProperty(VariableProperty.SIZE_COPY));
-        if (maxValue != Level.DELAY) return false;
+        int current = methodAnalysis.getProperty(VariableProperty.SIZE);
+        if (current != Level.DELAY) return false;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -269,9 +269,6 @@ public class MethodAnalyser {
             if (methodInfo.isConstructor) return false; // non-modifying constructor would be weird anyway
             if (methodInfo.returnType().hasSize()) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
-
-                // first try @Size(copy ...)
-                if (sizeCopyNonModifying(methodInfo, methodAnalysis)) return true;
 
                 // then try @Size(min, equals)
                 boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
@@ -293,32 +290,47 @@ public class MethodAnalyser {
         // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
         // the size copy will need to be written on the PARAMETER from which the copying has taken place
         if (methodInfo.typeInfo.hasSize()) {
-            if (sizeCopyModifying(methodInfo, methodAnalysis)) return true;
             return sizeModifying(methodInfo, methodAnalysis);
 
         }
         return false;
     }
 
-    // return type has size, and method is not modifying
 
-    private boolean sizeCopyNonModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY) == Level.DELAY);
-        if (delays) {
-            log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
+    private boolean computeSizeCopy(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        int current = methodAnalysis.getProperty(VariableProperty.SIZE_COPY);
+        if (current != Level.DELAY) return false;
+
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.DELAY) {
+            log(DELAYED, "Delaying @Size(copy) on {} because waiting for @Modified", methodInfo.distinguishingName());
             return false;
         }
-        IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY));
-        int min = stream.min().orElse(Level.DELAY);
-        return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min);
-    }
+        if (modified == Level.FALSE) {
+            if (methodInfo.isConstructor) return false; // non-modifying constructor would be weird anyway
+            if (methodInfo.returnType().hasSize()) {
+                // first try @Size(copy ...)
+                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
+                        entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY) == Level.DELAY);
+                if (delays) {
+                    log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
+                    return false;
+                }
+                IntStream stream = methodAnalysis.returnStatementSummaries.stream()
+                        .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY));
+                int min = stream.min().orElse(Level.DELAY);
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min);
+            }
+            return false;
+        }
 
-    // instead of writing the @Size(copy=) annotation to the method, we write it to the parameter that we are copying it from
-    // NOTE: this one also works for constructors!
-    private boolean sizeCopyModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        return false; // TODO NYI
+        // modifying method
+        // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
+        // the size copy will need to be written on the PARAMETER from which the copying has taken place
+        if (methodInfo.typeInfo.hasSize()) {
+            // TODO not implemented yet
+        }
+        return false;
     }
 
     // there is a modification that alters the @Size of this type (e.g. put() will cause a @Size(min = 1))
