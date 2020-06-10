@@ -45,6 +45,9 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
 
     public SetOnceMap<Variable, Boolean> removeVariablesFromConditional = new SetOnceMap<>();
 
+    // used for patterns
+    public SetOnce<Value> valueOfExpression = new SetOnce<>();
+
     public final int[] indices;
     public final SideEffect sideEffect;
 

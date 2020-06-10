@@ -411,4 +411,9 @@ public class AndValue implements Value {
         if (values.size() == 1) return values.get(0).nonIndividualCondition();
         return this;
     }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        return new AndValue().append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+    }
 }

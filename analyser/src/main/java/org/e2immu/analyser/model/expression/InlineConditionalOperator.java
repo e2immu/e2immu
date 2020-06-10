@@ -55,14 +55,7 @@ public class InlineConditionalOperator implements Expression {
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
-        Value res;
-        if (c instanceof BoolValue) {
-            boolean first = ((BoolValue) c).value;
-            evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
-            res = first ? t : f;
-        } else {
-            res = new ConditionalValue(c, t, f);
-        }
+        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f);
         evaluationVisitor.visit(this, evaluationContext, res);
         return res;
     }

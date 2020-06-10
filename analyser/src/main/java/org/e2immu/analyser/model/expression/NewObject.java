@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.model.expression;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -154,7 +156,37 @@ public class NewObject implements HasParameterExpressions {
             parameterValues.add(parameterValue);
             i++;
         }
+        if (methodInfo != null && methodInfo.methodAnalysis.isSet() && methodInfo.methodAnalysis.get().precondition.isSet()) {
+            // there is a precondition, and we have a list of values... let's see what we can learn
+            // the precondition is using parameter info's as variables so we'll have to substitute
+            Value precondition = methodInfo.methodAnalysis.get().precondition.get();
+            Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
+            Value reEvaluated = precondition.reEvaluate(translationMap);
+            // from the result we either may infer another condition, or values to be set...
+            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses();
+            for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
+                if (!nullClauseEntry.getValue()) {
+                    evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, Level.TRUE);
+                }
+            }
+            Value nonIndividual = precondition.nonIndividualCondition();
+            if (nonIndividual != null) {
+                // TODO we'll need to wrap the method call object in some precondition value
+            }
+        }
         return parameterValues;
+    }
+
+    public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
+        ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
+        int i = 0;
+        for (Value parameterValue : parameters) {
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
+            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
+            builder.put(vv, parameterValue);
+            i++;
+        }
+        return builder.build();
     }
 
     @Override

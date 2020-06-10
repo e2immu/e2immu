@@ -8,7 +8,7 @@ import java.util.Set;
 public class SizeChecks2 {
 
     // this test tries to ensure that the effects of the "add1" method are not shown on "set1"
-    // the method may not be called
+    // the method may not be called at all
 
     static class Test1 {
         @Size(type = AnnotationType.VERIFY_ABSENT)
@@ -58,13 +58,14 @@ public class SizeChecks2 {
         }
     }
 
+    // check that both @NotNull and @Size(min = 1) get to the parameter and the field
     static class Test3 {
 
         @Size(min = 1)
         @NotNull
         private final Set<String> set3;
 
-        public Test3(Set<String> set3) {
+        public Test3(@Size(min = 1) @NotNull  Set<String> set3) {
             if (set3 == null || set3.isEmpty()) {
                 throw new UnsupportedOperationException();
             }
@@ -77,12 +78,41 @@ public class SizeChecks2 {
 
     }
 
+
+    // check that both @NotNull and @Size(min = 1) get to the parameter and the field
+    static class Test3b {
+
+        @Size(min = 0)
+        @NotNull
+        private final Set<String> set3b;
+
+        public Test3b(@Size(min = 1) @NotNull  Set<String> set3) {
+            if (set3 == null || set3.isEmpty()) {
+                throw new UnsupportedOperationException();
+            }
+            this.set3b = set3;
+        }
+
+        public Set<String> getSet3b() {
+            return set3b;
+        }
+
+        public void clear() {
+            set3b.clear();
+        }
+    }
+
+
     static class Test4 {
 
         private final Set<String> set4;
 
         public Test4(@Size(type = AnnotationType.VERIFY_ABSENT) Set<String> set4param) {
             this.set4 = new HashSet<>(set4param);
+        }
+
+        public Set<String> getSet4() {
+            return set4;
         }
     }
 }

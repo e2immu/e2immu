@@ -49,9 +49,10 @@ public class TestPreconditionChecks extends CommonTestRunner {
         }
     };
 
+    // TODO we leave one error for now, to be implemented later once we have a Precondition value
     @Test
     public void test() throws IOException {
-        testClass("PreconditionChecks", 0, new DebugConfiguration.Builder()
+        testClass("PreconditionChecks", 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

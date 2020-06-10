@@ -939,6 +939,7 @@ class VariableProperties implements EvaluationContext {
         }
     }
 
+    @Override
     public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
         addProperty(variable, property, value);
         if (variable instanceof ParameterInfo) {

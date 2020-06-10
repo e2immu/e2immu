@@ -216,4 +216,9 @@ public class OrValue extends PrimitiveValue {
         if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
         return new OrValue(nonIndividuals);
     }
+
+    @Override
+    public Value reEvaluate(Map<Value, Value> translation) {
+        return new OrValue().append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+    }
 }

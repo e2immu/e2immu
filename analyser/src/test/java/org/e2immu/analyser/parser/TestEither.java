@@ -19,18 +19,64 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class TestEither extends CommonTestRunner {
 
+    /*  getLeftOrElse:
+        A local = left;
+        return local != null ? local : Objects.requireNonNull(orElse);
+     */
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+            if("getLeftOrElse".equals(methodInfo.name) && "orElse".equals(variableName) && "1".equals(statementId)) {
+                Assert.assertEquals("orElse", currentValue.toString());
+                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("getLeftOrElse".equals(methodInfo.name) && iteration > 0) {
+                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
+                Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
+                ConditionalValue conditionalValue = (ConditionalValue)tv.value.get();
+                Assert.assertTrue(conditionalValue.ifFalse instanceof VariableValue); // orElse
+                Assert.assertTrue(conditionalValue.ifTrue instanceof PropertyWrapper); // left, wrapped with @NotNull
+                Assert.assertEquals("not (null == left)?left,@NotNull:orElse", tv.value.get().toString());
+                Assert.assertEquals(Level.TRUE, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+    // we do expect 2x potential null pointer exception, because you can call getLeft() when you initialised with right() and vice versa
 
     @Test
     public void test() throws IOException {
-        testUtilClass("Either", 0, 0, new DebugConfiguration.Builder()
-
+        testUtilClass("Either", 0, 2, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

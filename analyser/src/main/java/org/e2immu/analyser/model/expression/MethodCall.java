@@ -147,7 +147,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
             if (srv instanceof InlineValue) {
-                return srv.reEvaluate(translationMap(evaluationContext, methodInfo, parameters));
+                return srv.reEvaluate(NewObject.translationMap(evaluationContext, methodInfo, parameters));
             }
             return srv;
         }
@@ -167,18 +167,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return new IntValue(((StringValue) objectValue).value.length());
         }
         return null;
-    }
-
-    private static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
-        ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
-        int i = 0;
-        for (Value parameterValue : parameters) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
-            builder.put(vv, parameterValue);
-            i++;
-        }
-        return builder.build();
     }
 
     private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {

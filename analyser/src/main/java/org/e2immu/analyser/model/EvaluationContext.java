@@ -97,6 +97,8 @@ public interface EvaluationContext {
     // merge "up", explicitly called for Lambda blocks and expressions
     void merge(EvaluationContext child);
 
+    void addPropertyRestriction(Variable variable, VariableProperty property, int value);
+
     void markRead(Variable variable);
 
     void markRead(String variableName);

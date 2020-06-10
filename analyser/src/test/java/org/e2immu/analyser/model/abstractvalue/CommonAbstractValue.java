@@ -99,6 +99,11 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
+        public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
+
+        }
+
+        @Override
         public MethodInfo getCurrentMethod() {
             throw new UnsupportedOperationException();
         }

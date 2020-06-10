@@ -129,6 +129,7 @@ public class ConditionalManager {
     public Value escapeCondition() {
         if (conditional == null) return null;
         Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
+        if (pre == null) return null;
         return NegatedValue.negate(pre);
     }
 }

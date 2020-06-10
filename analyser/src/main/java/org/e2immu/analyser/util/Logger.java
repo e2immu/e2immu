@@ -60,7 +60,7 @@ public class Logger {
         EXTENSION_CLASS,
         NOT_MODIFIED,
         CONSTANT,
-        NOT_NULL,
+        NOT_NULL, NOT_NULL_DEBUG,
         FLUENT,
         IDENTITY,
         FINAL,

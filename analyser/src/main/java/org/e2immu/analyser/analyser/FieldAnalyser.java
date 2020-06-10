@@ -26,12 +26,14 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -239,8 +241,45 @@ public class FieldAnalyser {
 
         int finalValue = Math.max(valueFromAssignment, valueFromContext);
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
+
+        if (isFinal == Level.TRUE && finalValue >= Level.TRUE) {
+            List<MethodInfo> methodsWhereFieldIsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
+            if (methodsWhereFieldIsAssigned.size() > 0 && !haveInitialiser) {
+                // check that all methods have a precondition, and that the variable is linked to at least one of the parameters occurring in the precondition
+                boolean linkedToVarsInPrecondition = methodsWhereFieldIsAssigned.stream().allMatch(mi ->
+                        mi.methodAnalysis.isSet() && mi.methodAnalysis.get().precondition.isSet() &&
+                                !Collections.disjoint(mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.get(),
+                                        mi.methodAnalysis.get().precondition.get().variables()));
+                if (linkedToVarsInPrecondition) {
+                    // we now check if a not-null is compatible with the pre-condition
+                    boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
+                        Value assignment = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get();
+                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment));
+                        Value andValue = new AndValue().append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
+                        return andValue != BoolValue.FALSE;
+                    });
+                    if (allCompatible) {
+                        log(NOT_NULL, "Not setting @NotNull on {}, already in precondition", fieldInfo.fullyQualifiedName());
+                        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, Level.FALSE);
+                        return true;
+                    }
+                } else {
+                    log(NOT_NULL_DEBUG, "Not checking preconditions because not linked to parameters for {}", fieldInfo.fullyQualifiedName());
+                }
+            } else {
+                log(NOT_NULL_DEBUG, "Only checking preconditions if my value is assigned in methods, not in initialiser; {}", fieldInfo.fullyQualifiedName());
+            }
+        } else {
+            log(NOT_NULL_DEBUG, "Non-final, therefore not checking preconditions on methods for {}", fieldInfo.fullyQualifiedName());
+        }
         fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalValue);
         return true;
+    }
+
+    private static List<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
+        return fieldInfo.owner.typeInspection.get().constructorAndMethodStream().filter(mi -> mi.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+                .filter(mi -> mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) >= Level.TRUE)
+                .collect(Collectors.toList());
     }
 
     private boolean fieldErrors(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis, boolean fieldSummariesNotYetSet) {

@@ -39,7 +39,7 @@ public class Either<A, B> {
     @Nullable
     private final B right;
 
-    @Precondition("not ((null == a) and (null == b))")
+    @Precondition("((null == a or null == b) and (not (null == a) or not (null == b)))")
     private Either(@Nullable A a, @Nullable B b) {
         if ((a == null && b == null) || (a != null && b != null)) throw new UnsupportedOperationException();
         left = a;

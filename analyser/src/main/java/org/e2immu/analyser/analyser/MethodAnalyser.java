@@ -356,7 +356,11 @@ public class MethodAnalyser {
         if (methodAnalysis.returnStatementSummaries.size() != 1) {
             return Level.DELAY;
         }
-        Value value = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
+        TransferValue tv = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue();
+        if (!tv.value.isSet()) {
+            return Level.DELAY;
+        }
+        Value value = tv.value.get();
         if (methodInfo.returnType().isDiscrete() && value instanceof ConstrainedNumericValue) {
             // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
             ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;

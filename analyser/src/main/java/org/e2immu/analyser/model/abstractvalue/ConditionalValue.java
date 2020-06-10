@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
@@ -41,6 +42,19 @@ public class ConditionalValue implements Value {
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
         combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
+    }
+
+    public static Value conditionalValue(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
+        Value res;
+        if (condition instanceof BoolValue) {
+            boolean first = ((BoolValue) condition).value;
+            evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+            res = first ? ifTrue : ifFalse;
+        } else {
+            res = new ConditionalValue(condition, ifTrue, ifFalse);
+        }
+        // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
+        return res;
     }
 
     @Override

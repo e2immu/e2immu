@@ -210,4 +210,22 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     public boolean isExpressionOfParameters() {
         return value.isExpressionOfParameters();
     }
+
+    @Override
+    public Map<Variable, Value> individualSizeRestrictions() {
+        XB xb = extract();
+        if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
+            if (cnv.value instanceof MethodValue) {
+                MethodValue methodValue = (MethodValue) cnv.value;
+                if (methodValue.methodInfo.typeInfo.sizeMethod() == methodValue.methodInfo) {
+                    // I am the size method!
+                    if (methodValue.object instanceof ValueWithVariable) {
+                        return Map.of(((ValueWithVariable) methodValue.object).variable, this);
+                    }
+                }
+            }
+        }
+        return Map.of();
+    }
 }
