@@ -266,12 +266,114 @@ The obvious generalisation here is the _independent_ computation of multiple val
 Standardization is again the greatest motivator: the analyser will determine an order of computation.
 It should be able to detect this independence, and thanks to the `@NotModified` annotations it knows when methods are modifying or not.
 
-==== Code fragment streams
+==== Example
 
-Thinking in terms of a code fragment stream, we obtain something like:
-
+[source]
 ----
-{f1.get(p0);v0==null||v0.size()==0?0:countOccurrences(v0,"b")}
+Objects.requireNonNull(t); // <1>
+Node<T> node = nodeMap.get(t); // <2>
+if (node == null) {
+  node = new Node<>(t);
+  nodeMap.put(t, node);
+}
+return node;
+----
+<1> preconditions
+<2> reuse of local computation
+
+Should we rewrite this as
+
+[source]
+----
+return { // <1>
+  Objects.requireNonNull(t); // <2>
+  Node<T> node = nodeMap.get(t); // <3>
+  node != null ? node : return { // <4>
+    Node<T> newNode = new Node<>(t); // <5>
+    nodeMap.put(t, newNode); // <6>
+    newNode
+  }
+}
+----
+<1> start of block
+<2> precondition
+<3> local computation to be reused
+<4> start of modifying block
+<5> local computation to be reused
+<6> modifying method, not influencing the result
+
+==== Emerging pattern 1: non-modifying block with single return
+
+One type of frequently occurring block has the following properties:
+
+. incoming parameters
+. preconditions on the incoming parameters
+. a number of independent, non-conditional non-modifying computations whose results can be reused.
+We compute the computations lazily in the return expression
+. a return expression based on the results of the parameters and independent computations.
+
+The required _independence_ means that the computations can be executed in any order.
+Computations like those in Pattern 2 (locally modifying fluent chain) fit in step 3.
+
+==== Emerging pattern 2: locally modifying fluent chain
+
+. incoming parameters
+. preconditions on the incoming parameters
+. primary object is either one of the parameters, or a new object
+. chain of fluent methods called, last one decides result
+
+If the fluent methods are modifying, the primary object must be a new object, and modifications must be limited to this new object.
+As a consequence, the end result is a "closed loop", independent method.
+Functions called in the fluent methods have no modifying effect on the local chain, but may cause side effects.
+
+There are many classic loops that can be transformed into streams:
+
+[source]
+----
+T result = null;
+for(T t : ts) {
+  if(predicate(t)) {
+    result = t;
+    break;
+  }
+}
 ----
 
-The `countOccurrences` method could be expanded as well if it has no side effects.
+translates into:
+
+[source]
+----
+T result = ts.stream().filter(predicate).findFirst().orElse(null);
+----
+
+Here is a second one:
+
+[source]
+----
+StringBuilder sb = new StringBuilder();
+for(int i=0; i<10; i++) {
+  System.out.println("count "+i);
+  sb.append(i);
+}
+String s = sb.build();
+----
+
+can be rewritten as:
+
+[source]
+----
+StringBuilder sb = new StringBuilder();
+IntStream.range(0, n).peek(i -> System.out.println("count "+i).forEach(sb::append);
+return sb.toString();
+----
+which translates into an expression fitting in the pattern:
+
+[source]
+----
+return IntStream.range(0, n)
+  .peek(i -> System.out.println("count "+i)
+  .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+  .toString();
+----
+using mutable streams. Note that the analyser ignores modifications on `System.out` because of the way we have annotated `java.lang.System`.
+

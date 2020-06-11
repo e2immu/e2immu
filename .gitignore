@@ -3,3 +3,4 @@
 **/out/
 .idea
 documentation/**/*.pdf
+documentation/**/*.html
