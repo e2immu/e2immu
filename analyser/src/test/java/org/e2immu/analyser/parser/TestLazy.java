@@ -42,8 +42,8 @@ public class TestLazy extends CommonTestRunner {
             if ("get".equals(methodInfo.name) && "Lazy.this.t".equals(variableName) && iteration > 0) {
                 if ("2.0.0".equals(statementId)) {
                     Assert.assertEquals("supplier.get(),@NotNull,@Size", currentValue.toString());
-                    // TODO the moment we start with inferring @NN1 this should become TRUE!
                     Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(1, currentValue.variables().size());
                 }
             }
         }
@@ -96,7 +96,8 @@ public class TestLazy extends CommonTestRunner {
                             .entrySet().stream()
                             .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
                             .map(Map.Entry::getValue).findFirst().orElseThrow();
-                    Assert.assertFalse(linkedToT.isEmpty());
+                    // for now (and I believe it's correct, t will not be linked to supplier)
+                    Assert.assertTrue(linkedToT.isEmpty());
                 }
             }
         }

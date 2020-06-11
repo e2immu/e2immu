@@ -62,9 +62,7 @@ public class TestEither extends CommonTestRunner {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
                 ConditionalValue conditionalValue = (ConditionalValue)tv.value.get();
-                Assert.assertTrue(conditionalValue.ifFalse instanceof VariableValue); // orElse
-                Assert.assertTrue(conditionalValue.ifTrue instanceof PropertyWrapper); // left, wrapped with @NotNull
-                Assert.assertEquals("not (null == left)?left,@NotNull:orElse", tv.value.get().toString());
+                Assert.assertEquals("null == left?orElse:left", conditionalValue.toString());
                 Assert.assertEquals(Level.TRUE, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }

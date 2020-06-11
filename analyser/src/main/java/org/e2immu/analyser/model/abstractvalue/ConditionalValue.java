@@ -18,10 +18,9 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.ConditionalManager;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetUtil;
@@ -45,16 +44,32 @@ public class ConditionalValue implements Value {
     }
 
     public static Value conditionalValue(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
-        Value res;
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;
             evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
-            res = first ? ifTrue : ifFalse;
-        } else {
-            res = new ConditionalValue(condition, ifTrue, ifFalse);
+            return first ? ifTrue : ifFalse;
         }
+        Value edgeCase = edgeCases(condition, ifTrue, ifFalse);
+        if (edgeCase != null) return edgeCase;
+
+        // standardization... we swap!
+        // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
+        if (condition instanceof NegatedValue) {
+            return new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue);
+        }
+        return new ConditionalValue(condition, ifTrue, ifFalse);
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
-        return res;
+    }
+
+    private static Value edgeCases(Value condition, Value ifTrue, Value ifFalse) {
+        // x ? a : a == a
+        if (ifTrue.equals(ifFalse)) return ifTrue;
+        // a ? a : !a == a == !a ? !a : a
+        if (condition.equals(ifTrue) && condition.equals(NegatedValue.negate(ifFalse))) return BoolValue.TRUE;
+        // !a ? a : !a == !a == a ? !a : a
+        Value notIfTrue = NegatedValue.negate(ifTrue);
+        if (condition.equals(notIfTrue) && condition.equals(ifFalse)) return BoolValue.FALSE;
+        return null;
     }
 
     @Override
@@ -94,13 +109,75 @@ public class ConditionalValue implements Value {
         return condition.toString() + "?" + ifTrue.toString() + ":" + ifFalse.toString();
     }
 
+    private static final int NO_PATTERN = -2;
+
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        int inCondition = lookForPatterns(evaluationContext, variableProperty);
+        if (inCondition != NO_PATTERN) return inCondition;
         return evaluationContext.getProperty(combinedValue, variableProperty);
+    }
+
+    /*
+    There are a few patterns that we can look out for.
+
+    (1) a == null ? xx : a  (note that a != null ? a : xx has been re-written to null == a ? xx: a)
+    (2) a == null ? xx : something(a)
+
+    (3)-(4) same wit SIZE, e.g.
+    (3) 0 == a.size() ? xx : a
+    (4) (-3) + a.size() >= 0 ? a : x
+     */
+    private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.SIZE) {
+            // contrary to null situation, we never have a negation because not equals to 0 is written as >= 1
+            return Math.max(checkSizeRestriction(evaluationContext, condition, ifTrue, ifFalse),
+                    checkSizeRestriction(evaluationContext, NegatedValue.negate(condition), ifFalse, ifTrue));
+        }
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            Map<Variable, Boolean> individualNullClauses = condition.individualNullClauses();
+
+            // a == null ? a : x => x == DELAY -> delay, worst case is a, which is 0 => 0
+            if (ifTrue instanceof ValueWithVariable) {
+                Boolean isNull = individualNullClauses.get(((ValueWithVariable) ifTrue).variable);
+                if (isNull != null) {
+                    if (!isNull) throw new UnsupportedOperationException();
+                    return 0;
+                }
+            }
+            // a == null ? x : a
+            if (ifFalse instanceof ValueWithVariable) {
+                Boolean isNull = individualNullClauses.get(((ValueWithVariable) ifFalse).variable);
+                if (isNull != null) {
+                    if (!isNull) throw new UnsupportedOperationException();
+                    return evaluationContext == null ? ifTrue.getPropertyOutsideContext(VariableProperty.NOT_NULL) :
+                            evaluationContext.getProperty(ifTrue, VariableProperty.NOT_NULL);
+                }
+            }
+        }
+        return NO_PATTERN;
+    }
+
+    private static int checkSizeRestriction(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
+        Map<Variable, Value> sizeRestrictions = condition.individualSizeRestrictions();
+        if (ifTrue instanceof ValueWithVariable) {
+            Value sizeRestriction = sizeRestrictions.get(((ValueWithVariable) ifTrue).variable);
+            if (sizeRestriction != null) {
+                // have a size restriction on ifTrue
+                int t = sizeRestriction.encodedSizeRestriction();
+                int f = evaluationContext == null ? ifFalse.getPropertyOutsideContext(VariableProperty.SIZE) :
+                        evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
+                if (Analysis.haveEquals(t) && Analysis.haveEquals(f) && t != f) return Analysis.IS_A_SIZE;
+                return Analysis.joinSizeRestrictions(t, f);
+            }
+        }
+        return NO_PATTERN;
     }
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        int inCondition = lookForPatterns(null, variableProperty);
+        if (inCondition != Level.DELAY) return inCondition;
         return combinedValue.getPropertyOutsideContext(variableProperty);
     }
 

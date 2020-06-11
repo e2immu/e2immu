@@ -45,7 +45,15 @@ public class VariableValuePlaceholder extends ValueWithVariable {
 
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        VariableValuePlaceholder that = (VariableValuePlaceholder) o;
+        return name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), name);
     }
 
     @Override

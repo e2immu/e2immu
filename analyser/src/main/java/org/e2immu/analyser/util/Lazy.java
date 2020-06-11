@@ -41,7 +41,7 @@ public class Lazy<T> {
     @Linked(to = "supplierParam") // the parameter
     private final Supplier<T> supplier;
 
-    @Linked(to = "supplier")// for now, we link t to supplier (nothing that rules it out)
+    @Linked(type = AnnotationType.VERIFY_ABSENT)
     @Final(type = AnnotationType.VERIFY_ABSENT) // later after mark
     private volatile T t;
 

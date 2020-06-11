@@ -187,7 +187,7 @@ public class MethodValue implements Value {
      * to. There is no need to consider linking between `b`, `c` and `d` here because that linking takes place in the method's
      * definition itself. We consider 4 cases:
      *
-     * 1. a is primitive or e2immutable: independent
+     * 1. a is primitive, unbound type parameter, or e2immutable: independent
      * 2. method is @Independent: independent (the very definition)
      * 3. b is @E2Immutable: only dependent on c, d
      *
