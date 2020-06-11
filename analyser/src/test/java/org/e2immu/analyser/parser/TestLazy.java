@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public class TestLazy extends CommonTestRunner {
 
@@ -74,6 +75,8 @@ public class TestLazy extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             FieldInfo supplier = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
+            FieldInfo t = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
+
             if ("Lazy".equals(methodInfo.name)) {
                 TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
                 Assert.assertTrue(tv.value.isSet());
@@ -87,14 +90,23 @@ public class TestLazy extends CommonTestRunner {
                 if (iteration >= 1) {
                     Assert.assertEquals(Level.TRUE, ret1.properties.get(VariableProperty.NOT_NULL));
                     Assert.assertEquals(Level.TRUE, ret2.properties.get(VariableProperty.NOT_NULL));
+
+                    Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
+                    Set<Variable> linkedToT = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
+                            .entrySet().stream()
+                            .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
+                            .map(Map.Entry::getValue).findFirst().orElseThrow();
+                    Assert.assertFalse(linkedToT.isEmpty());
                 }
             }
         }
     };
 
+    // TODO for later: @NotNull1 inference on Objects.requireNotNull(supplier.get())
+
     @Test
     public void test() throws IOException {
-        testUtilClass("Lazy", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass("Lazy", 0, 1, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

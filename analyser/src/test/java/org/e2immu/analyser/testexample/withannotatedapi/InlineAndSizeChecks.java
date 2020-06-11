@@ -31,13 +31,13 @@ public class InlineAndSizeChecks {
     }
 
     // TODO near future work
-
     private static int len4(String s) {
         int t = -1;
         if (s != null) t = s.length();
         return t;
     }
 
+    // TODO near future work
     private static int len5(String s) {
         int t;
         if (s == null) t = -1;
@@ -48,6 +48,7 @@ public class InlineAndSizeChecks {
         return t;
     }
 
+    // ok check that this can be inlined
     private static int len6(String s) {
         if (s == null) return -1;
         return s.length();
@@ -76,8 +77,6 @@ public class InlineAndSizeChecks {
     public static final int m2_3 = len3(null);
 
 
-    // TODO FUTURE WORK
-
     public static void method1(@NotNull String in1) {
         Objects.requireNonNull(in1);
         int l1 = len(in1);
@@ -88,10 +87,9 @@ public class InlineAndSizeChecks {
     }
 
     // simply a different way of causing the @NotNull
-    // The added complication is that we rely on the @Size(copy = true) of toLowerCase()
-    // (meaning that in2.toLowerCase().length() == in2.length())
     public static void method2(@NotNull String in2) {
         int l2 = len(in2.toLowerCase());
+        // TODO for now, in2.toLowerCase().length() is not reduced to in2.length()
         // if all is well, l should have the value "in1.length()", which has a @Size annotation, therefore always >=0
         if (l2 >= 0) { // should raise an error
             System.out.println("Always true");

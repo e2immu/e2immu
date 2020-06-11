@@ -98,4 +98,18 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
         Assert.assertNotEquals(gt0Gt3, gt1Gt2);
         Assert.assertNotEquals(gt1Gt2, gt0Gt3);
     }
+
+    @Test
+    public void testCombination() {
+        ConstrainedNumericValue gt1 = ConstrainedNumericValue.lowerBound(i, 1);
+        Value gt1Gt2 = GreaterThanZeroValue.greater(gt1, IntValue.TWO_VALUE, true);
+        Assert.assertEquals("((-2) + i,?>=1) >= 0", gt1Gt2.toString());
+
+        ConstrainedNumericValue gt0 = ConstrainedNumericValue.lowerBound(i, 0);
+        Value gt0Gt3 = GreaterThanZeroValue.greater(gt0, new IntValue(3), true);
+        Assert.assertEquals("((-3) + i,?>=0) >= 0", gt0Gt3.toString());
+
+        Value combined = new AndValue().append(gt1Gt2, gt0Gt3);
+        Assert.assertSame(gt0Gt3, combined);
+    }
 }

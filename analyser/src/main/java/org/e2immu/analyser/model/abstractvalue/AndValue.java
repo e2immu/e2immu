@@ -335,6 +335,22 @@ public class AndValue implements Value {
                 }
                 return Action.FALSE;
             }
+            if (xb1.x instanceof ConstrainedNumericValue && xb2.x instanceof ConstrainedNumericValue) {
+                ConstrainedNumericValue cnv1 = (ConstrainedNumericValue) xb1.x;
+                ConstrainedNumericValue cnv2 = (ConstrainedNumericValue) xb2.x;
+
+                // x,?>=a1 >= b1 && x,?>=a2 >= b2
+                if (!xb1.lessThan && !xb2.lessThan && cnv1.value.equals(cnv2.value) && cnv1.onlyLowerBound() && cnv2.onlyLowerBound()) {
+                    // we know that a1<b1 and a2<b2, otherwise there would be no CNV; the greatest one survives
+                    if (xb1.b < xb2.b) {
+                        // remove previous
+                        newConcat.remove(newConcat.size() - 1);
+                        return Action.ADD;
+                    } // else keep the 1st, so skip
+                    return Action.SKIP;
+                }
+                // TODO other combinations are very possible!
+            }
         }
 
         return Action.ADD;

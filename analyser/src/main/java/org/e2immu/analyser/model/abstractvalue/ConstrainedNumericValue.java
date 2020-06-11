@@ -29,13 +29,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         return WRAPPER_ORDER_CONSTRAINED_NUMERIC_VALUE;
     }
 
-    public static ConstrainedNumericValue equalTo(Value value, double upperAndLower) {
-        return new ConstrainedNumericValue(value, upperAndLower, upperAndLower);
-    }
-
     public static ConstrainedNumericValue lowerBound(Value value, double lowerBound) {
-
-        // this one reduces a PropertyWrapper with @Size(min = x) wrapped around a CNV
         if (value instanceof ConstrainedNumericValue) {
             ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
             if (cnv.lowerBound >= lowerBound) return cnv; // nothing to do!
@@ -45,10 +39,17 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public static ConstrainedNumericValue upperBound(Value value, double upperBound) {
+        if (value instanceof ConstrainedNumericValue) {
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+            if (cnv.upperBound <= upperBound) return cnv; // nothing to do!
+            return new ConstrainedNumericValue(cnv.value, cnv.lowerBound, upperBound);
+        }
         return new ConstrainedNumericValue(value, MIN, upperBound);
     }
 
     public ConstrainedNumericValue(Value value, double lowerBound, double upperBound) {
+        if (value instanceof ConstrainedNumericValue) throw new UnsupportedOperationException();
+
         this.upperBound = upperBound;
         this.lowerBound = lowerBound;
         assert upperBound >= lowerBound;
@@ -61,7 +62,23 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     public Value reEvaluate(Map<Value, Value> translation) {
         Value re = value.reEvaluate(translation);
         if (re.isConstant()) return re;
-        return new ConstrainedNumericValue(re, lowerBound, upperBound);
+        return ConstrainedNumericValue.create(re, lowerBound, upperBound);
+    }
+
+    private static Value create(Value value, double lowerBound, double upperBound) {
+        if (upperBound == MAX) {
+            return lowerBound(value, lowerBound);
+        }
+        if (lowerBound == MIN) {
+            return upperBound(value, upperBound);
+        }
+        if (value instanceof ConstrainedNumericValue) {
+            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+            // save ourselves a new object....
+            if (cnv.lowerBound >= lowerBound && cnv.upperBound <= upperBound) return value;
+            return new ConstrainedNumericValue(value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));
+        }
+        return new ConstrainedNumericValue(value, lowerBound, upperBound);
     }
 
     @Override
