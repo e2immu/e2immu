@@ -259,14 +259,18 @@ public class TestWithSkeleton {
 
         // we're outside the method; during field initialisation
         VariableProperties variableProperties = newVariableProperties(testSkeleton);
-        Assert.assertFalse(variableProperties.isKnown(setRef));
 
-        Assert.assertFalse(variableProperties.equals(setRef, setRef)); // not even equal to itself!
+        // they're not known, so equal
+        Assert.assertFalse(variableProperties.isKnown(setRef));
+        Assert.assertTrue(variableProperties.equals(setRef, setRef));
 
         Assert.assertEquals(DELAY, variableProperties.getProperty(setRef, VariableProperty.FINAL));
-        Assert.assertEquals(FALSE, set.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
 
+        // now they're known, not equal
         Assert.assertTrue(variableProperties.isKnown(setRef));
+        Assert.assertFalse(variableProperties.equals(setRef, setRef)); // not even equal to itself!
+
+        Assert.assertEquals(FALSE, set.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
 
         Value currentValue = variableProperties.currentValue(setRef);
         Assert.assertTrue(currentValue instanceof VariableValue);

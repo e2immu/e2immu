@@ -172,11 +172,16 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional,
+    public EvaluationContext childInSyncBlock(Value conditional,
+                                              Runnable uponUsingConditional,
                                               boolean inSyncBlock,
                                               boolean guaranteedToBeReachedByParentStatement) {
-        return new VariableProperties(this, depth + 1, currentMethod,
-                currentStatement, conditionalManager.combineWithConditional(conditional), uponUsingConditional,
+        return new VariableProperties(this,
+                depth + 1,
+                currentMethod,
+                currentStatement,
+                inSyncBlock ? conditionalManager.getConditional() : conditionalManager.combineWithConditional(conditional),
+                uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
@@ -185,8 +190,12 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
 
-        return new VariableProperties(this, depth + 1, currentMethod, currentStatement,
-                conditionalManager.combineWithConditional(conditional), uponUsingConditional,
+        return new VariableProperties(this,
+                depth + 1,
+                currentMethod,
+                currentStatement,
+                conditionalManager.combineWithConditional(conditional),
+                uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }

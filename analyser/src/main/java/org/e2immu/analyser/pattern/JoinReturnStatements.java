@@ -104,8 +104,12 @@ public class JoinReturnStatements {
         String idOfThenReturn = statementId + ".0." + (ifElseStatement.ifBlock.statements.size() - 1);
         MethodInfo methodInfo = evaluationContext.getCurrentMethod();
         TransferValue thenTv = methodInfo.methodAnalysis.get().returnStatementSummaries.getOtherwiseNull(idOfThenReturn);
+        if (thenTv == null) return null;
 
         if (!ifStatement.valueOfExpression.isSet()) return DELAY;
+        // once we know there is no delay, we can still exclude if there's a problem
+        if (ifStatement.inErrorState()) return null;
+
         Value condition = ifStatement.valueOfExpression.get();
         Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get());
         return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));

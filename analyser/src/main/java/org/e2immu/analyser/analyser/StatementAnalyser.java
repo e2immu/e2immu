@@ -383,7 +383,7 @@ public class StatementAnalyser {
         }
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
-        if(value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
+        if (value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
             statement.valueOfExpression.set(value);
         }
 
@@ -451,8 +451,13 @@ public class StatementAnalyser {
         Runnable uponUsingConditional;
 
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
+            Value previousConditional = variableProperties.conditionalManager.getConditional();
             Value combinedWithConditional = variableProperties.conditionalManager.evaluateWithConditional(value);
-            if (combinedWithConditional.isConstant()) {
+
+            // we have no idea which of the 2 remains
+            boolean noEffect = combinedWithConditional.equals(previousConditional);
+
+            if (combinedWithConditional.isConstant() || noEffect) {
                 if (!statement.inErrorState()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
@@ -475,7 +480,8 @@ public class StatementAnalyser {
         }
 
         // PART 7: the primary block, if it's there
-        // we'll treat it as a conditional on 'value', even if there is no if() statement
+        // the primary block has an expression in case of "if", "while", and "synchronized"
+        // in the first two cases, we'll treat the expression as a condition
 
         List<NumberedStatement> startOfBlocks = statement.blocks.get();
         List<VariableProperties> evaluationContextsGathered = new ArrayList<>();
@@ -490,6 +496,7 @@ public class StatementAnalyser {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
             boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
 
+            // in a synchronized block, some fields can behave like variables
             boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
             VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childInSyncBlock(value, uponUsingConditional,
                     inSyncBlock, statementsExecutedAtLeastOnce);
@@ -500,7 +507,7 @@ public class StatementAnalyser {
                     startOfFirstBlock.breakAndContinueStatements.get() : List.of());
 
             allButLastSubStatementsEscape = startOfFirstBlock.neverContinues.get();
-            if (value != NO_VALUE && value != null) {
+            if (!inSyncBlock && value != NO_VALUE && value != null) {
                 defaultCondition = NegatedValue.negate(value);
             }
 

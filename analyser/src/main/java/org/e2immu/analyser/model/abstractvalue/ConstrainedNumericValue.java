@@ -120,6 +120,10 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         return false;
     }
 
+    public boolean onlyLowerBound() {
+        return lowerBound != MIN && upperBound == MAX;
+    }
+
     @Override
     public ParameterizedType type() {
         return value.type();

@@ -42,7 +42,7 @@ public class TestLazy extends CommonTestRunner {
                 if ("2.0.0".equals(statementId)) {
                     Assert.assertEquals("supplier.get(),@NotNull,@Size", currentValue.toString());
                     // TODO the moment we start with inferring @NN1 this should become TRUE!
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                 }
             }
         }
@@ -65,7 +65,7 @@ public class TestLazy extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if (iteration > 0 && "get".equals(methodInfo.name) && "2.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("", conditional.toString());
+                Assert.assertEquals("null == localT", conditional.toString());
             }
         }
     };
