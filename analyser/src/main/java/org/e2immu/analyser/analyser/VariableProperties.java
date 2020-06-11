@@ -785,13 +785,15 @@ class VariableProperties implements EvaluationContext {
     public boolean equals(Variable variable, Variable other) {
         String name = variableName(variable);
         String nameOther = variableName(other);
+
+        // we allow find( ) to fail (typically comparisons out of scope)
         if (!(variable instanceof ParameterInfo)) {
-            AboutVariable av = findComplain(variable);
-            if (av.fieldReferenceState == MULTI_COPY) return false;
+            AboutVariable av = find(variable);
+            if (av != null && av.fieldReferenceState == MULTI_COPY) return false;
         }
         if (!(other instanceof ParameterInfo)) {
-            AboutVariable avOther = findComplain(other);
-            if (avOther.fieldReferenceState == MULTI_COPY) return false;
+            AboutVariable avOther = find(other);
+            if (avOther != null && avOther.fieldReferenceState == MULTI_COPY) return false;
         }
         return name.equals(nameOther);
     }
@@ -814,6 +816,8 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = ensureLocalCopy(at);
 
         if (assignmentToNonEmptyExpression) {
+            aboutVariable.removeProperties(VariableProperty.REMOVE_AFTER_ASSIGNMENT);
+
             if (value instanceof Instance) {
                 resetToNewInstance(aboutVariable, (Instance) value);
             } else if (value instanceof VariableValue) {

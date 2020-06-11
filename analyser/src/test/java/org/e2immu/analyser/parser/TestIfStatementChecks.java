@@ -6,6 +6,10 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,8 +52,26 @@ public class TestIfStatementChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
 
-        if ("method4".equals(methodInfo.name) && iteration >= 0) {
+        if ("method1".equals(methodInfo.name)) {
+            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+        }
 
+        if ("method2".equals(methodInfo.name)) {
+            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+        }
+
+        if ("method3".equals(methodInfo.name)) {
+            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+        }
+
+        // TODO at some point we will hav an InlineValue here as well, we'll simply have to transform
+        // the pattern X x; if(...) x= else x= into an inline definition
+        if ("method4".equals(methodInfo.name)) {
+            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue("Got: " + value.getClass(), value instanceof MethodValue);
         }
     };
 

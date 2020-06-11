@@ -69,6 +69,7 @@ public class Logger {
         CNF,
         DYNAMIC,
         SIZE,
+        PATTERN,
 
         INSPECT,
         ANALYSER,    // main analyser info

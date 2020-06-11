@@ -383,6 +383,10 @@ public class StatementAnalyser {
         }
         log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
 
+        if(value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
+            statement.valueOfExpression.set(value);
+        }
+
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
                 ((ArrayValue) value).values.stream().allMatch(variableProperties::isNotNull0)) {
             variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.TRUE);

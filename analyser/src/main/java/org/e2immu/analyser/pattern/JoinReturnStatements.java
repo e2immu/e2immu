@@ -7,17 +7,21 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /*
 
 The goal of this pattern is to standardize a number of constructs involving return statements.
 
-
+This method currently works with top-level statements!
 
  */
 public class JoinReturnStatements {
@@ -27,12 +31,24 @@ public class JoinReturnStatements {
         this.evaluationContext = evaluationContext;
     }
 
+    public static final JoinResult DELAY = new JoinResult(UnknownValue.NO_VALUE, Set.of());
+
+    public static class JoinResult {
+        public final Value value;
+        public final Set<String> statementIdsReduced;
+
+        public JoinResult(Value value, Set<String> statementIdsReduced) {
+            this.statementIdsReduced = statementIdsReduced;
+            this.value = value;
+        }
+    }
+
     /*
     if(condition) { ... return a; } else { ... return b; }
 
     with the statements in between not modifying the condition
      */
-    public Value joinReturnStatementsInIfThenElse(List<NumberedStatement> statements) {
+    public JoinResult joinReturnStatementsInIfThenElse(List<NumberedStatement> statements) {
         if (statements.isEmpty()) return null;
         NumberedStatement last = statements.get(statements.size() - 1);
         if (last.inErrorState()) return null;
@@ -45,9 +61,12 @@ public class JoinReturnStatements {
         TransferValue thenTv = methodInfo.methodAnalysis.get().returnStatementSummaries.getOtherwiseNull(idOfThenReturn);
         TransferValue elseTv = methodInfo.methodAnalysis.get().returnStatementSummaries.getOtherwiseNull(idOfElseReturn);
         if (thenTv == null || elseTv == null) return null;
+
+        if (!last.valueOfExpression.isSet()) return DELAY;
         Value condition = last.valueOfExpression.get();
         // TODO check that statements in between do not modify the condition
-        return ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get());
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get());
+        return new JoinResult(res, Set.of(idOfThenReturn, idOfElseReturn));
     }
 
     /**
@@ -60,7 +79,7 @@ public class JoinReturnStatements {
      * @param statements the statements of a block
      * @return null upon failure to detect something
      */
-    public Value joinReturnStatements(List<NumberedStatement> statements) {
+    public JoinResult joinReturnStatements(List<NumberedStatement> statements) {
         int n = statements.size();
         if (n < 2) return null;
 
@@ -86,8 +105,10 @@ public class JoinReturnStatements {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod();
         TransferValue thenTv = methodInfo.methodAnalysis.get().returnStatementSummaries.getOtherwiseNull(idOfThenReturn);
 
+        if (!ifStatement.valueOfExpression.isSet()) return DELAY;
         Value condition = ifStatement.valueOfExpression.get();
-        return ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get());
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get());
+        return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));
     }
 
 }

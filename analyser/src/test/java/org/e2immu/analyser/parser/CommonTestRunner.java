@@ -67,7 +67,8 @@ public abstract class CommonTestRunner {
                 SIDE_EFFECT,
                 UTILITY_CLASS,
                 NOT_NULL,
-                NOT_MODIFIED);
+                NOT_MODIFIED,
+                PATTERN);
     }
 
     protected void testClass(String className, int errorsToExpect) throws IOException {

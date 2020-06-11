@@ -132,4 +132,5 @@ public enum VariableProperty {
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT); // but not CONTENT_MODIFIED, SIZE, have separate computation
 
+    public final static Set<VariableProperty> REMOVE_AFTER_ASSIGNMENT = Set.of(NOT_NULL, SIZE);
 }

@@ -19,18 +19,55 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 public class TestTrie extends CommonTestRunner {
 
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+            if ("add".equals(methodInfo.name) && "newTrieNode".equals(variableName)) {
+                if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(statementId)) {
+                    Assert.assertTrue(currentValue instanceof VariableValue);
+                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+                }
+            }
+            if ("goTo".equals(methodInfo.name) && "1.0.1".equals(statementId) && "node".equals(variableName)) {
+                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.FALSE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("goTo".equals(methodInfo.name) && "1.0.0".equals(numberedStatement.streamIndices())) {
+                Assert.assertEquals("(not (null == node.map) and (not (i) + upToPosition) > 0)", conditional.toString());
+            }
+        }
+    };
 
     @Test
     public void test() throws IOException {
         testUtilClass("Trie", 0, 0, new DebugConfiguration.Builder()
-
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

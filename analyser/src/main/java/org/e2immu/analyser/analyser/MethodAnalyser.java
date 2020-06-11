@@ -32,6 +32,8 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.pattern.JoinReturnStatements;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +149,7 @@ public class MethodAnalyser {
                     if (propertiesOfReturnStatements(methodInfo, methodAnalysis))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
-                    if (methodIsConstant(methodInfo, methodAnalysis)) changes = true;
+                    if (methodIsConstant(methodInfo, methodAnalysis, methodProperties)) changes = true;
                 }
                 if (methodInfo.isStatic) {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
@@ -183,7 +185,7 @@ public class MethodAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private boolean methodIsConstant(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean methodIsConstant(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
         if (methodAnalysis.singleReturnValue.isSet()) return false;
 
         boolean allReturnValuesSet = methodAnalysis.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
@@ -191,9 +193,20 @@ public class MethodAnalyser {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return false;
         }
+        List<TransferValue> remainingReturnStatementSummaries;
+        if (methodAnalysis.returnStatementSummaries.size() > 1) {
+            remainingReturnStatementSummaries = applyJoinReturnStatementPatterns(methodInfo, methodAnalysis, methodProperties);
+            if (remainingReturnStatementSummaries.isEmpty()) {
+                log(DELAYED, "Not everything known for pattern analysis in {}, delaying", methodInfo.distinguishingName());
+                return false;
+            }
+        } else {
+            remainingReturnStatementSummaries = methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+        }
+
         Value value = null;
-        if (methodAnalysis.returnStatementSummaries.size() == 1) {
-            Value single = methodAnalysis.returnStatementSummaries.stream().findFirst().orElseThrow().getValue().value.get();
+        if (remainingReturnStatementSummaries.size() == 1) {
+            Value single = remainingReturnStatementSummaries.get(0).value.get();
             if (single.isConstant()) {
                 value = single;
             } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {
@@ -218,6 +231,34 @@ public class MethodAnalyser {
 
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    @NotNull
+    private List<TransferValue> applyJoinReturnStatementPatterns(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
+        JoinReturnStatements joinReturnStatements = new JoinReturnStatements(evaluationContext);
+        List<NumberedStatement> topLevelStatements = methodAnalysis.numberedStatements.get().stream()
+                .filter(ns -> ns.indices.length == 1).collect(Collectors.toList());
+        JoinReturnStatements.JoinResult result = joinReturnStatements.joinReturnStatementsInIfThenElse(topLevelStatements);
+        if (result != null) {
+            log(PATTERN, "Successfully applied JoinReturnStatementsInIfThenElse in {}", methodInfo.distinguishingName());
+            return applyJoinResult(methodAnalysis, result);
+        }
+        JoinReturnStatements.JoinResult result2 = joinReturnStatements.joinReturnStatements(topLevelStatements);
+        if (result2 != null) {
+            log(PATTERN, "Successfully applied JoinReturnStatements in {}", methodInfo.distinguishingName());
+            return applyJoinResult(methodAnalysis, result2);
+        }
+        return methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+    }
+
+    private List<TransferValue> applyJoinResult(MethodAnalysis methodAnalysis, JoinReturnStatements.JoinResult result) {
+        if (result.value == UnknownValue.NO_VALUE) return List.of(); // DELAY
+        List<TransferValue> old = methodAnalysis.returnStatementSummaries.stream()
+                .filter(e -> !result.statementIdsReduced.contains(e.getKey()))
+                .map(Map.Entry::getValue).collect(Collectors.toList());
+        TransferValue transferValue = new TransferValue();
+        transferValue.value.set(result.value);
+        return ListUtil.immutableConcat(old, List.of(transferValue));
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,

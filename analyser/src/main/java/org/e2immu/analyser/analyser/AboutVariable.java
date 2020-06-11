@@ -7,6 +7,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 class AboutVariable {
 
@@ -99,5 +100,9 @@ class AboutVariable {
 
     boolean isLocalVariable() {
         return variable instanceof LocalVariableReference;
+    }
+
+    void removeProperties(Set<VariableProperty> toRemove) {
+        properties.keySet().removeAll(toRemove);
     }
 }
