@@ -4,21 +4,26 @@
 
 === Commercial vs open source
 
-All software is Apache 2.0 licensed.
+All `e2immu` software is Apache 2.0 licensed.
 As a consequence, you may use it as you see fit in your commercial projects.
+We welcome improvements and bug reports.
+We encourage you to use the analyser, and to annotate your libraries.
+Especially when you're co-developing an open source library, we'd appreciate if you included `e2immu` annotations.
 
 The company provides additional services based on exactly the same software, broadly speaking on three levels:
 
-. we provide the software as a service, so you don't have to host it, upgrade it, resource it, etc.
+. we provide the software as a service (SaaS), so you don't have to host it, upgrade it, resource it, etc.
 This service is free for open source projects under the provision that the resulting annotations are part of the "open" aspect of the code.
 
 . we give you access to a larger repository of code, more annotated libraries, than available publicly.
 This saves you from having to annotate some libraries yourself.
 It also improves the quality of the correct code suggestions.
 
-. we help you leverage the analyser, with two goals in mind:
+. we help you leverage the analyser, with a number of goals in mind:
 .. reduce your code base by discovering code duplicates.
-Here we would claim that a 10% reduction in "size" should really be possible without
+Here we would claim that a 10% reduction in "size" should really be possible without compromising code readability.
+.. standardize your code base by using the same-style constructs consistently.
+This makes your code base more accessible to new developers.
 .. upgrade your code base from "old" Java to the latest Java, while tracking latest versions of popular libraries
 
 ==== Summary table
@@ -48,26 +53,37 @@ The following table summarizes the company's offering:
 
 ==== In more detail
 
-Cloud infrastructure::
+{y} Cloud infrastructure::
 We are running all required tools for you:
++
+--
 . annotation server
 . project management app (which annotations, for whom)
 . analyser
-
+--
 You just have to install a plugin in your IDE, connect it, configure your project, and edit your build tool or CI/CD configuration.
++
+We guarantee the security of your code: we're running exactly the code that is publicly available, so you can check for yourself.
 
-Code corrections against larger library::
+
+{y} Code corrections against a larger library::
 The code to do code corrections is freely available to you.
-However, the more 
+However, the more code snippets are available, the better the code corrections will be.
+The wider the database of code snippets, the more likely you'll get support.
+Make use of the company's repository!
+It contains tens of thousands of snippets from a large variety of open source projects.
 
-Library annotations on demand::
+{y} Code corrections against your golden standard::
+As a service, we can configure "your" analyser to prefer your own choice constructs, to improve standardization of code.
+
+{y} Library annotations on demand ($)::
 Code duplication checking and correct code suggestions work better when all method calls are "known" and have been properly annotated.
 Annotation can be made more strict than the code actually warrents, just like we're requiring `java.util.Map` to reject null keys and values.
 We can help annotate the libraries you use, be they internal, commercially external or open source.
 +
 The price can be rather low if we can collaborate on a popular Open Source library which has not been annoted previously, in the understanding the result can be made public.
 
-Full single code upgrade:: You have a working code base in Java, maybe written in the days of Java 1.4? Your youngsters don't like programming 1.4, and are mixing Java Streams and functional programming with old-style Enumerations?
+{y} Full single code upgrade ($$):: You have a working code base in Java, maybe written in the days of Java 1.4? Your youngsters don't like programming 1.4, and are mixing Java Streams and functional programming with old-style Enumerations?
 Or are you still using Hibernate 3.5? We believe we can help you there.
 +
 You provide us with a branch of your code, access to the build scripts and libraries, and we'll do the rest.
@@ -79,7 +95,7 @@ This service assumes that you can provide us with an environment to run all your
 Cost will be between linear and quadratic in the amount of lines or statements.
 It does not depend on the age of the code base.
 
-Multi-year code upgrade care:: Your Java code is important to you, and you envisage using it for many years to come.
+{y} Multi-year code upgrade care ($$$):: Your Java code is important to you, and you envisage using it for many years to come.
 But why investing in developers to upgrade it?
 We can keep your code "up to date", so that it makes use of the latest language constructs, uses the latest version of Guava or Spring, runs in the latest Tomcat, etc.
 The company will provide yearly or biannual upgrade steps, which they present to you for approval.
@@ -88,6 +104,6 @@ As the update procedure has been mostly automated, albeit still requiring manual
 We present the new version of the code in a cloud-based development environment like Eclipse Che, using one of the popular build tools.
 This allows us to discuss, present, and potentially improve the upgrade in collaboration with your developers.
 
-Software development:: We won't be developing your software!
+{n} Software development:: We won't be developing your software!
 We're not writing more tests for you.
 The company focuses on the analyser and derivative services.
