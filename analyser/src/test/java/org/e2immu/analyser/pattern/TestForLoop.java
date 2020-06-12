@@ -6,8 +6,14 @@ import org.junit.Test;
 public class TestForLoop {
 
     @Test
-    public void test() {
+    public void testClassic() {
         Statement forLoop = ForLoop.classicIndexLoop();
+        System.out.println(forLoop.statementString(0));
+    }
+
+    @Test
+    public void testDecreasing() {
+        Statement forLoop = ForLoop.decreasingIndexLoop();
         System.out.println(forLoop.statementString(0));
     }
 }

@@ -25,6 +25,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
+import java.util.StringJoiner;
+
 @E2Immutable
 public class IntConstant implements Expression, Constant<Integer> {
     @Override
@@ -60,5 +62,10 @@ public class IntConstant implements Expression, Constant<Integer> {
     @Override
     public Integer getValue() {
         return constant.value;
+    }
+
+    @Override
+    public String toString() {
+        return expressionString(0);
     }
 }

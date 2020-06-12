@@ -1,22 +1,224 @@
 package org.e2immu.analyser.pattern;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.NumberedStatement;
+import com.google.common.collect.Iterables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ForStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 
 public class ForLoop {
 
     private static final String VARIABLE_STUB = "$";
-    private static final int SOME_VALUE = 2_010_989_767;
+
+    interface Context {
+
+        TypeParameter requestUnboundTypeParameter(int index);
+
+        Variable requestParameter(int index, ParameterizedType type);
+
+        TypeContext getTypeContext();
+
+    }
+
+    enum Style {
+        OLD, FUNCTIONAL, OK,
+
+        EXPENSIVE,
+
+        COMPACT, ELABORATE,
+
+        NON_JDK,
+    }
+    /*
+
+    T result = defaultValue;
+    for(T t: coll) {
+      ... static side effect only
+      if(predicate(t)) { result = t; break; }
+      ... static side effect only
+    }
+
+    which is identical to
+
+    for(T t: coll) {
+      if(predicate(t)) return t;
+    }
+    return defaultValue;
+
+    in the context of a separate method. Equivalent to
+
+    T result = coll.stream().filter(predicate).findFirst().orElse(defaultValue);
+
+    */
+
+    static class FindInCollection {
+        public static <T> T findInCollectionUsingReturn(T defaultValue, Iterable<T> collection, Predicate<T> predicate) {
+            style(Style.OK);
+            start();
+
+            for (T t : collection) {
+                consume(0, t);
+                if (predicate.test(t)) {
+                    consume(1, t);
+                    return t;
+                }
+                consume(2, t);
+            }
+            consume(3, defaultValue);
+            return defaultValue;
+        }
+
+        public static <T> T findInCollectionUsingVariable(T defaultValue, Iterable<T> collection, Predicate<T> predicate) {
+            style(Style.ELABORATE);
+            start();
+
+            T result = defaultValue;
+            for (T t : collection) {
+                consume(0, t);
+                if (predicate.test(t)) {
+                    result = t;
+                    consume(1, t);
+                    break;
+                }
+                consume(2, t);
+            }
+            if (result == defaultValue) consume(3, result);
+            return result;
+        }
+
+        public static <T> T findInCollection(T defaultValue, Iterable<T> collection, Predicate<T> predicate) {
+            style(Style.OLD);
+            start();
+
+            Iterator<T> iterator = collection.iterator();
+            while (iterator.hasNext()) {
+                T t = iterator.next();
+                consume(0, t);
+                if (predicate.test(t)) {
+                    consume(1, t);
+                    return t;
+                }
+                consume(2, t);
+            }
+            consume(3, defaultValue);
+            return defaultValue; // == end(defaultValue);
+        }
+
+        public static <T> T findInList(T defaultValue, List<T> list, Predicate<T> predicate) {
+            style(Style.OLD, Style.EXPENSIVE);
+            start();
+
+            for (int i = 0; i < list.size(); i++) {
+                T t = list.get(i);
+                consume(0, t);
+                if (predicate.test(t)) {
+                    consume(1, t);
+                    return t;
+                }
+                consume(2, t);
+            }
+            consume(3, defaultValue);
+            return defaultValue;
+        }
+
+
+        public static <T> T findInCollectionUsingStream(T defaultValue, Iterable<T> collection, Predicate<T> predicate) {
+            style(Style.FUNCTIONAL, Style.ELABORATE);
+            start();
+
+            T result = StreamSupport.stream(collection.spliterator(), false)
+                    .peek(t -> consume(0, t))
+                    .filter(predicate)
+                    .peek(t -> consume(2, t))
+                    .findFirst()
+                    .orElse(defaultValue);
+            if (result == defaultValue) consume(3, result);
+            else consume(1, result);
+            return result;
+        }
+
+        public static <T> T findInCollectionUsingStream(T defaultValue, Collection<T> collection, Predicate<T> predicate) {
+            style(Style.FUNCTIONAL, Style.COMPACT);
+            start();
+
+            T result = collection.stream()
+                    .peek(t -> consume(0, t))
+                    .filter(predicate)
+                    .peek(t -> consume(2, t))
+                    .findFirst()
+                    .orElse(defaultValue);
+            if (result == defaultValue) consume(3, result);
+            else consume(1, result);
+            return result;
+        }
+
+        public static <T> T findWithGuava(T defaultValue, Iterable<T> iterable, Predicate<T> predicate) {
+            style(Style.FUNCTIONAL, Style.NON_JDK);
+            start();
+
+            T result = Iterables.tryFind(iterable, predicate::test).or(defaultValue);
+            if (result == defaultValue) consume(3, result);
+            else consume(1, result);
+            return result;
+        }
+    }
+
+    public static Statement findInCollectionVariable(Context context) {
+        TypeParameter typeParameter = context.requestUnboundTypeParameter(0); // T
+        ParameterizedType theType = new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.UNBOUND);
+        LocalVariable localVariable = localVariableStub(0, theType); // T t
+        LocalVariableReference localVariableReference = new LocalVariableReference(localVariable, List.of());
+
+        Variable defaultValue = context.requestParameter(1, theType);
+        VariableExpression defaultValueExpression = new VariableExpression(defaultValue);
+
+        LocalVariableCreation result = new LocalVariableCreation(localVariableStub(0, theType), defaultValueExpression);
+        Assignment createVariable = new Assignment(new VariableExpression(result.localVariableReference), defaultValueExpression);
+
+        TypeInfo iterable = context.getTypeContext().getFullyQualified(Iterable.class);
+        ParameterizedType iterableT = new ParameterizedType(iterable, List.of(theType));
+        Variable collection = context.requestParameter(0, iterableT);
+        VariableExpression collectionExpression = new VariableExpression(collection);
+
+        TypeInfo predicateTypeInfo = context.getTypeContext().getFullyQualified(Predicate.class);
+        ParameterizedType predicateType = new ParameterizedType(predicateTypeInfo, List.of(theType));
+        Variable predicate = context.requestParameter(2, predicateType);
+
+        // predicate.test(t)
+        Expression object = new VariableExpression(predicate);
+        MethodTypeParameterMap method = predicateType.findSingleAbstractMethodOfInterface();
+        MethodCall predicateCall = new MethodCall(object, object, method, List.of(new VariableExpression(result.localVariableReference)));
+
+        Assignment resultEqualsLocal = new Assignment(new VariableExpression(result.localVariableReference),
+                new VariableExpression(localVariableReference));
+        Block ifBlock = new Block.BlockBuilder()
+                .addStatement(new ExpressionAsStatement(resultEqualsLocal))
+                .addStatement(new BreakStatement(null))
+                .build();
+        IfElseStatement ifPredicate = new IfElseStatement(predicateCall, ifBlock, Block.EMPTY_BLOCK);
+
+        Block block = new Block.BlockBuilder()
+                .addStatement(new AnyNonModifyingStatement(defaultValue, collection, localVariableReference))
+                .addStatement(ifPredicate)
+                .build();
+
+        ForEachStatement forEach = new ForEachStatement(null, localVariable, collectionExpression, block);
+        return new Block.BlockBuilder()
+                .addStatement(new ExpressionAsStatement(createVariable))
+                .addStatement(forEach).build();
+    }
+
 
     /*
     is the statement a classic index loop?
@@ -29,9 +231,130 @@ public class ForLoop {
     Alternatives provided for: i<n, i<=n, n>i, n>=i; i++, ++i, i+= 1; arbitrary variable name
      */
 
+    public static void start() {
+    }
+
+    public static void end(Object... objects) {
+    }
+
+
+    public static void style(Style... style) {
+
+    }
+
+    public static void consume(int index, Object... objects) {
+
+    }
+
+    public static boolean allowMultipleOperations(boolean... b) {
+        return b[0];
+    }
+
+
+    static class IndexLoopPattern {
+
+        public static void classicIndexLoopPattern(int n) {
+            // we start by declaring a multi-boolean operation
+            IntPredicate p = i -> allowMultipleOperations(i < n, i <= n, n > i, n >= i);
+            start();
+            // now the pattern starts
+
+            for (int i = 0; p.test(i); i += 1) {
+                // 2 method calls to indicate that there may be no break, no assignments to i
+            }
+        }
+
+        public static void indexLoopPatternUsingWhile(int n) {
+            // part 1: assertions on parameters as local variables
+            assert n >= 0;
+            start();
+
+            // part 2: the code
+            int i = 0;
+            while (i < n) {
+                // 2 method calls to indicate that there may be no break, no assignments to i
+                i += 1;
+            }
+
+            // extra available
+            end(i);
+            assert i == n;
+        }
+
+    }
+
+    static class DecreasingIndex {
+
+        public static void decreasingIndexLoopPattern(int n) {
+            assert n >= 0; // translated into restriction
+            start();
+
+            for (int i = n; i >= 0; i -= 1) { // i will get picked up as "some variable"
+                // 2 method calls to indicate that there may be no break, no assignments to i
+            }
+        }
+
+        public static void decreasingIndexLoopPattern2(int n) {
+            assert n >= 0;
+            start();
+
+            for (int i = n; 0 <= i; i -= 1) { // i will get picked up as "some variable"
+                // 2 method calls to indicate that there may be no break, no assignments to i
+            }
+        }
+
+    }
+
+    // using a supplier -> there is need for an additional variable
+
+    static class AlternativeAssignmentInCode {
+
+        public static <T> void pattern1(Supplier<T> initialValue, Predicate<T> predicate, Supplier<T> alternativeValue) {
+            T result = initialValue.get();
+            if (predicate.test(result)) {
+                result = alternativeValue.get();
+            }
+
+            end(result);
+        }
+
+        public static <T> void pattern4(Supplier<T> initialValue, Predicate<T> predicate, Supplier<T> alternativeValue) {
+            T temp = initialValue.get();
+            T result;
+            if (predicate.test(temp)) {
+                result = alternativeValue.get();
+            } else {
+                result = temp;
+            }
+
+            end(result);
+        }
+    }
+
+    static class AlternativeAssignmentInReturn {
+
+        // with a redundant variable
+
+        public static <T> T pattern3(Supplier<T> initialValue, Predicate<T> predicate, Supplier<T> alternativeValue) {
+            T result = initialValue.get();
+            if (predicate.test(result)) {
+                return alternativeValue.get();
+            }
+            return result;
+        }
+
+        // shortest
+
+        public static <T> T pattern5(Supplier<T> initialValue, Predicate<T> predicate, Supplier<T> alternativeValue) {
+            T temp = initialValue.get();
+            return predicate.test(temp) ? alternativeValue.get() : temp;
+        }
+    }
+
+
     public static Statement classicIndexLoop() {
-        LocalVariableCreation i = new LocalVariableCreation(localVariableStub(0), someIntConstant(0));
-        Expression someIntValue = someIntValue(0);
+        LocalVariableCreation i = new LocalVariableCreation(localIntVariableStub(0), new IntConstant(0));
+        Expression someIntValue = intExpression(0, Set.of(i.localVariableReference));
         Expression conditionWithGreaterThan = new BinaryOperatorTemplate(
                 someIntValue,
                 Set.of(Primitives.PRIMITIVES.greaterEqualsOperatorInt, Primitives.PRIMITIVES.greaterOperatorInt),
@@ -45,8 +368,8 @@ public class ForLoop {
                 true,
                 Primitives.PRIMITIVES.booleanParameterizedType);
         Expression condition = new ExpressionAlternatives(conditionWithGreaterThan, conditionWithLessThan);
-        Expression iPlusEquals1 = new UnaryOperator(Primitives.PRIMITIVES.unaryPlusOperatorInt, new IntConstant(1),
-                UnaryOperator.DEFAULT_PRECEDENCE);
+        Expression iPlusEquals1 = new Assignment(new VariableExpression(i.localVariableReference),
+                new IntConstant(1), Primitives.PRIMITIVES.assignPlusOperatorInt, null);
         Block block = new Block.BlockBuilder()
                 .addStatement(new NoAssignmentRestriction(i.localVariableReference))
                 .addStatement(new NoBreakoutRestriction())
@@ -66,7 +389,7 @@ public class ForLoop {
      */
 
     public static Statement decreasingIndexLoop() {
-        LocalVariableCreation i = new LocalVariableCreation(localVariableStub(0), someIntValue(0));
+        LocalVariableCreation i = new LocalVariableCreation(localIntVariableStub(0), intExpression(0, Set.of()));
         Expression conditionWithGreaterThan = new BinaryOperatorTemplate(
                 new VariableExpression(i.localVariableReference),
                 Set.of(Primitives.PRIMITIVES.greaterEqualsOperatorInt),
@@ -80,20 +403,16 @@ public class ForLoop {
                 true,
                 Primitives.PRIMITIVES.booleanParameterizedType);
         Expression condition = new ExpressionAlternatives(conditionWithGreaterThan, conditionWithLessThan);
-        Expression iMinusEquals = new UnaryOperator(Primitives.PRIMITIVES.unaryMinusOperatorInt, new IntConstant(1),
-                UnaryOperator.DEFAULT_PRECEDENCE);
+        Expression iMinusEquals1 = new Assignment(new VariableExpression(i.localVariableReference),
+                new IntConstant(1), Primitives.PRIMITIVES.assignMinusOperatorInt, null);
         Block block = new Block.BlockBuilder()
                 .addStatement(new NoAssignmentRestriction(i.localVariableReference))
                 .addStatement(new NoBreakoutRestriction())
                 .build();
-        return new ForStatement(null, List.of(i), condition, List.of(iMinusEquals), block);
+        return new ForStatement(null, List.of(i), condition, List.of(iMinusEquals1), block);
     }
 
     static abstract class GenericRestrictionStatement implements Statement {
-        @Override
-        public String statementString(int indent) {
-            return null;
-        }
 
         @Override
         public Set<String> imports() {
@@ -114,11 +433,41 @@ public class ForLoop {
             this.variables = ImmutableSet.copyOf(variables);
         }
 
+        @Override
+        public String statementString(int indent) {
+            StringBuilder sb = new StringBuilder();
+            StringUtil.indent(sb, indent);
+            sb.append("No assignments to ").append(variables).append(";\n");
+            return sb.toString();
+        }
+
     }
 
     static class NoBreakoutRestriction extends GenericRestrictionStatement {
+        @Override
+        public String statementString(int indent) {
+            StringBuilder sb = new StringBuilder();
+            StringUtil.indent(sb, indent);
+            sb.append("No breakouts allowed;\n");
+            return sb.toString();
+        }
 
     }
+
+    static class AnyNonModifyingStatement extends GenericRestrictionStatement {
+
+        public Set<Variable> variables;
+
+        public AnyNonModifyingStatement(Variable... variables) {
+            this.variables = ImmutableSet.copyOf(variables);
+        }
+
+        @Override
+        public String statementString(int indent) {
+            return "Any non-modifying statement using only " + variables + ";";
+        }
+    }
+
 
     static class ExpressionAlternatives implements Expression {
 
@@ -171,6 +520,11 @@ public class ForLoop {
         }
 
         @Override
+        public String toString() {
+            return expressionString(0);
+        }
+
+        @Override
         public ParameterizedType returnType() {
             return returnType;
         }
@@ -192,23 +546,18 @@ public class ForLoop {
     }
 
     public static Expression someIntConstant(int index) {
-        return new IntConstant(SOME_VALUE + index) {
-            @Override
-            public String toString() {
-                return "Some int constant " + index;
-            }
-        };
+        return new GenericConstantExpression<Integer>(index, Primitives.PRIMITIVES.intParameterizedType);
     }
 
-    public static Expression someIntValue(int index) {
-        return new GenericExpression(index, Primitives.PRIMITIVES.intParameterizedType);
+    public static Expression intExpression(int index, Set<Variable> variablesNotAllowed) {
+        return new GenericExpression(index, Primitives.PRIMITIVES.intParameterizedType, variablesNotAllowed);
     }
 
-    static class GenericExpression implements Expression {
+    static class GenericConstantExpression<T> implements Expression, Constant<T> {
         public final int index;
         public final ParameterizedType returnType;
 
-        public GenericExpression(int index, ParameterizedType returnType) {
+        public GenericConstantExpression(int index, ParameterizedType returnType) {
             this.index = index;
             this.returnType = returnType;
         }
@@ -220,7 +569,55 @@ public class ForLoop {
 
         @Override
         public String expressionString(int indent) {
-            return "Some expression " + index;
+            return "[constant " + index + "]";
+        }
+
+        @Override
+        public String toString() {
+            return expressionString(0);
+        }
+
+        @Override
+        public int precedence() {
+            return 0;
+        }
+
+        @Override
+        public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public T getValue() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class GenericExpression implements Expression {
+        public final int index;
+        public final ParameterizedType returnType;
+        public final Set<Variable> variablesNotAllowed;
+
+        public GenericExpression(int index, ParameterizedType returnType, Set<Variable> variablesNotAllowed) {
+            this.index = index;
+            this.returnType = returnType;
+            this.variablesNotAllowed = variablesNotAllowed;
+        }
+
+        @Override
+        public ParameterizedType returnType() {
+            return returnType;
+        }
+
+        @Override
+        public String expressionString(int indent) {
+            String notAllowed = variablesNotAllowed.isEmpty() ? "" : " without " + variablesNotAllowed;
+            return "[expression " + index + notAllowed + "]";
+        }
+
+        @Override
+        public String toString() {
+            return expressionString(0);
         }
 
         @Override
@@ -234,8 +631,12 @@ public class ForLoop {
         }
     }
 
-    public static LocalVariable localVariableStub(int index) {
-        return new LocalVariable(List.of(), VARIABLE_STUB + index, Primitives.PRIMITIVES.intParameterizedType, List.of());
+    public static LocalVariable localIntVariableStub(int index) {
+        return localVariableStub(index, Primitives.PRIMITIVES.intParameterizedType);
+    }
+
+    public static LocalVariable localVariableStub(int index, ParameterizedType type) {
+        return new LocalVariable(List.of(), VARIABLE_STUB + index, type, List.of());
     }
 }
 

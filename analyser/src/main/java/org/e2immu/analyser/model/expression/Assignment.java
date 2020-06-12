@@ -103,7 +103,8 @@ public class Assignment implements Expression {
             }
             return target.expressionString(indent) + operator;
         }
-        String operator = primitiveOperator != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
+        //  != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
+        String operator = primitiveOperator == null ? "=" : primitiveOperator.name;
         return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
     }
 

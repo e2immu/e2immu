@@ -27,6 +27,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 public class VariableExpression implements Expression {
     public final Variable variable;
@@ -95,5 +96,10 @@ public class VariableExpression implements Expression {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return variable.sideEffect(Objects.requireNonNull(sideEffectContext));
+    }
+
+    @Override
+    public String toString() {
+        return expressionString(0);
     }
 }

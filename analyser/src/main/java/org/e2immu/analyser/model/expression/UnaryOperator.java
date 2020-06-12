@@ -43,6 +43,7 @@ public class UnaryOperator implements Expression {
     public final int precedence;
     public final MethodInfo operator;
 
+    public static final int PRECEDENCE_POST_INCREMENT = 15;
     public static final int DEFAULT_PRECEDENCE = 14;
 
     public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, int precedence) {
@@ -55,7 +56,7 @@ public class UnaryOperator implements Expression {
         switch (operator) {
             case POSTFIX_DECREMENT:
             case POSTFIX_INCREMENT:
-                return 15;
+                return PRECEDENCE_POST_INCREMENT;
             default:
                 return DEFAULT_PRECEDENCE;
         }
