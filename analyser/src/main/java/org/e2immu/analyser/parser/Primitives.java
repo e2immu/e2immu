@@ -108,6 +108,13 @@ public class Primitives {
     public final MethodInfo remainderOperatorInt = new MethodInfo(intTypeInfo, "%",
             List.of(), intParameterizedType, true);
 
+    public final MethodInfo signedRightShiftOperatorInt = new MethodInfo(intTypeInfo, ">>",
+            List.of(), intParameterizedType, true);
+    public final MethodInfo unsignedRightShiftOperatorInt = new MethodInfo(intTypeInfo, ">>>",
+            List.of(), intParameterizedType, true);
+    public final MethodInfo leftShiftOperatorInt = new MethodInfo(intTypeInfo, "<<",
+            List.of(), intParameterizedType, true);
+
     public final MethodInfo divideOperatorInt = new MethodInfo(intTypeInfo, "/",
             List.of(), intParameterizedType, true);
 

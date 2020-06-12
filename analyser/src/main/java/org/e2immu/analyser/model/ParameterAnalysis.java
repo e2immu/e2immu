@@ -136,6 +136,9 @@ public class ParameterAnalysis extends Analysis {
                 return Level.TRUE;
             }
         }
+        if(variableProperty == VariableProperty.NOT_NULL) {
+           if(parameterizedType.isPrimitive()) return Level.FALSE;
+        }
         return Integer.MAX_VALUE;
     }
 

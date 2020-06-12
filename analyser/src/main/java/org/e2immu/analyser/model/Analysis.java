@@ -226,7 +226,12 @@ public abstract class Analysis {
                 if (notNull0 == Level.FALSE) {
                     annotations.put(typeContext.notNull.get(), false);
                 }
-                if (doNullable) annotations.put(typeContext.nullable.get(), notNull0 != Level.TRUE);
+                if (doNullable) {
+                    int max = maximalValue(VariableProperty.NOT_NULL);
+                    boolean nullablePresent = max != Level.FALSE && notNull0 != Level.TRUE;
+                    // a delay on notNull0 on a non-primitive will get nullable present
+                    annotations.put(typeContext.nullable.get(), nullablePresent);
+                }
             }
         }
 

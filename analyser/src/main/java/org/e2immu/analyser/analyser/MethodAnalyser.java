@@ -488,8 +488,9 @@ public class MethodAnalyser {
             boolean localMethodsCalled = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_CALLED, Level.DELAY) == Level.TRUE;
             if (localMethodsCalled) {
                 int thisModified = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
+                int methodDelay = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_DELAY, Level.FALSE);
 
-                if (thisModified == Level.DELAY) {
+                if (thisModified == Level.DELAY && methodDelay == Level.TRUE) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
                             methodInfo.distinguishingName());
                     return false;

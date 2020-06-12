@@ -51,6 +51,10 @@ public class TestTrie extends CommonTestRunner {
                 Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.FALSE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
+
+            if("get".equals(methodInfo.name) && "0".equals(statementId) && "node".equals(variableName)) {
+                Assert.assertNull(properties.get(VariableProperty.MODIFIED));
+            }
         }
     };
 
@@ -62,6 +66,9 @@ public class TestTrie extends CommonTestRunner {
             }
         }
     };
+
+    // warnings:
+    // for now we accept that "action.apply( )", as a Function, may return null, since we haven't implemented inference of @NotNull1 yet
 
     @Test
     public void test() throws IOException {

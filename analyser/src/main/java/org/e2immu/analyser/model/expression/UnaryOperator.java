@@ -43,6 +43,8 @@ public class UnaryOperator implements Expression {
     public final int precedence;
     public final MethodInfo operator;
 
+    public static final int DEFAULT_PRECEDENCE = 14;
+
     public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, int precedence) {
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
@@ -55,7 +57,7 @@ public class UnaryOperator implements Expression {
             case POSTFIX_INCREMENT:
                 return 15;
             default:
-                return 14;
+                return DEFAULT_PRECEDENCE;
         }
     }
 

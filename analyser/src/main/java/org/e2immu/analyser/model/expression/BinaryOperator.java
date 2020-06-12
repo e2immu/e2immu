@@ -266,6 +266,12 @@ public class BinaryOperator implements Expression {
                     return Primitives.PRIMITIVES.bitwiseAndOperatorInt;
                 case XOR:
                     return Primitives.PRIMITIVES.bitwiseXorOperatorInt;
+                case UNSIGNED_RIGHT_SHIFT:
+                    return Primitives.PRIMITIVES.unsignedRightShiftOperatorInt;
+                case SIGNED_RIGHT_SHIFT:
+                    return Primitives.PRIMITIVES.signedRightShiftOperatorInt;
+                case LEFT_SHIFT:
+                    return Primitives.PRIMITIVES.leftShiftOperatorInt;
                 case GREATER:
                     return Primitives.PRIMITIVES.greaterOperatorInt;
                 case GREATER_EQUALS:
@@ -285,39 +291,38 @@ public class BinaryOperator implements Expression {
                 widestType.fullyQualifiedName);
     }
 
-    public static int precedence(@NotNull @NotModified BinaryExpr.Operator operator) {
-        switch (operator) {
-            case DIVIDE:
-            case REMAINDER:
-            case MULTIPLY:
-                return MULTIPLICATIVE_PRECEDENCE;
-            case MINUS:
-            case PLUS:
-                return ADDITIVE_PRECEDENCE;
-            case SIGNED_RIGHT_SHIFT:
-            case UNSIGNED_RIGHT_SHIFT:
-            case LEFT_SHIFT:
-                return SHIFT_PRECEDENCE;
-            case GREATER:
-            case GREATER_EQUALS:
-            case LESS:
-            case LESS_EQUALS:
-                return COMPARISON_PRECEDENCE;
-            case EQUALS:
-            case NOT_EQUALS:
-                return EQUALITY_PRECEDENCE;
-            case BINARY_AND:
-                return AND_PRECEDENCE;
-            case XOR:
-                return XOR_PRECEDENCE;
-            case BINARY_OR:
-                return OR_PRECEDENCE;
-            case AND:
-                return LOGICAL_AND_PRECEDENCE;
-            case OR:
-                return LOGICAL_OR_PRECEDENCE;
+    public static int precedence(@NotNull @NotModified MethodInfo methodInfo) {
+        if (Primitives.PRIMITIVES.divideOperatorInt == methodInfo || Primitives.PRIMITIVES.remainderOperatorInt == methodInfo || Primitives.PRIMITIVES.multiplyOperatorInt == methodInfo) {
+            return MULTIPLICATIVE_PRECEDENCE;
         }
-        throw new UnsupportedOperationException("? unknown operator " + operator);
+        if (Primitives.PRIMITIVES.minusOperatorInt == methodInfo || Primitives.PRIMITIVES.plusOperatorInt == methodInfo || Primitives.PRIMITIVES.plusOperatorString == methodInfo) {
+            return ADDITIVE_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.signedRightShiftOperatorInt == methodInfo || Primitives.PRIMITIVES.unsignedRightShiftOperatorInt == methodInfo || Primitives.PRIMITIVES.leftShiftOperatorInt == methodInfo) {
+            return SHIFT_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.greaterEqualsOperatorInt == methodInfo || Primitives.PRIMITIVES.greaterOperatorInt == methodInfo || Primitives.PRIMITIVES.lessEqualsOperatorInt == methodInfo || Primitives.PRIMITIVES.lessOperatorInt == methodInfo) {
+            return COMPARISON_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.equalsOperatorInt == methodInfo || Primitives.PRIMITIVES.equalsOperatorObject == methodInfo || Primitives.PRIMITIVES.notEqualsOperatorInt == methodInfo || Primitives.PRIMITIVES.notEqualsOperatorObject == methodInfo) {
+            return EQUALITY_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.bitwiseAndOperatorInt == methodInfo) {
+            return AND_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.bitwiseXorOperatorInt == methodInfo) {
+            return XOR_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.bitwiseOrOperatorInt == methodInfo) {
+            return OR_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.andOperatorBool == methodInfo) {
+            return LOGICAL_AND_PRECEDENCE;
+        }
+        if (Primitives.PRIMITIVES.orOperatorBool == methodInfo) {
+            return LOGICAL_OR_PRECEDENCE;
+        }
+        throw new UnsupportedOperationException("? unknown operator " + methodInfo.distinguishingName());
     }
 
     // TODO needs cleanup

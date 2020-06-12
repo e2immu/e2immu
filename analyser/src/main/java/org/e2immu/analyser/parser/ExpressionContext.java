@@ -429,11 +429,12 @@ public class ExpressionContext {
                 } else {
                     typeInfo = null;
                 }
+                MethodInfo operatorMethod = BinaryOperator.getOperator(binaryExpr.getOperator(), typeInfo);
                 return new BinaryOperator(
                         lhs,
-                        BinaryOperator.getOperator(binaryExpr.getOperator(), typeInfo),
+                        operatorMethod,
                         rhs,
-                        BinaryOperator.precedence(binaryExpr.getOperator()));
+                        BinaryOperator.precedence(operatorMethod));
             }
             if (expression.isUnaryExpr()) {
                 UnaryExpr unaryExpr = (UnaryExpr) expression;
