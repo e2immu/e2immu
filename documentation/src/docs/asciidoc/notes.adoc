@@ -84,3 +84,110 @@ if(a == null && b) {
 What to do with this?
 Following the method above, we could use `someExpression` only for `NOT_NULL`, but only if `b` is true.
 Will this lead us too far?
+
+=== On the relation between code standardization and patterns
+
+==== Step 1: expression standardization
+
+Using inline conditionals and the `switch` statement as expression, expression standardization gets us pretty far.
+Major points are:
+
+. apply boolean logic to resolve over-complicated constructs
+. apply sorting to standardize components of expressions
+. replace some `if-else` constructs by inline expressions
+
+==== Step 2: Extended non-modifying computation
+
+These two lead up to the "expanded non-modifying computation"
+. preconditions
+. independent partial results, standardized expressions
+. one final result expression, standardized
+
+This ENMC will be the 2nd level building block beyond expressions.
+It can be represented by a method: it has multiple inputs, an escape mechanism, and a single return value.
+It can, equivalently, be seen as a _function_.
+If it is non-static, and in an `@E2Immutable` class, it is guaranteed to result in the same result for every execution.
+If it is non-static in a class where some dependencies are mutable, there will be less flexibility and synchronisation will start to play a role.
+
+The expressions in the ENMC can be basic operations, or method calls to other ENMCs.
+No local variables can be created except for the representation of the partial results.
+Fields can be consulted, but not assigned to, and their content not modified.
+
+We should strive to have as little variation as possible between functionally identical ENMCs.
+However, there is always a "substitution" level for methods: we do not want to expand _everything_.
+For example, `set.isEmpty()` is transformed to `0 == set.size()` to deal with size computations.
+We do not need to know how `size` itself is computed.
+
+==== Step 3: Transformations and streams
+
+An ENMC can be used to transform one or more inputs into a single output.
+Given the same input, we may want to compute a second output independently.
+Or, we may want to store the first output, and then compute a second one based on the first and the initial input.
+Composition of ENMCs need to deal with:
+
+. the sequential and or independent nature
+. the storage of the eventual results
+
+To deal with the latter, we will need to understand the "context" in which one applies the transformations.
+
+Taking the definition of a Java stream a little wider, in our context, a stream runs over all elements of a `@Container`.
+It is the first, most obvious reason to use loops.
+Arguably the most important aspect of a stream is that it iterates _independently_ over the elements.
+
+Fully non-modifying streams always compute some result.
+Modifying ones can be used to collect elements to generate a new container.
+Finally, as a third case, the streams can end in a `forEach()` which can effect general modifying statements.
+
+We will need to implement the inherent semantics of streams:
+
+. they can be cut short
+. they can be empty
+. the stream computation may not need any memory
+. the stream computation may need a little memory (_reduction_)
+. they can be used to collect and build wholly new structures
+
+===== Representation
+
+We will use streams and stream semantics as the native representation for some loop structures occurring in Java code.
+Note that streams in Java are _fluent_: they are implemented as the composition of method calls each returning a new, modified stream object.
+The _sequential_ nature here is important.
+
+One of the weaknesses of Java is the difficulty of working with tuples.
+It is not difficult, just extremely verbose, to create small classes that hold multiple objects together.
+Java 14's `record` statement may improve the situation.
+However, there is no technical limitation, and we may have to introduce such temporary classes to transform less obvious loops into streams.
+Consider, for example, looping over a list with the element and the index at the same time.
+
+A standard Java stream only holds one element.
+So, a special type needs to be made to keep both the index and element of the container.
+
+Consider
+
+[source]
+----
+List<String> list1 = List.of("a", "b", "c", "d");
+ZipWithIndex.streamWithIndex(list1)
+   .filter(wi -> wi.index % 2 == 0)
+   .forEach(wi -> System.out.println(wi.index + " = " + wi.t));
+----
+
+We had to make a special type (to hold the index as an `int`, together with the element of the container) and a custom iterator.
+Even if implementation-wise it is not always so trivial, conceptually all is sound: the stream considers each element independently.
+The loop equivalent is simply:
+
+[source]
+----
+int i=0;
+for(String s: list1) {
+  if(i % 2 == 0) System.out.println(i + " = " + s);
+  i++;
+}
+----
+
+==== More complicated loop constructs
+
+Clearly not all loops can be replaced by streams.
+A _sliding window_ is a typical example of an alternative way of going over the elements of an ordered container.
+Here, the _current_ and _previous_ element are visible at each point in the loop (except for maybe in the first step, where there is no _previous_ element yet).
+
+When the container is a matrix, loops can go over all elements of the diagonal, or the upper triangle, ... The variations are endless, but for each data structure, there will be methods that are more natural and more commonly used than others.
