@@ -1,5 +1,6 @@
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.util.stream;
 
+import org.e2immu.analyser.util.stream.ZipWithIndex;
 import org.junit.Test;
 
 import java.util.List;

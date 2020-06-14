@@ -1,4 +1,4 @@
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.util.stream;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

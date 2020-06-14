@@ -145,12 +145,16 @@ We will need to implement the inherent semantics of streams:
 . the stream computation may not need any memory
 . the stream computation may need a little memory (_reduction_)
 . they can be used to collect and build wholly new structures
+. they can be combined
+. ...
 
 ===== Representation
 
 We will use streams and stream semantics as the native representation for some loop structures occurring in Java code.
-Note that streams in Java are _fluent_: they are implemented as the composition of method calls each returning a new, modified stream object.
+Note that in Java we construct stream pipelines _fluently_, by composition of method calls each returning a new, modified stream object.
 The _sequential_ nature here is important.
+The end result is an expression, which may or may not have side effects.
+If it does not, it can be part of other ENMCs.
 
 One of the weaknesses of Java is the difficulty of working with tuples.
 It is not difficult, just extremely verbose, to create small classes that hold multiple objects together.
@@ -184,10 +188,58 @@ for(String s: list1) {
 }
 ----
 
-==== More complicated loop constructs
+The single advantage of using a stream here, is that you do not forget to increment the index variable!
 
-Clearly not all loops can be replaced by streams.
+===== More complicated loop constructs
+
 A _sliding window_ is a typical example of an alternative way of going over the elements of an ordered container.
 Here, the _current_ and _previous_ element are visible at each point in the loop (except for maybe in the first step, where there is no _previous_ element yet).
 
-When the container is a matrix, loops can go over all elements of the diagonal, or the upper triangle, ... The variations are endless, but for each data structure, there will be methods that are more natural and more commonly used than others.
+More in the mathematical sphere is a loop to generate every pair of elements in a list or array, as in:
+
+[source]
+----
+int n = array.length;
+for(int i=0; i<n-1; i++) {
+  for(int j=i+1; j<n; j++) {
+    System.out.println("(" + i + "," + j + ")=(" + array[i] + "," + array[j] + ")");
+  }
+}
+----
+
+
+==== Implementation
+
+Detection will be a two-step process:
+
+. transformation of non-standard loop construct into standardized `forEach` construct using patterns
+. transformation of standardized `forEach` into stream
+
+The other way round should work as well.
+
+
+=== Step 4: Tree structures, recursion
+
+At the level of the actual data structure, recursion plays a role as soon as the data structure is not linear.
+The equivalent of looping over all elements, in absence of an iterator, can look minimally like:
+
+[source]
+----
+class Node<T> {
+  public final T t;
+  List<Node<T>> children;
+}
+
+boolean find(Node<T> root, Predicate<T> predicate) {
+  if(predicate.test(root.t)) return true;
+  for(Node<T> child: children) {
+    if(find(child, predicate)) return true;
+  }
+  return false;
+}
+----
+
+
+=== Step 5: Common discrete data structures
+
+
