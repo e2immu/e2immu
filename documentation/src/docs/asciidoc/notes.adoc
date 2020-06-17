@@ -87,6 +87,17 @@ Will this lead us too far?
 
 === On the relation between code standardization and patterns
 
+For the purpose of standardizing code, we rely on
+
+. normalised expressions
+. grouping expressions to compute a value
+. understanding loops that iterate over a data structure
+. standard data types: `@E2Container`, `@Container` as builder for `@E2Container`
+. interfaces as an alternative system of conditionals
+
+A group of types that can be rewritten using the 5 standardizations above can be 'understood'.
+
+
 ==== Step 1: expression standardization
 
 Using inline conditionals and the `switch` statement as expression, expression standardization gets us pretty far.
@@ -207,7 +218,6 @@ for(int i=0; i<n-1; i++) {
 }
 ----
 
-
 ==== Implementation
 
 Detection will be a two-step process:
@@ -217,8 +227,7 @@ Detection will be a two-step process:
 
 The other way round should work as well.
 
-
-=== Step 4: Tree structures, recursion
+==== Tree structures, recursion
 
 At the level of the actual data structure, recursion plays a role as soon as the data structure is not linear.
 The equivalent of looping over all elements, in absence of an iterator, can look minimally like:
@@ -239,7 +248,56 @@ boolean find(Node<T> root, Predicate<T> predicate) {
 }
 ----
 
+=== Step 4: Common discrete data structures
 
-=== Step 5: Common discrete data structures
+Obviously for this project, the primary data structures that we want to promote are the `@E1Container` and, even better, the `@E2Container`.
+Depending on the context, we may have to live with eventual immutability, but that will be the strength of this project.
+
+==== Standard @E1Immutable
+--
+. final fields
+. public fields instead of a getter by default, but getters included when necessary for some framework.
+
+. one primary constructor:
+
+.. inside, first precondition checks on the parameters
+.. then, assignments to the fields. The most complicated assignment expression we would advocate is a single expression without explicit internal method calls.
+. alternative constructors, but only for default values of parameters.
+Preferrably these alternative constructors use the primary constructor.
+
+. we create factory methods for two purposes:
+
+.. more complicated computations needed to transform from parameters to fields, common to the single constructor
+.. alternative versions of constructing that are not simply about default parameter values.
+--
+
+These rules enforce that
+
+. actual construction is fast.
+No real computations should occur during object construction.
+. field assignments happen at the end, once.
+They should not be used as local variables.
+
+==== Builders
+
+The single-step nature of constructing `@E1Immutable` classes, and the immutability of `@E2Immutable` ones, necessitates a step-wise construction system: the _builder_.
+
+Build `@Fluent` in nature, builders can be created and deliver their result in a single expression, removing another reason for local variables.
+
+=== Interfaces
+
+Certain expressions that are not allowed normally are acceptable when a method implements an interface method:
+
+. returning constants
+
+==== Detection of sub-typing, extracting interfaces
+
+When code depends on characteristics of fields rather than parameters, sub-typing may be an answer.
+
+==== Detection of default implementations
+
+Methods that only use other interface methods should not be in an abstract supertype, but in the interface.
+
+
 
 
