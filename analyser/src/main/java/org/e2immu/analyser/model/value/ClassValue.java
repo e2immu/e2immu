@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,6 +31,11 @@ public class ClassValue extends ConstantValue implements Constant<ParameterizedT
     public final ParameterizedType value;
 
     public ClassValue(ParameterizedType value) {
+        this(value, null);
+    }
+
+    public ClassValue(ParameterizedType value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = Objects.requireNonNull(value);
     }
 

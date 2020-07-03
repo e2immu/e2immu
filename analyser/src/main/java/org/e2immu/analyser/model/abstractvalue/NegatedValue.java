@@ -48,6 +48,7 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     }
 
     private NegatedValue(@NotNull Value value) {
+        super(value.getObjectFlow());
         this.value = Objects.requireNonNull(value);
         if (value instanceof NegatedValue) throw new UnsupportedOperationException();
     }
@@ -61,7 +62,7 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         Objects.requireNonNull(v);
         if (v instanceof BoolValue) {
             BoolValue boolValue = (BoolValue) v;
-            return boolValue.value ? BoolValue.FALSE : BoolValue.TRUE;
+            return boolValue.negate();
         }
         if (v instanceof NumericValue) {
             return ((NumericValue) v).negate();
@@ -72,12 +73,12 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (v instanceof OrValue) {
             OrValue or = (OrValue) v;
             Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
-            return new AndValue().append(negated);
+            return new AndValue(v.getObjectFlow()).append(negated);
         }
         if (v instanceof AndValue) {
             AndValue and = (AndValue) v;
             List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
-            return new OrValue().append(negated);
+            return new OrValue(v.getObjectFlow()).append(negated);
         }
         if (v instanceof EqualsValue) {
             EqualsValue equalsValue = (EqualsValue) v;

@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
@@ -35,25 +36,26 @@ public class RemainderValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
-    public RemainderValue(Value lhs, Value rhs) {
+    public RemainderValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
     }
 
-    public static Value remainder(EvaluationContext evaluationContext, Value l, Value r) {
-        if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
+    public static Value remainder(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
+        if (l instanceof NumericValue && l.toInt().value == 0) return l;
         if (r instanceof NumericValue && r.toInt().value == 0) {
             evaluationContext.raiseError(Message.DIVISION_BY_ZERO);
             return l;
         }
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof IntValue && r instanceof IntValue)
-            return new IntValue(l.toInt().value % r.toInt().value);
+            return new IntValue(l.toInt().value % r.toInt().value, objectFlow);
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        return new RemainderValue(l, r);
+        return new RemainderValue(l, r, objectFlow);
     }
 
     @Override

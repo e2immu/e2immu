@@ -4,10 +4,18 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 
 public abstract class ConstantValue implements Value {
+
+    public final ObjectFlow objectFlow;
+
+    public ConstantValue(ObjectFlow objectFlow) {
+        this.objectFlow = objectFlow;
+    }
+
     @Override
     public boolean isConstant() {
         return true;
@@ -41,5 +49,10 @@ public abstract class ConstantValue implements Value {
     @Override
     public boolean isExpressionOfParameters() {
         return true;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 }

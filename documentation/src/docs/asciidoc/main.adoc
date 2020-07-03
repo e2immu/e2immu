@@ -8,6 +8,8 @@
 :toc: left
 :imagesdir: images
 
+:e2immu: pass:normal[_e2immu_]
+
 include::{includedir}/abstract.adoc[]
 include::{includedir}/about.adoc[]
 include::{includedir}/motivation.adoc[]
@@ -46,7 +48,7 @@ include::{includedir}/analysis-of-expressions.adoc[]
 
 == Copyright and License
 
-Copyright 2020, Bart Naudts
+Copyright (C) 2020, Bart Naudts
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

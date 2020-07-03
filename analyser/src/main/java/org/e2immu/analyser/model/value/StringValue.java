@@ -20,6 +20,8 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -29,14 +31,27 @@ public class StringValue extends ConstantValue implements Constant<String> {
     public final String value;
 
     public StringValue(String value) {
+        this(value, null);
+    }
+
+    public StringValue(String value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = Objects.requireNonNull(value);
     }
 
-    public static Value concat(Value l, Value r) {
+    public static Value concat(Value l, Value r, Location location) {
         if (l.isConstant() && r.isConstant()) {
-            return new StringValue(l.toString() + r.toString());
+            String ls = l.toString();
+            String rs = r.toString();
+            if(ls.isEmpty() && r instanceof StringValue) {
+                return r;
+            }
+            if(rs.isEmpty() && l instanceof StringValue) {
+                return l;
+            }
+            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringTypeInfo));
         }
-        return Instance.newStringInstance();
+        return Instance.newStringInstance(location);
     }
 
     @Override

@@ -9,6 +9,9 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +42,7 @@ public class ConditionalManager {
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the conditional
-        Value result = new AndValue().append(conditional, value);
+        Value result = new AndValue(value.getObjectFlow()).append(conditional, value);
         if (result.equals(conditional)) {
             // constant true: adding the value has no effect at all
             return BoolValue.TRUE;
@@ -54,7 +57,7 @@ public class ConditionalManager {
         if (conditional instanceof AndValue) {
             return ((AndValue) conditional).append(value);
         }
-        return new AndValue().append(conditional, value);
+        return new AndValue(value.getObjectFlow()).append(conditional, value);
     }
 
     public Set<Variable> getNullConditionals(boolean equalToNull) {
@@ -79,7 +82,7 @@ public class ConditionalManager {
 
         // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
         // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-        Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value);
+        Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, null);
         if (equalsNull == BoolValue.FALSE) return Level.TRUE;
         Value withConditional = combineWithConditional(equalsNull);
         if (withConditional == BoolValue.FALSE) return Level.TRUE; // we know != null

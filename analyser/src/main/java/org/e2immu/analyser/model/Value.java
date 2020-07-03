@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.abstractvalue.ValueWrapper;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotModified;
 
 import java.util.List;
@@ -166,4 +167,6 @@ public interface Value extends Comparable<Value> {
     default Value nonIndividualCondition() {
         return this;
     }
+
+    default ObjectFlow getObjectFlow() { throw new UnsupportedOperationException(); }
 }

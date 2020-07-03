@@ -2,6 +2,14 @@
 == About this document
 
 How to read this document?
-The <<Motivation>> section provides a narrative to the concepts that we want to introduce.
-The <<Overview of annotations>> section works more like a reference.
+The <<Motivation>> section concludes the introductory part, and provides a narrative to the concepts that we want to introduce.
 
+The second part of the document focuses on the practical aspects of installing and using {e2immu}.
+It then discusses a number of popular libraries and programming frameworks in the light of eventual immutability.
+
+The third part provides a reference to concepts and annotations.
+The most important section here is <<Overview of annotations>>.
+
+The fourth part focuses on some technical aspects of the implementation of the code analyser.
+
+Finally, we take a look at the to-do list, and conclude this document with a copyright notice.

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,6 +31,11 @@ public class CharValue extends ConstantValue implements Constant<Character> {
     public final char value;
 
     public CharValue(char value) {
+        this(value, null);
+    }
+
+    public CharValue(char value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 

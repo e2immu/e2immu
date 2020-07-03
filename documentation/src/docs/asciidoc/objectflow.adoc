@@ -1,0 +1,153 @@
+== Object flows
+
+An ObjectFlow object records the flow of objects of a given type throughout an application.
+
+An ObjectFlow often starts with an object creation statement (`new SomeObject()`), which takes place in either a method or field assignment.
+In its simplest form, the method creates an object, calls some methods on it, and forgets it:
+
+[source,java]
+----
+return new StringBuider().append(i).append("+").append(j).toString();
+----
+
+In general, there are four different ways of moving the object outside the creating method:
+
+. the method returns the newly created object
+. the method passes on the newly created object as an argument to a method call (either static, or on another object).
+Here, we distinguish two cases:
+
+.. inside the method call, recursively, the object persists
+.. inside the method call, recursively, the object is never stored
+. the method assigns the newly created object to a field inside the class.
+
+There are three different origins:
+
+. new object creation
+. parents flows, either objects coming in via a parameter, or chaining inside a method
+. a field
+
+
+In the light of eventual immutability, we consider a state change where, after calling a certain method, the object becomes immutable.
+Once immutable, calling one of the modifying methods results in an error.
+
+The type of the object flow is as specific as we can be.
+
+We do not create flows inside a class, i.e., on the `this` object.
+We do not create flows for primitives.
+
+=== Components of an object flow object
+
+Many instances of the `ObjectFlow` object linked together describe a single object flow.
+The object has the following components:
+
+* a `Location`, consisting of a method or field initialiser, the type, and an index number: together they provide uniqueness, and the _where_ and _what_.
+* either a new creation, or one or more links to parent `ObjectFlow` objects, which act as a source.
+The new creation itself is a `MethodCall` object, it can be connected to other object flows through its arguments.
+* a list of `MethodCall` objects representing method calls and field accesses on the object.
+The calls appear in the order of occurrence in the `Location`; they need not be consecutive, nor fluent.
+Some can be conditional, or appear in loops.
+* the state of the object after these method calls.
+Currently, this is a integer denoting immutability, and a boolean indicating if any of the method calls were modifying.
+* one or more bindings of this object to a (effectively final?) field belonging to the `Location`.
+* a number of exit or chaining possibilities:
+
+** a list of `ObjectFlow` objects representing a return statement: all the object flows where the `Location` method was called.
+** a _callout_: passing the object as an argument to another method (a different location)
+** optionally, in combination with a callout: the _next_ object flow object, indicating further usage of the object in the same location
+
+=== Examples
+
+Let us start with a small bit of code:
+
+[source,java]
+----
+class X {
+    public final int i;
+    public final int j;
+
+    public X(int i, int j) {
+        this.i = i;
+        this.j = j;
+    }
+
+    public String toString() {
+      return new StringBuider().append(i).append(" x ").append(j).toString();
+    }
+}
+----
+
+The statement in the `toString` method represents one `ObjectFlow` object of the type `StringBuilder`, in the location `X.toString()`, with a new creation and four method calls.
+This flow does not link to the object flows of `i` and `j` (occurring in the two `append` calls) because they belong to the `this` object.
+The last method call returns a `String` object, which is outside the scope of object flow for `StringBuilder`.
+
+It creates an object flow of type `String`, in the location `X.toString()`, with a parent linking to the `ObjectFlow` in `StringBuilder.toString()`, and a list representing the return statement and all the uses of the `X.toString()` method.
+
+Using the class `X` in an admittedly silly way,
+
+[source,java]
+----
+class UsingX {
+  public final X x12 = new X(1, 2);
+  public final X x44 = new X(4, 4);
+
+  public X mix(X x) {
+    return new X(x12.i + x.i, x44.j + x.j);
+  }
+
+  public String toString() {
+    return x12+", "+x44;
+  }
+}
+----
+
+In the locations `UsingX.x12` and `UsingX.x44` we create flows that consists solely of the creation of an object of type `X`.
+
+In the `mix()` method, we create a flow for the argument `x`.
+It consists of links to source flows (those flows calling out to `mix`), and two references to a field access.
+We create a flow for the return statement consisting of a creation of type `X`, and the set of links to the return statement.
+The creation call links to a newly created flow with origin `x12`, and field access `i`,
+and, similarly, to a newly created flow with origin `x44` and field access `j`.
+
+The flow in `UsingX.toString()` is a concatenation of strings.
+Regardless of the implementation of the concatenation, the flow should connect to the `X.toString()` method's object flow twice:
+one with a flow with origin `x12` and a method access `toString()`, and once with a flow with origin `x44` and method access `toString()`.
+
+==== Flow versus usage
+
+Should we also attach the access flows of `x12.i`, `x.i`, `x.j` and `x44.j` to `next` sets of `i` and `j` in `X`?
+From the point of view of recording usage, I'd say yes.
+
+Consider
+
+[source,java]
+----
+class UsingX_2 {
+    public final X x;
+
+    public UsingX_2(int v) {
+        x = new X(v, 1);
+    }
+}
+----
+A flow passing through this class ends in `X.i`.
+
+==== Multiple return statements
+
+Multiple return statements matter insofar there are callouts or modifying statements in between.
+Here we can distinguish two distinct flows:
+
+[source,java]
+----
+class UsingY {
+    public Set<Y> wrap(Y y) {
+        if(y.isModifiable()) {
+            y.modify();
+            return Set.of(y, someOtherY);
+        }
+        return Set.of(y);
+    }
+}
+----
+
+This raises a number of problems: how would we know which flow to connect to when constructing the flow of `y` when calling `wrap`?
+

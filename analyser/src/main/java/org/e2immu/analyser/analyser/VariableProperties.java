@@ -74,6 +74,7 @@ class VariableProperties implements EvaluationContext {
     final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
     final MethodInfo currentMethod;
+    final FieldInfo currentField;
     final TypeInfo currentType;
     final boolean inSyncBlock;
 
@@ -83,19 +84,24 @@ class VariableProperties implements EvaluationContext {
 
     // in type analyser, for fields
     public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
-        this(typeContext, currentType, iteration, debugConfiguration, null);
+        this(typeContext, currentType, iteration, debugConfiguration, null, null);
     }
 
     // in type analyser, for methods
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
-        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod);
+        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null);
+    }
+    // in type analyser, for fields
+    public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
+        this(typeContext, currentField.owner, iteration, debugConfiguration, null, currentField);
     }
 
     private VariableProperties(TypeContext typeContext,
                                TypeInfo currentType,
                                int iteration,
                                DebugConfiguration debugConfiguration,
-                               MethodInfo currentMethod) {
+                               MethodInfo currentMethod,
+                               FieldInfo currentField) {
         this.iteration = iteration;
         this.depth = 0;
         this.debugConfiguration = debugConfiguration;
@@ -104,6 +110,7 @@ class VariableProperties implements EvaluationContext {
         uponUsingConditional = null;
         this.typeContext = typeContext;
         this.currentMethod = currentMethod;
+        this.currentField = currentField;
         this.currentType = currentType;
         this.dependencyGraphBestCase = new DependencyGraph<>();
         this.dependencyGraphWorstCase = new DependencyGraph<>();
@@ -112,7 +119,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
-        return new VariableProperties(this, depth, methodInfo, null, conditionalManager.getConditional(), uponUsingConditional,
+        return new VariableProperties(this, depth, methodInfo, null,
+                null, conditionalManager.getConditional(), uponUsingConditional,
                 methodInfo.isSynchronized(),
                 guaranteedToBeReachedByParentStatement);
     }
@@ -120,6 +128,7 @@ class VariableProperties implements EvaluationContext {
     private VariableProperties(VariableProperties parent,
                                int depth,
                                MethodInfo currentMethod,
+                               FieldInfo currentField,
                                NumberedStatement currentStatement,
                                Value conditional,
                                Runnable uponUsingConditional,
@@ -135,10 +144,17 @@ class VariableProperties implements EvaluationContext {
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
         this.currentType = parent.currentType;
+        this.currentField = currentField;
         dependencyGraphBestCase = parent.dependencyGraphBestCase;
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
+    }
+
+    @Override
+    public org.e2immu.analyser.objectflow.Location getLocation() {
+        if(currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
+        return new org.e2immu.analyser.objectflow.Location(currentField);
     }
 
     @Override
@@ -179,6 +195,7 @@ class VariableProperties implements EvaluationContext {
         return new VariableProperties(this,
                 depth + 1,
                 currentMethod,
+                currentField,
                 currentStatement,
                 inSyncBlock ? conditionalManager.getConditional() : conditionalManager.combineWithConditional(conditional),
                 uponUsingConditional,
@@ -193,6 +210,7 @@ class VariableProperties implements EvaluationContext {
         return new VariableProperties(this,
                 depth + 1,
                 currentMethod,
+                currentField,
                 currentStatement,
                 conditionalManager.combineWithConditional(conditional),
                 uponUsingConditional,

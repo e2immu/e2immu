@@ -1,3 +1,4 @@
+
 == Motivation
 
 Software development managers responsible for larger projects need to keep a eye on 
@@ -18,8 +19,8 @@ by an immutable phase. We set out to show that there are many different forms of
 deep immutability to weak guarantees of non-modification, that can be made explicit in the code. We believe that
 code complexity can be greatly reduced when the software engineer is made aware of the state of objects.
 
-Enter `e2immu`, a set of definitions and a fully implemented code analyser to enforce the ideas behind them.
-Using `e2immu` in your project will help to maintain higher coding standards, the
+Enter {e2immu}, a set of definitions and a fully implemented code analyser to enforce the ideas behind them.
+Using {e2immu} in your project will help to maintain higher coding standards, the
 ultimate beneficiary being code that will survive longer.
 
 === Assumptions
@@ -288,7 +289,7 @@ public class SetOnce<T> {
 }
 ----
 
-The benefit of using the `e2immu` project is that, when sufficient care has been taken, there are vast places in the code base where the
+The benefit of using the {e2immu} project is that, when sufficient care has been taken, there are vast places in the code base where the
 code analyser can flag an error when the user attempts to use the `set` method; at the same time, unnecessary `isSet`
 calls can be flagged, and, maybe even more importantly, the analyser itself knows that the exception in `get` will not be thrown there.
 

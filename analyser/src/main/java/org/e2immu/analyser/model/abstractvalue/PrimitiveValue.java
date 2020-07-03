@@ -4,8 +4,19 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 public abstract class PrimitiveValue implements Value {
+
+    public final ObjectFlow objectFlow;
+    public PrimitiveValue(ObjectFlow objectFlow) {
+        this.objectFlow = objectFlow;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
 
     // executed without context, default for all constant types
     @Override

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -34,7 +35,8 @@ public class EqualsValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
-    public EqualsValue(Value lhs, Value rhs) {
+    public EqualsValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+        super(objectFlow);
         boolean swap = lhs.compareTo(rhs) > 0;
         this.lhs = swap ? rhs : lhs;
         this.rhs = swap ? lhs : rhs;
@@ -44,15 +46,15 @@ public class EqualsValue extends PrimitiveValue {
     public Value reEvaluate(Map<Value, Value> translation) {
         Value reLhs = lhs.reEvaluate(translation);
         Value reRhs = rhs.reEvaluate(translation);
-        return EqualsValue.equals(reLhs, reRhs);
+        return EqualsValue.equals(reLhs, reRhs, objectFlow);
     }
 
-    public static Value equals(Value l, Value r) {
+    public static Value equals(Value l, Value r, ObjectFlow objectFlow) {
         if (l.equals(r)) return BoolValue.TRUE;
 
-        if (l == NullValue.NULL_VALUE && r.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+        if (l instanceof NullValue && r.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
             return BoolValue.FALSE;
-        if (r == NullValue.NULL_VALUE && l.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+        if (r instanceof NullValue && l.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
             return BoolValue.FALSE;
 
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
@@ -60,7 +62,7 @@ public class EqualsValue extends PrimitiveValue {
         if (r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l)) return BoolValue.FALSE;
 
 
-        return new EqualsValue(l, r);
+        return new EqualsValue(l, r, objectFlow);
     }
 
     @Override

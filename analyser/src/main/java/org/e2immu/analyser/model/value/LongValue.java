@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,6 +31,10 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     public final long value;
 
     public LongValue(long value) {
+        this(value, null);
+    }
+    public LongValue(long value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 
@@ -46,7 +51,7 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     @Override
     public IntValue toInt() {
         if (value >= Integer.MIN_VALUE && value < Integer.MAX_VALUE) {
-            return new IntValue((int) value);
+            return new IntValue((int) value, getObjectFlow());
         }
         throw new UnsupportedOperationException("Cannot cast from long to int without loss");
     }

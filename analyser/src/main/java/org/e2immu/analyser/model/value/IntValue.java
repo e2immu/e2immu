@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -32,8 +33,13 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
 
     public final int value;
 
-    public IntValue(int value) {
+    public IntValue(int value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
+    }
+
+    public IntValue(int value) {
+        this(value, null);
     }
 
     @Override
@@ -58,7 +64,7 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
 
     @Override
     public int internalCompareTo(Value v) {
-        return value - ((IntValue)v).value;
+        return value - ((IntValue) v).value;
     }
 
     @Override

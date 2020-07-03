@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,12 +31,16 @@ public class DoubleValue extends ConstantValue implements Constant<Double>, Nume
     public final double value;
 
     public DoubleValue(double value) {
+        this(value, null);
+    }
+    public DoubleValue(double value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 
     @Override
     public NumericValue negate() {
-        return new DoubleValue(-value);
+        return new DoubleValue(-value, getObjectFlow());
     }
 
     @Override

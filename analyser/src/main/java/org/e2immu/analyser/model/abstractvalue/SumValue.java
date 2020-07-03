@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -34,7 +35,8 @@ public class SumValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
-    public SumValue(Value lhs, Value rhs) {
+    public SumValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
     }
@@ -42,18 +44,18 @@ public class SumValue extends PrimitiveValue {
     public Value reEvaluate(Map<Value, Value> translation) {
         Value reLhs = lhs.reEvaluate(translation);
         Value reRhs = rhs.reEvaluate(translation);
-        return SumValue.sum(reLhs, reRhs);
+        return SumValue.sum(reLhs, reRhs, getObjectFlow());
     }
 
     // we try to maintain a sum of products
-    public static Value sum(Value l, Value r) {
-        if (l.equals(r)) return ProductValue.product(IntValue.TWO_VALUE, l);
+    public static Value sum(Value l, Value r, ObjectFlow objectFlow) {
+        if (l.equals(r)) return ProductValue.product(IntValue.TWO_VALUE, l, objectFlow);
         if (l instanceof IntValue && ((IntValue) l).value == 0) return r;
         if (r instanceof IntValue && ((IntValue) r).value == 0) return l;
         if (l instanceof NegatedValue && ((NegatedValue) l).value.equals(r)) return IntValue.ZERO_VALUE;
         if (r instanceof NegatedValue && ((NegatedValue) r).value.equals(l)) return IntValue.ZERO_VALUE;
         if (l instanceof NumericValue && r instanceof NumericValue)
-            return new IntValue(l.toInt().value + r.toInt().value);
+            return new IntValue(l.toInt().value + r.toInt().value, objectFlow);
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
@@ -61,20 +63,22 @@ public class SumValue extends PrimitiveValue {
         // a + x*a
         if (l instanceof ProductValue && ((ProductValue) l).lhs instanceof NumericValue &&
                 r.equals(((ProductValue) l).rhs))
-            return ProductValue.product(new IntValue(1 + ((ProductValue) l).lhs.toInt().value), r);
+            return ProductValue.product(new IntValue(1 + ((ProductValue) l).lhs.toInt().value,
+                    ((ProductValue)l).lhs.getObjectFlow()), r, objectFlow);
         if (r instanceof ProductValue && ((ProductValue) r).lhs instanceof NumericValue &&
                 l.equals(((ProductValue) r).rhs))
-            return ProductValue.product(new IntValue(1 + ((ProductValue) r).lhs.toInt().value), l);
+            return ProductValue.product(new IntValue(1 + ((ProductValue) r).lhs.toInt().value,
+                    ((ProductValue)r).lhs.getObjectFlow()), l, objectFlow);
 
         // n*a + m*a
         if (l instanceof ProductValue && r instanceof ProductValue &&
                 ((ProductValue) l).lhs instanceof NumericValue && ((ProductValue) r).lhs instanceof NumericValue &&
                 ((ProductValue) l).rhs.equals(((ProductValue) r).rhs)) {
             return ProductValue.product(
-                    new IntValue(((ProductValue) l).lhs.toInt().value + ((ProductValue) r).lhs.toInt().value),
-                    ((ProductValue) l).rhs);
+                    new IntValue(((ProductValue) l).lhs.toInt().value + ((ProductValue) r).lhs.toInt().value, objectFlow),
+                    ((ProductValue) l).rhs, objectFlow);
         }
-        return l.compareTo(r) < 0 ? new SumValue(l, r) : new SumValue(r, l);
+        return l.compareTo(r) < 0 ? new SumValue(l, r, objectFlow) : new SumValue(r, l, objectFlow);
     }
 
     @Override
@@ -123,7 +127,7 @@ public class SumValue extends PrimitiveValue {
 
     // -(lhs + rhs) = -lhs + -rhs
     public Value negate() {
-        return SumValue.sum(NegatedValue.negate(lhs), NegatedValue.negate(rhs));
+        return SumValue.sum(NegatedValue.negate(lhs), NegatedValue.negate(rhs), getObjectFlow());
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,12 +31,17 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
     public final short value;
 
     public ShortValue(short value) {
+        this(value, null);
+    }
+
+    public ShortValue(short value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 
     @Override
     public NumericValue negate() {
-        return new IntValue(-value);
+        return new IntValue(-value, getObjectFlow());
     }
 
     @Override
@@ -45,7 +51,7 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
 
     @Override
     public IntValue toInt() {
-        return new IntValue((int) value);
+        return new IntValue(value, getObjectFlow());
     }
 
     @Override

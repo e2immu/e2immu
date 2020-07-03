@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -34,7 +35,8 @@ public class ProductValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
-    public ProductValue(Value lhs, Value rhs) {
+    public ProductValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
     }
@@ -42,11 +44,11 @@ public class ProductValue extends PrimitiveValue {
     public Value reEvaluate(Map<Value, Value> translation) {
         Value reLhs = lhs.reEvaluate(translation);
         Value reRhs = rhs.reEvaluate(translation);
-        return ProductValue.product(reLhs, reRhs);
+        return ProductValue.product(reLhs, reRhs, getObjectFlow());
     }
 
     // we try to maintain a sum of products
-    public static Value product(Value l, Value r) {
+    public static Value product(Value l, Value r, ObjectFlow objectFlow) {
 
         if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
         if (r instanceof NumericValue && r.toInt().value == 0) return IntValue.ZERO_VALUE;
@@ -61,13 +63,13 @@ public class ProductValue extends PrimitiveValue {
 
         if (r instanceof SumValue) {
             SumValue sum = (SumValue) r;
-            return SumValue.sum(product(l, sum.lhs), product(l, sum.rhs));
+            return SumValue.sum(product(l, sum.lhs, objectFlow), product(l, sum.rhs, objectFlow), objectFlow);
         }
         if (l instanceof SumValue) {
             SumValue sum = (SumValue) l;
-            return SumValue.sum(product(sum.lhs, r), product(sum.rhs, r));
+            return SumValue.sum(product(sum.lhs, r, objectFlow), product(sum.rhs, r, objectFlow), objectFlow);
         }
-        return l.compareTo(r) < 0 ? new ProductValue(l, r) : new ProductValue(r, l);
+        return l.compareTo(r) < 0 ? new ProductValue(l, r,objectFlow) : new ProductValue(r, l, objectFlow);
     }
 
     @Override

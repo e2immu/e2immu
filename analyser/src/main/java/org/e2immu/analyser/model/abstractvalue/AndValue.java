@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -33,14 +34,15 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class AndValue implements Value {
+public class AndValue extends PrimitiveValue {
     public final List<Value> values;
 
-    public AndValue() {
-        values = List.of();
+    public AndValue(ObjectFlow objectFlow) {
+        this(objectFlow, List.of());
     }
 
-    private AndValue(List<Value> values) {
+    private AndValue(ObjectFlow objectFlow, List<Value> values) {
+        super(objectFlow);
         this.values = values;
     }
 
@@ -128,7 +130,7 @@ public class AndValue implements Value {
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        AndValue res = new AndValue(ImmutableList.copyOf(concat));
+        AndValue res = new AndValue(objectFlow, ImmutableList.copyOf(concat));
         log(CNF, "Constructed {}", res);
         return res;
     }
@@ -173,7 +175,7 @@ public class AndValue implements Value {
                     return Action.FALSE;
                 }
                 // replace
-                Value orValue = new OrValue().append(remaining);
+                Value orValue = new OrValue(objectFlow).append(remaining);
                 newConcat.add(orValue);
                 return Action.SKIP;
             }
@@ -207,7 +209,7 @@ public class AndValue implements Value {
                 }
             }
             if (ok && !equal.isEmpty()) {
-                Value orValue = new OrValue().append(equal);
+                Value orValue = new OrValue(objectFlow).append(equal);
                 newConcat.set(newConcat.size() - 1, orValue);
                 return Action.SKIP;
             }
@@ -329,7 +331,7 @@ public class AndValue implements Value {
                 if (xb1.b > xb2.b) return !xb1.lessThan ? Action.FALSE : Action.ADD;
                 if (xb1.b < xb2.b) return !xb1.lessThan ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals && ge2.allowEquals) {
-                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b), xb1.x);
+                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b, ge1.getObjectFlow()), xb1.x, ge1.getObjectFlow());
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }
@@ -413,7 +415,7 @@ public class AndValue implements Value {
     }
 
     public Value removeClausesInvolving(Variable variable) {
-        return new AndValue(values.stream().filter(value -> !value.variables().contains(variable)).collect(Collectors.toList()));
+        return new AndValue(objectFlow, values.stream().filter(value -> !value.variables().contains(variable)).collect(Collectors.toList()));
     }
 
     @Override
@@ -430,6 +432,6 @@ public class AndValue implements Value {
 
     @Override
     public Value reEvaluate(Map<Value, Value> translation) {
-        return new AndValue().append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+        return new AndValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
     }
 }

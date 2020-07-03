@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -30,12 +31,16 @@ public class FloatValue extends ConstantValue implements Constant<Float>, Numeri
     public final float value;
 
     public FloatValue(float value) {
+        this(value, null);
+    }
+    public FloatValue(float value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 
     @Override
     public NumericValue negate() {
-        return new FloatValue(-value);
+        return new FloatValue(-value, getObjectFlow());
     }
 
     @Override

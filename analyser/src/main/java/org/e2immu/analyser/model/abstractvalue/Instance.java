@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
@@ -43,16 +45,18 @@ public class Instance implements Value {
     @NotNull
     public final List<Value> constructorParameterValues;
     public final MethodInfo constructor;
+    public final ObjectFlow objectFlow;
 
-    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues) {
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, Location location) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
+        objectFlow = new ObjectFlow(location, parameterizedType.bestTypeInfo());
     }
 
-    public static Instance newStringInstance() {
+    public static Instance newStringInstance(Location location) {
         MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.get().constructors.get(0);
-        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of());
+        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of(), location);
     }
 
     // every new instance is different.

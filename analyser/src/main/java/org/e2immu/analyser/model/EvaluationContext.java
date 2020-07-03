@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
+import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -111,4 +112,5 @@ public interface EvaluationContext {
 
     void raiseError(String message, String extra);
 
+    Location getLocation();
 }

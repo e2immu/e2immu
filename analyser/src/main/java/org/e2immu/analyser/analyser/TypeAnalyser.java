@@ -126,7 +126,8 @@ public class TypeAnalyser {
             changes = false;
 
             int iteration = postAnalysis ? POST_ANALYSIS + cnt : cnt;
-            VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, iteration, debugConfiguration);
+            // TODO check that separate field properties work...
+            //VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, iteration, debugConfiguration);
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
@@ -165,6 +166,7 @@ public class TypeAnalyser {
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.beforeFieldAnalyserVisitors) {
                         fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
+                    VariableProperties fieldProperties = new VariableProperties(typeContext, iteration, debugConfiguration, fieldInfo);
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {

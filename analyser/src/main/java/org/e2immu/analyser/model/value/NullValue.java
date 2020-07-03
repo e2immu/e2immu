@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import static org.e2immu.analyser.model.Level.FALSE;
 import static org.e2immu.analyser.model.Level.TRUE;
@@ -31,6 +32,11 @@ public class NullValue extends ConstantValue implements Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
 
     private NullValue() {
+        this(null);
+    }
+
+    public NullValue(ObjectFlow objectFlow) {
+        super(objectFlow);
     }
 
     @Override

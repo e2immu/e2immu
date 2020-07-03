@@ -94,8 +94,28 @@ For the purpose of standardizing code, we rely on
 . understanding loops that iterate over a data structure
 . standard data types: `@E2Container`, `@Container` as builder for `@E2Container`
 . interfaces as an alternative system of conditionals
+. singletons and extension classes
 
 A group of types that can be rewritten using the 5 standardizations above can be 'understood'.
+'Understanding' means that we can write out the code in different forms:
+
+* in the original way
+* in an improved way, but still very close to the original way
+* optimally, using the same programming paradigm
+* switching to reactive (or back, if we started reactive)
+* in a different programming language (e.g. transformation to Kotlin)
+
+
+Step 3 essentially transforms loops into _streams_.
+
+Conventional (synchronous) programming and reactive programming should both be supported.
+Iterators are pull-based, reactive streams (flows) are push-based.
+
+Callbacks (events in UIs, anonymous functions) or Futures.
+
+Reactor: assembly line analogy. Start with `Publisher`, end up with `Subscriber`. Nothing happens until a `Subscriber` links itself to a `Publisher`.
+
+Important in a reactive way of programming: we still use errors for exactly what they are: situations that should not occur.
 
 
 ==== Step 1: expression standardization

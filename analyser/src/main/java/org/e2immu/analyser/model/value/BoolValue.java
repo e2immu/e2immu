@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -33,11 +35,16 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     public final boolean value;
 
     public BoolValue(boolean value) {
+        this(value, null);
+    }
+
+    public BoolValue(boolean value, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
     }
 
-    public static Value of(boolean b) {
-        return b ? TRUE : FALSE;
+    public static Value of(boolean b, Location location) {
+        return location == null ? (b ? TRUE : FALSE) : new BoolValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
     }
 
     @Override
@@ -76,5 +83,12 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     @Override
     public ParameterizedType type() {
         return Primitives.PRIMITIVES.booleanParameterizedType;
+    }
+
+    public Value negate() {
+        if(objectFlow == null) {
+            return value ? BoolValue.FALSE : BoolValue.TRUE;
+        }
+        return new BoolValue(!value, objectFlow);
     }
 }

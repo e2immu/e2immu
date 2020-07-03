@@ -21,16 +21,28 @@ package org.e2immu.analyser.model.value;
 import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 public interface NumericValue extends Value {
 
-    static Value intOrDouble(double b) {
+    static Value intOrDouble(double b, ObjectFlow objectFlow) {
         if (DoubleMath.isMathematicalInteger(b)) {
             long l = Math.round(b);
-            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l);
-            return new IntValue((int) l);
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l, objectFlow);
+            return new IntValue((int) l, objectFlow);
         }
-        return new DoubleValue(b);
+        return new DoubleValue(b, objectFlow);
+    }
+
+    static Value intOrDouble(double b, Location location) {
+        if (DoubleMath.isMathematicalInteger(b)) {
+            long l = Math.round(b);
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l, new ObjectFlow(location, Primitives.PRIMITIVES.longTypeInfo));
+            return new IntValue((int) l, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+        }
+        return new DoubleValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.doubleTypeInfo));
     }
 
     NumericValue negate();

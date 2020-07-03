@@ -21,6 +21,10 @@ package org.e2immu.analyser.model.abstractvalue;
 public class UnknownPrimitiveValue extends PrimitiveValue {
     public static final UnknownPrimitiveValue UNKNOWN_PRIMITIVE = new UnknownPrimitiveValue();
 
+    private UnknownPrimitiveValue() {
+        super(null);
+    }
+
     @Override
     public boolean isUnknown() {
         return true;

@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -43,8 +44,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         if (allowEquals != that.allowEquals) return false;
         if (value.equals(that.value)) return true;
         // there's another situation that we want to be true
-        if (specialEquals(value, that.value)) return true;
-        return false;
+        return specialEquals(value, that.value);
     }
 
     private static boolean specialEquals(Value v1, Value v2) {
@@ -90,14 +90,15 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             // cnv,?>=lb >= nv is the situation
             // now if lb >= nv then we should not have this value, we simply should have cnv
             // (it would be saying: cnv,?>=1 >= 1, which is a tautology
-            if (cnv.lowerBound >= nv) throw new UnsupportedOperationException("Have LB "+cnv.lowerBound+", >= "+nv);
+            if (cnv.lowerBound >= nv)
+                throw new UnsupportedOperationException("Have LB " + cnv.lowerBound + ", >= " + nv);
         }
     }
 
     @Override
     public Value reEvaluate(Map<Value, Value> translation) {
         Value reValue = value.reEvaluate(translation);
-        return GreaterThanZeroValue.greater(reValue, IntValue.ZERO_VALUE, allowEquals);
+        return GreaterThanZeroValue.greater(reValue, IntValue.ZERO_VALUE, allowEquals, getObjectFlow());
     }
 
     @Override
@@ -114,11 +115,12 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             if (sumValue.lhs instanceof NumericValue && sumValue.lhs.isDiscreteType()) {
                 // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
                 // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
-                Value minusSumPlusOne = NumericValue.intOrDouble(-(((NumericValue) sumValue.lhs).getNumber().doubleValue() + 1.0));
-                return new GreaterThanZeroValue(SumValue.sum(minusSumPlusOne, NegatedValue.negate(sumValue.rhs)), true);
+                Value minusSumPlusOne = NumericValue.intOrDouble(-(((NumericValue) sumValue.lhs).getNumber().doubleValue() + 1.0),
+                        sumValue.lhs.getObjectFlow());
+                return new GreaterThanZeroValue(SumValue.sum(minusSumPlusOne, NegatedValue.negate(sumValue.rhs), value.getObjectFlow()), true, getObjectFlow());
             }
         }
-        return new GreaterThanZeroValue(NegatedValue.negate(value), !allowEquals);
+        return new GreaterThanZeroValue(NegatedValue.negate(value), !allowEquals, getObjectFlow());
     }
 
     /**
@@ -169,36 +171,39 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         return new XB(x, 0.0d, lessThan);
     }
 
-    public GreaterThanZeroValue(Value value, boolean allowEquals) {
+    public GreaterThanZeroValue(Value value, boolean allowEquals, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.value = value;
         this.allowEquals = allowEquals;
     }
 
-    public static Value greater(Value l, Value r, boolean allowEquals) {
+    public static Value greater(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
-                return BoolValue.of(l.toInt().value >= r.toInt().value);
-            return BoolValue.of(l.toInt().value > r.toInt().value);
+                return new BoolValue(l.toInt().value >= r.toInt().value, objectFlow);
+            return new BoolValue(l.toInt().value > r.toInt().value, objectFlow);
         }
 
         Value v = tautologyGreaterThan(l, r, allowEquals);
         if (v != null) return v;
 
+        ObjectFlow objectFlowSum = new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intTypeInfo); // TODO
+
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
-            Value lMinusOne = NumericValue.intOrDouble(((NumericValue) l).getNumber().doubleValue() - 1.0);
-            return new GreaterThanZeroValue(SumValue.sum(lMinusOne, NegatedValue.negate(r)), true);
+            Value lMinusOne = NumericValue.intOrDouble(((NumericValue) l).getNumber().doubleValue() - 1.0, l.getObjectFlow());
+            return new GreaterThanZeroValue(SumValue.sum(lMinusOne, NegatedValue.negate(r), objectFlowSum), true, objectFlow);
         }
         if (r instanceof NumericValue && !allowEquals && r.isDiscreteType()) {
             // x > 3 == -3 + x > 0 transform to x >= 4
-            Value minusRPlusOne = NumericValue.intOrDouble(-(((NumericValue) r).getNumber().doubleValue() + 1.0));
-            return new GreaterThanZeroValue(SumValue.sum(l, minusRPlusOne), true);
+            Value minusRPlusOne = NumericValue.intOrDouble(-(((NumericValue) r).getNumber().doubleValue() + 1.0), r.getObjectFlow());
+            return new GreaterThanZeroValue(SumValue.sum(l, minusRPlusOne, objectFlowSum), true, objectFlow);
         }
 
-        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r)), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(l, NegatedValue.negate(r), objectFlowSum), allowEquals, objectFlow);
     }
 
     // check ConstrainedNV
@@ -215,32 +220,36 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         return null;
     }
 
-    public static Value less(Value l, Value r, boolean allowEquals) {
+    public static Value less(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
-                return BoolValue.of(l.toInt().value <= r.toInt().value);
-            return BoolValue.of(l.toInt().value < r.toInt().value);
+                return new BoolValue(l.toInt().value <= r.toInt().value, objectFlow);
+            return new BoolValue(l.toInt().value < r.toInt().value, objectFlow);
         }
+
+        ObjectFlow objectFlowSum = new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intTypeInfo); // TODO
+
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4
-            Value minusLPlusOne = NumericValue.intOrDouble(-(((NumericValue) l).getNumber().doubleValue() + 1.0));
-            return new GreaterThanZeroValue(SumValue.sum(minusLPlusOne, r), true);
+            Value minusLPlusOne = NumericValue.intOrDouble(-(((NumericValue) l).getNumber().doubleValue() + 1.0), l.getObjectFlow());
+            return new GreaterThanZeroValue(SumValue.sum(minusLPlusOne, r, objectFlowSum), true, objectFlow);
         }
         if (r instanceof NumericValue && !allowEquals && r.isDiscreteType()) {
             // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
-            Value rMinusOne = NumericValue.intOrDouble(((NumericValue) r).getNumber().doubleValue() - 1.0);
-            return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), rMinusOne), true);
+            Value rMinusOne = NumericValue.intOrDouble(((NumericValue) r).getNumber().doubleValue() - 1.0, r.getObjectFlow());
+            return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), rMinusOne, objectFlowSum), true, objectFlow);
         }
         // l < r <=> l-r < 0 <=> -l+r > 0
         if (l instanceof NumericValue) {
-            return new GreaterThanZeroValue(SumValue.sum(((NumericValue) l).negate(), r), allowEquals);
+            return new GreaterThanZeroValue(SumValue.sum(((NumericValue) l).negate(), r, objectFlowSum), allowEquals, objectFlow);
         }
 
         // TODO add tautology call
 
-        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), r), allowEquals);
+        return new GreaterThanZeroValue(SumValue.sum(NegatedValue.negate(l), r, objectFlowSum), allowEquals, objectFlow);
     }
 
     @Override

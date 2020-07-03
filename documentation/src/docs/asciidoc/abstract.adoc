@@ -1,4 +1,13 @@
 [abstract]
 == Abstract
 
-The `e2immu` project provides a set of annotations and a Java code analyser to support immutability.
+The {e2immu} project combines strong opinions of how to write good Java code, with a set of annotations, a static code analyser, and support code such as editor highlighting tools and an annotation server.
+Together these concepts and tools aim to help Java engineers write code that is more readable, more consistently structured, and lasts longer.
+
+In large software projects, immutability is an important concept with numerous benefits.
+In object oriented languages, immutability never received the attention that in gets in functional languages.
+
+However, immutability is too strong a concept for many situations.
+Many complex objects undergo a long construction phase before they are in their final state.
+
+By introducing a number of annotations that imply content modification, or the absence thereof, the {e2immu} code analyser can compute if, or when and where, a class is effectively content immutable.

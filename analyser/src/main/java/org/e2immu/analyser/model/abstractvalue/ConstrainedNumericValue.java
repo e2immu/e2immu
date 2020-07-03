@@ -48,6 +48,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public ConstrainedNumericValue(Value value, double lowerBound, double upperBound) {
+        super(value.getObjectFlow());
         if (value instanceof ConstrainedNumericValue) throw new UnsupportedOperationException();
 
         this.upperBound = upperBound;
@@ -177,11 +178,11 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         }
         if (equals(x, lowerBound)) {
             // not(x == v,?>=x) transforms to v,?>=x > x
-            return GreaterThanZeroValue.greater(this, numericValue, false);
+            return GreaterThanZeroValue.greater(this, numericValue, false, getObjectFlow());
         }
         if (equals(x, upperBound)) {
             // not(x == v,?<=x) transforms to v,?<=x < x
-            return GreaterThanZeroValue.less(this, numericValue, false);
+            return GreaterThanZeroValue.less(this, numericValue, false, getObjectFlow());
         }
         return null;
     }

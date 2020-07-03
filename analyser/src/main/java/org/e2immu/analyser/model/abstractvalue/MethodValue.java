@@ -255,9 +255,9 @@ public class MethodValue implements Value {
                 Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
                 Value comparison;
                 if (Analysis.haveEquals(size)) {
-                    comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv);
+                    comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv, null);
                 } else {
-                    comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true);
+                    comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true, null);
                 }
                 return Map.of(variableValue.variable, comparison);
             }

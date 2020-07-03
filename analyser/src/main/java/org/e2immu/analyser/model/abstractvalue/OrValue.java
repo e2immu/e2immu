@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -34,15 +35,16 @@ import static org.e2immu.analyser.util.Logger.log;
 public class OrValue extends PrimitiveValue {
     public final List<Value> values;
 
-    public OrValue() {
-        values = List.of();
+    public OrValue(ObjectFlow objectFlow) {
+        this(objectFlow, List.of());
     }
 
-    OrValue(Value... values) {
-        this.values = List.of(values);
+    OrValue(ObjectFlow objectFlow, Value... values) {
+        this(objectFlow, List.of(values));
     }
 
-    private OrValue(List<Value> values) {
+    private OrValue(ObjectFlow objectFlow, List<Value> values) {
+        super(objectFlow);
         this.values = values;
     }
 
@@ -137,10 +139,10 @@ public class OrValue extends PrimitiveValue {
                     .map(v -> append(ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Value[]::new);
             log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
-            return new AndValue().append(components);
+            return new AndValue(objectFlow).append(components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
-        return new OrValue(finalValues);
+        return new OrValue(objectFlow, finalValues);
     }
 
     private void recursivelyAdd(ArrayList<Value> concat, List<Value> collect) {
@@ -214,11 +216,11 @@ public class OrValue extends PrimitiveValue {
         List<Value> nonIndividuals = values.stream().map(Value::nonIndividualCondition).filter(Objects::nonNull).collect(Collectors.toList());
         if (nonIndividuals.size() == 0) return null;
         if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
-        return new OrValue(nonIndividuals);
+        return new OrValue(objectFlow, nonIndividuals);
     }
 
     @Override
     public Value reEvaluate(Map<Value, Value> translation) {
-        return new OrValue().append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+        return new OrValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
     }
 }
