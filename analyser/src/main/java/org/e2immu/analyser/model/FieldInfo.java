@@ -190,4 +190,9 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
         }
     }
+
+    @Override
+    public String detailedName() {
+        return fullyQualifiedName();
+    }
 }

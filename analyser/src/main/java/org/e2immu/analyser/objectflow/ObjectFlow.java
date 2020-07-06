@@ -16,14 +16,24 @@ public class ObjectFlow {
 
     public static class MethodCalls implements Origin {
         public final Set<ObjectFlow> objectFlows = new HashSet<>();
+
+        @Override
+        public String toString() {
+            return "method calls " + objectFlows;
+        }
     }
 
     public static class ParentFlows implements Origin {
         public final Set<ObjectFlow> objectFlows = new HashSet<>();
+
+        @Override
+        public String toString() {
+            return "parent flows "+objectFlows;
+        }
     }
 
     public static class ObjectCreation implements Origin {
-        private  MethodCall methodCall;
+        private MethodCall methodCall;
 
         public void setMethodCall(MethodCall methodCall) {
             this.methodCall = methodCall;
@@ -31,6 +41,11 @@ public class ObjectFlow {
 
         public MethodCall getMethodCall() {
             return methodCall;
+        }
+
+        @Override
+        public String toString() {
+            return "new " + methodCall;
         }
     }
 

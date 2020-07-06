@@ -71,4 +71,6 @@ public interface WithInspectionAndAnalysis {
         }
         return mustBeAbsent.get() ? Optional.empty() : mustBeAbsent;
     }
+
+    String detailedName();
 }

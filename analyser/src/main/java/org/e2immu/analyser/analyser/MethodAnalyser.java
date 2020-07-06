@@ -207,6 +207,7 @@ public class MethodAnalyser {
         Value value = null;
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
+            methodAnalysis.setReturnedObjectFlow(single.getObjectFlow());
             if (single.isConstant()) {
                 value = single;
             } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {

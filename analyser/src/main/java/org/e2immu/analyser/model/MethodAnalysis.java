@@ -21,12 +21,14 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -224,5 +226,19 @@ public class MethodAnalysis extends Analysis {
             AnnotationExpression ae = typeContext.precondition.get().copyWith("value", precondition.get().toString());
             annotations.put(ae, true);
         }
+    }
+
+    public Collection<? extends ObjectFlow> internalObjectFlows() {
+        return List.of();// TODO ObjectFlow
+    }
+
+    private ObjectFlow returnedObjectFlow;
+
+    public void setReturnedObjectFlow(ObjectFlow returnedObjectFlow) {
+        this.returnedObjectFlow = returnedObjectFlow;
+    }
+
+    public ObjectFlow getReturnedObjectFlow() {
+        return returnedObjectFlow;
     }
 }

@@ -45,6 +45,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     public final SetOnce<ParameterAnalysis> parameterAnalysis = new SetOnce<>();
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
+    public final MethodInfo owner;
 
     public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {
         this(owner, typeInfo.asParameterizedType(), name, index);
@@ -55,6 +56,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
+        this.owner = owner;
     }
 
     @Override
@@ -186,5 +188,10 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.NONE_PURE;
+    }
+
+    @Override
+    public String detailedName() {
+        return (owner == null ? "-" : owner.fullyQualifiedName()) + "#" + index;
     }
 }

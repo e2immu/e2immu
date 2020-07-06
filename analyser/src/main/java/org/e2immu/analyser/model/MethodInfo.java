@@ -566,4 +566,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     parameterInfo.parameterInspection.get().annotations, typeContext, overwrite);
         });
     }
+
+    @Override
+    public String detailedName() {
+        return fullyQualifiedName();
+    }
 }

@@ -4,7 +4,6 @@ package org.e2immu.analyser.objectflow;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
 import java.util.Objects;
-import java.util.StringJoiner;
 
 public class Location {
     public final WithInspectionAndAnalysis info;
@@ -28,6 +27,6 @@ public class Location {
 
     @Override
     public String toString() {
-        return info.name();
+        return info.detailedName();
     }
 }

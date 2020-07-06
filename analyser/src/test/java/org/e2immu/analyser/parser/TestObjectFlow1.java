@@ -32,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 public class TestObjectFlow1 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow1.class);
@@ -74,8 +76,26 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
         ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
-        LOGGER.info("Detail: " + inType.detailed());
 
+        ParameterInfo value = keyValueConstructor.methodInspection.get().parameters.get(1);
+        ObjectFlow objectFlowValue = value.parameterAnalysis.get().objectFlow;
+        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowValue.getOrigin() instanceof ObjectFlow.MethodCalls);
+
+        MethodInfo useKv = objectFlow1.typeInspection.get().methods.stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
+        ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
+        ObjectFlow objectFlowK = k.parameterAnalysis.get().objectFlow;
+
+        Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getReturnedObjectFlow());
+
+        Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
+        for(ObjectFlow objectFlow: flowsOfObjectFlow1) {
+            LOGGER.info("Detailed: {}", objectFlow.detailed());
+        }
+        Assert.assertEquals(4, flowsOfObjectFlow1.size());
+        Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowK));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowKey));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowValue));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(keyConstant));
     }
 
 }

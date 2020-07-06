@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -1060,5 +1061,38 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInfo returnType = methodInfo.returnType().typeInfo;
         return returnType == PRIMITIVES.integerTypeInfo || returnType == PRIMITIVES.intTypeInfo ||
                 returnType == PRIMITIVES.longTypeInfo || returnType == PRIMITIVES.boxedLongTypeInfo;
+    }
+
+    public Set<ObjectFlow> objectFlows() {
+        Set<ObjectFlow> result = typeAnalysis.get().getConstantObjectFlows().collect(Collectors.toCollection(HashSet::new));
+        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+            Set<ObjectFlow> localObjectFlows = new HashSet<>();
+            // set, because the returned object flow could equal either one of the non-returned, or parameter flows
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                localObjectFlows.add(parameterInfo.parameterAnalysis.get().objectFlow);
+            }
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+            result.addAll(methodAnalysis.internalObjectFlows());
+            if (methodAnalysis.getReturnedObjectFlow() != null) {
+                localObjectFlows.add(methodAnalysis.getReturnedObjectFlow());
+            }
+            result.addAll(localObjectFlows);
+        }
+        // for fields we only add those owned by the field itself (i.e. with an initialiser)
+        for (FieldInfo fieldInfo : typeInspection.get().fields) {
+            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+            if (objectFlow != null && objectFlow.location.info == fieldInfo) {
+                result.add(objectFlow);
+            }
+        }
+        for (TypeInfo subType : typeInspection.get().subTypes) {
+            result.addAll(subType.objectFlows());
+        }
+        return result;
+    }
+
+    @Override
+    public String detailedName() {
+        return fullyQualifiedName;
     }
 }
