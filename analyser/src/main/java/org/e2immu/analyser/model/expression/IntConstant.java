@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -36,16 +37,16 @@ public class IntConstant implements Expression, Constant<Integer> {
     }
 
     @NotNull
-    public final IntValue constant;
+    public final int constant;
 
     public IntConstant(int constant) {
-        this.constant = new IntValue(constant);
+        this.constant = constant;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Integer.toString(constant.value);
+        return Integer.toString(constant);
     }
 
     @Override
@@ -56,12 +57,12 @@ public class IntConstant implements Expression, Constant<Integer> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new IntValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     public Integer getValue() {
-        return constant.value;
+        return constant;
     }
 
     @Override

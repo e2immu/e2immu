@@ -61,7 +61,7 @@ public class InstanceOf implements Expression {
             }
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof ValueWithVariable) {
-            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanTypeInfo);
+            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, ObjectFlow.OPERATOR);
             result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType, objectFlow);
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext.getLocation());

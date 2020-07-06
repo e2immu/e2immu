@@ -35,21 +35,21 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
 
-    public final BoolValue constant;
+    public final boolean constant;
 
     public BooleanConstant(boolean constant) {
-        this.constant = new BoolValue(constant);
+        this.constant = constant;
     }
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new BoolValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Boolean.toString(constant.value);
+        return Boolean.toString(constant);
     }
 
     @Override
@@ -59,6 +59,6 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
 
     @Override
     public Boolean getValue() {
-        return constant.value;
+        return constant;
     }
 }

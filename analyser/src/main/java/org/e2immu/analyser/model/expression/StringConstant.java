@@ -33,20 +33,20 @@ public class StringConstant implements Expression, Constant<String> {
     }
 
     @NotNull
-    public final StringValue constant;
+    public final String constant;
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new StringValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     public StringConstant(@NotNull String constant) {
-        this.constant = new StringValue(Objects.requireNonNull(constant));
+        this.constant = Objects.requireNonNull(constant);
     }
 
     @Override
     public String expressionString(int indent) {
-        return "\"" + constant.value.replace("\"", "\\\"") + "\"";
+        return "\"" + constant.replace("\"", "\\\"") + "\"";
     }
 
     @Override
@@ -56,6 +56,6 @@ public class StringConstant implements Expression, Constant<String> {
 
     @Override
     public String getValue() {
-        return constant.value;
+        return constant;
     }
 }

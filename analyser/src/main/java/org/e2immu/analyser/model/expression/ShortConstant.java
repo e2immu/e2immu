@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.ShortValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -34,16 +35,16 @@ public class ShortConstant implements Expression, Constant<Short> {
     }
 
     @NotNull
-    public final ShortValue constant;
+    public final short constant;
 
     public ShortConstant(short constant) {
-        this.constant = new ShortValue(constant);
+        this.constant = constant;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Short.toString(constant.value);
+        return Short.toString(constant);
     }
 
     @Override
@@ -54,11 +55,11 @@ public class ShortConstant implements Expression, Constant<Short> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new ShortValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     public Short getValue() {
-        return constant.value;
+        return constant;
     }
 }

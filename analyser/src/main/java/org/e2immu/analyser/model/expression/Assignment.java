@@ -189,6 +189,10 @@ public class Assignment implements Expression {
             if (StatementAnalyser.checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, evaluationContext)) {
                 return;
             }
+
+            if (resultOfExpression.getObjectFlow() != null) {
+                fieldInfo.fieldAnalysis.get().ensureObjectFlow(resultOfExpression.getObjectFlow()).assignTo(fieldInfo);
+            }
         } else if (at instanceof ParameterInfo) {
             if (!statement.inErrorState()) {
                 typeContext.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));

@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.DoubleValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -34,16 +35,16 @@ public class DoubleConstant implements Expression, Constant<Double> {
     }
 
     @NotNull
-    public final DoubleValue constant;
+    public final double constant;
 
     public DoubleConstant(double constant) {
-        this.constant = new DoubleValue(constant);
+        this.constant = constant;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Double.toString(constant.value);
+        return Double.toString(constant);
     }
 
     @Override
@@ -54,11 +55,11 @@ public class DoubleConstant implements Expression, Constant<Double> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new DoubleValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     public Double getValue() {
-        return constant.value;
+        return constant;
     }
 }

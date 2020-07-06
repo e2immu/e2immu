@@ -30,6 +30,7 @@ import java.util.Objects;
 public class StringValue extends ConstantValue implements Constant<String> {
     public final String value;
 
+    // for testing only
     public StringValue(String value) {
         this(value, null);
     }
@@ -49,7 +50,7 @@ public class StringValue extends ConstantValue implements Constant<String> {
             if(rs.isEmpty() && l instanceof StringValue) {
                 return l;
             }
-            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringTypeInfo));
+            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringParameterizedType, ObjectFlow.LITERAL));
         }
         return Instance.newStringInstance(location);
     }

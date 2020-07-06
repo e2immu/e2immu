@@ -20,7 +20,7 @@ public class TypeValue implements Value {
 
     public TypeValue(ParameterizedType parameterizedType, Location location) {
         this.parameterizedType = parameterizedType;
-        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo);
+        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo.asParameterizedType(), ObjectFlow.LITERAL);
     }
 
     @Override

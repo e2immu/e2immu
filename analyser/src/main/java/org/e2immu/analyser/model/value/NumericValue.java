@@ -39,10 +39,11 @@ public interface NumericValue extends Value {
     static Value intOrDouble(double b, Location location) {
         if (DoubleMath.isMathematicalInteger(b)) {
             long l = Math.round(b);
-            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l, new ObjectFlow(location, Primitives.PRIMITIVES.longTypeInfo));
-            return new IntValue((int) l, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE)
+                return new LongValue(l, new ObjectFlow(location, Primitives.PRIMITIVES.longParameterizedType, ObjectFlow.LITERAL));
+            return new IntValue((int) l, new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.LITERAL));
         }
-        return new DoubleValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.doubleTypeInfo));
+        return new DoubleValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.doubleParameterizedType, ObjectFlow.LITERAL));
     }
 
     NumericValue negate();

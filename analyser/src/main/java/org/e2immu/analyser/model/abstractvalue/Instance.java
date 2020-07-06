@@ -51,8 +51,7 @@ public class Instance implements Value {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
-        objectFlow =  bestType == null ? null: new ObjectFlow(location, bestType);
+        objectFlow = new ObjectFlow(location, parameterizedType, new ObjectFlow.ObjectCreation());
     }
 
     public static Instance newStringInstance(Location location) {

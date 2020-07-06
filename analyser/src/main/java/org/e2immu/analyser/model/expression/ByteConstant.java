@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ByteValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -30,20 +31,20 @@ public class ByteConstant implements Expression, Constant<Byte> {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.shortParameterizedType;
+        return Primitives.PRIMITIVES.byteParameterizedType;
     }
 
     @NotNull
-    public final ByteValue constant;
+    public final byte constant;
 
     public ByteConstant(byte constant) {
-        this.constant = new ByteValue(constant);
+        this.constant = constant;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Byte.toString(constant.value);
+        return Byte.toString(constant);
     }
 
     @Override
@@ -54,11 +55,11 @@ public class ByteConstant implements Expression, Constant<Byte> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new ByteValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     public Byte getValue() {
-        return constant.value;
+        return constant;
     }
 }

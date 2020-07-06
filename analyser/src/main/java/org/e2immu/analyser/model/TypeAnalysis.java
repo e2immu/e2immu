@@ -19,15 +19,18 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.lang.annotation.ElementType;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 // ...
@@ -63,5 +66,15 @@ public class TypeAnalysis extends Analysis {
     @Override
     public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
         return Map.of();
+    }
+
+    private final Set<ObjectFlow> constantObjectFlows = new HashSet<>();
+
+    public void addConstantObjectFlow(ObjectFlow objectFlow) {
+        this.constantObjectFlows.add(objectFlow);
+    }
+
+    public Stream<ObjectFlow> getConstantObjectFlows() {
+        return constantObjectFlows.stream();
     }
 }

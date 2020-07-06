@@ -114,7 +114,7 @@ public class NewObject implements HasParameterExpressions {
             List<Value> values = arrayInitializer.expressions.stream()
                     .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
-            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType.bestTypeInfo()), values);
+            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType, ObjectFlow.LITERAL), values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext.getLocation());
@@ -130,7 +130,7 @@ public class NewObject implements HasParameterExpressions {
         List<Value> parameterValues = new ArrayList<>();
         int i = 0;
         for (Expression parameterExpression : parameterExpressions) {
-            ForwardEvaluationInfo forward;
+            Value parameterValue;
             if (methodInfo != null) {
                 List<ParameterInfo> params = methodInfo.methodInspection.get().parameters;
                 ParameterInfo parameterInfo;
@@ -149,11 +149,19 @@ public class NewObject implements HasParameterExpressions {
                 if (map.containsValue(Level.DELAY)) {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
                 }
-                forward = new ForwardEvaluationInfo(map, false);
+                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, false);
+                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
+
+                ObjectFlow source = parameterValue.getObjectFlow();
+                if (source != null) {
+                    ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
+                    source.addCallOut(destination);
+                    destination.addSource(source);
+                }
             } else {
-                forward = ForwardEvaluationInfo.DEFAULT;
+                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT);
             }
-            Value parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
+
             parameterValues.add(parameterValue);
             i++;
         }

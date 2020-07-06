@@ -44,7 +44,7 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     }
 
     public static Value of(boolean b, Location location) {
-        return location == null ? (b ? TRUE : FALSE) : new BoolValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+        return location == null ? (b ? TRUE : FALSE) : new BoolValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, ObjectFlow.LITERAL));
     }
 
     @Override

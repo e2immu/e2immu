@@ -74,7 +74,7 @@ public class ArrayInitializer implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
 
-        ArrayValue arrayValue = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), commonType.bestTypeInfo()), values);
+        ArrayValue arrayValue = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), commonType, ObjectFlow.LITERAL), values);
         visitor.visit(this, evaluationContext, arrayValue);
         return arrayValue;
     }

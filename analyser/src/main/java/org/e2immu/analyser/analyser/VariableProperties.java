@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -91,6 +92,7 @@ class VariableProperties implements EvaluationContext {
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
         this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null);
     }
+
     // in type analyser, for fields
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
         this(typeContext, currentField.owner, iteration, debugConfiguration, null, currentField);
@@ -153,7 +155,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public org.e2immu.analyser.objectflow.Location getLocation() {
-        if(currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
+        if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
         return new org.e2immu.analyser.objectflow.Location(currentField);
     }
 
@@ -329,7 +331,13 @@ class VariableProperties implements EvaluationContext {
     public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
-            Value resetValue = new VariableValue(this, variable, variable.name(), null);  // TODO ObjectFlow
+            ObjectFlow objectFlow;
+            if (variable instanceof ParameterInfo) {
+                objectFlow = ((ParameterInfo) variable).parameterAnalysis.get().objectFlow;
+            } else {
+                objectFlow = null;
+            }
+            Value resetValue = new VariableValue(this, variable, variable.name(), objectFlow);
             internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, SINGLE_COPY);
         } else {
             throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");

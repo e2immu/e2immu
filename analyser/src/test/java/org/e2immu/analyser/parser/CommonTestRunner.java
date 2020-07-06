@@ -71,15 +71,15 @@ public abstract class CommonTestRunner {
                 PATTERN);
     }
 
-    protected void testClass(String className, int errorsToExpect) throws IOException {
-        testClass(className, errorsToExpect, 0, new DebugConfiguration.Builder().build());
+    protected TypeContext testClass(String className, int errorsToExpect) throws IOException {
+        return testClass(className, errorsToExpect, 0, new DebugConfiguration.Builder().build());
     }
 
-    protected void testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
-        testClass(className, errorsToExpect, 0, debugConfiguration);
+    protected TypeContext testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+        return testClass(className, errorsToExpect, 0, debugConfiguration);
     }
 
-    protected void testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+    protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         String path = withAnnotatedAPIs ? "withannotatedapi." : "";
@@ -96,10 +96,10 @@ public abstract class CommonTestRunner {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                         .build())
                 .build();
-        execute(configuration, errorsToExpect, warningsToExpect);
+        return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected void testUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+    protected TypeContext testUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(new InputConfiguration.Builder()
@@ -119,10 +119,10 @@ public abstract class CommonTestRunner {
                         .addClassPath("jmods/java.xml.jmod")
                         .build())
                 .build();
-        execute(configuration, errorsToExpect, warningsToExpect);
+        return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    private void execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
+    private TypeContext execute(Configuration configuration, int errorsToExpect, int warningsToExpect) throws IOException {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
@@ -135,6 +135,7 @@ public abstract class CommonTestRunner {
                 .filter(m -> m.severity == Message.Severity.ERROR).count());
         Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages().stream()
                 .filter(m -> m.severity == Message.Severity.WARN).count());
+        return parser.getTypeContext();
     }
 
 }

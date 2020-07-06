@@ -19,11 +19,13 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +36,7 @@ public class FieldAnalysis extends Analysis {
     public final boolean isExplicitlyFinal;
     public final ParameterizedType type;
     public final Location location;
+    public final FieldInfo fieldInfo;
 
     public FieldAnalysis(FieldInfo fieldInfo) {
         super(fieldInfo.hasBeenDefined(), fieldInfo.name);
@@ -42,6 +45,8 @@ public class FieldAnalysis extends Analysis {
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         type = fieldInfo.type;
         location = new Location(fieldInfo);
+        this.fieldInfo = fieldInfo;
+        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type, new ObjectFlow.MethodCalls());
     }
 
     @Override
@@ -69,6 +74,8 @@ public class FieldAnalysis extends Analysis {
     public final SetOnceMap<MethodInfo, Boolean> errorsForAssignmentsOutsidePrimaryType = new SetOnceMap<>();
 
     public final SetOnce<Boolean> fieldError = new SetOnce<>();
+
+    private ObjectFlow objectFlow;
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
@@ -160,5 +167,16 @@ public class FieldAnalysis extends Analysis {
         return Map.of(
                 VariableProperty.MODIFIED, typeContext.notModified.get(),
                 VariableProperty.FINAL, typeContext.variableField.get());
+    }
+
+    public ObjectFlow ensureObjectFlow(ObjectFlow objectFlow) {
+        if (this.objectFlow.importance() < objectFlow.importance()) {
+            this.objectFlow = objectFlow.merge(this.objectFlow);
+        }
+        return this.objectFlow;
+    }
+
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 }

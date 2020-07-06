@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ConstrainedNumericValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
@@ -41,12 +42,15 @@ public class ParameterAnalysis extends Analysis {
     public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
     public final Location location;
 
+    public final ObjectFlow objectFlow;
+
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
         this.owner = parameterInfo.parameterInspection.get().owner;
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
         this.location = new Location(parameterInfo);
+        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, new ObjectFlow.MethodCalls());
     }
 
     @Override

@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.LongValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -34,16 +35,16 @@ public class LongConstant implements Expression, Constant<Long> {
     }
 
     @NotNull
-    public final LongValue constant;
+    public final long constant;
 
     public LongConstant(long constant) {
-        this.constant = new LongValue(constant);
+        this.constant = constant;
     }
 
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return Long.toString(constant.value);
+        return Long.toString(constant);
     }
 
     @Override
@@ -54,11 +55,11 @@ public class LongConstant implements Expression, Constant<Long> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return constant;
+        return new LongValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
     }
 
     @Override
     public Long getValue() {
-        return constant.value;
+        return constant;
     }
 }

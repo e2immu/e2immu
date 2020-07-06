@@ -1,15 +1,12 @@
 package org.e2immu.analyser.objectflow;
 
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.annotation.Fluent;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class ObjectFlow {
 
@@ -17,12 +14,8 @@ public class ObjectFlow {
 
     }
 
-    public static class FieldOrigin implements Origin {
-        public final FieldInfo fieldInfo;
-
-        public FieldOrigin(FieldInfo fieldInfo) {
-            this.fieldInfo = fieldInfo;
-        }
+    public static class MethodCalls implements Origin {
+        public final Set<ObjectFlow> objectFlows = new HashSet<>();
     }
 
     public static class ParentFlows implements Origin {
@@ -30,10 +23,38 @@ public class ObjectFlow {
     }
 
     public static class ObjectCreation implements Origin {
-        public final MethodCall methodCall;
+        private  MethodCall methodCall;
 
-        public ObjectCreation(MethodCall methodCall) {
+        public void setMethodCall(MethodCall methodCall) {
             this.methodCall = methodCall;
+        }
+
+        public MethodCall getMethodCall() {
+            return methodCall;
+        }
+    }
+
+    public static final Literal LITERAL = new Literal();
+
+    public static class Literal implements Origin {
+        private Literal() {
+        }
+
+        @Override
+        public String toString() {
+            return "literal";
+        }
+    }
+
+    public static final Operator OPERATOR = new Operator();
+
+    public static class Operator implements Origin {
+        private Operator() {
+        }
+
+        @Override
+        public String toString() {
+            return "operator";
         }
     }
 
@@ -74,11 +95,12 @@ public class ObjectFlow {
     public final Location location;
 
     // the type being created
-    public final TypeInfo typeInfo;
+    public final ParameterizedType type;
 
-    public ObjectFlow(Location location, TypeInfo typeInfo) {
-        this.typeInfo = Objects.requireNonNull(typeInfo);
+    public ObjectFlow(Location location, ParameterizedType type, Origin origin) {
         this.location = Objects.requireNonNull(location);
+        this.type = Objects.requireNonNull(type);
+        this.origin = Objects.requireNonNull(origin);
     }
 
     @Override
@@ -87,30 +109,75 @@ public class ObjectFlow {
         if (o == null || getClass() != o.getClass()) return false;
         ObjectFlow that = (ObjectFlow) o;
         return location.equals(that.location) &&
-                typeInfo.equals(that.typeInfo);
+                type.equals(that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(location, typeInfo);
+        return Objects.hash(location, type);
     }
 
     // denotes where the object comes from
-    Origin origin;
+    public final Origin origin;
 
     List<Access> objectAccesses;
     int immutableAfterObjectAccess;
     boolean objectModifiedByObjectAccess; // either via methods called, or assignments to fields
 
-    List<FieldInfo> localAssignments;
+    final Set<FieldInfo> localAssignments = new HashSet<>();
 
     // either all recipients of return, or
-    Set<ObjectFlow> nextViaReturn;
+    Set<ObjectFlow> nextViaReturnOrFieldAccess = new HashSet<>();
 
-    // is null when this object is not used as an argument
-    ObjectFlow callOut;
+    // is empty when this object is not used as an argument
+    // can only contain one value if the call is @Modified
+    // if the object is immutable, all callouts can be joined (order does not matter)
+    final Set<ObjectFlow> nonModifyingCallOuts = new HashSet<>();
+
+    ObjectFlow modifyingCallOut;
 
     // the next flow objects; can be empty
     // must be empty when the location is a field
     Set<ObjectFlow> next;
+
+    public void addCallOut(ObjectFlow destination) {
+        nonModifyingCallOuts.add(destination);
+    }
+
+    public void addSource(ObjectFlow source) {
+        if (!(origin instanceof MethodCalls)) throw new UnsupportedOperationException();
+        ((MethodCalls) origin).objectFlows.add(source);
+    }
+
+    public void assignTo(FieldInfo fieldInfo) {
+        localAssignments.add(fieldInfo);
+    }
+
+    public int importance() {
+        if (location.info instanceof ParameterInfo) return 1;
+        return 0;
+    }
+
+    @Fluent
+    public ObjectFlow merge(ObjectFlow objectFlow) {
+        this.nextViaReturnOrFieldAccess.addAll(objectFlow.nextViaReturnOrFieldAccess);
+        return this;
+    }
+
+    public Origin getOrigin() {
+        return origin;
+    }
+
+    public Stream<FieldInfo> getLocalAssignments() {
+        return localAssignments.stream();
+    }
+
+    public String detailed() {
+        return toString() + ": origin " + origin + ", fields: " + localAssignments + ", call-outs: " + nonModifyingCallOuts;
+    }
+
+    @Override
+    public String toString() {
+        return location + ", " + type.detailedString();
+    }
 }

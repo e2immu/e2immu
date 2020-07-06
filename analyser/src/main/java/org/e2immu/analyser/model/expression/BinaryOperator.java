@@ -82,9 +82,6 @@ public class BinaryOperator implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-
-        Location location = evaluationContext.getLocation();
-
         // we need to handle the short-circuit operators differently
         if (operator == Primitives.PRIMITIVES.orOperatorBool) {
             return shortCircuit(evaluationContext, visitor, false);
@@ -107,14 +104,14 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
                 return BoolValue.FALSE;
             }
-            return EqualsValue.equals(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.equalsOperatorInt) {
             if (l.equals(r)) return BoolValue.TRUE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return EqualsValue.equals(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorObject) {
             if (l.equals(r)) return BoolValue.FALSE;
@@ -124,46 +121,46 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
                 return BoolValue.TRUE;
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo)));
+            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext)));
         }
         if (operator == Primitives.PRIMITIVES.notEqualsOperatorInt) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo)));
+            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext)));
         }
 
         // from here on, straightforward operations
         if (operator == Primitives.PRIMITIVES.plusOperatorInt) {
-            return SumValue.sum(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return SumValue.sum(l, r, intObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.minusOperatorInt) {
-            return SumValue.sum(l, NegatedValue.negate(r), new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return SumValue.sum(l, NegatedValue.negate(r), intObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.multiplyOperatorInt) {
-            return ProductValue.product(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return ProductValue.product(l, r, intObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.divideOperatorInt) {
-            return DivideValue.divide(evaluationContext, l, r, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return DivideValue.divide(evaluationContext, l, r, intObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.remainderOperatorInt) {
-            return RemainderValue.remainder(evaluationContext, l, r, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return RemainderValue.remainder(evaluationContext, l, r, intObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.lessEqualsOperatorInt) {
-            return GreaterThanZeroValue.less(l, r, true, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return GreaterThanZeroValue.less(l, r, true, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.lessOperatorInt) {
-            return GreaterThanZeroValue.less(l, r, false, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return GreaterThanZeroValue.less(l, r, false, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.greaterEqualsOperatorInt) {
-            return GreaterThanZeroValue.greater(l, r, true, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return GreaterThanZeroValue.greater(l, r, true, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.greaterOperatorInt) {
-            return GreaterThanZeroValue.greater(l, r, false, new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo));
+            return GreaterThanZeroValue.greater(l, r, false, booleanObjectFlow(evaluationContext));
         }
         if (operator == Primitives.PRIMITIVES.bitwiseAndOperatorInt) {
-            return BitwiseAndValue.bitwiseAnd(l, r, new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo));
+            return BitwiseAndValue.bitwiseAnd(l, r, intObjectFlow(evaluationContext));
         }
         /*
             if (operator == Primitives.PRIMITIVES.bitwiseOrOperatorInt) {
@@ -177,9 +174,17 @@ public class BinaryOperator implements Expression {
          TODO
          */
         if (operator == Primitives.PRIMITIVES.plusOperatorString) {
-            return StringValue.concat(l, r, location);
+            return StringValue.concat(l, r, evaluationContext.getLocation());
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
+    }
+
+    private ObjectFlow booleanObjectFlow(EvaluationContext evaluationContext) {
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, ObjectFlow.OPERATOR);
+    }
+
+    private ObjectFlow intObjectFlow(EvaluationContext evaluationContext) {
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.OPERATOR);
     }
 
     private Value shortCircuit(EvaluationContext evaluationContext, EvaluationVisitor visitor, boolean and) {
@@ -198,7 +203,7 @@ public class BinaryOperator implements Expression {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return constant;
         }
-        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanTypeInfo);
+        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, ObjectFlow.OPERATOR);
         if (and) {
             return new AndValue(objectFlow).append(l, r);
         }

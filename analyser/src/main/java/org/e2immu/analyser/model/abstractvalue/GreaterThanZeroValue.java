@@ -195,7 +195,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         Value v = tautologyGreaterThan(l, r, allowEquals);
         if (v != null) return v;
 
-        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intTypeInfo); // TODO ObjectFlow
+        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.OPERATOR); // TODO ObjectFlow
 
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
@@ -240,7 +240,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             return new BoolValue(l.toInt().value < r.toInt().value, objectFlow);
         }
 
-        ObjectFlow objectFlowSum = objectFlow == null ? null: new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intTypeInfo); // TODO ObjectFlow
+        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.OPERATOR); // TODO ObjectFlow
 
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4

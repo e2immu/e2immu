@@ -158,16 +158,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return UnknownValue.NO_VALUE;
         }
 
-        TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
         ObjectFlow theObjectFlow;
-        if (bestType == null) {
-            theObjectFlow = null;
+        if (objectFlow != null) {
+            theObjectFlow = objectFlow;
         } else {
-            if (objectFlow != null) {
-                theObjectFlow = objectFlow;
-            } else {
-                theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), bestType);
-            }
+            theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType(), new ObjectFlow.MethodCalls());
         }
         // we will never analyse this method
         return new MethodValue(methodInfo, objectValue, parameters, theObjectFlow);
@@ -245,7 +240,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
 
         // TODO causes null pointer exception
-        Location location = evaluationContext == null ? objectValue.getObjectFlow().location: evaluationContext.getLocation();
+        Location location = evaluationContext == null ? objectValue.getObjectFlow().location : evaluationContext.getLocation();
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Analysis.IS_A_SIZE) {
@@ -283,7 +278,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
             return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters,
-                            new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType().bestTypeInfo())),
+                            new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType(), new ObjectFlow.MethodCalls())),
                     Analysis.decodeSizeMin(sizeOfObject));
         }
         return null;
@@ -296,9 +291,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, location);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo);
+            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, new ObjectFlow.MethodCalls());
             return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize),
-                            new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo)),
+                            new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, new ObjectFlow.MethodCalls())),
                     constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
