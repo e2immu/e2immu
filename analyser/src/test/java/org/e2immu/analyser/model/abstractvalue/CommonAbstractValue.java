@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -206,6 +207,11 @@ public abstract class CommonAbstractValue {
         @Override
         public void raiseError(String message, String extra) {
 
+        }
+
+        @Override
+        public Location getLocation() {
+            return null;
         }
     };
 

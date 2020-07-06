@@ -116,7 +116,7 @@ public class NewObject implements HasParameterExpressions {
             value = new ArrayValue(values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
-            value = new Instance(parameterizedType, constructor, parameterValues);
+            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext.getLocation());
         }
         visitor.visit(this, evaluationContext, value);
         return value;

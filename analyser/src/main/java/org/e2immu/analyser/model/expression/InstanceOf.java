@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -60,13 +61,14 @@ public class InstanceOf implements Expression {
             }
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof ValueWithVariable) {
-            result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType);
+            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanTypeInfo);
+            result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType, objectFlow);
         } else if (value instanceof Instance) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType));
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext.getLocation());
         } else if (value instanceof MethodValue) {
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // no clue, too deep
         } else if (value instanceof ClassValue) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value));
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext.getLocation());
         } else {
             // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
             // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is

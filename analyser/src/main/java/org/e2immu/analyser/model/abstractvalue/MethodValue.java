@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -32,11 +33,13 @@ public class MethodValue implements Value {
     public final MethodInfo methodInfo;
     public final List<Value> parameters;
     public final Value object;
+    public final ObjectFlow objectFlow;
 
-    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters) {
+    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, ObjectFlow objectFlow) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
+        this.objectFlow = objectFlow;
     }
 
     @Override
@@ -94,7 +97,7 @@ public class MethodValue implements Value {
     public Value reEvaluate(Map<Value, Value> translation) {
         List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(translation)).collect(Collectors.toList());
         Value reObject = object.reEvaluate(translation);
-        return MethodCall.methodValue(null, methodInfo, reObject, reParams);
+        return MethodCall.methodValue(null, methodInfo, reObject, reParams, getObjectFlow());
     }
 
     @Override
@@ -270,7 +273,7 @@ public class MethodValue implements Value {
             return this;
         }
         if (methodInfo.returnType().typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) {
-            return new MethodValue(sizeMethod, object, List.of());
+            return new MethodValue(sizeMethod, object, List.of(), null); // for internal computational use, so no ObjectFlow
         }
         throw new UnsupportedOperationException();
     }

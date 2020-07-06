@@ -37,6 +37,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public class AndValue extends PrimitiveValue {
     public final List<Value> values;
 
+    // testing only
+    public AndValue() {
+        this(null);
+    }
+
     public AndValue(ObjectFlow objectFlow) {
         this(objectFlow, List.of());
     }

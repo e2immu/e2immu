@@ -35,6 +35,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public class OrValue extends PrimitiveValue {
     public final List<Value> values;
 
+    // testing only
+    public OrValue() {
+        this(null);
+    }
+
     public OrValue(ObjectFlow objectFlow) {
         this(objectFlow, List.of());
     }

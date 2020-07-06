@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 
@@ -88,7 +89,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (methodInfo.isConstructor) {
             // construction, similar to NewObject, without parameters
             // TODO arrays?
-            result = new Instance(methodInfo.returnType(), methodInfo, List.of());
+            result = new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext.getLocation());
         } else {
             // normal method call, very similar to MethodCall.evaluate
 
@@ -100,6 +101,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
             }
+            ObjectFlow objectFlow = null; // TODO
             if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
                 Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
@@ -108,7 +110,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     if (value instanceof NullValue) {
                         evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodValue(methodInfo, value, List.of());
+                    result = new MethodValue(methodInfo, value, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasBeenDefined()) {
                 result = UnknownValue.NO_VALUE; // delay, waiting
@@ -116,7 +118,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (value instanceof NullValue) {
                     evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodValue(methodInfo, value, List.of());
+                result = new MethodValue(methodInfo, value, List.of(), objectFlow);
             }
 
         }

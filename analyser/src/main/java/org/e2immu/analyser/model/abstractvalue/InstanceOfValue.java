@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -31,7 +32,8 @@ public class InstanceOfValue extends PrimitiveValue {
     public final ParameterizedType parameterizedType;
     public final Variable variable;
 
-    public InstanceOfValue(Variable variable, ParameterizedType parameterizedType) {
+    public InstanceOfValue(Variable variable, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
+        super(objectFlow);
         this.parameterizedType = parameterizedType;
         this.variable = variable;
     }

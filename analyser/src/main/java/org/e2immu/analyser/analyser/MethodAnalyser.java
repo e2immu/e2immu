@@ -216,7 +216,8 @@ public class MethodAnalyser {
         // fallback
         if (value == null) {
             // the object (2nd parameter) is not important here; it will not be used to compute properties
-            value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
+            // TODO
+            value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of(), null);
         }
         boolean isConstant = value.isConstant();
 

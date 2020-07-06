@@ -177,6 +177,11 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         this.allowEquals = allowEquals;
     }
 
+    // testing only
+    public static Value greater(Value l, Value r, boolean allowEquals) {
+        return greater(l, r, allowEquals, null);
+    }
+
     public static Value greater(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
         if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
@@ -218,6 +223,11 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             if (cnv.onlyLowerBound() && v < cnv.lowerBound) return BoolValue.TRUE;
         }
         return null;
+    }
+
+    // testing only
+    public static Value less(Value l, Value r, boolean allowEquals) {
+        return less(l, r, allowEquals, null);
     }
 
     public static Value less(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {

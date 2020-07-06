@@ -47,6 +47,11 @@ public class SumValue extends PrimitiveValue {
         return SumValue.sum(reLhs, reRhs, getObjectFlow());
     }
 
+    // testing only
+    public static Value sum(Value l, Value r) {
+        return sum(l, r, null);
+    }
+
     // we try to maintain a sum of products
     public static Value sum(Value l, Value r, ObjectFlow objectFlow) {
         if (l.equals(r)) return ProductValue.product(IntValue.TWO_VALUE, l, objectFlow);

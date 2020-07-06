@@ -35,6 +35,11 @@ public class EqualsValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
 
+    // testing only
+    public EqualsValue(Value lhs, Value rhs) {
+        this(lhs, rhs, null);
+    }
+
     public EqualsValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
         super(objectFlow);
         boolean swap = lhs.compareTo(rhs) > 0;
@@ -47,6 +52,11 @@ public class EqualsValue extends PrimitiveValue {
         Value reLhs = lhs.reEvaluate(translation);
         Value reRhs = rhs.reEvaluate(translation);
         return EqualsValue.equals(reLhs, reRhs, objectFlow);
+    }
+
+    // testing only
+    public static Value equals(Value l, Value r ) {
+        return equals(l, r, null);
     }
 
     public static Value equals(Value l, Value r, ObjectFlow objectFlow) {

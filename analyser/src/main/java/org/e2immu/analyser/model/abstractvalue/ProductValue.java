@@ -47,6 +47,10 @@ public class ProductValue extends PrimitiveValue {
         return ProductValue.product(reLhs, reRhs, getObjectFlow());
     }
 
+    public static Value product(Value l, Value r) {
+        return product(l, r, null);
+    }
+
     // we try to maintain a sum of products
     public static Value product(Value l, Value r, ObjectFlow objectFlow) {
 
@@ -69,7 +73,7 @@ public class ProductValue extends PrimitiveValue {
             SumValue sum = (SumValue) l;
             return SumValue.sum(product(sum.lhs, r, objectFlow), product(sum.rhs, r, objectFlow), objectFlow);
         }
-        return l.compareTo(r) < 0 ? new ProductValue(l, r,objectFlow) : new ProductValue(r, l, objectFlow);
+        return l.compareTo(r) < 0 ? new ProductValue(l, r, objectFlow) : new ProductValue(r, l, objectFlow);
     }
 
     @Override

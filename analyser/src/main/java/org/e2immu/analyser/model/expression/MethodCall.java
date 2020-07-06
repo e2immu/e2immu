@@ -29,6 +29,8 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -91,7 +93,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
-        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters);
+        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, null);
 
         checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
         visitor.visit(this, evaluationContext, result);
@@ -111,7 +113,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
+    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters, ObjectFlow objectFlow) {
         // no value (method call on field that does not have effective value yet)
         if (objectValue == UnknownValue.NO_VALUE) {
             return UnknownValue.NO_VALUE; // this will delay
@@ -156,8 +158,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return UnknownValue.NO_VALUE;
         }
 
+        ObjectFlow theObjectFlow;
+        if (objectFlow != null) {
+            theObjectFlow = objectFlow;
+        } else {
+            theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType().bestTypeInfo());
+        }
+
         // we will never analyse this method
-        return new MethodValue(methodInfo, objectValue, parameters);
+        return new MethodValue(methodInfo, objectValue, parameters, theObjectFlow);
     }
 
     private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
@@ -230,11 +239,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 objectValue.getPropertyOutsideContext(VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
+        Location location = evaluationContext.getLocation();
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Analysis.IS_A_SIZE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
-                return sizeMethodValue(methodInfo, objectValue, requiredSize);
+                return sizeMethodValue(methodInfo, objectValue, requiredSize, location);
             }
             // we have a requirement, and we have a size.
             if (Analysis.haveEquals(requiredSize)) {
@@ -250,7 +260,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     return BoolValue.FALSE;
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-                return sizeMethodValue(methodInfo, objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
+                return sizeMethodValue(methodInfo, objectValue, requiredSize, location); // we want =3, but we have >= 2; could be anything
             }
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
@@ -258,7 +268,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return BoolValue.TRUE;
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-            return sizeMethodValue(methodInfo, objectValue, requiredSize);
+            return sizeMethodValue(methodInfo, objectValue, requiredSize, location);
         }
 
         // SITUATION 2: @Size int size(): this method returns the size
@@ -266,7 +276,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (Analysis.haveEquals(sizeOfObject)) {
                 return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
-            return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters),
+            return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters,
+                            new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType().bestTypeInfo())),
                     Analysis.decodeSizeMin(sizeOfObject));
         }
         return null;
@@ -274,13 +285,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // instead of returning isEmpty(), we return size() == 0
     // instead of returning isNotEmpty(), we return size() >= 1
-    private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize) {
+    private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize, Location location) {
         MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
-        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue);
+        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, location);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize)),
-                    constrainedSizeMethod);
+            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanTypeInfo);
+            return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize),
+                            new ObjectFlow(location, Primitives.PRIMITIVES.intTypeInfo)),
+                    constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
     }
@@ -288,7 +301,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // we normally return  objectValue.size();
     // but if objectValue is a method itself, and that method preserves the size, then we remove that method
     // object.entrySet().size() == object.size(); the entrySet() method has a @Size(copy = true) annotation
-    private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue) {
+    private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue, Location location) {
         if (objectValue instanceof MethodValue) {
             MethodValue methodValue = (MethodValue) objectValue;
             if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.TRUE_LEVEL_1) {
@@ -299,10 +312,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod();
                 if (sizeMethodInfoOnObject == null)
                     throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
-                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of());
+                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(), null); // TODO
             }
         }
-        return new MethodValue(sizeMethodInfo, objectValue, List.of());
+        return new MethodValue(sizeMethodInfo, objectValue, List.of(), null); // TODO
     }
 
     private static Value computeSizeModifyingMethod(MethodInfo methodInfo, Value objectValue, EvaluationContext evaluationContext) {

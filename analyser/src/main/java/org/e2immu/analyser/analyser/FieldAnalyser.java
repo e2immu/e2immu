@@ -254,8 +254,8 @@ public class FieldAnalyser {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
                         Value assignment = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get();
-                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment));
-                        Value andValue = new AndValue().append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
+                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, null));
+                        Value andValue = new AndValue(null).append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
                         return andValue != BoolValue.FALSE;
                     });
                     if (allCompatible) {
