@@ -1,11 +1,13 @@
 package org.e2immu.analyser.objectflow;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.Fluent;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectFlow {
@@ -28,19 +30,15 @@ public class ObjectFlow {
 
         @Override
         public String toString() {
-            return "parent flows "+objectFlows;
+            return "parent flows " + objectFlows;
         }
     }
 
     public static class ObjectCreation implements Origin {
-        private MethodCall methodCall;
+        public final MethodCall methodCall;
 
-        public void setMethodCall(MethodCall methodCall) {
-            this.methodCall = methodCall;
-        }
-
-        public MethodCall getMethodCall() {
-            return methodCall;
+        public ObjectCreation(MethodInfo methodInfo, List<Value> parameters) {
+            methodCall = new MethodCall(methodInfo, parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList()));
         }
 
         @Override
@@ -98,10 +96,16 @@ public class ObjectFlow {
     public static class MethodCall {
 
         public final MethodInfo methodInfo;
-        public final SetOnceMap<Integer, ObjectFlow> objectFlowsOfArguments = new SetOnceMap<>();
+        public final List<ObjectFlow> objectFlowsOfArguments;
 
-        public MethodCall(MethodInfo methodInfo) {
+        public MethodCall(MethodInfo methodInfo, List<ObjectFlow> objectFlowsOfArguments) {
             this.methodInfo = methodInfo;
+            this.objectFlowsOfArguments = ImmutableList.copyOf(objectFlowsOfArguments);
+        }
+
+        @Override
+        public String toString() {
+            return methodInfo.name + "(" + objectFlowsOfArguments + ")";
         }
     }
 

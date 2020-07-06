@@ -91,7 +91,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         for(ObjectFlow objectFlow: flowsOfObjectFlow1) {
             LOGGER.info("Detailed: {}", objectFlow.detailed());
         }
-        Assert.assertEquals(4, flowsOfObjectFlow1.size());
+        Assert.assertEquals(5, flowsOfObjectFlow1.size());
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowK));
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowKey));
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowValue));

@@ -118,6 +118,11 @@ public class NewObject implements HasParameterExpressions {
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext.getLocation());
+            if (evaluationContext.getCurrentMethod() != null) {
+                evaluationContext.getCurrentMethod().methodAnalysis.get().addInternalObjectFlow(value.getObjectFlow());
+            } else if (evaluationContext.getCurrentField() != null) {
+                evaluationContext.getCurrentField().fieldAnalysis.get().addInternalObjectFlow(value.getObjectFlow());
+            } else throw new UnsupportedOperationException();
         }
         visitor.visit(this, evaluationContext, value);
         return value;

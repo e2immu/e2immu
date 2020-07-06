@@ -185,6 +185,11 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
+    public FieldInfo getCurrentField() {
+        return currentField;
+    }
+
+    @Override
     public TypeInfo getCurrentType() {
         return currentType;
     }

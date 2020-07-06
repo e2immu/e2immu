@@ -28,10 +28,7 @@ import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -228,8 +225,14 @@ public class MethodAnalysis extends Analysis {
         }
     }
 
-    public Collection<? extends ObjectFlow> internalObjectFlows() {
-        return List.of();// TODO ObjectFlow
+    private final Set<ObjectFlow> internalObjectFlows = new HashSet<>();
+
+    public Stream<ObjectFlow> getInternalObjectFlows() {
+        return internalObjectFlows.stream();
+    }
+
+    public void addInternalObjectFlow(ObjectFlow objectFlow) {
+        internalObjectFlows.add(objectFlow);
     }
 
     private ObjectFlow returnedObjectFlow;

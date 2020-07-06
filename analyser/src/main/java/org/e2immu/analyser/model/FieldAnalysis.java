@@ -179,4 +179,15 @@ public class FieldAnalysis extends Analysis {
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }
+
+    private final Set<ObjectFlow> internalObjectFlows = new HashSet<>();
+
+    public Iterable<ObjectFlow> getInternalObjectFlows() {
+        return internalObjectFlows;
+    }
+
+    public void addInternalObjectFlow(ObjectFlow objectFlow) {
+        internalObjectFlows.add(objectFlow);
+    }
+
 }

@@ -39,6 +39,7 @@ public interface EvaluationContext {
 
     // can be null, in evaluation of lambda expressions
     MethodInfo getCurrentMethod();
+    default FieldInfo getCurrentField() { return null; }
 
     NumberedStatement getCurrentStatement();
 
