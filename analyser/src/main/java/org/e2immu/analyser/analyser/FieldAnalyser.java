@@ -480,10 +480,6 @@ public class FieldAnalyser {
     }
 
     private Value determineEffectivelyFinalValue(FieldReference fieldReference, List<Value> values) {
-        // List<Value> transformed = values.stream()
-        //        .map(v -> v instanceof VariableValue && ((VariableValue) v).variable instanceof ParameterInfo ?
-        //                 new ParameterValue((ParameterInfo) ((VariableValue) v).variable) : v)
-        //         .collect(Collectors.toList());
         Value combinedValue;
         if (values.isEmpty()) {
             combinedValue = NullValue.NULL_VALUE;
@@ -494,7 +490,7 @@ public class FieldAnalyser {
         } else {
             combinedValue = CombinedValue.create(values);
         }
-        return new FinalFieldValue(fieldReference);
+        return new FinalFieldValue(fieldReference, combinedValue.getObjectFlow());
     }
 
     private boolean analyseLinked(FieldInfo fieldInfo,

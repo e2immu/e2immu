@@ -664,4 +664,16 @@ public class ParameterizedType {
                 typeInfo == Primitives.PRIMITIVES.integerTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedLongTypeInfo ||
                 typeInfo == Primitives.PRIMITIVES.boxedShortTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedByteTypeInfo;
     }
+
+    /**
+     * return the best common type
+     *
+     * @param other the other type
+     * @return the common type
+     */
+    public ParameterizedType commonType(ParameterizedType other) {
+        if (equals(other)) return this;
+        return this; // TODO implement!!
+    }
+
 }

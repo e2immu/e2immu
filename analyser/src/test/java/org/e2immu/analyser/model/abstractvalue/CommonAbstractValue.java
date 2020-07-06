@@ -146,7 +146,7 @@ public abstract class CommonAbstractValue {
 
         @Override
         public Value currentValue(Variable variable) {
-            return new VariableValue(this, variable, variable.name());
+            return new VariableValue(this, variable, variable.name(), null);
         }
 
         @Override
@@ -219,21 +219,21 @@ public abstract class CommonAbstractValue {
     static final Variable vb = createVariable("b");
     static final Variable vc = createVariable("c");
     static final Variable vd = createVariable("d");
-    static final VariableValue a = new VariableValue(minimalEvaluationContext, va, "a");
-    static final VariableValue b = new VariableValue(minimalEvaluationContext, vb, "b");
-    static final VariableValue c = new VariableValue(minimalEvaluationContext, vc, "c");
-    static final VariableValue d = new VariableValue(minimalEvaluationContext, vd, "d");
+    static final VariableValue a = new VariableValue(minimalEvaluationContext, va, "a", null);
+    static final VariableValue b = new VariableValue(minimalEvaluationContext, vb, "b", null);
+    static final VariableValue c = new VariableValue(minimalEvaluationContext, vc, "c", null);
+    static final VariableValue d = new VariableValue(minimalEvaluationContext, vd, "d", null);
 
     static final Variable vi = createVariable("i");
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
-    static final VariableValue i = new VariableValue(minimalEvaluationContext, vi, "i");
-    static final VariableValue j = new VariableValue(minimalEvaluationContext, vj, "j");
-    static final VariableValue k = new VariableValue(minimalEvaluationContext, vk, "k");
+    static final VariableValue i = new VariableValue(minimalEvaluationContext, vi, "i", null);
+    static final VariableValue j = new VariableValue(minimalEvaluationContext, vj, "j", null);
+    static final VariableValue k = new VariableValue(minimalEvaluationContext, vk, "k", null);
 
     static final Variable vs = createVariable("s");
     static final Variable vt = createVariable("t");
-    static final VariableValue s = new VariableValue(minimalEvaluationContext, vs, "s");
-    static final VariableValue t = new VariableValue(minimalEvaluationContext, vt, "t");
+    static final VariableValue s = new VariableValue(minimalEvaluationContext, vs, "s", null);
+    static final VariableValue t = new VariableValue(minimalEvaluationContext, vt, "t", null);
 
 }

@@ -264,7 +264,7 @@ class VariableProperties implements EvaluationContext {
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
             resetValue = UnknownValue.NO_VALUE; // delay
         } else if (fieldReferenceState == MULTI_COPY) {
-            resetValue = new VariableValue(this, fieldReference, name, true);
+            resetValue = new VariableValue(this, fieldReference, name, null, true); // TODO ObjectFlow
         } else {
             FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -276,11 +276,11 @@ class VariableProperties implements EvaluationContext {
                 } else {
                     // undefined, will never get a value, but may have decent properties
                     // the properties will be copied from fieldAnalysis into properties in internalCreate
-                    resetValue = new VariableValue(this, fieldReference, name);
+                    resetValue = new VariableValue(this, fieldReference, name, null);  // TODO ObjectFlow
                 }
             } else {
                 // local variable situation
-                resetValue = new VariableValue(this, fieldReference, name);
+                resetValue = new VariableValue(this, fieldReference, name, null); // TODO ObjectFlow
             }
         }
         internalCreate(fieldReference, name, resetValue, resetValue, Set.of(), fieldReferenceState);
@@ -289,7 +289,7 @@ class VariableProperties implements EvaluationContext {
     public void ensureThisVariable(This thisVariable) {
         String name = variableName(thisVariable);
         if (find(name) != null) return;
-        VariableValue resetValue = new VariableValue(this, thisVariable, name);
+        VariableValue resetValue = new VariableValue(this, thisVariable, name, null); // TODO ObjectFlow
         internalCreate(thisVariable, name, resetValue, resetValue, Set.of(), SINGLE_COPY);
     }
 
@@ -329,7 +329,7 @@ class VariableProperties implements EvaluationContext {
     public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
-            Value resetValue = new VariableValue(this, variable, variable.name());
+            Value resetValue = new VariableValue(this, variable, variable.name(), null);  // TODO ObjectFlow
             internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, SINGLE_COPY);
         } else {
             throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
@@ -385,7 +385,7 @@ class VariableProperties implements EvaluationContext {
                 Variable newVariable = new RecordField(fieldReference, newName);
                 Expression initialiser = computeInitialiser(recordField);
                 Value newInitialValue = computeInitialValue(recordField, initialiser);
-                Value newResetValue = new VariableValue(this, newVariable, newName);
+                Value newResetValue = new VariableValue(this, newVariable, newName, null); // TODO ObjectFlow
                 internalCreate(newVariable, newName, newInitialValue, newResetValue, Set.of(), fieldReferenceState);
             }
         }
@@ -535,7 +535,8 @@ class VariableProperties implements EvaluationContext {
             ensureThisVariable((FieldReference) variable);
         }
         AboutVariable aboutVariable = findComplain(variable);
-        return new VariableValue(this, variable, aboutVariable.name);
+        // TODO ObjectFlow
+        return new VariableValue(this, variable, aboutVariable.name, null);
     }
 
 
@@ -625,7 +626,8 @@ class VariableProperties implements EvaluationContext {
                     localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
                 }
 
-                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name));
+                // TODO ObjectFlow
+                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name, null));
             } else {
                 // single context, guaranteed to be reached; include this has become irrelevant
                 Value singleValue = assignmentContexts.get(0).variableProperties.get(name).getCurrentValue();

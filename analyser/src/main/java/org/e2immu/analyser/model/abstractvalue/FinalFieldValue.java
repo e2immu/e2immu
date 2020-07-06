@@ -21,14 +21,15 @@ package org.e2immu.analyser.model.abstractvalue;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 
 public class FinalFieldValue extends ValueWithVariable {
 
     private final FieldAnalysis fieldAnalysis;
 
-    public FinalFieldValue(Variable variable) {
-        super(variable);
+    public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
+        super(variable, objectFlow);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
     }
 

@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -43,15 +44,17 @@ public class VariableValue extends ValueWithVariable {
 
     public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
-                         @NotNull String name) {
-        this(evaluationContext, variable, name, false);
+                         @NotNull String name,
+                         ObjectFlow objectFlow) {
+        this(evaluationContext, variable, name, objectFlow, false);
     }
 
     public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name,
+                         ObjectFlow objectFlow,
                          boolean multiCopyNonFinalField) {
-        super(variable);
+        super(variable, objectFlow);
         this.evaluationContext = evaluationContext;
         this.name = name;
         this.multiCopyNonFinalField = multiCopyNonFinalField;

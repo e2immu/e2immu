@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -126,5 +127,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
     @Override
     public boolean isExpressionOfParameters() {
         return value.isExpressionOfParameters();
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return value.getObjectFlow();
     }
 }

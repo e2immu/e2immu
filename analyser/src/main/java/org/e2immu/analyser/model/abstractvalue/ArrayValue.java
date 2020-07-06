@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -13,8 +14,10 @@ public class ArrayValue implements Value {
 
     public final Value combinedValue; // NO_VALUE when no values
     public final List<Value> values;
+    public final ObjectFlow objectFlow;
 
-    public ArrayValue(List<Value> values) {
+    public ArrayValue(ObjectFlow objectFlow, List<Value> values) {
+        this.objectFlow = objectFlow;
         this.values = ImmutableList.copyOf(values);
         combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(values);
     }
@@ -68,5 +71,10 @@ public class ArrayValue implements Value {
     @Override
     public boolean isExpressionOfParameters() {
         return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 }

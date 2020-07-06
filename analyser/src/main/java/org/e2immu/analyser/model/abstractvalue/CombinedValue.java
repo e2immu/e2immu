@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
 
@@ -74,5 +75,10 @@ public class CombinedValue implements Value {
     @Override
     public boolean isExpressionOfParameters() {
         return values.stream().allMatch(Value::isExpressionOfParameters);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return null;
     }
 }

@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.ConditionalManager;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -35,15 +36,22 @@ public class ConditionalValue implements Value {
     public final Value ifTrue;
     public final Value ifFalse;
     public final Value combinedValue;
+    public final ObjectFlow objectFlow;
 
-    public ConditionalValue(Value condition, Value ifTrue, Value ifFalse) {
+    public ConditionalValue(Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         this.condition = condition;
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
         combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
+        this.objectFlow = objectFlow;
     }
 
-    public static Value conditionalValue(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    public static Value conditionalValue(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;
             evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
@@ -55,9 +63,9 @@ public class ConditionalValue implements Value {
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
         if (condition instanceof NegatedValue) {
-            return new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue);
+            return new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue, objectFlow);
         }
-        return new ConditionalValue(condition, ifTrue, ifFalse);
+        return new ConditionalValue(condition, ifTrue, ifFalse, objectFlow);
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
@@ -83,7 +91,7 @@ public class ConditionalValue implements Value {
         if (reCondition == BoolValue.FALSE) {
             return reFalse;
         }
-        return new ConditionalValue(reCondition, reTrue, reFalse);
+        return new ConditionalValue(reCondition, reTrue, reFalse, getObjectFlow());
     }
 
     @Override

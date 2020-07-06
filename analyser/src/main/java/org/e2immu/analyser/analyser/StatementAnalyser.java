@@ -416,7 +416,8 @@ public class StatementAnalyser {
                 }
                 if (!transferValue.value.isSet()) {
                     if (value instanceof VariableValue) {
-                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties));
+                        // TODO ObjectFlow
+                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties, null));
                     } else {
                         transferValue.value.set(value);
                     }

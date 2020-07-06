@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -30,20 +31,28 @@ import java.util.stream.Collectors;
 
 public class ArrayInitializer implements Expression {
     public final List<Expression> expressions;
+    public final ParameterizedType commonType;
 
     public ArrayInitializer(@NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
+        commonType = commonType(expressions);
     }
 
     @Override
     public ParameterizedType returnType() {
-        return commonType(expressions);
+        return commonType;
     }
 
-    // TODO needs better implementation!!
     private static ParameterizedType commonType(List<Expression> expressions) {
-        if (expressions.isEmpty()) return Primitives.PRIMITIVES.voidParameterizedType;
-        return expressions.get(0).returnType();
+        ParameterizedType commonType = null;
+        for (Expression expression : expressions) {
+            if (expression != NullConstant.nullConstant) {
+                ParameterizedType parameterizedType = expression.returnType();
+                if (commonType == null) commonType = parameterizedType;
+                else commonType = commonType.commonType(parameterizedType);
+            }
+        }
+        return commonType == null ? Primitives.PRIMITIVES.objectParameterizedType : commonType;
     }
 
     @Override
@@ -65,7 +74,7 @@ public class ArrayInitializer implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
 
-        ArrayValue arrayValue = new ArrayValue(values);
+        ArrayValue arrayValue = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), commonType.bestTypeInfo()), values);
         visitor.visit(this, evaluationContext, arrayValue);
         return arrayValue;
     }

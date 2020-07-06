@@ -168,5 +168,5 @@ public interface Value extends Comparable<Value> {
         return this;
     }
 
-    default ObjectFlow getObjectFlow() { throw new UnsupportedOperationException(); }
+    ObjectFlow getObjectFlow();
 }

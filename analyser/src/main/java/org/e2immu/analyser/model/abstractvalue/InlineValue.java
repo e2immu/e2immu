@@ -6,6 +6,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 import java.util.StringJoiner;
@@ -54,5 +55,10 @@ public class InlineValue implements Value {
     @Override
     public String toString() {
         return value.toString();
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return value.getObjectFlow();
     }
 }

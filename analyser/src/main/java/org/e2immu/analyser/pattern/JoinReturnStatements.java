@@ -65,7 +65,7 @@ public class JoinReturnStatements {
         if (!last.valueOfExpression.isSet()) return DELAY;
         Value condition = last.valueOfExpression.get();
         // TODO check that statements in between do not modify the condition
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get());
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get(), null); // TODO ObjectFlow
         return new JoinResult(res, Set.of(idOfThenReturn, idOfElseReturn));
     }
 
@@ -111,7 +111,8 @@ public class JoinReturnStatements {
         if (ifStatement.inErrorState()) return null;
 
         Value condition = ifStatement.valueOfExpression.get();
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get());
+        //TODO ObjectFlow
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get(), null);
         return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));
     }
 

@@ -158,13 +158,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return UnknownValue.NO_VALUE;
         }
 
+        TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
         ObjectFlow theObjectFlow;
-        if (objectFlow != null) {
-            theObjectFlow = objectFlow;
+        if (bestType == null) {
+            theObjectFlow = null;
         } else {
-            theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType().bestTypeInfo());
+            if (objectFlow != null) {
+                theObjectFlow = objectFlow;
+            } else {
+                theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), bestType);
+            }
         }
-
         // we will never analyse this method
         return new MethodValue(methodInfo, objectValue, parameters, theObjectFlow);
     }
@@ -239,7 +243,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 objectValue.getPropertyOutsideContext(VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
-        Location location = evaluationContext.getLocation();
+
+        // TODO causes null pointer exception
+        Location location = evaluationContext == null ? objectValue.getObjectFlow().location: evaluationContext.getLocation();
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Analysis.IS_A_SIZE) {

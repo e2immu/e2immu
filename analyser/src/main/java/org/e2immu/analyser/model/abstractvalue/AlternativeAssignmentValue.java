@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.ConditionalManager;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.HashMap;
@@ -40,11 +41,18 @@ public class AlternativeAssignmentValue implements Value {
     public final Value value;
     public final Value predicate;
     public final Value alternativeValue;
+    public final ObjectFlow objectFlow;
 
-    public AlternativeAssignmentValue(Value value, Value predicate, Value alternativeValue) {
+    public AlternativeAssignmentValue(Value value, Value predicate, Value alternativeValue, ObjectFlow objectFlow) {
         this.value = value;
         this.predicate = predicate;
         this.alternativeValue = alternativeValue;
+        this.objectFlow = objectFlow;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
@@ -56,7 +64,7 @@ public class AlternativeAssignmentValue implements Value {
         if (rePredicate == BoolValue.TRUE) return reValue;
         Value reAlt = alternativeValue.reEvaluate(translationWithValue);
         if (rePredicate == BoolValue.FALSE) return reAlt;
-        return new AlternativeAssignmentValue(reValue, rePredicate, reAlt);
+        return new AlternativeAssignmentValue(reValue, rePredicate, reAlt, getObjectFlow());
     }
 
     @Override

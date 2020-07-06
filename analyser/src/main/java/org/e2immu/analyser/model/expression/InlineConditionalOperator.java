@@ -55,7 +55,8 @@ public class InlineConditionalOperator implements Expression {
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
-        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f);
+        // TODO ObjectFlow
+        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f, null);
         evaluationVisitor.visit(this, evaluationContext, res);
         return res;
     }

@@ -5,6 +5,9 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.StringJoiner;
 
@@ -13,9 +16,16 @@ import java.util.StringJoiner;
  */
 public class TypeValue implements Value {
     public final ParameterizedType parameterizedType;
+    public final ObjectFlow objectFlow;
 
-    public TypeValue(ParameterizedType parameterizedType) {
+    public TypeValue(ParameterizedType parameterizedType, Location location) {
         this.parameterizedType = parameterizedType;
+        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override

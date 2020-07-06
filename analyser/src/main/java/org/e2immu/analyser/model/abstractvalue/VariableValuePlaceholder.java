@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
@@ -34,8 +35,8 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
-    public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext) {
-        super(original.variable);
+    public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
+        super(original.variable, objectFlow);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {

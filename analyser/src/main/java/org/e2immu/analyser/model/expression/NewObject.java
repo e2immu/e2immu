@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -113,7 +114,7 @@ public class NewObject implements HasParameterExpressions {
             List<Value> values = arrayInitializer.expressions.stream()
                     .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
-            value = new ArrayValue(values);
+            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType.bestTypeInfo()), values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext.getLocation());
@@ -182,7 +183,7 @@ public class NewObject implements HasParameterExpressions {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
+            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name, null); // TODO ObjectFlow
             builder.put(vv, parameterValue);
             i++;
         }

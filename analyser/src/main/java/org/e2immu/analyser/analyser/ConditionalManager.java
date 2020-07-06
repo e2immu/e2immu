@@ -97,7 +97,7 @@ public class ConditionalManager {
 
 
     public boolean isNotNull(Variable variable) {
-        VariableValue vv = new VariableValue(null, variable, variable.name());
+        VariableValue vv = new VariableValue(null, variable, variable.name(), null);
         return notNull(vv) == Level.TRUE;
     }
 

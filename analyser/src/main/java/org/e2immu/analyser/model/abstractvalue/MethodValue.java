@@ -43,6 +43,11 @@ public class MethodValue implements Value {
     }
 
     @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
