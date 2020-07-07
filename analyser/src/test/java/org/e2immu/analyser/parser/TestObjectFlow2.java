@@ -24,10 +24,13 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.testexample.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestObjectFlow2 extends CommonTestRunner {
@@ -37,10 +40,10 @@ public class TestObjectFlow2 extends CommonTestRunner {
         TypeContext typeContext = testClass("ObjectFlow2", 0, 0, new DebugConfiguration.Builder()
                 .build());
 
-        TypeInfo hashSet = typeContext.typeStore.get("java.util.HashSet");
-        TypeInfo set = typeContext.typeStore.get("java.util.Set");
+        TypeInfo hashSet = typeContext.typeStore.get(HashSet.class.getCanonicalName());
+        TypeInfo set = typeContext.typeStore.get(Set.class.getCanonicalName());
 
-        TypeInfo objectFlow2 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow2");
+        TypeInfo objectFlow2 = typeContext.typeStore.get(ObjectFlow2.class.getCanonicalName());
         MethodInfo ofMethod = objectFlow2.typeInspection.get().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
         ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == hashSet).findAny().orElseThrow();
 
@@ -63,8 +66,10 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
+
         Assert.assertTrue(set1ObjectFlow.origin instanceof ObjectFlow.MethodCalls);
         ObjectFlow.MethodCalls set1ObjectFlowMcs = (ObjectFlow.MethodCalls) set1ObjectFlow.origin;
+        Assert.assertEquals(1, set1ObjectFlowMcs.objectFlows.size());
         Assert.assertTrue(set1ObjectFlowMcs.objectFlows.contains(newHashSet));
         Assert.assertTrue(newHashSet.getNextViaReturnOrFieldAccess().collect(Collectors.toSet()).contains(set1ObjectFlow));
 

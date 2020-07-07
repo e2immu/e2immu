@@ -256,7 +256,7 @@ public class FieldAnalyser {
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
                         Value assignment = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get();
                         Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW));
-                        Value andValue = new AndValue(null).append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
+                        Value andValue = new AndValue(ObjectFlow.NO_FLOW).append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
                         return andValue != BoolValue.FALSE;
                     });
                     if (allCompatible) {
@@ -460,6 +460,7 @@ public class FieldAnalyser {
         // compute and set the combined value
 
         Value effectivelyFinalValue = determineEffectivelyFinalValue(fieldReference, values);
+        fieldAnalysis.ensureObjectFlow(effectivelyFinalValue.getObjectFlow()).assignTo(fieldInfo);
         fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, effectivelyFinalValue.isConstant());
 

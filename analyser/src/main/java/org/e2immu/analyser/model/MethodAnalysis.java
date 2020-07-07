@@ -232,6 +232,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     public void addInternalObjectFlow(ObjectFlow objectFlow) {
+        if(objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
         internalObjectFlows.add(objectFlow);
     }
 

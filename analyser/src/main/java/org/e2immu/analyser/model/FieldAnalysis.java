@@ -170,9 +170,7 @@ public class FieldAnalysis extends Analysis {
     }
 
     public ObjectFlow ensureObjectFlow(ObjectFlow objectFlow) {
-        if (this.objectFlow.importance() < objectFlow.importance()) {
-            this.objectFlow = objectFlow.merge(this.objectFlow);
-        }
+        this.objectFlow = objectFlow.merge(this.objectFlow);
         return this.objectFlow;
     }
 
@@ -187,6 +185,7 @@ public class FieldAnalysis extends Analysis {
     }
 
     public void addInternalObjectFlow(ObjectFlow objectFlow) {
+        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
         internalObjectFlows.add(objectFlow);
     }
 

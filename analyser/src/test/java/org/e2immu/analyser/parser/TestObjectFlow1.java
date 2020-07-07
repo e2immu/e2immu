@@ -57,8 +57,11 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
                 // after the first iteration, the object flow becomes that of the parameter
                 // in the first iteration, the field value is NO_VALUE
-                Assert.assertEquals(iteration == 0 ? 0 : 1, objectFlow.importance());
-
+                if(iteration == 0) {
+                    Assert.assertTrue(objectFlow.location.info instanceof FieldInfo);
+                } else {
+                    Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
+                }
                 ParameterInfo key = fieldInfo.owner.typeInspection.get().constructors.get(0).methodInspection.get().parameters.get(0);
                 ObjectFlow objectFlowPI = key.parameterAnalysis.get().objectFlow;
                 if (iteration > 0) {
@@ -100,17 +103,21 @@ public class TestObjectFlow1 extends CommonTestRunner {
         ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
         ObjectFlow objectFlowK = k.parameterAnalysis.get().objectFlow;
 
+        Assert.assertEquals(1L, useKv.methodAnalysis.get().getInternalObjectFlows().count());
+        ObjectFlow inUseKv = useKv.methodAnalysis.get().getInternalObjectFlows().findAny().orElseThrow();
+
         Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getReturnedObjectFlow());
 
         Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
         for (ObjectFlow objectFlow : flowsOfObjectFlow1) {
             LOGGER.info("Detailed: {}", objectFlow.detailed());
         }
-        Assert.assertEquals(5, flowsOfObjectFlow1.size());
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowK));
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowKey));
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowValue));
         Assert.assertTrue(flowsOfObjectFlow1.contains(keyConstant));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(inUseKv));
+        Assert.assertEquals(5, flowsOfObjectFlow1.size());
     }
 
 }

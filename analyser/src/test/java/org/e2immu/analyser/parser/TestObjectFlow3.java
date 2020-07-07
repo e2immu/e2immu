@@ -54,7 +54,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
         MethodInfo mainMethod = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
         mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
-        Assert.assertEquals(2L, mainMethod.methodAnalysis.get().getInternalObjectFlows().count());
+        Assert.assertEquals(4L, mainMethod.methodAnalysis.get().getInternalObjectFlows().count());
 
         // the Config flow is used to initiate the Main flow
         TypeInfo config = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Config");

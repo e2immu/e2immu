@@ -339,8 +339,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static ObjectFlow sizeObjectFlow(MethodInfo sizeMethodInfo, Location location, Value object) {
         ObjectFlow.MethodCalls methodCalls = new ObjectFlow.MethodCalls();
         ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, methodCalls);
-        object.getObjectFlow().addObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
-        methodCalls.objectFlows.add(object.getObjectFlow());
+        if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
+            object.getObjectFlow().addObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
+            methodCalls.objectFlows.add(object.getObjectFlow());
+        }
         return objectFlow;
     }
 
