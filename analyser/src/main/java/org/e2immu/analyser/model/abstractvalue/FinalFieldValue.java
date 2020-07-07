@@ -27,10 +27,17 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 public class FinalFieldValue extends ValueWithVariable {
 
     private final FieldAnalysis fieldAnalysis;
+    private final ObjectFlow objectFlow;
 
     public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
-        super(variable, objectFlow);
+        super(variable);
+        this.objectFlow = objectFlow;
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override

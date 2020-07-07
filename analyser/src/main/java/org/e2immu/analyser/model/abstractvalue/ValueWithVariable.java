@@ -14,16 +14,8 @@ public abstract class ValueWithVariable implements Value {
     @NotNull
     public final Variable variable;
 
-    public final ObjectFlow objectFlow;
-
-    protected ValueWithVariable(@NotNull Variable variable, ObjectFlow objectFlow) {
+    protected ValueWithVariable(@NotNull Variable variable) {
         this.variable = Objects.requireNonNull(variable);
-        this.objectFlow = objectFlow;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
     }
 
     @Override

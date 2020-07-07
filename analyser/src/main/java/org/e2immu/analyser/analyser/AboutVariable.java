@@ -3,6 +3,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -22,6 +23,7 @@ class AboutVariable {
     @NotNull
     private Value currentValue;
 
+    private ObjectFlow objectFlow;
 
     // accessible to the outside world, but not modified
     final Value initialValue;
@@ -75,8 +77,13 @@ class AboutVariable {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
-    void setCurrentValue(Value value) {
+    void setCurrentValue(Value value, ObjectFlow objectFlow) {
         this.currentValue = value;
+        this.objectFlow = objectFlow;
+    }
+
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     void setProperty(VariableProperty variableProperty, int value) {

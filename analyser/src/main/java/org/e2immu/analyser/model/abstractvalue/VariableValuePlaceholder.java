@@ -35,13 +35,20 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
+    public final ObjectFlow objectFlow;
     public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
-        super(original.variable, objectFlow);
+        super(original.variable);
+        this.objectFlow = objectFlow;
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, evaluationContext.getProperty(original, property));
         }
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override

@@ -19,12 +19,12 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,19 +32,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+            if("main".equals(methodInfo.name) && "0".equals(statementId) && "config".equals(variableName)) {
+                Assert.assertTrue(currentValue instanceof VariableValue);
+                ObjectFlow objectFlow = currentValue.getObjectFlow();
+                Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectFlow.ObjectCreation);
+            }
+        }
+    };
 
     @Test
     public void test() throws IOException {
-        TypeContext typeContext = testClass("ObjectFlow3", 0, 0, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("ObjectFlow3", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
 
+        // there are 2 flows in the 'main' method
         TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
         MethodInfo main = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
-        Assert.assertEquals(1L, main.methodAnalysis.get().getInternalObjectFlows().count());
+        main.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        Assert.assertEquals(2L, main.methodAnalysis.get().getInternalObjectFlows().count());
+
+        // the Config flow is used to initiate the Main flow
+        TypeInfo config = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Config");
+        ObjectFlow newConfig = main.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == config).findAny().orElseThrow();
+        Assert.assertEquals(1L, newConfig.getNonModifyingCallouts().count());
     }
 
 }

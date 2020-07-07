@@ -1,13 +1,11 @@
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;

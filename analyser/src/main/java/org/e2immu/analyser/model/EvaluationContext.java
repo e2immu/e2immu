@@ -122,4 +122,5 @@ public interface EvaluationContext {
         return objectFlow;
     }
 
+    ObjectFlow getObjectFlow(Variable variable);
 }

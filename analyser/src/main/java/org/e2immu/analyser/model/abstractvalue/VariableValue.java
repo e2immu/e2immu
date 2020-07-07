@@ -44,17 +44,15 @@ public class VariableValue extends ValueWithVariable {
 
     public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
-                         @NotNull String name,
-                         ObjectFlow objectFlow) {
-        this(evaluationContext, variable, name, objectFlow, false);
+                         @NotNull String name) {
+        this(evaluationContext, variable, name, false);
     }
 
     public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name,
-                         ObjectFlow objectFlow,
                          boolean multiCopyNonFinalField) {
-        super(variable, objectFlow);
+        super(variable);
         this.evaluationContext = evaluationContext;
         this.name = name;
         this.multiCopyNonFinalField = multiCopyNonFinalField;
@@ -103,5 +101,10 @@ public class VariableValue extends ValueWithVariable {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return evaluationContext.getProperty(variable, variableProperty);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return evaluationContext.getObjectFlow(variable);
     }
 }

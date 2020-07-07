@@ -21,10 +21,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 public class TestObjectFlow1 extends CommonTestRunner {
@@ -44,11 +41,15 @@ public class TestObjectFlow1 extends CommonTestRunner {
             if ("key".equals(fieldInfo.name)) {
                 ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
                 Assert.assertNotNull(objectFlow);
+                LOGGER.info("Object flow is {}", objectFlow.detailed());
+
+                // after the first iteration, the object flow becomes that of the parameter
+                // in the first iteration, the field value is NO_VALUE
                 Assert.assertEquals(iteration == 0 ? 0 : 1, objectFlow.importance());
 
                 ParameterInfo key = fieldInfo.owner.typeInspection.get().constructors.get(0).methodInspection.get().parameters.get(0);
                 ObjectFlow objectFlowPI = key.parameterAnalysis.get().objectFlow;
-                if (iteration > 0) {
+                if (iteration > 1) {
                     Assert.assertSame(objectFlow, objectFlowPI);
                     Assert.assertEquals(1L, objectFlow.getLocalAssignments().count());
                 } else {
@@ -63,6 +64,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeContext typeContext = testClass("ObjectFlow1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
+
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
         MethodInfo keyValueConstructor = keyValue.typeInspection.get().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);

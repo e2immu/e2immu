@@ -38,7 +38,9 @@ public class ObjectFlow {
         public final MethodCall methodCall;
 
         public ObjectCreation(MethodInfo methodInfo, List<Value> parameters) {
-            methodCall = new MethodCall(methodInfo, parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList()));
+            methodCall = new MethodCall(methodInfo, parameters.stream()
+                    .filter(p -> p.getObjectFlow() != null)
+                    .map(Value::getObjectFlow).collect(Collectors.toList()));
         }
 
         @Override
@@ -47,29 +49,24 @@ public class ObjectFlow {
         }
     }
 
-    public static final Literal LITERAL = new Literal();
+    public static final StaticOrigin LITERAL = new StaticOrigin("literal");
+    public static final StaticOrigin OPERATOR = new StaticOrigin("operator");
+    public static final StaticOrigin LOCAL_VARIABLE = new StaticOrigin("local variable");
+    public static final StaticOrigin DEPENDENT_VARIABLE = new StaticOrigin("dependent variable");
 
-    public static class Literal implements Origin {
-        private Literal() {
+    public static class StaticOrigin implements Origin {
+        private final String reason;
+
+        private StaticOrigin(String reason) {
+            this.reason = reason;
         }
-
         @Override
         public String toString() {
-            return "literal";
+            return reason;
         }
+
     }
 
-    public static final Operator OPERATOR = new Operator();
-
-    public static class Operator implements Origin {
-        private Operator() {
-        }
-
-        @Override
-        public String toString() {
-            return "operator";
-        }
-    }
 
     public static class Access {
         public final Either<FieldAccess, MethodCall> fieldAccessOrMethodCall;
@@ -161,6 +158,10 @@ public class ObjectFlow {
 
     public void addCallOut(ObjectFlow destination) {
         nonModifyingCallOuts.add(destination);
+    }
+
+    public Stream<ObjectFlow> getNonModifyingCallouts() {
+        return nonModifyingCallOuts.stream();
     }
 
     public void addSource(ObjectFlow source) {

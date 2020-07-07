@@ -196,7 +196,7 @@ public class NewObject implements HasParameterExpressions {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name, null); // TODO ObjectFlow
+            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
             builder.put(vv, parameterValue);
             i++;
         }

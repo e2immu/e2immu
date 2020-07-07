@@ -131,7 +131,7 @@ public class TestWithSkeleton {
         Assert.assertEquals(DELAY, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
 
         // add s != null
-        Value sIsNotNull = NegatedValue.negate(new EqualsValue(new VariableValue(variableProperties, localS, localS.name(), null), NullValue.NULL_VALUE, null));
+        Value sIsNotNull = NegatedValue.negate(new EqualsValue(new VariableValue(variableProperties, localS, localS.name()), NullValue.NULL_VALUE, null));
         variableProperties.conditionalManager.addToConditional(sIsNotNull);
         Assert.assertEquals("not (null == s)", variableProperties.conditionalManager.getConditional().toString());
 
