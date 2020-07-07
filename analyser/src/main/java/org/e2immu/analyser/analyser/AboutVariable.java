@@ -8,6 +8,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 class AboutVariable {
@@ -35,6 +36,7 @@ class AboutVariable {
     final FieldReferenceState fieldReferenceState;
 
     AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value resetValue,
+                  ObjectFlow initialObjectFlow,
                   FieldReferenceState fieldReferenceState) {
         this.localCopyOf = localCopyOf;
         this.initialValue = initialValue;
@@ -43,6 +45,7 @@ class AboutVariable {
         this.variable = variable;
         this.name = name; // the value used to put it in the map
         this.fieldReferenceState = fieldReferenceState;
+        this.objectFlow = Objects.requireNonNull(initialObjectFlow);
     }
 
     @Override
@@ -60,7 +63,7 @@ class AboutVariable {
     }
 
     AboutVariable localCopy() {
-        AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, fieldReferenceState);
+        AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
         av.properties.putAll(properties);
         return av;
     }
@@ -79,7 +82,7 @@ class AboutVariable {
 
     void setCurrentValue(Value value, ObjectFlow objectFlow) {
         this.currentValue = value;
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     public ObjectFlow getObjectFlow() {

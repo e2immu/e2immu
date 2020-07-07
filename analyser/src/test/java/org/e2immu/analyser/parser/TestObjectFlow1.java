@@ -22,6 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
@@ -34,6 +35,17 @@ import java.util.Set;
 
 public class TestObjectFlow1 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow1.class);
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("KeyValue".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+            if ("key".equals(d.variableName)) {
+                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.MethodCalls);
+            }
+            if ("KeyValue.this.key".equals(d.variableName)) {
+                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.MethodCalls);
+            }
+        }
+    };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
         @Override
@@ -49,7 +61,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
                 ParameterInfo key = fieldInfo.owner.typeInspection.get().constructors.get(0).methodInspection.get().parameters.get(0);
                 ObjectFlow objectFlowPI = key.parameterAnalysis.get().objectFlow;
-                if (iteration > 1) {
+                if (iteration > 0) {
                     Assert.assertSame(objectFlow, objectFlowPI);
                     Assert.assertEquals(1L, objectFlow.getLocalAssignments().count());
                 } else {
@@ -63,6 +75,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
     public void test() throws IOException {
         TypeContext typeContext = testClass("ObjectFlow1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
 
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
@@ -90,7 +103,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getReturnedObjectFlow());
 
         Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
-        for(ObjectFlow objectFlow: flowsOfObjectFlow1) {
+        for (ObjectFlow objectFlow : flowsOfObjectFlow1) {
             LOGGER.info("Detailed: {}", objectFlow.detailed());
         }
         Assert.assertEquals(5, flowsOfObjectFlow1.size());

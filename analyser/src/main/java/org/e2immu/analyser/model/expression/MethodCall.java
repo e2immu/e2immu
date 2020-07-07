@@ -93,6 +93,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
+        ObjectFlow objectFlow = objectValue.getObjectFlow();
+        if(objectFlow != ObjectFlow.NO_FLOW) {
+            List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
+            objectFlow.addObjectAccess(new ObjectFlow.MethodCall(methodInfo, flowsOfArguments));
+        }
+
         Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, null);
 
         checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);

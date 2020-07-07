@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
@@ -53,14 +54,48 @@ public class TestObjectFlow3 extends CommonTestRunner {
 
         // there are 2 flows in the 'main' method
         TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
-        MethodInfo main = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
-        main.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
-        Assert.assertEquals(2L, main.methodAnalysis.get().getInternalObjectFlows().count());
+        MethodInfo mainMethod = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
+        mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        Assert.assertEquals(2L, mainMethod.methodAnalysis.get().getInternalObjectFlows().count());
 
         // the Config flow is used to initiate the Main flow
         TypeInfo config = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Config");
-        ObjectFlow newConfig = main.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == config).findAny().orElseThrow();
+        ObjectFlow newConfig = mainMethod.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == config).findAny().orElseThrow();
         Assert.assertEquals(1L, newConfig.getNonModifyingCallouts().count());
+
+        TypeInfo main = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Main");
+        ObjectFlow newMain = mainMethod.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == main).findAny().orElseThrow();
+        // test object access "go" method
+        Assert.assertEquals(1L, newMain.getObjectAccesses().count());
+        ObjectFlow.MethodCall newMainCallGo = (ObjectFlow.MethodCall) newMain.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals("go", newMainCallGo.methodInfo.name);
+
+        // the Config flow in Main is linked to the creation in the main method
+        MethodInfo mainConstructor = main.typeInspection.get().constructors.get(0);
+        ObjectFlow mainConstructorParamObjectFlow = mainConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
+        Assert.assertTrue(mainConstructorParamObjectFlow.origin instanceof ObjectFlow.MethodCalls);
+        ObjectFlow.MethodCalls mcs = (ObjectFlow.MethodCalls) mainConstructorParamObjectFlow.origin;
+        Assert.assertTrue(mcs.objectFlows.contains(newConfig));
+
+        // The go() method in main creates an InBetween flow
+        MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
+        goMethodMain.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
+        ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
+
+        // test object access "go" method
+        Assert.assertEquals(1L, newInBetween.getObjectAccesses().count());
+        ObjectFlow.MethodCall newInBetweenCallGo = (ObjectFlow.MethodCall) newInBetween.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals("go", newInBetweenCallGo.methodInfo.name);
+
+        Set<ObjectFlow> callOutsOfMainConstructorParamObjectFlow = mainConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
+
+        MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors.get(0);
+        ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
+        Assert.assertTrue(callOutsOfMainConstructorParamObjectFlow.contains(inBetweenConstructorParamObjectFlow));
+        ObjectFlow.MethodCalls mcs2 = (ObjectFlow.MethodCalls) inBetweenConstructorParamObjectFlow.origin;
+        Assert.assertTrue(mcs2.objectFlows.contains(mainConstructorParamObjectFlow));
+
     }
 
 }

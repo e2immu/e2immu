@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 public class ParameterizedType {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
 
+    public static final ParameterizedType TYPE_OF_NO_FLOW = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NULL_CONSTANT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);

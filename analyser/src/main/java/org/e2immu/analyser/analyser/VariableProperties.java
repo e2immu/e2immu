@@ -336,14 +336,6 @@ class VariableProperties implements EvaluationContext {
     public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
         Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
-            ObjectFlow objectFlow;
-            if (variable instanceof ParameterInfo) {
-                objectFlow = ((ParameterInfo) variable).parameterAnalysis.get().objectFlow;
-            } else {
-                objectFlow = new ObjectFlow(getLocation(), variable.parameterizedType(), variable instanceof LocalVariableReference ?
-                        ObjectFlow.LOCAL_VARIABLE : ObjectFlow.DEPENDENT_VARIABLE);
-            }
-            // TODO
             Value resetValue = new VariableValue(this, variable, variable.name());
             internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, SINGLE_COPY);
         } else {
@@ -357,9 +349,13 @@ class VariableProperties implements EvaluationContext {
                                 Value resetValue,
                                 Set<VariableProperty> initialProperties,
                                 AboutVariable.FieldReferenceState fieldReferenceState) {
+        ObjectFlow objectFlow = variable instanceof ParameterInfo ? ((ParameterInfo) variable).parameterAnalysis.get().objectFlow : ObjectFlow.NO_FLOW;
+
         AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null,
                 Objects.requireNonNull(initialValue),
-                Objects.requireNonNull(resetValue), Objects.requireNonNull(fieldReferenceState));
+                Objects.requireNonNull(resetValue),
+                objectFlow,
+                Objects.requireNonNull(fieldReferenceState));
 
         // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
@@ -512,7 +508,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     private void resetToUnknownValue(AboutVariable aboutVariable) {
-        aboutVariable.setCurrentValue(aboutVariable.resetValue, null);
+        aboutVariable.setCurrentValue(aboutVariable.resetValue, ObjectFlow.NO_FLOW);
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
             for (String name : recordNames) {
@@ -640,7 +636,7 @@ class VariableProperties implements EvaluationContext {
                 if (worstValue > Level.DELAY) {
                     localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
                 }
-                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name), null);
+                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name), ObjectFlow.NO_FLOW);
             } else {
                 // single context, guaranteed to be reached; include this has become irrelevant
                 AboutVariable av = assignmentContexts.get(0).variableProperties.get(name);
@@ -868,7 +864,7 @@ class VariableProperties implements EvaluationContext {
                 if (other.fieldReferenceState == SINGLE_COPY) {
                     aboutVariable.setCurrentValue(value, value.getObjectFlow());
                 } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
-                    aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, null);
+                    aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, ObjectFlow.NO_FLOW);
                 } else {
                     resetToUnknownValue(aboutVariable);
                 }
