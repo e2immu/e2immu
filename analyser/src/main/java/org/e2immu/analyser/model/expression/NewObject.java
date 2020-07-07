@@ -159,7 +159,7 @@ public class NewObject implements HasParameterExpressions {
                 if (source != ObjectFlow.NO_FLOW) {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
                     if(destination != ObjectFlow.NO_FLOW) {
-                        source.addCallOut(destination);
+                        source.addNonModifyingCallOut(destination);
                         destination.addSource(source);
                     }
                 }

@@ -62,7 +62,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         Assert.assertTrue(useOfFlow.origin instanceof ObjectFlow.MethodCalls);
         ObjectFlow.MethodCalls useOfFlowMcs = (ObjectFlow.MethodCalls) useOfFlow.origin;
         Assert.assertTrue(useOfFlowMcs.objectFlows.contains(newHashSet));
-        Assert.assertTrue(newHashSet.getNextViaReturnOrFieldAccess().collect(Collectors.toSet()).contains(useOfFlow));
+        Assert.assertTrue(newHashSet.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
@@ -71,9 +71,9 @@ public class TestObjectFlow2 extends CommonTestRunner {
         ObjectFlow.MethodCalls set1ObjectFlowMcs = (ObjectFlow.MethodCalls) set1ObjectFlow.origin;
         Assert.assertEquals(1, set1ObjectFlowMcs.objectFlows.size());
         Assert.assertTrue(set1ObjectFlowMcs.objectFlows.contains(newHashSet));
-        Assert.assertTrue(newHashSet.getNextViaReturnOrFieldAccess().collect(Collectors.toSet()).contains(set1ObjectFlow));
+        Assert.assertTrue(newHashSet.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));
 
-        Assert.assertEquals(2L, newHashSet.getObjectAccesses().count());
+        Assert.assertEquals(2L, newHashSet.getNonModifyingObjectAccesses().count());
         // TODO check that ofParam is linked to add method access
     }
 

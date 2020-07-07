@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -97,7 +96,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ObjectFlow objectFlow = objectValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW) {
             List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
-            objectFlow.addObjectAccess(new ObjectFlow.MethodCall(methodInfo, flowsOfArguments));
+            objectFlow.addNonModifyingObjectAccess(new ObjectFlow.MethodCall(methodInfo, flowsOfArguments));
         }
 
         // return value
@@ -111,7 +110,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // cross-link
             if (returnedFlow != ObjectFlow.NO_FLOW) {
                 origin.objectFlows.add(returnedFlow);
-                returnedFlow.addReturnOrFieldAccessFlow(objectFlowOfResult);
+                returnedFlow.addNext(objectFlowOfResult);
             }
             location.registerNewObjectFlow(objectFlowOfResult);
         } else {
@@ -340,7 +339,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ObjectFlow.MethodCalls methodCalls = new ObjectFlow.MethodCalls();
         ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, methodCalls);
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
-            object.getObjectFlow().addObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
+            object.getObjectFlow().addNonModifyingObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
             methodCalls.objectFlows.add(object.getObjectFlow());
         }
         return objectFlow;

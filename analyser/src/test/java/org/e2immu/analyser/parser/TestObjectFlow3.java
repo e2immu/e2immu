@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,8 +63,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         TypeInfo main = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Main");
         ObjectFlow newMain = mainMethod.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == main).findAny().orElseThrow();
         // test object access "go" method
-        Assert.assertEquals(1L, newMain.getObjectAccesses().count());
-        ObjectFlow.MethodCall newMainCallGo = (ObjectFlow.MethodCall) newMain.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newMain.getNonModifyingObjectAccesses().count());
+        ObjectFlow.MethodCall newMainCallGo = (ObjectFlow.MethodCall) newMain.getNonModifyingObjectAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newMainCallGo.methodInfo.name);
 
         // the Config flow in Main is linked to the creation in the main method
@@ -82,8 +81,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
 
         // test object access "go" method
-        Assert.assertEquals(1L, newInBetween.getObjectAccesses().count());
-        ObjectFlow.MethodCall newInBetweenCallGo = (ObjectFlow.MethodCall) newInBetween.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newInBetween.getNonModifyingObjectAccesses().count());
+        ObjectFlow.MethodCall newInBetweenCallGo = (ObjectFlow.MethodCall) newInBetween.getNonModifyingObjectAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newInBetweenCallGo.methodInfo.name);
 
         Set<ObjectFlow> callOutsOfMainConstructorParamObjectFlow = mainConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
@@ -101,8 +100,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         ObjectFlow newDoSomeWork = goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == doSomeWork).findAny().orElseThrow();
 
         // test object access "go" method
-        Assert.assertEquals(1L, newDoSomeWork.getObjectAccesses().count());
-        ObjectFlow.MethodCall newDoSomeWorkCallGo = (ObjectFlow.MethodCall) newDoSomeWork.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newDoSomeWork.getNonModifyingObjectAccesses().count());
+        ObjectFlow.MethodCall newDoSomeWorkCallGo = (ObjectFlow.MethodCall) newDoSomeWork.getNonModifyingObjectAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newDoSomeWorkCallGo.methodInfo.name);
 
         Set<ObjectFlow> callOutsOfInBetweenConstructorParamObjectFlow = inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());

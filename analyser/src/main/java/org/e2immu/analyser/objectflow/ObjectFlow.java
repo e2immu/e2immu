@@ -1,8 +1,13 @@
 package org.e2immu.analyser.objectflow;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Mark;
 import org.e2immu.annotation.Nullable;
 
 import java.util.*;
@@ -12,7 +17,7 @@ import java.util.stream.Stream;
 public class ObjectFlow {
 
     public interface Origin {
-
+        Stream<ObjectFlow> sources();
     }
 
     public static class MethodCalls implements Origin {
@@ -22,6 +27,11 @@ public class ObjectFlow {
         public String toString() {
             return "method calls " + objectFlows;
         }
+
+        @Override
+        public Stream<ObjectFlow> sources() {
+            return objectFlows.stream();
+        }
     }
 
     public static class ParentFlows implements Origin {
@@ -30,6 +40,11 @@ public class ObjectFlow {
         @Override
         public String toString() {
             return "parent flows " + objectFlows;
+        }
+
+        @Override
+        public Stream<ObjectFlow> sources() {
+            return objectFlows.stream();
         }
     }
 
@@ -45,6 +60,11 @@ public class ObjectFlow {
         @Override
         public String toString() {
             return "new " + methodCall;
+        }
+
+        @Override
+        public Stream<ObjectFlow> sources() {
+            return Stream.of();
         }
     }
 
@@ -66,6 +86,10 @@ public class ObjectFlow {
             return reason;
         }
 
+        @Override
+        public Stream<ObjectFlow> sources() {
+            return Stream.of();
+        }
     }
 
     public interface Access {
@@ -125,12 +149,14 @@ public class ObjectFlow {
         }
     }
 
-
     // where does this take place?
     public final Location location;
 
     // the type being created
     public final ParameterizedType type;
+
+    // denotes where the object comes from
+    public final Origin origin;
 
     public ObjectFlow(Location location, ParameterizedType type, Origin origin) {
         this.location = Objects.requireNonNull(location);
@@ -152,22 +178,17 @@ public class ObjectFlow {
         return Objects.hash(location, type);
     }
 
-    // denotes where the object comes from
-    public final Origin origin;
 
-    private final Set<Access> objectAccesses = new HashSet<>();
+    private final Set<Access> nonModifyingObjectAccesses = new HashSet<>();
 
-    public Stream<Access> getObjectAccesses() {
-        return objectAccesses.stream();
+    public Stream<Access> getNonModifyingObjectAccesses() {
+        return nonModifyingObjectAccesses.stream();
     }
 
-    public void addObjectAccess(Access access) {
+    public void addNonModifyingObjectAccess(Access access) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
-        objectAccesses.add(access);
+        nonModifyingObjectAccesses.add(access);
     }
-
-    int immutableAfterObjectAccess;
-    boolean objectModifiedByObjectAccess; // either via methods called, or assignments to fields
 
     private final Set<FieldInfo> localAssignments = new HashSet<>();
 
@@ -180,31 +201,26 @@ public class ObjectFlow {
         return localAssignments.stream();
     }
 
-    // either all recipients of return, or
-
-    Set<ObjectFlow> nextViaReturnOrFieldAccess = new HashSet<>();
-    // is empty when this object is not used as an argument
-    // can only contain one value if the call is @Modified
-    // if the object is immutable, all callouts can be joined (order does not matter)
-
-    public Stream<ObjectFlow> getNextViaReturnOrFieldAccess() {
-        return nextViaReturnOrFieldAccess.stream();
-    }
-
-    public void addReturnOrFieldAccessFlow(ObjectFlow objectFlow) {
-        if (this == NO_FLOW) throw new UnsupportedOperationException();
-        nextViaReturnOrFieldAccess.add(objectFlow);
-    }
-
     final Set<ObjectFlow> nonModifyingCallOuts = new HashSet<>();
 
+    Access modifyingAccess;
+
     ObjectFlow modifyingCallOut;
-    // the next flow objects; can be empty
-    // must be empty when the location is a field
 
-    Set<ObjectFlow> next;
+    // the next flow objects; only possibly non-empty when modifying access or modifying call-out
 
-    public void addCallOut(ObjectFlow destination) {
+    private Set<ObjectFlow> next = new HashSet<>();
+
+    public void addNext(ObjectFlow objectFlow) {
+        if (this == NO_FLOW) throw new UnsupportedOperationException();
+        this.next.add(objectFlow);
+    }
+
+    public Stream<ObjectFlow> getNext() {
+        return next.stream();
+    }
+
+    public void addNonModifyingCallOut(ObjectFlow destination) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
         nonModifyingCallOuts.add(destination);
     }
@@ -219,12 +235,11 @@ public class ObjectFlow {
         ((MethodCalls) origin).objectFlows.add(source);
     }
 
-    @Fluent
     public ObjectFlow merge(ObjectFlow objectFlow) {
         if (this == NO_FLOW) return objectFlow;
         if (objectFlow == NO_FLOW) return this;
 
-        this.nextViaReturnOrFieldAccess.addAll(objectFlow.nextViaReturnOrFieldAccess);
+        this.next.addAll(objectFlow.next);
         // TODO study merging
         return this;
     }
@@ -240,5 +255,23 @@ public class ObjectFlow {
     @Override
     public String toString() {
         return location + ", " + type.detailedString();
+    }
+
+
+    public Set<String> marks() {
+        Set<String> marksSources = origin.sources().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
+        if (modifyingAccess != null && modifyingAccess instanceof MethodCall) {
+            MethodInfo methodInfo = ((MethodCall) modifyingAccess).methodInfo;
+            Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()
+                    .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Mark.class.getName())).findFirst();
+            if (oMark.isPresent()) {
+                AnnotationExpression ae = oMark.get();
+                String[] strings = ae.extract("after", new String[0]);
+                if (strings.length > 0) {
+                    return SetUtil.immutableUnion(marksSources, new HashSet<>(Arrays.asList(strings)));
+                }
+            }
+        }
+        return marksSources;
     }
 }
