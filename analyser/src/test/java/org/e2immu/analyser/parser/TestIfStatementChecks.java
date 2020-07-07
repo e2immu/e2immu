@@ -10,6 +10,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -70,7 +71,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
         // the pattern X x; if(...) x= else x= into an inline definition
         if ("method4".equals(methodInfo.name)) {
             Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertTrue("Got: " + value.getClass(), value instanceof MethodValue);
+            Assert.assertSame(UnknownValue.RETURN_VALUE, value);
         }
     };
 

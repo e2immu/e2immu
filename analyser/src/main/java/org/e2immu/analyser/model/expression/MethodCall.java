@@ -174,14 +174,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (srv instanceof InlineValue) {
                 return srv.reEvaluate(NewObject.translationMap(evaluationContext, methodInfo, parameters));
             }
-            return srv;
-        }
-        if (methodInfo.hasBeenDefined()) {
+            if (srv.isConstant()) {
+                return srv;
+            }
+        } else if (methodInfo.hasBeenDefined()) {
             // we will, at some point, analyse this method
             return UnknownValue.NO_VALUE;
         }
 
-        // we will never analyse this method
+        // normal method value
         return new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
     }
 
@@ -293,8 +294,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (Analysis.haveEquals(sizeOfObject)) {
                 return new IntValue(Analysis.decodeSizeEquals(sizeOfObject));
             }
-            return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters,
-                            new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType(), new ObjectFlow.MethodCalls())),
+            ObjectFlow objectFlow = sizeObjectFlow(methodInfo, location, objectValue);
+            return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters, objectFlow),
                     Analysis.decodeSizeMin(sizeOfObject));
         }
         return null;
@@ -329,10 +330,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod();
                 if (sizeMethodInfoOnObject == null)
                     throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
-                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(), null); // TODO
+                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(), sizeObjectFlow(sizeMethodInfo, location, objectValue));
             }
         }
-        return new MethodValue(sizeMethodInfo, objectValue, List.of(), null); // TODO
+        return new MethodValue(sizeMethodInfo, objectValue, List.of(), sizeObjectFlow(sizeMethodInfo, location, objectValue));
+    }
+
+    private static ObjectFlow sizeObjectFlow(MethodInfo sizeMethodInfo, Location location, Value object) {
+        ObjectFlow.MethodCalls methodCalls = new ObjectFlow.MethodCalls();
+        ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, methodCalls);
+        object.getObjectFlow().addObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
+        methodCalls.objectFlows.add(object.getObjectFlow());
+        return objectFlow;
     }
 
     private static Value computeSizeModifyingMethod(MethodInfo methodInfo, Value objectValue, EvaluationContext evaluationContext) {

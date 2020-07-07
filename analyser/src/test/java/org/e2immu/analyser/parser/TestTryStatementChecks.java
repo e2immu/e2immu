@@ -6,10 +6,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.CombinedValue;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,8 +28,8 @@ public class TestTryStatementChecks extends CommonTestRunner {
                 Assert.assertTrue("Got " + value0.getClass(), value0 instanceof Instance);
                 Value value1 = methodAnalysis.returnStatementSummaries.get("0.1.0").value.get();
                 Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
-                Value srt = methodAnalysis.singleReturnValue.get();
-                Assert.assertTrue("Got " + srt.getClass(), srt instanceof MethodValue);
+                Value srv = methodAnalysis.singleReturnValue.get();
+                Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
             }
             if ("method3".equals(methodInfo.name)) {
                 Assert.assertEquals(1, methodAnalysis.uselessAssignments.size());

@@ -533,7 +533,7 @@ public class StatementAnalyser {
                         valueForSubStatement = BoolValue.TRUE;
                     } else {
                         Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
-                        valueForSubStatement = new AndValue(null).append(negated);
+                        valueForSubStatement = new AndValue(ObjectFlow.NO_FLOW).append(negated);
                     }
                 }
                 defaultCondition = valueForSubStatement;

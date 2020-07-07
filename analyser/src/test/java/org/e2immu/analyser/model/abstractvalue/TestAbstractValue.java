@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -97,12 +98,12 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testInstanceOf() {
-        Value iva = new InstanceOfValue(va, Primitives.PRIMITIVES.stringParameterizedType, null);
+        Value iva = new InstanceOfValue(va, Primitives.PRIMITIVES.stringParameterizedType, ObjectFlow.NO_FLOW);
         Assert.assertEquals("a instanceof java.lang.String", iva.toString());
-        Value ivb = new InstanceOfValue(vb, Primitives.PRIMITIVES.stringParameterizedType, null);
+        Value ivb = new InstanceOfValue(vb, Primitives.PRIMITIVES.stringParameterizedType, ObjectFlow.NO_FLOW);
         Value or = new OrValue().append(ivb, iva);
         Assert.assertEquals("(a instanceof java.lang.String or b instanceof java.lang.String)", or.toString());
-        Value iva2 = new InstanceOfValue(va, Primitives.PRIMITIVES.objectParameterizedType, null);
+        Value iva2 = new InstanceOfValue(va, Primitives.PRIMITIVES.objectParameterizedType, ObjectFlow.NO_FLOW);
         Value or2 = new OrValue().append(iva, iva2);
         Assert.assertEquals("(a instanceof java.lang.Object or a instanceof java.lang.String)", or2.toString());
     }

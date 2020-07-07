@@ -101,7 +101,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
             }
-            ObjectFlow objectFlow = null; // TODO
+            ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
             if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
                 Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {

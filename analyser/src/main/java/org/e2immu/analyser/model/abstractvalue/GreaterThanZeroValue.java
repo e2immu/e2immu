@@ -179,7 +179,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
 
     // testing only
     public static Value greater(Value l, Value r, boolean allowEquals) {
-        return greater(l, r, allowEquals, null);
+        return greater(l, r, allowEquals, ObjectFlow.NO_FLOW);
     }
 
     public static Value greater(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
@@ -227,7 +227,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
 
     // testing only
     public static Value less(Value l, Value r, boolean allowEquals) {
-        return less(l, r, allowEquals, null);
+        return less(l, r, allowEquals, ObjectFlow.NO_FLOW);
     }
 
     public static Value less(Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {

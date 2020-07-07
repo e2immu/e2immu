@@ -156,10 +156,12 @@ public class NewObject implements HasParameterExpressions {
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
 
                 ObjectFlow source = parameterValue.getObjectFlow();
-                if (source != null) {
+                if (source != ObjectFlow.NO_FLOW) {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
-                    source.addCallOut(destination);
-                    destination.addSource(source);
+                    if(destination != ObjectFlow.NO_FLOW) {
+                        source.addCallOut(destination);
+                        destination.addSource(source);
+                    }
                 }
             } else {
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT);

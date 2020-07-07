@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,9 +42,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("get".equals(methodInfo.name)) {
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
-                Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.get()", srv.toString());
-                Assert.assertTrue("Have " + srv.getClass(), srv instanceof MethodValue);
-                Assert.assertEquals(Level.TRUE, Level.value(srv.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
 
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertNotNull(tv);
@@ -60,8 +59,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertEquals(Level.DELAY, tv.properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
 
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
-                Assert.assertEquals("org.e2immu.analyser.util.SetOnceMap<K, V>.isEmpty()", srv.toString());
-                Assert.assertTrue("Have " + srv.getClass(), srv instanceof MethodValue);
+                Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
                 // @Size(equals = 0)
                 Assert.assertEquals(Analysis.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
             }

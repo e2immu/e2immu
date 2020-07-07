@@ -162,6 +162,7 @@ public class ObjectFlow {
     }
 
     public void addObjectAccess(Access access) {
+        if(this == NO_FLOW) throw new UnsupportedOperationException();
         objectAccesses.add(access);
     }
 
@@ -171,6 +172,7 @@ public class ObjectFlow {
     private final Set<FieldInfo> localAssignments = new HashSet<>();
 
     public void assignTo(FieldInfo fieldInfo) {
+        if(this == NO_FLOW) throw new UnsupportedOperationException();
         localAssignments.add(fieldInfo);
     }
 
@@ -190,6 +192,7 @@ public class ObjectFlow {
     }
 
     public void addReturnOrFieldAccessFlow(ObjectFlow objectFlow) {
+        if(this == NO_FLOW) throw new UnsupportedOperationException();
         nextViaReturnOrFieldAccess.add(objectFlow);
     }
 
@@ -202,6 +205,7 @@ public class ObjectFlow {
     Set<ObjectFlow> next;
 
     public void addCallOut(ObjectFlow destination) {
+        if(this == NO_FLOW) throw new UnsupportedOperationException();
         nonModifyingCallOuts.add(destination);
     }
 
@@ -210,6 +214,7 @@ public class ObjectFlow {
     }
 
     public void addSource(ObjectFlow source) {
+        if(this == NO_FLOW) throw new UnsupportedOperationException();
         if (!(origin instanceof MethodCalls)) throw new UnsupportedOperationException();
         ((MethodCalls) origin).objectFlows.add(source);
     }

@@ -92,7 +92,7 @@ public abstract class CommonAbstractValue {
 
         @Override
         public ObjectFlow getObjectFlow(Variable variable) {
-            return null;
+            return ObjectFlow.NO_FLOW;
         }
 
         @Override

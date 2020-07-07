@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
@@ -254,7 +255,7 @@ public class FieldAnalyser {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
                         Value assignment = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get();
-                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, null));
+                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW));
                         Value andValue = new AndValue(null).append(methodInfo.methodAnalysis.get().precondition.get(), fieldIsNotNull);
                         return andValue != BoolValue.FALSE;
                     });

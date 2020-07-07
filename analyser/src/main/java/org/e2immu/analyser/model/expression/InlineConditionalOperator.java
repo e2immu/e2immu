@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -56,7 +57,7 @@ public class InlineConditionalOperator implements Expression {
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
         // TODO ObjectFlow
-        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f, null);
+        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f, ObjectFlow.NO_FLOW);
         evaluationVisitor.visit(this, evaluationContext, res);
         return res;
     }

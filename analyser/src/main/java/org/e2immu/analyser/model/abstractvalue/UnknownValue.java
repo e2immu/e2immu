@@ -29,6 +29,8 @@ public class UnknownValue implements Value {
     // used if we don't know yet which value a variable will have
     public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
 
+    public static final UnknownValue RETURN_VALUE = new UnknownValue("<return value>");
+
     private final String msg;
 
     private UnknownValue(String msg) {

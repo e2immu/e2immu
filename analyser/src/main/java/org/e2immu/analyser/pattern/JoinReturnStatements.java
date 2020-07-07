@@ -11,6 +11,7 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +66,7 @@ public class JoinReturnStatements {
         if (!last.valueOfExpression.isSet()) return DELAY;
         Value condition = last.valueOfExpression.get();
         // TODO check that statements in between do not modify the condition
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get(), null); // TODO ObjectFlow
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get(), ObjectFlow.NO_FLOW); // TODO ObjectFlow
         return new JoinResult(res, Set.of(idOfThenReturn, idOfElseReturn));
     }
 
@@ -112,7 +113,7 @@ public class JoinReturnStatements {
 
         Value condition = ifStatement.valueOfExpression.get();
         //TODO ObjectFlow
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get(), null);
+        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get(), ObjectFlow.NO_FLOW);
         return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));
     }
 
