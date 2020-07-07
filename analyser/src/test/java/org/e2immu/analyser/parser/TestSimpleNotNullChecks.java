@@ -18,20 +18,19 @@ public class TestSimpleNotNullChecks extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                         variable, currentValue, properties) -> {
-        if ("a1".equals(variableName) && "0".equals(statementId)) {
-            Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("a1".equals(d.variableName) && "0".equals(d.statementId)) {
+            Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
         }
-        if ("s1".equals(variableName) && "0".equals(statementId)) {
-            Assert.assertTrue(currentValue instanceof VariableValue);
-            Assert.assertEquals("a1", ((VariableValue) currentValue).name);
+        if ("s1".equals(d.variableName) && "0".equals(d.statementId)) {
+            Assert.assertTrue(d.currentValue instanceof VariableValue);
+            Assert.assertEquals("a1", ((VariableValue) d.currentValue).name);
         }
-        if ("s1".equals(variableName) && "1.0.0".equals(statementId)) {
-            Assert.assertTrue(currentValue instanceof StringValue);
+        if ("s1".equals(d.variableName) && "1.0.0".equals(d.statementId)) {
+            Assert.assertTrue(d.currentValue instanceof StringValue);
         }
-        if ("s1".equals(variableName) && "1".equals(statementId)) {
-            Assert.assertTrue(currentValue instanceof VariableValue);
+        if ("s1".equals(d.variableName) && "1".equals(d.statementId)) {
+            Assert.assertTrue(d.currentValue instanceof VariableValue);
         }
     };
 

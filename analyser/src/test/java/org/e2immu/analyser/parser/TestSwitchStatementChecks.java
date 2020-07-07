@@ -23,9 +23,9 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method7".equals(methodInfo.name) && "3".equals(statementId) && "res".equals(variableName)) {
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+        public void visit(Data d) {
+            if ("method7".equals(d.methodInfo.name) && "3".equals(d.statementId) && "res".equals(d.variableName)) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
             }
         }
     };

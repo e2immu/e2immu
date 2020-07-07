@@ -31,17 +31,17 @@ public class TestDependentVariables extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method1".equals(methodInfo.name)) {
-                if ("2".equals(statementId) && "array[0]".equals(variableName)) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+        public void visit(Data d) {
+            if ("method1".equals(d.methodInfo.name)) {
+                if ("2".equals(d.statementId) && "array[0]".equals(d.variableName)) {
+                    Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
                 }
-                if ("4".equals(statementId) && "array[0]".equals(variableName)) {
-                    Assert.assertNull(properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
+                if ("4".equals(d.statementId) && "array[0]".equals(d.variableName)) {
+                    Assert.assertNull(d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                    Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
                 }
-                if ("4".equals(statementId) && "array".equals(variableName)) {
-                    Assert.assertEquals(VariableProperty.READ.best, (int) properties.get(VariableProperty.READ));
+                if ("4".equals(d.statementId) && "array".equals(d.variableName)) {
+                    Assert.assertEquals(VariableProperty.READ.best, (int) d.properties.get(VariableProperty.READ));
                 }
             }
         }

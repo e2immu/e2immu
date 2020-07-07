@@ -32,52 +32,51 @@ public class TestNullParameterChecks extends CommonTestRunner {
     //    }
     //}
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                         variable, currentValue, properties) -> {
-        if (methodInfo.name.equals("method2")) {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if (d.methodInfo.name.equals("method2")) {
 
-            if (!statementId.equals("0")) Assert.fail();
+            if (!d.statementId.equals("0")) Assert.fail();
 
-            if ("s".equals(variableName)) {
-                LOGGER.info("Properties of s it iteration {} are {}, value {}", iteration, properties, currentValue);
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED)); //FALSE at level 1
-                //Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.NOT_NULL));
+            if ("s".equals(d.variableName)) {
+                LOGGER.info("Properties of s it iteration {} are {}, value {}", d.iteration, d.properties, d.currentValue);
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED)); //FALSE at level 1
+                //Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) d.properties.get(VariableProperty.NOT_NULL));
                 return;
             }
-            if ("NullParameterChecks.this.s".equals(variableName)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // even field will have this
+            if ("NullParameterChecks.this.s".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // even field will have this
                 return;
             }
             //Assert.fail();
         }
-        if ("method8Implicit".equals(methodInfo.name)) {
-            if ("0.0.0".equals(statementId) && "NullParameterChecks.this.s".equals(variableName)) {
+        if ("method8Implicit".equals(d.methodInfo.name)) {
+            if ("0.0.0".equals(d.statementId) && "NullParameterChecks.this.s".equals(d.variableName)) {
                 // TODO
             }
-            // the parameter "s" is not present in the variable properties at the 0.0.0 level; it is one higher
-            if ("0".equals(statementId)) {
-                if ("s".equals(variableName)) {
+            // the parameter "s" is not present in the variable d.properties at the 0.0.0 level; it is one higher
+            if ("0".equals(d.statementId)) {
+                if ("s".equals(d.variableName)) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
-                    Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) properties.get(VariableProperty.READ));
-                } else if ("NullParameterChecks.this.s".equals(variableName)) {
+                    Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) d.properties.get(VariableProperty.READ));
+                } else if ("NullParameterChecks.this.s".equals(d.variableName)) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.ASSIGNED));
+                    Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.ASSIGNED));
                 }
             }
         }
-        if ("method11Lambda".equals(methodInfo.name) && "supplier".equals(variableName) && "0".equals(statementId)) {
+        if ("method11Lambda".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
             // value was an Instance, which gets translated to a VariableValue that is not null
-            Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof VariableValue);
-            Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof VariableValue);
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
         }
-        if ("method12LambdaBlock".equals(methodInfo.name) && "supplier".equals(variableName) && "0".equals(statementId)) {
+        if ("method12LambdaBlock".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
             // value was an Instance, which gets translated to a VariableValue that is not null
-            Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof VariableValue);
-            Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+            Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof VariableValue);
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
         }
     };
 

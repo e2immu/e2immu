@@ -21,24 +21,21 @@ public class TestSizeChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("requireNotEmpty".equals(methodInfo.name) && "ts".equals(variableName)) {
-                if ("1".equals(statementId)) {
-                    // we check that the restriction has been passed on to the parameter
-                    ParameterInfo parameterInfo = (ParameterInfo) variable;
-                    Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("requireNotEmpty".equals(d.methodInfo.name) && "ts".equals(d.variableName)) {
+            if ("1".equals(d.statementId)) {
+                // we check that the restriction has been passed on to the parameter
+                ParameterInfo parameterInfo = (ParameterInfo) d.variable;
+                Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
             }
-            if ("method2".equals(methodInfo.name) && "size2".equals(variableName)) {
-                if ("0".equals(statementId)) {
-                    Assert.assertTrue(currentValue instanceof ConstrainedNumericValue);
-                }
+        }
+        if ("method2".equals(d.methodInfo.name) && "size2".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertTrue(d.currentValue instanceof ConstrainedNumericValue);
             }
-            if ("method3".equals(methodInfo.name) && "size3".equals(variableName) && "0".equals(statementId)) {
-                Assert.assertEquals("input3.size(),?>=0", currentValue.toString());
-            }
+        }
+        if ("method3".equals(d.methodInfo.name) && "size3".equals(d.variableName) && "0".equals(d.statementId)) {
+            Assert.assertEquals("input3.size(),?>=0", d.currentValue.toString());
         }
     };
 

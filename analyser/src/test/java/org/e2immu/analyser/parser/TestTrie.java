@@ -40,20 +40,20 @@ public class TestTrie extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("add".equals(methodInfo.name) && "newTrieNode".equals(variableName)) {
-                if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(statementId)) {
-                    Assert.assertTrue(currentValue instanceof VariableValue);
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+        public void visit(Data d) {
+            if ("add".equals(d.methodInfo.name) && "newTrieNode".equals(d.variableName)) {
+                if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId)) {
+                    Assert.assertTrue(d.currentValue instanceof VariableValue);
+                    Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
                 }
             }
-            if ("goTo".equals(methodInfo.name) && "1.0.1".equals(statementId) && "node".equals(variableName)) {
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.FALSE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            if ("goTo".equals(d.methodInfo.name) && "1.0.1".equals(d.statementId) && "node".equals(d.variableName)) {
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.FALSE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
 
-            if("get".equals(methodInfo.name) && "0".equals(statementId) && "node".equals(variableName)) {
-                Assert.assertNull(properties.get(VariableProperty.MODIFIED));
+            if("get".equals(d.methodInfo.name) && "0".equals(d.statementId) && "node".equals(d.variableName)) {
+                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

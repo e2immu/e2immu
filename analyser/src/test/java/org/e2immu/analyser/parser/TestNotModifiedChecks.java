@@ -16,28 +16,25 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("addAll".equals(methodInfo.name) && "d".equals(variableName)) {
-                Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("addAll".equals(d.methodInfo.name) && "d".equals(d.variableName)) {
+            Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
+        }
+        if ("addAll".equals(d.methodInfo.name) && "c".equals(d.variableName)) {
+            Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
+        }
+        if ("addAllOnC".equals(d.methodInfo.name)) {
+            if ("d".equals(d.variableName)) {
+                Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
             }
-            if ("addAll".equals(methodInfo.name) && "c".equals(variableName)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.MODIFIED));
+            if ("d.set".equals(d.variableName)) {
+                Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
             }
-            if ("addAllOnC".equals(methodInfo.name)) {
-                if ("d".equals(variableName)) {
-                    Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
-                }
-                if ("d.set".equals(variableName)) {
-                    Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
-                }
-                if ("c.set".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.MODIFIED));
-                }
-                if ("c".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.MODIFIED));
-                }
+            if ("c.set".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
+            }
+            if ("c".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

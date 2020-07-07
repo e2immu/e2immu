@@ -18,94 +18,93 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                         variable, currentValue, properties) -> {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (d) -> {
 
-        if ("size".equals(methodInfo.name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
-            Assert.assertEquals(0, (int) properties.get(VariableProperty.MODIFIED));
+        if ("size".equals(d.methodInfo.name) && "Example2".equals(d.methodInfo.typeInfo.simpleName)) {
+            Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
         }
 
-        if ("add3".equals(methodInfo.name) && "local3".equals(variableName)) {
-            if ("0".equals(statementId)) {
-                if (iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
+        if ("add3".equals(d.methodInfo.name) && "local3".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                if (d.iteration == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set3", currentValue.toString());
+                    Assert.assertEquals("set3", d.currentValue.toString());
                 }
             }
         }
-        if ("add4".equals(methodInfo.name) && "local4".equals(variableName)) {
-            if ("0".equals(statementId)) {
-                if (iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
+        if ("add4".equals(d.methodInfo.name) && "local4".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                if (d.iteration == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set4", currentValue.toString());
+                    Assert.assertEquals("set4", d.currentValue.toString());
                 }
             }
-            if ("1".equals(statementId) && iteration > 1) {
-                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            if ("1".equals(d.statementId) && d.iteration > 1) {
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
-        if ("add4".equals(methodInfo.name) && "Example4.this.set4".equals(variableName)) {
-            if ("1".equals(statementId)) {
-                if (iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
+        if ("add4".equals(d.methodInfo.name) && "Example4.this.set4".equals(d.variableName)) {
+            if ("1".equals(d.statementId)) {
+                if (d.iteration == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                    if (iteration > 1) {
-                        Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    if (d.iteration > 1) {
+                        Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                     }
                 }
             }
         }
-        if ("Example4".equals(methodInfo.name) && "set4".equals(variableName) && "0".equals(statementId)) {
-            if (iteration == 3) {
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+        if ("Example4".equals(d.methodInfo.name) && "set4".equals(d.variableName) && "0".equals(d.statementId)) {
+            if (d.iteration == 3) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
             }
         }
 
-        if ("Example5".equals(methodInfo.name) && "in5".equals(variableName) && "0".equals(statementId)) {
-            Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
+        if ("Example5".equals(d.methodInfo.name) && "in5".equals(d.variableName) && "0".equals(d.statementId)) {
+            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
         }
 
-        if ("Example5".equals(methodInfo.name) && "Example5.this.set5".equals(variableName) && "0".equals(statementId)) {
-            if (iteration == 0) {
-                Assert.assertTrue(currentValue instanceof Instance);
+        if ("Example5".equals(d.methodInfo.name) && "Example5.this.set5".equals(d.variableName) && "0".equals(d.statementId)) {
+            if (d.iteration == 0) {
+                Assert.assertTrue(d.currentValue instanceof Instance);
             } else {
-                Assert.assertTrue(currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
             }
         }
 
-        if ("add6".equals(methodInfo.name) && "values6".equals(variableName)) {
-            if (iteration > 1) {
-                Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        if ("add6".equals(d.methodInfo.name) && "values6".equals(d.variableName)) {
+            if (d.iteration > 1) {
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
-        if ("add6".equals(methodInfo.name) && "example6".equals(variableName)) {
-            Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        if ("add6".equals(d.methodInfo.name) && "example6".equals(d.variableName)) {
+            Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
-        if ("add6".equals(methodInfo.name) && "example6.set6".equals(variableName)) {
-            Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-            if (iteration > 1)
-                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        if ("add6".equals(d.methodInfo.name) && "example6.set6".equals(d.variableName)) {
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+            if (d.iteration > 1)
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
-        if ("Example6".equals(methodInfo.name) && "set6".equals(variableName) && "0".equals(statementId)) {
-            if (iteration == 3) {
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        if ("Example6".equals(d.methodInfo.name) && "set6".equals(d.variableName) && "0".equals(d.statementId)) {
+            if (d.iteration == 3) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
-        if ("Example6".equals(methodInfo.name) && "in6".equals(variableName) && "0".equals(statementId)) {
-            if (iteration == 0) {
-                Assert.assertNull(properties.get(VariableProperty.MODIFIED));
+        if ("Example6".equals(d.methodInfo.name) && "in6".equals(d.variableName) && "0".equals(d.statementId)) {
+            if (d.iteration == 0) {
+                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

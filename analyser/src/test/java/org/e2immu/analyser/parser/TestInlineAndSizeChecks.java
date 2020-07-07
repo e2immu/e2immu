@@ -21,16 +21,13 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method1".equals(methodInfo.name) && "1".equals(statementId) && "l1".equals(variableName)) {
-                Assert.assertEquals("in1.length(),?>=0", currentValue.toString());
-            }
-            // TODO for now, in2.toLowerCase().length() is not reduced to in2.length()
-            if ("method2".equals(methodInfo.name) && "0".equals(statementId) && "l2".equals(variableName)) {
-                Assert.assertEquals("in2.toLowerCase().length(),?>=0", currentValue.toString());
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId) && "l1".equals(d.variableName)) {
+            Assert.assertEquals("in1.length(),?>=0", d.currentValue.toString());
+        }
+        // TODO for now, in2.toLowerCase().length() is not reduced to in2.length()
+        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "l2".equals(d.variableName)) {
+            Assert.assertEquals("in2.toLowerCase().length(),?>=0", d.currentValue.toString());
         }
     };
 

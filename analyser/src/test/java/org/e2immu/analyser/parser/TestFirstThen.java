@@ -42,17 +42,14 @@ public class TestFirstThen extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
-            if ("getFirst".equals(methodInfo.name) && "FirstThen.this.first".equals(variableName)) {
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-            }
-            if ("equals".equals(methodInfo.name) && "o".equals(variableName)) {
-                if ("2".equals(statementId)) {
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
-                }
+        if ("getFirst".equals(d.methodInfo.name) && "FirstThen.this.first".equals(d.variableName)) {
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+        }
+        if ("equals".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
+            if ("2".equals(d.statementId)) {
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };
@@ -71,7 +68,7 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
 
-                if(iteration>0) {
+                if (iteration > 0) {
                     Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
                 }
             }

@@ -21,16 +21,13 @@ public class TestNotModifiedChecks2 extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("add".equals(methodInfo.name) && "theSet".equals(variableName)) {
-                if("1".equals(statementId)) {
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
-                }
-                if("2".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.MODIFIED));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("add".equals(d.methodInfo.name) && "theSet".equals(d.variableName)) {
+            if ("1".equals(d.statementId)) {
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            }
+            if ("2".equals(d.statementId)) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

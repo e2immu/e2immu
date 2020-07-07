@@ -20,9 +20,8 @@ import java.util.Map;
 /**
  * Method 3:
  * following the @NotNull from `res` (1) into the return statement summary (2) into the method's return value (3)
- *
+ * <p>
  * Method 1:
- *
  */
 public class TestLoopStatementChecks extends CommonTestRunner {
     public TestLoopStatementChecks() {
@@ -60,23 +59,20 @@ public class TestLoopStatementChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method3".equals(methodInfo.name) && "res".equals(variableName)) {
-                if ("2".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL)); // (1)
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method3".equals(d.methodInfo.name) && "res".equals(d.variableName)) {
+            if ("2".equals(d.statementId)) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL)); // (1)
             }
-            if("method1".equals(methodInfo.name) && "res1".equals(variableName)) {
-                if("2.0.0".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
-                    Assert.assertTrue(currentValue instanceof StringValue);
-                }
-                if("3".equals(statementId)) {
-                    Assert.assertTrue(currentValue instanceof VariableValue);
-                }
+        }
+        if ("method1".equals(d.methodInfo.name) && "res1".equals(d.variableName)) {
+            if ("2.0.0".equals(d.statementId)) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
+                Assert.assertTrue(d.currentValue instanceof StringValue);
+            }
+            if ("3".equals(d.statementId)) {
+                Assert.assertTrue(d.currentValue instanceof VariableValue);
             }
         }
     };

@@ -37,14 +37,11 @@ import java.util.Set;
 
 public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if("main".equals(methodInfo.name) && "0".equals(statementId) && "config".equals(variableName)) {
-                Assert.assertTrue(currentValue instanceof VariableValue);
-                ObjectFlow objectFlow = currentValue.getObjectFlow();
-                Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectFlow.ObjectCreation);
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("main".equals(d.methodInfo.name) && "0".equals(d.statementId) && "config".equals(d.variableName)) {
+            Assert.assertTrue(d.currentValue instanceof VariableValue);
+            ObjectFlow objectFlow = d.currentValue.getObjectFlow();
+            Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectFlow.ObjectCreation);
         }
     };
 

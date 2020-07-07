@@ -33,18 +33,15 @@ import java.util.Set;
 
 public class TestLazy extends CommonTestRunner {
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("get".equals(methodInfo.name) && "Lazy.this.supplier".equals(variableName)) {
-                Assert.assertNull("Statement: " + statementId, properties.get(VariableProperty.ASSIGNED));
-            }
-            if ("get".equals(methodInfo.name) && "Lazy.this.t".equals(variableName) && iteration > 0) {
-                if ("2.0.0".equals(statementId)) {
-                    Assert.assertEquals("supplier.get(),@NotNull,@Size", currentValue.toString());
-                    Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(1, currentValue.variables().size());
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("get".equals(d.methodInfo.name) && "Lazy.this.supplier".equals(d.variableName)) {
+            Assert.assertNull("Statement: " + d.statementId, d.properties.get(VariableProperty.ASSIGNED));
+        }
+        if ("get".equals(d.methodInfo.name) && "Lazy.this.t".equals(d.variableName) && d.iteration > 0) {
+            if ("2.0.0".equals(d.statementId)) {
+                Assert.assertEquals("supplier.get(),@NotNull,@Size", d.currentValue.toString());
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(1, d.currentValue.variables().size());
             }
         }
     };

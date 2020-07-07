@@ -19,18 +19,14 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     private static final int SIZE_EQUALS_2 = Analysis.encodeSizeEquals(2);
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName,
-                          Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method2".equals(methodInfo.name) && "0".equals(statementId) && "SimpleSizeChecks.this.intSet".equals(variableName)) {
-                if (iteration > 0) {
-                    Assert.assertEquals("intSet", currentValue.toString());
-                    Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                    
-                    if (iteration > 1) {
-                     //   Assert.assertEquals(SIZE_EQUALS_2, currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
-                    }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
+            if (d.iteration > 0) {
+                Assert.assertEquals("intSet", d.currentValue.toString());
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+
+                if (d.iteration > 1) {
+                    //   Assert.assertEquals(SIZE_EQUALS_2, currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
                 }
             }
         }
@@ -70,7 +66,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
         @Override
         public void visit(int iteration, FieldInfo fieldInfo) {
-            if(iteration>0 && fieldInfo.name.equals("intSet")) {
+            if (iteration > 0 && fieldInfo.name.equals("intSet")) {
                 Assert.assertEquals(SIZE_EQUALS_2, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.SIZE));
             }
         }

@@ -22,32 +22,31 @@ public class TestFinalChecks extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                 variable, currentValue, properties) -> {
-        if (methodInfo.name.equals("setS4") && "s4".equals(variableName)) {
-            if ("0".equals(statementId)) {
-                Assert.assertNull(properties.get(VariableProperty.MODIFIED)); // no method was called on parameter s4
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.READ)); // read 1x
+    StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
+        if (d.methodInfo.name.equals("setS4") && "s4".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED)); // no method was called on parameter s4
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
 
-        if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 2
-                && "FinalChecks.this.s1".equals(variableName)) {
-            if (iteration == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, currentValue);
-            } else if (iteration == 1) {
-                Assert.assertEquals("instance type java.lang.String()", currentValue.toString());
-                Assert.assertEquals(Level.TRUE, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-            } else if (iteration > 1) {
-                Assert.assertEquals("s1", currentValue.toString());
-                Assert.assertTrue(currentValue instanceof FinalFieldValue);
-                if (iteration == 2) {
-                    Assert.assertEquals(Level.DELAY, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+        if ("FinalChecks".equals(d.methodInfo.name) && d.methodInfo.methodInspection.get().parameters.size() == 2
+                && "FinalChecks.this.s1".equals(d.variableName)) {
+            if (d.iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+            } else if (d.iteration == 1) {
+                Assert.assertEquals("instance type java.lang.String()", d.currentValue.toString());
+                Assert.assertEquals(Level.TRUE, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+            } else if (d.iteration > 1) {
+                Assert.assertEquals("s1", d.currentValue.toString());
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                if (d.iteration == 2) {
+                    Assert.assertEquals(Level.DELAY, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 } else {
-                    Assert.assertEquals(Level.FALSE, Level.value(currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                    Assert.assertEquals(Level.FALSE, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 }
             }
         }

@@ -82,9 +82,9 @@ public class StatementAnalyser {
                 for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                         ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVariableVisitors) {
                     variableProperties.variableProperties().forEach(aboutVariable -> {
-                        statementAnalyserVariableVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo,
+                        statementAnalyserVariableVisitor.visit(new StatementAnalyserVariableVisitor.Data(((VariableProperties) evaluationContext).iteration, methodInfo,
                                 statementId, aboutVariable.name, aboutVariable.variable,
-                                aboutVariable.getCurrentValue(), aboutVariable.properties());
+                                aboutVariable.getCurrentValue(), aboutVariable.getObjectFlow(), aboutVariable.properties()));
                     });
                 }
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {

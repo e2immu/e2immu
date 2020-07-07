@@ -86,24 +86,23 @@ public class TestBasics extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId,
-                                                                 variableName, variable, currentValue, properties) -> {
-        if (methodInfo.name.equals("getExplicitlyFinal")
-                && "0".equals(statementId)
-                && "Basics.this.explicitlyFinal".equals(variableName)) {
-            if (iteration == 0) {
-                LOGGER.info("Properties after 1 iteration are {}", properties);
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-                Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(new StringValue("abc"), currentValue);
+    StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
+        if (d.methodInfo.name.equals("getExplicitlyFinal")
+                && "0".equals(d.statementId)
+                && "Basics.this.explicitlyFinal".equals(d.variableName)) {
+            if (d.iteration == 0) {
+                LOGGER.info("Properties after 1 iteration are {}", d.properties);
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertNull(d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(new StringValue("abc"), d.currentValue);
                 return;
             }
-            if (iteration == 1 || iteration == 2) {
-                LOGGER.info("Properties after 2 iterations are {}", properties);
-                Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.READ));
-                Assert.assertNull(properties.get(VariableProperty.ASSIGNED));
-                Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
+            if (d.iteration == 1 || d.iteration == 2) {
+                LOGGER.info("Properties after 2 iterations are {}", d.properties);
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertNull(d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
                 return;
             }
         }

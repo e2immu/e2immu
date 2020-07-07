@@ -44,13 +44,10 @@ public class TestEither extends CommonTestRunner {
         return local != null ? local : Objects.requireNonNull(orElse);
      */
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if("getLeftOrElse".equals(methodInfo.name) && "orElse".equals(variableName) && "1".equals(statementId)) {
-                Assert.assertEquals("orElse", currentValue.toString());
-                Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("getLeftOrElse".equals(d.methodInfo.name) && "orElse".equals(d.variableName) && "1".equals(d.statementId)) {
+            Assert.assertEquals("orElse", d.currentValue.toString());
+            Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
     };
 
@@ -61,7 +58,7 @@ public class TestEither extends CommonTestRunner {
             if ("getLeftOrElse".equals(methodInfo.name) && iteration > 0) {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
-                ConditionalValue conditionalValue = (ConditionalValue)tv.value.get();
+                ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
                 Assert.assertEquals("null == left?orElse:left", conditionalValue.toString());
                 Assert.assertEquals(Level.TRUE, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }

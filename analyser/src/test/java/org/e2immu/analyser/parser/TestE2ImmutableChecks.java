@@ -21,20 +21,17 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("isAbc".equals(methodInfo.name) && "0".equals(statementId) && "E2Container1.this.value1".equals(variableName)) {
-                if (iteration == 1) {
-                    Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
-                } else {
-                    Assert.assertNull("At iteration " + iteration, properties.get(VariableProperty.NOT_NULL));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("isAbc".equals(d.methodInfo.name) && "0".equals(d.statementId) && "E2Container1.this.value1".equals(d.variableName)) {
+            if (d.iteration == 1) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
+            } else {
+                Assert.assertNull("At iteration " + d.iteration, d.properties.get(VariableProperty.NOT_NULL));
             }
-            // no decision about immutable of "mingle" is ever made
-            if ("input4".equals(variableName) && "1".equals(statementId) && "mingle".equals(methodInfo.name)) {
-                Assert.assertEquals(0, (int) properties.get(VariableProperty.IMMUTABLE));
-            }
+        }
+        // no decision about immutable of "mingle" is ever made
+        if ("input4".equals(d.variableName) && "1".equals(d.statementId) && "mingle".equals(d.methodInfo.name)) {
+            Assert.assertEquals(0, (int) d.properties.get(VariableProperty.IMMUTABLE));
         }
     };
 

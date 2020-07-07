@@ -18,24 +18,21 @@ public class TestContainerChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("setStrings1".equals(methodInfo.name)) {
-                if ("strings1param".equals(variableName) && "0".equals(statementId)) {
-                    Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-                }
-                if ("strings1param".equals(variableName) && "1".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-                }
-                if ("Container1.this.strings1".equals(variableName) && "1".equals(statementId)) {
-                    Assert.assertEquals(Level.TRUE, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("setStrings1".equals(d.methodInfo.name)) {
+            if ("strings1param".equals(d.variableName) && "0".equals(d.statementId)) {
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             }
-            if ("setStrings3".equals(methodInfo.name)) {
-                if ("strings3param".equals(variableName) && "0".equals(statementId)) {
-                    Assert.assertEquals(Level.FALSE, (int) properties.get(VariableProperty.MODIFIED));
-                }
+            if ("strings1param".equals(d.variableName) && "1".equals(d.statementId)) {
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
+            if ("Container1.this.strings1".equals(d.variableName) && "1".equals(d.statementId)) {
+                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
+        }
+        if ("setStrings3".equals(d.methodInfo.name)) {
+            if ("strings3param".equals(d.variableName) && "0".equals(d.statementId)) {
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

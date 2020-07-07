@@ -19,18 +19,15 @@ public class TestConditionalChecks extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("method5".equals(methodInfo.name) && "o".equals(variableName)) {
-                if ("0".equals(statementId)) {
-                    Assert.assertNull(properties.get(VariableProperty.NOT_NULL));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method5".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             }
-            if ("method5".equals(methodInfo.name) && "conditionalChecks".equals(variableName)) {
-                if ("2".equals(statementId)) {
-                    Assert.assertEquals("o", currentValue.toString());
-                }
+        }
+        if ("method5".equals(d.methodInfo.name) && "conditionalChecks".equals(d.variableName)) {
+            if ("2".equals(d.statementId)) {
+                Assert.assertEquals("o", d.currentValue.toString());
             }
         }
     };

@@ -34,12 +34,9 @@ import java.util.Set;
 
 public class TestSetOnce extends CommonTestRunner {
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("overwrite".equals(methodInfo.name) && "t".equals(variableName) && "0".equals(statementId)) {
-           //     Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("overwrite".equals(d.methodInfo.name) && "t".equals(d.variableName) && "0".equals(d.statementId)) {
+            //     Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
         }
     };
 

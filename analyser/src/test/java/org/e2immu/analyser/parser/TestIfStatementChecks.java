@@ -32,21 +32,20 @@ public class TestIfStatementChecks extends CommonTestRunner {
     }
      */
 
-    StatementAnalyserVariableVisitor statementAnalyserVisitor = (iteration, methodInfo, statementId, variableName,
-                                                                 variable, currentValue, properties) -> {
-        if (methodInfo.name.equals("method4") && "res".equals(variableName)) {
-            if ("0".equals(statementId)) {
-                Assert.assertNull(properties.get(VariableProperty.MODIFIED));
-                Assert.assertNull(properties.get(VariableProperty.READ)); // nothing that points to not null
-            } else if ("1.0.0".equals(statementId) || "1.1.0".equals(statementId)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
-                Assert.assertNull(properties.get(VariableProperty.READ)); // nothing that points to not null
-            } else if ("1".equals(statementId)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
-                Assert.assertNull(properties.get(VariableProperty.READ)); // nothing that points to not null
-            } else if ("2".equals(statementId)) {
-                Assert.assertEquals(1, (int) properties.get(VariableProperty.READ));
-            } else Assert.fail("Statement " + statementId);
+    StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
+        if (d.methodInfo.name.equals("method4") && "res".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertNull(d.properties.get(VariableProperty.READ)); // nothing that points to not null
+            } else if ("1.0.0".equals(d.statementId) || "1.1.0".equals(d.statementId)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertNull(d.properties.get(VariableProperty.READ)); // nothing that points to not null
+            } else if ("1".equals(d.statementId)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertNull(d.properties.get(VariableProperty.READ)); // nothing that points to not null
+            } else if ("2".equals(d.statementId)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ));
+            } else Assert.fail("Statement " + d.statementId);
         }
     };
 

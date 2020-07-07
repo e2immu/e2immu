@@ -33,13 +33,10 @@ import java.util.Set;
 
 public class TestSMapList extends CommonTestRunner {
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("list".equals(methodInfo.name) && "list".equals(variableName) && "3".equals(statementId)) {
-                Assert.assertEquals("map.get(a)", currentValue.toString());
-                Assert.assertEquals(0, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("list".equals(d.methodInfo.name) && "list".equals(d.variableName) && "3".equals(d.statementId)) {
+            Assert.assertEquals("map.get(a)", d.currentValue.toString());
+            Assert.assertEquals(0, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
     };
 

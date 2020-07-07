@@ -55,32 +55,29 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     }
      */
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, String statementId, String variableName, Variable variable, Value currentValue, Map<VariableProperty, Integer> properties) {
-            if ("checkArray2".equals(methodInfo.name) && "0".equals(statementId)) {
-                if ("integers".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED)); // integers=, and integers[i]=
-                    Assert.assertNull(properties.get(VariableProperty.READ));
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("checkArray2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+            if ("integers".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED)); // integers=, and integers[i]=
+                Assert.assertNull(d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
             }
-            if ("checkArray2".equals(methodInfo.name) && "2".equals(statementId)) {
-                if ("integers".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED)); // integers=, NOT integers[i]=
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.READ));
-                    Assert.assertNull(properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                    Assert.assertEquals(3, currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL)); // because in scope side
-                } else if ("i".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.READ));
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
+        }
+        if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            if ("integers".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED)); // integers=, NOT integers[i]=
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                Assert.assertEquals(3, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL)); // because in scope side
+            } else if ("i".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED));
 
-                    // the standardized name is the evaluation value of expression and index, in this particular case, both constants
-                } else if ("{1,2,3}[0]".equals(variableName)) {
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                    Assert.assertEquals(1, (int) properties.get(VariableProperty.ASSIGNED));
-                } else Assert.fail();
-            }
+                // the standardized name is the evaluation value of expression and index, in this particular case, both constants
+            } else if ("{1,2,3}[0]".equals(d.variableName)) {
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.ASSIGNED));
+            } else Assert.fail();
         }
     };
 
