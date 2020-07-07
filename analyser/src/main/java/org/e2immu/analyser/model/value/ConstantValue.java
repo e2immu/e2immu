@@ -7,13 +7,14 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
+import java.util.Objects;
 
 public abstract class ConstantValue implements Value {
 
     public final ObjectFlow objectFlow;
 
     public ConstantValue(ObjectFlow objectFlow) {
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override

@@ -19,9 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -96,6 +94,23 @@ public class TestObjectFlow3 extends CommonTestRunner {
         ObjectFlow.MethodCalls mcs2 = (ObjectFlow.MethodCalls) inBetweenConstructorParamObjectFlow.origin;
         Assert.assertTrue(mcs2.objectFlows.contains(mainConstructorParamObjectFlow));
 
+        // The go() method in inBetween creates a DoSomeWork flow
+        MethodInfo goMethodInBetween = inBetween.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
+        goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        TypeInfo doSomeWork = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.DoSomeWork");
+        ObjectFlow newDoSomeWork = goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == doSomeWork).findAny().orElseThrow();
+
+        // test object access "go" method
+        Assert.assertEquals(1L, newDoSomeWork.getObjectAccesses().count());
+        ObjectFlow.MethodCall newDoSomeWorkCallGo = (ObjectFlow.MethodCall) newDoSomeWork.getObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals("go", newDoSomeWorkCallGo.methodInfo.name);
+
+        Set<ObjectFlow> callOutsOfInBetweenConstructorParamObjectFlow = inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
+        MethodInfo doSomeWorkConstructor = doSomeWork.typeInspection.get().constructors.get(0);
+        ObjectFlow doSomeWorkConstructorParamObjectFlow = doSomeWorkConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
+        Assert.assertTrue(callOutsOfInBetweenConstructorParamObjectFlow.contains(doSomeWorkConstructorParamObjectFlow));
+
+        // now we've followed the "Config" object all along
     }
 
 }

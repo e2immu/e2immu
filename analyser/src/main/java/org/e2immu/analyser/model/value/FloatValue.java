@@ -31,7 +31,7 @@ public class FloatValue extends ConstantValue implements Constant<Float>, Numeri
     public final float value;
 
     public FloatValue(float value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
     public FloatValue(float value, ObjectFlow objectFlow) {
         super(objectFlow);

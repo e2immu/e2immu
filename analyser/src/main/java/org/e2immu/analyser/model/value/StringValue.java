@@ -32,7 +32,7 @@ public class StringValue extends ConstantValue implements Constant<String> {
 
     // for testing only
     public StringValue(String value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     public StringValue(String value, ObjectFlow objectFlow) {

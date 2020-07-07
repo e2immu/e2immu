@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class AlternativeAssignmentValue implements Value {
@@ -47,7 +48,7 @@ public class AlternativeAssignmentValue implements Value {
         this.value = value;
         this.predicate = predicate;
         this.alternativeValue = alternativeValue;
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull( objectFlow);
     }
 
     @Override

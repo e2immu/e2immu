@@ -23,6 +23,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+import java.util.Objects;
+
 
 public class FinalFieldValue extends ValueWithVariable {
 
@@ -31,7 +33,7 @@ public class FinalFieldValue extends ValueWithVariable {
 
     public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
         super(variable);
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
     }
 

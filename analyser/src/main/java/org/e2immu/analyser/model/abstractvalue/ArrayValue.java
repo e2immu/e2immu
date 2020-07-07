@@ -7,6 +7,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,7 +18,7 @@ public class ArrayValue implements Value {
     public final ObjectFlow objectFlow;
 
     public ArrayValue(ObjectFlow objectFlow, List<Value> values) {
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.values = ImmutableList.copyOf(values);
         combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(values);
     }

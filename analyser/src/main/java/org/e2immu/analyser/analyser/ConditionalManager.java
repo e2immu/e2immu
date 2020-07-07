@@ -82,7 +82,7 @@ public class ConditionalManager {
 
         // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
         // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-        Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, null);
+        Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
         if (equalsNull == BoolValue.FALSE) return Level.TRUE;
         Value withConditional = combineWithConditional(equalsNull);
         if (withConditional == BoolValue.FALSE) return Level.TRUE; // we know != null

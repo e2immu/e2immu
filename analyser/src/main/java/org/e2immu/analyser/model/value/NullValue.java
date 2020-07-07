@@ -32,7 +32,7 @@ public class NullValue extends ConstantValue implements Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
 
     private NullValue() {
-        this(null);
+        this(ObjectFlow.NO_FLOW);
     }
 
     public NullValue(ObjectFlow objectFlow) {

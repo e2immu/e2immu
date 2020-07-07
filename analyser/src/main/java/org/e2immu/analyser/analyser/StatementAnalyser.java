@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
@@ -416,8 +417,7 @@ public class StatementAnalyser {
                 }
                 if (!transferValue.value.isSet()) {
                     if (value instanceof VariableValue) {
-                        // TODO ObjectFlow
-                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties, null));
+                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties, value.getObjectFlow()));
                     } else {
                         transferValue.value.set(value);
                     }

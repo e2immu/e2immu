@@ -155,6 +155,9 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public org.e2immu.analyser.objectflow.Location getLocation() {
+        if (currentStatement != null) {
+            return new org.e2immu.analyser.objectflow.Location(getCurrentMethod(), currentStatement);
+        }
         if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
         return new org.e2immu.analyser.objectflow.Location(currentField);
     }

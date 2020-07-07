@@ -39,7 +39,7 @@ public class MethodValue implements Value {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
-        this.objectFlow = objectFlow;
+        this.objectFlow =  Objects.requireNonNull(objectFlow);
     }
 
     @Override

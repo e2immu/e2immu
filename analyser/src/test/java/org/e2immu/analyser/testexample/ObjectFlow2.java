@@ -30,4 +30,8 @@ public class ObjectFlow2 {
     static final Set<String> set1 = of("abc");
     static final Set<String> set2 = of("def");
     static final Set<String> set3 = SetUtil.immutableUnion(set1, set2);
+
+    static boolean useOf() {
+        return of("x").contains("x");
+    }
 }

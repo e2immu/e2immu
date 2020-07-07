@@ -31,7 +31,7 @@ public class ClassValue extends ConstantValue implements Constant<ParameterizedT
     public final ParameterizedType value;
 
     public ClassValue(ParameterizedType value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     public ClassValue(ParameterizedType value, ObjectFlow objectFlow) {

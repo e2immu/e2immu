@@ -48,7 +48,7 @@ public class ProductValue extends PrimitiveValue {
     }
 
     public static Value product(Value l, Value r) {
-        return product(l, r, null);
+        return product(l, r, ObjectFlow.NO_FLOW);
     }
 
     // we try to maintain a sum of products

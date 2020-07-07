@@ -31,7 +31,7 @@ public class CharValue extends ConstantValue implements Constant<Character> {
     public final char value;
 
     public CharValue(char value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     public CharValue(char value, ObjectFlow objectFlow) {

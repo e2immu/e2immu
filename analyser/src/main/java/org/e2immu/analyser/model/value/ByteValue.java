@@ -31,7 +31,7 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
     public final byte value;
 
     public ByteValue(byte value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
     public ByteValue(byte value, ObjectFlow objectFlow) {
         super(objectFlow);

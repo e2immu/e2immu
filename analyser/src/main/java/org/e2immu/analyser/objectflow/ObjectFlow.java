@@ -185,6 +185,14 @@ public class ObjectFlow {
     // can only contain one value if the call is @Modified
     // if the object is immutable, all callouts can be joined (order does not matter)
 
+    public Stream<ObjectFlow> getNextViaReturnOrFieldAccess() {
+        return nextViaReturnOrFieldAccess.stream();
+    }
+
+    public void addReturnOrFieldAccessFlow(ObjectFlow objectFlow) {
+        nextViaReturnOrFieldAccess.add(objectFlow);
+    }
+
     final Set<ObjectFlow> nonModifyingCallOuts = new HashSet<>();
 
     ObjectFlow modifyingCallOut;

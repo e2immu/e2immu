@@ -31,7 +31,7 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     public final long value;
 
     public LongValue(long value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
     public LongValue(long value, ObjectFlow objectFlow) {
         super(objectFlow);

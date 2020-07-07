@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -217,9 +218,10 @@ public class MethodAnalyser {
         // fallback
         if (value == null) {
             // the object (2nd parameter) is not important here; it will not be used to compute properties
-            // TODO
+            org.e2immu.analyser.objectflow.Location location = methodProperties.getLocation();
+            ObjectFlow newObjectFlow = new ObjectFlow(location, methodInfo.returnType(), new ObjectFlow.ParentFlows());
             value = new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType(), methodProperties.getLocation()),
-                    List.of(), null);
+                    List.of(), newObjectFlow);
         }
         boolean isConstant = value.isConstant();
 

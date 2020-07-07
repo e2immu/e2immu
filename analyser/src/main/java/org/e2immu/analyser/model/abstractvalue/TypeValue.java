@@ -13,6 +13,8 @@ import java.util.StringJoiner;
 
 /**
  * the thing that, for now, makes TypeValue different from UnknownValue is that it is not null.
+ *
+ * for object flows: TypeValue is used as the scope for static methods.
  */
 public class TypeValue implements Value {
     public final ParameterizedType parameterizedType;

@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
@@ -117,12 +118,9 @@ public class NewObject implements HasParameterExpressions {
             value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType, ObjectFlow.LITERAL), values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
-            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext.getLocation());
-            if (evaluationContext.getCurrentMethod() != null) {
-                evaluationContext.getCurrentMethod().methodAnalysis.get().addInternalObjectFlow(value.getObjectFlow());
-            } else if (evaluationContext.getCurrentField() != null) {
-                evaluationContext.getCurrentField().fieldAnalysis.get().addInternalObjectFlow(value.getObjectFlow());
-            } else throw new UnsupportedOperationException();
+            Location location = evaluationContext.getLocation();
+            value = new Instance(parameterizedType, constructor, parameterValues, location);
+            location.registerNewObjectFlow(value.getObjectFlow());
         }
         visitor.visit(this, evaluationContext, value);
         return value;

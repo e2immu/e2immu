@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.objectflow.ObjectFlow;
+
 public class UnknownPrimitiveValue extends PrimitiveValue {
     public static final UnknownPrimitiveValue UNKNOWN_PRIMITIVE = new UnknownPrimitiveValue();
 
     private UnknownPrimitiveValue() {
-        super(null);
+        super(ObjectFlow.NO_FLOW);
     }
 
     @Override

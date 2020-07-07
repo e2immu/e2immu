@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.ConditionalManager;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -28,6 +27,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class ConditionalValue implements Value {
@@ -43,7 +43,7 @@ public class ConditionalValue implements Value {
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
         combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
-        this.objectFlow = objectFlow;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override

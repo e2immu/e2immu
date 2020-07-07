@@ -35,7 +35,7 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     public final boolean value;
 
     public BoolValue(boolean value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     public BoolValue(boolean value, ObjectFlow objectFlow) {
@@ -86,7 +86,7 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     }
 
     public Value negate() {
-        if(objectFlow == null) {
+        if (objectFlow == null) {
             return value ? BoolValue.FALSE : BoolValue.TRUE;
         }
         return new BoolValue(!value, objectFlow);

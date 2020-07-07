@@ -6,11 +6,13 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+import java.util.Objects;
+
 public abstract class PrimitiveValue implements Value {
 
     public final ObjectFlow objectFlow;
     public PrimitiveValue(ObjectFlow objectFlow) {
-        this.objectFlow = objectFlow;
+        this.objectFlow =  Objects.requireNonNull(objectFlow);
     }
 
     @Override

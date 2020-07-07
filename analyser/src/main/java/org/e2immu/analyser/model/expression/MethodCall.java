@@ -93,13 +93,31 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // process parameters
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
+        // access
         ObjectFlow objectFlow = objectValue.getObjectFlow();
-        if(objectFlow != ObjectFlow.NO_FLOW) {
+        if (objectFlow != ObjectFlow.NO_FLOW) {
             List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
             objectFlow.addObjectAccess(new ObjectFlow.MethodCall(methodInfo, flowsOfArguments));
         }
 
-        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, null);
+        // return value
+        ObjectFlow objectFlowOfResult;
+        if (!methodInfo.returnType().isVoid()) {
+            ObjectFlow.MethodCalls origin = new ObjectFlow.MethodCalls();
+            ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getReturnedObjectFlow();
+            Location location = evaluationContext.getLocation();
+            objectFlowOfResult = new ObjectFlow(location, methodInfo.returnType(), origin);
+
+            // cross-link
+            if (returnedFlow != ObjectFlow.NO_FLOW) {
+                origin.objectFlows.add(returnedFlow);
+                returnedFlow.addReturnOrFieldAccessFlow(objectFlowOfResult);
+            }
+            location.registerNewObjectFlow(objectFlowOfResult);
+        } else {
+            objectFlowOfResult = ObjectFlow.NO_FLOW;
+        }
+        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
 
         checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
         visitor.visit(this, evaluationContext, result);
@@ -110,7 +128,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue, List<Value> parameters) {
-        // TODO simple example of a frequently recurring issue...
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.type();
             if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
@@ -119,7 +136,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters, ObjectFlow objectFlow) {
+    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters, ObjectFlow objectFlowOfResult) {
         // no value (method call on field that does not have effective value yet)
         if (objectValue == UnknownValue.NO_VALUE) {
             return UnknownValue.NO_VALUE; // this will delay
@@ -164,19 +181,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return UnknownValue.NO_VALUE;
         }
 
-        ObjectFlow theObjectFlow;
-        if (objectFlow != null) {
-            theObjectFlow = objectFlow;
-        } else {
-            theObjectFlow = new ObjectFlow(evaluationContext.getLocation(), methodInfo.returnType(), new ObjectFlow.MethodCalls());
-        }
         // we will never analyse this method
-        return new MethodValue(methodInfo, objectValue, parameters, theObjectFlow);
+        return new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
     }
 
     private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
         if (!objectValue.isConstant()) return null;
-        // TODO simple example here, we can do a lot more with simple reflection
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) && objectValue instanceof StringValue) {
             return new IntValue(((StringValue) objectValue).value.length());
         }

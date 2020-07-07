@@ -37,7 +37,7 @@ public class OrValue extends PrimitiveValue {
 
     // testing only
     public OrValue() {
-        this(null);
+        this(ObjectFlow.NO_FLOW);
     }
 
     public OrValue(ObjectFlow objectFlow) {

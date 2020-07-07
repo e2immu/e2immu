@@ -31,7 +31,7 @@ public class DoubleValue extends ConstantValue implements Constant<Double>, Nume
     public final double value;
 
     public DoubleValue(double value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
     public DoubleValue(double value, ObjectFlow objectFlow) {
         super(objectFlow);

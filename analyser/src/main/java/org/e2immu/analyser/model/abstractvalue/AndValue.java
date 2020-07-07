@@ -39,7 +39,7 @@ public class AndValue extends PrimitiveValue {
 
     // testing only
     public AndValue() {
-        this(null);
+        this(ObjectFlow.NO_FLOW);
     }
 
     public AndValue(ObjectFlow objectFlow) {

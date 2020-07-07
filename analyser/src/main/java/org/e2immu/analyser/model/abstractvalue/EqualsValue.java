@@ -37,7 +37,7 @@ public class EqualsValue extends PrimitiveValue {
 
     // testing only
     public EqualsValue(Value lhs, Value rhs) {
-        this(lhs, rhs, null);
+        this(lhs, rhs, ObjectFlow.NO_FLOW);
     }
 
     public EqualsValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
@@ -56,7 +56,7 @@ public class EqualsValue extends PrimitiveValue {
 
     // testing only
     public static Value equals(Value l, Value r ) {
-        return equals(l, r, null);
+        return equals(l, r, ObjectFlow.NO_FLOW);
     }
 
     public static Value equals(Value l, Value r, ObjectFlow objectFlow) {

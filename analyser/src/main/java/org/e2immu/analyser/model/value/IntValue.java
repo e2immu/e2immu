@@ -39,7 +39,7 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
     }
 
     public IntValue(int value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     @Override

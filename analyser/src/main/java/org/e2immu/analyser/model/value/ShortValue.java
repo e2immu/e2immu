@@ -31,7 +31,7 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
     public final short value;
 
     public ShortValue(short value) {
-        this(value, null);
+        this(value, ObjectFlow.NO_FLOW);
     }
 
     public ShortValue(short value, ObjectFlow objectFlow) {

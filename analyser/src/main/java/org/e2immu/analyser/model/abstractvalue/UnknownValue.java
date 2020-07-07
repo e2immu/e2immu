@@ -67,6 +67,6 @@ public class UnknownValue implements Value {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return ObjectFlow.NO_FLOW;
     }
 }

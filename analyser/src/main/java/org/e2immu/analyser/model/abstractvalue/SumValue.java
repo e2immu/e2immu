@@ -49,7 +49,7 @@ public class SumValue extends PrimitiveValue {
 
     // testing only
     public static Value sum(Value l, Value r) {
-        return sum(l, r, null);
+        return sum(l, r, ObjectFlow.NO_FLOW);
     }
 
     // we try to maintain a sum of products
