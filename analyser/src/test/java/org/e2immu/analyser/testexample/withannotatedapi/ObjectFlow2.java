@@ -1,4 +1,4 @@
-package org.e2immu.analyser.testexample;
+package org.e2immu.analyser.testexample.withannotatedapi;
 
 import org.e2immu.analyser.util.SetUtil;
 

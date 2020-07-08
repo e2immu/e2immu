@@ -89,6 +89,10 @@ class AboutVariable {
         return objectFlow;
     }
 
+    public void setObjectFlow(ObjectFlow objectFlow) {
+        this.objectFlow = objectFlow;
+    }
+
     void setProperty(VariableProperty variableProperty, int value) {
         properties.put(variableProperty, value);
     }

@@ -1006,4 +1006,10 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = findComplain(variable);
         return aboutVariable.getObjectFlow();
     }
+
+    @Override
+    public void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
+        AboutVariable aboutVariable = findComplain(variable);
+        aboutVariable.setObjectFlow(objectFlow);
+    }
 }

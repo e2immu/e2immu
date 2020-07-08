@@ -203,7 +203,15 @@ public class ObjectFlow {
 
     final Set<ObjectFlow> nonModifyingCallOuts = new HashSet<>();
 
-    Access modifyingAccess;
+    private MethodCall modifyingAccess;
+
+    public MethodCall getModifyingAccess() {
+        return modifyingAccess;
+    }
+
+    public void setModifyingAccess(MethodCall modifyingAccess) {
+        this.modifyingAccess = modifyingAccess;
+    }
 
     ObjectFlow modifyingCallOut;
 
@@ -260,7 +268,7 @@ public class ObjectFlow {
 
     public Set<String> marks() {
         Set<String> marksSources = origin.sources().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
-        if (modifyingAccess != null && modifyingAccess instanceof MethodCall) {
+        if (modifyingAccess != null) {
             MethodInfo methodInfo = ((MethodCall) modifyingAccess).methodInfo;
             Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()
                     .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Mark.class.getName())).findFirst();
@@ -273,5 +281,10 @@ public class ObjectFlow {
             }
         }
         return marksSources;
+    }
+
+    public void moveNextTo(ObjectFlow second) {
+        second.next.addAll(next);
+        next.clear();
     }
 }

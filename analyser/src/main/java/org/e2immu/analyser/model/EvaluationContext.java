@@ -123,4 +123,6 @@ public interface EvaluationContext {
     }
 
     ObjectFlow getObjectFlow(Variable variable);
+
+    default void updateObjectFlow(Variable variable, ObjectFlow second) { throw new UnsupportedOperationException(); }
 }
