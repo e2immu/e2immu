@@ -158,20 +158,23 @@ public class StatementAnalyser {
     private static void precondition(VariableProperties variableProperties, NumberedStatement startStatement) {
         Value precondition = variableProperties.conditionalManager.escapeCondition();
         if (precondition != null) {
-            log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
-            MethodAnalysis methodAnalysis = variableProperties.getCurrentMethod().methodAnalysis.get();
-            if (!methodAnalysis.precondition.isSet()) {
-                methodAnalysis.precondition.set(precondition);
-            }
-            if (variableProperties.uponUsingConditional != null) {
-                log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-                variableProperties.uponUsingConditional.run();
-            }
-            Set<Variable> variables = precondition.variables();
-            for (Variable variable : variables) {
-                // we're guarding because we can have these escapes for sizes as well
-                if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
-                    startStatement.parent.removeVariablesFromConditional.put(variable, true);
+            boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
+            if(atLeastFieldOrParameterInvolved) {
+                log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
+                MethodAnalysis methodAnalysis = variableProperties.getCurrentMethod().methodAnalysis.get();
+                if (!methodAnalysis.precondition.isSet()) {
+                    methodAnalysis.precondition.set(precondition);
+                }
+                if (variableProperties.uponUsingConditional != null) {
+                    log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+                    variableProperties.uponUsingConditional.run();
+                }
+                Set<Variable> variables = precondition.variables();
+                for (Variable variable : variables) {
+                    // we're guarding because we can have these escapes for sizes as well
+                    if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
+                        startStatement.parent.removeVariablesFromConditional.put(variable, true);
+                    }
                 }
             }
         }

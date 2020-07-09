@@ -19,8 +19,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -79,10 +85,43 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         }
     };
 
+    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
+            if ("method2".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
+            if ("method3".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            }
+            // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
+            if ("method9".equals(methodInfo.name)) {
+                if ("0".equals(numberedStatement.streamIndices())) {
+                    // TODO Assert.assertFalse(numberedStatement.errorValue.isSet());
+                }
+                if ("1".equals(numberedStatement.streamIndices())) {
+                   // TODO Assert.assertTrue(numberedStatement.errorValue.isSet());
+                }
+            }
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, FieldInfo fieldInfo) {
+            if ("SET8".equals(fieldInfo.name) && iteration > 0) {
+                ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+               // TODO  Assert.assertEquals("[freeze]", objectFlow.marks().toString());
+            }
+        }
+    };
+
     @Test
     public void test() throws IOException {
         TypeContext typeContext = testClass("ObjectFlowFreezableSet", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
 
     }

@@ -31,5 +31,6 @@ import java.lang.annotation.Target;
 public @interface Precondition {
     AnnotationType type() default AnnotationType.VERIFY;
 
-    String value();
+    // we need the default value, for when the type() is VERIFY_ABSENT
+    String value() default "";
 }

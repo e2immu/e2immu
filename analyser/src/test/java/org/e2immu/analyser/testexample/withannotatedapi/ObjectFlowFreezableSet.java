@@ -6,14 +6,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+@ModifiesArguments
 public class ObjectFlowFreezableSet {
 
+    @E2Container(after = "freeze")
     static class FreezableSet {
         private final Set<String> set = new HashSet<>();
         private boolean frozen;
 
         @Only(after = "freeze")
         @NotModified
+        @NotNull1
         public Stream<String> stream() {
             if (!frozen) throw new UnsupportedOperationException();
             return set.stream();
@@ -87,8 +90,13 @@ public class ObjectFlowFreezableSet {
         return set6;
     }
 
+    // result frozen
     @E2Container
-    static FreezableSet method7(FreezableSet set7) {
+    @Identity
+    @NotModified
+    @NotNull
+    @Precondition("not (set7.isFrozen())")
+    static FreezableSet method7(@Modified @NotNull FreezableSet set7) {
         if (set7.isFrozen()) throw new UnsupportedOperationException();
         set7.freeze();
         return set7;
