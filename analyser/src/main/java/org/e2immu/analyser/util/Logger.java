@@ -88,6 +88,9 @@ public class Logger {
         MERGE_ANNOTATIONS,
 
         STATIC_METHOD_CALLS,
+
+        MARK
+        ;
     }
 
     private Logger() {

@@ -21,8 +21,10 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -171,6 +173,7 @@ public class MethodAnalysis extends Analysis {
     // if true, the method has no (non-static) method calls on the "this" scope
     public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
 
+
     // ************** ERRORS
 
     public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
@@ -225,6 +228,29 @@ public class MethodAnalysis extends Analysis {
         }
     }
 
+    public static class OnlyData {
+        public final Value precondition;
+        public final String markLabel;
+        public final boolean mark;
+        public final boolean after; // default before
+
+        public OnlyData(Value precondition, String markLabel, boolean mark, boolean after) {
+            this.precondition = precondition;
+            this.mark = mark;
+            this.markLabel = markLabel;
+            this.after = after;
+        }
+
+        @Override
+        public String toString() {
+            return markLabel + "=" + precondition + "; after? " + after + "; @Mark? " + mark;
+        }
+    }
+
+    // the value here (size will be one)
+    public final SetOnce<Value> preconditionForOnlyData = new SetOnce<Value>();
+    public final SetOnce<OnlyData> onlyData = new SetOnce<OnlyData>();
+
     private final Set<ObjectFlow> internalObjectFlows = new HashSet<>();
 
     public Stream<ObjectFlow> getInternalObjectFlows() {
@@ -232,7 +258,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     public void addInternalObjectFlow(ObjectFlow objectFlow) {
-        if(objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
+        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
         internalObjectFlows.add(objectFlow);
     }
 

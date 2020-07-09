@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.lang.annotation.ElementType;
@@ -32,8 +33,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
-// ...
 public class TypeAnalysis extends Analysis {
 
     public final TypeInfo typeInfo;
@@ -78,4 +77,6 @@ public class TypeAnalysis extends Analysis {
     public Stream<ObjectFlow> getConstantObjectFlows() {
         return constantObjectFlows.stream();
     }
+
+    public final SetOnceMap<Value, String> approvedPreconditions = new SetOnceMap<>();
 }

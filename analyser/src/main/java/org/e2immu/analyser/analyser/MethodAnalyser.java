@@ -27,13 +27,16 @@ import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.pattern.JoinReturnStatements;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,6 +162,10 @@ public class MethodAnalyser {
             // even though all constructors should be modifying...
             if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
 
+            // @Only, @Mark comes after modifications
+            if (computeOnlyMarkPrepWork(methodInfo, methodAnalysis)) changes = true;
+            if (computeOnlyMarkAnnotate(methodInfo, methodAnalysis)) changes = true;
+
             // size comes after modifications
             if (computeSize(methodInfo, methodAnalysis)) changes = true;
             if (computeSizeCopy(methodInfo, methodAnalysis)) changes = true;
@@ -169,6 +176,89 @@ public class MethodAnalyser {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
         }
+    }
+
+    private boolean computeOnlyMarkAnnotate(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (methodAnalysis.onlyData.isSet()) return false; // done
+        if (!methodAnalysis.preconditionForOnlyData.isSet()) return false;
+        Value precondition = methodAnalysis.preconditionForOnlyData.get();
+        if (precondition == UnknownValue.NO_VALUE) return false;
+        SetOnceMap<Value, String> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
+        boolean after;
+        String markLabel;
+        if (approvedPreconditions.isSet(precondition)) {
+            after = false;
+            markLabel = approvedPreconditions.get(precondition);
+        } else {
+            Value negated = NegatedValue.negate(precondition);
+            if (approvedPreconditions.isSet(negated)) {
+                after = true;
+                markLabel = approvedPreconditions.get(negated);
+            } else {
+                log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
+                methodAnalysis.annotations.put(typeContext.mark.get(), false);
+                methodAnalysis.annotations.put(typeContext.only.get(), false);
+                return false;
+            }
+        }
+        boolean mark;
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.DELAY) {
+            log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
+            return false;
+        }
+        if (modified == Level.FALSE) {
+            log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
+            mark = false;
+        } else {
+            // modifying method. we need to find a statement that reverses the precondition, or, at least, modifies one of the fields
+            Set<Variable> variables = precondition.variables();
+            mark = variables.stream().anyMatch(variable -> {
+                TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
+                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.TRUE;
+                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+                return assigned;
+            });
+        }
+        MethodAnalysis.OnlyData onlyData = new MethodAnalysis.OnlyData(precondition, markLabel, mark, after);
+        methodAnalysis.onlyData.set(onlyData);
+        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), onlyData);
+        if (mark) {
+            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.mark.get().typeInfo,
+                    List.of(new MemberValuePair("value", new StringConstant(markLabel))));
+            methodAnalysis.annotations.put(markAnnotation, true);
+        } else {
+            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.only.get().typeInfo,
+                    List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(markLabel))));
+            methodAnalysis.annotations.put(onlyAnnotation, true);
+        }
+        return true;
+    }
+
+    private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        if (methodAnalysis.preconditionForOnlyData.isSet()) return false;
+        boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
+                field.fieldAnalysis.get().properties.get(VariableProperty.IMMUTABLE) != Level.DELAY);
+        if (!allFieldsFinalValueKnown) {
+            log(DELAYED, "Delaying compute @Only and @Mark, not all field's final state known in {}", methodInfo.distinguishingName());
+            return false;
+        }
+        if (!methodAnalysis.precondition.isSet()) {
+            methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
+            return true;
+        }
+        Value precondition = methodAnalysis.precondition.get();
+        Set<Variable> variables = precondition.variables();
+        boolean allVariablesAreFieldsOfMyOwnType = variables.stream().allMatch(v -> v instanceof FieldReference && ((FieldReference) v).scope instanceof This
+                && ((This) ((FieldReference) v).scope).typeInfo == methodInfo.typeInfo);
+        if (!allVariablesAreFieldsOfMyOwnType || variables.isEmpty()) {
+            log(MARK, "No @Mark annotation in {}: not all variables are fields of my type, or there are no variables in the precondition", methodInfo.distinguishingName());
+            methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
+            return true;
+        }
+        log(MARK, "Did prep work for @Only, @Mark, found precondition {} on variables {} in {}", precondition, variables, methodInfo.distinguishingName());
+        methodAnalysis.preconditionForOnlyData.set(precondition);
+        return true;
     }
 
     // part of @UtilityClass computation in the type analyser

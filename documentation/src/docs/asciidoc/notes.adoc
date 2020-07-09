@@ -113,10 +113,11 @@ Iterators are pull-based, reactive streams (flows) are push-based.
 
 Callbacks (events in UIs, anonymous functions) or Futures.
 
-Reactor: assembly line analogy. Start with `Publisher`, end up with `Subscriber`. Nothing happens until a `Subscriber` links itself to a `Publisher`.
+Reactor: assembly line analogy.
+Start with `Publisher`, end up with `Subscriber`.
+Nothing happens until a `Subscriber` links itself to a `Publisher`.
 
 Important in a reactive way of programming: we still use errors for exactly what they are: situations that should not occur.
-
 
 ==== Step 1: expression standardization
 
@@ -274,6 +275,7 @@ Obviously for this project, the primary data structures that we want to promote 
 Depending on the context, we may have to live with eventual immutability, but that will be the strength of this project.
 
 ==== Standard @E1Immutable
+
 --
 . final fields
 . public fields instead of a getter by default, but getters included when necessary for some framework.
@@ -283,7 +285,7 @@ Depending on the context, we may have to live with eventual immutability, but th
 .. inside, first precondition checks on the parameters
 .. then, assignments to the fields. The most complicated assignment expression we would advocate is a single expression without explicit internal method calls.
 . alternative constructors, but only for default values of parameters.
-Preferrably these alternative constructors use the primary constructor.
+Preferably these alternative constructors use the primary constructor.
 
 . we create factory methods for two purposes:
 
@@ -318,6 +320,36 @@ When code depends on characteristics of fields rather than parameters, sub-typin
 
 Methods that only use other interface methods should not be in an abstract supertype, but in the interface.
 
+=== Detection of @Mark and @Only
 
+We can infer a combination of `@E2Container(after="x")`, and `@Mark("x")` on one or more modifying methods, and `@Only` on modifying and non-modifying methods, by looking at a precondition that is based on fields, with at least one `@Variable` field in it:
 
+. all modifying methods must have this precondition.
+All will be marked `@Only(before="x")`, unless they'll be marked `@Mark` which implies `@Only(before="x")`.
+. non-modifying methods with the precondition will also be marked `@Only(before="x")`; the precondition is optional for non-modifying methods
+. some modifying methods can change on of the fields in the precondition to invalidate it.
+These methods will be marked `@Mark("x")`.
+. non-modifying methods with the negation of the precondition will be marked `@Only(after="x")`
+. by definition, the type will become `@E1Immutable(after="x")`
+. if the type turns out to be `@E2Immutable` (computed by ignoring all the methods with the pre-condition, or all modifying methods), it will be marked `@E2Immutable(after="x")`
+
+By extension, we can imagine a number of different preconditions x~1~ to x~n~, each bound to some fields.
+
+. every modifying method must have at least one precondition x~i~. It will be marked `@Only(before="xi")`
+. non-modifying methods sporting the precondition x~i~ will be marked `@Only(before="xi")`
+. the modifying methods that invalidate the precondition x~i~ will be marked `@Mark("xi")`
+. non-modifying methods with the negation of the precondition x~i~ will be marked `@Only(after="xi")`
+. the type will become `@E1Immutable(after="x1 && x2 && ... && xn")`
+
+Strategy for detection:
+
+In the method analyser, we will
+
+. mark tentative preconditions that fit, plus, optionally, the modification that negates it
+. if the type analyser has _approved_ these preconditions, then we mark `@Only()` and potentially also `@Mark`
+
+In the type analyser, we will, if the conditions are right  (not a record, all modifications known)
+
+. approve conditions
+. use them for `@E1Immutable(after=)` and `@E2Immutable(after=)`
 
