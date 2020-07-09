@@ -75,6 +75,9 @@ public class Message {
 
     public static final String WRONG_PRECONDITION = "Wrong precondition";
 
+    public static final String ONLY_BEFORE = "Calling method annotated @Only(before=\"x\") when \"x\" has already been @Mark'ed";
+    public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
+
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
@@ -115,6 +118,9 @@ public class Message {
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
+
+        map.put(ONLY_AFTER, Severity.ERROR);
+        map.put(ONLY_BEFORE, Severity.ERROR);
 
         SEVERITY_MAP = map.build();
     }

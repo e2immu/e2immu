@@ -52,7 +52,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         // there are 2 flows in the 'main' method
         TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
         MethodInfo mainMethod = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
-        mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info("object flow: {}", of.detailed()));
         Assert.assertEquals(4L, mainMethod.methodAnalysis.get().getInternalObjectFlows().count());
 
         // the Config flow is used to initiate the Main flow
@@ -76,9 +76,11 @@ public class TestObjectFlow3 extends CommonTestRunner {
 
         // The go() method in main creates an InBetween flow
         MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
-        goMethodMain.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
+        goMethodMain.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info("object flow: {}", of.detailed()));
         TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
+        Assert.assertEquals(1L, goMethodMain.methodAnalysis.get().getInternalObjectFlows().count());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
+        Assert.assertTrue(newInBetween.origin instanceof ObjectFlow.ObjectCreation);
 
         // test object access "go" method
         Assert.assertEquals(1L, newInBetween.getNonModifyingObjectAccesses().count());

@@ -269,14 +269,14 @@ public class ObjectFlow {
     public Set<String> marks() {
         Set<String> marksSources = origin.sources().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
         if (modifyingAccess != null) {
-            MethodInfo methodInfo = ((MethodCall) modifyingAccess).methodInfo;
+            MethodInfo methodInfo = modifyingAccess.methodInfo;
             Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()
                     .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Mark.class.getName())).findFirst();
             if (oMark.isPresent()) {
                 AnnotationExpression ae = oMark.get();
-                String[] strings = ae.extract("after", new String[0]);
-                if (strings.length > 0) {
-                    return SetUtil.immutableUnion(marksSources, new HashSet<>(Arrays.asList(strings)));
+                String mark = ae.extract("value", "");
+                if (!mark.isEmpty()) {
+                    return SetUtil.immutableUnion(marksSources, Set.of(mark));
                 }
             }
         }

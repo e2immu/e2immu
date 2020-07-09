@@ -33,8 +33,11 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.annotation.Mark;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Only;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -102,40 +105,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
                 ObjectFlow.MethodCall methodCall = new ObjectFlow.MethodCall(methodInfo, flowsOfArguments);
+                ObjectFlow target;
+                if (objectFlow.getModifyingAccess() == null) {
+                    target = objectFlow;
+                } else {
+                    Logger.log(NOT_MODIFIED, "Flow access: splitting first, already have modifying object access");
+                    target = split(objectFlow, objectValue, evaluationContext);
+                }
                 if (modified == Level.FALSE) {
                     Logger.log(NOT_MODIFIED, "Flow access: non-modifying object access");
-                    objectFlow.addNonModifyingObjectAccess(methodCall);
+                    target.addNonModifyingObjectAccess(methodCall);
                 } else {
-                    if (objectFlow.getModifyingAccess() == null) {
-                        Logger.log(NOT_MODIFIED, "Flow access: modifying object access, no need to split yet");
-                        objectFlow.setModifyingAccess(methodCall);
-                    } else if (objectFlow.getModifyingAccess().equals(methodCall)) {
-                        Logger.log(NOT_MODIFIED, "Flow access: already in place");
-                    } else {
-                        Logger.log(NOT_MODIFIED, "Flow access: modifying object access, need to split");
-                        ObjectFlow.ParentFlows parentFlows = new ObjectFlow.ParentFlows();
-                        parentFlows.objectFlows.add(objectFlow);
-                        Location location = evaluationContext.getLocation();
-                        ObjectFlow second = new ObjectFlow(location, objectFlow.type,
-                                parentFlows);
-                        objectFlow.moveNextTo(second);
-                        objectFlow.addNext(second);
-                        location.registerNewObjectFlow(second);
-                        if (location.info instanceof MethodInfo) {
-                            MethodAnalysis methodAnalysis = ((MethodInfo) location.info).methodAnalysis.get();
-                            if (methodAnalysis.getReturnedObjectFlow() == objectFlow) {
-                                methodAnalysis.setReturnedObjectFlow(second);
-                            }
-                        }
-                        second.setModifyingAccess(methodCall);
-                        if(objectValue instanceof VariableValue) {
-                            evaluationContext.updateObjectFlow(((VariableValue)objectValue).variable, second);
-                        }
-                        // TODO if fluent, we need to get second to objectFlowOfResult
-                    }
+                    Logger.log(NOT_MODIFIED, "Flow access: modifying access");
+                    target.setModifyingAccess(methodCall);
                 }
             }
         }
+        // @Only check
+        checkOnly(objectFlow, evaluationContext);
 
         // return value
         ObjectFlow objectFlowOfResult;
@@ -162,6 +149,52 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(evaluationContext, objectValue, parameters);
 
         return result;
+    }
+
+    private void checkOnly(ObjectFlow objectFlow, EvaluationContext evaluationContext) {
+        Optional<AnnotationExpression> oOnly = methodInfo.methodInspection.get().annotations.stream()
+                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Only.class.getName())).findFirst();
+        if (oOnly.isPresent()) {
+            AnnotationExpression ae = oOnly.get();
+            String before = ae.extract("before", "");
+            if (!before.isEmpty()) {
+                Set<String> marks = objectFlow.marks();
+                if (marks.contains(before)) {
+                    evaluationContext.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
+                            ", mark \"" + before + "\"");
+                }
+            } else {
+                String after = ae.extract("after", "");
+                Set<String> marks = objectFlow.marks();
+                if (!marks.contains(after)) {
+                    evaluationContext.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
+                            ", mark \"" + after + "\"");
+                }
+            }
+        }
+    }
+
+    private static ObjectFlow split(ObjectFlow objectFlow, Value objectValue, EvaluationContext evaluationContext) {
+        ObjectFlow.ParentFlows parentFlows = new ObjectFlow.ParentFlows();
+        parentFlows.objectFlows.add(objectFlow);
+        Location location = evaluationContext.getLocation();
+        ObjectFlow second = new ObjectFlow(location, objectFlow.type,
+                parentFlows);
+        objectFlow.moveNextTo(second);
+        objectFlow.addNext(second);
+        location.registerNewObjectFlow(second);
+        if (location.info instanceof MethodInfo) {
+            MethodAnalysis methodAnalysis = ((MethodInfo) location.info).methodAnalysis.get();
+            if (methodAnalysis.getReturnedObjectFlow() == objectFlow) {
+                methodAnalysis.setReturnedObjectFlow(second);
+            }
+        }
+        if (objectValue instanceof VariableValue) {
+            evaluationContext.updateObjectFlow(((VariableValue) objectValue).variable, second);
+        }
+        // TODO if fluent, we need to get second to objectFlowOfResult
+
+        return second;
     }
 
     private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue, List<Value> parameters) {

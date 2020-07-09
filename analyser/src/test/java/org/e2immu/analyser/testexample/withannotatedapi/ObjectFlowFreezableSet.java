@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 
 public class ObjectFlowFreezableSet {
 
-    @E2Container(after = "freeze")
     static class FreezableSet {
         private final Set<String> set = new HashSet<>();
         private boolean frozen;
