@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
 
 public interface NumericValue extends Value {
@@ -40,10 +41,10 @@ public interface NumericValue extends Value {
         if (DoubleMath.isMathematicalInteger(b)) {
             long l = Math.round(b);
             if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE)
-                return new LongValue(l, new ObjectFlow(location, Primitives.PRIMITIVES.longParameterizedType, ObjectFlow.LITERAL));
-            return new IntValue((int) l, new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.LITERAL));
+                return new LongValue(l, new ObjectFlow(location, Primitives.PRIMITIVES.longParameterizedType, StaticOrigin.LITERAL));
+            return new IntValue((int) l, new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, StaticOrigin.LITERAL));
         }
-        return new DoubleValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.doubleParameterizedType, ObjectFlow.LITERAL));
+        return new DoubleValue(b, new ObjectFlow(location, Primitives.PRIMITIVES.doubleParameterizedType, StaticOrigin.LITERAL));
     }
 
     NumericValue negate();

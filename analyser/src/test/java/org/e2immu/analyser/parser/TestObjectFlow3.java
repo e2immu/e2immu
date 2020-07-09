@@ -23,6 +23,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.objectflow.MethodAccess;
+import org.e2immu.analyser.objectflow.MethodCalls;
+import org.e2immu.analyser.objectflow.ObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +42,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         if ("main".equals(d.methodInfo.name) && "0".equals(d.statementId) && "config".equals(d.variableName)) {
             Assert.assertTrue(d.currentValue instanceof VariableValue);
             ObjectFlow objectFlow = d.currentValue.getObjectFlow();
-            Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectFlow.ObjectCreation);
+            Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectCreation);
         }
     };
 
@@ -63,16 +66,16 @@ public class TestObjectFlow3 extends CommonTestRunner {
         TypeInfo main = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Main");
         ObjectFlow newMain = mainMethod.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == main).findAny().orElseThrow();
         // test object access "go" method
-        Assert.assertEquals(1L, newMain.getNonModifyingObjectAccesses().count());
-        ObjectFlow.MethodCall newMainCallGo = (ObjectFlow.MethodCall) newMain.getNonModifyingObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newMain.getNonModifyingAccesses().count());
+        MethodAccess newMainCallGo = (MethodAccess) newMain.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newMainCallGo.methodInfo.name);
 
         // the Config flow in Main is linked to the creation in the main method
         MethodInfo mainConstructor = main.typeInspection.get().constructors.get(0);
         ObjectFlow mainConstructorParamObjectFlow = mainConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
-        Assert.assertTrue(mainConstructorParamObjectFlow.origin instanceof ObjectFlow.MethodCalls);
-        ObjectFlow.MethodCalls mcs = (ObjectFlow.MethodCalls) mainConstructorParamObjectFlow.origin;
-        Assert.assertTrue(mcs.objectFlows.contains(newConfig));
+        Assert.assertTrue(mainConstructorParamObjectFlow.origin instanceof MethodCalls);
+        MethodCalls mcs = (MethodCalls) mainConstructorParamObjectFlow.origin;
+        Assert.assertTrue(mcs.contains(newConfig));
 
         // The go() method in main creates an InBetween flow
         MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
@@ -80,11 +83,11 @@ public class TestObjectFlow3 extends CommonTestRunner {
         TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
         Assert.assertEquals(1L, goMethodMain.methodAnalysis.get().getInternalObjectFlows().count());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
-        Assert.assertTrue(newInBetween.origin instanceof ObjectFlow.ObjectCreation);
+        Assert.assertTrue(newInBetween.origin instanceof ObjectCreation);
 
         // test object access "go" method
-        Assert.assertEquals(1L, newInBetween.getNonModifyingObjectAccesses().count());
-        ObjectFlow.MethodCall newInBetweenCallGo = (ObjectFlow.MethodCall) newInBetween.getNonModifyingObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newInBetween.getNonModifyingAccesses().count());
+        MethodAccess newInBetweenCallGo = (MethodAccess) newInBetween.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newInBetweenCallGo.methodInfo.name);
 
         Set<ObjectFlow> callOutsOfMainConstructorParamObjectFlow = mainConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
@@ -92,8 +95,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors.get(0);
         ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
         Assert.assertTrue(callOutsOfMainConstructorParamObjectFlow.contains(inBetweenConstructorParamObjectFlow));
-        ObjectFlow.MethodCalls mcs2 = (ObjectFlow.MethodCalls) inBetweenConstructorParamObjectFlow.origin;
-        Assert.assertTrue(mcs2.objectFlows.contains(mainConstructorParamObjectFlow));
+        MethodCalls mcs2 = (MethodCalls) inBetweenConstructorParamObjectFlow.origin;
+        Assert.assertTrue(mcs2.contains(mainConstructorParamObjectFlow));
 
         // The go() method in inBetween creates a DoSomeWork flow
         MethodInfo goMethodInBetween = inBetween.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
@@ -102,8 +105,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         ObjectFlow newDoSomeWork = goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == doSomeWork).findAny().orElseThrow();
 
         // test object access "go" method
-        Assert.assertEquals(1L, newDoSomeWork.getNonModifyingObjectAccesses().count());
-        ObjectFlow.MethodCall newDoSomeWorkCallGo = (ObjectFlow.MethodCall) newDoSomeWork.getNonModifyingObjectAccesses().findFirst().orElseThrow();
+        Assert.assertEquals(1L, newDoSomeWork.getNonModifyingAccesses().count());
+        MethodAccess newDoSomeWorkCallGo = (MethodAccess) newDoSomeWork.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newDoSomeWorkCallGo.methodInfo.name);
 
         Set<ObjectFlow> callOutsOfInBetweenConstructorParamObjectFlow = inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());

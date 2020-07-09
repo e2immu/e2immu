@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -74,7 +75,7 @@ public class ArrayInitializer implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
 
-        ArrayValue arrayValue = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), commonType, ObjectFlow.LITERAL), values);
+        ArrayValue arrayValue = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), commonType, StaticOrigin.LITERAL), values);
         visitor.visit(this, evaluationContext, arrayValue);
         return arrayValue;
     }

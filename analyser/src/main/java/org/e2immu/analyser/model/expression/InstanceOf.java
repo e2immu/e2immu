@@ -24,8 +24,8 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -61,7 +61,7 @@ public class InstanceOf implements Expression {
             }
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof ValueWithVariable) {
-            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, ObjectFlow.OPERATOR);
+            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, StaticOrigin.OPERATOR);
             result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType, objectFlow);
         } else if (value instanceof Instance) {
             result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext.getLocation());

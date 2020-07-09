@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -117,7 +118,7 @@ public interface EvaluationContext {
     Location getLocation();
 
     default ObjectFlow registerConstantObjectFlow(ParameterizedType parameterizedType) {
-        ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, ObjectFlow.LITERAL);
+        ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, StaticOrigin.LITERAL);
         getCurrentType().typeAnalysis.get().addConstantObjectFlow(objectFlow);
         return objectFlow;
     }
@@ -125,4 +126,6 @@ public interface EvaluationContext {
     ObjectFlow getObjectFlow(Variable variable);
 
     default void updateObjectFlow(Variable variable, ObjectFlow second) { throw new UnsupportedOperationException(); }
+
+    default void reassigned(Variable variable) { }
 }

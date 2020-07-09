@@ -22,9 +22,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.List;
 import java.util.Objects;
 
 public class StringValue extends ConstantValue implements Constant<String> {
@@ -50,7 +50,7 @@ public class StringValue extends ConstantValue implements Constant<String> {
             if(rs.isEmpty() && l instanceof StringValue) {
                 return l;
             }
-            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringParameterizedType, ObjectFlow.LITERAL));
+            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringParameterizedType, StaticOrigin.LITERAL));
         }
         return Instance.newStringInstance(location);
     }

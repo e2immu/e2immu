@@ -7,9 +7,8 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
-
-import java.util.StringJoiner;
 
 /**
  * the thing that, for now, makes TypeValue different from UnknownValue is that it is not null.
@@ -22,7 +21,7 @@ public class TypeValue implements Value {
 
     public TypeValue(ParameterizedType parameterizedType, Location location) {
         this.parameterizedType = parameterizedType;
-        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo.asParameterizedType(), ObjectFlow.LITERAL);
+        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo.asParameterizedType(), StaticOrigin.LITERAL);
     }
 
     @Override

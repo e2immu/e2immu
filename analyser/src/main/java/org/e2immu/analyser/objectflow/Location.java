@@ -43,14 +43,14 @@ public class Location {
 
     @Override
     public String toString() {
-        return info == null ? "<no location>" : info.detailedName() + (statementWithinMethod == null ? "" : ":" + statementWithinMethod);
+        return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name() + (statementWithinMethod == null ? "" : ":" + statementWithinMethod);
     }
 
     public void registerNewObjectFlow(ObjectFlow objectFlowOfResult) {
-        if(info instanceof MethodInfo) {
-            ((MethodInfo)info).methodAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
-        } else if(info instanceof FieldInfo) {
-            ((FieldInfo)info).fieldAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
+        if (info instanceof MethodInfo) {
+            ((MethodInfo) info).methodAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
+        } else if (info instanceof FieldInfo) {
+            ((FieldInfo) info).fieldAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
         }
     }
 }

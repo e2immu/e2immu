@@ -27,13 +27,19 @@ import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.MethodAccess;
+import org.e2immu.analyser.objectflow.ObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.ParentFlows;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class TestObjectFlowFreezableSet extends CommonTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlowFreezableSet.class);
 
     public TestObjectFlowFreezableSet() {
         super(true);
@@ -42,43 +48,43 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
             if ("1".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ObjectCreation);
+                Assert.assertTrue(d.objectFlow.origin instanceof ObjectCreation);
                 Assert.assertEquals("add", d.objectFlow.getModifyingAccess().methodInfo.name);
                 Assert.assertTrue(d.objectFlow.marks().isEmpty());
             }
             if ("2".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
-                ObjectFlow parent = ((ObjectFlow.ParentFlows) d.objectFlow.origin).objectFlows.stream().findFirst().orElseThrow();
-                Assert.assertTrue(parent.origin instanceof ObjectFlow.ObjectCreation);
+                Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
+                ObjectFlow parent = d.objectFlow.origin.sources().findFirst().orElseThrow();
+                Assert.assertTrue(parent.origin instanceof ObjectCreation);
                 Assert.assertEquals("add", d.objectFlow.getModifyingAccess().methodInfo.name);
             }
             if ("3".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
-                Assert.assertEquals("isFrozen", ((ObjectFlow.MethodCall) d.objectFlow.getNonModifyingObjectAccesses().findFirst().orElseThrow()).methodInfo.name);
+                Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
+                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
 
-                ObjectFlow parent = ((ObjectFlow.ParentFlows) d.objectFlow.origin).objectFlows.stream().findFirst().orElseThrow();
-                Assert.assertTrue(parent.origin instanceof ObjectFlow.ParentFlows);
+                ObjectFlow parent = d.objectFlow.origin.sources().findFirst().orElseThrow();
+                Assert.assertTrue(parent.origin instanceof ParentFlows);
                 Assert.assertEquals("add", parent.getModifyingAccess().methodInfo.name);
 
-                ObjectFlow parent2 = ((ObjectFlow.ParentFlows) parent.origin).objectFlows.stream().findFirst().orElseThrow();
-                Assert.assertTrue(parent2.origin instanceof ObjectFlow.ObjectCreation);
+                ObjectFlow parent2 = parent.origin.sources().findFirst().orElseThrow();
+                Assert.assertTrue(parent2.origin instanceof ObjectCreation);
                 Assert.assertEquals("add", parent2.getModifyingAccess().methodInfo.name);
                 Assert.assertTrue(d.objectFlow.marks().isEmpty());
             }
             if ("4".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
-                Assert.assertEquals("isFrozen", ((ObjectFlow.MethodCall) d.objectFlow.getNonModifyingObjectAccesses().findFirst().orElseThrow()).methodInfo.name);
+                Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
+                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
                 Assert.assertEquals("freeze", d.objectFlow.getModifyingAccess().methodInfo.name);
                 Assert.assertEquals("[freeze]", d.objectFlow.marks().toString());
             }
             if ("5".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
-                Assert.assertEquals("isFrozen", ((ObjectFlow.MethodCall) d.objectFlow.getNonModifyingObjectAccesses().findFirst().orElseThrow()).methodInfo.name);
+                Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
+                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
                 Assert.assertNull(d.objectFlow.getModifyingAccess());
             }
             if ("6".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
-                Assert.assertEquals(2L, d.objectFlow.getNonModifyingObjectAccesses().count());
+                Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
+                Assert.assertEquals(2L, d.objectFlow.getNonModifyingAccesses().count());
                 Assert.assertNull(d.objectFlow.getModifyingAccess());
                 Assert.assertEquals("[freeze]", d.objectFlow.marks().toString());
             }
@@ -97,10 +103,10 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
             if ("method9".equals(methodInfo.name)) {
                 if ("0".equals(numberedStatement.streamIndices())) {
-                    // TODO Assert.assertFalse(numberedStatement.errorValue.isSet());
+                    Assert.assertFalse(numberedStatement.errorValue.isSet());
                 }
                 if ("1".equals(numberedStatement.streamIndices())) {
-                   // TODO Assert.assertTrue(numberedStatement.errorValue.isSet());
+                    Assert.assertTrue(numberedStatement.errorValue.isSet());
                 }
             }
         }
@@ -111,7 +117,8 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         public void visit(int iteration, FieldInfo fieldInfo) {
             if ("SET8".equals(fieldInfo.name) && iteration > 0) {
                 ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
-               // TODO  Assert.assertEquals("[freeze]", objectFlow.marks().toString());
+                LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
+                Assert.assertEquals("[freeze]", objectFlow.marks().toString());
             }
         }
     };

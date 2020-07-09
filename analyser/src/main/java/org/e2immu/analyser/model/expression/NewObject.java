@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -115,7 +116,7 @@ public class NewObject implements HasParameterExpressions {
             List<Value> values = arrayInitializer.expressions.stream()
                     .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
-            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType, ObjectFlow.LITERAL), values);
+            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType, StaticOrigin.LITERAL), values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             Location location = evaluationContext.getLocation();
@@ -160,7 +161,7 @@ public class NewObject implements HasParameterExpressions {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
                     if(destination != ObjectFlow.NO_FLOW) {
                         source.addNonModifyingCallOut(destination);
-                        destination.addSource(source);
+                        destination.addMethodCallOrigin(source);
                     }
                 }
             } else {

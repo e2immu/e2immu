@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.StaticOrigin;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -195,7 +196,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         Value v = tautologyGreaterThan(l, r, allowEquals);
         if (v != null) return v;
 
-        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.OPERATOR); // TODO ObjectFlow
+        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, StaticOrigin.OPERATOR); // TODO ObjectFlow
 
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 > x == 3 + (-x) > 0 transform to 2 >= x
@@ -240,7 +241,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             return new BoolValue(l.toInt().value < r.toInt().value, objectFlow);
         }
 
-        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, ObjectFlow.OPERATOR); // TODO ObjectFlow
+        ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, Primitives.PRIMITIVES.intParameterizedType, StaticOrigin.OPERATOR); // TODO ObjectFlow
 
         if (l instanceof NumericValue && !allowEquals && l.isDiscreteType()) {
             // 3 < x == x > 3 == -3 + x > 0 transform to x >= 4

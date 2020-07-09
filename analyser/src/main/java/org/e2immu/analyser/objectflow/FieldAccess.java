@@ -1,0 +1,30 @@
+package org.e2immu.analyser.objectflow;
+
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.annotation.Nullable;
+
+import java.util.Objects;
+
+public class FieldAccess implements Access {
+    public final FieldInfo fieldInfo;
+    public final Access accessOnField;
+
+    public FieldAccess(FieldInfo fieldInfo, @Nullable Access accessOnField) {
+        this.fieldInfo = Objects.requireNonNull(fieldInfo);
+        this.accessOnField = accessOnField;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FieldAccess that = (FieldAccess) o;
+        return fieldInfo.equals(that.fieldInfo) &&
+                Objects.equals(accessOnField, that.accessOnField);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fieldInfo, accessOnField);
+    }
+}

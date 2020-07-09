@@ -3,10 +3,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.EqualsValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.Location;
@@ -119,6 +116,9 @@ public class ConditionalManager {
     // same applies to size()... if(a.isEmpty()) a = ...
     private static Value removeClausesInvolving(Value conditional, Variable variable) {
         Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
+        if (toTest instanceof MethodValue && toTest.variables().contains(variable)) {
+            return null;
+        }
         if (toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
             return null;
         }

@@ -28,14 +28,12 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.objectflow.Location;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Logger;
-import org.e2immu.annotation.Mark;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
@@ -97,27 +95,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
 
         // access
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         ObjectFlow objectFlow = objectValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW) {
-            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) {
                 Logger.log(DELAYED, "Delaying flow access registration");
             } else {
                 List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
-                ObjectFlow.MethodCall methodCall = new ObjectFlow.MethodCall(methodInfo, flowsOfArguments);
+                MethodAccess methodCall = new MethodAccess(methodInfo, flowsOfArguments);
                 ObjectFlow target;
                 if (objectFlow.getModifyingAccess() == null) {
                     target = objectFlow;
+                    Logger.log(NOT_MODIFIED, "Flow access: not splitting: {} -->> ", objectFlow.detailed());
                 } else {
-                    Logger.log(NOT_MODIFIED, "Flow access: splitting first, already have modifying object access");
+                    Logger.log(NOT_MODIFIED, "Flow access: splitting {}", objectFlow.detailed());
                     target = split(objectFlow, objectValue, evaluationContext);
+                    Logger.log(NOT_MODIFIED, "Result: {} linked to", objectFlow.detailed());
                 }
                 if (modified == Level.FALSE) {
-                    Logger.log(NOT_MODIFIED, "Flow access: non-modifying object access");
-                    target.addNonModifyingObjectAccess(methodCall);
+                    target.addNonModifyingAccess(methodCall);
+                    Logger.log(NOT_MODIFIED, "Flow access: non-modifying object access: {}", target.detailed());
                 } else {
-                    Logger.log(NOT_MODIFIED, "Flow access: modifying access");
                     target.setModifyingAccess(methodCall);
+                    Logger.log(NOT_MODIFIED, "Flow access: modifying access: {}", target.detailed());
                 }
             }
         }
@@ -127,14 +127,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // return value
         ObjectFlow objectFlowOfResult;
         if (!methodInfo.returnType().isVoid()) {
-            ObjectFlow.MethodCalls origin = new ObjectFlow.MethodCalls();
+            MethodCalls origin = new MethodCalls();
             ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getReturnedObjectFlow();
             Location location = evaluationContext.getLocation();
             objectFlowOfResult = new ObjectFlow(location, methodInfo.returnType(), origin);
 
             // cross-link
             if (returnedFlow != ObjectFlow.NO_FLOW) {
-                origin.objectFlows.add(returnedFlow);
+                objectFlowOfResult.addMethodCallOrigin(returnedFlow);
                 returnedFlow.addNext(objectFlowOfResult);
             }
             location.registerNewObjectFlow(objectFlowOfResult);
@@ -144,6 +144,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
 
         checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
+
+        if(modified == Level.TRUE && objectValue instanceof ValueWithVariable) {
+            Variable variable = ((ValueWithVariable)objectValue).variable;
+            evaluationContext.reassigned(variable);
+        }
+
         visitor.visit(this, evaluationContext, result);
 
         checkCommonErrors(evaluationContext, objectValue, parameters);
@@ -175,11 +181,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static ObjectFlow split(ObjectFlow objectFlow, Value objectValue, EvaluationContext evaluationContext) {
-        ObjectFlow.ParentFlows parentFlows = new ObjectFlow.ParentFlows();
-        parentFlows.objectFlows.add(objectFlow);
+        ParentFlows parentFlows = new ParentFlows();
         Location location = evaluationContext.getLocation();
-        ObjectFlow second = new ObjectFlow(location, objectFlow.type,
-                parentFlows);
+        ObjectFlow second = new ObjectFlow(location, objectFlow.type, parentFlows);
+        second.addParentOrigin(objectFlow);
         objectFlow.moveNextTo(second);
         objectFlow.addNext(second);
         location.registerNewObjectFlow(second);
@@ -227,7 +232,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         // @Identity as method annotation
-        Value identity = computeIdentity(methodAnalysis, parameters);
+        Value identity = computeIdentity(methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
             return identity;
         }
@@ -290,20 +295,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return scope;
     }
 
-    private static Value wrap(MethodAnalysis methodAnalysis, Value value) {
+    private static Value wrap(MethodAnalysis methodAnalysis, Value value, ObjectFlow objectFlow) {
         Map<VariableProperty, Integer> map = new HashMap<>();
         for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(value, map);
+        return PropertyWrapper.propertyWrapper(value, map, objectFlow);
     }
 
-    private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters) {
+    private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters, ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
-        return wrap(methodAnalysis, parameters.get(0));
+        return wrap(methodAnalysis, parameters.get(0), objectFlowOfResult);
     }
 
     private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
@@ -378,9 +383,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, location);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, new ObjectFlow.MethodCalls());
+            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, new MethodCalls());
             return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize),
-                            new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, new ObjectFlow.MethodCalls())),
+                            new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, new MethodCalls())),
                     constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
@@ -407,11 +412,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static ObjectFlow sizeObjectFlow(MethodInfo sizeMethodInfo, Location location, Value object) {
-        ObjectFlow.MethodCalls methodCalls = new ObjectFlow.MethodCalls();
+        MethodCalls methodCalls = new MethodCalls();
         ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, methodCalls);
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
-            object.getObjectFlow().addNonModifyingObjectAccess(new ObjectFlow.MethodCall(sizeMethodInfo, List.of()));
-            methodCalls.objectFlows.add(object.getObjectFlow());
+            object.getObjectFlow().addNonModifyingAccess(new MethodAccess(sizeMethodInfo, List.of()));
+            objectFlow.addMethodCallOrigin(object.getObjectFlow());
         }
         return objectFlow;
     }

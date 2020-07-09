@@ -1012,4 +1012,9 @@ class VariableProperties implements EvaluationContext {
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.setObjectFlow(objectFlow);
     }
+
+    @Override
+    public void reassigned(Variable variable) {
+        conditionalManager.variableReassigned(variable);
+    }
 }

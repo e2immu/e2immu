@@ -24,7 +24,7 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,9 +42,9 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if("of".equals(d.methodInfo.name) && "4".equals(d.statementId) && "res".equals(d.variableName)) {
-            Assert.assertTrue(d.objectFlow.origin instanceof ObjectFlow.ParentFlows);
+            Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
             ObjectFlow parent = d.objectFlow.origin.sources().findFirst().orElseThrow();
-            Assert.assertTrue(parent.origin instanceof ObjectFlow.ObjectCreation);
+            Assert.assertTrue(parent.origin instanceof ObjectCreation);
         }
     };
 
@@ -61,7 +61,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         MethodInfo ofMethod = objectFlow2.typeInspection.get().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
         ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows()
                 .filter(of -> of.type.typeInfo == hashSet)
-                .filter(of -> of.origin instanceof ObjectFlow.ObjectCreation)
+                .filter(of -> of.origin instanceof ObjectCreation)
                 .findAny().orElseThrow();
         Assert.assertEquals(1L, newHashSet.getNext().count());
         ObjectFlow newHashSet2 = newHashSet.getNext().findFirst().orElseThrow();
@@ -73,31 +73,31 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows()
                 .filter(of -> of.type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo).findFirst().orElseThrow();
-        ObjectFlow.MethodCalls methodCallsOfOfParam = (ObjectFlow.MethodCalls)ofParam.origin ;
-        Assert.assertTrue(methodCallsOfOfParam.objectFlows.contains(constantX));
+        MethodCalls methodCallsOfOfParam = (MethodCalls)ofParam.origin ;
+        Assert.assertTrue(methodCallsOfOfParam.contains(constantX));
 
         ObjectFlow useOfFlow = useOf.methodAnalysis.get().getInternalObjectFlows()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
-        Assert.assertTrue(useOfFlow.origin instanceof ObjectFlow.MethodCalls);
-        ObjectFlow.MethodCalls useOfFlowMcs = (ObjectFlow.MethodCalls) useOfFlow.origin;
-        Assert.assertTrue(useOfFlowMcs.objectFlows.contains(newHashSet2));
+        Assert.assertTrue(useOfFlow.origin instanceof MethodCalls);
+        MethodCalls useOfFlowMcs = (MethodCalls) useOfFlow.origin;
+        Assert.assertTrue(useOfFlowMcs.contains(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
 
-        Assert.assertTrue(set1ObjectFlow.origin instanceof ObjectFlow.MethodCalls);
-        ObjectFlow.MethodCalls set1ObjectFlowMcs = (ObjectFlow.MethodCalls) set1ObjectFlow.origin;
-        Assert.assertEquals(1, set1ObjectFlowMcs.objectFlows.size());
-        Assert.assertTrue(set1ObjectFlowMcs.objectFlows.contains(newHashSet2));
+        Assert.assertTrue(set1ObjectFlow.origin instanceof MethodCalls);
+        MethodCalls set1ObjectFlowMcs = (MethodCalls) set1ObjectFlow.origin;
+        Assert.assertEquals(1L, set1ObjectFlowMcs.sources().count());
+        Assert.assertTrue(set1ObjectFlowMcs.contains(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));
 
-        Assert.assertEquals(0L, newHashSet.getNonModifyingObjectAccesses().count());
-        Assert.assertEquals(0L, newHashSet2.getNonModifyingObjectAccesses().count());
-        ObjectFlow.MethodCall add1 = newHashSet.getModifyingAccess();
+        Assert.assertEquals(0L, newHashSet.getNonModifyingAccesses().count());
+        Assert.assertEquals(0L, newHashSet2.getNonModifyingAccesses().count());
+        MethodAccess add1 = newHashSet.getModifyingAccess();
         Assert.assertEquals("add", add1.methodInfo.name);
-        ObjectFlow.MethodCall add2 = newHashSet2.getModifyingAccess();
+        MethodAccess add2 = newHashSet2.getModifyingAccess();
         Assert.assertEquals("add", add2.methodInfo.name);
     }
 

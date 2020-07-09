@@ -36,10 +36,12 @@ public class PropertyWrapper implements Value, ValueWrapper {
      */
     public final Value value;
     public final Map<VariableProperty, Integer> properties;
+    public final ObjectFlow overwriteObjectFlow;
 
-    public PropertyWrapper(Value value, Map<VariableProperty, Integer> properties) {
+    public PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         this.value = value;
         this.properties = properties;
+        overwriteObjectFlow = objectFlow;
     }
 
     @Override
@@ -55,10 +57,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
     @Override
     public Value reEvaluate(Map<Value, Value> translation) {
         Value reValue = value.reEvaluate(translation);
-        return PropertyWrapper.propertyWrapper(reValue, properties);
+        return PropertyWrapper.propertyWrapper(reValue, properties, getObjectFlow());
     }
 
-    public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties) {
+    public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         // TODO this for-loop is a really good candidate to rewrite using streaming
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
@@ -68,7 +70,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
             }
         }
         // if I cannot contribute, there's no point being here...
-        if (newMap.isEmpty()) return value;
+        if (newMap.isEmpty() && objectFlow == null) return value;
 
         // second, we always want the negation to be on the outside
         if (value instanceof NegatedValue) {
@@ -79,7 +81,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
             if (Analysis.haveEquals(size) || size < Level.TRUE) throw new UnsupportedOperationException();
             return ConstrainedNumericValue.lowerBound(value, Analysis.decodeSizeMin(size));
         }
-        return new PropertyWrapper(value, properties);
+        return new PropertyWrapper(value, properties, objectFlow);
     }
 
     @Override
@@ -131,6 +133,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return value.getObjectFlow();
+        return overwriteObjectFlow != null ? overwriteObjectFlow: value.getObjectFlow();
     }
 }

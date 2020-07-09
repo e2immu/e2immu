@@ -1,14 +1,8 @@
 package org.e2immu.analyser.objectflow;
 
-import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetUtil;
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,138 +10,7 @@ import java.util.stream.Stream;
 
 public class ObjectFlow {
 
-    public interface Origin {
-        Stream<ObjectFlow> sources();
-    }
-
-    public static class MethodCalls implements Origin {
-        public final Set<ObjectFlow> objectFlows = new HashSet<>();
-
-        @Override
-        public String toString() {
-            return "method calls " + objectFlows;
-        }
-
-        @Override
-        public Stream<ObjectFlow> sources() {
-            return objectFlows.stream();
-        }
-    }
-
-    public static class ParentFlows implements Origin {
-        public final Set<ObjectFlow> objectFlows = new HashSet<>();
-
-        @Override
-        public String toString() {
-            return "parent flows " + objectFlows;
-        }
-
-        @Override
-        public Stream<ObjectFlow> sources() {
-            return objectFlows.stream();
-        }
-    }
-
-    public static class ObjectCreation implements Origin {
-        public final MethodCall methodCall;
-
-        public ObjectCreation(MethodInfo methodInfo, List<Value> parameters) {
-            methodCall = new MethodCall(methodInfo, parameters.stream()
-                    .filter(p -> p.getObjectFlow() != null)
-                    .map(Value::getObjectFlow).collect(Collectors.toList()));
-        }
-
-        @Override
-        public String toString() {
-            return "new " + methodCall;
-        }
-
-        @Override
-        public Stream<ObjectFlow> sources() {
-            return Stream.of();
-        }
-    }
-
-    public static final StaticOrigin LITERAL = new StaticOrigin("literal");
-    public static final StaticOrigin OPERATOR = new StaticOrigin("operator");
-    public static final StaticOrigin NO_ORIGIN = new StaticOrigin("<no origin>");
-
-    public static final ObjectFlow NO_FLOW = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, NO_ORIGIN);
-
-    public static class StaticOrigin implements Origin {
-        private final String reason;
-
-        private StaticOrigin(String reason) {
-            this.reason = reason;
-        }
-
-        @Override
-        public String toString() {
-            return reason;
-        }
-
-        @Override
-        public Stream<ObjectFlow> sources() {
-            return Stream.of();
-        }
-    }
-
-    public interface Access {
-    }
-
-    public static class FieldAccess implements Access {
-        public final FieldInfo fieldInfo;
-        public final Access accessOnField;
-
-        public FieldAccess(FieldInfo fieldInfo, @Nullable Access accessOnField) {
-            this.fieldInfo = Objects.requireNonNull(fieldInfo);
-            this.accessOnField = accessOnField;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            FieldAccess that = (FieldAccess) o;
-            return fieldInfo.equals(that.fieldInfo) &&
-                    Objects.equals(accessOnField, that.accessOnField);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(fieldInfo, accessOnField);
-        }
-    }
-
-    public static class MethodCall implements Access {
-
-        public final MethodInfo methodInfo;
-        public final List<ObjectFlow> objectFlowsOfArguments;
-
-        public MethodCall(MethodInfo methodInfo, List<ObjectFlow> objectFlowsOfArguments) {
-            this.methodInfo = methodInfo;
-            this.objectFlowsOfArguments = ImmutableList.copyOf(objectFlowsOfArguments);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            MethodCall that = (MethodCall) o;
-            return methodInfo.equals(that.methodInfo) &&
-                    objectFlowsOfArguments.equals(that.objectFlowsOfArguments);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(methodInfo, objectFlowsOfArguments);
-        }
-
-        @Override
-        public String toString() {
-            return methodInfo.name + "(" + objectFlowsOfArguments + ")";
-        }
-    }
+    public static final ObjectFlow NO_FLOW = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, StaticOrigin.NO_ORIGIN);
 
     // where does this take place?
     public final Location location;
@@ -164,6 +27,10 @@ public class ObjectFlow {
         this.origin = Objects.requireNonNull(origin);
     }
 
+    public static String typeLetter(WithInspectionAndAnalysis info) {
+        return Character.toString(info.getClass().getSimpleName().charAt(0));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -178,17 +45,32 @@ public class ObjectFlow {
         return Objects.hash(location, type);
     }
 
+    // non-modifying access
 
-    private final Set<Access> nonModifyingObjectAccesses = new HashSet<>();
+    private final Set<Access> nonModifyingAccesses = new HashSet<>();
 
-    public Stream<Access> getNonModifyingObjectAccesses() {
-        return nonModifyingObjectAccesses.stream();
+    public Stream<Access> getNonModifyingAccesses() {
+        return nonModifyingAccesses.stream();
     }
 
-    public void addNonModifyingObjectAccess(Access access) {
+    public void addNonModifyingAccess(Access access) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
-        nonModifyingObjectAccesses.add(access);
+        nonModifyingAccesses.add(access);
     }
+
+    // modifying access
+
+    private MethodAccess modifyingAccess;
+
+    public MethodAccess getModifyingAccess() {
+        return modifyingAccess;
+    }
+
+    public void setModifyingAccess(MethodAccess modifyingAccess) {
+        this.modifyingAccess = modifyingAccess;
+    }
+
+    // local assignments
 
     private final Set<FieldInfo> localAssignments = new HashSet<>();
 
@@ -201,21 +83,25 @@ public class ObjectFlow {
         return localAssignments.stream();
     }
 
+    // non-modifying callouts / use as argument in other method calls
+
     final Set<ObjectFlow> nonModifyingCallOuts = new HashSet<>();
 
-    private MethodCall modifyingAccess;
 
-    public MethodCall getModifyingAccess() {
-        return modifyingAccess;
+    public void addNonModifyingCallOut(ObjectFlow destination) {
+        if (this == NO_FLOW) throw new UnsupportedOperationException();
+        nonModifyingCallOuts.add(destination);
     }
 
-    public void setModifyingAccess(MethodCall modifyingAccess) {
-        this.modifyingAccess = modifyingAccess;
+    public Stream<ObjectFlow> getNonModifyingCallouts() {
+        return nonModifyingCallOuts.stream();
     }
+
+    // modifying call-out
 
     ObjectFlow modifyingCallOut;
 
-    // the next flow objects; only possibly non-empty when modifying access or modifying call-out
+    // the next flow objects
 
     private Set<ObjectFlow> next = new HashSet<>();
 
@@ -228,20 +114,26 @@ public class ObjectFlow {
         return next.stream();
     }
 
-    public void addNonModifyingCallOut(ObjectFlow destination) {
+
+    // origin
+
+    public void addParentOrigin(ObjectFlow source) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
-        nonModifyingCallOuts.add(destination);
+        if (!(origin instanceof ParentFlows)) throw new UnsupportedOperationException();
+        ((ParentFlows) origin).objectFlows.add(source);
     }
 
-    public Stream<ObjectFlow> getNonModifyingCallouts() {
-        return nonModifyingCallOuts.stream();
-    }
-
-    public void addSource(ObjectFlow source) {
+    public void addMethodCallOrigin(ObjectFlow source) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
         if (!(origin instanceof MethodCalls)) throw new UnsupportedOperationException();
         ((MethodCalls) origin).objectFlows.add(source);
     }
+
+    public Origin getOrigin() {
+        return origin;
+    }
+
+    // other
 
     public ObjectFlow merge(ObjectFlow objectFlow) {
         if (this == NO_FLOW) return objectFlow;
@@ -252,17 +144,31 @@ public class ObjectFlow {
         return this;
     }
 
-    public Origin getOrigin() {
-        return origin;
+
+    static <X> String detail(String what, X objectFlow) {
+        return objectFlow == null ? "" : "\n    " + what + ": " + objectFlow;
+    }
+
+    static <X> String detail(String what, Collection<X> collection) {
+        if (collection.size() == 1) return detail(what, collection.stream().findFirst().orElseThrow());
+        if (collection.isEmpty()) return "";
+        return "\n    " + what + ": " + collection.stream().map(X::toString).collect(Collectors.joining(", "));
     }
 
     public String detailed() {
-        return toString() + ": origin " + origin + ", fields: " + localAssignments + ", call-outs: " + nonModifyingCallOuts;
+        return "\n<flow of type " + type.stream() + ": " + origin + " @" + location +
+                detail("@NM access", nonModifyingAccesses) +
+                detail("@M access", modifyingAccess) +
+                detail("@NM call-outs", nonModifyingCallOuts) +
+                detail("@M call-out", modifyingCallOut) +
+                detail("fields", localAssignments) +
+                detail("next", next) +
+                ">";
     }
 
     @Override
     public String toString() {
-        return location + ", " + type.detailedString();
+        return "<flow of type " + type.stream() + ": " + origin + " @" + location + ">";
     }
 
 

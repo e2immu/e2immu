@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.objectflow.MethodCalls;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
@@ -46,7 +47,7 @@ public class FieldAnalysis extends Analysis {
         type = fieldInfo.type;
         location = new Location(fieldInfo);
         this.fieldInfo = fieldInfo;
-        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type, new ObjectFlow.MethodCalls());
+        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type, new MethodCalls());
     }
 
     @Override
