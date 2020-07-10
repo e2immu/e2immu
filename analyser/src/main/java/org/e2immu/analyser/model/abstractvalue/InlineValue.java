@@ -10,6 +10,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.function.Consumer;
 
 /*
  can only be created as the single result value of a method
@@ -60,5 +61,11 @@ public class InlineValue implements Value {
     @Override
     public ObjectFlow getObjectFlow() {
         return value.getObjectFlow();
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        value.visit(consumer);
+        consumer.accept(this);
     }
 }

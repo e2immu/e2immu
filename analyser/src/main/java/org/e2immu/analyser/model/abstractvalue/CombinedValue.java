@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 // a combined value is NOT a variable value. that means it should not be assigned to a variable
@@ -80,5 +81,11 @@ public class CombinedValue implements Value {
     @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NO_FLOW;
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        values.forEach(v -> visit(consumer));
+        consumer.accept(this);
     }
 }

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -10,6 +11,7 @@ import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -138,10 +140,16 @@ public class ConditionalManager {
     }
 
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
-    public Value escapeCondition() {
+    public Value escapeCondition(EvaluationContext evaluationContext) {
         if (conditional == null || delayedConditional()) return null;
         Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
         if (pre == null) return null;
-        return NegatedValue.negate(pre);
+        Map<Value, Value> translation = new HashMap<>();
+        pre.visit(v -> {
+            if (v instanceof VariableValue) {
+                translation.put(v, new VariableValuePlaceholder((VariableValue)v, evaluationContext, v.getObjectFlow()));
+            }
+        });
+        return NegatedValue.negate(pre.reEvaluate(translation));
     }
 }

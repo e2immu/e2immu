@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class BitwiseAndValue extends PrimitiveValue {
     public final Value lhs;
@@ -97,4 +98,10 @@ public class BitwiseAndValue extends PrimitiveValue {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
 
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        lhs.visit(consumer);
+        rhs.visit(consumer);
+        consumer.accept(this);
+    }
 }

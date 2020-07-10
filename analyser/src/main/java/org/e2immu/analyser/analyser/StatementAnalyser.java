@@ -160,7 +160,7 @@ public class StatementAnalyser {
 
     // whatever that has not been picked up by the notNull and the size escapes
     private static void precondition(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Value precondition = variableProperties.conditionalManager.escapeCondition();
+        Value precondition = variableProperties.conditionalManager.escapeCondition(variableProperties);
         if (precondition != null) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
             if (atLeastFieldOrParameterInvolved) {

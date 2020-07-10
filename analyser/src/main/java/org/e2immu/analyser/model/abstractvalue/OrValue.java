@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
@@ -227,5 +228,11 @@ public class OrValue extends PrimitiveValue {
     @Override
     public Value reEvaluate(Map<Value, Value> translation) {
         return new OrValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        values.forEach(v -> visit(consumer));
+        consumer.accept(this);
     }
 }

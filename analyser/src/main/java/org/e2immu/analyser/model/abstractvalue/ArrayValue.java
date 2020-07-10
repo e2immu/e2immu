@@ -9,6 +9,7 @@ import org.e2immu.analyser.util.ListUtil;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ArrayValue implements Value {
@@ -77,5 +78,24 @@ public class ArrayValue implements Value {
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArrayValue that = (ArrayValue) o;
+        return values.equals(that.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(values);
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        values.forEach(v -> visit(consumer));
+        consumer.accept(this);
     }
 }

@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -165,5 +166,11 @@ public class Instance implements Value {
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        constructorParameterValues.forEach(v -> visit(consumer));
+        consumer.accept(this);
     }
 }

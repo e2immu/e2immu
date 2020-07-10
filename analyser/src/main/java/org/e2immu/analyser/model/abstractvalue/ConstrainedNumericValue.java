@@ -9,6 +9,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrapper {
     public static final double MIN = -Double.MAX_VALUE;
@@ -190,5 +191,11 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     @Override
     public boolean isExpressionOfParameters() {
         return value.isExpressionOfParameters();
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        value.visit(consumer);
+        consumer.accept(this);
     }
 }

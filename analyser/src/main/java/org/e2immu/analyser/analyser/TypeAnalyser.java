@@ -238,9 +238,13 @@ public class TypeAnalyser {
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
         }
-        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get().methods.stream().allMatch(methodInfo ->
-                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
-                        methodInfo.methodAnalysis.get().preconditionForOnlyData.isSet());
+        boolean someModifiedNotSet = typeInfo.typeInspection.get().methods.stream()
+                .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+        if (someModifiedNotSet) return false;
+
+        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get().methods.stream()
+                .filter(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
+                .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForOnlyData.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return false;

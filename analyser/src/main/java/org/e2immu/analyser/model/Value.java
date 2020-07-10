@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotModified;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)
@@ -169,4 +170,8 @@ public interface Value extends Comparable<Value> {
     }
 
     ObjectFlow getObjectFlow();
+
+    default void visit(Consumer<Value> consumer) {
+        consumer.accept(this);
+    }
 }

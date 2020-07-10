@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class NegatedValue extends PrimitiveValue implements ValueWrapper {
@@ -165,5 +166,12 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     @Override
     public boolean isExpressionOfParameters() {
         return value.isExpressionOfParameters();
+    }
+
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        value.visit(consumer);
+        consumer.accept(this);
     }
 }

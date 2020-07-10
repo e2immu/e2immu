@@ -31,6 +31,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class RemainderValue extends PrimitiveValue {
     public final Value lhs;
@@ -105,5 +106,12 @@ public class RemainderValue extends PrimitiveValue {
     @Override
     public boolean isExpressionOfParameters() {
         return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        lhs.visit(consumer);
+        rhs.visit(consumer);
+        consumer.accept(this);
     }
 }

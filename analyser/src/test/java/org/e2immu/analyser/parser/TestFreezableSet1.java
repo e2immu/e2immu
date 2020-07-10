@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.*;
@@ -40,6 +41,15 @@ public class TestFreezableSet1 extends CommonTestRunner {
     public TestFreezableSet1() {
         super(true);
     }
+
+    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, TypeInfo typeInfo) {
+            if (iteration > 0) {
+                Assert.assertEquals("m0", typeInfo.typeAnalysis.get().approvedPreconditions.stream().findFirst().orElseThrow().getValue());
+            }
+        }
+    };
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
@@ -75,6 +85,7 @@ public class TestFreezableSet1 extends CommonTestRunner {
     public void test() throws IOException {
         testClass("FreezableSet1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
 
     }

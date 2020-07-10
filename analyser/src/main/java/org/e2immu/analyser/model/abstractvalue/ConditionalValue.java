@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class ConditionalValue implements Value {
 
@@ -202,5 +203,12 @@ public class ConditionalValue implements Value {
     @Override
     public boolean isExpressionOfParameters() {
         return combinedValue.isExpressionOfParameters();
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        ifTrue.visit(consumer);
+        ifFalse.visit(consumer);
+        consumer.accept(this);
     }
 }

@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class MethodValue implements Value {
@@ -282,4 +283,8 @@ public class MethodValue implements Value {
         }
         throw new UnsupportedOperationException();
     }
-}
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        parameters.forEach(v -> visit(consumer));
+        consumer.accept(this);
+    }}

@@ -25,6 +25,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class PropertyWrapper implements Value, ValueWrapper {
@@ -133,6 +134,12 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return overwriteObjectFlow != null ? overwriteObjectFlow: value.getObjectFlow();
+        return overwriteObjectFlow != null ? overwriteObjectFlow : value.getObjectFlow();
+    }
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        value.visit(consumer);
+        consumer.accept(this);
     }
 }

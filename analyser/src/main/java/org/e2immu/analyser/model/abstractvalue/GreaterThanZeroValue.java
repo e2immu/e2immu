@@ -32,6 +32,7 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
@@ -319,5 +320,12 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             }
         }
         return Map.of();
+    }
+
+
+    @Override
+    public void visit(Consumer<Value> consumer) {
+        value.visit(consumer);
+        consumer.accept(this);
     }
 }
