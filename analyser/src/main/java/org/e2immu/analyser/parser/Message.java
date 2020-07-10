@@ -77,6 +77,7 @@ public class Message {
 
     public static final String ONLY_BEFORE = "Calling method annotated @Only(before=\"x\") when \"x\" has already been @Mark'ed";
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
+    public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
 
     public static final Map<String, Severity> SEVERITY_MAP;
 
@@ -121,6 +122,7 @@ public class Message {
 
         map.put(ONLY_AFTER, Severity.ERROR);
         map.put(ONLY_BEFORE, Severity.ERROR);
+        map.put(ONLY_WRONG_MARK_LABEL, Severity.ERROR);
 
         SEVERITY_MAP = map.build();
     }

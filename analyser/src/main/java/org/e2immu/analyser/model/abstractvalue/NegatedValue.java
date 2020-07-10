@@ -147,7 +147,9 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
     @Override
     public Value nonIndividualCondition() {
-        return value.nonIndividualCondition();
+        Value inside = value.nonIndividualCondition();
+        if (inside == null) return null;
+        return this;
     }
 
     @Override

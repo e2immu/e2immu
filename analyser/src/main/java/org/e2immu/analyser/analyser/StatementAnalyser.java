@@ -457,10 +457,14 @@ public class StatementAnalyser {
         // PART 6: checks for IfElse
 
         Runnable uponUsingConditional;
+        boolean haveADefaultCondition = false;
 
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
+            Objects.requireNonNull(value);
+
             Value previousConditional = variableProperties.conditionalManager.getConditional();
             Value combinedWithConditional = variableProperties.conditionalManager.evaluateWithConditional(value);
+            haveADefaultCondition = true;
 
             // we have no idea which of the 2 remains
             boolean noEffect = combinedWithConditional.equals(previousConditional);
@@ -495,6 +499,7 @@ public class StatementAnalyser {
         List<VariableProperties> evaluationContextsGathered = new ArrayList<>();
         boolean allButLastSubStatementsEscape = true;
         Value defaultCondition = NO_VALUE;
+
         List<Value> conditions = new ArrayList<>();
         List<BreakOrContinueStatement> breakOrContinueStatementsInChildren = new ArrayList<>();
 
@@ -588,7 +593,7 @@ public class StatementAnalyser {
             statement.breakAndContinueStatements.set(breakOrContinueStatementsInChildren);
         }
 
-        if (allButLastSubStatementsEscape && defaultCondition != NO_VALUE) {
+        if (allButLastSubStatementsEscape && haveADefaultCondition) {
             variableProperties.conditionalManager.addToConditional(defaultCondition);
             statement.removeVariablesFromConditional.visit((toRemove, b) ->
                     variableProperties.conditionalManager.variableReassigned(toRemove));

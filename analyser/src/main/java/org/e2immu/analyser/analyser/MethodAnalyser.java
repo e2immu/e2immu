@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.check.CheckConstant;
+import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
@@ -84,6 +85,7 @@ public class MethodAnalyser {
                 CheckConstant.checkConstantForMethods(typeContext, methodInfo);
             }
 
+
             // opposites
             check(methodInfo, Dependent.class, typeContext.dependent.get());
             check(methodInfo, Nullable.class, typeContext.nullable.get());
@@ -92,6 +94,8 @@ public class MethodAnalyser {
 
         CheckSize.checkSizeForMethods(typeContext, methodInfo);
         CheckPrecondition.checkPrecondition(typeContext, methodInfo);
+        CheckOnly.checkOnly(typeContext, methodInfo);
+        CheckOnly.checkMark(typeContext, methodInfo);
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);
     }
@@ -196,8 +200,12 @@ public class MethodAnalyser {
                 markLabel = approvedPreconditions.get(negated);
             } else {
                 log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                methodAnalysis.annotations.put(typeContext.mark.get(), false);
-                methodAnalysis.annotations.put(typeContext.only.get(), false);
+                if (!methodAnalysis.annotations.isSet(typeContext.mark.get())) {
+                    methodAnalysis.annotations.put(typeContext.mark.get(), false);
+                }
+                if (!methodAnalysis.annotations.isSet(typeContext.only.get())) {
+                    methodAnalysis.annotations.put(typeContext.only.get(), false);
+                }
                 return false;
             }
         }
@@ -227,10 +235,12 @@ public class MethodAnalyser {
             AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.mark.get().typeInfo,
                     List.of(new MemberValuePair("value", new StringConstant(markLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
+            methodAnalysis.annotations.put(typeContext.only.get(), false);
         } else {
             AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.only.get().typeInfo,
                     List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(markLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
+            methodAnalysis.annotations.put(typeContext.mark.get(), false);
         }
         return true;
     }
@@ -238,7 +248,7 @@ public class MethodAnalyser {
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.preconditionForOnlyData.isSet()) return false;
         boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
-                field.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE) != Level.DELAY);
+                field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalValueKnown) {
             log(DELAYED, "Delaying compute @Only and @Mark, not all field's final state known in {}", methodInfo.distinguishingName());
             return false;

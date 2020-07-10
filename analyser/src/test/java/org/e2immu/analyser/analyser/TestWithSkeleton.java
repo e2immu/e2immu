@@ -275,7 +275,5 @@ public class TestWithSkeleton {
 
         Value currentValue = variableProperties.currentValue(setRef);
         Assert.assertTrue(currentValue instanceof VariableValue);
-        VariableValue vv = ((VariableValue) currentValue);
-        Assert.assertTrue(vv.multiCopyNonFinalField);
     }
 }

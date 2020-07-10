@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
 import org.junit.Assert;
@@ -48,19 +49,23 @@ public class TestFreezableSet1 extends CommonTestRunner {
             if (iteration > 0) {
                 if ("stream".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertEquals("", methodAnalysis.preconditionForOnlyData.get().toString());
+                    Assert.assertEquals("frozen", methodAnalysis.preconditionForOnlyData.get().toString());
                 }
                 if ("streamEarly".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
+                    Assert.assertEquals("not (frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
                 }
                 if ("add".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.TRUE, modified);
+                    Assert.assertEquals("not (frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
                 }
                 if ("freeze".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.TRUE, modified);
+                    Assert.assertEquals("not (frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
                 }
                 if ("isFrozen".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
+                    Assert.assertSame(UnknownValue.NO_VALUE, methodAnalysis.preconditionForOnlyData.get());
                 }
             }
         }

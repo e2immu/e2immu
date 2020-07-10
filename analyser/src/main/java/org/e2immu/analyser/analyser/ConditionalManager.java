@@ -11,13 +11,13 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ConditionalManager {
 
     private Value conditional;
-    private boolean delayed;
 
     public ConditionalManager(Value conditional) {
         this.conditional = conditional;
@@ -34,9 +34,11 @@ public class ConditionalManager {
     }
 
     public Value evaluateWithConditional(Value value) {
-        if (conditional == null || conditional.isUnknown()) return value;
-        // we take the conditional as a given, and see if the value agrees
+        if (conditional == null) return value; // allow to go delayed
+        // one delayed, all delayed
+        if (delayedConditional() || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
 
+        // we take the conditional as a given, and see if the value agrees
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the conditional
@@ -49,8 +51,9 @@ public class ConditionalManager {
     }
 
     public Value combineWithConditional(Value value) {
-        if (value == null || value.isUnknown()) return conditional;
-        if (conditional == null || conditional.isUnknown()) return value;
+        Objects.requireNonNull(value);
+        if (conditional == null) return value;
+        if (delayedConditional() || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
 
         if (conditional instanceof AndValue) {
             return ((AndValue) conditional).append(value);
@@ -59,7 +62,7 @@ public class ConditionalManager {
     }
 
     public Set<Variable> getNullConditionals(boolean equalToNull) {
-        if (conditional == null) {
+        if (conditional == null || delayedConditional()) {
             return Set.of();
         }
         Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses();
@@ -69,7 +72,7 @@ public class ConditionalManager {
     }
 
     public Map<Variable, Value> getSizeRestrictions() {
-        if (conditional == null) return Map.of();
+        if (conditional == null || delayedConditional()) return Map.of();
         return conditional.individualSizeRestrictions();
     }
 
@@ -103,6 +106,11 @@ public class ConditionalManager {
         return conditional != null;
     }
 
+    // we need a system to be able to delay conditionals, when they are based on the value of fields
+    public boolean delayedConditional() {
+        return conditional == UnknownValue.NO_VALUE;
+    }
+
     public boolean conditionalInErrorState() {
         return BoolValue.TRUE == conditional || BoolValue.FALSE == conditional;
     }
@@ -131,14 +139,9 @@ public class ConditionalManager {
 
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
     public Value escapeCondition() {
-        if (conditional == null) return null;
+        if (conditional == null || delayedConditional()) return null;
         Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
         if (pre == null) return null;
         return NegatedValue.negate(pre);
-    }
-
-    // we need a system to be able to delay conditionals, when they are based on the value of fields
-    public boolean delayedConditional() {
-        return delayed;
     }
 }
