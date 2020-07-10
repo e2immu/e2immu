@@ -46,7 +46,8 @@ public class TestFreezableSet1 extends CommonTestRunner {
         @Override
         public void visit(int iteration, TypeInfo typeInfo) {
             if (iteration > 0) {
-                Assert.assertEquals("m0", typeInfo.typeAnalysis.get().approvedPreconditions.stream().findFirst().orElseThrow().getValue());
+                Assert.assertEquals(1L, typeInfo.typeAnalysis.get().approvedPreconditions.size());
+                Assert.assertEquals("mark", typeInfo.typeAnalysis.get().approvedPreconditions.stream().findFirst().orElseThrow().getValue());
             }
         }
     };

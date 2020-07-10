@@ -263,11 +263,11 @@ public class TypeAnalyser {
             if (modified == Level.TRUE) {
                 Value precondition = methodInfo.methodAnalysis.get().preconditionForOnlyData.get();
                 if (!tempApproved.containsKey(precondition)) {
-                    String markLabel = "m" + count;
+                    String markLabel = "mark" + (count > 0 ? ("" + count) : "");
                     tempApproved.put(precondition, markLabel);
+                    count++;
                 }
             }
-            count++;
         }
         if (tempApproved.isEmpty()) {
             log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);

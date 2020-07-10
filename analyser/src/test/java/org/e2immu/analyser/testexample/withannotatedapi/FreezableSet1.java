@@ -17,7 +17,7 @@ public class FreezableSet1 {
         if(n < 0) throw new UnsupportedOperationException();
     }
 
-    @Only(after = "freeze")
+    @Only(after = "mark")
     @NotModified
     @NotNull1
     public Stream<String> stream() {
@@ -25,7 +25,7 @@ public class FreezableSet1 {
         return set.stream();
     }
 
-    @Only(before = "freeze")
+    @Only(before = "mark")
     @NotModified
     @NotNull1
     public Stream<String> streamEarly() {
@@ -33,15 +33,14 @@ public class FreezableSet1 {
         return set.stream();
     }
 
-    @Only(before = "freeze")
+    @Only(before = "mark")
     @Modified
     public void add(String s) {
         if (frozen) throw new UnsupportedOperationException();
         set.add(s);
     }
 
-    @Mark("freeze")
-    @Only(before = "freeze")
+    @Mark("mark")
     @Modified
     public void freeze() {
         if (frozen) throw new UnsupportedOperationException();

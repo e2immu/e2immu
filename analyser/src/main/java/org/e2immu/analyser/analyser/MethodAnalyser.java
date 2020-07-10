@@ -188,6 +188,10 @@ public class MethodAnalyser {
         Value precondition = methodAnalysis.preconditionForOnlyData.get();
         if (precondition == UnknownValue.NO_VALUE) return false;
         SetOnceMap<Value, String> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
+        if (approvedPreconditions.isEmpty()) {
+            log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
+            return false;
+        }
         boolean after;
         String markLabel;
         if (approvedPreconditions.isSet(precondition)) {
