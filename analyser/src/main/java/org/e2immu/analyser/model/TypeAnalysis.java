@@ -70,7 +70,7 @@ public class TypeAnalysis extends Analysis {
     private final Set<ObjectFlow> constantObjectFlows = new HashSet<>();
 
     public void addConstantObjectFlow(ObjectFlow objectFlow) {
-        if(objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
+        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
         this.constantObjectFlows.add(objectFlow);
     }
 
@@ -79,4 +79,8 @@ public class TypeAnalysis extends Analysis {
     }
 
     public final SetOnceMap<Value, String> approvedPreconditions = new SetOnceMap<>();
+
+    public boolean isEventual() {
+        return !approvedPreconditions.isEmpty();
+    }
 }

@@ -183,7 +183,7 @@ public class TypeAnalyser {
             // this is caused by the fact that some knowledge may come later.
             // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
             if (typeInfo.hasBeenDefined()) {
-                if (analyseOnlyMark(typeInfo)) changes = true;
+                if (analyseOnlyAndMark(typeInfo)) changes = true;
                 if (analyseE1Immutable(typeInfo)) changes = true;
                 if (analyseE2Immutable(typeInfo)) changes = true;
                 if (analyseContainer(typeInfo)) changes = true;
@@ -233,7 +233,7 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    private boolean analyseOnlyMark(TypeInfo typeInfo) {
+    private boolean analyseOnlyAndMark(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
@@ -273,9 +273,11 @@ public class TypeAnalyser {
             log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
             return false;
         }
+
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
-        log(MARK, "Approved preconditions {} in {}", tempApproved.values(), typeInfo.fullyQualifiedName);
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.TRUE);
+        log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return true;
     }
 
@@ -348,22 +350,24 @@ public class TypeAnalyser {
         int typeE2Immutable = Level.value(typeImmutable, Level.E2IMMUTABLE);
         if (typeE2Immutable != Level.DELAY) return false; // we have a decision already
         int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
-        if (typeE1Immutable != Level.TRUE) {
-            log(E2IMMUTABLE, "Type {} is not @E2Immutable, because it is not @E1Immutable", typeInfo.fullyQualifiedName);
+        if (typeE1Immutable != Level.TRUE && typeAnalysis.approvedPreconditions.isEmpty()) {
+            log(E2IMMUTABLE, "Type {} is not @E2Immutable, because it is not (eventually) @E1Immutable", typeInfo.fullyQualifiedName);
             return false;
         }
         int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
+        boolean eventual = typeAnalysis.isEventual();
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
 
             // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
-            // checked with @E1Immutable
+            // checked with @E1Immutable, or eventual
 
             // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
 
             int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
             int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
+            // TODO for now, we'll not be cascading eventually immutable
             // field is of the type of the class being analysed... it will not make the difference.
             if (e2immutable == Level.DELAY && typeInfo == fieldInfo.type.typeInfo) {
                 e2immutable = Level.TRUE;
@@ -376,11 +380,12 @@ public class TypeAnalyser {
             if (e2immutable == Level.FALSE) {
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
 
-                if (modified == Level.DELAY) {
+                // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
+                if (!eventual && modified == Level.DELAY) {
                     log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
                     return false;
                 }
-                if (modified == Level.TRUE) {
+                if (!eventual && modified == Level.TRUE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
                     typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
@@ -401,7 +406,7 @@ public class TypeAnalyser {
             }
         }
 
-        // RULE 3: INDEPENDENCE OF METHODS
+        // RULE 3: INDEPENDENCE OF CONSTRUCTORS
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
             int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
@@ -420,26 +425,30 @@ public class TypeAnalyser {
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-            int returnTypeE2Immutable = Level.value(returnTypeImmutable, Level.E2IMMUTABLE);
-            if (returnTypeE2Immutable == Level.DELAY) {
-                log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
-                return false;
-            }
-            if (returnTypeE2Immutable == Level.FALSE) {
-                // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
-                int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                if (independent == Level.DELAY) {
-                    log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
-                    return false; //not decided
+            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            // in the eventual case, we only need to look at the non-modifying methods
+            if(modified == Level.FALSE || !eventual) {
+                MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+                int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                int returnTypeE2Immutable = Level.value(returnTypeImmutable, Level.E2IMMUTABLE);
+                if (returnTypeE2Immutable == Level.DELAY) {
+                    log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
+                    return false;
                 }
-                if (independent == Level.FALSE) {
-                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
-                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                    return true;
+                if (returnTypeE2Immutable == Level.FALSE) {
+                    // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
+                    int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                    if (independent == Level.DELAY) {
+                        log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                                typeInfo.fullyQualifiedName, methodInfo.name);
+                        return false; //not decided
+                    }
+                    if (independent == Level.FALSE) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
+                                typeInfo.fullyQualifiedName, methodInfo.name);
+                        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                        return true;
+                    }
                 }
             }
         }

@@ -257,6 +257,12 @@ public class MethodAnalyser {
             log(DELAYED, "Delaying compute @Only and @Mark, not all field's final state known in {}", methodInfo.distinguishingName());
             return false;
         }
+        boolean allFieldsFinal = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
+                field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.TRUE);
+        if (allFieldsFinal) {
+            log(MARK, "No point in computing @Mark @Only prep in {}, since all fields are final", methodInfo.distinguishingName());
+            return false;
+        }
         if (!methodAnalysis.precondition.isSet()) {
             methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
             return true;

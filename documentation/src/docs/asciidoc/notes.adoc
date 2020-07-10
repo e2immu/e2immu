@@ -335,7 +335,8 @@ These methods will be marked `@Mark("x")`.
 
 By extension, we can imagine a number of different preconditions x~1~ to x~n~, each bound to some fields.
 
-. every modifying method must have at least one precondition x~i~. It will be marked `@Only(before="xi")`
+. every modifying method must have at least one precondition x~i~.
+It will be marked `@Only(before="xi")`
 . non-modifying methods sporting the precondition x~i~ will be marked `@Only(before="xi")`
 . the modifying methods that invalidate the precondition x~i~ will be marked `@Mark("xi")`
 . non-modifying methods with the negation of the precondition x~i~ will be marked `@Only(after="xi")`
@@ -345,10 +346,11 @@ Strategy for detection:
 
 In the method analyser, we will
 
-. mark tentative preconditions that fit, plus, optionally, the modification that negates it
-. if the type analyser has _approved_ these preconditions, then we mark `@Only()` and potentially also `@Mark`
+. mark tentative preconditions that are based on fields, when we know the `@Final` situation of the fields, and there is at least one `@Variable` (non-`@Final`) field
+. if the type analyser has _approved_ these preconditions, then we annotate with `@Only()`or `@Mark`.
+For `@Mark` the method must assign to one of the fields in the precondition.
 
-In the type analyser, we will, if the conditions are right  (not a record, all modifications known)
+In the type analyser, we will, if the conditions are right (not a record, all modifications known)
 
 . approve conditions
 . use them for `@E1Immutable(after=)` and `@E2Immutable(after=)`
