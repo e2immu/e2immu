@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
@@ -182,6 +183,7 @@ public class TypeAnalyser {
             // this is caused by the fact that some knowledge may come later.
             // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
             if (typeInfo.hasBeenDefined()) {
+                if (analyseOnlyMark(typeInfo)) changes = true;
                 if (analyseE1Immutable(typeInfo)) changes = true;
                 if (analyseE2Immutable(typeInfo)) changes = true;
                 if (analyseContainer(typeInfo)) changes = true;
@@ -229,6 +231,48 @@ public class TypeAnalyser {
         }
         log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",
                 typeInfo.fullyQualifiedName);
+    }
+
+    private boolean analyseOnlyMark(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        if (!typeAnalysis.approvedPreconditions.isEmpty()) {
+            return false; // already done
+        }
+        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get().methods.stream().allMatch(methodInfo ->
+                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
+                        methodInfo.methodAnalysis.get().preconditionForOnlyData.isSet());
+        if (!allPreconditionsOnModifyingMethodsSet) {
+            log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
+            return false;
+        }
+        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get().methods.stream().anyMatch(methodInfo ->
+                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
+                        methodInfo.methodAnalysis.get().preconditionForOnlyData.get() == UnknownValue.NO_VALUE);
+        if (someInvalidPreconditionsOnModifyingMethods) {
+            log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
+            return false;
+        }
+        int count = 0;
+        Map<Value, String> tempApproved = new HashMap<>();
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            if (modified == Level.TRUE) {
+                Value precondition = methodInfo.methodAnalysis.get().preconditionForOnlyData.get();
+                if (!tempApproved.containsKey(precondition)) {
+                    String markLabel = "m" + count;
+                    tempApproved.put(precondition, markLabel);
+                }
+            }
+            count++;
+        }
+        if (tempApproved.isEmpty()) {
+            log(MARK, "No modifying methods in {}", typeInfo.fullyQualifiedName);
+            return false;
+        }
+        // copy into approved preconditions
+        tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
+        log(MARK, "Approved preconditions {} in {}", tempApproved.values(), typeInfo.fullyQualifiedName);
+        return true;
     }
 
     private boolean analyseContainer(TypeInfo typeInfo) {
@@ -340,7 +384,7 @@ public class TypeAnalyser {
                 }
 
                 // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
-                if(fieldInfo.type.typeInfo != typeInfo) {
+                if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
                         log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);

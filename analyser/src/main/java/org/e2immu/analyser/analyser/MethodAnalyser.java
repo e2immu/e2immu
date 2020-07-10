@@ -238,7 +238,7 @@ public class MethodAnalyser {
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.preconditionForOnlyData.isSet()) return false;
         boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
-                field.fieldAnalysis.get().properties.get(VariableProperty.IMMUTABLE) != Level.DELAY);
+                field.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE) != Level.DELAY);
         if (!allFieldsFinalValueKnown) {
             log(DELAYED, "Delaying compute @Only and @Mark, not all field's final state known in {}", methodInfo.distinguishingName());
             return false;

@@ -123,13 +123,17 @@ public class StatementAnalyser {
                 startStatement.neverContinues.set(neverContinues);
             }
             if (!startStatement.escapes.isSet()) {
-                log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
-                startStatement.escapes.set(escapesViaException);
+                if (variableProperties.conditionalManager.delayedConditional()) {
+                    log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.streamIndices());
+                } else {
+                    log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
+                    startStatement.escapes.set(escapesViaException);
 
-                if (escapesViaException) {
-                    notNullEscapes(variableProperties, startStatement);
-                    sizeEscapes(variableProperties, startStatement);
-                    precondition(variableProperties, startStatement);
+                    if (escapesViaException) {
+                        notNullEscapes(variableProperties, startStatement);
+                        sizeEscapes(variableProperties, startStatement);
+                        precondition(variableProperties, startStatement);
+                    }
                 }
             }
             // order is important, because unused gets priority
@@ -159,7 +163,7 @@ public class StatementAnalyser {
         Value precondition = variableProperties.conditionalManager.escapeCondition();
         if (precondition != null) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
-            if(atLeastFieldOrParameterInvolved) {
+            if (atLeastFieldOrParameterInvolved) {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
                 MethodAnalysis methodAnalysis = variableProperties.getCurrentMethod().methodAnalysis.get();
                 if (!methodAnalysis.precondition.isSet()) {

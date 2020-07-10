@@ -12,6 +12,10 @@ public class FreezableSet1 {
     private final Set<String> set = new HashSet<>();
     private boolean frozen;
 
+    private void check(int n) {
+        if(n < 0) throw new UnsupportedOperationException();
+    }
+
     @Only(after = "freeze")
     @NotModified
     @NotNull1

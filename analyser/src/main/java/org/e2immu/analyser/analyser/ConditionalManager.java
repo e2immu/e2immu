@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class ConditionalManager {
 
     private Value conditional;
+    private boolean delayed;
 
     public ConditionalManager(Value conditional) {
         this.conditional = conditional;
@@ -134,5 +135,10 @@ public class ConditionalManager {
         Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
         if (pre == null) return null;
         return NegatedValue.negate(pre);
+    }
+
+    // we need a system to be able to delay conditionals, when they are based on the value of fields
+    public boolean delayedConditional() {
+        return delayed;
     }
 }
