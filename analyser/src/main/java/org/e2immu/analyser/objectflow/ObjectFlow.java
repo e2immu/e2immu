@@ -194,4 +194,25 @@ public class ObjectFlow {
         second.next.addAll(next);
         next.clear();
     }
+
+    /**
+     * @param typeInfo the type to check for
+     * @return also returns true if effectively immutable (not eventually!)
+     */
+    public boolean conditionsMetForEventual(TypeInfo typeInfo) {
+        Set<String> set = typeInfo.typeAnalysis.get().marksRequiredForImmutable();
+        // set.isEmpty() is a speed-up, marks() could be expensive && not necessary
+        return set.isEmpty() || marks().containsAll(set);
+    }
+
+    /**
+     * convenience method
+     *
+     * @param returnType te type to check for, uses bestTypeInfo
+     * @return also returns true if effectively immutable (not eventually!)
+     */
+    public boolean conditionsMetForEventual(ParameterizedType returnType) {
+        TypeInfo typeInfo = returnType.bestTypeInfo();
+        return typeInfo != null && conditionsMetForEventual(typeInfo);
+    }
 }

@@ -21,10 +21,8 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -76,11 +74,14 @@ public class MethodAnalysis extends Analysis {
             case INDEPENDENT:
             case SIZE:
                 return getPropertyCheckOverrides(variableProperty);
+
             case MODIFIED:
-                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
+                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
+                        && returnedObjectFlow.conditionsMetForEventual(typeInfo)) {
                     return Level.FALSE;
                 }
                 return getPropertyCheckOverrides(variableProperty);
+
             case NOT_NULL:
                 if (returnType.isPrimitive()) return Level.TRUE;
                 int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
@@ -88,13 +89,20 @@ public class MethodAnalysis extends Analysis {
                 if (fluent == Level.TRUE) return Level.best(Level.TRUE,
                         typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
+
             case IMMUTABLE:
-            case CONTAINER:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
-                if (Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE)) {
-                    return variableProperty.best;
-                }
-                return super.getProperty(variableProperty);
+                int fromReturnType = Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE) &&
+                        returnedObjectFlow.conditionsMetForEventual(returnType) ? variableProperty.best : Level.DELAY;
+                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), fromReturnType);
+
+            case CONTAINER:
+                // don't understand why this code is here... return type @E2Immutable does NOT imply container
+                //  if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
+                //  if (Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE)) {
+                //      return variableProperty.best;
+                //   }
+                //  return super.getProperty(variableProperty);
             default:
         }
         return super.getProperty(variableProperty);

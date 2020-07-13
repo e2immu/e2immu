@@ -30,14 +30,15 @@ public @interface E1Immutable {
 
     /**
      * @return when the type is effectively final, set the empty string.
-     * When it is eventually final, return a boolean expression of strings from <code>@Mark</code>
+     * When it is eventually final, return a comma-separated list of strings from <code>@Mark</code>
      * values on some of the assigning methods of the type. After these have been called, the
      * type will become effectively final.
      */
     String after() default "";
 
     /**
-     * @return when true, the type is E2Final after the framework has made all modifications.
+     * @return when true, the type is eventually final after the framework has made all modifications.
+     *
      * This is a short-hand for adding <code>@Only(framework=true) @Mark("framework")</code> on all modifying methods,
      * and setting <code>after="framework"</code> on this annotation.
      */

@@ -24,10 +24,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /*
- Opposite of @E2Immutable.
+ Opposite of @E1Immutable.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
 public @interface ExternallyMutable {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    /**
+     * @return when the type is permanently mutable, set the empty string.
+     * When it is eventually immutable, set a comma-separated list of strings from <code>@Mark</code>
+     * values on some of the modifying methods of the type. Before all of these have been called, the
+     * type is still mutable. Afterwards, it has become eventually immutable.
+     */
+    String before() default "";
 }

@@ -1,11 +1,9 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 
-@E1Immutable(after = "mark")
+@E1Container(after = "mark")
+@ExternallyMutable(before = "mark")
 public class EventuallyE1Immutable1 {
 
     @Container

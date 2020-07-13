@@ -677,4 +677,9 @@ public class ParameterizedType {
         return this; // TODO implement!!
     }
 
+    public boolean isEventual() {
+        TypeInfo typeInfo = bestTypeInfo();
+        if (typeInfo == null) return false;
+        return typeInfo.typeAnalysis.get().isEventual();
+    }
 }

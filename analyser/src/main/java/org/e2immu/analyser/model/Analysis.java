@@ -174,26 +174,26 @@ public abstract class Analysis {
             }
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
-                    annotations.put(makeEventualAnnotation(typeContext.e2Container.get()), true);
+                    annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), true);
                 }
             } else {
-                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e2Container.get()), false);
+                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), false);
                 if (immutable > minImmutable)
-                    annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get()), true);
+                    annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
             }
         } else if (Level.haveTrueAt(immutable, Level.E1IMMUTABLE)) {
             if (isType) {
-                annotations.put(typeContext.externallyMutable.get(), true);
+                annotations.put(makeEventualAnnotation(typeContext.externallyMutable.get(), false), true);
                 annotations.put(typeContext.mutable.get(), false);
             }
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
-                    annotations.put(makeEventualAnnotation(typeContext.e1Container.get()), true);
+                    annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
                 }
             } else {
-                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e1Container.get()), false);
+                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), false);
                 if (immutable > minImmutable)
-                    annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get()), true);
+                    annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
             }
         } else {
             if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
@@ -266,12 +266,12 @@ public abstract class Analysis {
         preconditionFromAnalysisToAnnotation(typeContext);
     }
 
-    private AnnotationExpression makeEventualAnnotation(AnnotationExpression annotationExpression) {
+    private AnnotationExpression makeEventualAnnotation(AnnotationExpression annotationExpression, boolean after) {
         boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
         if (eventual) {
-            String after = ((TypeAnalysis) this).approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.joining(" && "));
-            return AnnotationExpression.fromAnalyserExpressions(annotationExpression.typeInfo, List.of(new MemberValuePair("after",
-                    new StringConstant(after))));
+            String csv = ((TypeAnalysis) this).approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.joining(", "));
+            return AnnotationExpression.fromAnalyserExpressions(annotationExpression.typeInfo,
+                    List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(csv))));
         }
         return annotationExpression;
     }

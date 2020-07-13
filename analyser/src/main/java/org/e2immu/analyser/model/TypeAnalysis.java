@@ -83,4 +83,8 @@ public class TypeAnalysis extends Analysis {
     public boolean isEventual() {
         return !approvedPreconditions.isEmpty();
     }
+
+    public Set<String> marksRequiredForImmutable() {
+        return approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.toSet());
+    }
 }

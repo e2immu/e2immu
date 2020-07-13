@@ -1097,4 +1097,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public String detailedName() {
         return fullyQualifiedName;
     }
+
+    public boolean isEventual() {
+        return typeAnalysis.get().isEventual();
+    }
 }
