@@ -30,12 +30,14 @@ import java.util.Objects;
 import java.util.Set;
 
 // used in a return statement, to freeze the properties
+// also in @Mark @Only computation to hold the approved precondition values
 
 public class VariableValuePlaceholder extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
     public final ObjectFlow objectFlow;
+    private final Map<VariableProperty, Integer> properties;
 
     public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
         super(original.variable);
@@ -45,6 +47,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
         for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
             builder.put(property, evaluationContext.getProperty(original, property));
         }
+        properties = builder.build();
     }
 
     @Override
@@ -67,7 +70,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     @Override
@@ -77,7 +80,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     @Override

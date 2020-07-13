@@ -95,7 +95,7 @@ public class ArrayValue implements Value {
 
     @Override
     public void visit(Consumer<Value> consumer) {
-        values.forEach(v -> visit(consumer));
+        values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
     }
 }

@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -305,7 +302,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions() {
+    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
         XB xb = extract();
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
             ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
@@ -314,7 +311,10 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 if (methodValue.methodInfo.typeInfo.sizeMethod() == methodValue.methodInfo) {
                     // I am the size method!
                     if (methodValue.object instanceof ValueWithVariable) {
-                        return Map.of(((ValueWithVariable) methodValue.object).variable, this);
+                        ValueWithVariable v = (ValueWithVariable) methodValue.object;
+                        if (!parametersOnly || v.variable instanceof ParameterInfo) {
+                            return Map.of(v.variable, this);
+                        }
                     }
                 }
             }

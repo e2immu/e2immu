@@ -41,7 +41,7 @@ public class TestDependencyGraph extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("sorted".equals(methodInfo.name) && "3.0.0".equals(numberedStatement.streamIndices())) {
                 Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", conditional.toString());
-                Map<Variable, Value> isr = conditional.individualSizeRestrictions();
+                Map<Variable, Value> isr = conditional.individualSizeRestrictions(false);
                 Assert.assertEquals(1, isr.size());
                 Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
                 Assert.assertEquals("toDo", entry.getKey().name());

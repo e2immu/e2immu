@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
@@ -126,15 +123,15 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses() {
-        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses();
+    public Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
+        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses(parametersOnly);
         return individualNullClauses.entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions() {
-        return value.individualSizeRestrictions().entrySet()
+    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
+        return value.individualSizeRestrictions(parametersOnly).entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue())));
     }
 

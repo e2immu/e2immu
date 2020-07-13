@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -206,14 +207,14 @@ public class OrValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses() {
-        return values.stream().flatMap(v -> v.individualNullClauses().entrySet().stream())
+    public Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
+        return values.stream().flatMap(v -> v.individualNullClauses(parametersOnly).entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions() {
-        return values.stream().flatMap(v -> v.individualSizeRestrictions().entrySet().stream())
+    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
+        return values.stream().flatMap(v -> v.individualSizeRestrictions(parametersOnly).entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -232,7 +233,7 @@ public class OrValue extends PrimitiveValue {
 
     @Override
     public void visit(Consumer<Value> consumer) {
-        values.forEach(v -> visit(consumer));
+        values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
     }
 }

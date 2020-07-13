@@ -68,7 +68,8 @@ public abstract class CommonTestRunner {
                 UTILITY_CLASS,
                 NOT_NULL,
                 NOT_MODIFIED,
-                PATTERN);
+                PATTERN,
+                MARK);
     }
 
     protected TypeContext testClass(String className, int errorsToExpect) throws IOException {

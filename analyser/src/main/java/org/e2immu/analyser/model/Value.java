@@ -127,10 +127,7 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    /**
-     * @return a map with all clauses, true for V == null, false for V != null
-     */
-    default Map<Variable, Boolean> individualNullClauses() {
+    default Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
         return Map.of();
     }
 
@@ -147,7 +144,7 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default Map<Variable, Value> individualSizeRestrictions() {
+    default Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
         return Map.of();
     }
 
@@ -164,7 +161,8 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
-    // sort of the opposite of the combination of individualSizeRestrictions() and individualNullClauses()
+    // exactly the complement of the combination of individualSizeRestrictions() and individualNullClauses()
+    // used for @Mark, @Only
     default Value nonIndividualCondition() {
         return this;
     }

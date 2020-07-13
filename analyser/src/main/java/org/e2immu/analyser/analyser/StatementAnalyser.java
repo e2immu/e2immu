@@ -185,12 +185,11 @@ public class StatementAnalyser {
     }
 
     private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true);
+        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true, true);
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
-            if (nullVariable instanceof ParameterInfo) {
-                ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
-            }
+            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
+
             // as a context property
             variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, Level.TRUE);
             if (variableProperties.uponUsingConditional != null) {
@@ -208,17 +207,16 @@ public class StatementAnalyser {
     }
 
     private static void sizeEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions();
+        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions(true);
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
-            Variable variable = entry.getKey();
+            ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
             Value negated = NegatedValue.negate(entry.getValue());
-            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", variable.detailedString(), negated);
+            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.detailedString(), negated);
             int sizeRestriction = negated.encodedSizeRestriction();
             if (sizeRestriction > 0) { // if the complement is a meaningful restriction
-                if (variable instanceof ParameterInfo) {
-                    ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
-                }
-                variableProperties.addProperty(variable, VariableProperty.SIZE, sizeRestriction);
+                parameterInfo.parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
+
+                variableProperties.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
                 if (variableProperties.uponUsingConditional != null) {
                     log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                     variableProperties.uponUsingConditional.run();
@@ -228,8 +226,8 @@ public class StatementAnalyser {
                 // the not-null is already in the properties. we need to communicate this one level up.
 
                 // we're guarding because we can have these escapes for not-nulls as well
-                if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
-                    startStatement.parent.removeVariablesFromConditional.put(variable, true);
+                if (!startStatement.parent.removeVariablesFromConditional.isSet(parameterInfo)) {
+                    startStatement.parent.removeVariablesFromConditional.put(parameterInfo, true);
                 }
             }
         }
@@ -467,7 +465,7 @@ public class StatementAnalyser {
             haveADefaultCondition = true;
 
             // we have no idea which of the 2 remains
-            boolean noEffect = combinedWithConditional.equals(previousConditional);
+            boolean noEffect = combinedWithConditional.equals(previousConditional) && combinedWithConditional != NO_VALUE;
 
             if (combinedWithConditional.isConstant() || noEffect) {
                 if (!statement.inErrorState()) {
@@ -476,7 +474,7 @@ public class StatementAnalyser {
                 }
             }
             uponUsingConditional = () -> {
-                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement");
+                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statement.streamIndices());
                 if (!statement.errorValue.isSet()) statement.errorValue.set(true);
             };
         } else {

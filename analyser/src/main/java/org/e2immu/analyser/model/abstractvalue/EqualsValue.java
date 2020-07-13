@@ -56,7 +56,7 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     // testing only
-    public static Value equals(Value l, Value r ) {
+    public static Value equals(Value l, Value r) {
         return equals(l, r, ObjectFlow.NO_FLOW);
     }
 
@@ -96,9 +96,14 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses() {
-        return lhs instanceof NullValue && rhs instanceof ValueWithVariable ? Map.of(((ValueWithVariable) rhs).variable, true) :
-                Map.of();
+    public Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
+        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
+            ValueWithVariable v = (ValueWithVariable) rhs;
+            if (!parametersOnly || v.variable instanceof ParameterInfo) {
+                return Map.of(v.variable, true);
+            }
+        }
+        return Map.of();
     }
 
     @Override
@@ -128,7 +133,7 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions() {
+    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
         // constants always left, methods always right;
         // methods for size should be wrapped with a ConstrainedNumericValue
         if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) rhs).value instanceof MethodValue) {
@@ -137,7 +142,9 @@ public class EqualsValue extends PrimitiveValue {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {
                     VariableValue variableValue = (VariableValue) methodValue.object;
-                    return Map.of(variableValue.variable, this);
+                    if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
+                        return Map.of(variableValue.variable, this);
+                    }
                 }
             }
         }
@@ -146,8 +153,8 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public Value nonIndividualCondition() {
-        if (!individualSizeRestrictions().isEmpty()) return null;
-        if (!individualNullClauses().isEmpty()) return null;
+        if (!individualSizeRestrictions(true).isEmpty()) return null;
+        if (!individualNullClauses(true).isEmpty()) return null;
         return this;
     }
 

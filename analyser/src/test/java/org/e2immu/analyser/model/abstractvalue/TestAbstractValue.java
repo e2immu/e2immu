@@ -18,26 +18,17 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
-import java.util.Set;
 
 public class TestAbstractValue extends CommonAbstractValue {
 
@@ -112,19 +103,19 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testIsNull() {
         Value v = new EqualsValue(a, NullValue.NULL_VALUE);
         Assert.assertEquals("null == a", v.toString());
-        Map<Variable, Boolean> nullClauses = v.individualNullClauses();
+        Map<Variable, Boolean> nullClauses = v.individualNullClauses(false);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
         Value v2 = new EqualsValue(b, NullValue.NULL_VALUE);
         Assert.assertEquals("null == b", v2.toString());
-        Map<Variable, Boolean> nullClauses2 = v2.individualNullClauses();
+        Map<Variable, Boolean> nullClauses2 = v2.individualNullClauses(false);
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
         Value orValue = new OrValue().append(v, NegatedValue.negate(v2));
         Assert.assertEquals("(null == a or not (null == b))", orValue.toString());
-        Map<Variable, Boolean> nullClausesAnd = orValue.individualNullClauses();
+        Map<Variable, Boolean> nullClausesAnd = orValue.individualNullClauses(false);
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
         Assert.assertEquals(false, nullClausesAnd.get(vb));
@@ -134,7 +125,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testIsNotNull() {
         Value v = NegatedValue.negate(new EqualsValue(NullValue.NULL_VALUE, a));
         Assert.assertEquals("not (null == a)", v.toString());
-        Map<Variable, Boolean> nullClauses = v.individualNullClauses();
+        Map<Variable, Boolean> nullClauses = v.individualNullClauses(false);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(false, nullClauses.get(va));
     }

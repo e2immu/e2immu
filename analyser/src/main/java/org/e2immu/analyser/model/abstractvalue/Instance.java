@@ -170,7 +170,7 @@ public class Instance implements Value {
 
     @Override
     public void visit(Consumer<Value> consumer) {
-        constructorParameterValues.forEach(v -> visit(consumer));
+        constructorParameterValues.forEach(v -> v.visit(consumer));
         consumer.accept(this);
     }
 }

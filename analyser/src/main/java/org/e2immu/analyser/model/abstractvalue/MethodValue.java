@@ -40,7 +40,7 @@ public class MethodValue implements Value {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
-        this.objectFlow =  Objects.requireNonNull(objectFlow);
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override
@@ -254,21 +254,23 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions() {
+    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
         MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
         if (sizeMethod != null) {
             int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (size >= Level.TRUE && modified == Level.FALSE && object instanceof VariableValue) {
                 VariableValue variableValue = (VariableValue) object;
-                Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
-                Value comparison;
-                if (Analysis.haveEquals(size)) {
-                    comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv, null);
-                } else {
-                    comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true, null);
+                if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
+                    Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
+                    Value comparison;
+                    if (Analysis.haveEquals(size)) {
+                        comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv, null);
+                    } else {
+                        comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true, null);
+                    }
+                    return Map.of(variableValue.variable, comparison);
                 }
-                return Map.of(variableValue.variable, comparison);
             }
         }
         return Map.of();
@@ -283,8 +285,10 @@ public class MethodValue implements Value {
         }
         throw new UnsupportedOperationException();
     }
+
     @Override
     public void visit(Consumer<Value> consumer) {
-        parameters.forEach(v -> visit(consumer));
+        parameters.forEach(v -> v.visit(consumer));
         consumer.accept(this);
-    }}
+    }
+}

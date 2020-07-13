@@ -1,15 +1,10 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,19 +58,19 @@ public class ConditionalManager {
         return new AndValue(value.getObjectFlow()).append(conditional, value);
     }
 
-    public Set<Variable> getNullConditionals(boolean equalToNull) {
+    public Set<Variable> getNullConditionals(boolean equalToNull, boolean parametersOnly) {
         if (conditional == null || delayedConditional()) {
             return Set.of();
         }
-        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses();
+        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses(parametersOnly);
         return individualNullClauses.entrySet()
                 .stream().filter(e -> e.getValue() == equalToNull)
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    public Map<Variable, Value> getSizeRestrictions() {
+    public Map<Variable, Value> getSizeRestrictions(boolean parametersOnly) {
         if (conditional == null || delayedConditional()) return Map.of();
-        return conditional.individualSizeRestrictions();
+        return conditional.individualSizeRestrictions(parametersOnly);
     }
 
     public int notNull(Value value) {
@@ -147,7 +142,7 @@ public class ConditionalManager {
         Map<Value, Value> translation = new HashMap<>();
         pre.visit(v -> {
             if (v instanceof VariableValue) {
-                translation.put(v, new VariableValuePlaceholder((VariableValue)v, evaluationContext, v.getObjectFlow()));
+                translation.put(v, new VariableValuePlaceholder((VariableValue) v, evaluationContext, v.getObjectFlow()));
             }
         });
         return NegatedValue.negate(pre.reEvaluate(translation));

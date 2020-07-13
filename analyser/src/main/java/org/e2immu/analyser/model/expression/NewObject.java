@@ -159,7 +159,7 @@ public class NewObject implements HasParameterExpressions {
                 ObjectFlow source = parameterValue.getObjectFlow();
                 if (source != ObjectFlow.NO_FLOW) {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
-                    if(destination != ObjectFlow.NO_FLOW) {
+                    if (destination != ObjectFlow.NO_FLOW) {
                         source.addNonModifyingCallOut(destination);
                         destination.addMethodCallOrigin(source);
                     }
@@ -178,7 +178,7 @@ public class NewObject implements HasParameterExpressions {
             Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
             Value reEvaluated = precondition.reEvaluate(translationMap);
             // from the result we either may infer another condition, or values to be set...
-            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses();
+            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(false);
             for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
                 if (!nullClauseEntry.getValue()) {
                     evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, Level.TRUE);
