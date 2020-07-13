@@ -39,7 +39,7 @@ public class TestLazy extends CommonTestRunner {
         }
         if ("get".equals(d.methodInfo.name) && "Lazy.this.t".equals(d.variableName) && d.iteration > 0) {
             if ("2.0.0".equals(d.statementId)) {
-                Assert.assertEquals("supplier.get(),@NotNull,@Size", d.currentValue.toString());
+                Assert.assertEquals("supplier.get(),@NotNull", d.currentValue.toString());
                 Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                 Assert.assertEquals(1, d.currentValue.variables().size());
             }

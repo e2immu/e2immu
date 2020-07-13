@@ -39,7 +39,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public final Map<VariableProperty, Integer> properties;
     public final ObjectFlow overwriteObjectFlow;
 
-    public PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         this.value = value;
         this.properties = properties;
         overwriteObjectFlow = objectFlow;
@@ -97,8 +97,9 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public String toString() {
-        return value.toString() + "," + properties.keySet().stream()
-                .map(VariableProperty::toString).sorted().collect(Collectors.joining(","));
+        return value.toString() + "," + properties.entrySet().stream()
+                .filter(e -> e.getValue() > Level.FALSE)
+                .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
     }
 
 

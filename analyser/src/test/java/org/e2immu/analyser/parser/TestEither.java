@@ -59,7 +59,7 @@ public class TestEither extends CommonTestRunner {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
                 ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
-                Assert.assertEquals("null == left?orElse:left", conditionalValue.toString());
+                Assert.assertEquals("null == left?orElse,@NotNull:left", conditionalValue.toString());
                 Assert.assertEquals(Level.TRUE, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
