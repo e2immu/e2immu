@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.StaticOrigin;
+import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -40,7 +40,10 @@ public interface EvaluationContext {
 
     // can be null, in evaluation of lambda expressions
     MethodInfo getCurrentMethod();
-    default FieldInfo getCurrentField() { return null; }
+
+    default FieldInfo getCurrentField() {
+        return null;
+    }
 
     NumberedStatement getCurrentStatement();
 
@@ -119,13 +122,15 @@ public interface EvaluationContext {
 
     default ObjectFlow registerConstantObjectFlow(ParameterizedType parameterizedType) {
         ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, StaticOrigin.LITERAL);
-        getCurrentType().typeAnalysis.get().addConstantObjectFlow(objectFlow);
-        return objectFlow;
+        return getCurrentType().typeAnalysis.get().ensureConstantObjectFlow(objectFlow);
     }
 
     ObjectFlow getObjectFlow(Variable variable);
 
-    default void updateObjectFlow(Variable variable, ObjectFlow second) { throw new UnsupportedOperationException(); }
+    default void updateObjectFlow(Variable variable, ObjectFlow second) {
+        throw new UnsupportedOperationException();
+    }
 
-    default void reassigned(Variable variable) { }
+    default void reassigned(Variable variable) {
+    }
 }

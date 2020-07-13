@@ -1,11 +1,16 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.origin;
+
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MethodCalls implements Origin {
+// internal origin of a flow as a result (return value) of a method call
+
+public class ResultOfMethodCall implements Origin {
 
     final Set<ObjectFlow> objectFlows = new HashSet<>();
 
@@ -22,7 +27,7 @@ public class MethodCalls implements Origin {
     @Override
     public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
         if (detailed) {
-            return "method calls: [" +
+            return "parameter: [" +
                     objectFlows.stream()
                             .map(of -> visited.contains(of) ? of.visited() : of.safeToString(visited, false))
                             .collect(Collectors.joining(", ")) + "]";
@@ -33,5 +38,17 @@ public class MethodCalls implements Origin {
     // mainly used for testing
     public boolean contains(ObjectFlow objectFlow) {
         return objectFlows.contains(objectFlow);
+    }
+
+    public void replaceSource(ObjectFlow oldObjectFlow, ObjectFlow newObjectFlow) {
+        objectFlows.remove(oldObjectFlow);
+        objectFlows.add(newObjectFlow);
+    }
+
+    @Override
+    public void addBiDirectionalLink(ObjectFlow destination) {
+        for(ObjectFlow objectFlow: objectFlows) {
+            objectFlow.addNext(destination);
+        }
     }
 }

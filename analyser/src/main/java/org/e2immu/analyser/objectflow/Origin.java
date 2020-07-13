@@ -7,4 +7,7 @@ public interface Origin {
     Stream<ObjectFlow> sources();
 
     String safeToString(Set<ObjectFlow> visited, boolean detailed);
+
+    // add bi-directional link
+    void addBiDirectionalLink(ObjectFlow destination);
 }

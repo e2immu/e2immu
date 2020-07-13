@@ -24,7 +24,7 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.MethodCalls;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,10 +40,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("KeyValue".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
             if ("key".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof MethodCalls);
+                Assert.assertTrue(d.objectFlow.origin instanceof CallOutsArgumentToParameter);
             }
             if ("KeyValue.this.key".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof MethodCalls);
+                Assert.assertTrue(d.objectFlow.origin instanceof CallOutsArgumentToParameter);
             }
         }
     };
@@ -86,8 +86,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
         MethodInfo keyValueConstructor = keyValue.typeInspection.get().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
         ObjectFlow objectFlowKey = key.parameterAnalysis.get().objectFlow;
-        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowKey.getOrigin() instanceof MethodCalls);
-        MethodCalls methodCalls = (MethodCalls) objectFlowKey.getOrigin();
+        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowKey.getOrigin() instanceof CallOutsArgumentToParameter);
+        CallOutsArgumentToParameter methodCalls = (CallOutsArgumentToParameter) objectFlowKey.getOrigin();
 
         Assert.assertEquals(1L, methodCalls.sources().count());
         ObjectFlow keyConstant = methodCalls.sources().findAny().orElseThrow();
@@ -98,7 +98,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
         ParameterInfo value = keyValueConstructor.methodInspection.get().parameters.get(1);
         ObjectFlow objectFlowValue = value.parameterAnalysis.get().objectFlow;
-        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowValue.getOrigin() instanceof MethodCalls);
+        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowValue.getOrigin() instanceof CallOutsArgumentToParameter);
 
         MethodInfo useKv = objectFlow1.typeInspection.get().methods.stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
         ParameterInfo k = useKv.methodInspection.get().parameters.get(0);

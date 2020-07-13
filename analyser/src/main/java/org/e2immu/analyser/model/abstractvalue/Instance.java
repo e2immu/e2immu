@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.Location;
-import org.e2immu.analyser.objectflow.ObjectCreation;
+import org.e2immu.analyser.objectflow.origin.ObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;

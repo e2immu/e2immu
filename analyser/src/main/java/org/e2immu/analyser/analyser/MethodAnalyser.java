@@ -111,33 +111,27 @@ public class MethodAnalyser {
     public boolean analyse(MethodInfo methodInfo, VariableProperties methodProperties) {
         List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().statements;
         if (!statements.isEmpty()) {
-            return analyseMethod(methodInfo, methodProperties, statements);
+            boolean changes = false;
+            log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
+
+            if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
+                List<NumberedStatement> numberedStatements = new LinkedList<>();
+                Stack<Integer> indices = new Stack<>();
+                CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements,
+                        new SideEffectContext(methodInfo));
+                methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
+                changes = true;
+            }
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                methodProperties.createLocalVariableOrParameter(parameterInfo);
+            }
+            if (analyseMethod(methodInfo, methodProperties)) changes = true;
+            return changes;
         }
         return false;
     }
 
-    // return when there have been changes
-    private boolean analyseMethod(MethodInfo methodInfo, VariableProperties methodProperties, List<Statement> statements) {
-        boolean changes = false;
-
-        log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
-
-        if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
-            List<NumberedStatement> numberedStatements = new LinkedList<>();
-            Stack<Integer> indices = new Stack<>();
-            CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements,
-                    new SideEffectContext(methodInfo));
-            methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
-            changes = true;
-        }
-        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            methodProperties.createLocalVariableOrParameter(parameterInfo);
-        }
-        if (analyseFlow(methodInfo, methodProperties)) changes = true;
-        return changes;
-    }
-
-    private boolean analyseFlow(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private boolean analyseMethod(MethodInfo methodInfo, VariableProperties methodProperties) {
         try {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
@@ -317,7 +311,7 @@ public class MethodAnalyser {
         Value value = null;
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
-            methodAnalysis.setReturnedObjectFlow(single.getObjectFlow());
+            methodAnalysis.ensureReturnedObjectFlow(single.getObjectFlow());
             if (single.isConstant()) {
                 value = single;
             } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {

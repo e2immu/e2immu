@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.MethodCalls;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
@@ -49,7 +49,7 @@ public class ParameterAnalysis extends Analysis {
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
         this.location = new Location(parameterInfo);
-        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, new MethodCalls());
+        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, new CallOutsArgumentToParameter());
     }
 
     @Override

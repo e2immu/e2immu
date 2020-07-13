@@ -1,7 +1,10 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.origin;
 
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 
 import java.util.List;
 import java.util.Set;
@@ -30,5 +33,10 @@ public class ObjectCreation implements Origin {
     @Override
     public Stream<ObjectFlow> sources() {
         return Stream.of();
+    }
+
+    @Override
+    public void addBiDirectionalLink(ObjectFlow destination) {
+        // there is no bi-directional link here; it is the start of a flow
     }
 }

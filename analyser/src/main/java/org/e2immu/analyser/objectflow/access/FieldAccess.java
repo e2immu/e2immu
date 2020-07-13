@@ -1,12 +1,12 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.access;
 
 import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.objectflow.Access;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.Nullable;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 public class FieldAccess implements Access {
     public final FieldInfo fieldInfo;

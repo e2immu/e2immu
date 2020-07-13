@@ -10,21 +10,19 @@ In its simplest form, the method creates an object, calls some methods on it, an
 return new StringBuider().append(i).append("+").append(j).toString();
 ----
 
-In general, there are four different ways of moving the object outside the creating method:
+In general, there are three different ways of moving the object outside the creating method:
 
 . the method returns the newly created object
 . the method passes on the newly created object as an argument to a method call (either static, or on another object).
-Here, we distinguish two cases:
-
-.. inside the method call, recursively, the object persists
-.. inside the method call, recursively, the object is never stored
 . the method assigns the newly created object to a field inside the class.
 
-There are three different origins:
+There are four different origins:
 
-. new object creation
-. parents flows, either objects coming in via a parameter, or chaining inside a method
-. a field
+. new object creation (via the `new` keyword)
+. incoming flows from outside the method via parameters, or as a return value of method calls
+. chaining of flows inside a method
+. literals (attached as statics in the type)
+. #TODO# the result of binary operators (should become method call flows)
 
 
 In the light of eventual immutability, we consider a state change where, after calling a certain method, the object becomes immutable.
@@ -33,12 +31,56 @@ Once immutable, calling one of the modifying methods results in an error.
 The type of the object flow is as specific as we can be.
 
 We do not create flows inside a class, i.e., on the `this` object.
-We do not create flows for primitives.
 
-=== Components of an object flow object
+=== Components of an object flow
 
 Many instances of the `ObjectFlow` object linked together describe a single object flow.
-The object has the following components:
+The object has the following defining components:
+
+* a type
+* a location
+* an origin
+
+augmented by the optional components:
+
+* a (potentially empty) list of non-modifying method and field accesses
+* a (potentially empty) list of non-modifying method call-outs (where the flow is used as an argument)
+* optionally one modifying method access or one modifying method call-out, but not both
+* a (potentially empty) list of successor flows
+
+It is important to note that we allow only modification in the flow object, while we record all non-modifying ones without keeping track of the sequence.
+As soon as the analyser encounters a second modifying call, the object flow splits into two flows, each with one modifying call or call-out.
+The main reason is that each modification may be the one causing a state change (from mutable into immutable).
+
+=== Registration of an object flow
+
+Parameters are one of the obvious origins for object flows in a method: they start with an object flow created by default in `ParameterAnalysis`, using a `CallOutsArgumentToParameter` origin.
+Inside this `CallOutsArgumentToParameter` object, the analyser registers all call-outs object flows (object flows of arguments to the parameter's method call).
+
+Inside a method, the `new` keyword creates a new object flow which is registered in the `internalObjectFlows` variable in `MethodAnalysis`.
+Given that we need to distinguish between modifying and non-modifying method calls (both on the object, and call-outs), registration of the flow may have to be delayed, or redone.
+
+These types of flows (incoming via parameters, or newly created objects) can exit the method by assigning them to a field.
+Other methods can access fields, so there must be a flow object present from the start.
+At the point of assignment, the two flows objects may have to be merged.
+
+The `return` statements are the second exit point for a flow.
+They have to be present as soon as the analyser knows the modification status of the method, because then it starts recording method calls and call-outs.
+
+To summarize:
+
+. parameters have an object flow from the start
+. fields and methods have one for registering access, which can be merged into a more important flow object
+. internal flow objects only get registered as soon as none of the method accesses and call-outs are delayed because of modification computations
+. types hold object flows for literals
+
+
+=== Splitting and joining
+
+Naturally in code, object flows split into different tracks, and may be joined later on.
+#TODO#
+
+=== Old #TODO#
 
 * a `Location`, consisting of a method or field initialiser, the type, and an index number: together they provide uniqueness, and the _where_ and _what_.
 * either a new creation, or one or more links to parent `ObjectFlow` objects, which act as a source.
@@ -105,8 +147,7 @@ In the locations `UsingX.x12` and `UsingX.x44` we create flows that consists sol
 In the `mix()` method, we create a flow for the argument `x`.
 It consists of links to source flows (those flows calling out to `mix`), and two references to a field access.
 We create a flow for the return statement consisting of a creation of type `X`, and the set of links to the return statement.
-The creation call links to a newly created flow with origin `x12`, and field access `i`,
-and, similarly, to a newly created flow with origin `x44` and field access `j`.
+The creation call links to a newly created flow with origin `x12`, and field access `i`, and, similarly, to a newly created flow with origin `x44` and field access `j`.
 
 The flow in `UsingX.toString()` is a concatenation of strings.
 Regardless of the implementation of the concatenation, the flow should connect to the `X.toString()` method's object flow twice:
@@ -129,6 +170,7 @@ class UsingX_2 {
     }
 }
 ----
+
 A flow passing through this class ends in `X.i`.
 
 ==== Multiple return statements

@@ -30,6 +30,9 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.objectflow.Location;
+import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.origin.ParentFlows;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -127,7 +130,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // return value
         ObjectFlow objectFlowOfResult;
         if (!methodInfo.returnType().isVoid()) {
-            MethodCalls origin = new MethodCalls();
+            CallOutsArgumentToParameter origin = new CallOutsArgumentToParameter();
             ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getReturnedObjectFlow();
             Location location = evaluationContext.getLocation();
             objectFlowOfResult = new ObjectFlow(location, methodInfo.returnType(), origin);
@@ -191,7 +194,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (location.info instanceof MethodInfo) {
             MethodAnalysis methodAnalysis = ((MethodInfo) location.info).methodAnalysis.get();
             if (methodAnalysis.getReturnedObjectFlow() == objectFlow) {
-                methodAnalysis.setReturnedObjectFlow(second);
+                methodAnalysis.ensureReturnedObjectFlow(second);
             }
         }
         if (objectValue instanceof VariableValue) {
@@ -383,9 +386,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, location);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, new MethodCalls());
+            ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, new CallOutsArgumentToParameter());
             return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize),
-                            new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, new MethodCalls())),
+                            new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, new CallOutsArgumentToParameter())),
                     constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
@@ -412,7 +415,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static ObjectFlow sizeObjectFlow(MethodInfo sizeMethodInfo, Location location, Value object) {
-        MethodCalls methodCalls = new MethodCalls();
+        CallOutsArgumentToParameter methodCalls = new CallOutsArgumentToParameter();
         ObjectFlow objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, methodCalls);
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
             object.getObjectFlow().addNonModifyingAccess(new MethodAccess(sizeMethodInfo, List.of()));

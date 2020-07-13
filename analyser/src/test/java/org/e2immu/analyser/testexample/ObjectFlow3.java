@@ -1,5 +1,7 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotModified;
+
 public class ObjectFlow3 {
 
     static class Config {
@@ -29,6 +31,7 @@ public class ObjectFlow3 {
             this.config = config;
         }
 
+        @NotModified
         public void go() {
            InBetween inBetween = new InBetween(config);
            inBetween.go();
@@ -42,6 +45,7 @@ public class ObjectFlow3 {
             this.config = config;
         }
 
+        @NotModified
         void go() {
             DoSomeWork doSomeWork = new DoSomeWork(config);
             doSomeWork.go();
@@ -55,8 +59,9 @@ public class ObjectFlow3 {
             this.config = config;
         }
 
+        @NotModified
         void go() {
-            System.out.println(config.complexity);
+            assert config != null;
         }
     }
 }

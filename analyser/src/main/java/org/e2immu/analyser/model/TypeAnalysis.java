@@ -26,10 +26,7 @@ import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.lang.annotation.ElementType;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,15 +64,17 @@ public class TypeAnalysis extends Analysis {
         return Map.of();
     }
 
-    private final Set<ObjectFlow> constantObjectFlows = new HashSet<>();
+    private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
 
-    public void addConstantObjectFlow(ObjectFlow objectFlow) {
+    public ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {
         if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
-        this.constantObjectFlows.add(objectFlow);
+        if (constantObjectFlows.containsKey(objectFlow)) return constantObjectFlows.get(objectFlow);
+        this.constantObjectFlows.put(objectFlow, objectFlow);
+        return objectFlow;
     }
 
     public Stream<ObjectFlow> getConstantObjectFlows() {
-        return constantObjectFlows.stream();
+        return constantObjectFlows.values().stream();
     }
 
     public final SetOnceMap<Value, String> approvedPreconditions = new SetOnceMap<>();

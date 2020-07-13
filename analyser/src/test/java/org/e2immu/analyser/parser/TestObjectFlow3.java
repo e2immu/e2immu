@@ -20,12 +20,13 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.objectflow.MethodAccess;
-import org.e2immu.analyser.objectflow.MethodCalls;
-import org.e2immu.analyser.objectflow.ObjectCreation;
+import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.origin.ObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,18 +39,41 @@ import java.util.stream.Collectors;
 
 public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
+
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("main".equals(d.methodInfo.name) && "0".equals(d.statementId) && "config".equals(d.variableName)) {
             Assert.assertTrue(d.currentValue instanceof VariableValue);
             ObjectFlow objectFlow = d.currentValue.getObjectFlow();
             Assert.assertTrue(objectFlow.getOrigin() instanceof ObjectCreation);
         }
+        if ("go".equals(d.methodInfo.name) && "Main".equals(d.methodInfo.typeInfo.simpleName) && "1".equals(d.statementId) && "inBetween".equals(d.variableName)) {
+            ObjectFlow objectFlow = d.currentValue.getObjectFlow();
+            if (d.iteration >= 100) {
+                Assert.assertEquals(1L, objectFlow.getNonModifyingAccesses().count());
+                MethodAccess methodAccess = (MethodAccess) objectFlow.getNonModifyingAccesses().findAny().orElseThrow();
+                Assert.assertEquals("go", methodAccess.methodInfo.name);
+                Assert.assertEquals("InBetween", methodAccess.methodInfo.typeInfo.simpleName);
+            }
+            Assert.assertNull(objectFlow.getModifyingAccess());
+            Assert.assertTrue(objectFlow.origin instanceof ObjectCreation);
+            Assert.assertEquals("InBetween", ((ObjectCreation)objectFlow.origin).methodCall.methodInfo.name);
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName)) {
+                Assert.assertEquals("It: "+iteration, 0L, methodInfo.methodAnalysis.get().getInternalObjectFlows().count());
+            }
+        }
     };
 
     @Test
     public void test() throws IOException {
-        TypeContext typeContext = testClass("ObjectFlow3", 0, 1, new DebugConfiguration.Builder()
+        TypeContext typeContext = testClass("ObjectFlow3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 
         // there are 2 flows in the 'main' method
@@ -73,13 +97,13 @@ public class TestObjectFlow3 extends CommonTestRunner {
         // the Config flow in Main is linked to the creation in the main method
         MethodInfo mainConstructor = main.typeInspection.get().constructors.get(0);
         ObjectFlow mainConstructorParamObjectFlow = mainConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
-        Assert.assertTrue(mainConstructorParamObjectFlow.origin instanceof MethodCalls);
-        MethodCalls mcs = (MethodCalls) mainConstructorParamObjectFlow.origin;
+        Assert.assertTrue(mainConstructorParamObjectFlow.origin instanceof CallOutsArgumentToParameter);
+        CallOutsArgumentToParameter mcs = (CallOutsArgumentToParameter) mainConstructorParamObjectFlow.origin;
         Assert.assertTrue(mcs.contains(newConfig));
 
         // The go() method in main creates an InBetween flow
         MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
-        goMethodMain.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info("object flow: {}", of.detailed()));
+        goMethodMain.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
         TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
         Assert.assertEquals(1L, goMethodMain.methodAnalysis.get().getInternalObjectFlows().count());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
@@ -95,7 +119,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors.get(0);
         ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
         Assert.assertTrue(callOutsOfMainConstructorParamObjectFlow.contains(inBetweenConstructorParamObjectFlow));
-        MethodCalls mcs2 = (MethodCalls) inBetweenConstructorParamObjectFlow.origin;
+        CallOutsArgumentToParameter mcs2 = (CallOutsArgumentToParameter) inBetweenConstructorParamObjectFlow.origin;
         Assert.assertTrue(mcs2.contains(mainConstructorParamObjectFlow));
 
         // The go() method in inBetween creates a DoSomeWork flow

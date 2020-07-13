@@ -1,6 +1,10 @@
 package org.e2immu.analyser.objectflow;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.origin.ParentFlows;
+import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Mark;
 
@@ -25,6 +29,8 @@ public class ObjectFlow {
         this.location = Objects.requireNonNull(location);
         this.type = Objects.requireNonNull(type);
         this.origin = Objects.requireNonNull(origin);
+
+        permanent = location.info instanceof ParameterInfo || location.info instanceof FieldInfo || origin instanceof StaticOrigin;
     }
 
     public static String typeLetter(WithInspectionAndAnalysis info) {
@@ -115,18 +121,42 @@ public class ObjectFlow {
     }
 
 
+    private boolean permanent;
+
+    public void fix() {
+        if (permanent) throw new UnsupportedOperationException();
+        permanent = true;
+        origin.addBiDirectionalLink(this); // only for ResultOfMethodCall -- add to next()
+        nonModifyingAccesses.forEach(access -> access.addBiDirectionalLink);
+
+    }
+
+    public boolean isPermanent() {
+        return permanent;
+    }
+
+    private boolean delayed;
+
+    public void delay() {
+        this.delayed = true;
+    }
+
+    public boolean isDelayed() {
+        return delayed;
+    }
+
     // origin
 
     public void addParentOrigin(ObjectFlow source) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
         if (!(origin instanceof ParentFlows)) throw new UnsupportedOperationException();
-        ((ParentFlows) origin).objectFlows.add(source);
+        ((ParentFlows) origin).addSource(source);
     }
 
     public void addMethodCallOrigin(ObjectFlow source) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
-        if (!(origin instanceof MethodCalls)) throw new UnsupportedOperationException();
-        ((MethodCalls) origin).objectFlows.add(source);
+        if (!(origin instanceof CallOutsArgumentToParameter)) throw new UnsupportedOperationException();
+        ((CallOutsArgumentToParameter) origin).addSource(source);
     }
 
     public Origin getOrigin() {
@@ -140,7 +170,6 @@ public class ObjectFlow {
         if (objectFlow == NO_FLOW) return this;
 
         this.next.addAll(objectFlow.next);
-        // TODO study merging
         return this;
     }
 
@@ -190,8 +219,15 @@ public class ObjectFlow {
         return marksSources;
     }
 
-    public void moveNextTo(ObjectFlow second) {
-        second.next.addAll(next);
+    // used in case of splitting an internal flow
+    // the object flows in next are linked to "this" in the origin
+    // (it can't be ObjectCreation, nor StaticFlow, nor can it be ParentFlow because we split going forward)
+    public void moveNextTo(ObjectFlow newObjectFlow) {
+        for (ObjectFlow objectFlow : next) {
+            if (!(objectFlow.origin instanceof CallOutsArgumentToParameter)) throw new UnsupportedOperationException();
+            ((CallOutsArgumentToParameter) objectFlow.origin).replaceSource(this, newObjectFlow);
+        }
+        newObjectFlow.next.addAll(next);
         next.clear();
     }
 
@@ -215,4 +251,5 @@ public class ObjectFlow {
         TypeInfo typeInfo = returnType.bestTypeInfo();
         return typeInfo != null && conditionsMetForEventual(typeInfo);
     }
+
 }

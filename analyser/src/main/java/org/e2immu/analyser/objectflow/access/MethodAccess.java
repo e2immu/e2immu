@@ -1,7 +1,9 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.access;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.objectflow.Access;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.List;
 import java.util.Objects;

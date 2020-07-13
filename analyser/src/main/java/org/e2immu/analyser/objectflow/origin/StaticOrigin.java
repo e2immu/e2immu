@@ -1,4 +1,7 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.origin;
+
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -27,5 +30,10 @@ public class StaticOrigin implements Origin {
     @Override
     public Stream<ObjectFlow> sources() {
         return Stream.of();
+    }
+
+    @Override
+    public void addBiDirectionalLink(ObjectFlow destination) {
+        throw new UnsupportedOperationException();
     }
 }

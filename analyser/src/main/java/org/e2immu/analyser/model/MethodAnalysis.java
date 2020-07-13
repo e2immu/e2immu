@@ -270,13 +270,15 @@ public class MethodAnalysis extends Analysis {
         internalObjectFlows.add(objectFlow);
     }
 
-    private ObjectFlow returnedObjectFlow = ObjectFlow.NO_FLOW;
+    private ObjectFlow returnedObjectFlow;
 
-    public void setReturnedObjectFlow(ObjectFlow returnedObjectFlow) {
-        this.returnedObjectFlow = returnedObjectFlow;
+    public ObjectFlow ensureReturnedObjectFlow(ObjectFlow objectFlow) {
+        this.returnedObjectFlow = objectFlow.merge(this.returnedObjectFlow);
+        return this.returnedObjectFlow;
     }
 
     public ObjectFlow getReturnedObjectFlow() {
         return returnedObjectFlow;
     }
+
 }

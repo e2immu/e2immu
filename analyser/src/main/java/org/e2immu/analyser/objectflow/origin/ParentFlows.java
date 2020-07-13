@@ -1,4 +1,7 @@
-package org.e2immu.analyser.objectflow;
+package org.e2immu.analyser.objectflow.origin;
+
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,5 +30,14 @@ public class ParentFlows implements Origin {
     @Override
     public Stream<ObjectFlow> sources() {
         return objectFlows.stream();
+    }
+
+    @Override
+    public void addBiDirectionalLink(ObjectFlow destination) {
+        // nothing here, the parent is also a temporary flow
+    }
+
+    public void addSource(ObjectFlow source) {
+        objectFlows.add(source);
     }
 }
