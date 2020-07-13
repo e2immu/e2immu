@@ -4,6 +4,9 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.annotation.Nullable;
 
 import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 public class FieldAccess implements Access {
     public final FieldInfo fieldInfo;
@@ -21,6 +24,19 @@ public class FieldAccess implements Access {
         FieldAccess that = (FieldAccess) o;
         return fieldInfo.equals(that.fieldInfo) &&
                 Objects.equals(accessOnField, that.accessOnField);
+    }
+
+    @Override
+    public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
+        if (detailed) {
+            return "access " + fieldInfo.name + (accessOnField == null ? "" : "." + accessOnField.safeToString(visited, false));
+        }
+        return toString();
+    }
+
+    @Override
+    public String toString() {
+        return "access " + fieldInfo.name + (accessOnField == null ? "" : "." + accessOnField.toString());
     }
 
     @Override

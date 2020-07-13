@@ -5,6 +5,8 @@ import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MethodAccess implements Access {
 
@@ -32,6 +34,17 @@ public class MethodAccess implements Access {
 
     @Override
     public String toString() {
-        return methodInfo.name + "(" + objectFlowsOfArguments + ")";
+        return (methodInfo == null ? "<lambda>" : methodInfo.name) + "(" + objectFlowsOfArguments.size() + " object flows)";
+    }
+
+    @Override
+    public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
+        if (detailed) {
+            return (methodInfo == null ? "<lambda>" : methodInfo.name) + "(" +
+                    objectFlowsOfArguments.stream()
+                            .map(of -> visited.contains(of) ? "visited object flow @" + of.location : of.safeToString(visited, false))
+                            .collect(Collectors.joining(", ")) + ")";
+        }
+        return toString();
     }
 }

@@ -222,7 +222,7 @@ class VariableProperties implements EvaluationContext {
                 currentMethod,
                 currentField,
                 currentStatement,
-                conditionalManager.combineWithConditional(conditional),
+                conditional == null ? conditionalManager.getConditional() : conditionalManager.combineWithConditional(conditional),
                 uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);

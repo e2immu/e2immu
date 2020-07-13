@@ -161,8 +161,11 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
-    // exactly the complement of the combination of individualSizeRestrictions() and individualNullClauses()
-    // used for @Mark, @Only
+    /* exactly the complement of the combination of individualSizeRestrictions() and individualNullClauses()
+       with parametersOnly == true
+       used for @Mark, @Only
+
+     */
     default Value nonIndividualCondition() {
         return this;
     }

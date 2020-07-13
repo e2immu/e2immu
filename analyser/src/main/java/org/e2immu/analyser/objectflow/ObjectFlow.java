@@ -103,7 +103,7 @@ public class ObjectFlow {
 
     // the next flow objects
 
-    private Set<ObjectFlow> next = new HashSet<>();
+    private final Set<ObjectFlow> next = new HashSet<>();
 
     public void addNext(ObjectFlow objectFlow) {
         if (this == NO_FLOW) throw new UnsupportedOperationException();
@@ -144,31 +144,32 @@ public class ObjectFlow {
         return this;
     }
 
-
-    static <X> String detail(String what, X objectFlow) {
-        return objectFlow == null ? "" : "\n    " + what + ": " + objectFlow;
-    }
-
-    static <X> String detail(String what, Collection<X> collection) {
-        if (collection.size() == 1) return detail(what, collection.stream().findFirst().orElseThrow());
-        if (collection.isEmpty()) return "";
-        return "\n    " + what + ": " + collection.stream().map(X::toString).collect(Collectors.joining(", "));
-    }
-
     public String detailed() {
-        return "\n<flow of type " + type.stream() + ": " + origin + " @" + location +
-                detail("@NM access", nonModifyingAccesses) +
-                detail("@M access", modifyingAccess) +
-                detail("@NM call-outs", nonModifyingCallOuts) +
-                detail("@M call-out", modifyingCallOut) +
-                detail("fields", localAssignments) +
-                detail("next", next) +
-                ">";
+        return safeToString(new HashSet<>(), true);
+    }
+
+    public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
+        visited.add(this);
+        if (detailed) {
+            return "\n<flow of type " + type.stream() + ": " + origin + " @" + location +
+                    (nonModifyingAccesses.isEmpty() ? "" : "; @NM access" + nonModifyingAccesses.stream().map(access -> access.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (modifyingAccess == null ? "" : "; @M access" + modifyingAccess.safeToString(visited, false)) +
+                    (nonModifyingCallOuts.isEmpty() ? "" : "; @NM call-outs " + nonModifyingCallOuts.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (modifyingCallOut == null ? "" : "; @M call-out " + modifyingCallOut.safeToString(visited, false)) +
+                    (localAssignments.isEmpty() ? "" : "; fields " + localAssignments.stream().map(FieldInfo::toString).collect(Collectors.joining(", "))) +
+                    (next.isEmpty() ? "" : "; next " + next.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    ">";
+        }
+        return "<flow of type " + type.stream() + ": " + origin.safeToString(visited, false) + " @" + location + ">";
+    }
+
+    public String visited() {
+        return "visited object flow @" + location;
     }
 
     @Override
     public String toString() {
-        return "<flow of type " + type.stream() + ": " + origin + " @" + location + ">";
+        return safeToString(new HashSet<>(), false);
     }
 
 

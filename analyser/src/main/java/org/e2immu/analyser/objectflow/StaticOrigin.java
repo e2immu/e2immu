@@ -1,5 +1,6 @@
 package org.e2immu.analyser.objectflow;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class StaticOrigin implements Origin {
@@ -16,6 +17,11 @@ public class StaticOrigin implements Origin {
     @Override
     public String toString() {
         return reason;
+    }
+
+    @Override
+    public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
+        return toString();
     }
 
     @Override

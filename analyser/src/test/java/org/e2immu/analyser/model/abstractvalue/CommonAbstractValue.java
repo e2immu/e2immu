@@ -52,7 +52,7 @@ public abstract class CommonAbstractValue {
             public ParameterizedType parameterizedType() {
                 if (Set.of("a", "b", "c", "d").contains(name)) return Primitives.PRIMITIVES.booleanParameterizedType;
                 if (Set.of("i", "j", "k").contains(name)) return Primitives.PRIMITIVES.intParameterizedType;
-                if (Set.of("s", "t").contains(name)) return Primitives.PRIMITIVES.stringParameterizedType;
+                if (Set.of("s", "t", "p").contains(name)) return Primitives.PRIMITIVES.stringParameterizedType;
                 return null;
             }
 
@@ -86,6 +86,13 @@ public abstract class CommonAbstractValue {
                 return name;
             }
         };
+    }
+
+    static ParameterInfo createParameter(String name) {
+        ParameterInfo pi = new ParameterInfo(null, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
+        pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(null));
+        pi.parameterAnalysis.set(new ParameterAnalysis(pi));
+        return pi;
     }
 
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
@@ -241,5 +248,8 @@ public abstract class CommonAbstractValue {
     static final Variable vt = createVariable("t");
     static final VariableValue s = new VariableValue(minimalEvaluationContext, vs, "s");
     static final VariableValue t = new VariableValue(minimalEvaluationContext, vt, "t");
+
+    static final Variable vp = createParameter("p");
+    static final VariableValue p = new VariableValue(minimalEvaluationContext, vp, "p");
 
 }

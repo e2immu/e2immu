@@ -11,20 +11,20 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
     public void test1() {
         Value sEqualsNull = EqualsValue.equals(NullValue.NULL_VALUE, s);
         Assert.assertEquals("null == s", sEqualsNull.toString());
-        Assert.assertNull(sEqualsNull.nonIndividualCondition());
+        Assert.assertEquals("null == s", sEqualsNull.nonIndividualCondition().toString());
 
-        Value tEqualsNull = EqualsValue.equals(NullValue.NULL_VALUE, t);
-        Assert.assertEquals("null == t", tEqualsNull.toString());
-        Assert.assertNull(tEqualsNull.nonIndividualCondition());
-        Assert.assertNull(NegatedValue.negate(tEqualsNull).nonIndividualCondition());
+        Value pEqualsNull = EqualsValue.equals(NullValue.NULL_VALUE, p);
+        Assert.assertEquals("null == p", pEqualsNull.toString());
+        Assert.assertNull(pEqualsNull.nonIndividualCondition());
+        Assert.assertNull(NegatedValue.negate(pEqualsNull).nonIndividualCondition());
 
-        Value orValue = new OrValue().append(sEqualsNull, tEqualsNull);
-        Assert.assertNull(orValue.nonIndividualCondition());
+        Value orValue = new OrValue().append(sEqualsNull, pEqualsNull);
+        Assert.assertEquals("null == s", orValue.nonIndividualCondition().toString());
 
-        Value andValue = new AndValue().append(sEqualsNull, tEqualsNull);
+        Value andValue = new AndValue().append(sEqualsNull, pEqualsNull);
         Assert.assertSame(andValue, andValue.nonIndividualCondition());
 
         Value notAndValue = NegatedValue.negate(andValue);
-        Assert.assertNull(notAndValue.nonIndividualCondition());
+        Assert.assertEquals("not (null == s)", notAndValue.nonIndividualCondition().toString());
     }
 }

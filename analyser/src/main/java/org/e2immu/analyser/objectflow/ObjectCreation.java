@@ -4,6 +4,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,6 +20,11 @@ public class ObjectCreation implements Origin {
     @Override
     public String toString() {
         return "new " + methodCall;
+    }
+
+    @Override
+    public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
+        return "new " + methodCall.safeToString(visited, detailed);
     }
 
     @Override
