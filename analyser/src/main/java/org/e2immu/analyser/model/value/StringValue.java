@@ -40,7 +40,7 @@ public class StringValue extends ConstantValue implements Constant<String> {
         this.value = Objects.requireNonNull(value);
     }
 
-    public static Value concat(Value l, Value r, Location location) {
+    public static Value concat(Value l, Value r, EvaluationContext evaluationContext) {
         if (l.isConstant() && r.isConstant()) {
             String ls = l.toString();
             String rs = r.toString();
@@ -50,9 +50,9 @@ public class StringValue extends ConstantValue implements Constant<String> {
             if(rs.isEmpty() && l instanceof StringValue) {
                 return l;
             }
-            return new StringValue(ls+rs, new ObjectFlow(location, Primitives.PRIMITIVES.stringParameterizedType, StaticOrigin.LITERAL));
+            return new StringValue(ls+rs, evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.stringParameterizedType));
         }
-        return Instance.newStringInstance(location);
+        return Instance.newStringInstance(evaluationContext);
     }
 
     @Override

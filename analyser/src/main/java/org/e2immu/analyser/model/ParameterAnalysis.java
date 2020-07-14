@@ -104,7 +104,7 @@ public class ParameterAnalysis extends Analysis {
             case SIZE:
                 int modified = getProperty(VariableProperty.MODIFIED);
                 if (modified != Level.FALSE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
-                return parameterizedType.getProperty(variableProperty);
+                return Math.max(1, parameterizedType.getProperty(variableProperty));
 
             case MODIFIED:
                 if (parameterizedType.isUnboundParameterType()) return Integer.MAX_VALUE;
@@ -121,6 +121,7 @@ public class ParameterAnalysis extends Analysis {
             case CONTAINER:
             case IMMUTABLE:
                 return parameterizedType.getProperty(variableProperty);
+
             default:
         }
         return Level.UNDEFINED;

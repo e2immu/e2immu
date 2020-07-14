@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.expression;
 
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.CharValue;
 import org.e2immu.analyser.model.value.ShortValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -55,7 +54,7 @@ public class ShortConstant implements Expression, Constant<Short> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new ShortValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
+        return new ShortValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
     }
 
     @Override

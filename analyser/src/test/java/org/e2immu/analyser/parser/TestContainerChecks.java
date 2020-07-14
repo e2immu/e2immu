@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class TestContainerChecks extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("add2b".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
                 if (iteration == 0) {
-                    Assert.assertNull(conditional);
+                    Assert.assertSame(UnknownValue.NO_VALUE, conditional);
                 } else {
                     Assert.assertEquals("not (null == strings2b)", conditional.toString());
                 }

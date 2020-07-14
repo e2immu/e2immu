@@ -34,9 +34,7 @@ import java.util.Objects;
  * @param <T> type of the final stage
  */
 
-@E1Immutable(type = AnnotationType.VERIFY_ABSENT)
-@E1Container(type = AnnotationType.VERIFY_ABSENT) // later: after=set
-@Container
+@E1Container(after = "mark")
 public class FirstThen<S, T> {
     @Linked(to = {"first"})
     private volatile S first;
@@ -71,7 +69,7 @@ public class FirstThen<S, T> {
      * @throws NullPointerException          when the final value is <code>null</code>
      * @throws UnsupportedOperationException when the object had already reached its final stage
      */
-    //@Mark("set")
+    @Mark("mark")
     public void set(@NotNull T then) {
         Objects.requireNonNull(then);
         synchronized (this) {
@@ -89,11 +87,15 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    //@Only(after = "set")
+    @Only(before = "mark")
     public S getFirst() {
-        S local = first;
-        if (local == null) throw new UnsupportedOperationException("Then has already been set");
-        return local;
+        // TODO this is a bit convoluted, but in on the 3rd statement it does not (yet) recognize @Only
+        if (first == null) throw new UnsupportedOperationException("Then has already been set");
+
+        // note that we assign to a local variable to guarantee the same value
+        S s = first;
+        if (s == null) throw new NullPointerException();
+        return s;
     }
 
     /**
@@ -104,11 +106,13 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    //@Only(before = "set")
+    @Only(after = "mark")
     public T get() {
-        T local = then;
-        if (local == null) throw new UnsupportedOperationException("Not yet set");
-        return local;
+        // TODO we could have had a check on then directly, but then @Only would not be recognized
+        if (first != null) throw new UnsupportedOperationException("Not yet set");
+        T t = then;
+        if (t == null) throw new UnsupportedOperationException();
+        return t;
     }
 
     /**

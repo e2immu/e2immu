@@ -174,7 +174,7 @@ public class BinaryOperator implements Expression {
          TODO
          */
         if (operator == Primitives.PRIMITIVES.plusOperatorString) {
-            return StringValue.concat(l, r, evaluationContext.getLocation());
+            return StringValue.concat(l, r, evaluationContext);
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
     }

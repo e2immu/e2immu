@@ -56,6 +56,6 @@ public class TypeExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new TypeValue(parameterizedType, evaluationContext.getLocation());
+        return new TypeValue(parameterizedType, evaluationContext);
     }
 }

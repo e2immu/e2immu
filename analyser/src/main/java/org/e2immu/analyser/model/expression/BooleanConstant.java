@@ -43,7 +43,7 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new BoolValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
+        return new BoolValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
     }
 
     @Override

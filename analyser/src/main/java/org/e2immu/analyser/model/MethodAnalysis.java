@@ -40,6 +40,7 @@ public class MethodAnalysis extends Analysis {
     public final ParameterizedType returnType;
     public final TypeInfo typeInfo;
     public final Location location;
+    public final MethodInfo methodInfo;
 
     public MethodAnalysis(MethodInfo methodInfo) {
         this(methodInfo, methodInfo.typeInfo.overrides(methodInfo, true));
@@ -52,6 +53,7 @@ public class MethodAnalysis extends Analysis {
     private MethodAnalysis(MethodInfo methodInfo, Set<MethodInfo> overrides) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.overrides = overrides;
+        this.methodInfo = methodInfo;
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
         location = new Location(methodInfo);
@@ -80,7 +82,7 @@ public class MethodAnalysis extends Analysis {
                 return getPropertyCheckOverrides(variableProperty);
 
             case MODIFIED:
-                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
+                if (!methodInfo.isConstructor && Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
                         && getObjectFlow().conditionsMetForEventual(typeInfo)) {
                     return Level.FALSE;
                 }
@@ -126,13 +128,9 @@ public class MethodAnalysis extends Analysis {
     @Override
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case IMMUTABLE:
-            case CONTAINER:
-                if (Level.haveTrueAt(returnType.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
-                    return variableProperty.best;
-                break;
             case INDEPENDENT:
-                if (Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) == Level.TRUE) {
+                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) &&
+                        !typeInfo.isEventual()) {
                     return Level.TRUE;
                 }
                 break;
@@ -141,6 +139,12 @@ public class MethodAnalysis extends Analysis {
                 break;
             case SIZE:
                 return 1;
+
+            // the following means: if the value is higher than exactly what is shown, then display @Container
+            case IMMUTABLE:
+            case CONTAINER:
+                return returnType.getProperty(variableProperty);
+            default:
         }
         return Level.UNDEFINED;
     }

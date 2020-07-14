@@ -32,7 +32,7 @@ public class CheckSize {
         AnnotationType annotationType = annotationExpression.extract("type", null);
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
 
-        if (mustBeAbsent && size != Level.DELAY) {
+        if (mustBeAbsent && size > Analysis.IS_A_SIZE) {
             typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Size"));
             return;
         }

@@ -91,6 +91,6 @@ public class LambdaExpression implements Expression {
         visitor.visit(this, evaluationContext, v);
 
         MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
-        return new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext.getLocation());
+        return new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
     }
 }

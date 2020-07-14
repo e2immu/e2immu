@@ -82,7 +82,6 @@ public class SizeChecks2 {
     // check that both @NotNull and @Size(min = 1) get to the parameter and the field
     static class Test3b {
 
-        @Size(min = 0)
         @NotNull
         private final Set<String> set3b;
 

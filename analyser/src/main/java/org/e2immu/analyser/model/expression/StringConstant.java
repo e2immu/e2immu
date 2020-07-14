@@ -37,7 +37,7 @@ public class StringConstant implements Expression, Constant<String> {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new StringValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
+        return new StringValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
     }
 
     public StringConstant(@NotNull String constant) {

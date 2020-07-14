@@ -114,22 +114,30 @@ public class ConditionalManager {
 
     // used in assignments (it gets a new value, so whatever was known, must go)
     // and in escapes (forget about the null condition, we have stored it in the property)
-    public void variableReassigned(Variable at) {
-        if (conditional != null) conditional = removeClausesInvolving(conditional, at);
+    public void variableReassigned(Variable variable) {
+        if (conditional != null) conditional = removeClausesInvolving(conditional, variable, true);
+    }
+
+    public void modifyingMethodAccess(Variable variable) {
+        if (conditional != null) conditional = removeClausesInvolving(conditional, variable, false);
     }
 
     // null-clauses like if(a==null) a = ... (then the null-clause on a should go)
     // same applies to size()... if(a.isEmpty()) a = ...
-    private static Value removeClausesInvolving(Value conditional, Variable variable) {
+
+    private static Value removeClausesInvolving(Value conditional, Variable variable, boolean includeEqualityOnVariable) {
         Value toTest = conditional instanceof NegatedValue ? ((NegatedValue) conditional).value : conditional;
+
+        // method call on the variable (a.isEmpty())
         if (toTest instanceof MethodValue && toTest.variables().contains(variable)) {
             return null;
         }
-        if (toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
+        //
+        if (includeEqualityOnVariable && toTest instanceof EqualsValue && toTest.variables().contains(variable)) {
             return null;
         }
         if (conditional instanceof AndValue) {
-            return ((AndValue) conditional).removeClausesInvolving(variable);
+            return ((AndValue) conditional).removeClausesInvolving(variable, includeEqualityOnVariable);
         }
         return conditional;
     }
@@ -147,4 +155,5 @@ public class ConditionalManager {
         });
         return NegatedValue.negate(pre.reEvaluate(evaluationContext, translation));
     }
+
 }

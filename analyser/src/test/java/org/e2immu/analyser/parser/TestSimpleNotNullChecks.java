@@ -37,11 +37,13 @@ public class TestSimpleNotNullChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("1.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("null == a1", conditional.toString());
-            }
-            if ("1".equals(numberedStatement.streamIndices())) {
-                Assert.assertNull(conditional);
+            if("method1".equals(methodInfo.name)) {
+                if ("1.0.0".equals(numberedStatement.streamIndices())) {
+                    Assert.assertEquals("null == a1", conditional.toString());
+                }
+                if ("1".equals(numberedStatement.streamIndices())) {
+                    Assert.assertNull(conditional);
+                }
             }
         }
     };

@@ -421,8 +421,10 @@ public class AndValue extends PrimitiveValue {
         return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
     }
 
-    public Value removeClausesInvolving(Variable variable) {
-        return new AndValue(objectFlow, values.stream().filter(value -> !value.variables().contains(variable)).collect(Collectors.toList()));
+    public Value removeClausesInvolving(Variable variable, boolean includeEqualityOnVariable) {
+        return new AndValue(objectFlow, values.stream()
+                .filter(value -> !value.variables().contains(variable) ||
+                        !includeEqualityOnVariable && value instanceof EqualsValue).collect(Collectors.toList()));
     }
 
     @Override

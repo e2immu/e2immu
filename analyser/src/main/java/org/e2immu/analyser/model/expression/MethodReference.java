@@ -89,7 +89,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (methodInfo.isConstructor) {
             // construction, similar to NewObject, without parameters
             // TODO arrays?
-            result = new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext.getLocation());
+            result = new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext);
         } else {
             // normal method call, very similar to MethodCall.evaluate
 

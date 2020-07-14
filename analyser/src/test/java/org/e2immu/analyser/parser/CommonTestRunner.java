@@ -55,7 +55,7 @@ public abstract class CommonTestRunner {
                 //LAMBDA,
                 //METHOD_CALL,
 
-                VARIABLE_PROPERTIES,
+                //VARIABLE_PROPERTIES,
                 FINAL,
                 LINKED_VARIABLES,
                 INDEPENDENT,
@@ -69,7 +69,8 @@ public abstract class CommonTestRunner {
                 NOT_NULL,
                 NOT_MODIFIED,
                 PATTERN,
-                MARK);
+                MARK,
+                OBJECT_FLOW);
     }
 
     protected TypeContext testClass(String className, int errorsToExpect) throws IOException {

@@ -144,7 +144,7 @@ public class ObjectFlow {
 
      */
     public void fix() {
-        if (permanent) throw new UnsupportedOperationException();
+        if (isPermanent()) throw new UnsupportedOperationException("Trying to fix "+toString());
         permanent = true;
         origin.addBiDirectionalLink(this); // only for ResultOfMethodCall and ParentFlows -- add to next()
         if (modifyingCallOut != null) {
@@ -178,14 +178,6 @@ public class ObjectFlow {
     }
 
     // other
-
-    public ObjectFlow merge(ObjectFlow objectFlow) {
-        if (this == NO_FLOW) return objectFlow;
-        if (objectFlow == NO_FLOW) return this;
-
-        this.next.addAll(objectFlow.next);
-        return this;
-    }
 
     public String detailed() {
         return safeToString(new HashSet<>(), true);

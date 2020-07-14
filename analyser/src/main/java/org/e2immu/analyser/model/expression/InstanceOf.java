@@ -64,11 +64,11 @@ public class InstanceOf implements Expression {
             ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, StaticOrigin.OPERATOR);
             result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType, objectFlow);
         } else if (value instanceof Instance) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext.getLocation());
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext);
         } else if (value instanceof MethodValue) {
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // no clue, too deep
         } else if (value instanceof ClassValue) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext.getLocation());
+            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext);
         } else {
             // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
             // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is

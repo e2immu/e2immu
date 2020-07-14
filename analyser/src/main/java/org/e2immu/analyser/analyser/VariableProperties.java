@@ -32,6 +32,8 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.origin.ObjectCreation;
 import org.e2immu.analyser.objectflow.origin.ParentFlows;
 import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
@@ -839,8 +841,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public void reassigned(Variable variable) {
-        conditionalManager.variableReassigned(variable);
+    public void modifyingMethodAccess(Variable variable) {
+        conditionalManager.modifyingMethodAccess(variable);
     }
 
     // there is special consideration for parameters of inline values, which are NOT KNOWN to the variable properties map.
@@ -1037,14 +1039,13 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, Origin origin) {
-        if (!(origin instanceof ResultOfMethodCall) && !(origin instanceof ParentFlows))
-            throw new UnsupportedOperationException();
         int counter = 0;
         while (true) {
             org.e2immu.analyser.objectflow.Location location = getLocation(counter);
             ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
             if (!internalObjectFlows.contains(objectFlow)) {
                 internalObjectFlows.add(objectFlow);
+                log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
                 return objectFlow;
             }
             ++counter;
@@ -1079,6 +1080,11 @@ class VariableProperties implements EvaluationContext {
         } else {
             log(OBJECT_FLOW, "Added non-modifying call-out to {}", potentiallySplit);
             potentiallySplit.addNonModifyingCallOut(callOut);
+        }
+        if(potentiallySplit.isPermanent()) {
+            CallOutsArgumentToParameter callOutsArgumentToParameter = (CallOutsArgumentToParameter) callOut.origin;
+            callOutsArgumentToParameter.addSource(potentiallySplit);
+            log(OBJECT_FLOW, "Added inverse link from {} because in permanent flow {}", callOut, potentiallySplit);
         }
         return potentiallySplit;
     }

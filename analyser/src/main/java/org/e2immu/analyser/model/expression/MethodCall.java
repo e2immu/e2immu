@@ -29,10 +29,7 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.*;
-import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
-import org.e2immu.analyser.objectflow.origin.ParentFlows;
 import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -118,9 +115,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ObjectFlow objectFlowOfResult;
         if (!methodInfo.returnType().isVoid()) {
             ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getObjectFlow();
-            if (returnedFlow == ObjectFlow.NO_FLOW || !returnedFlow.isPermanent()) {
-                throw new UnsupportedOperationException();
-            }
 
             ResultOfMethodCall origin = new ResultOfMethodCall(returnedFlow);
             objectFlowOfResult = evaluationContext.createInternalObjectFlow(methodInfo.returnType(), origin);
@@ -136,7 +130,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         if (modified == Level.TRUE && objectValue instanceof ValueWithVariable) {
             Variable variable = ((ValueWithVariable) objectValue).variable;
-            evaluationContext.reassigned(variable);
+            evaluationContext.modifyingMethodAccess(variable);
         }
 
         visitor.visit(this, evaluationContext, result);

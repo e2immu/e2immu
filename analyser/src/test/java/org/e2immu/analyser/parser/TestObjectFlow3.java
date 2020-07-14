@@ -63,8 +63,13 @@ public class TestObjectFlow3 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
-            if ("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName) && iteration > 1) {
-                Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.get().isEmpty());
+            if ("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName)) {
+                if (iteration < 100) {
+                    Assert.assertFalse(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
+                } else {
+                    Set<ObjectFlow> objectFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+                    Assert.assertEquals(1, objectFlows.size());
+                }
             }
         }
     };
@@ -79,7 +84,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         // there are 2 flows in the 'main' method
         TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
         MethodInfo mainMethod = objectFlow3.typeInspection.get().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
-        mainMethod.methodAnalysis.get().internalObjectFlows.get().forEach(of -> LOGGER.info("object flow: {}", of.detailed()));
+        mainMethod.methodAnalysis.get().internalObjectFlows.get().forEach(of ->
+                LOGGER.info("internal object flows of static 'main': {}", of.detailed()));
         Assert.assertEquals(4L, mainMethod.methodAnalysis.get().internalObjectFlows.get().size());
 
         // the Config flow is used to initiate the Main flow
@@ -119,8 +125,9 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors.get(0);
         ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
         Assert.assertTrue(callOutsOfMainConstructorParamObjectFlow.contains(inBetweenConstructorParamObjectFlow));
+
         CallOutsArgumentToParameter mcs2 = (CallOutsArgumentToParameter) inBetweenConstructorParamObjectFlow.origin;
-        Assert.assertTrue(mcs2.contains(mainConstructorParamObjectFlow));
+        Assert.assertTrue("Have "+mcs2, mcs2.contains(mainConstructorParamObjectFlow));
 
         // The go() method in inBetween creates a DoSomeWork flow
         MethodInfo goMethodInBetween = inBetween.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();

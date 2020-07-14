@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.CharValue;
-import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -55,7 +54,7 @@ public class CharConstant implements Expression, Constant<Character> {
     @Override
     @NotNull
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new CharValue(constant, evaluationContext.registerConstantObjectFlow(returnType()));
+        return new CharValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
     }
 
     @Override

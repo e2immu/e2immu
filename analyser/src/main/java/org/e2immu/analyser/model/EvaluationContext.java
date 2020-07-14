@@ -122,7 +122,7 @@ public interface EvaluationContext {
 
     Location getLocation();
 
-    default ObjectFlow registerConstantObjectFlow(ParameterizedType parameterizedType) {
+    default ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
         ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, StaticOrigin.LITERAL);
         return getCurrentType().typeAnalysis.get().ensureConstantObjectFlow(objectFlow);
     }
@@ -161,6 +161,6 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default void reassigned(Variable variable) {
+    default void modifyingMethodAccess(Variable variable) {
     }
 }

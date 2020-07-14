@@ -118,11 +118,11 @@ public class NewObject implements HasParameterExpressions {
             List<Value> values = arrayInitializer.expressions.stream()
                     .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
-            value = new ArrayValue(new ObjectFlow(evaluationContext.getLocation(), arrayInitializer.commonType, StaticOrigin.LITERAL), values);
+            value = new ArrayValue(evaluationContext.createLiteralObjectFlow(arrayInitializer.commonType), values);
         } else {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             Location location = evaluationContext.getLocation();
-            value = new Instance(parameterizedType, constructor, parameterValues, location);
+            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext);
         }
         visitor.visit(this, evaluationContext, value);
         return value;

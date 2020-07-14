@@ -12,16 +12,16 @@ import org.e2immu.analyser.parser.Primitives;
 
 /**
  * the thing that, for now, makes TypeValue different from UnknownValue is that it is not null.
- *
+ * <p>
  * for object flows: TypeValue is used as the scope for static methods.
  */
 public class TypeValue implements Value {
     public final ParameterizedType parameterizedType;
     public final ObjectFlow objectFlow;
 
-    public TypeValue(ParameterizedType parameterizedType, Location location) {
+    public TypeValue(ParameterizedType parameterizedType, EvaluationContext evaluationContext) {
         this.parameterizedType = parameterizedType;
-        objectFlow = new ObjectFlow(location, Primitives.PRIMITIVES.classTypeInfo.asParameterizedType(), StaticOrigin.LITERAL);
+        objectFlow = evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.classTypeInfo.asParameterizedType());
     }
 
     @Override

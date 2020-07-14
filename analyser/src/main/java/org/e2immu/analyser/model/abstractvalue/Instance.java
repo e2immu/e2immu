@@ -45,16 +45,16 @@ public class Instance implements Value {
     public final MethodInfo constructor;
     public final ObjectFlow objectFlow;
 
-    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, Location location) {
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, EvaluationContext evaluationContext) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
-        objectFlow = new ObjectFlow(location, parameterizedType, new ObjectCreation(constructor, parameterValues));
+        objectFlow = evaluationContext.createInternalObjectFlow(parameterizedType, new ObjectCreation(constructor, parameterValues));
     }
 
-    public static Instance newStringInstance(Location location) {
+    public static Instance newStringInstance(EvaluationContext evaluationContext) {
         MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.get().constructors.get(0);
-        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of(), location);
+        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of(), evaluationContext);
     }
 
     // every new instance is different.
