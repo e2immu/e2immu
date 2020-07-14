@@ -56,8 +56,8 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reValue = value.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reValue = value.reEvaluate(evaluationContext, translation);
         return PropertyWrapper.propertyWrapper(reValue, properties, getObjectFlow());
     }
 

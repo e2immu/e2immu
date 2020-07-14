@@ -1,9 +1,6 @@
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -61,8 +58,8 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value re = value.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value re = value.reEvaluate(evaluationContext, translation);
         if (re.isConstant()) return re;
         return ConstrainedNumericValue.create(re, lowerBound, upperBound);
     }

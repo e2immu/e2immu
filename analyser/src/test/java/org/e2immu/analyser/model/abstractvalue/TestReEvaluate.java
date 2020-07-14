@@ -14,7 +14,7 @@ public class TestReEvaluate extends CommonAbstractValue {
         Value square = ProductValue.product(i, i);
         Assert.assertEquals("i * i", square.toString());
         Map<Value, Value> translate = Map.of(i, new IntValue(3));
-        Value re = square.reEvaluate(translate);
+        Value re = square.reEvaluate(null, translate);
         Assert.assertEquals("9", re.toString());
     }
 
@@ -23,10 +23,10 @@ public class TestReEvaluate extends CommonAbstractValue {
         Value value = SumValue.sum(new IntValue(10), NegatedValue.negate(ProductValue.product(i, j)));
         Assert.assertEquals("(10 + not (i * j))", value.toString());
         Map<Value, Value> translate = Map.of(i, new IntValue(3));
-        Value re = value.reEvaluate(translate);
+        Value re = value.reEvaluate(null, translate);
         Assert.assertEquals("(10 + not (3 * j))", re.toString());
         Map<Value, Value> translate2 = Map.of(j, new IntValue(2));
-        Value re2 = re.reEvaluate(translate2);
+        Value re2 = re.reEvaluate(null, translate2);
         Assert.assertEquals("4", re2.toString());
     }
 }

@@ -9,22 +9,31 @@ import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import java.util.Objects;
 
 public class Location {
-    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null);
+    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null, 0);
 
     public final WithInspectionAndAnalysis info;
     public final String statementWithinMethod;
+    public final int counter; // in the same statement, there can be multiple identical flows starting...
 
     public Location(WithInspectionAndAnalysis info) {
-        this(Objects.requireNonNull(info), null);
+        this(Objects.requireNonNull(info), null, 0);
+    }
+    public Location(WithInspectionAndAnalysis info, int counter) {
+        this(Objects.requireNonNull(info), null, counter);
     }
 
     public Location(MethodInfo methodInfo, NumberedStatement currentStatement) {
-        this(Objects.requireNonNull(methodInfo), currentStatement.streamIndices());
+        this(Objects.requireNonNull(methodInfo), currentStatement.streamIndices(), 0);
     }
 
-    private Location(WithInspectionAndAnalysis info, String statementWithinMethod) {
+    public Location(MethodInfo methodInfo, NumberedStatement currentStatement, int counter) {
+        this(Objects.requireNonNull(methodInfo), currentStatement.streamIndices(), counter);
+    }
+
+    private Location(WithInspectionAndAnalysis info, String statementWithinMethod, int counter) {
         this.info = info;
         this.statementWithinMethod = statementWithinMethod;
+        this.counter = counter;
     }
 
     @Override
@@ -43,14 +52,8 @@ public class Location {
 
     @Override
     public String toString() {
-        return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name() + (statementWithinMethod == null ? "" : ":" + statementWithinMethod);
-    }
-
-    public void registerNewObjectFlow(ObjectFlow objectFlowOfResult) {
-        if (info instanceof MethodInfo) {
-            ((MethodInfo) info).methodAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
-        } else if (info instanceof FieldInfo) {
-            ((FieldInfo) info).fieldAnalysis.get().addInternalObjectFlow(objectFlowOfResult);
-        }
+        return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name()
+                + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
+                + (counter == 0 ? "" : "#" + counter);
     }
 }

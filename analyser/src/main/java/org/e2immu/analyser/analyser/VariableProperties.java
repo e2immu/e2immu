@@ -29,6 +29,9 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.objectflow.origin.ParentFlows;
+import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -39,6 +42,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AboutVariable.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
@@ -82,20 +86,21 @@ class VariableProperties implements EvaluationContext {
     // locally modified
 
     private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
+    private final Set<ObjectFlow> internalObjectFlows;
 
     // in type analyser, for fields
     public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
-        this(typeContext, currentType, iteration, debugConfiguration, null, null);
+        this(typeContext, currentType, iteration, debugConfiguration, null, null, new HashSet<>());
     }
 
     // in type analyser, for methods
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
-        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null);
+        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null, new HashSet<>());
     }
 
     // in type analyser, for fields
     public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
-        this(typeContext, currentField.owner, iteration, debugConfiguration, null, currentField);
+        this(typeContext, currentField.owner, iteration, debugConfiguration, null, currentField, new HashSet<>());
     }
 
     private VariableProperties(TypeContext typeContext,
@@ -103,7 +108,8 @@ class VariableProperties implements EvaluationContext {
                                int iteration,
                                DebugConfiguration debugConfiguration,
                                MethodInfo currentMethod,
-                               FieldInfo currentField) {
+                               FieldInfo currentField,
+                               Set<ObjectFlow> internalObjectFlows) {
         this.iteration = iteration;
         this.depth = 0;
         this.debugConfiguration = debugConfiguration;
@@ -118,6 +124,7 @@ class VariableProperties implements EvaluationContext {
         this.dependencyGraphWorstCase = new DependencyGraph<>();
         guaranteedToBeReachedByParentStatement = true;
         inSyncBlock = currentMethod != null && currentMethod.isSynchronized();
+        this.internalObjectFlows = internalObjectFlows;
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
@@ -151,6 +158,7 @@ class VariableProperties implements EvaluationContext {
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
+        this.internalObjectFlows = parent.internalObjectFlows;
     }
 
     @Override
@@ -160,6 +168,14 @@ class VariableProperties implements EvaluationContext {
         }
         if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
         return new org.e2immu.analyser.objectflow.Location(currentField);
+    }
+
+    private org.e2immu.analyser.objectflow.Location getLocation(int counter) {
+        if (currentStatement != null) {
+            return new org.e2immu.analyser.objectflow.Location(getCurrentMethod(), currentStatement, counter);
+        }
+        if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod, counter);
+        return new org.e2immu.analyser.objectflow.Location(currentField, counter);
     }
 
     @Override
@@ -1011,6 +1027,26 @@ class VariableProperties implements EvaluationContext {
     public void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
         AboutVariable aboutVariable = findComplain(variable);
         aboutVariable.setObjectFlow(objectFlow);
+    }
+
+    @Override
+    public ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, Origin origin) {
+        if (!(origin instanceof ResultOfMethodCall) && !(origin instanceof ParentFlows))
+            throw new UnsupportedOperationException();
+        int counter = 0;
+        while (true) {
+            org.e2immu.analyser.objectflow.Location location = getLocation(counter);
+            ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
+            if (!internalObjectFlows.contains(objectFlow)) {
+                internalObjectFlows.add(objectFlow);
+                return objectFlow;
+            }
+            ++counter;
+        }
+    }
+
+    Stream<ObjectFlow> getInternalObjectFlows() {
+        return internalObjectFlows.stream();
     }
 
     @Override

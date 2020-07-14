@@ -95,8 +95,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reValue = value.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reValue = value.reEvaluate(evaluationContext, translation);
         return GreaterThanZeroValue.greater(reValue, IntValue.ZERO_VALUE, allowEquals, getObjectFlow());
     }
 

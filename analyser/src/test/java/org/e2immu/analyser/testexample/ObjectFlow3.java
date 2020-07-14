@@ -1,5 +1,6 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 
 public class ObjectFlow3 {
@@ -8,6 +9,7 @@ public class ObjectFlow3 {
         final boolean debug;
         final int complexity;
 
+        @Modified
         public Config(boolean debug, int complexity) {
             this.debug = debug;
             this.complexity = complexity;
@@ -27,6 +29,7 @@ public class ObjectFlow3 {
     static class Main {
         public final Config config;
 
+        @Modified
         public Main(Config config) {
             this.config = config;
         }
@@ -41,6 +44,7 @@ public class ObjectFlow3 {
     static class InBetween {
         private final Config config;
 
+        @Modified
         InBetween(Config config) {
             this.config = config;
         }

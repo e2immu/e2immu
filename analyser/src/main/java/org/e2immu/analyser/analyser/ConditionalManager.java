@@ -145,6 +145,6 @@ public class ConditionalManager {
                 translation.put(v, new VariableValuePlaceholder((VariableValue) v, evaluationContext, v.getObjectFlow()));
             }
         });
-        return NegatedValue.negate(pre.reEvaluate(translation));
+        return NegatedValue.negate(pre.reEvaluate(evaluationContext, translation));
     }
 }

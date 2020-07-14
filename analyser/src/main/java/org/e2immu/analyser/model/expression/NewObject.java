@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.origin.ParentFlows;
 import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
@@ -121,7 +123,6 @@ public class NewObject implements HasParameterExpressions {
             List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
             Location location = evaluationContext.getLocation();
             value = new Instance(parameterizedType, constructor, parameterValues, location);
-            location.registerNewObjectFlow(value.getObjectFlow());
         }
         visitor.visit(this, evaluationContext, value);
         return value;
@@ -157,12 +158,12 @@ public class NewObject implements HasParameterExpressions {
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
 
                 ObjectFlow source = parameterValue.getObjectFlow();
-                if (source != ObjectFlow.NO_FLOW) {
+                int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
+                if (modified == Level.DELAY) {
+                    source.delay();
+                } else {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
-                    if (destination != ObjectFlow.NO_FLOW) {
-                        source.addNonModifyingCallOut(destination);
-                        destination.addMethodCallOrigin(source);
-                    }
+                    evaluationContext.addCallOut(modified == Level.TRUE, destination, parameterValue);
                 }
             } else {
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT);
@@ -176,7 +177,7 @@ public class NewObject implements HasParameterExpressions {
             // the precondition is using parameter info's as variables so we'll have to substitute
             Value precondition = methodInfo.methodAnalysis.get().precondition.get();
             Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
-            Value reEvaluated = precondition.reEvaluate(translationMap);
+            Value reEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
             // from the result we either may infer another condition, or values to be set...
             Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(false);
             for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {

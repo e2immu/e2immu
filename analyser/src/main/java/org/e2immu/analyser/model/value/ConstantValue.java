@@ -43,7 +43,7 @@ public abstract class ConstantValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         return this; // minor speedup + security, we're not allowed to mess with constants :-)
     }
 

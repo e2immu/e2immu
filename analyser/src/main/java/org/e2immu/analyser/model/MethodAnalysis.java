@@ -259,16 +259,7 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> preconditionForOnlyData = new SetOnce<Value>();
     public final SetOnce<OnlyData> onlyData = new SetOnce<OnlyData>();
 
-    private final Set<ObjectFlow> internalObjectFlows = new HashSet<>();
-
-    public Stream<ObjectFlow> getInternalObjectFlows() {
-        return internalObjectFlows.stream();
-    }
-
-    public void addInternalObjectFlow(ObjectFlow objectFlow) {
-        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
-        internalObjectFlows.add(objectFlow);
-    }
+    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
     private ObjectFlow returnedObjectFlow;
 

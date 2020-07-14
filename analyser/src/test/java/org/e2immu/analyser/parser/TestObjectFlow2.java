@@ -63,7 +63,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         TypeInfo objectFlow2 = typeContext.typeStore.get(ObjectFlow2.class.getCanonicalName());
         MethodInfo ofMethod = objectFlow2.typeInspection.get().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
-        ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows()
+        ObjectFlow newHashSet = ofMethod.methodAnalysis.get().internalObjectFlows.get().stream()
                 .filter(of -> of.type.typeInfo == hashSet)
                 .filter(of -> of.origin instanceof ObjectCreation)
                 .findAny().orElseThrow();
@@ -80,7 +80,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         CallOutsArgumentToParameter methodCallsOfOfParam = (CallOutsArgumentToParameter)ofParam.origin ;
         Assert.assertTrue(methodCallsOfOfParam.contains(constantX));
 
-        ObjectFlow useOfFlow = useOf.methodAnalysis.get().getInternalObjectFlows()
+        ObjectFlow useOfFlow = useOf.methodAnalysis.get().internalObjectFlows.get().stream()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
         Assert.assertTrue(useOfFlow.origin instanceof CallOutsArgumentToParameter);

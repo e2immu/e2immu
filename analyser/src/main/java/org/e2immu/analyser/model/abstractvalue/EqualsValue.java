@@ -49,9 +49,9 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reLhs = lhs.reEvaluate(translation);
-        Value reRhs = rhs.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reLhs = lhs.reEvaluate(evaluationContext, translation);
+        Value reRhs = rhs.reEvaluate(evaluationContext, translation);
         return EqualsValue.equals(reLhs, reRhs, objectFlow);
     }
 

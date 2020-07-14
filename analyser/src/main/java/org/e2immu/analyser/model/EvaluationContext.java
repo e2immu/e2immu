@@ -23,8 +23,10 @@ import org.e2immu.analyser.analyser.VariableProperty;
 
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
+import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
@@ -123,6 +125,34 @@ public interface EvaluationContext {
     default ObjectFlow registerConstantObjectFlow(ParameterizedType parameterizedType) {
         ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, StaticOrigin.LITERAL);
         return getCurrentType().typeAnalysis.get().ensureConstantObjectFlow(objectFlow);
+    }
+
+    /**
+     * creates a new object flow in this current method or field initialiser.
+     * The location is created in a more advanced way than using getLocation().
+     *
+     * @param parameterizedType The type of the object flow
+     * @param origin            The origin, must be either ResultOfMethodCall or ParentFlows
+     * @return a new ObjectFlow object, with a unique location (not a *reused* object flow object)
+     */
+    default ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, Origin origin) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * The method updates the flow if the value is a variable value
+     *
+     * @param modifying is the access modifying?
+     * @param access    the access to add
+     * @param value     the value whose flow to add the access to
+     * @return potentially a new flow, but can be source
+     */
+    default ObjectFlow addAccess(boolean modifying, Access access, Value value) {
+        throw new UnsupportedOperationException();
+    }
+
+    default ObjectFlow addCallOut(boolean modifying, ObjectFlow callOut, Value value) {
+        throw new UnsupportedOperationException();
     }
 
     ObjectFlow getObjectFlow(Variable variable);

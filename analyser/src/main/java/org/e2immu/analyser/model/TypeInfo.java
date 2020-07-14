@@ -1071,7 +1071,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 result.add(parameterInfo.parameterAnalysis.get().objectFlow);
             }
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            methodAnalysis.getInternalObjectFlows().forEach(result::add);
+            result.addAll(methodAnalysis.internalObjectFlows.get());
 
             if (methodAnalysis.getReturnedObjectFlow() != ObjectFlow.NO_FLOW) {
                 result.add(methodAnalysis.getReturnedObjectFlow());
@@ -1083,9 +1083,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (objectFlow != null && objectFlow.location.info == fieldInfo) {
                 result.add(objectFlow);
             }
-            for (ObjectFlow of : fieldInfo.fieldAnalysis.get().getInternalObjectFlows()) {
-                result.add(of);
-            }
+            result.addAll(fieldInfo.fieldAnalysis.get().internalObjectFlows.get());
         }
         for (TypeInfo subType : typeInspection.get().subTypes) {
             result.addAll(subType.objectFlows());

@@ -14,6 +14,13 @@ public class ResultOfMethodCall implements Origin {
 
     final Set<ObjectFlow> objectFlows = new HashSet<>();
 
+    public ResultOfMethodCall() {
+        // perfectly possible not to have a flow (e.g., for operators at the moment)
+    }
+    public ResultOfMethodCall(ObjectFlow objectFlow) {
+        this.objectFlows.add(objectFlow);
+    }
+
     @Override
     public String toString() {
         return objectFlows.size() + " method calls";
@@ -40,14 +47,9 @@ public class ResultOfMethodCall implements Origin {
         return objectFlows.contains(objectFlow);
     }
 
-    public void replaceSource(ObjectFlow oldObjectFlow, ObjectFlow newObjectFlow) {
-        objectFlows.remove(oldObjectFlow);
-        objectFlows.add(newObjectFlow);
-    }
-
     @Override
     public void addBiDirectionalLink(ObjectFlow destination) {
-        for(ObjectFlow objectFlow: objectFlows) {
+        for (ObjectFlow objectFlow : objectFlows) {
             objectFlow.addNext(destination);
         }
     }

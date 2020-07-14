@@ -51,8 +51,8 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (value instanceof NegatedValue) throw new UnsupportedOperationException();
     }
 
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reValue = value.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reValue = value.reEvaluate(evaluationContext, translation);
         return NegatedValue.negate(reValue);
     }
 

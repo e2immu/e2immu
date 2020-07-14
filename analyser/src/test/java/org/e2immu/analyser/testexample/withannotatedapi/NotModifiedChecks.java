@@ -65,6 +65,7 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT)
     final int l2;
 
+    @Modified
     public NotModifiedChecks(@NotModified @NotNull List<String> list,
                              @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set2,
                              @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set3,
@@ -87,6 +88,7 @@ public class NotModifiedChecks {
         @NotModified
         final Set<String> set; // linked to set1
 
+        @Modified
         C1(@NotNull Set<String> set1) {
             this.set = Objects.requireNonNull(set1);
         }

@@ -58,7 +58,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
                 // after the first iteration, the object flow becomes that of the parameter
                 // in the first iteration, the field value is NO_VALUE
-                if(iteration == 0) {
+                if (iteration == 0) {
                     Assert.assertTrue(objectFlow.location.info instanceof FieldInfo);
                 } else {
                     Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
@@ -104,8 +104,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
         ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
         ObjectFlow objectFlowK = k.parameterAnalysis.get().objectFlow;
 
-        Assert.assertEquals(1L, useKv.methodAnalysis.get().getInternalObjectFlows().count());
-        ObjectFlow inUseKv = useKv.methodAnalysis.get().getInternalObjectFlows().findAny().orElseThrow();
+        Assert.assertEquals(1L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
+        ObjectFlow inUseKv = useKv.methodAnalysis.get().internalObjectFlows.get().stream().findAny().orElseThrow();
 
         Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getReturnedObjectFlow());
 

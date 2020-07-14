@@ -2,14 +2,11 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 /*
@@ -49,8 +46,8 @@ public class InlineValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        return value.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        return value.reEvaluate(evaluationContext, translation);
     }
 
     @Override

@@ -89,8 +89,9 @@ public class Logger {
 
         STATIC_METHOD_CALLS,
 
-        MARK
-        ;
+        MARK,
+        OBJECT_FLOW,
+
     }
 
     private Logger() {

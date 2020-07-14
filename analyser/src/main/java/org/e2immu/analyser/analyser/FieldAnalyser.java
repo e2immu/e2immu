@@ -84,6 +84,8 @@ public class FieldAnalyser {
         }
         boolean fieldSummariesNotYetSet = fieldProperties.iteration == 0;
 
+        if (makeInternalObjectFlowsPermanent(fieldInfo, fieldAnalysis, fieldProperties)) changes = true;
+
         // STEP 2: EFFECTIVELY FINAL: @E1Immutable
         if (analyseFinal(fieldInfo, fieldAnalysis, value, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
@@ -124,6 +126,22 @@ public class FieldAnalyser {
         if (fieldErrors(fieldInfo, fieldAnalysis, fieldSummariesNotYetSet)) changes = true;
         return changes;
     }
+
+
+    private boolean makeInternalObjectFlowsPermanent(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis, VariableProperties fieldProperties) {
+        if (fieldAnalysis.internalObjectFlows.isSet()) return false; // already done
+        boolean noDelays = fieldProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
+        if (noDelays) {
+            Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(fieldProperties.getInternalObjectFlows().collect(Collectors.toSet()));
+            internalObjectFlows.forEach(ObjectFlow::fix);
+            fieldAnalysis.internalObjectFlows.set(internalObjectFlows);
+            log(OBJECT_FLOW, "Set {} internal object flows on {}", internalObjectFlows.size(), fieldInfo.fullyQualifiedName());
+            return true;
+        }
+        log(DELAYED, "Not yet setting internal object flows on {}, delaying", fieldInfo.fullyQualifiedName());
+        return false;
+    }
+
 
     // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
 

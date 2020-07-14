@@ -100,10 +100,10 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(translation)).collect(Collectors.toList());
-        Value reObject = object.reEvaluate(translation);
-        return MethodCall.methodValue(null, methodInfo, reObject, reParams, getObjectFlow());
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        Value reObject = object.reEvaluate(evaluationContext, translation);
+        return MethodCall.methodValue(evaluationContext, methodInfo, reObject, reParams, getObjectFlow());
     }
 
     @Override

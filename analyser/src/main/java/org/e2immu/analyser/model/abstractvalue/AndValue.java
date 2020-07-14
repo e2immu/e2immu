@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -437,8 +438,8 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        return new AndValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(translation)).toArray(Value[]::new));
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        return new AndValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(evaluationContext, translation)).toArray(Value[]::new));
     }
 
     @Override

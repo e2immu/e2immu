@@ -73,6 +73,7 @@ public class ObjectFlow {
     }
 
     public void setModifyingAccess(MethodAccess modifyingAccess) {
+        Objects.requireNonNull(modifyingAccess);
         this.modifyingAccess = modifyingAccess;
     }
 
@@ -107,6 +108,19 @@ public class ObjectFlow {
 
     ObjectFlow modifyingCallOut;
 
+    public ObjectFlow getModifyingCallOut() {
+        return modifyingCallOut;
+    }
+
+    public void setModifyingCallOut(ObjectFlow modifyingCallOut) {
+        Objects.requireNonNull(modifyingCallOut);
+       this.modifyingCallOut = modifyingCallOut;
+    }
+
+    public boolean haveModifying() {
+        return modifyingCallOut != null || modifyingAccess != null;
+    }
+
     // the next flow objects
 
     private final Set<ObjectFlow> next = new HashSet<>();
@@ -123,12 +137,22 @@ public class ObjectFlow {
 
     private boolean permanent;
 
+    /*
+    in an internal flow object, we move from non-permanent to permanent
+
+    we need to add the inverse "links"; but they're not that many
+
+     */
     public void fix() {
         if (permanent) throw new UnsupportedOperationException();
         permanent = true;
-        origin.addBiDirectionalLink(this); // only for ResultOfMethodCall -- add to next()
-        nonModifyingAccesses.forEach(access -> access.addBiDirectionalLink);
-
+        origin.addBiDirectionalLink(this); // only for ResultOfMethodCall and ParentFlows -- add to next()
+        if (modifyingCallOut != null) {
+            ((CallOutsArgumentToParameter) modifyingCallOut.origin).addSource(this);
+        }
+        for (ObjectFlow nonModifyingCallOut : nonModifyingCallOuts) {
+            ((CallOutsArgumentToParameter) nonModifyingCallOut.origin).addSource(this);
+        }
     }
 
     public boolean isPermanent() {
@@ -138,7 +162,9 @@ public class ObjectFlow {
     private boolean delayed;
 
     public void delay() {
-        this.delayed = true;
+        if (!isPermanent()) {
+            this.delayed = true;
+        }
     }
 
     public boolean isDelayed() {
@@ -146,18 +172,6 @@ public class ObjectFlow {
     }
 
     // origin
-
-    public void addParentOrigin(ObjectFlow source) {
-        if (this == NO_FLOW) throw new UnsupportedOperationException();
-        if (!(origin instanceof ParentFlows)) throw new UnsupportedOperationException();
-        ((ParentFlows) origin).addSource(source);
-    }
-
-    public void addMethodCallOrigin(ObjectFlow source) {
-        if (this == NO_FLOW) throw new UnsupportedOperationException();
-        if (!(origin instanceof CallOutsArgumentToParameter)) throw new UnsupportedOperationException();
-        ((CallOutsArgumentToParameter) origin).addSource(source);
-    }
 
     public Origin getOrigin() {
         return origin;

@@ -82,10 +82,10 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reCondition = condition.reEvaluate(translation);
-        Value reTrue = ifTrue.reEvaluate(translation);
-        Value reFalse = ifFalse.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reCondition = condition.reEvaluate(evaluationContext, translation);
+        Value reTrue = ifTrue.reEvaluate(evaluationContext, translation);
+        Value reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         if (reCondition == BoolValue.TRUE) {
             return reTrue;
         }

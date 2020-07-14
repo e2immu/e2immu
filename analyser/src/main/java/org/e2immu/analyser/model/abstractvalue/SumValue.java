@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -42,9 +43,9 @@ public class SumValue extends PrimitiveValue {
         this.rhs = rhs;
     }
 
-    public Value reEvaluate(Map<Value, Value> translation) {
-        Value reLhs = lhs.reEvaluate(translation);
-        Value reRhs = rhs.reEvaluate(translation);
+    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        Value reLhs = lhs.reEvaluate(evaluationContext, translation);
+        Value reRhs = rhs.reEvaluate(evaluationContext, translation);
         return SumValue.sum(reLhs, reRhs, getObjectFlow());
     }
 

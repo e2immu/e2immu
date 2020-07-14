@@ -34,7 +34,9 @@ public class ParentFlows implements Origin {
 
     @Override
     public void addBiDirectionalLink(ObjectFlow destination) {
-        // nothing here, the parent is also a temporary flow
+        for(ObjectFlow objectFlow: objectFlows) {
+            objectFlow.addNext(destination);
+        }
     }
 
     public void addSource(ObjectFlow source) {

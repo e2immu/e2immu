@@ -19,15 +19,11 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
-import org.e2immu.analyser.model.abstractvalue.ValueWrapper;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotModified;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -152,7 +148,7 @@ public interface Value extends Comparable<Value> {
         return Level.FALSE;
     }
 
-    default Value reEvaluate(Map<Value, Value> translation) {
+    default Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         Value inMap = translation.get(this);
         return inMap == null ? this : inMap;
     }
