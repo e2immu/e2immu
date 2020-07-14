@@ -117,7 +117,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // return value
         ObjectFlow objectFlowOfResult;
         if (!methodInfo.returnType().isVoid()) {
-            ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getReturnedObjectFlow();
+            ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getObjectFlow();
             if (returnedFlow == ObjectFlow.NO_FLOW || !returnedFlow.isPermanent()) {
                 throw new UnsupportedOperationException();
             }
@@ -382,7 +382,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
             evaluationContext.addAccess(false, new MethodAccess(sizeMethodInfo, List.of()), object);
 
-            ObjectFlow source = sizeMethodInfo.methodAnalysis.get().getReturnedObjectFlow();
+            ObjectFlow source = sizeMethodInfo.methodAnalysis.get().getObjectFlow();
             ResultOfMethodCall resultOfMethodCall = new ResultOfMethodCall(source);
             return evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, resultOfMethodCall);
         }

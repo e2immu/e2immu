@@ -1004,13 +1004,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             this.typeAnalysis.set(typeAnalysis);
         }
         typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
-        //typeInspection.get().subTypes.forEach(subType -> subType.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
-            methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined);
-        });
-        typeInspection.get().fields.forEach(fieldInfo -> {
-            fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined);
-        });
+        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
+                methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined));
+        typeInspection.get().fields.forEach(fieldInfo ->
+                fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined));
     }
 
     public void resolveAllAnnotations(ExpressionContext expressionContext) {
@@ -1073,9 +1070,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             result.addAll(methodAnalysis.internalObjectFlows.get());
 
-            if (methodAnalysis.getReturnedObjectFlow() != ObjectFlow.NO_FLOW) {
-                result.add(methodAnalysis.getReturnedObjectFlow());
-            }
+            result.add(methodAnalysis.getObjectFlow());
         }
         // for fields we only add those owned by the field itself (i.e. with an initialiser)
         for (FieldInfo fieldInfo : typeInspection.get().fields) {

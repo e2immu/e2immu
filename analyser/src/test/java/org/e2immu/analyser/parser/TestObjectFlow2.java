@@ -69,7 +69,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
                 .findAny().orElseThrow();
         Assert.assertEquals(1L, newHashSet.getNext().count());
         ObjectFlow newHashSet2 = newHashSet.getNext().findFirst().orElseThrow();
-        Assert.assertSame(newHashSet2, ofMethod.methodAnalysis.get().getReturnedObjectFlow());
+        Assert.assertSame(newHashSet2, ofMethod.methodAnalysis.get().getObjectFlow());
 
         ObjectFlow ofParam = ofMethod.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
 

@@ -11,6 +11,10 @@ import java.util.stream.Stream;
 public class ParentFlows implements Origin {
     final Set<ObjectFlow> objectFlows = new HashSet<>();
 
+    public ParentFlows(ObjectFlow objectFlow) {
+        this.objectFlows.add(objectFlow);
+    }
+
     @Override
     public String toString() {
         return objectFlows.size() + " parent flows";
@@ -39,7 +43,8 @@ public class ParentFlows implements Origin {
         }
     }
 
-    public void addSource(ObjectFlow source) {
-        objectFlows.add(source);
+    @Override
+    public boolean permanentFromStart() {
+        return false;
     }
 }

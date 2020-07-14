@@ -10,4 +10,6 @@ public interface Origin {
 
     // add bi-directional link
     void addBiDirectionalLink(ObjectFlow destination);
+
+    boolean permanentFromStart();
 }

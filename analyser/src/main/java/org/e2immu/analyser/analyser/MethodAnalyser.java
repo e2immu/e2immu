@@ -186,7 +186,7 @@ public class MethodAnalyser {
             Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows().collect(Collectors.toSet()));
             internalObjectFlows.forEach(ObjectFlow::fix);
             methodAnalysis.internalObjectFlows.set(internalObjectFlows);
-            log(OBJECT_FLOW, "Set {} internal object flows on {}", internalObjectFlows.size(), methodInfo.distinguishingName());
+            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlows.size(), methodInfo.distinguishingName());
             return true;
         }
         log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());
@@ -328,7 +328,16 @@ public class MethodAnalyser {
         Value value = null;
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
-            methodAnalysis.ensureReturnedObjectFlow(single.getObjectFlow());
+            if (!methodAnalysis.internalObjectFlows.isSet()) {
+                log(DELAYED, "Delaying single return value because internal object flows not yet known, {}", methodInfo.distinguishingName());
+                return false;
+            }
+            ObjectFlow objectFlow = single.getObjectFlow();
+            if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
+                log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
+                methodAnalysis.objectFlow.getFirst().moveNextTo(objectFlow);
+                methodAnalysis.objectFlow.set(objectFlow);
+            }
             if (single.isConstant()) {
                 value = single;
             } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {

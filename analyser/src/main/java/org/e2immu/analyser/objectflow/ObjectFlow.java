@@ -30,7 +30,7 @@ public class ObjectFlow {
         this.type = Objects.requireNonNull(type);
         this.origin = Objects.requireNonNull(origin);
 
-        permanent = location.info instanceof ParameterInfo || location.info instanceof FieldInfo || origin instanceof StaticOrigin;
+        permanent = origin.permanentFromStart();
     }
 
     public static String typeLetter(WithInspectionAndAnalysis info) {
@@ -114,7 +114,7 @@ public class ObjectFlow {
 
     public void setModifyingCallOut(ObjectFlow modifyingCallOut) {
         Objects.requireNonNull(modifyingCallOut);
-       this.modifyingCallOut = modifyingCallOut;
+        this.modifyingCallOut = modifyingCallOut;
     }
 
     public boolean haveModifying() {
@@ -238,12 +238,14 @@ public class ObjectFlow {
     // (it can't be ObjectCreation, nor StaticFlow, nor can it be ParentFlow because we split going forward)
     public void moveNextTo(ObjectFlow newObjectFlow) {
         for (ObjectFlow objectFlow : next) {
-            if (!(objectFlow.origin instanceof CallOutsArgumentToParameter)) throw new UnsupportedOperationException();
-            ((CallOutsArgumentToParameter) objectFlow.origin).replaceSource(this, newObjectFlow);
+            if (objectFlow.origin instanceof CallOutsArgumentToParameter) {
+                ((CallOutsArgumentToParameter) objectFlow.origin).replaceSource(this, newObjectFlow);
+            }
         }
         newObjectFlow.next.addAll(next);
         next.clear();
     }
+
 
     /**
      * @param typeInfo the type to check for

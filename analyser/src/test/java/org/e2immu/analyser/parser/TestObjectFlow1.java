@@ -107,7 +107,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         Assert.assertEquals(1L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
         ObjectFlow inUseKv = useKv.methodAnalysis.get().internalObjectFlows.get().stream().findAny().orElseThrow();
 
-        Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getReturnedObjectFlow());
+        Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getObjectFlow());
 
         Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
         for (ObjectFlow objectFlow : flowsOfObjectFlow1) {

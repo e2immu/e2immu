@@ -53,4 +53,9 @@ public class ResultOfMethodCall implements Origin {
             objectFlow.addNext(destination);
         }
     }
+
+    @Override
+    public boolean permanentFromStart() {
+        return false;
+    }
 }

@@ -39,4 +39,9 @@ public class ObjectCreation implements Origin {
     public void addBiDirectionalLink(ObjectFlow destination) {
         // there is no bi-directional link here; it is the start of a flow
     }
+
+    @Override
+    public boolean permanentFromStart() {
+        return false;
+    }
 }

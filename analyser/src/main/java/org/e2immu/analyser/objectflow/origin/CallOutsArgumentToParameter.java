@@ -53,4 +53,9 @@ public class CallOutsArgumentToParameter implements Origin {
     public void addSource(ObjectFlow source) {
         objectFlows.add(source);
     }
+
+    @Override
+    public boolean permanentFromStart() {
+        return true;
+    }
 }

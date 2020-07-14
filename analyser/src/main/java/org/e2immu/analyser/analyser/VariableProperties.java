@@ -28,8 +28,10 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.objectflow.origin.ParentFlows;
 import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
@@ -836,6 +838,10 @@ class VariableProperties implements EvaluationContext {
         return value.getProperty(this, variableProperty);
     }
 
+    @Override
+    public void reassigned(Variable variable) {
+        conditionalManager.variableReassigned(variable);
+    }
 
     // there is special consideration for parameters of inline values, which are NOT KNOWN to the variable properties map.
     // findComplain would actually complain when a reEvaluation takes place.
@@ -1050,7 +1056,45 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public void reassigned(Variable variable) {
-        conditionalManager.variableReassigned(variable);
+    public ObjectFlow addAccess(boolean modifying, Access access, Value value) {
+        if (value.getObjectFlow() == ObjectFlow.NO_FLOW) return value.getObjectFlow();
+        ObjectFlow potentiallySplit = splitIfNeeded(value);
+        if (modifying) {
+            log(OBJECT_FLOW, "Set modifying access on {}", potentiallySplit);
+            potentiallySplit.setModifyingAccess((MethodAccess) access);
+        } else {
+            log(OBJECT_FLOW, "Added non-modifying access to {}", potentiallySplit);
+            potentiallySplit.addNonModifyingAccess(access);
+        }
+        return potentiallySplit;
+    }
+
+    @Override
+    public ObjectFlow addCallOut(boolean modifying, ObjectFlow callOut, Value value) {
+        if (callOut == ObjectFlow.NO_FLOW || value.getObjectFlow() == ObjectFlow.NO_FLOW) return value.getObjectFlow();
+        ObjectFlow potentiallySplit = splitIfNeeded(value);
+        if (modifying) {
+            log(OBJECT_FLOW, "Set call-out on {}", potentiallySplit);
+            potentiallySplit.setModifyingCallOut(callOut);
+        } else {
+            log(OBJECT_FLOW, "Added non-modifying call-out to {}", potentiallySplit);
+            potentiallySplit.addNonModifyingCallOut(callOut);
+        }
+        return potentiallySplit;
+    }
+
+    private ObjectFlow splitIfNeeded(Value value) {
+        ObjectFlow objectFlow = value.getObjectFlow();
+        if (objectFlow == ObjectFlow.NO_FLOW) return objectFlow; // not doing anything
+        if (objectFlow.haveModifying()) {
+            // we'll need to split
+            ObjectFlow split = createInternalObjectFlow(objectFlow.type, new ParentFlows(objectFlow));
+            if (value instanceof VariableValue) {
+                updateObjectFlow(((VariableValue) value).variable, split);
+            }
+            log(OBJECT_FLOW, "Split {}", objectFlow);
+            return split;
+        }
+        return objectFlow;
     }
 }

@@ -22,7 +22,9 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -30,7 +32,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @NotNull
 public class MethodAnalysis extends Analysis {
@@ -54,6 +55,9 @@ public class MethodAnalysis extends Analysis {
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
         location = new Location(methodInfo);
+        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType,
+                new StaticOrigin("initial object flow of " + methodInfo.distinguishingName()));
+        objectFlow = new FirstThen<>(initialObjectFlow);
     }
 
     @Override
@@ -77,7 +81,7 @@ public class MethodAnalysis extends Analysis {
 
             case MODIFIED:
                 if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
-                        && returnedObjectFlow.conditionsMetForEventual(typeInfo)) {
+                        && getObjectFlow().conditionsMetForEventual(typeInfo)) {
                     return Level.FALSE;
                 }
                 return getPropertyCheckOverrides(variableProperty);
@@ -93,7 +97,7 @@ public class MethodAnalysis extends Analysis {
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
                 int fromReturnType = Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE) &&
-                        returnedObjectFlow.conditionsMetForEventual(returnType) ? variableProperty.best : Level.DELAY;
+                        getObjectFlow().conditionsMetForEventual(returnType) ? variableProperty.best : Level.DELAY;
                 return Level.best(super.getProperty(VariableProperty.IMMUTABLE), fromReturnType);
 
             case CONTAINER:
@@ -256,20 +260,15 @@ public class MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    public final SetOnce<Value> preconditionForOnlyData = new SetOnce<Value>();
-    public final SetOnce<OnlyData> onlyData = new SetOnce<OnlyData>();
+    public final SetOnce<Value> preconditionForOnlyData = new SetOnce<>();
+    public final SetOnce<OnlyData> onlyData = new SetOnce<>();
 
     public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
-    private ObjectFlow returnedObjectFlow;
+    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
 
-    public ObjectFlow ensureReturnedObjectFlow(ObjectFlow objectFlow) {
-        this.returnedObjectFlow = objectFlow.merge(this.returnedObjectFlow);
-        return this.returnedObjectFlow;
-    }
-
-    public ObjectFlow getReturnedObjectFlow() {
-        return returnedObjectFlow;
+    public ObjectFlow getObjectFlow() {
+        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
 
 }

@@ -477,8 +477,18 @@ public class FieldAnalyser {
 
         // compute and set the combined value
 
+        if (!fieldAnalysis.internalObjectFlows.isSet()) {
+            log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
+            return false;
+        }
         Value effectivelyFinalValue = determineEffectivelyFinalValue(fieldReference, values);
-        fieldAnalysis.ensureObjectFlow(effectivelyFinalValue.getObjectFlow()).assignTo(fieldInfo);
+
+        ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
+        if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
+            log(OBJECT_FLOW, "Set final object flow object for field {}: {}", fieldInfo.fullyQualifiedName(), objectFlow);
+            fieldAnalysis.objectFlow.getFirst().moveNextTo(objectFlow);
+            fieldAnalysis.objectFlow.set(objectFlow);
+        }
         fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, effectivelyFinalValue.isConstant());
 

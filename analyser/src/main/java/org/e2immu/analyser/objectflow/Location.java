@@ -18,6 +18,7 @@ public class Location {
     public Location(WithInspectionAndAnalysis info) {
         this(Objects.requireNonNull(info), null, 0);
     }
+
     public Location(WithInspectionAndAnalysis info, int counter) {
         this(Objects.requireNonNull(info), null, counter);
     }
@@ -42,12 +43,13 @@ public class Location {
         if (o == null || getClass() != o.getClass()) return false;
         Location location = (Location) o;
         return Objects.equals(info, location.info) &&
-                Objects.equals(statementWithinMethod, location.statementWithinMethod);
+                Objects.equals(statementWithinMethod, location.statementWithinMethod) &&
+                counter == location.counter;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(info, statementWithinMethod);
+        return Objects.hash(info, statementWithinMethod, counter);
     }
 
     @Override

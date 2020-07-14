@@ -19,14 +19,14 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,7 +47,9 @@ public class FieldAnalysis extends Analysis {
         type = fieldInfo.type;
         location = new Location(fieldInfo);
         this.fieldInfo = fieldInfo;
-        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type, new CallOutsArgumentToParameter());
+        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type,
+                new StaticOrigin("initial object flow of " + fieldInfo.fullyQualifiedName()));
+        objectFlow = new FirstThen<>(initialObjectFlow);
     }
 
     @Override
@@ -76,7 +78,9 @@ public class FieldAnalysis extends Analysis {
 
     public final SetOnce<Boolean> fieldError = new SetOnce<>();
 
-    private ObjectFlow objectFlow;
+    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
+
+    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
@@ -170,14 +174,8 @@ public class FieldAnalysis extends Analysis {
                 VariableProperty.FINAL, typeContext.variableField.get());
     }
 
-    public ObjectFlow ensureObjectFlow(ObjectFlow objectFlow) {
-        this.objectFlow = objectFlow.merge(this.objectFlow);
-        return this.objectFlow;
-    }
-
     public ObjectFlow getObjectFlow() {
-        return objectFlow;
+        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
 
-    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 }

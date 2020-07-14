@@ -13,7 +13,7 @@ public class StaticOrigin implements Origin {
 
     private final String reason;
 
-    StaticOrigin(String reason) {
+    public StaticOrigin(String reason) {
         this.reason = reason;
     }
 
@@ -35,5 +35,10 @@ public class StaticOrigin implements Origin {
     @Override
     public void addBiDirectionalLink(ObjectFlow destination) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean permanentFromStart() {
+        return true;
     }
 }

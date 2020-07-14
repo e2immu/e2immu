@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -190,8 +191,8 @@ public class Assignment implements Expression {
                 return;
             }
 
-            if (resultOfExpression.getObjectFlow() != null) {
-                fieldInfo.fieldAnalysis.get().ensureObjectFlow(resultOfExpression.getObjectFlow()).assignTo(fieldInfo);
+            if (resultOfExpression.getObjectFlow() != ObjectFlow.NO_FLOW) {
+                resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo) {
             if (!statement.inErrorState()) {
