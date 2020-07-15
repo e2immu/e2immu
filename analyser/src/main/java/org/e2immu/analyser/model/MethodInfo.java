@@ -377,8 +377,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public SideEffect sideEffect() {
         int modified = methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         int typeE2Immutable = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if (typeE2Immutable != Level.TRUE && modified == Level.DELAY) return SideEffect.DELAYED;
-        if (typeE2Immutable == Level.TRUE || modified == Level.FALSE) {
+        boolean isNonEventuallyE2Immutable = typeE2Immutable == Level.TRUE && !typeInfo.isEventual();
+        if (!isNonEventuallyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
+        if (isNonEventuallyE2Immutable || modified == Level.FALSE) {
             if (isStatic) {
                 if (isVoid()) {
                     return SideEffect.STATIC_ONLY;

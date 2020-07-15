@@ -20,8 +20,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.Origin;
@@ -99,8 +101,10 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             if ("0".equals(d.statementId)) {
                 Assert.assertTrue("Have " + d.objectFlow.marks(), d.objectFlow.marks().isEmpty());
             }
+            // now after set7.freeze():
             if ("1".equals(d.statementId)) {
                 Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };
@@ -118,11 +122,11 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
                 Assert.assertTrue(objectFlow.marks().isEmpty());
             }
-            //if ("method7".equals(methodInfo.name)) {
-            //    Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-            //   ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
-            //   Assert.assertEquals("[mark]", objectFlow.marks().toString());
-            //}
+            if ("method7".equals(methodInfo.name)) {
+                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            }
         }
     };
 
@@ -138,10 +142,10 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
             if ("method9".equals(methodInfo.name)) {
                 if ("0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
+                    //   Assert.assertFalse(numberedStatement.errorValue.isSet());
                 }
                 if ("1".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.isSet());
+                    //    Assert.assertTrue(numberedStatement.errorValue.isSet());
                 }
             }
         }
