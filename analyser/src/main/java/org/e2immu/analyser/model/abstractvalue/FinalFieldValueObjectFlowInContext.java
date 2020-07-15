@@ -19,33 +19,36 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.FieldAnalysis;
+import org.e2immu.analyser.model.FieldReference;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Objects;
 
 
-public class FinalFieldValue extends ValueWithVariable {
+public class FinalFieldValueObjectFlowInContext extends ValueWithVariable {
 
     private final FieldAnalysis fieldAnalysis;
-    private final ObjectFlow objectFlow;
+    private final EvaluationContext evaluationContext;
 
-    public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
+    public FinalFieldValueObjectFlowInContext(Variable variable, EvaluationContext evaluationContext) {
         super(variable);
-        this.objectFlow = Objects.requireNonNull(objectFlow);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
+        this.evaluationContext = evaluationContext;
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return objectFlow;
+        return evaluationContext.getObjectFlow(variable);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        FinalFieldValue that = (FinalFieldValue) o;
+        FinalFieldValueObjectFlowInContext that = (FinalFieldValueObjectFlowInContext) o;
         return variable.equals(that.variable);
     }
 
@@ -64,7 +67,4 @@ public class FinalFieldValue extends ValueWithVariable {
         return fieldAnalysis.getProperty(variableProperty);
     }
 
-    public Value copy(EvaluationContext evaluationContext) {
-        return new FinalFieldValueObjectFlowInContext(variable, evaluationContext);
-    }
 }

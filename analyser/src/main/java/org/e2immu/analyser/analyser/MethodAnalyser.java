@@ -184,12 +184,12 @@ public class MethodAnalyser {
         if (methodAnalysis.internalObjectFlows.isSet()) return false; // already done
         boolean noDelays = methodProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
-            Set<ObjectFlow> internalObjectFlowsWithoutParameters = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows()
-                    .filter(of -> of.origin != Origin.PARAMETER)
+            Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows()
+                    .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
                     .collect(Collectors.toSet()));
 
-            internalObjectFlowsWithoutParameters.forEach(of -> of.finalize(null));
-            methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParameters);
+            internalObjectFlowsWithoutParametersAndLiterals.forEach(of -> of.finalize(null));
+            methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
 
             methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
                 ParameterAnalysis parameterAnalysis = ((ParameterInfo) of.location.info).parameterAnalysis.get();
@@ -197,7 +197,13 @@ public class MethodAnalyser {
                 parameterAnalysis.objectFlow.set(of);
             });
 
-            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParameters.size(), methodInfo.distinguishingName());
+            TypeAnalysis typeAnalysis = methodInfo.typeInfo.typeAnalysis.get();
+            methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
+                ObjectFlow inType = typeAnalysis.ensureConstantObjectFlow(of);
+                of.moveAllInto(inType);
+            });
+
+            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParametersAndLiterals.size(), methodInfo.distinguishingName());
             return true;
         }
         log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());

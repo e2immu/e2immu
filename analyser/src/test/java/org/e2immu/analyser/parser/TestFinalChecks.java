@@ -9,6 +9,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
                 Assert.assertEquals("s1", d.currentValue.toString());
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                 if (d.iteration == 2) {
                     Assert.assertEquals(Level.DELAY, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 } else {

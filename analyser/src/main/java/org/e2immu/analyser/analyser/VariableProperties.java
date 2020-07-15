@@ -253,7 +253,7 @@ class VariableProperties implements EvaluationContext {
             return aboutVariable;
         }
         if (variable instanceof FieldReference) {
-            ensureThisVariable((FieldReference) variable);
+            ensureFieldReference((FieldReference) variable);
         } else if (variable instanceof This) {
             ensureThisVariable((This) variable);
         }
@@ -280,7 +280,7 @@ class VariableProperties implements EvaluationContext {
         return null;
     }
 
-    public void ensureThisVariable(FieldReference fieldReference) {
+    public void ensureFieldReference(FieldReference fieldReference) {
         String name = variableName(fieldReference);
         if (find(name) != null) return;
         Value resetValue;
@@ -294,7 +294,7 @@ class VariableProperties implements EvaluationContext {
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.TRUE) {
                 if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    resetValue = fieldAnalysis.effectivelyFinalValue.get();
+                    resetValue = safeFinalFieldValue(fieldAnalysis.effectivelyFinalValue.get());
                 } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
                     resetValue = UnknownValue.NO_VALUE; // delay
                 } else {
@@ -308,6 +308,10 @@ class VariableProperties implements EvaluationContext {
             }
         }
         internalCreate(fieldReference, name, resetValue, resetValue, Set.of(), fieldReferenceState);
+    }
+
+    private Value safeFinalFieldValue(Value v) {
+        return v instanceof FinalFieldValue ? ((FinalFieldValue) v).copy(this) : v;
     }
 
     public void ensureThisVariable(This thisVariable) {
@@ -375,10 +379,14 @@ class VariableProperties implements EvaluationContext {
                 throw new UnsupportedOperationException("? should not yet be there");
         } else if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
-            objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),
+            ObjectFlow fieldObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),
                     fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
-            if (!internalObjectFlows.add(objectFlow))
-                throw new UnsupportedOperationException("? should not yet be there");
+            if (internalObjectFlows.contains(fieldObjectFlow)) {
+                objectFlow = internalObjectFlows.stream().filter(of -> of.equals(fieldObjectFlow)).findFirst().orElseThrow();
+            } else {
+                objectFlow = fieldObjectFlow;
+                internalObjectFlows.add(objectFlow);
+            }
         } else {
             // local variable, field reference, this
             // TODO we should have something for fields?
@@ -442,7 +450,7 @@ class VariableProperties implements EvaluationContext {
 
     private Value computeInitialValue(FieldInfo recordField, Expression initialiser) {
         if (recordField.fieldAnalysis.get().effectivelyFinalValue.isSet()) {
-            return recordField.fieldAnalysis.get().effectivelyFinalValue.get();
+            return safeFinalFieldValue(recordField.fieldAnalysis.get().effectivelyFinalValue.get());
         }
         if (initialiser instanceof EmptyExpression) {
             return recordField.type.defaultValue();
@@ -577,7 +585,7 @@ class VariableProperties implements EvaluationContext {
     public VariableValue newVariableValue(Variable variable) {
         if (variable instanceof This) throw new UnsupportedOperationException();
         if (variable instanceof FieldReference) {
-            ensureThisVariable((FieldReference) variable);
+            ensureFieldReference((FieldReference) variable);
         }
         AboutVariable aboutVariable = findComplain(variable);
         // TODO ObjectFlow
@@ -1101,6 +1109,8 @@ class VariableProperties implements EvaluationContext {
         if (objectFlow.haveModifying()) {
             // we'll need to split
             ObjectFlow split = createInternalObjectFlow(objectFlow.type, Origin.INTERNAL);
+            objectFlow.addNext(split);
+            split.addPrevious(objectFlow);
             if (value instanceof VariableValue) {
                 updateObjectFlow(((VariableValue) value).variable, split);
             }

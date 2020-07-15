@@ -66,7 +66,12 @@ public class TestObjectFlow3 extends CommonTestRunner {
                     Assert.assertFalse(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
                 } else {
                     Set<ObjectFlow> objectFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
-                    Assert.assertEquals(1, objectFlows.size());
+                    LOGGER.info("Have flows in Main.go(): {}", objectFlows);
+                    Assert.assertEquals(2, objectFlows.size());
+                    ObjectFlow newInBetween = objectFlows.stream().filter(of -> of.origin == Origin.NEW_OBJECT_CREATION).findFirst().orElseThrow();
+                    Assert.assertEquals("InBetween", newInBetween.type.typeInfo.simpleName);
+                    ObjectFlow fieldAccess = objectFlows.stream().filter(of -> of.origin == Origin.FIELD_ACCESS).findFirst().orElseThrow();
+                    Assert.assertEquals("config", fieldAccess.location.info.name());
                 }
             }
         }
@@ -108,7 +113,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
         goMethodMain.methodAnalysis.get().internalObjectFlows.get().forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
         TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
-        Assert.assertEquals(1L, goMethodMain.methodAnalysis.get().internalObjectFlows.get().size());
+        Assert.assertEquals(2L, goMethodMain.methodAnalysis.get().internalObjectFlows.get().size());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().internalObjectFlows.get().stream().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
         Assert.assertSame(Origin.NEW_OBJECT_CREATION, newInBetween.origin);
 
@@ -117,12 +122,13 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodAccess newInBetweenCallGo = (MethodAccess) newInBetween.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newInBetweenCallGo.methodInfo.name);
 
-        Set<ObjectFlow> callOutsOfMainConstructorParamObjectFlow = mainConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
+        Assert.assertEquals(0L, mainConstructorParamObjectFlow.getNonModifyingCallouts().count());
+        Assert.assertEquals(1L, mainConstructorParamObjectFlow.getLocalAssignments().count());
 
         MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors.get(0);
         ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
-        Assert.assertTrue(callOutsOfMainConstructorParamObjectFlow.contains(inBetweenConstructorParamObjectFlow));
-        Assert.assertTrue(inBetweenConstructorParamObjectFlow.containsPrevious(mainConstructorParamObjectFlow));
+        Assert.assertEquals(0L, inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().count());
+        Assert.assertEquals(1L, inBetweenConstructorParamObjectFlow.getLocalAssignments().count());
 
         // The go() method in inBetween creates a DoSomeWork flow
         MethodInfo goMethodInBetween = inBetween.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
@@ -135,10 +141,10 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodAccess newDoSomeWorkCallGo = (MethodAccess) newDoSomeWork.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newDoSomeWorkCallGo.methodInfo.name);
 
-        Set<ObjectFlow> callOutsOfInBetweenConstructorParamObjectFlow = inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().collect(Collectors.toSet());
         MethodInfo doSomeWorkConstructor = doSomeWork.typeInspection.get().constructors.get(0);
         ObjectFlow doSomeWorkConstructorParamObjectFlow = doSomeWorkConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
-        Assert.assertTrue(callOutsOfInBetweenConstructorParamObjectFlow.contains(doSomeWorkConstructorParamObjectFlow));
+        Assert.assertEquals(0L, doSomeWorkConstructorParamObjectFlow.getNonModifyingCallouts().count());
+        Assert.assertEquals(1L, doSomeWorkConstructorParamObjectFlow.getLocalAssignments().count());
 
         // now we've followed the "Config" object all along
     }

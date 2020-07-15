@@ -162,14 +162,17 @@ public class ObjectFlow {
     because that has to happen in bulk for internalObjectFlows
      */
     public void finalize(ObjectFlow initialObjectFlow) {
-        if (finalized) return; // is possible, because the same object flow can sit on a parameter and a method result, for example
+        if (finalized)
+            return; // is possible, because the same object flow can sit on a parameter and a method result, for example
         finalized = true;
         switch (origin) {
             case PARAMETER:
-                initialObjectFlow.getPrevious().forEach(callout -> {
-                    callout.replaceCallOut(initialObjectFlow, this);
-                    addPrevious(callout);
-                });
+                if (initialObjectFlow != null) {
+                    initialObjectFlow.getPrevious().forEach(callout -> {
+                        callout.replaceCallOut(initialObjectFlow, this);
+                        addPrevious(callout);
+                    });
+                }
                 break;
             case RESULT_OF_METHOD:
             case FIELD_ACCESS:
@@ -178,7 +181,7 @@ public class ObjectFlow {
 
             default:
         }
-        if(initialObjectFlow != null) {
+        if (initialObjectFlow != null) {
             initialObjectFlow.next.forEach(prev -> prev.replaceSource(initialObjectFlow, this));
             next.addAll(initialObjectFlow.next);
         }
@@ -293,5 +296,21 @@ public class ObjectFlow {
     // for testing
     public boolean containsPrevious(ObjectFlow objectFlow) {
         return previous.contains(objectFlow);
+    }
+
+    /**
+     * meant for literals, which are assigned to constants, have non-modifying access, non-modifying callouts
+     *
+     * @param destination destination object flow
+     */
+    public void moveAllInto(ObjectFlow destination) {
+        if (origin != Origin.LITERAL || destination.origin != Origin.LITERAL) throw new UnsupportedOperationException();
+
+        getLocalAssignments().forEach(destination::assignTo);
+        getNonModifyingAccesses().forEach(destination::addNonModifyingAccess);
+        getNonModifyingCallouts().forEach(callOut -> {
+            destination.addNonModifyingCallOut(callOut);
+            callOut.addPrevious(destination);
+        });
     }
 }

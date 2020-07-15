@@ -134,7 +134,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         visitor.visit(this, evaluationContext, result);
 
-        checkCommonErrors(evaluationContext, objectValue, parameters);
+        checkCommonErrors(evaluationContext, objectValue);
 
         return result;
     }
@@ -162,7 +162,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue, List<Value> parameters) {
+    private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue) {
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.type();
             if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
@@ -180,7 +180,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // eval on constant, like "abc".length()
-        Value evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue, parameters);
+        Value evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue);
         if (evaluationOnConstant != null) {
             return evaluationOnConstant;
         }
@@ -223,7 +223,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
     }
 
-    private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue, List<Value> parameters) {
+    private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue) {
         if (!objectValue.isConstant()) return null;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) && objectValue instanceof StringValue) {
             return new IntValue(((StringValue) objectValue).value.length());
@@ -303,13 +303,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (Analysis.haveEquals(requiredSize)) {
                 // we require a fixed size.
                 if (Analysis.haveEquals(sizeOfObject)) {
-                    if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
                     return sizeOfObject == requiredSize ? BoolValue.TRUE : BoolValue.FALSE;
                 }
                 if (sizeOfObject > requiredSize) {
                     log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
-                    if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     return BoolValue.FALSE;
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
@@ -317,7 +317,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
-                if (evaluationContext != null) evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                 return BoolValue.TRUE;
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);

@@ -122,8 +122,7 @@ public interface EvaluationContext {
     Location getLocation();
 
     default ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
-        ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, Origin.LITERAL);
-        return getCurrentType().typeAnalysis.get().ensureConstantObjectFlow(objectFlow);
+        return createInternalObjectFlow(parameterizedType, Origin.LITERAL);
     }
 
     /**

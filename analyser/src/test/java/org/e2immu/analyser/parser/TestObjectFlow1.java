@@ -19,11 +19,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -65,6 +62,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
                 Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
                 Set<ObjectFlow> internalFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+                LOGGER.info("Have internal flows of useKv: {}", internalFlows);
                 Assert.assertEquals(2, internalFlows.size());
                 ObjectFlow newKeyValue = internalFlows.stream()
                         .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
@@ -110,12 +108,26 @@ public class TestObjectFlow1 extends CommonTestRunner {
         }
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, TypeInfo typeInfo) {
+            if ("ObjectFlow1".equals(typeInfo.simpleName)) {
+                Assert.assertEquals(1L, typeInfo.typeAnalysis.get().getConstantObjectFlows().count());
+                ObjectFlow literal = typeInfo.typeAnalysis.get().getConstantObjectFlows().findAny().orElseThrow();
+                Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
+                Assert.assertSame(Origin.LITERAL, literal.origin);
+                Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());
+            }
+        }
+    };
+
     @Test
     public void test() throws IOException {
         TypeContext typeContext = testClass("ObjectFlow1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
 
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
@@ -131,6 +143,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
         ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
+        Assert.assertSame(Origin.LITERAL, inType.origin);
 
         ParameterInfo value = keyValueConstructor.methodInspection.get().parameters.get(1);
         ObjectFlow objectFlowValue = value.parameterAnalysis.get().getObjectFlow();
@@ -139,11 +152,18 @@ public class TestObjectFlow1 extends CommonTestRunner {
         MethodInfo useKv = objectFlow1.typeInspection.get().methods.stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
         ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
         ObjectFlow objectFlowK = k.parameterAnalysis.get().getObjectFlow();
+        Assert.assertSame(Origin.PARAMETER, objectFlowK.origin);
 
-        Assert.assertEquals(1L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
-        ObjectFlow inUseKv = useKv.methodAnalysis.get().internalObjectFlows.get().stream().findAny().orElseThrow();
+        Assert.assertEquals(2L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
+        ObjectFlow newKeyValue = useKv.methodAnalysis.get().internalObjectFlows.get().stream()
+                .filter(of -> Origin.NEW_OBJECT_CREATION == of.origin).findAny().orElseThrow();
+        ObjectFlow accessValue = useKv.methodAnalysis.get().internalObjectFlows.get().stream()
+                .filter(of -> Origin.FIELD_ACCESS == of.origin).findAny().orElseThrow();
 
-        Assert.assertSame(objectFlowValue, useKv.methodAnalysis.get().getObjectFlow());
+
+        MethodInfo getKeyMethod = keyValue.typeInspection.get().methods.stream().filter(m -> "getKey".equals(m.name)).findAny().orElseThrow();
+        ObjectFlow returnFlowGetKey = getKeyMethod.methodAnalysis.get().objectFlow.get();
+        Assert.assertSame(Origin.FIELD_ACCESS, returnFlowGetKey.origin);
 
         Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
         for (ObjectFlow objectFlow : flowsOfObjectFlow1) {
@@ -153,8 +173,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowKey));
         Assert.assertTrue(flowsOfObjectFlow1.contains(objectFlowValue));
         Assert.assertTrue(flowsOfObjectFlow1.contains(keyConstant));
-        Assert.assertTrue(flowsOfObjectFlow1.contains(inUseKv));
-        Assert.assertEquals(5, flowsOfObjectFlow1.size());
+        Assert.assertTrue(flowsOfObjectFlow1.contains(newKeyValue));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(returnFlowGetKey));
+        Assert.assertTrue(flowsOfObjectFlow1.contains(accessValue));
+        Assert.assertEquals(7, flowsOfObjectFlow1.size());
     }
 
 }

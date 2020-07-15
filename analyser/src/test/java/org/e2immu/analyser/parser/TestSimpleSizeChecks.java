@@ -6,6 +6,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,7 +24,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
             if (d.iteration > 0) {
                 Assert.assertEquals("intSet", d.currentValue.toString());
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
 
                 if (d.iteration > 1) {
                     //   Assert.assertEquals(SIZE_EQUALS_2, currentValue.getPropertyOutsideContext(VariableProperty.SIZE));

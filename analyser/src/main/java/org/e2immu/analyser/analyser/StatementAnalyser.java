@@ -736,7 +736,7 @@ public class StatementAnalyser {
         // the variable has already been created, if relevant
         if (!variableProperties.isKnown(variable)) {
             if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
-            variableProperties.ensureThisVariable((FieldReference) variable);
+            variableProperties.ensureFieldReference((FieldReference) variable);
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
@@ -751,13 +751,13 @@ public class StatementAnalyser {
 
     public static void markSizeRestriction(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
+        if (variable instanceof FieldReference) variableProperties.ensureFieldReference((FieldReference) variable);
         variableProperties.addPropertyRestriction(variable, VariableProperty.SIZE, value);
     }
 
     public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        if (variable instanceof FieldReference) variableProperties.ensureThisVariable((FieldReference) variable);
+        if (variable instanceof FieldReference) variableProperties.ensureFieldReference((FieldReference) variable);
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());

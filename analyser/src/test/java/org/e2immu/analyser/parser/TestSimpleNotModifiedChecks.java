@@ -29,8 +29,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                    FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
                     Assert.assertEquals("set3", d.currentValue.toString());
                 }
@@ -41,8 +41,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                    FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
                     Assert.assertEquals("set4", d.currentValue.toString());
                 }
@@ -56,7 +56,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                     if (d.iteration > 1) {
                         Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                     }
@@ -78,7 +78,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (d.iteration == 0) {
                 Assert.assertTrue(d.currentValue instanceof Instance);
             } else {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
             }
         }
 
