@@ -9,12 +9,12 @@ import java.util.stream.Stream;
 @ModifiesArguments
 public class ObjectFlowFreezableSet {
 
-    @E2Container(after = "freeze")
+    @E2Container(after = "mark")
     static class FreezableSet {
         private final Set<String> set = new HashSet<>();
         private boolean frozen;
 
-        @Only(after = "freeze")
+        @Only(after = "mark")
         @NotModified
         @NotNull1
         public Stream<String> stream() {
@@ -22,15 +22,14 @@ public class ObjectFlowFreezableSet {
             return set.stream();
         }
 
-        @Only(before = "freeze")
+        @Only(before = "mark")
         @Modified
         public void add(String s) {
             if (frozen) throw new UnsupportedOperationException();
             set.add(s);
         }
 
-        @Mark("freeze")
-        @Only(before = "freeze")
+        @Mark("mark")
         @Modified
         public void freeze() {
             if (frozen) throw new UnsupportedOperationException();
@@ -69,6 +68,7 @@ public class ObjectFlowFreezableSet {
     }
 
     @E2Container
+    @NotModified
     static FreezableSet method4() {
         FreezableSet set4 = new FreezableSet();
         set4.add("abc");
@@ -83,6 +83,7 @@ public class ObjectFlowFreezableSet {
 
     // not frozen yet
     @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified
     static FreezableSet method6() {
         FreezableSet set6 = new FreezableSet();
         set6.add("abc");

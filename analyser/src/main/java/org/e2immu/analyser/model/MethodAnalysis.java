@@ -57,9 +57,14 @@ public class MethodAnalysis extends Analysis {
         this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
         location = new Location(methodInfo);
-        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType,
-                new StaticOrigin("initial object flow of " + methodInfo.distinguishingName()));
-        objectFlow = new FirstThen<>(initialObjectFlow);
+        if (methodInfo.isConstructor || methodInfo.isVoid()) {
+            objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
+            objectFlow.set(ObjectFlow.NO_FLOW);
+        } else {
+            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType,
+                    new StaticOrigin("return flow of " + methodInfo.distinguishingName()));
+            objectFlow = new FirstThen<>(initialObjectFlow);
+        }
     }
 
     @Override
@@ -75,17 +80,17 @@ public class MethodAnalysis extends Analysis {
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
+            case MODIFIED:
+                //if (!methodInfo.isConstructor && Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
+                //        && getObjectFlow().conditionsMetForEventual(typeInfo)) {
+                //    return Level.FALSE;
+                //}
+                //return getPropertyCheckOverrides(variableProperty);
+
             case FLUENT:
             case IDENTITY:
             case INDEPENDENT:
             case SIZE:
-                return getPropertyCheckOverrides(variableProperty);
-
-            case MODIFIED:
-                if (!methodInfo.isConstructor && Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
-                        && getObjectFlow().conditionsMetForEventual(typeInfo)) {
-                    return Level.FALSE;
-                }
                 return getPropertyCheckOverrides(variableProperty);
 
             case NOT_NULL:
@@ -129,20 +134,29 @@ public class MethodAnalysis extends Analysis {
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
             case INDEPENDENT:
+                // implicit on non-eventual @E2Immutable
                 if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) &&
                         !typeInfo.isEventual()) {
                     return Level.TRUE;
                 }
                 break;
+
             case NOT_NULL:
+                // don't show @NotNull on primitive types
                 if (returnType.isPrimitive()) return Level.TRUE;
                 break;
+
             case SIZE:
+                // do not show @Size(min = 0) on a method
                 return 1;
 
-            // the following means: if the value is higher than exactly what is shown, then display @Container
             case IMMUTABLE:
+                // we show @ExImmutable on the method only when it is eventual, and the conditions have been met
+                return returnType.isEventual() && getObjectFlow().conditionsMetForEventual(returnType)
+                        ? Level.UNDEFINED: returnType.getProperty(variableProperty);
+
             case CONTAINER:
+                // we don't show @Container on the method
                 return returnType.getProperty(variableProperty);
             default:
         }

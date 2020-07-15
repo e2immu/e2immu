@@ -29,6 +29,7 @@ import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
 import org.e2immu.analyser.objectflow.origin.ObjectCreation;
 import org.e2immu.analyser.objectflow.origin.ParentFlows;
+import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
@@ -83,16 +84,16 @@ public class TestObjectFlow2 extends CommonTestRunner {
         ObjectFlow useOfFlow = useOf.methodAnalysis.get().internalObjectFlows.get().stream()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
-        Assert.assertTrue(useOfFlow.origin instanceof CallOutsArgumentToParameter);
-        CallOutsArgumentToParameter useOfFlowMcs = (CallOutsArgumentToParameter) useOfFlow.origin;
+        Assert.assertTrue(useOfFlow.origin instanceof ResultOfMethodCall);
+        ResultOfMethodCall useOfFlowMcs = (ResultOfMethodCall) useOfFlow.origin;
         Assert.assertTrue(useOfFlowMcs.contains(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
 
-        Assert.assertTrue(set1ObjectFlow.origin instanceof CallOutsArgumentToParameter);
-        CallOutsArgumentToParameter set1ObjectFlowMcs = (CallOutsArgumentToParameter) set1ObjectFlow.origin;
+        Assert.assertTrue(set1ObjectFlow.origin instanceof ResultOfMethodCall);
+        ResultOfMethodCall set1ObjectFlowMcs = (ResultOfMethodCall) set1ObjectFlow.origin;
         Assert.assertEquals(1L, set1ObjectFlowMcs.sources().count());
         Assert.assertTrue(set1ObjectFlowMcs.contains(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));

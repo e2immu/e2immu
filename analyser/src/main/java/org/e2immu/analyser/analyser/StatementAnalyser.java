@@ -686,7 +686,8 @@ public class StatementAnalyser {
         boolean error = modified == Level.TRUE;
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
-            variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
+            //TODO
+        //    variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
         }
     }
 

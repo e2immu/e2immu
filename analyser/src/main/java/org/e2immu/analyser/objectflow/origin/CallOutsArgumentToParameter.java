@@ -15,7 +15,7 @@ public class CallOutsArgumentToParameter implements Origin {
 
     @Override
     public String toString() {
-        return objectFlows.size() + " method calls";
+        return objectFlows.size() + " incoming call-outs";
     }
 
     @Override

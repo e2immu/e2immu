@@ -20,10 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
@@ -75,7 +72,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
                 Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
                 Assert.assertEquals("freeze", d.objectFlow.getModifyingAccess().methodInfo.name);
-                Assert.assertEquals("[freeze]", d.objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
             }
             if ("5".equals(d.statementId) && "set1".equals(d.variableName)) {
                 Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
@@ -86,8 +83,47 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
                 Assert.assertEquals(2L, d.objectFlow.getNonModifyingAccesses().count());
                 Assert.assertNull(d.objectFlow.getModifyingAccess());
-                Assert.assertEquals("[freeze]", d.objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
             }
+        }
+
+        if ("method4".equals(d.methodInfo.name) && "set4".equals(d.variableName)) {
+            if ("1".equals(d.statementId)) {
+                Assert.assertTrue(d.objectFlow.marks().isEmpty());
+            }
+            if ("4".equals(d.statementId)) {
+                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
+            }
+        }
+
+        if ("method7".equals(d.methodInfo.name) && "set7".equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertTrue("Have "+d.objectFlow.marks(), d.objectFlow.marks().isEmpty());
+            }
+            if ("1".equals(d.statementId)) {
+                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
+            }
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("method4".equals(methodInfo.name)) {
+                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            }
+            if ("method6".equals(methodInfo.name)) {
+                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+                Assert.assertTrue(objectFlow.marks().isEmpty());
+            }
+            //if ("method7".equals(methodInfo.name)) {
+            //    Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+             //   ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+             //   Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            //}
         }
     };
 
@@ -118,7 +154,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             if ("SET8".equals(fieldInfo.name) && iteration > 0) {
                 ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
                 LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
-                Assert.assertEquals("[freeze]", objectFlow.marks().toString());
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
             }
         }
     };
@@ -129,6 +165,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 
     }

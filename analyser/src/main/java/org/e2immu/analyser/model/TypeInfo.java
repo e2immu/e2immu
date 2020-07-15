@@ -1070,7 +1070,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             result.addAll(methodAnalysis.internalObjectFlows.get());
 
-            result.add(methodAnalysis.getObjectFlow());
+            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                result.add(methodAnalysis.getObjectFlow());
+            }
         }
         // for fields we only add those owned by the field itself (i.e. with an initialiser)
         for (FieldInfo fieldInfo : typeInspection.get().fields) {
