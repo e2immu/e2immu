@@ -22,7 +22,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
@@ -58,11 +58,11 @@ public class MethodAnalysis extends Analysis {
         this.returnType = methodInfo.returnType();
         location = new Location(methodInfo);
         if (methodInfo.isConstructor || methodInfo.isVoid()) {
+            // we set a NO_FLOW, non-modifiable
             objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
             objectFlow.set(ObjectFlow.NO_FLOW);
         } else {
-            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType,
-                    new StaticOrigin("return flow of " + methodInfo.distinguishingName()));
+            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType, Origin.RESULT_OF_METHOD);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
     }
@@ -153,7 +153,7 @@ public class MethodAnalysis extends Analysis {
             case IMMUTABLE:
                 // we show @ExImmutable on the method only when it is eventual, and the conditions have been met
                 return returnType.isEventual() && getObjectFlow().conditionsMetForEventual(returnType)
-                        ? Level.UNDEFINED: returnType.getProperty(variableProperty);
+                        ? Level.UNDEFINED : returnType.getProperty(variableProperty);
 
             case CONTAINER:
                 // we don't show @Container on the method

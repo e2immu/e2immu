@@ -19,9 +19,10 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 
@@ -41,7 +42,9 @@ public class ParameterAnalysis extends Analysis {
     public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
     public final Location location;
 
-    public final ObjectFlow objectFlow;
+    // initial flow object, used to collect call-outs
+    // at the end of the method analysis replaced by a "final" flow object
+    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
@@ -49,7 +52,8 @@ public class ParameterAnalysis extends Analysis {
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
         this.location = new Location(parameterInfo);
-        objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, new CallOutsArgumentToParameter());
+        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, Origin.PARAMETER);
+        objectFlow = new FirstThen<>(initialObjectFlow);
     }
 
     @Override
@@ -140,8 +144,8 @@ public class ParameterAnalysis extends Analysis {
                 return Level.TRUE;
             }
         }
-        if(variableProperty == VariableProperty.NOT_NULL) {
-           if(parameterizedType.isPrimitive()) return Level.FALSE;
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            if (parameterizedType.isPrimitive()) return Level.FALSE;
         }
         return Integer.MAX_VALUE;
     }
@@ -162,5 +166,9 @@ public class ParameterAnalysis extends Analysis {
             log(DELAYED, "Delaying setting parameter @NotNull on {}", logName);
         }
         return false;
+    }
+
+    public ObjectFlow getObjectFlow() {
+        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
 }

@@ -27,9 +27,6 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
-import org.e2immu.analyser.objectflow.origin.ParentFlows;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
@@ -162,7 +159,7 @@ public class NewObject implements HasParameterExpressions {
                 if (modified == Level.DELAY) {
                     source.delay();
                 } else {
-                    ObjectFlow destination = parameterInfo.parameterAnalysis.get().objectFlow;
+                    ObjectFlow destination = parameterInfo.parameterAnalysis.get().getObjectFlow();
                     evaluationContext.addCallOut(modified == Level.TRUE, destination, parameterValue);
                 }
             } else {

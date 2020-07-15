@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Immutable;
@@ -180,11 +180,11 @@ public class BinaryOperator implements Expression {
     }
 
     private ObjectFlow booleanObjectFlow(EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, StaticOrigin.OPERATOR);
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
     }
 
     private ObjectFlow intObjectFlow(EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.intParameterizedType, StaticOrigin.OPERATOR);
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
     }
 
     private Value shortCircuit(EvaluationContext evaluationContext, EvaluationVisitor visitor, boolean and) {
@@ -203,7 +203,7 @@ public class BinaryOperator implements Expression {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return constant;
         }
-        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, StaticOrigin.OPERATOR);
+        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
         if (and) {
             return new AndValue(objectFlow).append(l, r);
         }

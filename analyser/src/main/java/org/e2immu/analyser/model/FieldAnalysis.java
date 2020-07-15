@@ -20,7 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
@@ -48,7 +48,7 @@ public class FieldAnalysis extends Analysis {
         location = new Location(fieldInfo);
         this.fieldInfo = fieldInfo;
         ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type,
-                new StaticOrigin("initial object flow of " + fieldInfo.fullyQualifiedName()));
+                Origin.INITIAL_FIELD_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
     }
 

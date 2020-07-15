@@ -1065,7 +1065,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
             // set, because the returned object flow could equal either one of the non-returned, or parameter flows
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                result.add(parameterInfo.parameterAnalysis.get().objectFlow);
+                result.add(parameterInfo.parameterAnalysis.get().getObjectFlow());
             }
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             result.addAll(methodAnalysis.internalObjectFlows.get());

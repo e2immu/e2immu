@@ -30,7 +30,6 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -116,10 +115,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (!methodInfo.returnType().isVoid()) {
             ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getObjectFlow();
 
-            ResultOfMethodCall origin = new ResultOfMethodCall(returnedFlow);
-            objectFlowOfResult = evaluationContext.createInternalObjectFlow(methodInfo.returnType(), origin);
-
+            objectFlowOfResult = evaluationContext.createInternalObjectFlow(methodInfo.returnType(), Origin.RESULT_OF_METHOD);
+            objectFlowOfResult.addPrevious(returnedFlow);
             // cross-link, possible because returnedFlow is already permanent
+            // TODO ObjectFlow check cross-link
             returnedFlow.addNext(objectFlowOfResult);
         } else {
             objectFlowOfResult = ObjectFlow.NO_FLOW;
@@ -344,9 +343,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, evaluationContext);
         if (Analysis.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            ObjectFlow objectFlow = evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, new ResultOfMethodCall());
+            ObjectFlow objectFlow = evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
             return EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(requiredSize),
-                            evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, new ResultOfMethodCall())),
+                            evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD)),
                     constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Analysis.decodeSizeMin(requiredSize));
@@ -377,8 +376,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             evaluationContext.addAccess(false, new MethodAccess(sizeMethodInfo, List.of()), object);
 
             ObjectFlow source = sizeMethodInfo.methodAnalysis.get().getObjectFlow();
-            ResultOfMethodCall resultOfMethodCall = new ResultOfMethodCall(source);
-            return evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, resultOfMethodCall);
+            ObjectFlow resultOfMethod = evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
+            resultOfMethod.addPrevious(source);
+            return resultOfMethod;
         }
         return ObjectFlow.NO_FLOW;
     }

@@ -26,10 +26,6 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
-import org.e2immu.analyser.objectflow.origin.ObjectCreation;
-import org.e2immu.analyser.objectflow.origin.ParentFlows;
-import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,17 +42,17 @@ public class TestObjectFlow2 extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if("of".equals(d.methodInfo.name) && "4".equals(d.statementId) && "res".equals(d.variableName)) {
-            Assert.assertTrue(d.objectFlow.origin instanceof ParentFlows);
-            ObjectFlow parent = d.objectFlow.origin.sources().findFirst().orElseThrow();
-            Assert.assertTrue(parent.origin instanceof ObjectCreation);
+        if ("of".equals(d.methodInfo.name) && "4".equals(d.statementId) && "res".equals(d.variableName)) {
+            Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
+            ObjectFlow parent = d.objectFlow.getPrevious().findFirst().orElseThrow();
+            Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent.origin);
         }
     };
 
     @Test
     public void test() throws IOException {
         TypeContext typeContext = testClass("ObjectFlow2", 0, 0, new DebugConfiguration.Builder()
-               .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
 
         TypeInfo hashSet = typeContext.typeStore.get(HashSet.class.getCanonicalName());
@@ -66,36 +62,33 @@ public class TestObjectFlow2 extends CommonTestRunner {
         MethodInfo ofMethod = objectFlow2.typeInspection.get().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
         ObjectFlow newHashSet = ofMethod.methodAnalysis.get().internalObjectFlows.get().stream()
                 .filter(of -> of.type.typeInfo == hashSet)
-                .filter(of -> of.origin instanceof ObjectCreation)
+                .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
                 .findAny().orElseThrow();
         Assert.assertEquals(1L, newHashSet.getNext().count());
         ObjectFlow newHashSet2 = newHashSet.getNext().findFirst().orElseThrow();
         Assert.assertSame(newHashSet2, ofMethod.methodAnalysis.get().getObjectFlow());
 
-        ObjectFlow ofParam = ofMethod.methodInspection.get().parameters.get(0).parameterAnalysis.get().objectFlow;
+        ObjectFlow ofParam = ofMethod.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
 
         MethodInfo useOf = objectFlow2.typeInspection.get().methods.stream().filter(m -> "useOf".equals(m.name)).findAny().orElseThrow();
 
         ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows()
                 .filter(of -> of.type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo).findFirst().orElseThrow();
-        CallOutsArgumentToParameter methodCallsOfOfParam = (CallOutsArgumentToParameter)ofParam.origin ;
-        Assert.assertTrue(methodCallsOfOfParam.contains(constantX));
+        Assert.assertTrue(ofParam.containsPrevious(constantX));
 
         ObjectFlow useOfFlow = useOf.methodAnalysis.get().internalObjectFlows.get().stream()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
-        Assert.assertTrue(useOfFlow.origin instanceof ResultOfMethodCall);
-        ResultOfMethodCall useOfFlowMcs = (ResultOfMethodCall) useOfFlow.origin;
-        Assert.assertTrue(useOfFlowMcs.contains(newHashSet2));
+        Assert.assertSame(Origin.RESULT_OF_METHOD, useOfFlow.origin);
+        Assert.assertTrue(useOfFlow.containsPrevious(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
         FieldInfo set1 = objectFlow2.typeInspection.get().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
 
-        Assert.assertTrue(set1ObjectFlow.origin instanceof ResultOfMethodCall);
-        ResultOfMethodCall set1ObjectFlowMcs = (ResultOfMethodCall) set1ObjectFlow.origin;
-        Assert.assertEquals(1L, set1ObjectFlowMcs.sources().count());
-        Assert.assertTrue(set1ObjectFlowMcs.contains(newHashSet2));
+        Assert.assertSame(Origin.RESULT_OF_METHOD, set1ObjectFlow.origin);
+        Assert.assertEquals(1L, set1ObjectFlow.getPrevious().count());
+        Assert.assertTrue(set1ObjectFlow.containsPrevious(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(set1ObjectFlow));
 
         Assert.assertEquals(0L, newHashSet.getNonModifyingAccesses().count());

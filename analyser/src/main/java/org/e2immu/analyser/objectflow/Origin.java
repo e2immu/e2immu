@@ -1,15 +1,13 @@
 package org.e2immu.analyser.objectflow;
 
-import java.util.Set;
-import java.util.stream.Stream;
+public enum Origin {
+    NO_ORIGIN,
+    RESULT_OF_METHOD,
+    PARAMETER,
+    INTERNAL,
+    NEW_OBJECT_CREATION,
+    LITERAL,
 
-public interface Origin {
-    Stream<ObjectFlow> sources();
-
-    String safeToString(Set<ObjectFlow> visited, boolean detailed);
-
-    // add bi-directional link
-    void addBiDirectionalLink(ObjectFlow destination);
-
-    boolean permanentFromStart();
+    // will be replaced by whatever is assigned to the field
+    INITIAL_FIELD_FLOW,
 }

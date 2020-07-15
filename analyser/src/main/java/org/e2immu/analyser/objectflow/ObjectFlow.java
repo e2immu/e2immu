@@ -2,9 +2,6 @@ package org.e2immu.analyser.objectflow;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
-import org.e2immu.analyser.objectflow.origin.ParentFlows;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Mark;
 
@@ -14,7 +11,7 @@ import java.util.stream.Stream;
 
 public class ObjectFlow {
 
-    public static final ObjectFlow NO_FLOW = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, StaticOrigin.NO_ORIGIN);
+    public static final ObjectFlow NO_FLOW = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, Origin.NO_ORIGIN);
 
     // where does this take place?
     public final Location location;
@@ -25,16 +22,27 @@ public class ObjectFlow {
     // denotes where the object comes from
     public final Origin origin;
 
+    private boolean fixed;
+
     public ObjectFlow(Location location, ParameterizedType type, Origin origin) {
         this.location = Objects.requireNonNull(location);
         this.type = Objects.requireNonNull(type);
         this.origin = Objects.requireNonNull(origin);
-
-        permanent = origin.permanentFromStart();
     }
 
     public static String typeLetter(WithInspectionAndAnalysis info) {
         return Character.toString(info.getClass().getSimpleName().charAt(0));
+    }
+
+    private final Set<ObjectFlow> previous = new HashSet<>();
+
+    public void addPrevious(ObjectFlow objectFlow) {
+        if (this == NO_FLOW) throw new UnsupportedOperationException();
+        this.previous.add(objectFlow);
+    }
+
+    public Stream<ObjectFlow> getPrevious() {
+        return previous.stream();
     }
 
     @Override
@@ -135,36 +143,29 @@ public class ObjectFlow {
     }
 
 
-    private boolean permanent;
-
     /*
-    in an internal flow object, we move from non-permanent to permanent
-
-    we need to add the inverse "links"; but they're not that many
-
+    add inverse links
      */
     public void fix() {
-        if (isPermanent()) throw new UnsupportedOperationException("Trying to fix "+toString());
-        permanent = true;
-        origin.addBiDirectionalLink(this); // only for ResultOfMethodCall and ParentFlows -- add to next()
+        if (fixed) throw new UnsupportedOperationException("Trying to fix " + toString() + ", but already fixed");
+        fixed = true;
+        if (origin == Origin.RESULT_OF_METHOD || origin == Origin.INTERNAL) {
+            for (ObjectFlow objectFlow : previous) {
+                objectFlow.next.add(this);
+            }
+        }
         if (modifyingCallOut != null) {
-            ((CallOutsArgumentToParameter) modifyingCallOut.origin).addSource(this);
+            modifyingCallOut.previous.add(this);
         }
         for (ObjectFlow nonModifyingCallOut : nonModifyingCallOuts) {
-            ((CallOutsArgumentToParameter) nonModifyingCallOut.origin).addSource(this);
+            nonModifyingCallOut.previous.add(this);
         }
-    }
-
-    public boolean isPermanent() {
-        return permanent;
     }
 
     private boolean delayed;
 
     public void delay() {
-        if (!isPermanent()) {
-            this.delayed = true;
-        }
+        this.delayed = true;
     }
 
     public boolean isDelayed() {
@@ -186,7 +187,8 @@ public class ObjectFlow {
     public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
         visited.add(this);
         if (detailed) {
-            return "\n<flow of type " + type.stream() + ": " + origin + " @" + location +
+            return "\n<flow of type " + type.stream() + ": " + origin + "@" + location +
+                    (previous.isEmpty() ? "" : "; previous " + previous.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (nonModifyingAccesses.isEmpty() ? "" : "; @NM access" + nonModifyingAccesses.stream().map(access -> access.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (modifyingAccess == null ? "" : "; @M access" + modifyingAccess.safeToString(visited, false)) +
                     (nonModifyingCallOuts.isEmpty() ? "" : "; @NM call-outs " + nonModifyingCallOuts.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
@@ -195,7 +197,7 @@ public class ObjectFlow {
                     (next.isEmpty() ? "" : "; next " + next.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     ">";
         }
-        return "<flow of type " + type.stream() + ": " + origin.safeToString(visited, false) + " @" + location + ">";
+        return "<flow of type " + type.stream() + ": " + origin + "@" + location + ">";
     }
 
     public String visited() {
@@ -209,7 +211,7 @@ public class ObjectFlow {
 
 
     public Set<String> marks() {
-        Set<String> marksSources = origin.sources().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
+        Set<String> marksSources = previous.stream().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
         if (modifyingAccess != null) {
             MethodInfo methodInfo = modifyingAccess.methodInfo;
             Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()
@@ -229,11 +231,11 @@ public class ObjectFlow {
     // the object flows in next are linked to "this" in the origin
     // (it can't be ObjectCreation, nor StaticFlow, nor can it be ParentFlow because we split going forward)
     public void moveNextTo(ObjectFlow newObjectFlow) {
-        for (ObjectFlow objectFlow : next) {
-            if (objectFlow.origin instanceof CallOutsArgumentToParameter) {
-                ((CallOutsArgumentToParameter) objectFlow.origin).replaceSource(this, newObjectFlow);
-            }
-        }
+        //for (ObjectFlow objectFlow : next) {
+        //    if (objectFlow.origin == Origin.RESULT_OF_METHOD) {
+        //        ((CallOutsArgumentToParameter) objectFlow.origin).replaceSource(this, newObjectFlow);
+        //   }
+        //} TODO
         newObjectFlow.next.addAll(next);
         next.clear();
     }
@@ -260,4 +262,8 @@ public class ObjectFlow {
         return typeInfo != null && conditionsMetForEventual(typeInfo);
     }
 
+    // for testing
+    public boolean containsPrevious(ObjectFlow objectFlow) {
+        return previous.contains(objectFlow);
+    }
 }

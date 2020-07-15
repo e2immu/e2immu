@@ -21,9 +21,8 @@ package org.e2immu.analyser.model.abstractvalue;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.Location;
-import org.e2immu.analyser.objectflow.origin.ObjectCreation;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -49,7 +48,7 @@ public class Instance implements Value {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
-        objectFlow = evaluationContext.createInternalObjectFlow(parameterizedType, new ObjectCreation(constructor, parameterValues));
+        objectFlow = evaluationContext.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
     }
 
     public static Instance newStringInstance(EvaluationContext evaluationContext) {

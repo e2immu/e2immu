@@ -27,7 +27,6 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.objectflow.origin.StaticOrigin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
@@ -123,7 +122,7 @@ public interface EvaluationContext {
     Location getLocation();
 
     default ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
-        ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, StaticOrigin.LITERAL);
+        ObjectFlow objectFlow = new ObjectFlow(new Location(getCurrentType()), parameterizedType, Origin.LITERAL);
         return getCurrentType().typeAnalysis.get().ensureConstantObjectFlow(objectFlow);
     }
 

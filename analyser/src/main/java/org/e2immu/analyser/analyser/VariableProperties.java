@@ -26,16 +26,10 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
-import org.e2immu.analyser.objectflow.origin.ObjectCreation;
-import org.e2immu.analyser.objectflow.origin.ParentFlows;
-import org.e2immu.analyser.objectflow.origin.ResultOfMethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -372,7 +366,18 @@ class VariableProperties implements EvaluationContext {
                                 Value resetValue,
                                 Set<VariableProperty> initialProperties,
                                 AboutVariable.FieldReferenceState fieldReferenceState) {
-        ObjectFlow objectFlow = variable instanceof ParameterInfo ? ((ParameterInfo) variable).parameterAnalysis.get().objectFlow : ObjectFlow.NO_FLOW;
+        ObjectFlow objectFlow;
+        if (variable instanceof ParameterInfo) {
+            ParameterInfo parameterInfo = (ParameterInfo) variable;
+            objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
+                    parameterInfo.parameterizedType, Origin.PARAMETER);
+            if (internalObjectFlows.add(objectFlow))
+                throw new UnsupportedOperationException("? should not yet be there");
+        } else {
+            // local variable, field reference, this
+            // TODO we should have something for fields?
+            objectFlow = ObjectFlow.NO_FLOW; // will be assigned to soon enough
+        }
 
         AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null,
                 Objects.requireNonNull(initialValue),
@@ -1081,11 +1086,6 @@ class VariableProperties implements EvaluationContext {
             log(OBJECT_FLOW, "Added non-modifying call-out to {}", potentiallySplit);
             potentiallySplit.addNonModifyingCallOut(callOut);
         }
-        if(potentiallySplit.isPermanent()) {
-            CallOutsArgumentToParameter callOutsArgumentToParameter = (CallOutsArgumentToParameter) callOut.origin;
-            callOutsArgumentToParameter.addSource(potentiallySplit);
-            log(OBJECT_FLOW, "Added inverse link from {} because in permanent flow {}", callOut, potentiallySplit);
-        }
         return potentiallySplit;
     }
 
@@ -1094,7 +1094,7 @@ class VariableProperties implements EvaluationContext {
         if (objectFlow == ObjectFlow.NO_FLOW) return objectFlow; // not doing anything
         if (objectFlow.haveModifying()) {
             // we'll need to split
-            ObjectFlow split = createInternalObjectFlow(objectFlow.type, new ParentFlows(objectFlow));
+            ObjectFlow split = createInternalObjectFlow(objectFlow.type, Origin.INTERNAL);
             if (value instanceof VariableValue) {
                 updateObjectFlow(((VariableValue) value).variable, split);
             }

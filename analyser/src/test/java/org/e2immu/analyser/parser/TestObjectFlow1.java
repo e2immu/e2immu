@@ -24,8 +24,8 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.objectflow.origin.CallOutsArgumentToParameter;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,10 +40,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("KeyValue".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
             if ("key".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof CallOutsArgumentToParameter);
+                Assert.assertSame(Origin.PARAMETER, d.objectFlow.origin);
             }
             if ("KeyValue.this.key".equals(d.variableName)) {
-                Assert.assertTrue(d.objectFlow.origin instanceof CallOutsArgumentToParameter);
+                Assert.assertSame(Origin.PARAMETER, d.objectFlow.origin);
             }
         }
     };
@@ -64,7 +64,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
                     Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
                 }
                 ParameterInfo key = fieldInfo.owner.typeInspection.get().constructors.get(0).methodInspection.get().parameters.get(0);
-                ObjectFlow objectFlowPI = key.parameterAnalysis.get().objectFlow;
+                ObjectFlow objectFlowPI = key.parameterAnalysis.get().getObjectFlow();
                 if (iteration > 0) {
                     Assert.assertSame(objectFlow, objectFlowPI);
                     Assert.assertEquals(1L, objectFlow.getLocalAssignments().count());
@@ -85,24 +85,23 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
         MethodInfo keyValueConstructor = keyValue.typeInspection.get().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
-        ObjectFlow objectFlowKey = key.parameterAnalysis.get().objectFlow;
-        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowKey.getOrigin() instanceof CallOutsArgumentToParameter);
-        CallOutsArgumentToParameter methodCalls = (CallOutsArgumentToParameter) objectFlowKey.getOrigin();
+        ObjectFlow objectFlowKey = key.parameterAnalysis.get().getObjectFlow();
+        Assert.assertSame(Origin.PARAMETER, objectFlowKey.getOrigin());
 
-        Assert.assertEquals(1L, methodCalls.sources().count());
-        ObjectFlow keyConstant = methodCalls.sources().findAny().orElseThrow();
+        Assert.assertEquals(1L, objectFlowKey.getPrevious().count());
+        ObjectFlow keyConstant = objectFlowKey.getPrevious().findAny().orElseThrow();
 
         TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
         ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
 
         ParameterInfo value = keyValueConstructor.methodInspection.get().parameters.get(1);
-        ObjectFlow objectFlowValue = value.parameterAnalysis.get().objectFlow;
-        Assert.assertTrue("Have " + objectFlowKey.getOrigin(), objectFlowValue.getOrigin() instanceof CallOutsArgumentToParameter);
+        ObjectFlow objectFlowValue = value.parameterAnalysis.get().getObjectFlow();
+        Assert.assertSame(Origin.PARAMETER, objectFlowValue.getOrigin());
 
         MethodInfo useKv = objectFlow1.typeInspection.get().methods.stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
         ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
-        ObjectFlow objectFlowK = k.parameterAnalysis.get().objectFlow;
+        ObjectFlow objectFlowK = k.parameterAnalysis.get().getObjectFlow();
 
         Assert.assertEquals(1L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
         ObjectFlow inUseKv = useKv.methodAnalysis.get().internalObjectFlows.get().stream().findAny().orElseThrow();
