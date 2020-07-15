@@ -373,6 +373,12 @@ class VariableProperties implements EvaluationContext {
                     parameterInfo.parameterizedType, Origin.PARAMETER);
             if (!internalObjectFlows.add(objectFlow))
                 throw new UnsupportedOperationException("? should not yet be there");
+        } else if (variable instanceof FieldReference) {
+            FieldReference fieldReference = (FieldReference) variable;
+            objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),
+                    fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
+            if (!internalObjectFlows.add(objectFlow))
+                throw new UnsupportedOperationException("? should not yet be there");
         } else {
             // local variable, field reference, this
             // TODO we should have something for fields?

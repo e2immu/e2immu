@@ -173,11 +173,14 @@ public class ObjectFlow {
                 break;
             case RESULT_OF_METHOD:
             case FIELD_ACCESS:
-                initialObjectFlow.next.forEach(prev -> prev.replaceSource(initialObjectFlow, this));
-                next.addAll(initialObjectFlow.next);
+                previous.forEach(prev -> prev.addNext(this));
                 break;
 
             default:
+        }
+        if(initialObjectFlow != null) {
+            initialObjectFlow.next.forEach(prev -> prev.replaceSource(initialObjectFlow, this));
+            next.addAll(initialObjectFlow.next);
         }
         if (modifyingCallOut != null) {
             modifyingCallOut.previous.add(this);

@@ -73,6 +73,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
                 ObjectFlow valueFieldOfNewKeyValue = internalFlows.stream()
                         .filter(of -> of.origin == Origin.FIELD_ACCESS)
                         .findAny().orElseThrow();
+                Assert.assertEquals("value", valueFieldOfNewKeyValue.location.info.name());
 
                 Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
                 ObjectFlow returnFlow = methodInfo.methodAnalysis.get().objectFlow.get();
