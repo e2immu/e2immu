@@ -371,7 +371,7 @@ class VariableProperties implements EvaluationContext {
             ParameterInfo parameterInfo = (ParameterInfo) variable;
             objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.PARAMETER);
-            if (internalObjectFlows.add(objectFlow))
+            if (!internalObjectFlows.add(objectFlow))
                 throw new UnsupportedOperationException("? should not yet be there");
         } else {
             // local variable, field reference, this

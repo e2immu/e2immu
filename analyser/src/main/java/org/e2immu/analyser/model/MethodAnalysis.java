@@ -62,7 +62,7 @@ public class MethodAnalysis extends Analysis {
             objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
             objectFlow.set(ObjectFlow.NO_FLOW);
         } else {
-            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType, Origin.RESULT_OF_METHOD);
+            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
     }

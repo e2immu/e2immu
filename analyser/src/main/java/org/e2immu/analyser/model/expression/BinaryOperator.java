@@ -180,11 +180,11 @@ public class BinaryOperator implements Expression {
     }
 
     private ObjectFlow booleanObjectFlow(EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
     }
 
     private ObjectFlow intObjectFlow(EvaluationContext evaluationContext) {
-        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_OPERATOR);
     }
 
     private Value shortCircuit(EvaluationContext evaluationContext, EvaluationVisitor visitor, boolean and) {
@@ -203,7 +203,7 @@ public class BinaryOperator implements Expression {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return constant;
         }
-        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
+        ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
             return new AndValue(objectFlow).append(l, r);
         }

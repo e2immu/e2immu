@@ -22,6 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -44,6 +45,39 @@ public class TestObjectFlow1 extends CommonTestRunner {
             }
             if ("KeyValue.this.key".equals(d.variableName)) {
                 Assert.assertSame(Origin.PARAMETER, d.objectFlow.origin);
+            }
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("useKv".equals(methodInfo.name)) {
+                ParameterAnalysis p0 = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
+                Assert.assertTrue(p0.objectFlow.isSet());
+                ObjectFlow objectFlowP0 = p0.objectFlow.get();
+                Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
+                Assert.assertEquals(1L, objectFlowP0.getNonModifyingCallouts().count());
+                ObjectFlow callOutP0 = objectFlowP0.getNonModifyingCallouts().findAny().orElseThrow();
+                Assert.assertSame(Origin.PARAMETER, callOutP0.origin);
+                Assert.assertEquals("value", callOutP0.location.info.name());
+                Assert.assertTrue(callOutP0.containsPrevious(objectFlowP0));
+
+                Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
+                Set<ObjectFlow> internalFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+                Assert.assertEquals(2, internalFlows.size());
+                ObjectFlow newKeyValue = internalFlows.stream()
+                        .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
+                        .findAny().orElseThrow();
+                Assert.assertEquals("KeyValue", newKeyValue.type.typeInfo.simpleName);
+                ObjectFlow valueFieldOfNewKeyValue = internalFlows.stream()
+                        .filter(of -> of.origin == Origin.FIELD_ACCESS)
+                        .findAny().orElseThrow();
+
+                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+                ObjectFlow returnFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+                Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
+                Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
             }
         }
     };
@@ -80,11 +114,13 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeContext typeContext = testClass("ObjectFlow1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
 
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
         MethodInfo keyValueConstructor = keyValue.typeInspection.get().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
+        Assert.assertTrue(key.parameterAnalysis.get().objectFlow.isSet());
         ObjectFlow objectFlowKey = key.parameterAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.PARAMETER, objectFlowKey.getOrigin());
 

@@ -1,9 +1,9 @@
 == Object flows
 
-An ObjectFlow object records the flow of objects of a given type throughout an application.
+An `ObjectFlow` object records the flow of objects of a given type throughout an application.
 
-An ObjectFlow often starts with an object creation statement (`new SomeObject()`), which takes place in either a method or field assignment.
-In its simplest form, the method creates an object, calls some methods on it, and forgets it:
+A typical origin of an object flow is an new object creation expression, which takes place in either a method, or field assignment.
+In the following example statement, the expression creates a `StringBuilder` object, accesses the `append` method repeatedly, and then discards the `StringBuilder` object in favour of a `String`:
 
 [source,java]
 ----
@@ -18,12 +18,10 @@ In general, there are three different ways of moving the object outside the crea
 
 There are four different origins:
 
-. new object creation (via the `new` keyword)
-. incoming flows from outside the method via parameters, or as a return value of method calls
-. chaining of flows inside a method
-. literals (attached as statics in the type)
-. #TODO# the result of binary operators (should become method call flows)
-
+. new object creation (`NEW_OBJECT_CREATION`)
+. incoming flows from outside the method via parameters (`PARAMETER`), or as a return value of method calls or operators (`RESULT_OF_METHOD`)
+. chaining of flows inside a method (`INTERNAL`)
+. literals (attached as statics in the type, `LITERAL`)
 
 In the light of eventual immutability, we consider a state change where, after calling a certain method, the object becomes immutable.
 Once immutable, calling one of the modifying methods results in an error.
@@ -39,10 +37,11 @@ The object has the following defining components:
 
 * a type
 * a location
-* an origin
+* an origin type
 
 augmented by the optional components:
 
+* a (potentially empty) list of predecessor flows
 * a (potentially empty) list of non-modifying method and field accesses
 * a (potentially empty) list of non-modifying method call-outs (where the flow is used as an argument)
 * optionally one modifying method access or one modifying method call-out, but not both
@@ -54,48 +53,49 @@ The main reason is that each modification may be the one causing a state change 
 
 === Registration of an object flow
 
-Parameters are one of the obvious origins for object flows in a method: they start with an object flow created by default in `ParameterAnalysis`, using a `CallOutsArgumentToParameter` origin.
-Inside this `CallOutsArgumentToParameter` object, the analyser registers all call-outs object flows (object flows of arguments to the parameter's method call).
+An object flow connects to object flows in other methods and fields.
+Even though of these methods or fields may not have been analysed yet, we still want to make bi-directional links:
 
-Inside a method, the `new` keyword creates a new object flow which is registered in the `internalObjectFlows` variable in `MethodAnalysis`.
-Given that we need to distinguish between modifying and non-modifying method calls (both on the object, and call-outs), registration of the flow may have to be delayed, or redone.
+* from a call-out to the `previous` set of a `PARAMETER` flow
+* from a new internal flow of origin `RESULT_OF_METHOD` to the `next` set of the return flow of a method
 
-These types of flows (incoming via parameters, or newly created objects) can exit the method by assigning them to a field.
-Other methods can access fields, so there must be a flow object present from the start.
-At the point of assignment, the two flows objects may have to be merged.
+To this end, fields, methods and parameters have an initial flow registered using a `FirstThen` construct: at the end of analysis, the analyser `fixes` a permanent one.
 
-The `return` statements are the second exit point for a flow.
-They have to be present as soon as the analyser knows the modification status of the method, because then it starts recording method calls and call-outs.
+The statement analyser first registers new flows of origin `RESULT_OF_METHOD`, `PARAMETER`, `NEW_OBJECT_CREATION`, and `INTERNAL` in the evaluation context.
+It does so for each iteration, therefore it is important not to add these _unfixed_ flows to other flows that have already been fixed.
+Only when the analyser encounters no delays, it fixes the flows of the method or field.
+It writes flows of origin `PARAMETER` to their permanent place in `ParameterAnalysis`; all others stay in the `internalObjectFlows` set of `MethodAnalysis` or `FieldAnalysis`.
 
-To summarize:
+Summarizing registration, we have _before_ analysis:
 
-. parameters have an object flow from the start
-. fields and methods have one for registering access, which can be merged into a more important flow object
-. internal flow objects only get registered as soon as none of the method accesses and call-outs are delayed because of modification computations
-. types hold object flows for literals
+. field, method result, and parameter have an initial flow object.
+The initial flow objects of field and method receive downstream object flows, registered in `next`, for results of method calls, and field access.
+The initial parameter flow object receives upstream flows in `previous`, for call-outs.
+Note that flows referring to the above must do this only once, at the end of their analysis step.
+. there cannot be references to literals, internal flow objects, new object creations.
 
+During analysis, which consists of multiple iterations, we register as follows:
 
-=== Splitting and joining
+. new objects, parameters, results of method calls and operators, are stored in the evaluation context's `internalObjectFlows`.
+The analyser discards them at the end of the iteration if it has encountered a delay.
+. when the analyser splits a flow, it also adds the flow to the internal object flows.
+It links both flows bi-directionally.
+Importantly, only _local_ flows (created during the iteration) can be split.
+. literals:
 
-Naturally in code, object flows split into different tracks, and may be joined later on.
-#TODO#
+At the end of analysis:
 
-=== Old #TODO#
+. the method analyser separates parameter flows from the other flows in the evaluation context, and replace the initial parameter flow with the final one.
+It takes the incoming flows of the initial one (in `previous`) and adds them to the final one.
+It also replaces the old flow object with the new one in each of the call-out sets.
 
-* a `Location`, consisting of a method or field initialiser, the type, and an index number: together they provide uniqueness, and the _where_ and _what_.
-* either a new creation, or one or more links to parent `ObjectFlow` objects, which act as a source.
-The new creation itself is a `MethodCall` object, it can be connected to other object flows through its arguments.
-* a list of `MethodCall` objects representing method calls and field accesses on the object.
-The calls appear in the order of occurrence in the `Location`; they need not be consecutive, nor fluent.
-Some can be conditional, or appear in loops.
-* the state of the object after these method calls.
-Currently, this is a integer denoting immutability, and a boolean indicating if any of the method calls were modifying.
-* one or more bindings of this object to a (effectively final?) field belonging to the `Location`.
-* a number of exit or chaining possibilities:
+. for each of the field accesses and results of methods, it adds the reverse link
 
-** a list of `ObjectFlow` objects representing a return statement: all the object flows where the `Location` method was called.
-** a _callout_: passing the object as an argument to another method (a different location)
-** optionally, in combination with a callout: the _next_ object flow object, indicating further usage of the object in the same location
+After analysis:
+
+. only field, method result, and parameter flows are accessible.
+
+They have been set to their permanent state.
 
 === Examples
 

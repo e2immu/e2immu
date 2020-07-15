@@ -34,6 +34,7 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
@@ -183,10 +184,20 @@ public class MethodAnalyser {
         if (methodAnalysis.internalObjectFlows.isSet()) return false; // already done
         boolean noDelays = methodProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
-            Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows().collect(Collectors.toSet()));
-            internalObjectFlows.forEach(ObjectFlow::fix);
-            methodAnalysis.internalObjectFlows.set(internalObjectFlows);
-            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlows.size(), methodInfo.distinguishingName());
+            Set<ObjectFlow> internalObjectFlowsWithoutParameters = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows()
+                    .filter(of -> of.origin != Origin.PARAMETER)
+                    .collect(Collectors.toSet()));
+
+            internalObjectFlowsWithoutParameters.forEach(of -> of.finalize(null));
+            methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParameters);
+
+            methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
+                ParameterAnalysis parameterAnalysis = ((ParameterInfo) of.location.info).parameterAnalysis.get();
+                of.finalize(parameterAnalysis.objectFlow.getFirst());
+                parameterAnalysis.objectFlow.set(of);
+            });
+
+            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParameters.size(), methodInfo.distinguishingName());
             return true;
         }
         log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());
@@ -335,7 +346,7 @@ public class MethodAnalyser {
             ObjectFlow objectFlow = single.getObjectFlow();
             if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
                 log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
-                methodAnalysis.objectFlow.getFirst().moveNextTo(objectFlow);
+                objectFlow.finalize(methodAnalysis.objectFlow.getFirst());
                 methodAnalysis.objectFlow.set(objectFlow);
             }
             if (single.isConstant()) {
@@ -343,6 +354,10 @@ public class MethodAnalyser {
             } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {
                 value = new InlineValue(methodInfo, single);
             }
+        }
+        if (!methodAnalysis.objectFlow.isSet()) {
+            log(OBJECT_FLOW, "No single object flow; we keep the object that's already there, for {}", methodInfo.distinguishingName());
+            methodAnalysis.objectFlow.set(methodAnalysis.objectFlow.getFirst());
         }
         // fallback
         if (value == null) {

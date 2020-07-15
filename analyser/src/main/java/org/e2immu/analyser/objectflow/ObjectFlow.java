@@ -22,7 +22,7 @@ public class ObjectFlow {
     // denotes where the object comes from
     public final Origin origin;
 
-    private boolean fixed;
+    private boolean finalized;
 
     public ObjectFlow(Location location, ParameterizedType type, Origin origin) {
         this.location = Objects.requireNonNull(location);
@@ -43,6 +43,11 @@ public class ObjectFlow {
 
     public Stream<ObjectFlow> getPrevious() {
         return previous.stream();
+    }
+
+    public void replaceSource(ObjectFlow oldSource, ObjectFlow newSource) {
+        previous.remove(oldSource);
+        previous.add(newSource);
     }
 
     @Override
@@ -125,6 +130,15 @@ public class ObjectFlow {
         this.modifyingCallOut = modifyingCallOut;
     }
 
+    public void replaceCallOut(ObjectFlow oldCallOut, ObjectFlow newCallOut) {
+        if (oldCallOut == modifyingCallOut) {
+            modifyingCallOut = newCallOut;
+        } else {
+            nonModifyingCallOuts.remove(oldCallOut);
+            nonModifyingCallOuts.add(newCallOut);
+        }
+    }
+
     public boolean haveModifying() {
         return modifyingCallOut != null || modifyingAccess != null;
     }
@@ -144,15 +158,26 @@ public class ObjectFlow {
 
 
     /*
-    add inverse links
+    add inverse links, but does not change the value in ParameterAnalysis, FieldAnalysis, etc.
+    because that has to happen in bulk for internalObjectFlows
      */
-    public void fix() {
-        if (fixed) throw new UnsupportedOperationException("Trying to fix " + toString() + ", but already fixed");
-        fixed = true;
-        if (origin == Origin.RESULT_OF_METHOD || origin == Origin.INTERNAL) {
-            for (ObjectFlow objectFlow : previous) {
-                objectFlow.next.add(this);
-            }
+    public void finalize(ObjectFlow initialObjectFlow) {
+        if (finalized) return; // is possible, because the same object flow can sit on a parameter and a method result, for example
+        finalized = true;
+        switch (origin) {
+            case PARAMETER:
+                initialObjectFlow.getPrevious().forEach(callout -> {
+                    callout.replaceCallOut(initialObjectFlow, this);
+                    addPrevious(callout);
+                });
+                break;
+            case RESULT_OF_METHOD:
+            case FIELD_ACCESS:
+                initialObjectFlow.next.forEach(prev -> prev.replaceSource(initialObjectFlow, this));
+                next.addAll(initialObjectFlow.next);
+                break;
+
+            default:
         }
         if (modifyingCallOut != null) {
             modifyingCallOut.previous.add(this);
@@ -188,13 +213,13 @@ public class ObjectFlow {
         visited.add(this);
         if (detailed) {
             return "\n<flow of type " + type.stream() + ": " + origin + "@" + location +
-                    (previous.isEmpty() ? "" : "; previous " + previous.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
-                    (nonModifyingAccesses.isEmpty() ? "" : "; @NM access" + nonModifyingAccesses.stream().map(access -> access.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (previous.isEmpty() ? "" : "; previous " + getPrevious().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (nonModifyingAccesses.isEmpty() ? "" : "; @NM access" + getNonModifyingAccesses().map(access -> access.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (modifyingAccess == null ? "" : "; @M access" + modifyingAccess.safeToString(visited, false)) +
-                    (nonModifyingCallOuts.isEmpty() ? "" : "; @NM call-outs " + nonModifyingCallOuts.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (nonModifyingCallOuts.isEmpty() ? "" : "; @NM call-outs " + getNonModifyingCallouts().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (modifyingCallOut == null ? "" : "; @M call-out " + modifyingCallOut.safeToString(visited, false)) +
-                    (localAssignments.isEmpty() ? "" : "; fields " + localAssignments.stream().map(FieldInfo::toString).collect(Collectors.joining(", "))) +
-                    (next.isEmpty() ? "" : "; next " + next.stream().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
+                    (localAssignments.isEmpty() ? "" : "; fields " + getLocalAssignments().map(FieldInfo::toString).collect(Collectors.joining(", "))) +
+                    (next.isEmpty() ? "" : "; next " + getNext().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     ">";
         }
         return "<flow of type " + type.stream() + ": " + origin + "@" + location + ">";
@@ -211,7 +236,7 @@ public class ObjectFlow {
 
 
     public Set<String> marks() {
-        Set<String> marksSources = previous.stream().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
+        Set<String> marksSources = getPrevious().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
         if (modifyingAccess != null) {
             MethodInfo methodInfo = modifyingAccess.methodInfo;
             Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()

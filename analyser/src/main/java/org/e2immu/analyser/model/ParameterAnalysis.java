@@ -52,7 +52,7 @@ public class ParameterAnalysis extends Analysis {
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
         this.location = new Location(parameterInfo);
-        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, Origin.PARAMETER);
+        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
     }
 

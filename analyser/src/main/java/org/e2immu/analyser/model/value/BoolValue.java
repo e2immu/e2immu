@@ -43,9 +43,9 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
         this.value = value;
     }
 
-    public static Value of(boolean b, EvaluationContext evaluationContext) {
+    public static Value of(boolean b, EvaluationContext evaluationContext, Origin origin) {
         return evaluationContext == null ? (b ? TRUE : FALSE) :
-                new BoolValue(b, evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD));
+                new BoolValue(b, evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, origin));
     }
 
     @Override

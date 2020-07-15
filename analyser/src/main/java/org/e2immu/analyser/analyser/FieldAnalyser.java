@@ -133,7 +133,7 @@ public class FieldAnalyser {
         boolean noDelays = fieldProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
             Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(fieldProperties.getInternalObjectFlows().collect(Collectors.toSet()));
-            internalObjectFlows.forEach(ObjectFlow::fix);
+            internalObjectFlows.forEach(of -> of.finalize(null));
             fieldAnalysis.internalObjectFlows.set(internalObjectFlows);
             log(OBJECT_FLOW, "Set {} internal object flows on {}", internalObjectFlows.size(), fieldInfo.fullyQualifiedName());
             return true;
@@ -486,9 +486,14 @@ public class FieldAnalyser {
         ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
             log(OBJECT_FLOW, "Set final object flow object for field {}: {}", fieldInfo.fullyQualifiedName(), objectFlow);
-            fieldAnalysis.objectFlow.getFirst().moveNextTo(objectFlow);
+            objectFlow.finalize(fieldAnalysis.objectFlow.getFirst());
             fieldAnalysis.objectFlow.set(objectFlow);
         }
+        if (!fieldAnalysis.objectFlow.isSet()) {
+            fieldAnalysis.objectFlow.set(fieldAnalysis.objectFlow.getFirst());
+            log(OBJECT_FLOW, "Confirming the initial object flow for {}", fieldInfo.fullyQualifiedName());
+        }
+
         fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
         fieldAnalysis.setProperty(VariableProperty.CONSTANT, effectivelyFinalValue.isConstant());
 
