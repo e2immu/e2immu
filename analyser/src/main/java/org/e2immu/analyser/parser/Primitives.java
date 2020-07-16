@@ -206,6 +206,7 @@ public class Primitives {
             ti.typeAnalysis.set(new TypeAnalysis(ti));
             ti.typeAnalysis.get().properties.put(VariableProperty.CONTAINER, Level.TRUE);
             ti.typeAnalysis.get().properties.put(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
+            ti.typeAnalysis.get().approvedPreconditions.freeze(); // cannot change these anymore; will never be eventual
             ti.typeAnalysis.get().properties.put(VariableProperty.MODIFIED, Level.FALSE);
         }
 

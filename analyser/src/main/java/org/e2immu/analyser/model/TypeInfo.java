@@ -1096,4 +1096,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public boolean isEventual() {
         return typeAnalysis.get().isEventual();
     }
+
+    public boolean isEffectivelyE2Immutable() {
+        TypeAnalysis typeAnalysis = this.typeAnalysis.get();
+        return Level.haveTrueAt(typeAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                Level.E2IMMUTABLE) && !typeAnalysis.isEventual();
+    }
 }

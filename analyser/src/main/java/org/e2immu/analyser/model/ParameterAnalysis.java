@@ -74,27 +74,51 @@ public class ParameterAnalysis extends Analysis {
                         .getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
                     return Level.TRUE; // we've already marked our owning type with @NotNull...
                 break;
+
             case MODIFIED: {
-                if (parameterizedType.isUnboundParameterType()) return Level.FALSE;
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE)) {
-                    return Level.FALSE;
-                }
-                if (owner != null && !owner.isPrivate() &&
-                        owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                    return Level.FALSE;
-                }
+                // if the parameter is either formally or actually immutable, it cannot be modified
+                if (notModifiedBecauseOfImmutableStatus()) return Level.FALSE;
+                // now we rely on the computed value
                 break;
             }
-            case IMMUTABLE:
-            case CONTAINER:
+
+            // the only way to have a container is for the type to be a container, or for the user to have
+            // contract annotated the parameter with @Container
+            case CONTAINER: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null) return bestType.typeAnalysis.get().getProperty(variableProperty);
-                return Level.FALSE;
+                if (bestType != null) return bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
+                return Level.best(super.getProperty(VariableProperty.CONTAINER), Level.FALSE);
+            }
+            // when can a parameter be immutable? it cannot be computed in the method
+            // (1) if the type is effectively immutable
+            // (2) if all the flows leading up to this parameter are flows where the mark has been set; but this
+            // we can only know when the method is private and the flows are known
+            // (3) when the user has contract-annotated the parameter with @E2Immutable
+            case IMMUTABLE: {
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (bestType != null) {
+                    int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                    if (!bestType.isEventual()) return immutable;
+                    // we're in the eventual case...
+                    if (owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType))) {
+                        return immutable;
+                    }
+                }
+                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), Level.FALSE);
+            }
+
             default:
         }
         return super.getProperty(variableProperty);
+    }
+
+    private boolean notModifiedBecauseOfImmutableStatus() {
+        if (Level.haveTrueAt(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) return true;
+        // if the parameter is an unbound generic, the same holds
+        if (parameterizedType.isUnboundParameterType()) return true;
+        // if we're inside a container and the method is not private, the parameter cannot be modified
+        return owner != null && !owner.isPrivate() &&
+                owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE;
     }
 
     @Override
@@ -111,19 +135,12 @@ public class ParameterAnalysis extends Analysis {
                 return Math.max(1, parameterizedType.getProperty(variableProperty));
 
             case MODIFIED:
-                if (parameterizedType.isUnboundParameterType()) return Integer.MAX_VALUE;
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
-                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE)) {
-                    return Integer.MAX_VALUE;
-                }
-                if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                    return Integer.MAX_VALUE;
-                }
+                if (notModifiedBecauseOfImmutableStatus()) return Integer.MAX_VALUE;
                 return Level.UNDEFINED;
 
             case CONTAINER:
             case IMMUTABLE:
+                // TODO
                 return parameterizedType.getProperty(variableProperty);
 
             default:
@@ -133,17 +150,8 @@ public class ParameterAnalysis extends Analysis {
 
     @Override
     public int maximalValue(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.MODIFIED) {
-            if (parameterizedType.isUnboundParameterType()) return Level.TRUE;
-            TypeInfo bestType = parameterizedType.bestTypeInfo();
-            if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                    Level.E2IMMUTABLE)) {
-                return Level.TRUE;
-            }
-            if (!owner.isPrivate() && owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
-                return Level.TRUE;
-            }
-        }
+        if (variableProperty == VariableProperty.MODIFIED && notModifiedBecauseOfImmutableStatus()) return Level.TRUE;
+
         if (variableProperty == VariableProperty.NOT_NULL) {
             if (parameterizedType.isPrimitive()) return Level.FALSE;
         }

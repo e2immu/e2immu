@@ -215,8 +215,8 @@ public class MethodValue implements Value {
         if (returnType.isVoid()) return INDEPENDENT; // no assignment
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || returnTypeDifferent) && (returnType.bestTypeInfo() == null ||
-                Level.haveTrueAt(returnType.bestTypeInfo().typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))) {
+        if ((bestCase || returnTypeDifferent) &&
+                Level.haveTrueAt(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
             return INDEPENDENT;
         }
 
@@ -232,9 +232,9 @@ public class MethodValue implements Value {
         Set<Variable> result = new HashSet<>();
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
-        // RULE 3
-        int typeE2Immutable = Level.value(methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if ((bestCase || methodInfoDifferentType) && typeE2Immutable == Level.TRUE) // RULE 3
+        // RULE 3, in a = b.method(c,d), return c and d when b is E2Immutable
+        boolean objectE2Immutable = Level.haveTrueAt(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        if ((bestCase || methodInfoDifferentType) && objectE2Immutable) // RULE 3
             return result;
 
         // default case, add b

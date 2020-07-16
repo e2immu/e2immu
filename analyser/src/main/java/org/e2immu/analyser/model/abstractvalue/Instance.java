@@ -103,13 +103,14 @@ public class Instance implements Value {
 
         // RULE 2, 3
         boolean differentType = constructor.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || differentType) &&
-                (constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.TRUE // RULE 2
-                        || Level.value(constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE) == Level.TRUE)) { // RULE 3
-            return INDEPENDENT;
+        if ((bestCase || differentType)) {
+            if (constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
+                return INDEPENDENT; // RULE 2
+            }
+            if(constructor.typeInfo.isEffectivelyE2Immutable()) { // RULE 3
+                return INDEPENDENT;
+            }
         }
-
         // default case
         return constructorParameterValues.stream()
                 .flatMap(v -> v.linkedVariables(bestCase, evaluationContext).stream())

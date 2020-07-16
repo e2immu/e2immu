@@ -682,4 +682,11 @@ public class ParameterizedType {
         if (typeInfo == null) return false;
         return typeInfo.typeAnalysis.get().isEventual();
     }
+
+    public boolean isEffectivelyE2Immutable() {
+        if (isUnboundParameterType()) return true;
+        TypeInfo bestType = bestTypeInfo();
+        return bestType != null && bestType.isEffectivelyE2Immutable();
+    }
+
 }
