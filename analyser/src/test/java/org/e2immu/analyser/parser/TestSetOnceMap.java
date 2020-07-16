@@ -23,11 +23,9 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
@@ -61,7 +59,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
                 // @Size(equals = 0)
-                Assert.assertEquals(Analysis.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
+                Assert.assertEquals(Level.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
             }
             if ("stream".equals(methodInfo.name)) {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");

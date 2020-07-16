@@ -1,6 +1,6 @@
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
@@ -54,7 +54,7 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
     @Test
     public void testEncodeSize() {
         ConstrainedNumericValue cnv1 = ConstrainedNumericValue.lowerBound(i, 1);
-        Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, cnv1.encodedSizeRestriction());
+        Assert.assertEquals(Level.SIZE_NOT_EMPTY, cnv1.encodedSizeRestriction());
     }
 
     @Test

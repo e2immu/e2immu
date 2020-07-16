@@ -27,4 +27,8 @@ public class TransferValue {
     // In other words, if A->B, then B cannot be @NotModified unless A is too
 
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
+
+    public int getProperty(VariableProperty variableProperty) {
+        return properties.getOtherwise(variableProperty, Level.DELAY);
+    }
 }

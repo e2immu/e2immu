@@ -167,7 +167,7 @@ public abstract class Analysis {
         }
 
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (Level.haveTrueAt(immutable, Level.E2IMMUTABLE)) {
+        if (immutable >= Level.EVENTUALLY_E2IMMUTABLE) {
             if (isType) {
                 annotations.put(typeContext.externallyMutable.get(), false);
                 annotations.put(typeContext.mutable.get(), false);
@@ -181,7 +181,7 @@ public abstract class Analysis {
                 if (immutable > minImmutable)
                     annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
             }
-        } else if (Level.haveTrueAt(immutable, Level.E1IMMUTABLE)) {
+        } else if (immutable >= Level.EVENTUALLY_E1IMMUTABLE) {
             if (isType) {
                 annotations.put(makeEventualAnnotation(typeContext.externallyMutable.get(), false), true);
                 annotations.put(typeContext.mutable.get(), false);
@@ -210,30 +210,30 @@ public abstract class Analysis {
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
         int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
-        if (notNull2 == Level.TRUE) {
+        if (notNull2 >= Level.EVENTUAL) {
             if (notNull2 > minNotNull) annotations.put(typeContext.notNull2.get(), true);
             if (doNullable) annotations.put(typeContext.nullable.get(), false);
         } else {
-            if (notNull2 == Level.FALSE) annotations.put(typeContext.notNull2.get(), false);
+            if (notNull2 > Level.DELAY) annotations.put(typeContext.notNull2.get(), false);
 
             int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
-            if (notNull1 == Level.TRUE) {
+            if (notNull1 >= Level.EVENTUAL) {
                 if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
                 if (doNullable) annotations.put(typeContext.nullable.get(), false);
             } else {
-                if (notNull1 == Level.FALSE) {
+                if (notNull1 > Level.DELAY) {
                     annotations.put(typeContext.notNull1.get(), false);
                 }
                 int notNull0 = Level.value(notNull, Level.NOT_NULL);
-                if (notNull0 == Level.TRUE && notNull0 > minNotNull) {
+                if (notNull0 >= Level.EVENTUAL && notNull0 > minNotNull) {
                     annotations.put(typeContext.notNull.get(), true);
                 }
-                if (notNull0 == Level.FALSE) {
+                if (notNull0 > Level.DELAY) {
                     annotations.put(typeContext.notNull.get(), false);
                 }
                 if (doNullable) {
                     int max = maximalValue(VariableProperty.NOT_NULL);
-                    boolean nullablePresent = max != Level.FALSE && notNull0 != Level.TRUE;
+                    boolean nullablePresent = max != Level.FALSE && notNull0 < Level.EVENTUAL;
                     // a delay on notNull0 on a non-primitive will get nullable present
                     annotations.put(typeContext.nullable.get(), nullablePresent);
                 }
@@ -255,9 +255,9 @@ public abstract class Analysis {
         int minSizeCopy = minimalValue(VariableProperty.SIZE_COPY);
         int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
         if (sizeCopy > minSizeCopy) {
-            if (sizeCopy == Level.TRUE) {
+            if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
                 annotations.put(sizeAnnotationTrue(typeContext, "copyMin"), true);
-            } else if (sizeCopy == Level.TRUE_LEVEL_1) {
+            } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
                 annotations.put(sizeAnnotationTrue(typeContext, "copy"), true);
             }
         }
@@ -406,11 +406,6 @@ public abstract class Analysis {
         throw new UnsupportedOperationException(); // only for methods, please override
     }
 
-    public static final int SIZE_NOT_EMPTY = 3;
-    public static final int SIZE_EMPTY = 2;
-    public static final int IS_A_SIZE = 1;
-    public static final int NOT_A_SIZE = 0;
-
     /**
      * Values: -1 = absent; 0 = NOT A SIZE; 1 = min=0,(is a size);  2 = equals 0 (empty) ; 3 = min 1 (not empty); 4 = equals 1; 5 = min 2; 6 = equals 2
      *
@@ -444,9 +439,9 @@ public abstract class Analysis {
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {
         Boolean copy = annotationExpression.extract("copy", false);
-        if (copy) return Level.TRUE_LEVEL_1;
+        if (copy) return Level.SIZE_COPY_TRUE;
         Boolean copyMin = annotationExpression.extract("copyMin", false);
-        if (copyMin) return Level.TRUE;
+        if (copyMin) return Level.SIZE_COPY_MIN_TRUE;
         return Level.FALSE;
     }
 

@@ -157,21 +157,23 @@ which would cause an error.
 
 === Values of the IMMUTABLE property
 
-The `IMMUTABLE` property has the following values:
+The `IMMUTABLE` property has the following values, shown as two 3-bit components (_(i,j)_ stands for _i+8*j_):
 
 [cols ="7,31,31,31",options=header]
 |===
 | value | meaning  | annotation on field, parameter, method | annotation on type
 | -1    | delay | - | -
-| 0     | not level 1 immutable | -  | `@ExternallyMutable`
-| 1     | eventually level 1 immutable, before mark | `@ExternallyMutable` | -
-| 2     | eventually level 1 immutable; value for type | `@E1Immutable` when formal type is not (eventually) level 1 immutable | `@E1Immutable(after="...")`
-| 3     | eventually level 1 immutable, after mark | `@E1Immutable` | -
-| 4     | effectively level 1 immutable | `@E1Immutable` when formal type is not (eventually) level 1 immutable |`@E1Immutable`
-| 5     | eventually level 2 immutable, before mark | `@E1Immutable` | -
-| 6     | eventually level 2 immutable; value for type | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable(after="...")`
-| 7     | eventually level 2 immutable after mark | `@E2Immutable` | -
-| 8     | effectively level 2 immutable | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable`
+| 0,0   | not level 1 immutable | -  | `@Mutable`
+| 1,0   | eventually level 1 immutable, before mark | `@BeforeImmutableMark` | -
+| 2,0   | eventually level 1 immutable; value for type | `@E1Immutable` when formal type is not (eventually) level 1 immutable | `@E1Immutable(after="...")`
+| 3,0   | eventually level 1 immutable, after mark | `@E1Immutable` | -
+| 4,0   | effectively level 1 immutable | `@E1Immutable` when formal type is not (eventually) level 1 immutable |`@E1Immutable`
+| 1,1   | eventually level 1 & 2 immutable, before mark | `@BeforeImmutableMark` | -
+| 4,1   | effectively level 1, eventually level 2 immutable, before mark | `@BeforeImmutableMark @E1Immutable` | -
+| 2,2   | eventually level 1 & 2 immutable .2+| `@E2Immutable` when formal type is not (eventually) level 2 immutable .2+| `@E2Immutable(after="...")`
+| 4,2   | effectively level 1, eventually level 2 immutable
+| 3,3   | eventually level 2 immutable after mark | `@E2Immutable` | -
+| 4,4   | effectively level 2 immutable | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable`
 |===
 
 Is there a pattern we can reuse for `@NotNull`, the only other one we have with multiple levels?
@@ -180,17 +182,21 @@ Is there a pattern we can reuse for `@NotNull`, the only other one we have with 
 |===
 | value | meaning  | annotation on field, parameter, method | annotation in owning type
 | -1    | delay | - | -
-| 0     | nullable  | `@Nullable` | `@Nullable`
-| 1     | eventually not null, before mark | (makes no sense) | -
-| 2     | eventually not null | - | `@NotNull(after="...")`
-| 3     | eventually not null, after mark | `@NotNull` |
-| 4     | not null | `@NotNull` | `@NotNull`
-| 5     | eventually content not null, before mark | `@NotNull` | -
-| 6     | eventually content not null | - | `@NotNull1(after="...")`
-| 7     | eventually content not null, after mark | `@NotNull1` | -
-| 8     | contents not null | `@NotNull1` | `@NotNull1`
-| ...   | ... | ... |...
-| 12    | contents`' content not null | `@NotNull2` |  `@NotNull2`
+| 0,0   | nullable  | `@Nullable` | `@Nullable`
+| 1,0   | eventually not null, before mark | `@BeforeNotNullMark` (not field) | -
+| 2,0   | eventually not null | - | `@NotNull(after="...")`
+| 3,0   | eventually not null, after mark | `@NotNull` |
+| 4,0   | effectively not null | `@NotNull` | `@NotNull`
+| 1,1   | eventually not null & content not null, before mark | `@BeforeNotNullMark` | -
+| 4,1   | not null, eventually content not null, before mark | `@BeforeNotNullMark @NotNull` | -
+| 2,2   | eventually not null & content not null .2+| `@NotNull1` .2+| `@NotNull1(after="...")`
+| 4,2   | effectively not null, eventually content not null
+| 3,3   | eventually content not null, after mark | `@NotNull1` | -
+| 4,4   | effectively content not null | `@NotNull1` | `@NotNull1`
+4*| ...
+| 2,2,2 | eventually contents`' content not null | `@NotNull2` | `@NotNull2(after="...")`
+4*| ...
+| 4,4,4 | effectively contents`' content not null | `@NotNull2` |  `@NotNull2`
 |===
 
 Some examples:
@@ -219,7 +225,7 @@ This is a variation on the normal `@Mark`, `@Only` scheme.
 Here is an example that does not involve immutability of the type:
 [source,java]
 ----
-@ExternallyMutable
+@Mutable
 class ExampleNN1 {
     @NotNull1(after="mark")
     private final String[] strings;

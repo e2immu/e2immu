@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Set;
@@ -40,7 +39,7 @@ public class ForEachStatement extends LoopStatement {
     @Override
     public CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE)>= Analysis.SIZE_NOT_EMPTY)
+                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE)>= Level.SIZE_NOT_EMPTY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)

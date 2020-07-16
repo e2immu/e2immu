@@ -12,7 +12,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 
 public class TestContainerChecks extends CommonTestRunner {
     public TestContainerChecks() {
@@ -86,7 +85,7 @@ public class TestContainerChecks extends CommonTestRunner {
                 Assert.assertEquals("strings2", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, transferValue.properties.get(VariableProperty.SIZE));
+                Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.properties.get(VariableProperty.SIZE));
             }
             if ("add2b".equals(methodInfo.name)) {
                 FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);

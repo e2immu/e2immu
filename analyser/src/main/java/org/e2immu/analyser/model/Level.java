@@ -28,12 +28,6 @@ import java.util.function.IntBinaryOperator;
 @UtilityClass
 public class Level {
 
-    public static final int E1IMMUTABLE = 0;
-    public static final int E2IMMUTABLE = 1;
-    public static final int NOT_NULL = 0;
-    public static final int NOT_NULL_1 = 1;
-    public static final int NOT_NULL_2 = 2;
-
     private Level() {
         throw new UnsupportedOperationException();
     }
@@ -44,12 +38,12 @@ public class Level {
 
     public static final int FALSE = 0;
     public static final int TRUE = 1;
-    public static final int TRUE_LEVEL_1 = 3;
-    public static final int TRUE_LEVEL_2 = 5;
 
-    // be careful, assumes the same level everywhere
-    public static final IntBinaryOperator AND = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.min(i, j);
-    public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
+    public static final int EVENTUAL_BEFORE = 1;
+    public static final int EVENTUAL = 2;
+    public static final int EVENTUAL_AFTER = 3;
+    public static final int EFFECTIVE = 4;
+
 
     /**
      * make a value at a given level
@@ -64,6 +58,42 @@ public class Level {
         return value + level * 2;
     }
 
+    public static final int E1IMMUTABLE = 0;
+    public static final int E2IMMUTABLE = 1;
+
+    public static final int EVENTUAL_BEFORE_E1IMMUTABLE = compose(EVENTUAL_BEFORE, E1IMMUTABLE);
+    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, E1IMMUTABLE);
+    public static final int EVENTUAL_AFTER_E1IMMUTABLE = compose(EVENTUAL_AFTER, E1IMMUTABLE);
+    public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, E1IMMUTABLE);
+
+    public static final int EVENTUAL_BEFORE_E2IMMUTABLE = compose(EVENTUAL_BEFORE, E2IMMUTABLE);
+    public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, E2IMMUTABLE);
+    public static final int EVENTUAL_AFTER_E2IMMUTABLE = compose(EVENTUAL_AFTER, E2IMMUTABLE);
+    public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, E2IMMUTABLE);
+
+    public static final int NOT_NULL = 0;
+    public static final int NOT_NULL_1 = 1;
+    public static final int NOT_NULL_2 = 2;
+
+    public static final int EVENTUAL_BEFORE_NOT_NULL = compose(EVENTUAL_BEFORE, NOT_NULL);
+    public static final int EVENTUALLY_NOT_NULL = compose(EVENTUAL, NOT_NULL);
+    public static final int EVENTUAL_AFTER_NOT_NULL = compose(EVENTUAL_AFTER, NOT_NULL);
+    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE, NOT_NULL);
+
+    public static final int SIZE_COPY_MIN_TRUE = 1;
+    public static final int SIZE_COPY_TRUE = 3;
+
+    public static final int NOT_A_SIZE = 0;
+    public static final int IS_A_SIZE = 1; //  >=0
+    public static final int SIZE_EMPTY = 2; // =0
+    public static final int SIZE_NOT_EMPTY = 3; // >= 1
+
+    public static final int READ_ASSIGN_ONCE = TRUE;
+    public static final int READ_ASSIGN_MULTIPLE_TIMES = 2;
+
+    // be careful, assumes the same level everywhere
+    public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
+
     /**
      * return the value (DELAY, TRUE, FALSE) at a given level
      *
@@ -74,47 +104,12 @@ public class Level {
     public static int value(int i, int level) {
         assert i >= DELAY;
         assert level >= 0;
-
-        if (i < level * 2 + 1) return i % 2 == 0 ? FALSE : DELAY;
-        return TRUE;
+        if (i == -1) return -1;
+        return Math.max(0, i - 4 * level);
     }
 
-    /**
-     * @param i     current value
-     * @param level the minimal level to be reached; must be >= 0 (levels start at 0).
-     *              Note that @E1Immutable is level 0, while @NotNull1 is at level 1
-     * @return true if the level reaches the threshold
-     */
-    public static boolean haveTrueAt(int i, int level) {
-        assert i >= DELAY;
-        assert level >= 0;
-        return i >= level * 2 + 1;
-    }
-
-    /**
-     * the  best level where we have TRUE involved (-1, 0 = -1 (NONE), 1, 2 = 0, 3, 4 = 1, ...)
-     *
-     * @param i the current value
-     * @return the best level that has TRUE
-     */
     public static int level(int i) {
-        assert i >= DELAY;
-        if (i < 1) return -1;
-        return (i - 1) / 2;
-    }
-
-    /**
-     * compute the value of TRUE one level higher, with a max level restriction
-     *
-     * @param i        the current value
-     * @param maxLevel go to the next level, but not higher than this one
-     * @return the new value
-     */
-    public static int nextLevelTrue(int i, int maxLevel) {
-        assert i >= DELAY;
-        assert maxLevel >= 0;
-        int current = level(i);
-        return compose(Level.TRUE, Math.min(current + 1, maxLevel));
+        return Math.max(0, (i - 1) / 4);
     }
 
     /**

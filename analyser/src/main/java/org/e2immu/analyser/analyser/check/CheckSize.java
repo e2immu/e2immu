@@ -32,20 +32,20 @@ public class CheckSize {
         AnnotationType annotationType = annotationExpression.extract("type", null);
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
 
-        if (mustBeAbsent && size > Analysis.IS_A_SIZE) {
+        if (mustBeAbsent && size > Level.IS_A_SIZE) {
             typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Size"));
             return;
         }
         boolean copy = annotationExpression.extract("copy", false);
         if (copy) {
-            if (sizeCopy != Level.TRUE_LEVEL_1) {
+            if (sizeCopy != Level.SIZE_COPY_TRUE) {
                 typeContext.addMessage(Message.newMessage(where, Message.SIZE_COPY_MISSING));
             }
             return;
         }
         boolean copyMin = annotationExpression.extract("copyMin", false);
         if (copyMin) {
-            if (sizeCopy != Level.TRUE) {
+            if (sizeCopy != Level.SIZE_COPY_MIN_TRUE) {
                 typeContext.addMessage(Message.newMessage(where, Message.SIZE_COPY_MIN_MISSING));
             }
             return;

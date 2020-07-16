@@ -1,10 +1,10 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -194,7 +194,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testSizeRestriction() {
         Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, false);
-        Assert.assertEquals(Analysis.SIZE_NOT_EMPTY, iGe0.encodedSizeRestriction());
+        Assert.assertEquals(Level.SIZE_NOT_EMPTY, iGe0.encodedSizeRestriction());
         Value iGe3 = GreaterThanZeroValue.greater(i, new IntValue(3), true);
         Assert.assertEquals(Analysis.encodeSizeMin(3), iGe3.encodedSizeRestriction());
         Value iEq4 = EqualsValue.equals(i, new IntValue(4));

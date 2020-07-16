@@ -181,7 +181,7 @@ public class FieldAnalyser {
             return false;
         }
         if (modified == Level.TRUE) {
-            fieldAnalysis.setProperty(VariableProperty.SIZE, Analysis.IS_A_SIZE);
+            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.IS_A_SIZE);
             log(SIZE, "Setting @Size on {} to @Size(min = 0), meaning 'we have a @Size, but nothing else'", fieldInfo.fullyQualifiedName());
             return true;
         }

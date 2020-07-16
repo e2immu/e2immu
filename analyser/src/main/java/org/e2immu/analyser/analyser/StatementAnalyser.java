@@ -188,10 +188,10 @@ public class StatementAnalyser {
         Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true, true);
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
-            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.TRUE);
+            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
 
             // as a context property
-            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, Level.TRUE);
+            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
             if (variableProperties.uponUsingConditional != null) {
                 log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                 variableProperties.uponUsingConditional.run();
@@ -252,7 +252,7 @@ public class StatementAnalyser {
         // we run at the local level
         for (AboutVariable aboutVariable : variableProperties.variableProperties()) {
             if (aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariable()
-                    && !Level.haveTrueAt(aboutVariable.getProperty(VariableProperty.READ), 0)) {
+                    && aboutVariable.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
                 }
@@ -395,7 +395,7 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
                 ((ArrayValue) value).values.stream().allMatch(variableProperties::isNotNull0)) {
-            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.TRUE);
+            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
         }
 
         // PART 5: checks for ReturnStatement
@@ -427,13 +427,13 @@ public class StatementAnalyser {
                         transferValue.value.set(value);
                     }
                 }
-                if (transferValue.properties.getOtherwise(VariableProperty.IDENTITY, Level.DELAY) == Level.DELAY) {
+                if (transferValue.getProperty(VariableProperty.IDENTITY) == Level.DELAY) {
                     int identity = ReturnStatement.identity(((ReturnStatement) statement.statement).expression);
                     transferValue.properties.put(VariableProperty.IDENTITY, identity);
                 }
                 for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
                     int v = variableProperties.getProperty(value, variableProperty);
-                    int current = transferValue.properties.getOtherwise(variableProperty, Level.DELAY);
+                    int current = transferValue.getProperty(variableProperty);
                     if (v > current) {
                         transferValue.properties.put(variableProperty, v);
                     }
@@ -441,7 +441,7 @@ public class StatementAnalyser {
                 for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE) {
                     int v = variableProperties.getProperty(value, variableProperty);
                     if (v == Level.DELAY) v = Level.FALSE;
-                    int current = transferValue.properties.getOtherwise(variableProperty, Level.DELAY);
+                    int current = transferValue.getProperty(variableProperty);
                     if (v > current) {
                         transferValue.properties.put(variableProperty, v);
                     }
@@ -482,7 +482,7 @@ public class StatementAnalyser {
 
             if (value != null && statement.statement instanceof ForEachStatement) {
                 int size = variableProperties.getProperty(value, VariableProperty.SIZE);
-                if (size == Analysis.SIZE_EMPTY && !statement.inErrorState()) {
+                if (size == Level.SIZE_EMPTY && !statement.inErrorState()) {
                     typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
                 }
@@ -687,7 +687,7 @@ public class StatementAnalyser {
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {
             //TODO
-        //    variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
+            //    variableProperties.raiseError(Message.METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, methodCalled.distinguishingName());
         }
     }
 
@@ -740,7 +740,7 @@ public class StatementAnalyser {
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
-        int notNull = Level.value(evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL), Level.NOT_NULL);
+        int notNull = evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL);
         if (notNull == Level.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
         } else if (notNull == Level.DELAY) {

@@ -286,7 +286,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-        if (requiredSize <= Analysis.NOT_A_SIZE) return null;
+        if (requiredSize <= Level.NOT_A_SIZE) return null;
         // we have an @Size annotation on the method that we're calling
         int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
 
@@ -295,7 +295,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // TODO causes null pointer exception
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
-            if (sizeOfObject <= Analysis.IS_A_SIZE) {
+            if (sizeOfObject <= Level.IS_A_SIZE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
                 return sizeMethodValue(methodInfo, objectValue, requiredSize, evaluationContext);
             }

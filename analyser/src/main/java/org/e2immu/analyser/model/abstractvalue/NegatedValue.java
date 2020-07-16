@@ -138,8 +138,8 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     @Override
     public int encodedSizeRestriction() {
         int sub = value.encodedSizeRestriction();
-        if (sub == Analysis.SIZE_EMPTY) return Analysis.SIZE_NOT_EMPTY; // ==0 becomes >= 1
-        if (sub == Analysis.SIZE_NOT_EMPTY) return Analysis.SIZE_EMPTY; // >=1 becomes == 0
+        if (sub == Level.SIZE_EMPTY) return Level.SIZE_NOT_EMPTY; // ==0 becomes >= 1
+        if (sub == Level.SIZE_NOT_EMPTY) return Level.SIZE_EMPTY; // >=1 becomes == 0
         return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
     }
 
