@@ -173,3 +173,83 @@ The `IMMUTABLE` property has the following values:
 | 7     | eventually level 2 immutable after mark | `@E2Immutable` | -
 | 8     | effectively level 2 immutable | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable`
 |===
+
+Is there a pattern we can reuse for `@NotNull`, the only other one we have with multiple levels?
+
+[cols ="10,31,31,31",options=header]
+|===
+| value | meaning  | annotation on field, parameter, method | annotation in owning type
+| -1    | delay | - | -
+| 0     | nullable  | `@Nullable` | `@Nullable`
+| 1     | eventually not null, before mark | (makes no sense) | -
+| 2     | eventually not null | - | `@NotNull(after="...")`
+| 3     | eventually not null, after mark | `@NotNull` |
+| 4     | not null | `@NotNull` | `@NotNull`
+| 5     | eventually content not null, before mark | `@NotNull` | -
+| 6     | eventually content not null | - | `@NotNull1(after="...")`
+| 7     | eventually content not null, after mark | `@NotNull1` | -
+| 8     | contents not null | `@NotNull1` | `@NotNull1`
+| ...   | ... | ... |...
+| 12    | contents`' content not null | `@NotNull2` |  `@NotNull2`
+|===
+
+Some examples:
+
+[source,java]
+----
+@E1Immutable(after="mark")
+class SomeClass<X> {
+    private X x;
+
+    @Mark("mark")
+    public void initialize(Input<X> input) {
+        if(x == null) throw new UnsupportedOperationException();
+        x = doSomeComputation(input); // returns not null
+    }
+
+    @NotNull(after="mark")
+    public X getX() {
+        return x;
+    }
+}
+----
+
+This is a variation on the normal `@Mark`, `@Only` scheme.
+
+Here is an example that does not involve immutability of the type:
+[source,java]
+----
+@ExternallyMutable
+class ExampleNN1 {
+    @NotNull1(after="mark")
+    private final String[] strings;
+    private String input;
+
+    public ExampleNN1(int size) {
+        strings = new String[size];
+    }
+
+    @Mark("mark")
+    public void init() {
+        String in = this.input;
+        Arrays.fill(strings, in == null ? "?" : in);
+    }
+
+    @NotNull1(after="mark")
+    public Stream<String> getStrings() {
+        return Arrays.stream(strings);
+    }
+
+    public void setInput(String input) {
+        this.input = input;
+    }
+}
+----
+
+A stream can be created at any time, but its contents will only be not null when the `init()` method has run.
+Does this make sense, and how can we detect it?
+
+. There is only one method that changes the content of a field
+.  The iterator that fills the content is complete, i.e., it is guaranteed to run over all elements (is detectable via rewriting
+with streams, so that `@Size(copy = true))` is present). This iterator must not be conditional.
+.  The value that is set in the content is `@NotNull`. Obviously, when value is `@NotNull1`, the field will get a `@NotNull2`, etc.
