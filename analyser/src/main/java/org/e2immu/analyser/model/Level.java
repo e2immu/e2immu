@@ -2,7 +2,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.annotation.UtilityClass;
 
+import java.util.Arrays;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.IntStream;
 
 /**
  * This numeric encoding aims to work efficiently with properties at multiple levels,
@@ -48,37 +50,55 @@ public class Level {
     /**
      * make a value at a given level
      *
-     * @param value the value, DELAY, TRUE or FALSE
-     * @param level the level
+     * @param valuesPerLevel a value for each level
      * @return the composite value
      */
-    public static int compose(int value, int level) {
-        assert value >= DELAY && value <= TRUE;
-        assert level >= 0;
-        return value + level * 2;
+    public static int compose(int... valuesPerLevel) {
+        int result = 0;
+        int multiplicator = 1;
+        for (int value : valuesPerLevel) {
+            result += value * multiplicator;
+            multiplicator = multiplicator * 8;
+        }
+        return result;
     }
 
-    public static final int E1IMMUTABLE = 0;
-    public static final int E2IMMUTABLE = 1;
+    public static final int MUTABLE = FALSE;
+    public static final int EVENTUALLY_E1IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL);
+    public static final int EVENTUALLY_E1IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER);
+    public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE);
 
-    public static final int EVENTUAL_BEFORE_E1IMMUTABLE = compose(EVENTUAL_BEFORE, E1IMMUTABLE);
-    public static final int EVENTUALLY_E1IMMUTABLE = compose(EVENTUAL, E1IMMUTABLE);
-    public static final int EVENTUAL_AFTER_E1IMMUTABLE = compose(EVENTUAL_AFTER, E1IMMUTABLE);
-    public static final int EFFECTIVELY_E1IMMUTABLE = compose(EFFECTIVE, E1IMMUTABLE);
+    public static final int EVENTUALLY_E1_E2IMMUTABLE_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
+    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_E1_E2IMMUTABLE = compose(EVENTUAL, EVENTUAL);
+    public static final int EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE = compose(EFFECTIVE, EVENTUAL);
+    public static final int EVENTUALLY_E2IMMUTABLE_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
+    public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, EFFECTIVE);
 
-    public static final int EVENTUAL_BEFORE_E2IMMUTABLE = compose(EVENTUAL_BEFORE, E2IMMUTABLE);
-    public static final int EVENTUALLY_E2IMMUTABLE = compose(EVENTUAL, E2IMMUTABLE);
-    public static final int EVENTUAL_AFTER_E2IMMUTABLE = compose(EVENTUAL_AFTER, E2IMMUTABLE);
-    public static final int EFFECTIVELY_E2IMMUTABLE = compose(EFFECTIVE, E2IMMUTABLE);
+    public static final int NULLABLE = FALSE;
+    public static final int EVENTUALLY_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_NOT_NULL = compose(EVENTUAL);
+    public static final int EVENTUALLY_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER);
+    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE);
 
-    public static final int NOT_NULL = 0;
-    public static final int NOT_NULL_1 = 1;
-    public static final int NOT_NULL_2 = 2;
+    public static final int EVENTUALLY_NOT_NULL_CONTENT_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
+    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_NOT_NULL_CONTENT_NOT_NULL = compose(EVENTUAL, EVENTUAL);
+    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT_NOT_NULL = compose(EFFECTIVE, EVENTUAL);
+    public static final int EVENTUALLY_CONTENT_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER);
+    public static final int EFFECTIVELY_CONTENT_NOT_NULL = compose(EFFECTIVE, EFFECTIVE);
 
-    public static final int EVENTUAL_BEFORE_NOT_NULL = compose(EVENTUAL_BEFORE, NOT_NULL);
-    public static final int EVENTUALLY_NOT_NULL = compose(EVENTUAL, NOT_NULL);
-    public static final int EVENTUAL_AFTER_NOT_NULL = compose(EVENTUAL_AFTER, NOT_NULL);
-    public static final int EFFECTIVELY_NOT_NULL = compose(EFFECTIVE, NOT_NULL);
+    public static final int EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
+    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
+    public static final int EFFECTIVELY_CONTENT_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EFFECTIVE, EFFECTIVE, EVENTUAL_BEFORE);
+    public static final int EVENTUALLY_CONTENT2_NOT_NULL = compose(EVENTUAL, EVENTUAL, EVENTUAL);
+    public static final int EFFECTIVELY_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EVENTUAL, EVENTUAL);
+    public static final int EFFECTIVELY_CONTENT_NOT_NULL_EVENTUALLY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EFFECTIVE, EVENTUAL);
+    public static final int EVENTUALLY_CONTENT2_NOT_NULL_AFTER_MARK = compose(EVENTUAL_AFTER, EVENTUAL_AFTER, EVENTUAL_AFTER);
+    public static final int EFFECTIVELY_CONTENT2_NOT_NULL = compose(EFFECTIVE, EFFECTIVE, EFFECTIVE);
+
+    // SIZE
 
     public static final int SIZE_COPY_MIN_TRUE = 1;
     public static final int SIZE_COPY_TRUE = 3;
@@ -87,6 +107,8 @@ public class Level {
     public static final int IS_A_SIZE = 1; //  >=0
     public static final int SIZE_EMPTY = 2; // =0
     public static final int SIZE_NOT_EMPTY = 3; // >= 1
+
+    // READ, ASSIGN
 
     public static final int READ_ASSIGN_ONCE = TRUE;
     public static final int READ_ASSIGN_MULTIPLE_TIMES = 2;
@@ -105,11 +127,18 @@ public class Level {
         assert i >= DELAY;
         assert level >= 0;
         if (i == -1) return -1;
-        return Math.max(0, i - 4 * level);
+        return (i >> (3 * level)) & 0x7;
     }
 
     public static int level(int i) {
-        return Math.max(0, (i - 1) / 4);
+        assert i >= 0;
+        int level = 0;
+        int reduce = i;
+        while (reduce > 0) {
+            level++;
+            reduce = reduce >> 3;
+        }
+        return level - 1;
     }
 
     /**

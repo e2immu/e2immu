@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})
-public @interface ExternallyMutable {
+public @interface BeforeNotNullMark {
     AnnotationType type() default AnnotationType.VERIFY;
 
     /**

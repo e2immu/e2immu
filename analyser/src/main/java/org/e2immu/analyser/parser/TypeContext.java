@@ -52,6 +52,8 @@ public class TypeContext {
     private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
 
     // TODO at some point move the lazy's to typeStore, and use methods here to grab them
+    public final Lazy<AnnotationExpression> beforeImmutableMark = new Lazy<>(() -> create(BeforeImmutableMark.class));
+    public final Lazy<AnnotationExpression> beforeNotNullMark = new Lazy<>(() -> create(BeforeNotNullMark.class));
     public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));
     public final Lazy<AnnotationExpression> container = new Lazy<>(() -> create(Container.class));
     public final Lazy<AnnotationExpression> dependent = new Lazy<>(() -> create(Dependent.class));
@@ -61,7 +63,6 @@ public class TypeContext {
     public final Lazy<AnnotationExpression> e1Immutable = new Lazy<>(() -> create(E1Immutable.class));
     public final Lazy<AnnotationExpression> e2Immutable = new Lazy<>(() -> create(E2Immutable.class));
     public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
-    public final Lazy<AnnotationExpression> externallyMutable = new Lazy<>(() -> create(ExternallyMutable.class));
     public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
     public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
     public final Lazy<AnnotationExpression> ignoreModifications = new Lazy<>(() -> create(IgnoreModifications.class));

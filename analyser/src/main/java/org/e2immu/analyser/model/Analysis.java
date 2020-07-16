@@ -19,11 +19,9 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -167,39 +165,57 @@ public abstract class Analysis {
         }
 
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (immutable >= Level.EVENTUALLY_E2IMMUTABLE) {
+        if (immutable >= Level.EVENTUALLY_E1_E2IMMUTABLE) {
             if (isType) {
-                annotations.put(typeContext.externallyMutable.get(), false);
                 annotations.put(typeContext.mutable.get(), false);
+            } else {
+                annotations.put(typeContext.beforeImmutableMark.get(), false);
             }
+            annotations.put(typeContext.e1Immutable.get(), false);
             if (haveContainer) {
                 if (immutable > minImmutable || container > minContainer) {
                     annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), true);
                 }
             } else {
-                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), false);
-                if (immutable > minImmutable)
+                if (noContainer) annotations.put(typeContext.e2Container.get(), false);
+                if (immutable > minImmutable) {
                     annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
+                }
             }
         } else if (immutable >= Level.EVENTUALLY_E1IMMUTABLE) {
             if (isType) {
-                annotations.put(makeEventualAnnotation(typeContext.externallyMutable.get(), false), true);
                 annotations.put(typeContext.mutable.get(), false);
             }
-            if (haveContainer) {
-                if (immutable > minImmutable || container > minContainer) {
-                    annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
-                }
+            if (immutable == Level.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+                annotations.put(typeContext.beforeImmutableMark.get(), true);
+
             } else {
-                if (noContainer) annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), false);
-                if (immutable > minImmutable)
-                    annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
+                if (immutable == Level.EVENTUALLY_E1_E2IMMUTABLE_BEFORE_MARK) {
+                    annotations.put(typeContext.beforeImmutableMark.get(), true);
+                }
+                if (haveContainer) {
+                    if (immutable > minImmutable || container > minContainer) {
+                        annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
+                    }
+                } else {
+                    if (noContainer) {
+                        annotations.put(typeContext.e1Container.get(), false);
+                    }
+                    if (immutable > minImmutable) {
+                        annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
+                    }
+                }
             }
         } else {
-            if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
-            if (isType) {
-                annotations.put(typeContext.externallyMutable.get(), false);
-                annotations.put(typeContext.mutable.get(), true);
+            if (immutable == Level.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+                annotations.put(typeContext.beforeImmutableMark.get(), true);
+            } else {
+                if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
+                if (isType) {
+                    annotations.put(typeContext.mutable.get(), true);
+                } else {
+                    annotations.put(typeContext.beforeImmutableMark.get(), false);
+                }
             }
         }
 
@@ -209,15 +225,13 @@ public abstract class Analysis {
         // not null
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
-        int notNull2 = Level.value(notNull, Level.NOT_NULL_2);
-        if (notNull2 >= Level.EVENTUAL) {
-            if (notNull2 > minNotNull) annotations.put(typeContext.notNull2.get(), true);
+        if (notNull >= Level.EVENTUALLY_CONTENT2_NOT_NULL) {
+            if (notNull > minNotNull) annotations.put(typeContext.notNull2.get(), true);
             if (doNullable) annotations.put(typeContext.nullable.get(), false);
         } else {
-            if (notNull2 > Level.DELAY) annotations.put(typeContext.notNull2.get(), false);
+            if (notNull != Level.DELAY) annotations.put(typeContext.notNull2.get(), false);
 
-            int notNull1 = Level.value(notNull, Level.NOT_NULL_1);
-            if (notNull1 >= Level.EVENTUAL) {
+            if (notNull >= Level.EVENTUALLY_NOT_NULL) {
                 if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
                 if (doNullable) annotations.put(typeContext.nullable.get(), false);
             } else {
@@ -314,7 +328,7 @@ public abstract class Analysis {
                 } else if (typeContext.e2Container.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                     container = true;
-                } else if (typeContext.externallyMutable.get().typeInfo == t) {
+                } else if (typeContext.beforeImmutableMark.get().typeInfo == t) {
                     immutable = 1;
                 } else if (typeContext.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);

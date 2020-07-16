@@ -104,7 +104,7 @@ public class TypeAnalyser {
 
         // opposites
         check(typeInfo, Mutable.class, typeContext.mutable.get());
-        check(typeInfo, ExternallyMutable.class, typeContext.externallyMutable.get());
+        check(typeInfo, BeforeImmutableMark.class, typeContext.beforeImmutableMark.get());
         check(typeInfo, ModifiesArguments.class, typeContext.modifiesArguments.get());
     }
 

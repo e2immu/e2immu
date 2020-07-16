@@ -68,7 +68,7 @@ Usage of a type is typically analyser later than the type itself.
 This does not sit well with the idea that all downstream use should be marked automatically: unless there is another trick up our sleeve, we will have to manually mark `Config` as `@E2Immutable` in every constructor.
 
 We can move in the other direction if we annotate an eventually `@E2Immutable` type `@E1Immutable` when we can guarantee that in that location, the method will modify the type's content.
-Similarly, we annotate an eventually `@E1Immutable` type `@ExternallyMutable` if in that location the method makes assignments to the type's fields.
+Similarly, we annotate an eventually `@E1Immutable` type `BeforeImmutableMark` if in that location the method makes assignments to the type's fields.
 Consider
 
 [source,java]

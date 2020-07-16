@@ -3,7 +3,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 @E1Container(after = "mark")
-@ExternallyMutable(before = "mark")
+@BeforeImmutableMark(before = "mark")
 public class EventuallyE1Immutable1 {
 
     @Container
