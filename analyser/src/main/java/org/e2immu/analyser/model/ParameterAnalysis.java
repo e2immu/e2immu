@@ -164,19 +164,6 @@ public class ParameterAnalysis extends Analysis {
         return Map.of(VariableProperty.MODIFIED, typeContext.notModified.get());
     }
 
-    public boolean notNull(Boolean notNull) {
-        if (notNull != null) {
-            if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull", logName);
-                setProperty(VariableProperty.NOT_NULL, notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE);
-                return true;
-            }
-        } else {
-            log(DELAYED, "Delaying setting parameter @NotNull on {}", logName);
-        }
-        return false;
-    }
-
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }

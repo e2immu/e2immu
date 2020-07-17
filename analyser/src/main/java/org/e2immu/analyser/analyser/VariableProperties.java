@@ -415,11 +415,8 @@ class VariableProperties implements EvaluationContext {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
             // SIZE, NOT_NULL
 
-            int size = parameterAnalysis.properties.getOtherwise(VariableProperty.SIZE, Level.FALSE);
-            aboutVariable.setProperty(VariableProperty.SIZE, size);
-
-            int notNull = parameterAnalysis.properties.getOtherwise(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
-            aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
+            int immutable = parameterAnalysis.properties.getOtherwise(IMMUTABLE, MultiLevel.MUTABLE);
+            aboutVariable.setProperty(IMMUTABLE, immutable);
         }
 
         // copied over the existing one

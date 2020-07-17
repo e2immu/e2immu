@@ -40,8 +40,12 @@ public class TestBasicsOpposite extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+        if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+            if (d.iteration >= 1) {
+                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+            } else {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+            }
         }
     };
 
