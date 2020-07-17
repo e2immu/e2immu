@@ -52,8 +52,8 @@ public class CheckSize {
         }
         int sizeMin = annotationExpression.extract("min", -1);
         if (sizeMin >= 0) {
-            if (!Analysis.haveEquals(size)) {
-                int haveMin = Analysis.decodeSizeMin(size);
+            if (!Level.haveEquals(size)) {
+                int haveMin = Level.decodeSizeMin(size);
                 if (haveMin != sizeMin) {
                     typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_MIN_VALUE,
                             "have " + haveMin + ", requires " + sizeMin));
@@ -65,8 +65,8 @@ public class CheckSize {
         }
         int sizeEquals = annotationExpression.extract("equals", -1);
         if (sizeEquals >= 0) {
-            if (Analysis.haveEquals(size)) {
-                int haveEquals = Analysis.decodeSizeEquals(size);
+            if (Level.haveEquals(size)) {
+                int haveEquals = Level.decodeSizeEquals(size);
                 if (haveEquals != sizeEquals) {
                     typeContext.addMessage(Message.newMessage(where, Message.SIZE_WRONG_EQUALS_VALUE,
                             "have " + haveEquals + ", requires " + sizeEquals));

@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
@@ -30,9 +31,11 @@ public abstract class ConstantValue implements Value {
     // executed without context, default for all constant types
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // primitives are not null
-        if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
+        if (VariableProperty.CONTAINER == variableProperty) return Level.TRUE;
+        if (VariableProperty.IMMUTABLE == variableProperty) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (VariableProperty.NOT_NULL == variableProperty) return MultiLevel.EFFECTIVELY_NOT_NULL;
+        if (VariableProperty.SIZE == variableProperty) return Level.DELAY;
+        if (VariableProperty.SIZE_COPY == variableProperty) return Level.DELAY;
         if (VariableProperty.MODIFIED == variableProperty) return Level.FALSE;
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }

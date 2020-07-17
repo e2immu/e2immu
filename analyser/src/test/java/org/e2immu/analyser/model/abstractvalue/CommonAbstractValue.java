@@ -101,7 +101,7 @@ public abstract class CommonAbstractValue {
         public Value currentValue(Variable variable) {
             return new VariableValue(this, variable, variable.name());
         }
-        
+
         @Override
         public boolean equals(Variable variable, Variable other) {
             return variable.name().equals(other.name());

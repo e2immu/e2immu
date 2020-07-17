@@ -79,8 +79,8 @@ public class PropertyWrapper implements Value, ValueWrapper {
         }
         if (value instanceof ConstrainedNumericValue) {
             int size = newMap.getOrDefault(VariableProperty.SIZE, Level.DELAY);
-            if (Analysis.haveEquals(size) || size < Level.TRUE) throw new UnsupportedOperationException();
-            return ConstrainedNumericValue.lowerBound(value, Analysis.decodeSizeMin(size));
+            if (Level.haveEquals(size) || size < Level.TRUE) throw new UnsupportedOperationException();
+            return ConstrainedNumericValue.lowerBound(value, Level.decodeSizeMin(size));
         }
         return new PropertyWrapper(value, properties, objectFlow);
     }

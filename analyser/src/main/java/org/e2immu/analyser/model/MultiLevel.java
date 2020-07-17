@@ -29,7 +29,6 @@ public class MultiLevel {
     public static final int NOT_NULL_2 = 2;
     public static final int NOT_NULL_3 = 3;
 
-
     public static final int EVENTUALLY_CONTENT2_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_CONTENT_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE, EVENTUAL_BEFORE);
     public static final int EVENTUALLY_NOT_NULL_BEFORE_MARK = compose(EVENTUAL_BEFORE);
@@ -69,6 +68,10 @@ public class MultiLevel {
 
     public static final int MUTABLE = FALSE;
     public static final int NULLABLE = FALSE;
+
+    public static int valueAtLevel(int value, int level) {
+        return value << (level * SHIFT);
+    }
 
     /**
      * make a value at a given level
@@ -151,5 +154,10 @@ public class MultiLevel {
 
     public static int delayToFalse(int i) {
         return modifyEachComponent(i, MultiLevel::delayToFalseKeepRest);
+    }
+
+    public static int shift(int lowestLevel, int initial) {
+        if (initial == -1) return lowestLevel;
+        return lowestLevel + (initial << SHIFT);
     }
 }

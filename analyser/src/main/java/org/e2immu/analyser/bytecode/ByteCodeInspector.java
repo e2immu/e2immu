@@ -41,14 +41,6 @@ public class ByteCodeInspector implements OnDemandInspection {
     private final TypeContext typeContext;
     private final AnnotationStore annotationStore;
 
-    public ByteCodeInspector() {
-        this(null, null, new TypeContext());
-        for (TypeInfo typeInfo : Primitives.PRIMITIVES.typeByName.values()) {
-            typeContext.typeStore.add(typeInfo);
-            typeContext.addToContext(typeInfo);
-        }
-    }
-
     public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext) {
         this.classPath = classPath;
         this.typeContext = typeContext;

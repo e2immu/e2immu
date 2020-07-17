@@ -256,10 +256,10 @@ public abstract class Analysis {
         int minSize = minimalValue(VariableProperty.SIZE);
         int size = getProperty(VariableProperty.SIZE);
         if (size > minSize) {
-            if (haveEquals(size)) {
-                annotations.put(sizeAnnotation(typeContext, "equals", decodeSizeEquals(size)), true);
+            if (Level.haveEquals(size)) {
+                annotations.put(sizeAnnotation(typeContext, "equals", Level.decodeSizeEquals(size)), true);
             } else {
-                annotations.put(sizeAnnotation(typeContext, "min", decodeSizeMin(size)), true);
+                annotations.put(sizeAnnotation(typeContext, "min", Level.decodeSizeMin(size)), true);
             }
         }
 
@@ -310,6 +310,7 @@ public abstract class Analysis {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         boolean container = false;
+        boolean beforeMark = false;
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
@@ -320,14 +321,14 @@ public abstract class Analysis {
                 if (typeContext.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                 } else if (typeContext.mutable.get().typeInfo == t) {
-                    immutable = 0;
+                    immutable = -1;
                 } else if (typeContext.e2Immutable.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                 } else if (typeContext.e2Container.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                     container = true;
                 } else if (typeContext.beforeImmutableMark.get().typeInfo == t) {
-                    immutable = 1;
+                    beforeMark = true;
                 } else if (typeContext.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
@@ -390,7 +391,18 @@ public abstract class Analysis {
             method.accept(VariableProperty.CONTAINER, Level.TRUE);
         }
         if (immutable >= 0) {
-            method.accept(VariableProperty.IMMUTABLE, MultiLevel.compose(Level.TRUE, immutable));
+            int value;
+            switch (immutable) {
+                case 0:
+                    value = MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+                    break;
+                case 1:
+                    value = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+            method.accept(VariableProperty.IMMUTABLE, value);
         }
         for (Map.Entry<ElementType, Integer> entry : notNullMap.entrySet()) {
             VariableProperty variableProperty;
@@ -410,7 +422,24 @@ public abstract class Analysis {
                 default:
                     throw new UnsupportedOperationException();
             }
-            method.accept(variableProperty, entry.getValue() == -1 ? Level.FALSE : MultiLevel.compose(Level.TRUE, entry.getValue()));
+            int nn;
+            switch (entry.getValue()) {
+                case -1:
+                    nn = MultiLevel.NULLABLE;
+                    break;
+                case 0:
+                    nn = MultiLevel.EFFECTIVELY_NOT_NULL;
+                    break;
+                case 1:
+                    nn = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+                    break;
+                case 2:
+                    nn = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+            method.accept(variableProperty, nn);
         }
     }
 
@@ -428,7 +457,7 @@ public abstract class Analysis {
         Integer min = annotationExpression.extract("min", -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
-            return MultiLevel.compose(Level.TRUE, min);
+            return Level.encodeSizeMin(min);
         }
         Boolean copy = annotationExpression.extract("copy", false);
         if (copy) return Level.DELAY;
@@ -440,7 +469,7 @@ public abstract class Analysis {
             // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 
             // @Size is the default
-            return MultiLevel.compose(Level.FALSE, equals + 1);
+            return Level.encodeSizeEquals(equals);
         }
         // ignore! raise warning
         typeContext.addMessage(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
@@ -455,39 +484,6 @@ public abstract class Analysis {
         Boolean copyMin = annotationExpression.extract("copyMin", false);
         if (copyMin) return Level.SIZE_COPY_MIN_TRUE;
         return Level.FALSE;
-    }
-
-    public static boolean compatibleSizes(int value, int required) {
-        if (haveEquals(required)) return value == required;
-        return value >= required;
-    }
-
-    public static int joinSizeRestrictions(int v1, int v2) {
-        if (v1 == v2) return v1;
-        int min = Math.min(v1, v2);
-        if (haveEquals(min)) return min - 1;
-        return Math.min(v1, v2);
-    }
-
-    public static boolean haveEquals(int size) {
-        if (size == Integer.MAX_VALUE) return false;
-        return size >= 2 && size % 2 == 0;
-    }
-
-    public static int decodeSizeEquals(int size) {
-        return size / 2 - 1;
-    }
-
-    public static int decodeSizeMin(int size) {
-        return size / 2;
-    }
-
-    public static int encodeSizeEquals(int size) {
-        return (1 + size) * 2;
-    }
-
-    public static int encodeSizeMin(int size) {
-        return size * 2 + 1;
     }
 
     static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {

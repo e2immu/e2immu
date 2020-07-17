@@ -164,7 +164,7 @@ public class MethodValue implements Value {
                 Value value = parameters.get(parameterInfo.index);
                 int sizeOfValue = evaluationContext == null ? value.getPropertyOutsideContext(VariableProperty.SIZE) :
                         evaluationContext.getProperty(value, VariableProperty.SIZE);
-                if (Analysis.haveEquals(sizeOfValue) && sizeCopy == 1) return sizeOfValue - 1;
+                if (Level.haveEquals(sizeOfValue) && sizeCopy == 1) return sizeOfValue - 1;
                 return sizeOfValue;
             }
         }
@@ -264,10 +264,10 @@ public class MethodValue implements Value {
                 if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
                     Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
                     Value comparison;
-                    if (Analysis.haveEquals(size)) {
-                        comparison = EqualsValue.equals(new IntValue(Analysis.decodeSizeEquals(size)), cnv, null);
+                    if (Level.haveEquals(size)) {
+                        comparison = EqualsValue.equals(new IntValue(Level.decodeSizeEquals(size)), cnv, null);
                     } else {
-                        comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Analysis.decodeSizeMin(size)), true, null);
+                        comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Level.decodeSizeMin(size)), true, null);
                     }
                     return Map.of(variableValue.variable, comparison);
                 }

@@ -826,7 +826,7 @@ class VariableProperties implements EvaluationContext {
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
         if (VariableProperty.NOT_NULL == variableProperty && conditionalManager.isNotNull(variable)) {
-            return Level.best(MultiLevel.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
+            return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
         }
         if (VariableProperty.SIZE.equals(variableProperty)) {
             Value sizeRestriction = conditionalManager.getSizeRestrictions(false).get(variable);

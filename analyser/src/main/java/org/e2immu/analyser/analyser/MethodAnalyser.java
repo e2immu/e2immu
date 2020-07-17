@@ -557,7 +557,7 @@ public class MethodAnalyser {
                 MethodValue methodValue = (MethodValue) cnv.value;
                 MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                 if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
-                    return Analysis.encodeSizeMin((int) cnv.lowerBound);
+                    return Level.encodeSizeMin((int) cnv.lowerBound);
                 }
             }
         } else if (methodInfo.returnType().isBoolean()) {
@@ -572,7 +572,7 @@ public class MethodAnalyser {
                         MethodValue methodValue = (MethodValue) cnv.value;
                         MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                         if (methodValue.methodInfo == theSizeMethod) {
-                            return Analysis.encodeSizeEquals(i);
+                            return Level.encodeSizeEquals(i);
                         }
                     }
                 }
@@ -584,7 +584,7 @@ public class MethodAnalyser {
                         MethodValue methodValue = (MethodValue) cnv.value;
                         MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                         if (methodValue.methodInfo == theSizeMethod) {
-                            return Analysis.encodeSizeMin((int) xb.b);
+                            return Level.encodeSizeMin((int) xb.b);
                         }
                     }
                 }
@@ -595,9 +595,9 @@ public class MethodAnalyser {
 
     static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {
         int res = intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
-            if (Analysis.haveEquals(v1) && Analysis.haveEquals(v2) && v1 != v2) {
+            if (Level.haveEquals(v1) && Level.haveEquals(v2) && v1 != v2) {
                 typeContext.addMessage(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
-                        "Equal to " + Analysis.decodeSizeEquals(v1) + ", equal to " + Analysis.decodeSizeEquals(v2)));
+                        "Equal to " + Level.decodeSizeEquals(v1) + ", equal to " + Level.decodeSizeEquals(v2)));
             }
             return Math.min(v1, v2);
         });

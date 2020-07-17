@@ -78,6 +78,8 @@ public class TestBasics extends CommonTestRunner {
             if (iteration == 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.effectivelyFinalValue.get()
+                        .getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
             if (iteration > 0) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));

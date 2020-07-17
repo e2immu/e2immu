@@ -154,10 +154,10 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         if (!integer) throw new UnsupportedOperationException();
 
         if (lowerBound == upperBound) {
-            return Analysis.encodeSizeEquals((int) lowerBound);
+            return Level.encodeSizeEquals((int) lowerBound);
         }
         if (lowerBound > 0) {
-            return Analysis.encodeSizeMin((int) lowerBound);
+            return Level.encodeSizeMin((int) lowerBound);
         }
         return Level.FALSE; // no decent value
     }

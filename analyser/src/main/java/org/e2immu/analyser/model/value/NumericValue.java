@@ -19,8 +19,8 @@
 package org.e2immu.analyser.model.value;
 
 import com.google.common.math.DoubleMath;
-import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
@@ -36,22 +36,12 @@ public interface NumericValue extends Value {
         return new DoubleValue(b, objectFlow);
     }
 
-    static Value intOrDouble(double b, EvaluationContext evaluationContext) {
-        if (DoubleMath.isMathematicalInteger(b)) {
-            long l = Math.round(b);
-            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE)
-                return new LongValue(l, evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.longParameterizedType));
-            return new IntValue((int) l, evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.intParameterizedType));
-        }
-        return new DoubleValue(b, evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.doubleParameterizedType));
-    }
-
     NumericValue negate();
 
     Number getNumber();
 
     @Override
     default int encodedSizeRestriction() {
-        return Analysis.encodeSizeEquals(getNumber().intValue());
+        return Level.encodeSizeEquals(getNumber().intValue());
     }
 }

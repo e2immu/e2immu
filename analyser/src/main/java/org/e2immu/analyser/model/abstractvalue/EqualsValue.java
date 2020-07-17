@@ -162,7 +162,7 @@ public class EqualsValue extends PrimitiveValue {
     public int encodedSizeRestriction() {
         if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
             int size = ((NumericValue) lhs).getNumber().intValue();
-            return Analysis.encodeSizeEquals(size);
+            return Level.encodeSizeEquals(size);
         }
         return 0;
     }

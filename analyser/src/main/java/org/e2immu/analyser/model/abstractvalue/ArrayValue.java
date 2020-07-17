@@ -43,12 +43,10 @@ public class ArrayValue implements Value {
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
             int notNull = combinedValue.getPropertyOutsideContext(variableProperty);
-            int levelOfValues = MultiLevel.level(notNull);
-            int valueAtLevel = MultiLevel.value(notNull, levelOfValues);
-            return MultiLevel.compose(valueAtLevel, levelOfValues + 1); // default = @NotNull level 0
+            return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }
         if (VariableProperty.SIZE == variableProperty) {
-            return Analysis.encodeSizeEquals(values.size());
+            return Level.encodeSizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }
@@ -57,12 +55,10 @@ public class ArrayValue implements Value {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
             int notNull = evaluationContext.getProperty(combinedValue, variableProperty);
-            int levelOfValues = MultiLevel.level(notNull);
-            int valueAtLevel = MultiLevel.value(notNull, levelOfValues);
-            return MultiLevel.compose(valueAtLevel, levelOfValues + 1); // default = @NotNull level 0
+            return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }
         if (VariableProperty.SIZE == variableProperty) {
-            return Analysis.encodeSizeEquals(values.size());
+            return Level.encodeSizeEquals(values.size());
         }
         throw new UnsupportedOperationException("No info about " + variableProperty);
     }

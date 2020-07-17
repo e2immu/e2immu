@@ -176,8 +176,8 @@ public class ConditionalValue implements Value {
                 int t = sizeRestriction.encodedSizeRestriction();
                 int f = evaluationContext == null ? ifFalse.getPropertyOutsideContext(VariableProperty.SIZE) :
                         evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
-                if (Analysis.haveEquals(t) && Analysis.haveEquals(f) && t != f) return Level.IS_A_SIZE;
-                return Analysis.joinSizeRestrictions(t, f);
+                if (Level.haveEquals(t) && Level.haveEquals(f) && t != f) return Level.IS_A_SIZE;
+                return Level.joinSizeRestrictions(t, f);
             }
         }
         return NO_PATTERN;

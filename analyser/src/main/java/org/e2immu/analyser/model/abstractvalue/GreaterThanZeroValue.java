@@ -291,7 +291,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     public int encodedSizeRestriction() {
         XB xb = extract();
         if (!xb.lessThan) {
-            return Analysis.encodeSizeMin((int) xb.b);
+            return Level.encodeSizeMin((int) xb.b);
         }
         return 0;
     }

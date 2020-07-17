@@ -16,7 +16,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         super(true);
     }
 
-    private static final int SIZE_EQUALS_2 = Analysis.encodeSizeEquals(2);
+    private static final int SIZE_EQUALS_2 = Level.encodeSizeEquals(2);
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
@@ -46,7 +46,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         }
     };
 
-    private static final int SIZE_EQUALS_1 = Analysis.encodeSizeEquals(1);
+    private static final int SIZE_EQUALS_1 = Level.encodeSizeEquals(1);
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override

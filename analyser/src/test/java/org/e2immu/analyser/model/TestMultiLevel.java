@@ -30,13 +30,13 @@ public class TestMultiLevel {
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL));
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_1));
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_2));
-        Assert.assertEquals(FALSE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_3));
+        Assert.assertEquals(DELAY, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_3));
 
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL));
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_1));
-        Assert.assertEquals(FALSE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_2));
+        Assert.assertEquals(DELAY, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_2));
 
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_NOT_NULL, NOT_NULL));
-        Assert.assertEquals(NULLABLE, value(EFFECTIVELY_NOT_NULL, NOT_NULL_1));
+        Assert.assertEquals(DELAY, value(EFFECTIVELY_NOT_NULL, NOT_NULL_1));
     }
 }

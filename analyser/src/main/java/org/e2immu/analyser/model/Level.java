@@ -73,4 +73,36 @@ public class Level {
         return b ? TRUE : FALSE;
     }
 
+    public static boolean compatibleSizes(int value, int required) {
+        if (haveEquals(required)) return value == required;
+        return value >= required;
+    }
+
+    public static int joinSizeRestrictions(int v1, int v2) {
+        if (v1 == v2) return v1;
+        int min = Math.min(v1, v2);
+        if (haveEquals(min)) return min - 1;
+        return Math.min(v1, v2);
+    }
+
+    public static boolean haveEquals(int size) {
+        if (size == Integer.MAX_VALUE) return false;
+        return size >= 2 && size % 2 == 0;
+    }
+
+    public static int decodeSizeEquals(int size) {
+        return size / 2 - 1;
+    }
+
+    public static int decodeSizeMin(int size) {
+        return size / 2;
+    }
+
+    public static int encodeSizeEquals(int size) {
+        return (1 + size) * 2;
+    }
+
+    public static int encodeSizeMin(int size) {
+        return size * 2 + 1;
+    }
 }
