@@ -96,9 +96,8 @@ public class FieldAccess implements Expression {
         if (scope instanceof NullValue) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         } else {
-            int notNull = evaluationContext.getProperty(scope, VariableProperty.NOT_NULL);
-            // TODO check eventual?
-            if (MultiLevel.value(notNull, MultiLevel.NOT_NULL) < MultiLevel.EFFECTIVE) {
+            boolean isNotNull = MultiLevel.isEffectivelyNotNull(evaluationContext.getProperty(scope, VariableProperty.NOT_NULL));
+            if (!isNotNull) {
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scope);
             }
         }

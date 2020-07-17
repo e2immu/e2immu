@@ -418,7 +418,7 @@ class VariableProperties implements EvaluationContext {
             int size = parameterAnalysis.properties.getOtherwise(VariableProperty.SIZE, Level.FALSE);
             aboutVariable.setProperty(VariableProperty.SIZE, size);
 
-            int notNull = parameterAnalysis.properties.getOtherwise(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+            int notNull = parameterAnalysis.properties.getOtherwise(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
             aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
         }
 

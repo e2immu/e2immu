@@ -130,7 +130,7 @@ public class FieldAnalysis extends Analysis {
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
-                if (type.isPrimitive()) return Level.TRUE;
+                if (type.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
 
             case MODIFIED:

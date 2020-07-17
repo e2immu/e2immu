@@ -80,7 +80,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // scope
         Value objectValue = computedScope.evaluate(evaluationContext, visitor, new ForwardEvaluationInfo(Map.of(
-                VariableProperty.NOT_NULL, Level.TRUE,
+                VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.MODIFIED, modifiedValue), false));
@@ -234,9 +234,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {
         // compliance with current requirements
         int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (requiredNotNull >= Level.TRUE) {
-            int currentNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
-            if (currentNotNull == Level.FALSE) {
+        if (requiredNotNull > MultiLevel.NULLABLE) {
+            boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodAnalysis.getProperty(VariableProperty.NOT_NULL));
+            if (!isNotNull) {
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method call " + methodInfo.distinguishingName());
             }
         }

@@ -52,7 +52,7 @@ public class VariableExpression implements Expression {
             evaluationContext.markRead(variable);
         }
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (notNull >= Level.TRUE) {
+        if (notNull > MultiLevel.NULLABLE) {
             StatementAnalyser.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);

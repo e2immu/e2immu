@@ -108,7 +108,6 @@ public enum VariableProperty {
     }
 
     public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
-    public final static Set<VariableProperty> CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD = Set.of(SIZE, NOT_NULL);
 
     // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
     // NOT_MODIFIED == TRUE
@@ -121,13 +120,11 @@ public enum VariableProperty {
 
     public final static Set<VariableProperty> INSTANCE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE);
     public final static Set<VariableProperty> FROM_FIELD_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, IGNORE_MODIFICATIONS);
-    public final static Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER); // from the type
 
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, MODIFIED);
 
     public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(NOT_NULL, SIZE, SIZE_COPY);
-    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE = Set.of(IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT); // but not CONTENT_MODIFIED, SIZE, have separate computation

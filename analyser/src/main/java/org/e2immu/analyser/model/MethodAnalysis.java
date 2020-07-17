@@ -94,7 +94,7 @@ public class MethodAnalysis extends Analysis {
                 return getPropertyCheckOverrides(variableProperty);
 
             case NOT_NULL:
-                if (returnType.isPrimitive()) return Level.TRUE;
+                if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return Level.best(Level.TRUE,
@@ -145,7 +145,7 @@ public class MethodAnalysis extends Analysis {
 
             case NOT_NULL:
                 // don't show @NotNull on primitive types
-                if (returnType.isPrimitive()) return Level.TRUE;
+                if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 break;
 
             case SIZE:

@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import static org.e2immu.analyser.model.Level.FALSE;
@@ -61,12 +58,19 @@ public class NullValue extends ConstantValue implements Constant<Object> {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.NOT_NULL) return FALSE;
-        if (variableProperty == VariableProperty.SIZE || variableProperty == VariableProperty.SIZE_COPY) return FALSE; // min 0
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return TRUE;
-
-        // in combination with a non-null, FALSE can be overridden but can also work with another non-null that has FALSE
-        if (VariableProperty.MODIFIED == variableProperty) return FALSE;
-        throw new UnsupportedOperationException("Asking for " + variableProperty);
+        switch (variableProperty) {
+            case NOT_NULL:
+                return MultiLevel.NULLABLE;
+            case SIZE:
+            case SIZE_COPY:
+            case MODIFIED:
+                return FALSE;
+            case IMMUTABLE:
+                return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case CONTAINER:
+                return TRUE;
+            default:
+                throw new UnsupportedOperationException("Asking for " + variableProperty);
+        }
     }
 }

@@ -102,7 +102,7 @@ public interface Value extends Comparable<Value> {
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
-        if (VariableProperty.NOT_NULL == variableProperty) return Level.TRUE; // constants are not null
+        if (VariableProperty.NOT_NULL == variableProperty) return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
         if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
 
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());

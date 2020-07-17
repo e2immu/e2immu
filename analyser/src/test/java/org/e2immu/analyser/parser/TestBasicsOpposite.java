@@ -39,11 +39,26 @@ public class TestBasicsOpposite extends CommonTestRunner {
         super(false);
     }
 
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, MethodInfo methodInfo) {
+            if ("setString".equals(methodInfo.name)) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
+        }
+    };
 
     @Test
     public void test() throws IOException {
         testClass("BasicsOpposite", 0, new DebugConfiguration.Builder()
-
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

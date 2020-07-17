@@ -63,9 +63,9 @@ public class EqualsValue extends PrimitiveValue {
     public static Value equals(Value l, Value r, ObjectFlow objectFlow) {
         if (l.equals(r)) return BoolValue.TRUE;
 
-        if (l instanceof NullValue && r.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+        if (l instanceof NullValue && MultiLevel.isEffectivelyNotNull(r.getPropertyOutsideContext(VariableProperty.NOT_NULL)))
             return BoolValue.FALSE;
-        if (r instanceof NullValue && l.getPropertyOutsideContext(VariableProperty.NOT_NULL) >= Level.TRUE)
+        if (r instanceof NullValue && MultiLevel.isEffectivelyNotNull(l.getPropertyOutsideContext(VariableProperty.NOT_NULL)))
             return BoolValue.FALSE;
 
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;

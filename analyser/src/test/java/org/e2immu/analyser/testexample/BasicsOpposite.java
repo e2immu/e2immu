@@ -22,6 +22,7 @@ public class BasicsOpposite {
         this.string = string;
     }
 
+    @Nullable(type = AnnotationType.VERIFY_ABSENT)
     public void add(@Modified Collection<String> collection) {
         collection.add(string);
     }

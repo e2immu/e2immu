@@ -179,7 +179,7 @@ public class NewObject implements HasParameterExpressions {
             Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(false);
             for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
                 if (!nullClauseEntry.getValue()) {
-                    evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, Level.TRUE);
+                    evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
             }
             Value nonIndividual = precondition.nonIndividualCondition();

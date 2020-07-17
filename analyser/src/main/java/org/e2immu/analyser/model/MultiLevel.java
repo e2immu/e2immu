@@ -160,4 +160,8 @@ public class MultiLevel {
         if (initial == -1) return lowestLevel;
         return lowestLevel + (initial << SHIFT);
     }
+
+    public static boolean isEffectivelyNotNull(int notNull) {
+        return value(notNull, 0) >= EVENTUAL_AFTER;
+    }
 }

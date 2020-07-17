@@ -219,8 +219,10 @@ public abstract class Analysis {
             }
         }
 
-        boolean isConstructor = this instanceof MethodAnalysis && ((MethodAnalysis) this).returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
-        boolean doNullable = !isType && !isConstructor;
+        boolean noReturnType = this instanceof MethodAnalysis && (
+                ((MethodAnalysis) this).returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR
+                        || ((MethodAnalysis) this).returnType.isVoid());
+        boolean doNullable = !isType && !noReturnType;
 
         // not null
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);

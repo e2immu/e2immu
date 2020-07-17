@@ -107,7 +107,7 @@ public class Instance implements Value {
             if (constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
                 return INDEPENDENT; // RULE 2
             }
-            if(constructor.typeInfo.isEffectivelyE2Immutable()) { // RULE 3
+            if (constructor.typeInfo.isEffectivelyE2Immutable()) { // RULE 3
                 return INDEPENDENT;
             }
         }
@@ -136,8 +136,9 @@ public class Instance implements Value {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
 
         if (VariableProperty.NOT_NULL == variableProperty) {
-            return bestType == null ? Level.TRUE :
-                    Math.max(Level.TRUE, bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
+                    Math.max(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
         if (variableProperty == VariableProperty.SIZE) {
             return MethodValue.checkSize(null, constructor, constructorParameterValues);
@@ -148,10 +149,11 @@ public class Instance implements Value {
 
         if (variableProperty == VariableProperty.MODIFIED) return Level.FALSE;
 
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty) ||
-                VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) {
-            return bestType == null ? Level.FALSE :
-                    Math.max(Level.FALSE, bestType.typeAnalysis.get().getProperty(variableProperty));
+        // IMM
+        // CONT
+        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) {
+            return bestType == null ? variableProperty.falseValue :
+                    Math.max(variableProperty.falseValue, bestType.typeAnalysis.get().getProperty(variableProperty));
         }
 
         // @NotModified should not be asked here

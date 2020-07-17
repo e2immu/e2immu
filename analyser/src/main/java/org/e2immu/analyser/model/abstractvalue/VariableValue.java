@@ -64,8 +64,8 @@ public class VariableValue extends ValueWithVariable {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.NOT_NULL) {
-            if (variable.parameterizedType().isPrimitive()) return Level.TRUE;
-            if (variable instanceof This) return Level.TRUE;
+            if (variable.parameterizedType().isPrimitive() || variable instanceof This)
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
         }
         if (variableProperty == VariableProperty.MODIFIED) {
             ParameterizedType type = variable.parameterizedType();
