@@ -255,7 +255,7 @@ public class MethodAnalyser {
             Set<Variable> variables = precondition.variables();
             mark = variables.stream().anyMatch(variable -> {
                 TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
-                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.TRUE;
+                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
                 return assigned;
             });
@@ -428,14 +428,13 @@ public class MethodAnalyser {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY) return false;
 
-        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY);
+        boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(variableProperty));
         if (delays) {
             log(DELAYED, "Return statement value not yet set");
             return false;
         }
         IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                .mapToInt(entry -> entry.getValue().properties.getOtherwise(variableProperty, Level.DELAY));
+                .mapToInt(entry -> entry.getValue().getProperty(variableProperty));
         int value = variableProperty == VariableProperty.SIZE ?
                 safeMinimum(typeContext, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);
@@ -465,14 +464,13 @@ public class MethodAnalyser {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
 
                 // then try @Size(min, equals)
-                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                        entry.getValue().properties.getOtherwise(VariableProperty.SIZE, Level.DELAY) == Level.DELAY);
+                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE));
                 if (delays) {
                     log(DELAYED, "Return statement value not yet set for @Size on {}", methodInfo.distinguishingName());
                     return false;
                 }
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                        .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
+                        .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
                 return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimum(typeContext, new Location(methodInfo), stream));
             }
 
@@ -504,14 +502,13 @@ public class MethodAnalyser {
             if (methodInfo.isConstructor) return false; // non-modifying constructor would be weird anyway
             if (methodInfo.returnType().hasSize()) {
                 // first try @Size(copy ...)
-                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry ->
-                        entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY) == Level.DELAY);
+                boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));
                 if (delays) {
                     log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
                     return false;
                 }
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
-                        .mapToInt(entry -> entry.getValue().properties.getOtherwise(VariableProperty.SIZE_COPY, Level.DELAY));
+                        .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE_COPY));
                 int min = stream.min().orElse(Level.DELAY);
                 return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min);
             }
@@ -613,7 +610,7 @@ public class MethodAnalyser {
         // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.fieldSummaries.stream()
                 .map(Map.Entry::getValue)
-                .anyMatch(tv -> tv.properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) >= Level.TRUE);
+                .anyMatch(tv -> tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} cannot be @NotModified/is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
@@ -626,19 +623,19 @@ public class MethodAnalyser {
             return false;
         }
         boolean isModified = methodAnalysis.fieldSummaries.stream().map(Map.Entry::getValue)
-                .anyMatch(tv -> tv.properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE);
+                .anyMatch(tv -> tv.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
                     methodAnalysis.fieldSummaries.stream()
-                            .filter(e -> e.getValue().properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE)
+                            .filter(e -> e.getValue().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
                             .map(e -> e.getKey().fullyQualifiedName()).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (!isModified) {
-            boolean localMethodsCalled = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_CALLED, Level.DELAY) == Level.TRUE;
+            boolean localMethodsCalled = methodAnalysis.thisSummary.get().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
             if (localMethodsCalled) {
-                int thisModified = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
+                int thisModified = methodAnalysis.thisSummary.get().getProperty(VariableProperty.MODIFIED);
                 int methodDelay = methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.METHOD_DELAY, Level.FALSE);
 
                 if (thisModified == Level.DELAY && methodDelay == Level.TRUE) {
@@ -675,19 +672,19 @@ public class MethodAnalyser {
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
             int e2ImmutableStatusOfFieldRefs = variables.stream()
                     .filter(v -> v instanceof FieldReference)
-                    .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
-                    .min().orElse(Level.TRUE);
-            if (e2ImmutableStatusOfFieldRefs == Level.DELAY) {
+                    .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
+                    .min().orElse(MultiLevel.EFFECTIVE);
+            if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
                 log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                         variables.stream()
                                 .filter(v -> v instanceof FieldReference &&
                                         MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                                                Level.E2IMMUTABLE) == Level.DELAY)
+                                                MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                                 .map(Variable::detailedString)
                                 .collect(Collectors.joining(", ")));
                 return false;
             }
-            returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == Level.TRUE;
+            returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE;
         } else {
             returnObjectIsIndependent = true;
         }

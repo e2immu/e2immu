@@ -31,4 +31,8 @@ public class TransferValue {
     public int getProperty(VariableProperty variableProperty) {
         return properties.getOtherwise(variableProperty, Level.DELAY);
     }
+
+    public boolean isDelayed(VariableProperty variableProperty) {
+        return properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY;
+    }
 }

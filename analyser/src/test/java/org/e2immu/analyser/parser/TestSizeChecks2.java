@@ -35,7 +35,7 @@ public class TestSizeChecks2 extends CommonTestRunner {
                     .findAny().orElseThrow();
             ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
             int size = param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-            Assert.assertEquals(Level.TRUE_LEVEL_1, size);
+            Assert.assertEquals(Level.SIZE_COPY_TRUE, size);
         }
     };
 

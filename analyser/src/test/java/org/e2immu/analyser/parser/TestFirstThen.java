@@ -49,7 +49,7 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
             }
             if("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE_LEVEL_1, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, (int) d.properties.get(VariableProperty.READ));
             }
         }
         if ("equals".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
@@ -65,7 +65,7 @@ public class TestFirstThen extends CommonTestRunner {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             if ("getFirst".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
-                Assert.assertEquals(Level.TRUE_LEVEL_1, tv.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, tv.properties.get(VariableProperty.READ));
             }
             if ("hashCode".equals(methodInfo.name)) {
                 Assert.assertEquals(2, methodAnalysis.fieldSummaries.size());

@@ -55,7 +55,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
             if ("method1".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
                 Assert.assertNotNull(tv);
-                Assert.assertEquals(MultiLevel.compose(Level.TRUE, Level.NOT_NULL_1), tv.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(SIZE_EQUALS_1, tv.properties.get(VariableProperty.SIZE)); // (1)
                 Assert.assertEquals(SIZE_EQUALS_1, methodAnalysis.getProperty(VariableProperty.SIZE));
             }

@@ -24,10 +24,10 @@ public class TestContainerChecks extends CommonTestRunner {
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             }
             if ("strings1param".equals(d.variableName) && "1".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
             if ("Container1.this.strings1".equals(d.variableName) && "1".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
         if ("setStrings3".equals(d.methodInfo.name)) {
@@ -61,16 +61,16 @@ public class TestContainerChecks extends CommonTestRunner {
                 FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
                 Assert.assertEquals("strings1", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
             }
             if ("getStrings1".equals(methodInfo.name)) {
                 FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
                 Assert.assertEquals("strings1", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
             }
 
             if ("setStrings2".equals(methodInfo.name)) {
@@ -85,14 +85,14 @@ public class TestContainerChecks extends CommonTestRunner {
                 Assert.assertEquals("strings2", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.properties.get(VariableProperty.SIZE));
+                Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
             }
             if ("add2b".equals(methodInfo.name)) {
                 FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
                 Assert.assertEquals("strings2b", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
-                Assert.assertEquals(Level.TRUE_LEVEL_1, transferValue.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             }
         }
@@ -106,7 +106,7 @@ public class TestContainerChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 } else {
                     // setter may not have been called yet; there is no initialiser
-                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 }
             }
             if ("strings2".equals(fieldInfo.name)) {

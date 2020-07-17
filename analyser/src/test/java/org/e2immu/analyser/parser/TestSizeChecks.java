@@ -86,7 +86,7 @@ public class TestSizeChecks extends CommonTestRunner {
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findAny().orElseThrow();
         int sizeCopy = entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-        Assert.assertEquals(Level.TRUE_LEVEL_1, sizeCopy);
+        Assert.assertEquals(Level.SIZE_COPY_TRUE, sizeCopy);
     };
 
     @Test

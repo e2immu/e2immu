@@ -91,8 +91,8 @@ public class TestWithSkeleton {
         Assert.assertTrue(set.annotatedWith(typeContext.container.get()));
         TypeAnalysis setAnalysis = set.typeAnalysis.get();
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
-        Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
-        Assert.assertEquals(FALSE, setAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
+        Assert.assertEquals(MultiLevel.NULLABLE, setAnalysis.getProperty(VariableProperty.NOT_NULL));
 
         set.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 
@@ -100,14 +100,14 @@ public class TestWithSkeleton {
         MethodAnalysis setOfAnalysis = setOf.methodAnalysis.get();
         Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(FALSE, setOfAnalysis.getProperty(VariableProperty.MODIFIED));
-        Assert.assertEquals(MultiLevel.compose(TRUE, NOT_NULL_1), setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
-        Assert.assertEquals(TRUE, MultiLevel.value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE));
 
         TypeInfo system = typeContext.typeStore.get("java.lang.System");
         FieldInfo out = system.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();
 
         Assert.assertEquals(TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
-        Assert.assertEquals(TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     }
 
     @Test
@@ -141,7 +141,7 @@ public class TestWithSkeleton {
         Assert.assertEquals(1, nullConditionals2.size());
 
         // we now should have a not null local variable
-        Assert.assertEquals(TRUE, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
 
         // now explicitly set s to null
         variableProperties.assignmentBasics(localS, NullValue.NULL_VALUE, true);
@@ -150,7 +150,7 @@ public class TestWithSkeleton {
 
         // remember that we do not copy the properties of the assigned value into the variable
         Assert.assertEquals(DELAY, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
-        Assert.assertEquals(FALSE, variableProperties.getProperty(variableProperties.currentValue(localS), VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.NULLABLE, variableProperties.getProperty(variableProperties.currentValue(localS), VariableProperty.NOT_NULL));
     }
 
     private VariableProperties newVariableProperties(MethodInfo method) {
@@ -205,7 +205,7 @@ public class TestWithSkeleton {
         Value currentValue = variableProperties.currentValue(finalStringRef);
         Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof StringValue);
         Assert.assertEquals("this is the final value", ((StringValue) currentValue).value);
-        Assert.assertEquals(TRUE, variableProperties.getProperty(currentValue, VariableProperty.NOT_NULL));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, variableProperties.getProperty(currentValue, VariableProperty.NOT_NULL));
     }
 
     @Test

@@ -36,7 +36,7 @@ public class TestSMapList extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("list".equals(d.methodInfo.name) && "list".equals(d.variableName) && "3".equals(d.statementId)) {
             Assert.assertEquals("map.get(a)", d.currentValue.toString());
-            Assert.assertEquals(0, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
     };
 
@@ -55,17 +55,17 @@ public class TestSMapList extends CommonTestRunner {
             if ("list".equals(methodInfo.name)) {
                 TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.0");
                 // TODO check this should be 3?
-                Assert.assertEquals(1, returnValue1.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
                 // this is the one that needs to combine with the null conditional
                 TransferValue returnValue2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("3");
-                Assert.assertEquals(1, returnValue2.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, returnValue2.properties.get(VariableProperty.NOT_NULL));
 
-                Assert.assertEquals(1, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
             if("copy".equals(methodInfo.name)) {
                 TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
-                Assert.assertEquals(0, returnValue.properties.get(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
             }
         }
     };
@@ -75,7 +75,7 @@ public class TestSMapList extends CommonTestRunner {
         public void visit(TypeContext typeContext) {
             TypeInfo map = typeContext.getFullyQualified(Map.class);
             MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
-            Assert.assertEquals(Level.TRUE_LEVEL_1, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
+            Assert.assertEquals(Level.SIZE_COPY_TRUE, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
             Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE)); // no idea, could be empty
         }
     };

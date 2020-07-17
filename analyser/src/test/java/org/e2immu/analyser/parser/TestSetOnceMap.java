@@ -45,9 +45,10 @@ public class TestSetOnceMap extends CommonTestRunner {
 
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
                 Assert.assertNotNull(tv);
-                Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
-                Assert.assertEquals(Level.TRUE, MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
+                        methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
             }
             if ("isEmpty".equals(methodInfo.name)) {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
@@ -55,7 +56,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertEquals("0 == map.size(),?>=0", tv.value.get().toString());
 
                 // there is no reason to have a @Size annotation on this expression
-                Assert.assertEquals(Level.DELAY, tv.properties.getOtherwise(VariableProperty.SIZE, Level.DELAY));
+                Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
 
                 Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
                 Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
@@ -67,7 +68,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertNotNull(tv);
                 Value stream = tv.value.get();
                 Assert.assertEquals("map.entrySet().stream()", stream.toString());
-                Assert.assertEquals(Level.TRUE_LEVEL_1, stream.getPropertyOutsideContext(VariableProperty.SIZE_COPY));
+                Assert.assertEquals(Level.SIZE_COPY_TRUE, stream.getPropertyOutsideContext(VariableProperty.SIZE_COPY));
             }
         }
     };

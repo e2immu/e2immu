@@ -48,7 +48,7 @@ public class TestBasics extends CommonTestRunner {
 
         // check that the XML annotations have been read properly
         TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
-        Assert.assertEquals(VariableProperty.IMMUTABLE.best, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
 
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         if ("explicitlyFinal".equals(fieldInfo.name)) {
@@ -64,8 +64,8 @@ public class TestBasics extends CommonTestRunner {
                 return;
 
             } else if (iteration == 2) {
-                Assert.assertEquals(Level.TRUE_LEVEL_1, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
-                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 return;
             }
         }
@@ -80,8 +80,8 @@ public class TestBasics extends CommonTestRunner {
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
             }
             if (iteration > 0) {
-                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE_LEVEL_1, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
             }
         }
     };

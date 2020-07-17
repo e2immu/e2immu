@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.objectflow.Access;
@@ -34,92 +35,133 @@ import java.util.Set;
 
 public interface EvaluationContext {
 
-    int getIteration();
+    default int getIteration() {
+        return 0;
+    }
 
-    void addProperty(Variable variable, VariableProperty variableProperty, int value);
+    default void addProperty(Variable variable, VariableProperty variableProperty, int value) {
+    }
     // WHERE ARE WE??
 
     // can be null, in evaluation of lambda expressions
-    MethodInfo getCurrentMethod();
+    default MethodInfo getCurrentMethod() {
+        return null;
+    }
 
     default FieldInfo getCurrentField() {
         return null;
     }
 
-    NumberedStatement getCurrentStatement();
+    default NumberedStatement getCurrentStatement() {
+        return null;
+    }
 
     @NotNull
-    TypeInfo getCurrentType();
+    default TypeInfo getCurrentType() {
+        throw new UnsupportedOperationException();
+    }
 
     // METHODS FOR THE MANAGEMENT OF HIERARCHY (NEW CONTEXT IN EACH BLOCK)
 
     @NotNull
-    EvaluationContext childInSyncBlock(@NotNull Value conditional,
-                                       Runnable uponUsingConditional,
-                                       boolean inSyncBlock,
-                                       boolean guaranteedToBeReachedByParentStatement);
+    default EvaluationContext childInSyncBlock(@NotNull Value conditional,
+                                               Runnable uponUsingConditional,
+                                               boolean inSyncBlock,
+                                               boolean guaranteedToBeReachedByParentStatement) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    EvaluationContext child(@NotNull Value conditional,
-                            Runnable uponUsingConditional,
-                            boolean guaranteedToBeReachedByParentStatement);
+    default EvaluationContext child(@NotNull Value conditional,
+                                    Runnable uponUsingConditional,
+                                    boolean guaranteedToBeReachedByParentStatement) {
+        throw new UnsupportedOperationException();
+    }
 
     // used in LambdaBlock to create a new StatementAnalyser, which needs the typeContext...
     @NotNull
-    TypeContext getTypeContext();
+    default TypeContext getTypeContext() {
+        throw new UnsupportedOperationException();
+    }
 
     // BASIC ACCESS
 
-    void createLocalVariableOrParameter(@NotNull Variable variable);
+    default void createLocalVariableOrParameter(@NotNull Variable variable) {
+    }
 
     // mark that variables are linked (statement analyser, assignment)
-    void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> toBestCase, @NotNull Set<Variable> toWorstCase);
+    default void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> toBestCase, @NotNull Set<Variable> toWorstCase) {
+    }
 
     // called by VariableExpression, FieldAccess; will create a field if necessary
     // errors on local vars, parameters if they don't exist
 
     @NotNull
-    Value currentValue(@NotNull Variable variable);
+    default Value currentValue(@NotNull Variable variable) {
+        return UnknownValue.NO_VALUE;
+    }
+
     // we're adding a variable to the evaluation context, from FieldAnalyser with final value
 
     @NotNull
-    VariableValue newVariableValue(@NotNull Variable variable);
+    default VariableValue newVariableValue(@NotNull Variable variable) {
+        throw new UnsupportedOperationException();
+    }
 
     // obtain a variable value for a dynamic array position, like a[i], {1,2,3}[i] or a[3] (but not {1,2,3}[1], because that == 2)
     @NotNull
-    Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable);
+    default Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable) {
+        throw new UnsupportedOperationException();
+    }
 
     // delegation from VariableValue and analysers
-    int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty);
+    default int getProperty(@NotNull Variable variable, @NotNull VariableProperty variableProperty) {
+        return Level.DELAY;
+    }
 
     // to be called from getProperty() in value
-    int getProperty(@NotNull Value value, @NotNull VariableProperty variableProperty);
+    default int getProperty(@NotNull Value value, @NotNull VariableProperty variableProperty) {
+        return Level.DELAY;
+    }
 
     default boolean isNotNull0(Value value) {
         return MultiLevel.value(getProperty(value, VariableProperty.NOT_NULL), 0) >= MultiLevel.EVENTUAL_AFTER;
     }
 
     // method of VariableValue
-    boolean equals(@NotNull Variable variable, Variable other);
+    default boolean equals(@NotNull Variable variable, Variable other) {
+        return false;
+    }
 
     // merge "up", explicitly called for Lambda blocks and expressions
-    void merge(EvaluationContext child);
+    default void merge(EvaluationContext child) {
+    }
 
-    void addPropertyRestriction(Variable variable, VariableProperty property, int value);
+    default void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
+    }
 
-    void markRead(Variable variable);
+    default void markRead(Variable variable) {
+    }
 
-    void markRead(String variableName);
+    default void markRead(String variableName) {
+    }
 
-    DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable);
+    default DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
+        return null;
+    }
 
-    void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression);
+    default void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
+    }
 
-    void raiseError(String message);
+    default void raiseError(String message) {
+    }
 
-    void raiseError(String message, String extra);
+    default void raiseError(String message, String extra) {
+    }
 
-    Location getLocation();
+    default Location getLocation() {
+        return null;
+    }
 
     default ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
         return createInternalObjectFlow(parameterizedType, Origin.LITERAL);
@@ -153,7 +195,9 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    ObjectFlow getObjectFlow(Variable variable);
+    default ObjectFlow getObjectFlow(Variable variable) {
+        return ObjectFlow.NO_FLOW;
+    }
 
     default void updateObjectFlow(Variable variable, ObjectFlow second) {
         throw new UnsupportedOperationException();

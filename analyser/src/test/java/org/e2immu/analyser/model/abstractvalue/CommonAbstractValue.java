@@ -98,134 +98,15 @@ public abstract class CommonAbstractValue {
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
-        public ObjectFlow getObjectFlow(Variable variable) {
-            return ObjectFlow.NO_FLOW;
-        }
-
-        @Override
-        public int getIteration() {
-            return 0;
-        }
-
-        @Override
-        public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
-
-        }
-
-        @Override
-        public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
-
-        }
-
-        @Override
-        public MethodInfo getCurrentMethod() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public NumberedStatement getCurrentStatement() {
-            return null;
-        }
-
-        @Override
-        public TypeInfo getCurrentType() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public EvaluationContext childInSyncBlock(Value conditional, Runnable uponUsingConditional, boolean inSyncBlock, boolean guaranteedToBeReachedByParentStatement) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public EvaluationContext child(Value conditional, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public TypeContext getTypeContext() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void createLocalVariableOrParameter(Variable variable, VariableProperty... initialProperties) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void linkVariables(Variable variableFromExpression, Set<Variable> toBestCase, Set<Variable> toWorstCase) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Value currentValue(Variable variable) {
             return new VariableValue(this, variable, variable.name());
         }
-
-        @Override
-        public VariableValue newVariableValue(Variable variable) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getProperty(Variable variable, VariableProperty variableProperty) {
-            return 0;
-        }
-
-        @Override
-        public int getProperty(Value value, VariableProperty variableProperty) {
-            return 0;
-        }
-
+        
         @Override
         public boolean equals(Variable variable, Variable other) {
             return variable.name().equals(other.name());
         }
 
-        @Override
-        public void merge(EvaluationContext child) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void markRead(Variable variable) {
-            // nothing here
-        }
-
-        @Override
-        public void markRead(String variableName) {
-
-        }
-
-        @Override
-        public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
-            return null;
-        }
-
-        @Override
-        public void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
-
-        }
-
-        @Override
-        public void raiseError(String message) {
-
-        }
-
-        @Override
-        public void raiseError(String message, String extra) {
-
-        }
-
-        @Override
-        public Location getLocation() {
-            return null;
-        }
     };
 
     static final Variable va = createVariable("a");

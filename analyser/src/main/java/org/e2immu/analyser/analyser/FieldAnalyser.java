@@ -94,12 +94,10 @@ public class FieldAnalyser {
         if (analyseFinalValue(fieldInfo, fieldAnalysis, fieldReference, fieldProperties, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
-        // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: IMMUTABLE, CONTAINER (min over assignments)
-        for (VariableProperty property : VariableProperty.FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS) {
-            if (analyseDynamicTypeAnnotation(property, fieldInfo, fieldAnalysis, value, haveInitialiser,
-                    fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
-                changes = true;
-        }
+        // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: IMMUTABLE (min over assignments)
+        if (analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
 
         // STEP 5: NOT NULL
         if (analyseNotNull(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
@@ -246,7 +244,8 @@ public class FieldAnalyser {
 
         boolean allDelaysResolved = delaysOnFieldSummariesResolved(typeInspection, fieldInfo);
 
-        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value, VariableProperty.NOT_NULL, allDelaysResolved);
+        int valueFromAssignment = computeValueFromAssignment(typeInspection, fieldInfo, haveInitialiser, value,
+                VariableProperty.NOT_NULL, allDelaysResolved);
         if (valueFromAssignment == Level.DELAY) {
             log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
             return false; // delay
@@ -258,10 +257,10 @@ public class FieldAnalyser {
             return false; // delay
         }
 
-        int finalValue = Math.max(valueFromAssignment, valueFromContext);
-        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
+        int finalNotNullValue = Math.max(valueFromAssignment, valueFromContext);
+        log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
-        if (isFinal == Level.TRUE && finalValue >= Level.TRUE) {
+        if (isFinal == Level.TRUE && MultiLevel.value(finalNotNullValue, MultiLevel.NOT_NULL) == MultiLevel.EFFECTIVE) {
             List<MethodInfo> methodsWhereFieldIsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
             if (methodsWhereFieldIsAssigned.size() > 0 && !haveInitialiser) {
                 // check that all methods have a precondition, and that the variable is linked to at least one of the parameters occurring in the precondition
@@ -278,8 +277,8 @@ public class FieldAnalyser {
                         return andValue != BoolValue.FALSE;
                     });
                     if (allCompatible) {
-                        log(NOT_NULL, "Not setting @NotNull on {}, already in precondition", fieldInfo.fullyQualifiedName());
-                        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, Level.FALSE);
+                        log(NOT_NULL, "Setting @Nullable on {}, already in precondition", fieldInfo.fullyQualifiedName());
+                        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
                         return true;
                     }
                 } else {
@@ -291,13 +290,13 @@ public class FieldAnalyser {
         } else {
             log(NOT_NULL_DEBUG, "Non-final, therefore not checking preconditions on methods for {}", fieldInfo.fullyQualifiedName());
         }
-        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalValue);
+        fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalNotNullValue);
         return true;
     }
 
     private static List<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
         return fieldInfo.owner.typeInspection.get().constructorAndMethodStream().filter(mi -> mi.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .filter(mi -> mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) >= Level.TRUE)
+                .filter(mi -> mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED) >= Level.TRUE)
                 .collect(Collectors.toList());
     }
 
@@ -356,7 +355,7 @@ public class FieldAnalyser {
                 || fieldCanBeWrittenFromOutsideThisType)) {
             log(NOT_NULL, "Field {} cannot be {}: it is not @Final, and either not private, "
                     + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName(), property);
-            fieldAnalysis.setProperty(property, Level.FALSE); // in the case of size, FALSE means >= 0
+            fieldAnalysis.setProperty(property, property.falseValue); // in the case of size, FALSE means >= 0
             return true;
         }
         if (fieldSummariesNotYetSet) return false;
@@ -380,7 +379,7 @@ public class FieldAnalyser {
                 // field is not present in the method
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                         // field is not assigned to in the method
-                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY) < Level.TRUE ||
+                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
                         // if it is present, assigned to, it needs to have a value
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.isSet());
 
@@ -394,16 +393,16 @@ public class FieldAnalyser {
 
     private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
         return typeInspection.constructorAndMethodStream().filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY)
+                .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.METHOD_DELAY_RESOLVED)
                         == Level.TRUE);// TRUE indicates that there are delays
     }
 
     private int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {
         IntStream contextRestrictions = typeInspection.constructorAndMethodStream()
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(property, Level.DELAY));
+                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(property));
         int result = contextRestrictions.max().orElse(Level.DELAY);
-        if (result == Level.DELAY && allDelaysResolved) return Level.FALSE;
+        if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
     }
 
@@ -415,8 +414,8 @@ public class FieldAnalyser {
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
         IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
         IntStream combined = IntStream.concat(assignments, initialiser);
-        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(Level.FALSE);
-        if (result == Level.DELAY && allDelaysResolved) return Level.FALSE;
+        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(property.falseValue);
+        if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
     }
 
@@ -443,7 +442,7 @@ public class FieldAnalyser {
                 MethodAnalysis methodAnalysis = method.methodAnalysis.get();
                 if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
                     TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
-                    if (tv.properties.get(VariableProperty.ASSIGNED) >= Level.TRUE) {
+                    if (tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
                         if (tv.value.isSet()) {
                             values.add(tv.value.get());
                         } else {
@@ -572,7 +571,7 @@ public class FieldAnalyser {
         int isAssignedOutsideConstructors = typeInspection.methods.stream()
                 .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.ASSIGNED, Level.DELAY))
+                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED))
                 .max().orElse(Level.DELAY);
         boolean isFinal;
         if (fieldCanBeWrittenFromOutsideThisType) {
@@ -597,8 +596,8 @@ public class FieldAnalyser {
                                        boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.MODIFIED) != Level.UNDEFINED) return false;
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int e2immutable = MultiLevel.value(immutable, Level.E2IMMUTABLE);
-        if (e2immutable == Level.DELAY) {
+        int e2immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
+        if (e2immutable == MultiLevel.DELAY) {
             log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
             return false;
         }
@@ -606,15 +605,15 @@ public class FieldAnalyser {
         // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
         boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
-                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE ||
-                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) != Level.DELAY);
+                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
+                        m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
 
         if (allContentModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
                     typeInspection.constructorAndMethodStream()
                             .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                            .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.DELAY) >= Level.TRUE)
-                            .anyMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY) == Level.TRUE);
+                            .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) >= Level.TRUE)
+                            .anyMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.TRUE);
             fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
             log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
             return true;

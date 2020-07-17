@@ -21,7 +21,7 @@ public class TestTypeParameters extends CommonTestRunner {
             TypeInfo collection = typeContext.getFullyQualified(Collection.class);
             Assert.assertNotNull(collection);
             MethodInfo stream = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
-            Assert.assertEquals(MultiLevel.compose(Level.TRUE, Level.NOT_NULL_1), stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

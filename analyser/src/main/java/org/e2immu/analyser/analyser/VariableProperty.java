@@ -26,12 +26,12 @@ import java.util.Set;
 
 public enum VariableProperty {
     // can be read multiple times
-    READ("read", true, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
+    READ("read", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
 
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
     // assigned multiple times
-    ASSIGNED("assigned", true, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
+    ASSIGNED("assigned", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
 
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
@@ -50,18 +50,18 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL("@NotNull", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
 
     // the following three are on types only
-    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
-    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
-    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
 
-    FINAL("@Final", false, Level.TRUE, 0, 1),
-    CONTAINER("@Container", false, 1, 0, 1),
-    IMMUTABLE("@Immutable", true, MultiLevel.compose(Level.TRUE, MultiLevel.EFFECTIVELY_E2IMMUTABLE), 0, 1),
-    MODIFIED("@Modified", true, Level.TRUE, 1, 0),
-    INDEPENDENT("@Independent", false, Level.TRUE, 0, 1),
+    FINAL("@Final", false, Level.FALSE, Level.TRUE, 0, 1),
+    CONTAINER("@Container", false, Level.FALSE, Level.TRUE, 0, 1),
+    IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, 0, 1),
+    MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, 1, 0),
+    INDEPENDENT("@Independent", false, Level.FALSE, Level.TRUE, 0, 1),
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
@@ -72,24 +72,26 @@ public enum VariableProperty {
     ONLY("@Only"),
     OUTPUT("@Output"),
     SINGLETON("@Singleton"),
-    SIZE("@Size", true, Integer.MAX_VALUE, 0, 0), // the int value is for "min"+"equals", not for "max"
+    SIZE("@Size", true, Level.NOT_A_SIZE, Integer.MAX_VALUE, 0, 0), // the int value is for "min"+"equals", not for "max"
     SIZE_COPY("@Size copy"), // the int value is associated with the @Size(copy, copyMin)
     UTILITY_CLASS("@UtilityClass");
 
     public final String name;
     public final boolean canImprove;
     public final int best;
+    public final int falseValue;
     private final int valueWhenAbsentInDefensiveMode;
     private final int valueWhenAbsentInOffensiveMode;
 
     private VariableProperty(String name) {
-        this(name, false, Level.TRUE, 0, 0);
+        this(name, false, Level.FALSE, Level.TRUE, 0, 0);
     }
 
-    private VariableProperty(String name, boolean canImprove, int best, int valueWhenAbsentInDefensiveMode, int valueWhenAbsentInOffensiveMode) {
+    private VariableProperty(String name, boolean canImprove, int falseValue, int best, int valueWhenAbsentInDefensiveMode, int valueWhenAbsentInOffensiveMode) {
         this.name = name;
         this.canImprove = canImprove;
         this.best = best;
+        this.falseValue = falseValue;
         this.valueWhenAbsentInDefensiveMode = valueWhenAbsentInDefensiveMode;
         this.valueWhenAbsentInOffensiveMode = valueWhenAbsentInOffensiveMode;
     }
@@ -113,8 +115,6 @@ public enum VariableProperty {
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
 
-    public final static Set<VariableProperty> FIELD_ANALYSER_MIN_OVER_ASSIGNMENTS = Set.of(IMMUTABLE, CONTAINER);
-
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);
     public final static Set<VariableProperty> FIELD_AND_METHOD_PROPERTIES = Set.of(NOT_NULL, SIZE, SIZE_COPY);
     public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL, SIZE);
@@ -126,7 +126,7 @@ public enum VariableProperty {
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, MODIFIED);
 
-    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of( NOT_NULL, SIZE, SIZE_COPY);
+    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(NOT_NULL, SIZE, SIZE_COPY);
     public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE = Set.of(IMMUTABLE, CONTAINER);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =

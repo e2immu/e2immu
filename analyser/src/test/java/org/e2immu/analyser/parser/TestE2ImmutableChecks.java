@@ -24,14 +24,14 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("isAbc".equals(d.methodInfo.name) && "0".equals(d.statementId) && "E2Container1.this.value1".equals(d.variableName)) {
             if (d.iteration == 1) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
             } else {
                 Assert.assertNull("At iteration " + d.iteration, d.properties.get(VariableProperty.NOT_NULL));
             }
         }
         // no decision about immutable of "mingle" is ever made
         if ("input4".equals(d.variableName) && "1".equals(d.statementId) && "mingle".equals(d.methodInfo.name)) {
-            Assert.assertEquals(0, (int) d.properties.get(VariableProperty.IMMUTABLE));
+            Assert.assertEquals(MultiLevel.MUTABLE, (int) d.properties.get(VariableProperty.IMMUTABLE));
         }
     };
 
@@ -42,13 +42,13 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 FieldInfo value1 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "value1".equals(f.name)).findFirst().orElseThrow();
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(value1);
                 Assert.assertTrue("Got: " + transferValue.linkedVariables.get(), transferValue.linkedVariables.get().isEmpty());
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
             }
             if ("E2Container1".equals(methodInfo.name) && iteration > 1) {
                 ParameterInfo value = methodInfo.methodInspection.get().parameters.get(0);
                 Assert.assertEquals("value", value.name);
                 Assert.assertTrue(value.parameterAnalysis.get().assignedToField.isSet());
-                Assert.assertEquals(Level.TRUE, value.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, value.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
             if ("E2Container2".equals(methodInfo.name) && 2 == methodInfo.methodInspection.get().parameters.size()) {
                 if (iteration > 2) {
@@ -61,10 +61,10 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             // no decision about immutable of "mingle" is ever made
             if ("mingle".equals(methodInfo.name)) {
                 TransferValue transferValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
-                Assert.assertEquals(Level.FALSE, transferValue.properties.get(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(MultiLevel.MUTABLE, transferValue.properties.get(VariableProperty.IMMUTABLE));
                 Assert.assertEquals("input4", transferValue.value.get().toString());
                 Assert.assertTrue(transferValue.value.get() instanceof VariableValuePlaceholder);
-                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(MultiLevel.MUTABLE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
             }
 
             if ("getSet3".equals(methodInfo.name)) {
@@ -80,7 +80,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, FieldInfo fieldInfo) {
             if ("value1".equals(fieldInfo.name) && iteration > 1) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -102,7 +102,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                     .filter(m -> "copyOf".equals(m.name) && m.methodInspection.get().parameters.size() == 1)
                     .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                     .findAny().orElseThrow();
-            Assert.assertEquals(Level.TRUE_LEVEL_1, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         }
     };
 

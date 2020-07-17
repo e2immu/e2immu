@@ -33,15 +33,15 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
             } else if (d.iteration == 1) {
                 Assert.assertEquals("instance type java.lang.String()", d.currentValue.toString());
-                Assert.assertEquals(Level.TRUE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
                 Assert.assertEquals("s1", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                 if (d.iteration == 2) {
-                    Assert.assertEquals(Level.DELAY, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 } else {
-                    Assert.assertEquals(Level.FALSE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.FALSE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 }
             }
         }
@@ -50,7 +50,7 @@ public class TestFinalChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
-        Assert.assertEquals(VariableProperty.IMMUTABLE.best, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
 
         if ("setS4".equals(methodInfo.name) && iteration >= 0) {
             // @NotModified decided straight away, @Identity as well
