@@ -168,7 +168,7 @@ public class ParameterAnalysis extends Analysis {
         if (notNull != null) {
             if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
                 log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull", logName);
-                setProperty(VariableProperty.NOT_NULL, notNull ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
+                setProperty(VariableProperty.NOT_NULL, notNull ? MultiLevel.EFFECTIVELY_NOT_NULL : MultiLevel.NULLABLE);
                 return true;
             }
         } else {
