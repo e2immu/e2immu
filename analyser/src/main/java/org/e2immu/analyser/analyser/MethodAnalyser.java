@@ -675,13 +675,13 @@ public class MethodAnalyser {
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
             int e2ImmutableStatusOfFieldRefs = variables.stream()
                     .filter(v -> v instanceof FieldReference)
-                    .mapToInt(v -> Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
+                    .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE))
                     .min().orElse(Level.TRUE);
             if (e2ImmutableStatusOfFieldRefs == Level.DELAY) {
                 log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                         variables.stream()
                                 .filter(v -> v instanceof FieldReference &&
-                                        Level.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                                        MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                                                 Level.E2IMMUTABLE) == Level.DELAY)
                                 .map(Variable::detailedString)
                                 .collect(Collectors.joining(", ")));

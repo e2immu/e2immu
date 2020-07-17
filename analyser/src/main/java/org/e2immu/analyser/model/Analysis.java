@@ -165,7 +165,7 @@ public abstract class Analysis {
         }
 
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (immutable >= Level.EVENTUALLY_E1_E2IMMUTABLE) {
+        if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             if (isType) {
                 annotations.put(typeContext.mutable.get(), false);
             } else {
@@ -182,15 +182,15 @@ public abstract class Analysis {
                     annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
                 }
             }
-        } else if (immutable >= Level.EVENTUALLY_E1IMMUTABLE) {
+        } else if (immutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE) {
             if (isType) {
                 annotations.put(typeContext.mutable.get(), false);
             }
-            if (immutable == Level.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+            if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
                 annotations.put(typeContext.beforeImmutableMark.get(), true);
 
             } else {
-                if (immutable == Level.EVENTUALLY_E1_E2IMMUTABLE_BEFORE_MARK) {
+                if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
                     annotations.put(typeContext.beforeImmutableMark.get(), true);
                 }
                 if (haveContainer) {
@@ -207,7 +207,7 @@ public abstract class Analysis {
                 }
             }
         } else {
-            if (immutable == Level.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+            if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
                 annotations.put(typeContext.beforeImmutableMark.get(), true);
             } else {
                 if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
@@ -225,29 +225,27 @@ public abstract class Analysis {
         // not null
         int minNotNull = minimalValue(VariableProperty.NOT_NULL);
         int notNull = getProperty(VariableProperty.NOT_NULL);
-        if (notNull >= Level.EVENTUALLY_CONTENT2_NOT_NULL) {
+        if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
             if (notNull > minNotNull) annotations.put(typeContext.notNull2.get(), true);
             if (doNullable) annotations.put(typeContext.nullable.get(), false);
         } else {
             if (notNull != Level.DELAY) annotations.put(typeContext.notNull2.get(), false);
 
-            if (notNull >= Level.EVENTUALLY_NOT_NULL) {
-                if (notNull1 > minNotNull) annotations.put(typeContext.notNull1.get(), true);
+            if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
+                if (notNull > minNotNull) annotations.put(typeContext.notNull1.get(), true);
                 if (doNullable) annotations.put(typeContext.nullable.get(), false);
             } else {
-                if (notNull1 > Level.DELAY) {
+                if (notNull > Level.DELAY) {
                     annotations.put(typeContext.notNull1.get(), false);
                 }
-                int notNull0 = Level.value(notNull, Level.NOT_NULL);
-                if (notNull0 >= Level.EVENTUAL && notNull0 > minNotNull) {
+                if (notNull >= MultiLevel.EVENTUAL && notNull > minNotNull) {
                     annotations.put(typeContext.notNull.get(), true);
-                }
-                if (notNull0 > Level.DELAY) {
+                } else if (notNull > Level.DELAY) {
                     annotations.put(typeContext.notNull.get(), false);
                 }
                 if (doNullable) {
                     int max = maximalValue(VariableProperty.NOT_NULL);
-                    boolean nullablePresent = max != Level.FALSE && notNull0 < Level.EVENTUAL;
+                    boolean nullablePresent = max != Level.FALSE && notNull < MultiLevel.EVENTUAL;
                     // a delay on notNull0 on a non-primitive will get nullable present
                     annotations.put(typeContext.nullable.get(), nullablePresent);
                 }
@@ -392,7 +390,7 @@ public abstract class Analysis {
             method.accept(VariableProperty.CONTAINER, Level.TRUE);
         }
         if (immutable >= 0) {
-            method.accept(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, immutable));
+            method.accept(VariableProperty.IMMUTABLE, MultiLevel.compose(Level.TRUE, immutable));
         }
         for (Map.Entry<ElementType, Integer> entry : notNullMap.entrySet()) {
             VariableProperty variableProperty;
@@ -412,7 +410,7 @@ public abstract class Analysis {
                 default:
                     throw new UnsupportedOperationException();
             }
-            method.accept(variableProperty, entry.getValue() == -1 ? Level.FALSE : Level.compose(Level.TRUE, entry.getValue()));
+            method.accept(variableProperty, entry.getValue() == -1 ? Level.FALSE : MultiLevel.compose(Level.TRUE, entry.getValue()));
         }
     }
 
@@ -430,7 +428,7 @@ public abstract class Analysis {
         Integer min = annotationExpression.extract("min", -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
-            return Level.compose(Level.TRUE, min);
+            return MultiLevel.compose(Level.TRUE, min);
         }
         Boolean copy = annotationExpression.extract("copy", false);
         if (copy) return Level.DELAY;
@@ -442,7 +440,7 @@ public abstract class Analysis {
             // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 
             // @Size is the default
-            return Level.compose(Level.FALSE, equals + 1);
+            return MultiLevel.compose(Level.FALSE, equals + 1);
         }
         // ignore! raise warning
         typeContext.addMessage(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));

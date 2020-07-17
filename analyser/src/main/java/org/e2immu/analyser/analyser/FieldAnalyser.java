@@ -185,12 +185,12 @@ public class FieldAnalyser {
             log(SIZE, "Setting @Size on {} to @Size(min = 0), meaning 'we have a @Size, but nothing else'", fieldInfo.fullyQualifiedName());
             return true;
         }
-        int immutable = Level.value(fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if (immutable == Level.DELAY) {
+        int e2Immutable = MultiLevel.value(fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (e2Immutable == MultiLevel.DELAY) {
             log(DELAYED, "Delaying @Size on {} until we know about @E2Immutable", fieldInfo.fullyQualifiedName());
             return true;
         }
-        if (immutable == Level.FALSE) {
+        if (e2Immutable == MultiLevel.FALSE) {
             // TODO
         }
         if (someAssignmentValuesUndefined(VariableProperty.SIZE, fieldInfo, typeInspection)) return false;
@@ -227,8 +227,8 @@ public class FieldAnalyser {
                                    boolean fieldCanBeWrittenFromOutsideThisType,
                                    TypeInspection typeInspection,
                                    boolean fieldSummariesNotYetSet) {
-        int currentValue = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
-        if (currentValue != Level.DELAY) return false; // already decided
+        int currentValue = MultiLevel.value(fieldAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+        if (currentValue != MultiLevel.DELAY) return false; // already decided
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
@@ -237,7 +237,7 @@ public class FieldAnalyser {
         if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
             log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser, "
                     + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, Level.FALSE);
+            fieldAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
             return true;
         }
         if (fieldSummariesNotYetSet) return false;
@@ -597,7 +597,7 @@ public class FieldAnalyser {
                                        boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.MODIFIED) != Level.UNDEFINED) return false;
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
+        int e2immutable = MultiLevel.value(immutable, Level.E2IMMUTABLE);
         if (e2immutable == Level.DELAY) {
             log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
             return false;

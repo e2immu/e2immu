@@ -70,10 +70,7 @@ public class ParameterAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
-                if (owner != null && Level.haveTrueAt(owner.typeInfo.typeAnalysis.get()
-                        .getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
-                    return Level.TRUE; // we've already marked our owning type with @NotNull...
-                break;
+                return Math.max(super.getProperty(VariableProperty.NOT_NULL), notNullFromOwner());
 
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
@@ -96,15 +93,15 @@ public class ParameterAnalysis extends Analysis {
             // (3) when the user has contract-annotated the parameter with @E2Immutable
             case IMMUTABLE: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
+                int immutableFromType;
                 if (bestType != null) {
                     int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                    if (!bestType.isEventual()) return immutable;
-                    // we're in the eventual case...
-                    if (owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType))) {
-                        return immutable;
-                    }
+                    boolean objectFlowCondition = owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType));
+                    immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
+                } else {
+                    immutableFromType = MultiLevel.MUTABLE;
                 }
-                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), Level.FALSE);
+                return Math.max(immutableFromType, MultiLevel.delayToFalse(super.getProperty(VariableProperty.IMMUTABLE)));
             }
 
             default:
@@ -112,8 +109,14 @@ public class ParameterAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
+    private int notNullFromOwner() {
+        if (owner == null) return MultiLevel.DELAY;
+        return owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS);
+    }
+
     private boolean notModifiedBecauseOfImmutableStatus() {
-        if (Level.haveTrueAt(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) return true;
+        if (MultiLevel.value(getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER)
+            return true;
         // if the parameter is an unbound generic, the same holds
         if (parameterizedType.isUnboundParameterType()) return true;
         // if we're inside a container and the method is not private, the parameter cannot be modified
@@ -125,9 +128,7 @@ public class ParameterAnalysis extends Analysis {
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
-                if (Level.haveTrueAt(owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS), Level.NOT_NULL))
-                    return Level.TRUE;
-                break;
+                return notNullFromOwner();
 
             case SIZE:
                 int modified = getProperty(VariableProperty.MODIFIED);
@@ -153,7 +154,7 @@ public class ParameterAnalysis extends Analysis {
         if (variableProperty == VariableProperty.MODIFIED && notModifiedBecauseOfImmutableStatus()) return Level.TRUE;
 
         if (variableProperty == VariableProperty.NOT_NULL) {
-            if (parameterizedType.isPrimitive()) return Level.FALSE;
+            if (parameterizedType.isPrimitive()) return MultiLevel.NULLABLE;
         }
         return Integer.MAX_VALUE;
     }
@@ -167,7 +168,7 @@ public class ParameterAnalysis extends Analysis {
         if (notNull != null) {
             if (getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
                 log(NOT_NULL, "Mark {}  " + (notNull ? "" : "NOT") + " @NotNull", logName);
-                setProperty(VariableProperty.NOT_NULL, notNull);
+                setProperty(VariableProperty.NOT_NULL, notNull ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
                 return true;
             }
         } else {

@@ -100,8 +100,8 @@ public class TestWithSkeleton {
         MethodAnalysis setOfAnalysis = setOf.methodAnalysis.get();
         Assert.assertEquals(TRUE, setOfAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(FALSE, setOfAnalysis.getProperty(VariableProperty.MODIFIED));
-        Assert.assertEquals(Level.compose(TRUE, NOT_NULL_1), setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
-        Assert.assertEquals(TRUE, value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
+        Assert.assertEquals(MultiLevel.compose(TRUE, NOT_NULL_1), setOfAnalysis.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(TRUE, MultiLevel.value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE));
 
         TypeInfo system = typeContext.typeStore.get("java.lang.System");
         FieldInfo out = system.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();

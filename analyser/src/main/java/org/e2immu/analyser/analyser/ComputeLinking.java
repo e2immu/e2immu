@@ -218,11 +218,11 @@ public class ComputeLinking {
                         tv = new TransferValue();
                         methodAnalysis.fieldSummaries.put(fieldInfo, tv);
                     }
-                    int modified = tv.properties.getOtherwise(VariableProperty.MODIFIED, Level.DELAY);
+                    int modified = tv.getProperty(VariableProperty.MODIFIED);
                     if (modified == Level.DELAY) {
                         // break the delay in case the variable is not even read
                         int fieldModified;
-                        if (summary == Level.DELAY && tv.properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) {
+                        if (summary == Level.DELAY && tv.getProperty(VariableProperty.READ) < Level.TRUE) {
                             fieldModified = Level.FALSE; // TODO should this be TRUE? absence of information
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
@@ -297,7 +297,7 @@ public class ComputeLinking {
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             if (aboutVariable.variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
-                boolean assigned = Level.haveTrueAt(methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED), 1);
+                boolean assigned = methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 if (assigned && !methodInfo.methodAnalysis.get().parameterAssignments.isSet(parameterInfo)) {
                     typeContext.addMessage(Message.newMessage(new Location(parameterInfo), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                     methodInfo.methodAnalysis.get().parameterAssignments.put(parameterInfo, true);
@@ -363,7 +363,7 @@ public class ComputeLinking {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
-            if (variable instanceof FieldReference && aboutVariable.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
+            if (variable instanceof FieldReference && aboutVariable.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
                 Value value = aboutVariable.getCurrentValue();
@@ -391,16 +391,23 @@ public class ComputeLinking {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
 
-                // SIZE, NOT_NULL
-                for (VariableProperty variableProperty : VariableProperty.CONTEXT_PROPERTIES_FROM_STMT_TO_METHOD) {
-                    int value = aboutVariable.getProperty(variableProperty);
-                    int current = tv.properties.getOtherwise(variableProperty, haveDelay ? Level.DELAY : Level.FALSE);
-                    if (value > current) {
-                        tv.properties.put(variableProperty, value);
-                        changes = true;
-                    }
+                // SIZE
+                int size = aboutVariable.getProperty(VariableProperty.SIZE);
+                int currentSize = tv.properties.getOtherwise(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
+                if (size > currentSize) {
+                    tv.properties.put(VariableProperty.SIZE, size);
+                    changes = true;
                 }
-                int currentDelayResolved = tv.properties.getOtherwise(VariableProperty.METHOD_DELAY_RESOLVED, Level.DELAY);
+
+                // NOT_NULL (slightly different from SIZE, different type of level)
+                int notNull = aboutVariable.getProperty(VariableProperty.NOT_NULL);
+                int currentNotNull = tv.properties.getOtherwise(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
+                if (notNull > currentNotNull) {
+                    tv.properties.put(VariableProperty.NOT_NULL, notNull);
+                    changes = true;
+                }
+
+                int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
                 if (currentDelayResolved == Level.TRUE && !haveDelay) {
                     log(DELAYED, "Delays on {} have been resolved", aboutVariable.name);
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, 3);

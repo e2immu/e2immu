@@ -102,10 +102,13 @@ public class MethodAnalysis extends Analysis {
                 return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
 
             case IMMUTABLE:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
-                int fromReturnType = Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE) &&
-                        getObjectFlow().conditionsMetForEventual(returnType) ? variableProperty.best : Level.DELAY;
-                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), fromReturnType);
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
+                    return Level.FALSE;
+                int immutableType = returnType.getProperty(VariableProperty.IMMUTABLE);
+                if (immutableType == Level.DELAY) return Level.DELAY;
+
+                int immutableTypeAfterEventual = MultiLevel.eventual(immutableType, getObjectFlow().conditionsMetForEventual(returnType));
+                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
 
             case CONTAINER:
                 // don't understand why this code is here... return type @E2Immutable does NOT imply container
@@ -134,9 +137,8 @@ public class MethodAnalysis extends Analysis {
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
             case INDEPENDENT:
-                // implicit on non-eventual @E2Immutable
-                if (Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) &&
-                        !typeInfo.isEventual()) {
+                // implicit on effectively @E2Immutable
+                if (MultiLevel.EFFECTIVELY_E2IMMUTABLE == typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE)) {
                     return Level.TRUE;
                 }
                 break;
@@ -169,7 +171,7 @@ public class MethodAnalysis extends Analysis {
             case INDEPENDENT:
             case MODIFIED:
                 IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
-                IntStream overrideTypes = overrides.stream().mapToInt(mi -> !mi.isPrivate() && Level.haveTrueAt(mi.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE) ? Level.FALSE : Level.DELAY);
+                IntStream overrideTypes = overrides.stream().mapToInt(mi -> !mi.isPrivate() && MultiLevel.isE2Immutable(mi.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE)) ? Level.FALSE : Level.DELAY);
                 int max = IntStream.concat(overrideTypes, overrideValues).max().orElse(Level.DELAY);
                 if (max == Level.FALSE) return Level.TRUE;
         }

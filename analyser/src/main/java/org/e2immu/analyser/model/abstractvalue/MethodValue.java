@@ -58,7 +58,7 @@ public class MethodValue implements Value {
         return sameMethod &&
                 parameters.equals(that.parameters) &&
                 object.equals(that.object) &&
-                methodInfo.sideEffect().atMost(SideEffect.NONE_CONTEXT);
+                methodInfo.sideEffectNotTakingEventualIntoAccount().atMost(SideEffect.NONE_CONTEXT);
     }
 
     /*
@@ -158,7 +158,7 @@ public class MethodValue implements Value {
 
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-            if (sizeCopy == Level.TRUE || sizeCopy == Level.TRUE_LEVEL_1) {
+            if (sizeCopy == Level.SIZE_COPY_MIN_TRUE || sizeCopy == Level.SIZE_COPY_TRUE) {
                 // copyMin == True
                 // copyEquals == True
                 Value value = parameters.get(parameterInfo.index);
@@ -179,7 +179,7 @@ public class MethodValue implements Value {
         // we give priority to the value of the parameters, rather than that of the method
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-            if (sizeCopy == Level.TRUE || sizeCopy == Level.TRUE_LEVEL_1) {
+            if (sizeCopy == Level.SIZE_COPY_MIN_TRUE || sizeCopy == Level.SIZE_COPY_TRUE) {
                 return sizeCopy;
             }
         }
@@ -216,7 +216,7 @@ public class MethodValue implements Value {
 
         boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
         if ((bestCase || returnTypeDifferent) &&
-                Level.haveTrueAt(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)) {
+                MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER) {
             return INDEPENDENT;
         }
 
@@ -233,7 +233,7 @@ public class MethodValue implements Value {
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
         // RULE 3, in a = b.method(c,d), return c and d when b is E2Immutable
-        boolean objectE2Immutable = Level.haveTrueAt(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
+        boolean objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER;
         if ((bestCase || methodInfoDifferentType) && objectE2Immutable) // RULE 3
             return result;
 

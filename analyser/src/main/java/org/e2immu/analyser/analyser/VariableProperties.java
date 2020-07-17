@@ -307,7 +307,7 @@ class VariableProperties implements EvaluationContext {
                 resetValue = new VariableValue(this, fieldReference, name);
             }
         }
-        internalCreate(fieldReference, name, resetValue, resetValue, Set.of(), fieldReferenceState);
+        internalCreate(fieldReference, name, resetValue, resetValue, fieldReferenceState);
     }
 
     private Value safeFinalFieldValue(Value v) {
@@ -318,7 +318,7 @@ class VariableProperties implements EvaluationContext {
         String name = variableName(thisVariable);
         if (find(name) != null) return;
         VariableValue resetValue = new VariableValue(this, thisVariable, name);
-        internalCreate(thisVariable, name, resetValue, resetValue, Set.of(), SINGLE_COPY);
+        internalCreate(thisVariable, name, resetValue, resetValue, SINGLE_COPY);
     }
 
     private AboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
@@ -354,11 +354,10 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties) {
-        Set<VariableProperty> initialPropertiesAsSet = Set.of(initialProperties);
+    public void createLocalVariableOrParameter(@NotNull Variable variable) {
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
             Value resetValue = new VariableValue(this, variable, variable.name());
-            internalCreate(variable, variable.name(), resetValue, resetValue, initialPropertiesAsSet, SINGLE_COPY);
+            internalCreate(variable, variable.name(), resetValue, resetValue, SINGLE_COPY);
         } else {
             throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
         }
@@ -368,7 +367,6 @@ class VariableProperties implements EvaluationContext {
                                 String name,
                                 Value initialValue,
                                 Value resetValue,
-                                Set<VariableProperty> initialProperties,
                                 AboutVariable.FieldReferenceState fieldReferenceState) {
         ObjectFlow objectFlow;
         if (variable instanceof ParameterInfo) {
@@ -416,14 +414,15 @@ class VariableProperties implements EvaluationContext {
         } else if (variable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
             // SIZE, NOT_NULL
-            for (VariableProperty variableProperty : FROM_PARAMETER_TO_PROPERTIES) {
-                int value = parameterAnalysis.properties.getOtherwise(variableProperty, Level.FALSE);
-                aboutVariable.setProperty(variableProperty, value);
-            }
+
+            int size = parameterAnalysis.properties.getOtherwise(VariableProperty.SIZE, Level.FALSE);
+            aboutVariable.setProperty(VariableProperty.SIZE, size);
+
+            int notNull = parameterAnalysis.properties.getOtherwise(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+            aboutVariable.setProperty(VariableProperty.NOT_NULL, notNull);
         }
 
         // copied over the existing one
-        initialProperties.forEach(variableProperty -> aboutVariable.setProperty(variableProperty, Level.TRUE));
         if (variableProperties.put(name, aboutVariable) != null) {
             throw new UnsupportedOperationException("?? Duplicating name " + name);
         }
@@ -439,7 +438,7 @@ class VariableProperties implements EvaluationContext {
                 Expression initialiser = computeInitialiser(recordField);
                 Value newInitialValue = computeInitialValue(recordField, initialiser);
                 Value newResetValue = new VariableValue(this, newVariable, newName);
-                internalCreate(newVariable, newName, newInitialValue, newResetValue, Set.of(), fieldReferenceState);
+                internalCreate(newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
             }
         }
     }
@@ -618,7 +617,7 @@ class VariableProperties implements EvaluationContext {
     // first we only keep those that have been assigned at the lower level
     // then we get rid of those that are local variables created at the lower level; all the rest stays
     private static final Predicate<AboutVariable> ASSIGNED_NOT_LOCAL_VAR = aboutVariable ->
-            Level.value(aboutVariable.getProperty(ASSIGNED), 0) == Level.TRUE &&
+            MultiLevel.value(aboutVariable.getProperty(ASSIGNED), 0) == Level.TRUE &&
                     (!aboutVariable.isLocalVariable() || aboutVariable.isLocalCopy());
 
     /**
@@ -726,8 +725,8 @@ class VariableProperties implements EvaluationContext {
                 IntStream intStreamInc = streamBuilderInc(evaluationContextsGathered, name, includeThis, variableProperty);
                 int increasedValue = intStreamInc.reduce(Level.DELAY, (v1, v2) -> {
                     int best = Level.best(v1, v2);
-                    if (best == Level.TRUE) {
-                        return Level.nextLevelTrue(best, 1);
+                    if (best == Level.READ_ASSIGN_ONCE) {
+                        return Level.READ_ASSIGN_MULTIPLE_TIMES;
                     }
                     return best;
                 });
@@ -827,7 +826,7 @@ class VariableProperties implements EvaluationContext {
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
         if (VariableProperty.NOT_NULL == variableProperty && conditionalManager.isNotNull(variable)) {
-            return Level.best(Level.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
+            return Level.best(MultiLevel.compose(Level.TRUE, 0), aboutVariable.getProperty(variableProperty));
         }
         if (VariableProperty.SIZE.equals(variableProperty)) {
             Value sizeRestriction = conditionalManager.getSizeRestrictions(false).get(variable);
@@ -918,7 +917,7 @@ class VariableProperties implements EvaluationContext {
                 aboutVariable.setCurrentValue(value, value.getObjectFlow());
             }
             int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
-            aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.nextLevelTrue(assigned, 1));
+            aboutVariable.setProperty(VariableProperty.ASSIGNED, Math.max(Level.READ_ASSIGN_ONCE, Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, assigned + 1)));
 
             aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
             aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,

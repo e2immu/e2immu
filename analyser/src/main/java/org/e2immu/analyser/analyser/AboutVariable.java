@@ -104,7 +104,7 @@ class AboutVariable {
     public void markRead() {
         properties.remove(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT);
         int read = getProperty(VariableProperty.READ);
-        setProperty(VariableProperty.READ, Level.nextLevelTrue(read, 1));
+        setProperty(VariableProperty.READ, Math.max(Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, read + 1), Level.READ_ASSIGN_ONCE));
     }
 
     boolean haveProperty(VariableProperty variableProperty) {

@@ -5,13 +5,11 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class TestSimpleSizeChecks extends CommonTestRunner {
     public TestSimpleSizeChecks() {
@@ -57,7 +55,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
             if ("method1".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
                 Assert.assertNotNull(tv);
-                Assert.assertEquals(Level.compose(Level.TRUE, Level.NOT_NULL_1), tv.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.compose(Level.TRUE, Level.NOT_NULL_1), tv.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(SIZE_EQUALS_1, tv.properties.get(VariableProperty.SIZE)); // (1)
                 Assert.assertEquals(SIZE_EQUALS_1, methodAnalysis.getProperty(VariableProperty.SIZE));
             }

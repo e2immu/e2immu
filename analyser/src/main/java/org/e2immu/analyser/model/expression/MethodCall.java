@@ -73,7 +73,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 
         // not modified on scope
-        SideEffect sideEffect = methodInfo.sideEffect();
+        SideEffect sideEffect = methodInfo.sideEffectNotTakingEventualIntoAccount();
         boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
         int modifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.FALSE : Level.TRUE;
         int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
@@ -357,7 +357,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue, EvaluationContext evaluationContext) {
         if (objectValue instanceof MethodValue) {
             MethodValue methodValue = (MethodValue) objectValue;
-            if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.TRUE_LEVEL_1) {
+            if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
                 // there must be a sizeMethod()
                 TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
                 if (typeInfo == null)
@@ -473,7 +473,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        SideEffect methodsSideEffect = methodInfo.sideEffect();
+        SideEffect methodsSideEffect = methodInfo.sideEffectNotTakingEventualIntoAccount();
         if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
             return SideEffect.STATIC_ONLY;
         }

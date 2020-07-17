@@ -19,19 +19,19 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.List;
 import java.util.Set;
 
 public enum VariableProperty {
     // can be read multiple times
-    READ("read", true, Level.TRUE_LEVEL_1, 0, 0),
+    READ("read", true, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
 
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
     // assigned multiple times
-    ASSIGNED("assigned", true, Level.TRUE_LEVEL_1, 0, 0),
+    ASSIGNED("assigned", true, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
 
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
@@ -50,16 +50,16 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true, Level.TRUE_LEVEL_2, 0, 1),
+    NOT_NULL("@NotNull", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
 
     // the following three are on types only
-    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, Level.TRUE_LEVEL_2, 0, 1),
-    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, Level.TRUE_LEVEL_2, 0, 1),
-    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, Level.TRUE_LEVEL_2, 0, 1),
+    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
 
     FINAL("@Final", false, Level.TRUE, 0, 1),
     CONTAINER("@Container", false, 1, 0, 1),
-    IMMUTABLE("@Immutable", true, Level.compose(Level.TRUE, Level.E2IMMUTABLE), 0, 1),
+    IMMUTABLE("@Immutable", true, MultiLevel.compose(Level.TRUE, MultiLevel.EFFECTIVELY_E2IMMUTABLE), 0, 1),
     MODIFIED("@Modified", true, Level.TRUE, 1, 0),
     INDEPENDENT("@Independent", false, Level.TRUE, 0, 1),
     CONSTANT("@Constant"),

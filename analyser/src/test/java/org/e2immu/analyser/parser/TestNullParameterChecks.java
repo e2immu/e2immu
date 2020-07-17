@@ -4,8 +4,6 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +59,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 if ("s".equals(d.variableName)) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
                     Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
-                    Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) d.properties.get(VariableProperty.READ));
+                    Assert.assertEquals(MultiLevel.compose(Level.TRUE, 1), (int) d.properties.get(VariableProperty.READ));
                 } else if ("NullParameterChecks.this.s".equals(d.variableName)) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
                     Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.ASSIGNED));

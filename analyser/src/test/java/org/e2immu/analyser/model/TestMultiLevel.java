@@ -1,0 +1,42 @@
+package org.e2immu.analyser.model;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import static org.e2immu.analyser.model.MultiLevel.*;
+
+public class TestMultiLevel {
+
+    @Test
+    public void testCompose() {
+        Assert.assertEquals(EVENTUAL_BEFORE + FACTOR * EVENTUAL_BEFORE, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
+        Assert.assertEquals(EFFECTIVE + FACTOR * EVENTUAL_BEFORE, EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
+        Assert.assertEquals(EFFECTIVE + FACTOR * EFFECTIVE, EFFECTIVELY_E2IMMUTABLE);
+        Assert.assertEquals(EFFECTIVE + FACTOR * EFFECTIVE, EFFECTIVELY_E2IMMUTABLE + FACTOR * FACTOR * EFFECTIVE, EFFECTIVELY_CONTENT2_NOT_NULL);
+    }
+
+    @Test
+    public void testLevel() {
+        Assert.assertEquals(E1IMMUTABLE, level(EFFECTIVELY_E1IMMUTABLE));
+        Assert.assertEquals(NOT_NULL_1, level(EFFECTIVELY_CONTENT_NOT_NULL));
+        Assert.assertEquals(NOT_NULL_2, level(EFFECTIVELY_CONTENT2_NOT_NULL));
+        Assert.assertEquals(E2IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE));
+        Assert.assertEquals(E2IMMUTABLE, level(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK));
+        Assert.assertEquals(E1IMMUTABLE, level(EVENTUALLY_E1IMMUTABLE));
+    }
+
+    @Test
+    public void testValue() {
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL));
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_1));
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_2));
+        Assert.assertEquals(FALSE, value(EFFECTIVELY_CONTENT2_NOT_NULL, NOT_NULL_3));
+
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL));
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_1));
+        Assert.assertEquals(FALSE, value(EFFECTIVELY_CONTENT_NOT_NULL, NOT_NULL_2));
+
+        Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_NOT_NULL, NOT_NULL));
+        Assert.assertEquals(NULLABLE, value(EFFECTIVELY_NOT_NULL, NOT_NULL_1));
+    }
+}

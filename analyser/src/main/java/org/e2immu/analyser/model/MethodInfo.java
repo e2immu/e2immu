@@ -25,17 +25,14 @@ import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
@@ -374,12 +371,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public SideEffect sideEffect() {
+    public SideEffect sideEffectNotTakingEventualIntoAccount() {
         int modified = methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        int typeE2Immutable = Level.value(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        boolean isNonEventuallyE2Immutable = typeE2Immutable == Level.TRUE && !typeInfo.isEventual();
-        if (!isNonEventuallyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
-        if (isNonEventuallyE2Immutable || modified == Level.FALSE) {
+        int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
+        if (effectivelyE2Immutable || modified == Level.FALSE) {
             if (isStatic) {
                 if (isVoid()) {
                     return SideEffect.STATIC_ONLY;

@@ -70,7 +70,7 @@ public interface EvaluationContext {
 
     // BASIC ACCESS
 
-    void createLocalVariableOrParameter(@NotNull Variable variable, VariableProperty... initialProperties);
+    void createLocalVariableOrParameter(@NotNull Variable variable);
 
     // mark that variables are linked (statement analyser, assignment)
     void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> toBestCase, @NotNull Set<Variable> toWorstCase);
@@ -96,7 +96,7 @@ public interface EvaluationContext {
     int getProperty(@NotNull Value value, @NotNull VariableProperty variableProperty);
 
     default boolean isNotNull0(Value value) {
-        return Level.value(getProperty(value, VariableProperty.NOT_NULL), Level.NOT_NULL) == Level.TRUE;
+        return MultiLevel.value(getProperty(value, VariableProperty.NOT_NULL), 0) >= MultiLevel.EVENTUAL_AFTER;
     }
 
     // method of VariableValue

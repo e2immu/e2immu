@@ -87,19 +87,19 @@ public class FieldAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED:
                 if (bestType == null) return Level.FALSE; // we cannot modify because we cannot even execute a method
-                int e2Immutable = Level.value(getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-                if (e2Immutable == Level.DELAY) return e2Immutable;
-                if (e2Immutable == Level.TRUE) return Level.FALSE;
+                int immutable = getProperty(VariableProperty.IMMUTABLE);
+                if (immutable == Level.DELAY) return Level.DELAY;
+                if (MultiLevel.isE2Immutable(immutable)) return Level.FALSE;
                 break;
 
             case NOT_NULL:
-                if (bestType != null && bestType.isPrimitive()) return Level.TRUE;
+                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int notNullFields = owner.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_FIELDS);
                 return Level.best(notNullFields, super.getProperty(VariableProperty.NOT_NULL));
 
             case FINAL:
-                int e1ImmutableOwner = Level.value(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE);
-                if (e1ImmutableOwner == Level.TRUE) return Level.TRUE;
+                int immutableOwner = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                if (MultiLevel.isE1Immutable(immutableOwner)) return Level.TRUE;
                 break;
 
             case IMMUTABLE:
@@ -119,8 +119,7 @@ public class FieldAnalysis extends Analysis {
     public int maximalValue(VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.MODIFIED) {
             if (type.isUnboundParameterType()) return Level.TRUE;
-            if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                    Level.E2IMMUTABLE)) {
+            if (bestType != null && MultiLevel.isE2Immutable(getProperty(VariableProperty.IMMUTABLE))) {
                 return Level.TRUE;
             }
         }
@@ -136,15 +135,14 @@ public class FieldAnalysis extends Analysis {
 
             case MODIFIED:
                 if (type.isUnboundParameterType()) return Integer.MAX_VALUE;
-                if (bestType != null && Level.haveTrueAt(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                        Level.E2IMMUTABLE)) {
+                if (bestType != null && MultiLevel.isE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
                     return Integer.MAX_VALUE;
                 }
                 return Level.UNDEFINED;
 
             case FINAL:
                 if (isExplicitlyFinal) return Level.TRUE;
-                if (Level.haveTrueAt(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E1IMMUTABLE)) {
+                if (MultiLevel.isE1Immutable(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
                     // in an @E1Immutable class, all fields are effectively final, so no need to write this
                     return Level.TRUE;
                 }
@@ -152,8 +150,7 @@ public class FieldAnalysis extends Analysis {
             default:
 
             case IMMUTABLE:
-                if (Level.haveTrueAt(type.getProperty(variableProperty), Level.E2IMMUTABLE))
-                    return variableProperty.best;
+                if (MultiLevel.isE2Immutable(type.getProperty(variableProperty))) return variableProperty.best;
                 break;
 
             case CONTAINER:

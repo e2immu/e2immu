@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -46,7 +47,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertNotNull(tv);
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
-                Assert.assertEquals(Level.TRUE, Level.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), Level.NOT_NULL));
             }
             if ("isEmpty".equals(methodInfo.name)) {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");

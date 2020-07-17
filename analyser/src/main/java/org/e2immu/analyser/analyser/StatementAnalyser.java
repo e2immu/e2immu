@@ -188,10 +188,10 @@ public class StatementAnalyser {
         Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true, true);
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
-            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
+            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
             // as a context property
-            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
+            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             if (variableProperties.uponUsingConditional != null) {
                 log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                 variableProperties.uponUsingConditional.run();
@@ -313,12 +313,7 @@ public class StatementAnalyser {
         boolean changes = false;
         CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
-        VariableProperty[] newLocalVariableProperties;
-        if (statement.statement instanceof LoopStatement) {
-            newLocalVariableProperties = new VariableProperty[]{VariableProperty.ASSIGNED_IN_LOOP};
-        } else {
-            newLocalVariableProperties = new VariableProperty[0];
-        }
+        boolean assignedInLoop = statement.statement instanceof LoopStatement;
 
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
         // but then for variables in catch clauses)
@@ -327,7 +322,9 @@ public class StatementAnalyser {
         if (codeOrganization.localVariableCreation != null) {
             theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
                     List.of());
-            variableProperties.createLocalVariableOrParameter(theLocalVariableReference, newLocalVariableProperties);
+            variableProperties.createLocalVariableOrParameter(theLocalVariableReference);
+            if (assignedInLoop)
+                variableProperties.addProperty(theLocalVariableReference, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
         } else {
             theLocalVariableReference = null;
         }
@@ -340,7 +337,9 @@ public class StatementAnalyser {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                variableProperties.createLocalVariableOrParameter(lvr, newLocalVariableProperties);
+                variableProperties.createLocalVariableOrParameter(lvr);
+                if (assignedInLoop)
+                    variableProperties.addProperty(theLocalVariableReference, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             }
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);
@@ -395,7 +394,7 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
                 ((ArrayValue) value).values.stream().allMatch(variableProperties::isNotNull0)) {
-            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, Level.EFFECTIVELY_NOT_NULL);
+            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         }
 
         // PART 5: checks for ReturnStatement
@@ -438,14 +437,13 @@ public class StatementAnalyser {
                         transferValue.properties.put(variableProperty, v);
                     }
                 }
-                for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY_DEFAULT_FALSE) {
-                    int v = variableProperties.getProperty(value, variableProperty);
-                    if (v == Level.DELAY) v = Level.FALSE;
-                    int current = transferValue.getProperty(variableProperty);
-                    if (v > current) {
-                        transferValue.properties.put(variableProperty, v);
-                    }
+                int immutable = variableProperties.getProperty(value, VariableProperty.IMMUTABLE);
+                if (immutable == Level.DELAY) immutable = MultiLevel.MUTABLE;
+                int current = transferValue.getProperty(VariableProperty.IMMUTABLE);
+                if (immutable > current) {
+                    transferValue.properties.put(VariableProperty.IMMUTABLE, immutable);
                 }
+
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
                         methodInfo.fullyQualifiedName(), statement.streamIndices());
@@ -566,7 +564,9 @@ public class StatementAnalyser {
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
-                subContext.createLocalVariableOrParameter(lvr, VariableProperty.NOT_NULL, VariableProperty.READ);
+                subContext.createLocalVariableOrParameter(lvr);
+                subContext.addProperty(lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                subContext.addProperty(lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
             }
 
             NumberedStatement subStatementStart = statement.blocks.get().get(count);
@@ -650,7 +650,7 @@ public class StatementAnalyser {
         int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
         if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
 
-        SideEffect sideEffect = methodCall.methodInfo.sideEffect();
+        SideEffect sideEffect = methodCall.methodInfo.sideEffectNotTakingEventualIntoAccount();
         switch (sideEffect) {
             case DELAYED:
             case STATIC_ONLY:
@@ -740,10 +740,10 @@ public class StatementAnalyser {
         }
 
         // if we already know that the variable is NOT @NotNull, then we'll raise an error
-        int notNull = evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL);
-        if (notNull == Level.FALSE) {
+        int notNull = MultiLevel.value(evaluationContext.getProperty(currentValue, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+        if (notNull == MultiLevel.FALSE) {
             evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
-        } else if (notNull == Level.DELAY) {
+        } else if (notNull == MultiLevel.DELAY) {
             // we only need to mark this in case of doubt (if we already know, we should not mark)
             variableProperties.addPropertyRestriction(variable, VariableProperty.NOT_NULL, notNullContext);
         }

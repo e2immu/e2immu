@@ -2,12 +2,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.annotation.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,7 +21,7 @@ public class TestTypeParameters extends CommonTestRunner {
             TypeInfo collection = typeContext.getFullyQualified(Collection.class);
             Assert.assertNotNull(collection);
             MethodInfo stream = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
-            Assert.assertEquals(Level.compose(Level.TRUE, Level.NOT_NULL_1), stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.compose(Level.TRUE, Level.NOT_NULL_1), stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

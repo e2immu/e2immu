@@ -4,17 +4,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -39,15 +33,15 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
             } else if (d.iteration == 1) {
                 Assert.assertEquals("instance type java.lang.String()", d.currentValue.toString());
-                Assert.assertEquals(Level.TRUE, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
                 Assert.assertEquals("s1", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                 if (d.iteration == 2) {
-                    Assert.assertEquals(Level.DELAY, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                    Assert.assertEquals(Level.DELAY, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 } else {
-                    Assert.assertEquals(Level.FALSE, Level.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
+                    Assert.assertEquals(Level.FALSE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), Level.NOT_NULL));
                 }
             }
         }

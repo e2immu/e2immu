@@ -1098,6 +1098,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isEffectivelyE2Immutable() {
-        return typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == Level.EFFECTIVELY_E2IMMUTABLE;
+        return typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
     }
 }

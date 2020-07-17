@@ -276,7 +276,7 @@ public class TypeAnalyser {
 
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.TRUE);
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return true;
     }
@@ -324,10 +324,8 @@ public class TypeAnalyser {
 
     private boolean analyseE1Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
-        if (typeE1Immutable != Level.DELAY) return false; // we have a decision already
-        int no = Level.compose(Level.FALSE, Level.E1IMMUTABLE);
+        int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
+        if (typeE1Immutable != MultiLevel.DELAY) return false; // we have a decision already
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
@@ -335,26 +333,26 @@ public class TypeAnalyser {
             if (effectivelyFinal == Level.FALSE) {
                 log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
                         typeInfo.fullyQualifiedName, fieldInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return true;
             }
         }
         log(E1IMMUTABLE, "Improve @Immutable of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, Level.E1IMMUTABLE));
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
         return true;
     }
 
     private boolean analyseE2Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int typeE2Immutable = Level.value(typeImmutable, Level.E2IMMUTABLE);
-        if (typeE2Immutable != Level.DELAY) return false; // we have a decision already
-        int typeE1Immutable = Level.value(typeImmutable, Level.E1IMMUTABLE);
-        if (typeE1Immutable != Level.TRUE && typeAnalysis.approvedPreconditions.isEmpty()) {
+        int typeE2Immutable = MultiLevel.value(typeImmutable, MultiLevel.E2IMMUTABLE);
+        if (typeE2Immutable != MultiLevel.DELAY) return false; // we have a decision already
+        int typeE1Immutable = MultiLevel.value(typeImmutable, MultiLevel.E1IMMUTABLE);
+        if (typeE1Immutable < MultiLevel.EVENTUAL) {
             log(E2IMMUTABLE, "Type {} is not @E2Immutable, because it is not (eventually) @E1Immutable", typeInfo.fullyQualifiedName);
             return false;
         }
-        int no = Level.compose(Level.FALSE, Level.E2IMMUTABLE);
+        int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
         boolean eventual = typeAnalysis.isEventual();
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
@@ -365,19 +363,19 @@ public class TypeAnalyser {
 
             // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
 
-            int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-            int e2immutable = Level.value(immutable, Level.E2IMMUTABLE);
-            // TODO for now, we'll not be cascading eventually immutable
+            int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+            int fieldE2Immutable = MultiLevel.value(fieldImmutable, MultiLevel.E2IMMUTABLE);
             // field is of the type of the class being analysed... it will not make the difference.
-            if (e2immutable == Level.DELAY && typeInfo == fieldInfo.type.typeInfo) {
-                e2immutable = Level.TRUE;
+            if (fieldE2Immutable == MultiLevel.DELAY && typeInfo == fieldInfo.type.typeInfo) {
+                fieldE2Immutable = MultiLevel.EFFECTIVE;
             }
             // part of rule 2: we now need to check that @NotModified is on the field
-            if (e2immutable == Level.DELAY) {
+            if (fieldE2Immutable == MultiLevel.DELAY) {
                 log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
                 return false;
             }
-            if (e2immutable == Level.FALSE) {
+            // we're allowing eventualities to cascade!
+            if (fieldE2Immutable < MultiLevel.EVENTUAL) {
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
@@ -427,15 +425,15 @@ public class TypeAnalyser {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             // in the eventual case, we only need to look at the non-modifying methods
-            if(modified == Level.FALSE || !eventual) {
+            if (modified == Level.FALSE || !eventual) {
                 MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
                 int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                int returnTypeE2Immutable = Level.value(returnTypeImmutable, Level.E2IMMUTABLE);
-                if (returnTypeE2Immutable == Level.DELAY) {
+                int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
+                if (returnTypeE2Immutable == MultiLevel.DELAY) {
                     log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
                     return false;
                 }
-                if (returnTypeE2Immutable == Level.FALSE) {
+                if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
                     // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
                     int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                     if (independent == Level.DELAY) {
@@ -453,7 +451,8 @@ public class TypeAnalyser {
             }
         }
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, Level.compose(Level.TRUE, Level.E2IMMUTABLE));
+        int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
+        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
         return true;
     }
 
@@ -462,25 +461,25 @@ public class TypeAnalyser {
 
     private boolean analyseNotNull(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        int typeNotNull = typeAnalysis.getProperty(VariableProperty.NOT_NULL);
-        if (typeNotNull != Level.DELAY) return false;
+        int typeNotNull = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+        if (typeNotNull != MultiLevel.DELAY) return false;
 
         // all fields should be @NN, all methods, and all parameters...
         boolean isNotNull = true;
         methodLoop:
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-                if (notNull == Level.DELAY) return false;
-                if (notNull == Level.FALSE) {
+                int notNull = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+                if (notNull == MultiLevel.DELAY) return false;
+                if (notNull == MultiLevel.FALSE) {
                     isNotNull = false;
                     break;
                 }
             }
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                int notNull = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-                if (notNull == Level.DELAY) return false;
-                if (notNull == Level.FALSE) {
+                int notNull = MultiLevel.value(parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+                if (notNull == MultiLevel.DELAY) return false;
+                if (notNull == MultiLevel.FALSE) {
                     isNotNull = false;
                     break methodLoop;
                 }
@@ -488,15 +487,15 @@ public class TypeAnalyser {
         }
         if (isNotNull) {
             for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-                int notNull = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-                if (notNull == Level.DELAY) return false;
-                if (notNull == Level.FALSE) {
+                int notNull = MultiLevel.value(fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+                if (notNull == MultiLevel.DELAY) return false;
+                if (notNull == MultiLevel.FALSE) {
                     isNotNull = false;
                     break;
                 }
             }
         }
-        typeAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNull);
+        typeAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNull ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
         log(NOT_NULL, "Marked type {} as " + (isNotNull ? "" : "NOT ") + " @NotNull", typeInfo.fullyQualifiedName);
         return true;
     }
@@ -506,13 +505,13 @@ public class TypeAnalyser {
         int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
         if (extensionClass != Level.DELAY) return false;
 
-        int e2Immutable = Level.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if (e2Immutable == Level.DELAY) {
+        int e2Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (e2Immutable == MultiLevel.DELAY) {
             log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        if (e2Immutable == Level.FALSE) {
-            log(UTILITY_CLASS, "Type {} is not an @ExtensionClass, not @E2Immutable", typeInfo.fullyQualifiedName);
+        if (e2Immutable < MultiLevel.EVENTUAL) {
+            log(UTILITY_CLASS, "Type {} is not an @ExtensionClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.FALSE);
             return true;
         }
@@ -554,13 +553,13 @@ public class TypeAnalyser {
         int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
         if (utilityClass != Level.DELAY) return false;
 
-        int e2Immutable = Level.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE);
-        if (e2Immutable == Level.DELAY) {
+        int e2Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (e2Immutable == MultiLevel.DELAY) {
             log(DELAYED, "Don't know yet about @E2Immutable on {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        if (e2Immutable == Level.FALSE) {
-            log(UTILITY_CLASS, "Type {} is not a @UtilityClass, not @E2Immutable", typeInfo.fullyQualifiedName);
+        if (e2Immutable < MultiLevel.EVENTUAL) {
+            log(UTILITY_CLASS, "Type {} is not a @UtilityClass, not (eventually) @E2Immutable", typeInfo.fullyQualifiedName);
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
             return true;
         }
