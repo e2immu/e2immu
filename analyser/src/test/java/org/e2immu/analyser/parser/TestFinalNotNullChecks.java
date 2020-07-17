@@ -28,15 +28,15 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.DELAY, notNull);
             } else {
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
-                Assert.assertEquals(Level.TRUE, notNull);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }
         if ("FinalNotNullChecks".equals(d.methodInfo.name) && "param".equals(d.variableName)) {
-            Assert.assertEquals(1, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             int notNull = d.properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
             if (d.iteration == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
             }
         }
         // the variable has the value of param, which has received a @NotNull
@@ -51,10 +51,10 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             TypeInfo objects = typeContext.getFullyQualified(Objects.class);
             MethodInfo requireNonNull = objects.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
                     1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
-            Assert.assertEquals(1, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(1, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
             ParameterInfo parameterInfo = requireNonNull.methodInspection.get().parameters.get(0);
-            Assert.assertEquals(1, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -65,7 +65,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
             if (iteration >= 2 && "input".equals(fieldInfo.name)) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -75,7 +75,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo) {
             if (methodInfo.name.equals("FinalNotNullChecks")) {
                 ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
-                Assert.assertEquals(1, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };

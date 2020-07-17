@@ -86,9 +86,9 @@ public class TestConditionalChecks extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo) {
             if (iteration == 0 && "method3".equals(methodInfo.name)) {
                 ParameterInfo a = methodInfo.methodInspection.get().parameters.get(0);
-                Assert.assertEquals(Level.TRUE, a.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, a.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 ParameterInfo b = methodInfo.methodInspection.get().parameters.get(1);
-                Assert.assertEquals(Level.TRUE, b.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, b.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };

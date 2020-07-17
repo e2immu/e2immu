@@ -103,7 +103,7 @@ public class MethodAnalysis extends Analysis {
 
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
-                    return Level.FALSE;
+                    throw new UnsupportedOperationException(); //we should not even be asking
                 int immutableType = returnType.getProperty(VariableProperty.IMMUTABLE);
                 if (immutableType == Level.DELAY) return Level.DELAY;
 
@@ -120,6 +120,11 @@ public class MethodAnalysis extends Analysis {
             default:
         }
         return super.getProperty(variableProperty);
+    }
+
+    @Override
+    protected boolean isNotAConstructorOrVoidMethod() {
+        return !methodInfo.isVoid() && !methodInfo.isConstructor;
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {

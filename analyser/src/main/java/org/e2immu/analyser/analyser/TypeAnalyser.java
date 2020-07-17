@@ -423,6 +423,7 @@ public class TypeAnalyser {
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            if(methodInfo.isVoid()) continue; // we're looking at return types
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             // in the eventual case, we only need to look at the non-modifying methods
             if (modified == Level.FALSE || !eventual) {

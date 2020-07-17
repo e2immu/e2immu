@@ -26,12 +26,12 @@ import java.util.Set;
 
 public enum VariableProperty {
     // can be read multiple times
-    READ("read", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
+    READ("read", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
 
     NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
 
     // assigned multiple times
-    ASSIGNED("assigned", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, 0, 0),
+    ASSIGNED("assigned", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
 
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
@@ -50,18 +50,22 @@ public enum VariableProperty {
 
     // the ones corresponding to annotations
 
-    NOT_NULL("@NotNull", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL("@NotNull", true,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
     // the following three are on types only
-    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
-    NOT_NULL_METHODS("@NotNull(where=METHODS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
-    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, 0, 1),
+    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    NOT_NULL_METHODS("@NotNull(where=METHODS)", true,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
+    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true,
+            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
-    FINAL("@Final", false, Level.FALSE, Level.TRUE, 0, 1),
-    CONTAINER("@Container", false, Level.FALSE, Level.TRUE, 0, 1),
-    IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, 0, 1),
-    MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, 1, 0),
-    INDEPENDENT("@Independent", false, Level.FALSE, Level.TRUE, 0, 1),
+    FINAL("@Final", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    CONTAINER("@Container", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
+    IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE, MultiLevel.MUTABLE),
+    MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
+    INDEPENDENT("@Independent", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
@@ -72,7 +76,7 @@ public enum VariableProperty {
     ONLY("@Only"),
     OUTPUT("@Output"),
     SINGLETON("@Singleton"),
-    SIZE("@Size", true, Level.NOT_A_SIZE, Integer.MAX_VALUE, 0, 0), // the int value is for "min"+"equals", not for "max"
+    SIZE("@Size", true, Level.NOT_A_SIZE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE), // the int value is for "min"+"equals", not for "max"
     SIZE_COPY("@Size copy"), // the int value is associated with the @Size(copy, copyMin)
     UTILITY_CLASS("@UtilityClass");
 
@@ -84,7 +88,7 @@ public enum VariableProperty {
     private final int valueWhenAbsentInOffensiveMode;
 
     private VariableProperty(String name) {
-        this(name, false, Level.FALSE, Level.TRUE, 0, 0);
+        this(name, false, Level.FALSE, Level.TRUE, Level.FALSE, Level.FALSE);
     }
 
     private VariableProperty(String name, boolean canImprove, int falseValue, int best, int valueWhenAbsentInDefensiveMode, int valueWhenAbsentInOffensiveMode) {
