@@ -349,7 +349,7 @@ public class TypeAnalyser {
         if (typeE2Immutable != MultiLevel.DELAY) return false; // we have a decision already
         int typeE1Immutable = MultiLevel.value(typeImmutable, MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable < MultiLevel.EVENTUAL) {
-            log(E2IMMUTABLE, "Type {} is not @E2Immutable, because it is not (eventually) @E1Immutable", typeInfo.fullyQualifiedName);
+            log(E2IMMUTABLE, "Type {} is not (yet) @E2Immutable, because it is not (yet) (eventually) @E1Immutable", typeInfo.fullyQualifiedName);
             return false;
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);

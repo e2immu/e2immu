@@ -23,7 +23,8 @@ public abstract class ValueWithVariable implements Value {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
         int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
         boolean selfReferencing = typeInfo == evaluationContext.getCurrentType();
-        if (immutable == Level.TRUE || immutable == Level.DELAY && (bestCase || selfReferencing)) return Set.of();
+        if (MultiLevel.isE2Immutable(immutable) || (immutable == Level.DELAY && (bestCase || selfReferencing)))
+            return Set.of();
         return Set.of(variable);
     }
 

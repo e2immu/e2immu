@@ -96,7 +96,7 @@ public class ParameterAnalysis extends Analysis {
                 int immutableFromType;
                 if (bestType != null) {
                     int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                    boolean objectFlowCondition = owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType));
+                    boolean objectFlowCondition = owner != null && owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType));
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
                 } else {
                     immutableFromType = MultiLevel.MUTABLE;
