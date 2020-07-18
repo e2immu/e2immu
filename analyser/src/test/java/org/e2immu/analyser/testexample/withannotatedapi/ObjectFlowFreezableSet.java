@@ -79,10 +79,12 @@ public class ObjectFlowFreezableSet {
     }
 
     @E2Container
+    @NotNull
     static final FreezableSet SET5 = method4();
 
     // not frozen yet
     @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @BeforeImmutableMark
     @NotModified
     static FreezableSet method6() {
         FreezableSet set6 = new FreezableSet();
@@ -104,10 +106,15 @@ public class ObjectFlowFreezableSet {
     }
 
     @E2Container
+    @NotNull
     static final FreezableSet SET8 = method7(method6());
 
     static void method9() {
         System.out.println("Have "+SET8.stream().count());
         SET8.add("xx"); // should throw ERROR!!
     }
+
+    @NotNull
+    static final FreezableSet SET10 = method6();
+
 }

@@ -15,8 +15,8 @@ public class MultiLevel {
 
     public static final int DELAY = 0;
     public static final int FALSE = 1;
-    public static final int EVENTUAL_BEFORE = 2;
-    public static final int EVENTUAL = 3;
+    public static final int EVENTUAL = 2;
+    public static final int EVENTUAL_BEFORE = 3;
     public static final int EVENTUAL_AFTER = 4;
     public static final int EFFECTIVE = 5;
 

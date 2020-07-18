@@ -19,13 +19,9 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -35,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 
 public class TestObjectFlowFreezableSet extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlowFreezableSet.class);
@@ -109,57 +106,68 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("method4".equals(methodInfo.name)) {
-                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("method4".equals(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+            ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+        }
+        if ("method6".equals(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+            ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+            Assert.assertTrue(objectFlow.marks().isEmpty());
+        }
+        if ("method7".equals(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+            ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
+        if ("method2".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
+            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        }
+        if ("method3".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
+            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        }
+        // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
+        if ("method9".equals(methodInfo.name)) {
+            if ("0".equals(numberedStatement.streamIndices())) {
+                Assert.assertFalse(numberedStatement.errorValue.isSet());
             }
-            if ("method6".equals(methodInfo.name)) {
-                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
-                Assert.assertTrue(objectFlow.marks().isEmpty());
-            }
-            if ("method7".equals(methodInfo.name)) {
-                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-                ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            if ("1".equals(numberedStatement.streamIndices())) {
+                Assert.assertTrue(numberedStatement.errorValue.isSet());
             }
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("method2".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.isSet());
-            }
-            if ("method3".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.isSet());
-            }
-            // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
-            if ("method9".equals(methodInfo.name)) {
-                if ("0".equals(numberedStatement.streamIndices())) {
-                    //   Assert.assertFalse(numberedStatement.errorValue.isSet());
-                }
-                if ("1".equals(numberedStatement.streamIndices())) {
-                    //    Assert.assertTrue(numberedStatement.errorValue.isSet());
-                }
-            }
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("SET5".equals(fieldInfo.name) && iteration > 0) {
+            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
+        }
+        if ("SET10".equals(fieldInfo.name) && iteration > 0) {
+            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+            LOGGER.info("Object flow of SET10 at iteration {}: {}", iteration, objectFlow.detailed());
+            Assert.assertTrue(objectFlow.marks().isEmpty());
+            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, immutable);
+        }
+
+        if ("SET8".equals(fieldInfo.name) && iteration > 0) {
+            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+            LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
+            Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("SET8".equals(fieldInfo.name) && iteration > 0) {
-                ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
-                LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
-                Assert.assertEquals("[mark]", objectFlow.marks().toString());
-            }
-        }
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        MethodInfo stream = collection.findUniqueMethod("stream", 0);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     @Test
@@ -169,6 +177,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
 
     }

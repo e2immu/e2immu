@@ -8,6 +8,15 @@ import static org.e2immu.analyser.model.MultiLevel.*;
 public class TestMultiLevel {
 
     @Test
+    public void testLookup() {
+        Assert.assertEquals(5, EFFECTIVELY_E1IMMUTABLE);
+        Assert.assertEquals(18, EVENTUALLY_E2IMMUTABLE);
+        Assert.assertEquals(27, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
+        Assert.assertEquals(36, EVENTUALLY_E2IMMUTABLE_AFTER_MARK);
+        Assert.assertEquals(45, EFFECTIVELY_E2IMMUTABLE);
+    }
+
+    @Test
     public void testCompose() {
         Assert.assertEquals(EVENTUAL_BEFORE + FACTOR * EVENTUAL_BEFORE, EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
         Assert.assertEquals(EFFECTIVE + FACTOR * EVENTUAL_BEFORE, EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK);
