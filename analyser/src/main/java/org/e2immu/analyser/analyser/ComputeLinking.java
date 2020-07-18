@@ -55,7 +55,6 @@ public class ComputeLinking {
                 changes = true;
 
             if (computeContentModifications(methodInfo, methodAnalysis, methodProperties)) changes = true;
-            if (checkParameterAssignmentError(methodInfo, methodProperties)) changes = true;
 
             return changes;
         } catch (RuntimeException rte) {
@@ -290,22 +289,6 @@ public class ComputeLinking {
         List<Variable> reverse = variablesLinkedToFieldsAndParameters.entrySet()
                 .stream().filter(e -> e.getValue().contains(variable)).map(Map.Entry::getKey).collect(Collectors.toList());
         reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
-    }
-
-    private boolean checkParameterAssignmentError(MethodInfo methodInfo, VariableProperties methodProperties) {
-        boolean changes = false;
-        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
-            if (aboutVariable.variable instanceof ParameterInfo) {
-                ParameterInfo parameterInfo = (ParameterInfo) aboutVariable.variable;
-                boolean assigned = methodProperties.getProperty(parameterInfo, VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                if (assigned && !methodInfo.methodAnalysis.get().parameterAssignments.isSet(parameterInfo)) {
-                    typeContext.addMessage(Message.newMessage(new Location(parameterInfo), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
-                    methodInfo.methodAnalysis.get().parameterAssignments.put(parameterInfo, true);
-                    changes = true;
-                }
-            }
-        }
-        return changes;
     }
 
     /**

@@ -255,7 +255,7 @@ public abstract class Analysis {
                 }
             }
         }
-        
+
         // size
         int minSize = minimalValue(VariableProperty.SIZE);
         int size = getProperty(VariableProperty.SIZE);
