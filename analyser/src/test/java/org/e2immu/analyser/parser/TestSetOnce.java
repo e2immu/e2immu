@@ -19,53 +19,43 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
 public class TestSetOnce extends CommonTestRunner {
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("overwrite".equals(d.methodInfo.name) && "t".equals(d.variableName) && "0".equals(d.statementId)) {
-            //     Assert.assertEquals(Level.TRUE, (int) properties.get(VariableProperty.NOT_NULL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("t".equals(fieldInfo.name) && iteration > 0) {
+            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("t".equals(fieldInfo.name) && iteration > 0) {
-                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        if ("get".equals(methodInfo.name)) {
+            if (iteration == 0) {
+                Assert.assertFalse(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertFalse(methodAnalysis.variablesLinkedToMethodResult.isSet());
+            } else {
+                Assert.assertTrue(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
 
-            }
-        }
-    };
-
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            if ("get".equals(methodInfo.name)) {
-                if (iteration == 0) {
-                    Assert.assertFalse(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
-                    Assert.assertFalse(methodAnalysis.variablesLinkedToMethodResult.isSet());
-                } else {
-                    Assert.assertTrue(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
-
-                    Set<Variable> set = methodAnalysis.variablesLinkedToMethodResult.get();
-                    Assert.assertEquals(1, set.size());
-                    // we expect it to contain the field!
-                }
+                TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
+                Assert.assertTrue(tv.linkedVariables.isSet());
+                Assert.assertEquals(1, tv.linkedVariables.get().size());
+                Set<Variable> set = methodAnalysis.variablesLinkedToMethodResult.get();
+                Assert.assertEquals(1, set.size());
+                // we expect it to contain the field!
             }
         }
     };
@@ -75,7 +65,6 @@ public class TestSetOnce extends CommonTestRunner {
         testUtilClass("SetOnce", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
