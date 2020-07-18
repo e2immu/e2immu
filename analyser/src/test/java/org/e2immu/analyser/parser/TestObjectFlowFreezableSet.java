@@ -111,16 +111,19 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
             ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method6".equals(methodInfo.name)) {
             Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
             ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
             Assert.assertTrue(objectFlow.marks().isEmpty());
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method7".equals(methodInfo.name)) {
             Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
             ObjectFlow objectFlow = methodInfo.methodAnalysis.get().objectFlow.get();
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         }
     };
 

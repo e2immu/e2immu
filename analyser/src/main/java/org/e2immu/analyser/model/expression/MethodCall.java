@@ -263,20 +263,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return scope;
     }
 
-    private static Value wrap(MethodAnalysis methodAnalysis, Value value, ObjectFlow objectFlow) {
-        Map<VariableProperty, Integer> map = new HashMap<>();
-        for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
-            int v = methodAnalysis.getProperty(property);
-            if (v != Level.DELAY) map.put(property, v);
-        }
-        return PropertyWrapper.propertyWrapper(value, map, objectFlow);
-    }
 
     private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters, ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
-        return wrap(methodAnalysis, parameters.get(0), objectFlowOfResult);
+
+        Map<VariableProperty, Integer> map = new HashMap<>();
+        for (VariableProperty property : VariableProperty.PROPERTIES_IN_METHOD_RESULT_WRAPPER) {
+            int v = methodAnalysis.getProperty(property);
+            if (v != Level.DELAY) map.put(property, v);
+        }
+        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
     }
 
     private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {

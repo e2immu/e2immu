@@ -98,7 +98,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
     @Override
     public String toString() {
         return value.toString() + "," + properties.entrySet().stream()
-                .filter(e -> e.getValue() > Level.FALSE)
+                .filter(e -> e.getValue() > e.getKey().falseValue)
                 .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
     }
 
