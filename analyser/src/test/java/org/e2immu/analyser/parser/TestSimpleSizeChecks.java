@@ -26,8 +26,9 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.CONTAINER));
             Assert.assertTrue(d.variable instanceof LocalVariableReference);
 
-            // properties are on the value, not in the local map
-            Assert.assertNull(d.properties.get(VariableProperty.IMMUTABLE));
+            // properties are on the value; in the map is the value of the type before the assignment
+            // at the moment, the Set interface is not E1Immutable
+            Assert.assertEquals(MultiLevel.MUTABLE, (int) d.properties.get(VariableProperty.IMMUTABLE));
             Assert.assertNull(d.properties.get(VariableProperty.CONTAINER));
         }
         if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {

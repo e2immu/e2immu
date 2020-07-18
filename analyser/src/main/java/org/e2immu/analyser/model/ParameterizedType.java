@@ -617,6 +617,9 @@ public class ParameterizedType {
         if (bestType != null) {
             return bestType.typeAnalysis.get().getProperty(variableProperty);
         }
+        if (variableProperty == VariableProperty.IMMUTABLE) {
+            return MultiLevel.MUTABLE;
+        }
         if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
         return Level.FALSE;
     }

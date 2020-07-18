@@ -412,7 +412,10 @@ class VariableProperties implements EvaluationContext {
             aboutVariable.setProperty(IMMUTABLE, immutable);
         } else if (variable instanceof This) {
             aboutVariable.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        }
+        } else if (variable instanceof LocalVariableReference) {
+            LocalVariableReference localVariableReference = (LocalVariableReference) variable;
+            aboutVariable.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(IMMUTABLE));
+        } // else: dependentVariable
 
         // copied over the existing one
         if (variableProperties.put(name, aboutVariable) != null) {
