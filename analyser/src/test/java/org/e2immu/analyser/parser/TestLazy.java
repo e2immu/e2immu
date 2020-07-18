@@ -40,7 +40,7 @@ public class TestLazy extends CommonTestRunner {
         if ("get".equals(d.methodInfo.name) && "Lazy.this.t".equals(d.variableName) && d.iteration > 0) {
             if ("2.0.0".equals(d.statementId)) {
                 Assert.assertEquals("supplier.get(),@NotNull", d.currentValue.toString());
-                Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                 Assert.assertEquals(1, d.currentValue.variables().size());
             }
         }
@@ -85,8 +85,8 @@ public class TestLazy extends CommonTestRunner {
                 TransferValue ret1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1.0.0");
                 TransferValue ret2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.1");
                 if (iteration >= 1) {
-                    Assert.assertEquals(Level.TRUE, ret1.properties.get(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, ret2.properties.get(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
 
                     Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
                     Set<Variable> linkedToT = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
@@ -94,7 +94,7 @@ public class TestLazy extends CommonTestRunner {
                             .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
                             .map(Map.Entry::getValue).findFirst().orElseThrow();
                     // for now (and I believe it's correct, t will not be linked to supplier)
-                    Assert.assertTrue(linkedToT.isEmpty());
+                    Assert.assertFalse(linkedToT.isEmpty());
                 }
             }
         }

@@ -100,6 +100,14 @@ public class MultiLevel {
         assert i >= Level.DELAY;
         assert level >= 0;
         if (i == Level.DELAY) return MultiLevel.DELAY;
+
+        // IMPORTANT:
+        //  if the lower levels are DELAY, return DELAY
+        //  if the lower levels are FALSE, return FALSE
+        for (int shift = 0; shift < level; shift++) {
+            int v = (i >> (SHIFT * shift)) & AND;
+            if (v <= MultiLevel.FALSE) return MultiLevel.FALSE;
+        }
         return (i >> (SHIFT * level)) & AND;
     }
 

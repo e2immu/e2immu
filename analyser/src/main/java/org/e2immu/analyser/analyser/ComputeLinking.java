@@ -227,7 +227,7 @@ public class ComputeLinking {
                         if (fieldModified == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());
                         } else {
-                            log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @NotModified in {}",
+                            log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     linkedVariable.detailedString(), methodInfo.distinguishingName());
                             tv.properties.put(VariableProperty.MODIFIED, fieldModified);
                             changes = true;
