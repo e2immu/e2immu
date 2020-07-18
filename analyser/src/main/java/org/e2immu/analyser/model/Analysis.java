@@ -221,7 +221,7 @@ public abstract class Analysis {
                     }
                 }
             }
-            
+
             boolean doNullable = !isType;
 
             // not null
