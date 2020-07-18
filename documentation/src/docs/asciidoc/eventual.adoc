@@ -187,21 +187,24 @@ Is there a pattern we can reuse for `@NotNull`, the only other one we have with 
 |===
 | value | meaning  | annotation on field, parameter, method | annotation in owning type
 | -1    | delay | - | -
-| 0,0   | nullable  | `@Nullable` | `@Nullable`
-| 1,0   | eventually not null, before mark | `@BeforeNotNullMark` (not field) | -
+| 0,0   | delay  | - | -
+| 1,1   | nullable  | `@Nullable` | `@Nullable`
 | 2,0   | eventually not null | - | `@NotNull(after="...")`
-| 3,0   | eventually not null, after mark | `@NotNull` |
-| 4,0   | effectively not null | `@NotNull` | `@NotNull`
-| 1,1   | eventually not null & content not null, before mark | `@BeforeNotNullMark` | -
-| 4,1   | not null, eventually content not null, before mark | `@BeforeNotNullMark @NotNull` | -
+| 3,0   | eventually not null, before mark | `@BeforeNotNullMark` (not field) | -
+| 4,0   | eventually not null, after mark | `@NotNull` |
+| 5,0   | effectively not null, no idea about content .2+| `@NotNull` .2+| `@NotNull`
+| 5,1   | effectively not null, not content not null
 | 2,2   | eventually not null & content not null .2+| `@NotNull1` .2+| `@NotNull1(after="...")`
-| 4,2   | effectively not null, eventually content not null
-| 3,3   | eventually content not null, after mark | `@NotNull1` | -
-| 4,4   | effectively content not null | `@NotNull1` | `@NotNull1`
+| 5,2   | not null, eventually content not null
+| 3,3   | eventually not null & content not null, before mark | `@BeforeNotNullMark` (not field)| -
+| 5,3   | not null, eventually content not null, before mark | `@BeforeNotNullMark @NotNull` (not field)| -
+| 5,4   | not null, eventually content not null, after mark .2+| `@NotNull1` (not field) .2+| -
+| 4,4   | eventually content not null, after mark
+| 5,5   | effectively content not null | `@NotNull1` | `@NotNull1`
 4*| ...
-| 2,2,2 | eventually contents`' content not null | `@NotNull2` | `@NotNull2(after="...")`
+| 3,3,3 | eventually contents`' content not null | `@NotNull2` | `@NotNull2(after="...")`
 4*| ...
-| 4,4,4 | effectively contents`' content not null | `@NotNull2` |  `@NotNull2`
+| 5,5,5 | effectively contents`' content not null | `@NotNull2` |  `@NotNull2`
 |===
 
 Some examples:
@@ -228,6 +231,7 @@ class SomeClass<X> {
 This is a variation on the normal `@Mark`, `@Only` scheme.
 
 Here is an example that does not involve immutability of the type:
+
 [source,java]
 ----
 @Mutable
@@ -261,6 +265,7 @@ A stream can be created at any time, but its contents will only be not null when
 Does this make sense, and how can we detect it?
 
 . There is only one method that changes the content of a field
-.  The iterator that fills the content is complete, i.e., it is guaranteed to run over all elements (is detectable via rewriting
-with streams, so that `@Size(copy = true))` is present). This iterator must not be conditional.
-.  The value that is set in the content is `@NotNull`. Obviously, when value is `@NotNull1`, the field will get a `@NotNull2`, etc.
+. The iterator that fills the content is complete, i.e., it is guaranteed to run over all elements (is detectable via rewriting with streams, so that `@Size(copy = true))` is present).
+This iterator must not be conditional.
+. The value that is set in the content is `@NotNull`.
+Obviously, when value is `@NotNull1`, the field will get a `@NotNull2`, etc.
