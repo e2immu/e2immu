@@ -81,6 +81,13 @@ public class MethodAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case MODIFIED:
+                // all methods in java.lang.String are @NotModified, but we do not bother writing that down
+                if (!methodInfo.isConstructor &&
+                        MultiLevel.isE2Immutable(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
+                    return Level.FALSE;
+                }
+                return getPropertyCheckOverrides(VariableProperty.MODIFIED);
+
             case FLUENT:
             case IDENTITY:
             case INDEPENDENT:

@@ -24,10 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -47,7 +44,7 @@ public class TestEither extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("getLeftOrElse".equals(d.methodInfo.name) && "orElse".equals(d.variableName) && "1".equals(d.statementId)) {
             Assert.assertEquals("orElse", d.currentValue.toString());
-            Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
     };
 
@@ -60,7 +57,7 @@ public class TestEither extends CommonTestRunner {
                 Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
                 ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
                 Assert.assertEquals("null == left?orElse,@NotNull:left", conditionalValue.toString());
-                Assert.assertEquals(Level.TRUE, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
     };
