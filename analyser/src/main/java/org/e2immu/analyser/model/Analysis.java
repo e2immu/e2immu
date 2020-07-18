@@ -151,76 +151,9 @@ public abstract class Analysis {
 
         boolean isNotAConstructorOrVoidMethod = isNotAConstructorOrVoidMethod();
         if (isNotAConstructorOrVoidMethod) {
-
-            // container and immutable
-            int container = getProperty(VariableProperty.CONTAINER);
-            boolean haveContainer = container == Level.TRUE;
-            boolean noContainer = container == Level.FALSE;
-            int minContainer = minimalValue(VariableProperty.CONTAINER);
-            int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
             boolean isType = this instanceof TypeAnalysis;
 
-            if (noContainer) {
-                annotations.put(typeContext.container.get(), false);
-            }
-            if (isType) {
-                annotations.put(typeContext.modifiesArguments.get(), noContainer);
-            }
-
-            int immutable = getProperty(VariableProperty.IMMUTABLE);
-            if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
-                if (isType) {
-                    annotations.put(typeContext.mutable.get(), false);
-                } else {
-                    annotations.put(typeContext.beforeImmutableMark.get(), false);
-                }
-                annotations.put(typeContext.e1Immutable.get(), false);
-                if (haveContainer) {
-                    if (immutable > minImmutable || container > minContainer) {
-                        annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), true);
-                    }
-                } else {
-                    if (noContainer) annotations.put(typeContext.e2Container.get(), false);
-                    if (immutable > minImmutable) {
-                        annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
-                    }
-                }
-            } else if (immutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE) {
-                if (isType) {
-                    annotations.put(typeContext.mutable.get(), false);
-                }
-                if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-                    annotations.put(typeContext.beforeImmutableMark.get(), true);
-
-                } else {
-                    if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-                        annotations.put(typeContext.beforeImmutableMark.get(), true);
-                    }
-                    if (haveContainer) {
-                        if (immutable > minImmutable || container > minContainer) {
-                            annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
-                        }
-                    } else {
-                        if (noContainer) {
-                            annotations.put(typeContext.e1Container.get(), false);
-                        }
-                        if (immutable > minImmutable) {
-                            annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
-                        }
-                    }
-                }
-            } else {
-                if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
-                    annotations.put(typeContext.beforeImmutableMark.get(), true);
-                } else {
-                    if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
-                    if (isType) {
-                        annotations.put(typeContext.mutable.get(), true);
-                    } else {
-                        annotations.put(typeContext.beforeImmutableMark.get(), false);
-                    }
-                }
-            }
+            doImmutableContainer(typeContext, isType);
 
             boolean doNullable = !isType;
 
@@ -279,6 +212,78 @@ public abstract class Analysis {
 
         // precondition
         preconditionFromAnalysisToAnnotation(typeContext);
+    }
+
+    private void doImmutableContainer(TypeContext typeContext, boolean isType) {
+        // container and immutable
+        int container = getProperty(VariableProperty.CONTAINER);
+        boolean haveContainer = container == Level.TRUE;
+        boolean noContainer = container == Level.FALSE;
+        int minContainer = minimalValue(VariableProperty.CONTAINER);
+        int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
+
+        if (noContainer) {
+            annotations.put(typeContext.container.get(), false);
+        }
+        if (isType) {
+            annotations.put(typeContext.modifiesArguments.get(), noContainer);
+        }
+
+        int immutable = getProperty(VariableProperty.IMMUTABLE);
+        if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+            if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK ||
+                    immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+                annotations.put(typeContext.beforeImmutableMark.get(), true);
+                if (haveContainer) annotations.put(typeContext.container.get(), true);
+            } else {
+                annotations.put(typeContext.e1Immutable.get(), false);
+                if (haveContainer) {
+                    if (immutable > minImmutable || container > minContainer) {
+                        annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), true);
+                    }
+                } else {
+                    if (noContainer) annotations.put(typeContext.e2Container.get(), false);
+                    if (immutable > minImmutable) {
+                        annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
+                    }
+                }
+            }
+        } else if (immutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE) {
+            if (isType) {
+                annotations.put(typeContext.mutable.get(), false);
+            }
+            if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+                annotations.put(typeContext.beforeImmutableMark.get(), true);
+
+            } else {
+                if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
+                    annotations.put(typeContext.beforeImmutableMark.get(), true);
+                }
+                if (haveContainer) {
+                    if (immutable > minImmutable || container > minContainer) {
+                        annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
+                    }
+                } else {
+                    if (noContainer) {
+                        annotations.put(typeContext.e1Container.get(), false);
+                    }
+                    if (immutable > minImmutable) {
+                        annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
+                    }
+                }
+            }
+        } else {
+            if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
+                annotations.put(typeContext.beforeImmutableMark.get(), true);
+            } else {
+                if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
+                if (isType) {
+                    annotations.put(typeContext.mutable.get(), true);
+                } else {
+                    annotations.put(typeContext.beforeImmutableMark.get(), false);
+                }
+            }
+        }
     }
 
     protected boolean isNotAConstructorOrVoidMethod() {

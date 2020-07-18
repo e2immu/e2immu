@@ -114,6 +114,7 @@ public class ObjectFlowFreezableSet {
         SET8.add("xx"); // should throw ERROR!!
     }
 
+    @E2Container(type = AnnotationType.VERIFY_ABSENT)
     @NotNull
     static final FreezableSet SET10 = method6();
 

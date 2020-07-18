@@ -385,6 +385,7 @@ class VariableProperties implements EvaluationContext {
                 objectFlow = fieldObjectFlow;
                 internalObjectFlows.add(objectFlow);
             }
+            objectFlow.addPrevious(fieldReference.fieldInfo.fieldAnalysis.get().getObjectFlow());
         } else {
             // local variable, field reference, this
             // TODO we should have something for fields?

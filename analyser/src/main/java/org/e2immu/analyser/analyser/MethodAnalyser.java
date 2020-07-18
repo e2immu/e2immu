@@ -85,6 +85,8 @@ public class MethodAnalyser {
                 check(methodInfo, Container.class, typeContext.container.get());
                 check(methodInfo, E2Immutable.class, typeContext.e2Immutable.get());
                 check(methodInfo, E2Container.class, typeContext.e2Container.get());
+                check(methodInfo, BeforeImmutableMark.class, typeContext.beforeImmutableMark.get());
+                check(methodInfo, BeforeNotNullMark.class, typeContext.beforeNotNullMark.get());
                 CheckConstant.checkConstantForMethods(typeContext, methodInfo);
             }
 
