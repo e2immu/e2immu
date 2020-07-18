@@ -910,7 +910,7 @@ class VariableProperties implements EvaluationContext {
                 aboutVariable.setCurrentValue(value, value.getObjectFlow());
             }
             int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
-            aboutVariable.setProperty(VariableProperty.ASSIGNED, Math.max(Level.READ_ASSIGN_ONCE, Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, assigned + 1)));
+            aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.incrementReadAssigned(assigned));
 
             aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
             aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,

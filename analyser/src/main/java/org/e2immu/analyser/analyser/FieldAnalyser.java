@@ -211,7 +211,7 @@ public class FieldAnalyser {
             log(SIZE, "Problematic: assignments have lower value than requirements for @Size");
             typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_SIZE_PROBLEM));
         }
-        int finalValue = Math.max(valueFromAssignment, valueFromContext);
+        int finalValue = Level.best(valueFromAssignment, valueFromContext);
         log(SIZE, "Set property @Size on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
         fieldAnalysis.setProperty(VariableProperty.SIZE, finalValue);
         return true;
@@ -257,7 +257,7 @@ public class FieldAnalyser {
             return false; // delay
         }
 
-        int finalNotNullValue = Math.max(valueFromAssignment, valueFromContext);
+        int finalNotNullValue = MultiLevel.bestNotNull(valueFromAssignment, valueFromContext);
         log(NOT_NULL, "Set property @NotNull on field {} to value {}", fieldInfo.fullyQualifiedName(), finalNotNullValue);
 
         if (isFinal == Level.TRUE && MultiLevel.value(finalNotNullValue, MultiLevel.NOT_NULL) == MultiLevel.EFFECTIVE) {

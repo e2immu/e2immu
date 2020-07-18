@@ -137,7 +137,7 @@ public class Instance implements Value {
 
         if (VariableProperty.NOT_NULL == variableProperty) {
             return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
-                    Math.max(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                             bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
         if (variableProperty == VariableProperty.SIZE) {

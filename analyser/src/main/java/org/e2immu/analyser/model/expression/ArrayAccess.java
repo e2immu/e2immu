@@ -93,7 +93,7 @@ public class ArrayAccess implements Expression {
             Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue) expression).variable : null;
             value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
 
-            if (!forwardEvaluationInfo.isAssignmentTarget()) {
+            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 evaluationContext.markRead(dependentVariableName(array, indexValue));
             }
         }

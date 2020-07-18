@@ -105,4 +105,12 @@ public class Level {
     public static int encodeSizeMin(int size) {
         return size * 2 + 1;
     }
+
+    public static int incrementReadAssigned(int read) {
+        return Math.max(Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, read + 1), Level.READ_ASSIGN_ONCE);
+    }
+
+    public static int bestSize(int i, int j) {
+        return Math.max(i, j);
+    }
 }

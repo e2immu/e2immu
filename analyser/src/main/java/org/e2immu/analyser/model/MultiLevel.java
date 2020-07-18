@@ -172,4 +172,8 @@ public class MultiLevel {
     public static boolean isEffectivelyNotNull(int notNull) {
         return value(notNull, 0) >= EVENTUAL_AFTER;
     }
+
+    public static int bestNotNull(int nn1, int nn2) {
+        return Math.max(nn1, nn2);
+    }
 }

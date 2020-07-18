@@ -70,7 +70,7 @@ public class ParameterAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case NOT_NULL:
-                return Math.max(super.getProperty(VariableProperty.NOT_NULL), notNullFromOwner());
+                return MultiLevel.bestNotNull(super.getProperty(VariableProperty.NOT_NULL), notNullFromOwner());
 
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
@@ -133,7 +133,7 @@ public class ParameterAnalysis extends Analysis {
             case SIZE:
                 int modified = getProperty(VariableProperty.MODIFIED);
                 if (modified != Level.FALSE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
-                return Math.max(1, parameterizedType.getProperty(variableProperty));
+                return Level.bestSize(1, parameterizedType.getProperty(variableProperty));
 
             case MODIFIED:
                 if (notModifiedBecauseOfImmutableStatus()) return Integer.MAX_VALUE;

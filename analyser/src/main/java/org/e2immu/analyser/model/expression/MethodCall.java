@@ -83,7 +83,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
-                VariableProperty.MODIFIED, modifiedValue), false));
+                VariableProperty.MODIFIED, modifiedValue), true));
 
 
         // null scope
@@ -107,6 +107,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 evaluationContext.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
+        if (modified == Level.TRUE && objectValue instanceof ValueWithVariable) {
+            Variable variable = ((ValueWithVariable) objectValue).variable;
+            evaluationContext.modifyingMethodAccess(variable);
+        }
+
         // @Only check
         checkOnly(objectFlow, evaluationContext);
 
@@ -123,13 +128,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             objectFlowOfResult = ObjectFlow.NO_FLOW;
         }
-        Value result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
 
-        checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
+        Value result;
+        if (!methodInfo.isVoid()) {
+            checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
 
-        if (modified == Level.TRUE && objectValue instanceof ValueWithVariable) {
-            Variable variable = ((ValueWithVariable) objectValue).variable;
-            evaluationContext.modifyingMethodAccess(variable);
+            result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
+        } else {
+            result = UnknownValue.NO_RETURN_VALUE;
         }
 
         visitor.visit(this, evaluationContext, result);
@@ -234,7 +240,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {
         // compliance with current requirements
         int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (requiredNotNull > MultiLevel.NULLABLE) {
+        if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
             boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodAnalysis.getProperty(VariableProperty.NOT_NULL));
             if (!isNotNull) {
                 evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method call " + methodInfo.distinguishingName());

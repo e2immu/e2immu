@@ -81,12 +81,6 @@ public class MethodAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case MODIFIED:
-                //if (!methodInfo.isConstructor && Level.haveTrueAt(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), Level.E2IMMUTABLE)
-                //        && getObjectFlow().conditionsMetForEventual(typeInfo)) {
-                //    return Level.FALSE;
-                //}
-                //return getPropertyCheckOverrides(variableProperty);
-
             case FLUENT:
             case IDENTITY:
             case INDEPENDENT:
@@ -97,9 +91,9 @@ public class MethodAnalysis extends Analysis {
                 if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
                 int fluent = getProperty(VariableProperty.FLUENT);
-                if (fluent == Level.TRUE) return Level.best(Level.TRUE,
+                if (fluent == Level.TRUE) return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                         typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                return Level.best(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
+                return MultiLevel.bestNotNull(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
 
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())

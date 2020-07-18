@@ -140,7 +140,7 @@ public class ConditionalValue implements Value {
     private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (variableProperty == VariableProperty.SIZE) {
             // contrary to null situation, we never have a negation because not equals to 0 is written as >= 1
-            return Math.max(checkSizeRestriction(evaluationContext, condition, ifTrue, ifFalse),
+            return Level.bestSize(checkSizeRestriction(evaluationContext, condition, ifTrue, ifFalse),
                     checkSizeRestriction(evaluationContext, NegatedValue.negate(condition), ifFalse, ifTrue));
         }
         if (variableProperty == VariableProperty.NOT_NULL) {

@@ -30,6 +30,7 @@ public class UnknownValue implements Value {
     public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
 
     public static final UnknownValue RETURN_VALUE = new UnknownValue("<return value>");
+    public static final UnknownValue NO_RETURN_VALUE = new UnknownValue("<no return value>");
 
     private final String msg;
 
