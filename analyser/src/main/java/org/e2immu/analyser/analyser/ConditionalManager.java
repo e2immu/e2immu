@@ -74,9 +74,7 @@ public class ConditionalManager {
     }
 
     public int notNull(Value value) {
-
-        // TODO to which extent is this correct ?
-
+        if (conditional == null || delayedConditional()) return Level.DELAY;
 
         // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
         // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
@@ -84,19 +82,15 @@ public class ConditionalManager {
         if (equalsNull == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL;
         Value withConditional = combineWithConditional(equalsNull);
         if (withConditional == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
-        if (withConditional.equals(equalsNull)) return MultiLevel.FALSE; // we know == null
+        if (withConditional.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
         return Level.DELAY;
     }
 
-    // return the size restriction on value represented by the current condition
-    public int sizeRestriction(Value value) {
-        throw new UnsupportedOperationException();
-    }
-
-
     public boolean isNotNull(Variable variable) {
+        if (conditional == null || delayedConditional()) return false;
+
         VariableValue vv = new VariableValue(null, variable, variable.name());
-        return notNull(vv) == Level.TRUE;
+        return MultiLevel.isEffectivelyNotNull(notNull(vv));
     }
 
     public boolean haveConditional() {

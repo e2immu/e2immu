@@ -399,7 +399,7 @@ public class StatementAnalyser {
 
         // PART 5: checks for ReturnStatement
 
-        if (statement.statement instanceof ReturnStatement) {
+        if (statement.statement instanceof ReturnStatement && !methodInfo.isVoid() && !methodInfo.isConstructor) {
             String statementId = statement.streamIndices();
             TransferValue transferValue;
             if (methodAnalysis.returnStatementSummaries.isSet(statementId)) {

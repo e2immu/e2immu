@@ -401,11 +401,6 @@ class VariableProperties implements EvaluationContext {
         if (variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             if (!fieldInfo.hasBeenDefined() || aboutVariable.resetValue instanceof VariableValue) {
-                //     // copy everything??? wh
-                //     fieldInfo.fieldAnalysis.get().properties.visit(aboutVariable::setProperty);
-                // } else {
-                // from libraries...
-                // the difference now is that absence of info means that the property is false
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                     int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, Level.FALSE);
                     aboutVariable.setProperty(variableProperty, value);
@@ -413,10 +408,10 @@ class VariableProperties implements EvaluationContext {
             }
         } else if (variable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
-            // SIZE, NOT_NULL
-
-            int immutable = parameterAnalysis.properties.getOtherwise(IMMUTABLE, MultiLevel.MUTABLE);
+            int immutable = parameterAnalysis.getProperty(IMMUTABLE);
             aboutVariable.setProperty(IMMUTABLE, immutable);
+        } else if (variable instanceof This) {
+            aboutVariable.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         }
 
         // copied over the existing one
@@ -840,14 +835,10 @@ class VariableProperties implements EvaluationContext {
         }
         // we need to call the getProperty on value, but check the local condition...
         if (!(value instanceof Constant) && conditionalManager.haveConditional() && !conditionalManager.conditionalInErrorState()) {
-            if (VariableProperty.NOT_NULL.equals(variableProperty)) {
+            if (VariableProperty.NOT_NULL == variableProperty) {
                 int notNull = conditionalManager.notNull(value);
                 if (notNull != Level.DELAY) return notNull;
-            } else if (VariableProperty.SIZE.equals(variableProperty)) {
-                // action: we try to extract a size restriction related to value
-                // if it's there, it needs translation into a size restriction
-                // TODO
-            }
+            } // TODO Size?
         }
         // redirect to Value.getProperty()
         // this is the only usage of this method; all other evaluation of a Value in an evaluation context

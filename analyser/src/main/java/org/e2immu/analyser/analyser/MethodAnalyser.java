@@ -151,6 +151,8 @@ public class MethodAnalyser {
             if (makeInternalObjectFlowsPermanent(methodInfo, methodAnalysis, methodProperties)) changes = true;
             if (!methodInfo.isConstructor) {
                 if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
+                    // internal check
+                    if(methodInfo.isVoid()) throw new UnsupportedOperationException();
                     if (propertiesOfReturnStatements(methodInfo, methodAnalysis))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
