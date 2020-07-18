@@ -23,6 +23,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 
@@ -109,6 +110,12 @@ public class ParameterAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
+    @Override
+    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
+        // TODO can be better!
+        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
+    }
+
     private int notNullFromOwner() {
         if (owner == null) return MultiLevel.DELAY;
         return owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS);
@@ -141,8 +148,7 @@ public class ParameterAnalysis extends Analysis {
 
             case CONTAINER:
             case IMMUTABLE:
-                // TODO
-                return parameterizedType.getProperty(variableProperty);
+                throw new UnsupportedOperationException();
 
             default:
         }

@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@ModifiesArguments
+@E2Immutable
 public class ObjectFlowFreezableSet {
 
     @E2Container(after = "mark")

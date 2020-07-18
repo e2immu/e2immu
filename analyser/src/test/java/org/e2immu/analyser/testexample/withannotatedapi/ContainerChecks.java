@@ -78,7 +78,7 @@ public class ContainerChecks {
     // variant of the second example: the add method breaks the contract;
     // this works easily because strings2b is final
     @Container(type = VERIFY_ABSENT)
-    @ModifiesArguments
+    @E1Immutable // which implies NOT container
     static class Container2b {
 
         @Linked(to = "strings2param")

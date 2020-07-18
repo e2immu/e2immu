@@ -149,6 +149,8 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         if ("SET5".equals(fieldInfo.name) && iteration > 0) {
             int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
+            int container = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.CONTAINER);
+            Assert.assertEquals(Level.TRUE, container);
         }
         if ("SET10".equals(fieldInfo.name) && iteration > 0) {
             ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
@@ -164,6 +166,8 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
             int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
+            int container = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.CONTAINER);
+            Assert.assertEquals(Level.TRUE, container);
         }
     };
 

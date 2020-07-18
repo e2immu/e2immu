@@ -25,6 +25,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -106,11 +107,10 @@ public class MethodAnalysis extends Analysis {
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
                     throw new UnsupportedOperationException(); //we should not even be asking
-                int immutableType = returnType.getProperty(VariableProperty.IMMUTABLE);
-                if (immutableType == Level.DELAY) return Level.DELAY;
 
-                int immutableTypeAfterEventual = MultiLevel.eventual(immutableType, getObjectFlow().conditionsMetForEventual(returnType));
-                return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
+                int immutableType = formalImmutableProperty();
+                int immutableDynamic = dynamicImmutableProperty(immutableType);
+                return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
@@ -124,14 +124,31 @@ public class MethodAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
+    private int dynamicImmutableProperty(int formalImmutableProperty) {
+        int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
+        return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
+    }
+
+    private int formalImmutableProperty() {
+        return returnType.getProperty(VariableProperty.IMMUTABLE);
+    }
+
+    @Override
+    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
+        int immutableType = formalImmutableProperty();
+        int immutableDynamic = dynamicImmutableProperty(immutableType);
+        boolean dynamicBetter = MultiLevel.isBetterImmutable(immutableDynamic, immutableType);
+        return new Pair<>(dynamicBetter, dynamicBetter ? immutableDynamic : immutableType);
+    }
+
     @Override
     protected boolean isNotAConstructorOrVoidMethod() {
         return !methodInfo.isVoid() && !methodInfo.isConstructor;
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
-        IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty, Level.DELAY));
-        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
+        IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
+        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
         int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
         if (max == Level.DELAY && !hasBeenDefined) {
             // no information found in the whole hierarchy
@@ -160,13 +177,10 @@ public class MethodAnalysis extends Analysis {
                 return 1;
 
             case IMMUTABLE:
-                // we show @ExImmutable on the method only when it is eventual, and the conditions have been met
-                return returnType.isEventual() && getObjectFlow().conditionsMetForEventual(returnType)
-                        ? Level.UNDEFINED : returnType.getProperty(variableProperty);
-
             case CONTAINER:
-                // we don't show @Container on the method
-                return returnType.getProperty(variableProperty);
+                // we show @ExImmutable on the method only when it is eventual, and the conditions have been met
+                throw new UnsupportedOperationException("Separate computation");
+
             default:
         }
         return Level.UNDEFINED;
@@ -175,9 +189,11 @@ public class MethodAnalysis extends Analysis {
     @Override
     public int maximalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
+            case IMMUTABLE:
+                throw new UnsupportedOperationException("Separate computation");
             case INDEPENDENT:
             case MODIFIED:
-                IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty, Level.DELAY));
+                IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
                 IntStream overrideTypes = overrides.stream().mapToInt(mi -> !mi.isPrivate() && MultiLevel.isE2Immutable(mi.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE)) ? Level.FALSE : Level.DELAY);
                 int max = IntStream.concat(overrideTypes, overrideValues).max().orElse(Level.DELAY);
                 if (max == Level.FALSE) return Level.TRUE;

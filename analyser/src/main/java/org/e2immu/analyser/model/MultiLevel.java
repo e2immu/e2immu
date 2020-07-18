@@ -176,4 +176,12 @@ public class MultiLevel {
     public static int bestNotNull(int nn1, int nn2) {
         return Math.max(nn1, nn2);
     }
+
+    public static int bestImmutable(int imm1, int imm2) {
+        return isBetterImmutable(imm1, imm2) ? imm1 : imm2;
+    }
+
+    public static boolean isBetterImmutable(int immutableDynamic, int immutableType) {
+        return immutableDynamic > immutableType;
+    }
 }

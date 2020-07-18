@@ -56,7 +56,20 @@ public class TestGenerateAnnotationsImmutable {
 
     @Test
     public void testEventual() {
+        Assert.assertEquals(Map.of(E1Immutable.class, Map.of("after", "mark")),
+                generate(EVENTUALLY_E1IMMUTABLE, 0, true, "mark", false));
+        Assert.assertEquals(Map.of(E2Immutable.class, Map.of("after", "mark")),
+                generate(EVENTUALLY_E2IMMUTABLE, 0, true, "mark", false));
+        Assert.assertEquals(Map.of(E1Container.class, Map.of("after", "mark")),
+                generate(EVENTUALLY_E1IMMUTABLE, 1, true, "mark", true));
+        Assert.assertEquals(Map.of(E2Container.class, Map.of("after", "mark2")),
+                generate(EVENTUALLY_E2IMMUTABLE, 1, true, "mark2", true));
 
+        Assert.assertTrue(generate(EVENTUALLY_E1IMMUTABLE, 0, false, "mark", false).isEmpty());
+        Assert.assertTrue(generate(EVENTUALLY_E2IMMUTABLE, 1, false, "mark", false).isEmpty());
+
+        Assert.assertEquals(Map.of(E2Container.class, TRUE),
+                generate(EVENTUALLY_E2IMMUTABLE, 1, false, "mark2", true));
     }
 
     @Test
@@ -87,7 +100,7 @@ public class TestGenerateAnnotationsImmutable {
     public void testOnlyContainer() {
         Assert.assertTrue(generate(MUTABLE, 0, false).isEmpty());
         Assert.assertTrue(generate(MUTABLE, 1, false).isEmpty());
-        Assert.assertTrue(generate(MUTABLE, 0, true).isEmpty());
-        Assert.assertEquals(Map.of(Container.class, TRUE), generate(MUTABLE, 1, true));
+        Assert.assertEquals(Map.of(Mutable.class, TRUE, ModifiesArguments.class, TRUE), generate(MUTABLE, 0, true));
+        Assert.assertEquals(Map.of(Mutable.class, TRUE, Container.class, TRUE), generate(MUTABLE, 1, true));
     }
 }

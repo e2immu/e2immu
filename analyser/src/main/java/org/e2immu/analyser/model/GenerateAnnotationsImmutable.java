@@ -9,8 +9,13 @@ import java.util.Map;
 in a separate class to make this unit testable; there's too many different cases...
  */
 
+@UtilityClass
 public class GenerateAnnotationsImmutable {
     public static final Map<String, String> TRUE = Map.of();
+
+    private GenerateAnnotationsImmutable() {
+        throw new UnsupportedOperationException();
+    }
 
     public static Map<Class<?>, Map<String, String>> generate(int immutable, int container, boolean isType) {
         return generate(immutable, container, isType, "abc", false);
@@ -31,6 +36,7 @@ public class GenerateAnnotationsImmutable {
             } else if (betterThanFormal) {
                 res.put(key, TRUE);
             }
+            return res;
         }
 
         // BEFORE
@@ -64,8 +70,13 @@ public class GenerateAnnotationsImmutable {
             return res;
         }
 
-        if (haveContainer && isType) {
-            res.put(Container.class, TRUE);
+        if(isType) {
+            if (haveContainer) {
+                res.put(Container.class, TRUE);
+            } else if(container == Level.FALSE) {
+                res.put(ModifiesArguments.class, TRUE);
+            }
+            res.put(Mutable.class, TRUE);
         }
         return res;
     }

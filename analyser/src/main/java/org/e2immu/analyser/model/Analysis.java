@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.AnnotationType;
@@ -83,8 +84,10 @@ public abstract class Analysis {
         return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
-    protected int getPropertyAsIs(VariableProperty variableProperty, int orElse) {
-        return properties.getOtherwise(variableProperty, orElse);
+    public abstract Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal();
+
+    protected int getPropertyAsIs(VariableProperty variableProperty) {
+        return properties.getOtherwise(variableProperty, Level.DELAY);
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -215,89 +218,30 @@ public abstract class Analysis {
     }
 
     private void doImmutableContainer(TypeContext typeContext, boolean isType) {
-        // container and immutable
+        Pair<Boolean, Integer> pair = getImmutablePropertyAndBetterThanFormal();
+        int immutable = pair.v;
+        boolean betterThanFormal = pair.k;
         int container = getProperty(VariableProperty.CONTAINER);
-        boolean haveContainer = container == Level.TRUE;
-        boolean noContainer = container == Level.FALSE;
-        int minContainer = minimalValue(VariableProperty.CONTAINER);
-        int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
-
-        if (noContainer) {
-            annotations.put(typeContext.container.get(), false);
-        }
-        if (isType) {
-            annotations.put(typeContext.modifiesArguments.get(), noContainer);
-        }
-
-        int immutable = getProperty(VariableProperty.IMMUTABLE);
-        if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
-            if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK ||
-                    immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-                annotations.put(typeContext.beforeImmutableMark.get(), true);
-                if (haveContainer) annotations.put(typeContext.container.get(), true);
+        String mark;
+        boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
+        if (eventual) {
+            mark = ((TypeAnalysis) this).approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.joining(", "));
+        } else mark = "";
+        Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, mark, betterThanFormal);
+        for (Map.Entry<Class<?>, Map<String, String>> entry : map.entrySet()) {
+            List<Expression> list;
+            if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
+                list = List.of();
             } else {
-                annotations.put(typeContext.e1Immutable.get(), false);
-                if (haveContainer) {
-                    if (immutable > minImmutable || container > minContainer) {
-                        annotations.put(makeEventualAnnotation(typeContext.e2Container.get(), true), true);
-                    }
-                } else {
-                    if (noContainer) annotations.put(typeContext.e2Container.get(), false);
-                    if (immutable > minImmutable) {
-                        annotations.put(makeEventualAnnotation(typeContext.e2Immutable.get(), true), true);
-                    }
-                }
+                list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(), new StringConstant(e.getValue()))).collect(Collectors.toList());
             }
-        } else if (immutable >= MultiLevel.EVENTUALLY_E1IMMUTABLE) {
-            if (isType) {
-                annotations.put(typeContext.mutable.get(), false);
-            }
-            if (immutable == MultiLevel.EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-                annotations.put(typeContext.beforeImmutableMark.get(), true);
-
-            } else {
-                if (immutable == MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK) {
-                    annotations.put(typeContext.beforeImmutableMark.get(), true);
-                }
-                if (haveContainer) {
-                    if (immutable > minImmutable || container > minContainer) {
-                        annotations.put(makeEventualAnnotation(typeContext.e1Container.get(), true), true);
-                    }
-                } else {
-                    if (noContainer) {
-                        annotations.put(typeContext.e1Container.get(), false);
-                    }
-                    if (immutable > minImmutable) {
-                        annotations.put(makeEventualAnnotation(typeContext.e1Immutable.get(), true), true);
-                    }
-                }
-            }
-        } else {
-            if (immutable == MultiLevel.EVENTUALLY_E1IMMUTABLE_BEFORE_MARK) {
-                annotations.put(typeContext.beforeImmutableMark.get(), true);
-            } else {
-                if (haveContainer && container > minContainer) annotations.put(typeContext.container.get(), true);
-                if (isType) {
-                    annotations.put(typeContext.mutable.get(), true);
-                } else {
-                    annotations.put(typeContext.beforeImmutableMark.get(), false);
-                }
-            }
+            AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(typeContext.getFullyQualified(entry.getKey()), list);
+            annotations.put(expression, true);
         }
     }
 
     protected boolean isNotAConstructorOrVoidMethod() {
         return true;
-    }
-
-    private AnnotationExpression makeEventualAnnotation(AnnotationExpression annotationExpression, boolean after) {
-        boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
-        if (eventual) {
-            String csv = ((TypeAnalysis) this).approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.joining(", "));
-            return AnnotationExpression.fromAnalyserExpressions(annotationExpression.typeInfo,
-                    List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(csv))));
-        }
-        return annotationExpression;
     }
 
     protected void preconditionFromAnalysisToAnnotation(TypeContext typeContext) {

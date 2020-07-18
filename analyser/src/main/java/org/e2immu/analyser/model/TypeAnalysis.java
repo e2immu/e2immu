@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -57,6 +58,11 @@ public class TypeAnalysis extends Analysis {
     protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
         ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_ALL);
         return Arrays.stream(elements).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
+        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
     }
 
     @Override

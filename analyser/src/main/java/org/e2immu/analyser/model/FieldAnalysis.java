@@ -23,6 +23,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -109,11 +110,19 @@ public class FieldAnalysis extends Analysis {
                 if (myProperty == Level.DELAY) return Level.DELAY;
                 return Level.best(immutableType, myProperty);
 
+            // container is, for fields, a property purely on the type
+            case CONTAINER:
+                return bestType == null ? Level.TRUE : bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
+
             default:
         }
         return super.getProperty(variableProperty);
     }
 
+    @Override
+    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
+        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
+    }
 
     @Override
     public int maximalValue(VariableProperty variableProperty) {
