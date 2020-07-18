@@ -82,8 +82,9 @@ public class MethodAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED:
                 // all methods in java.lang.String are @NotModified, but we do not bother writing that down
+                // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
                 if (!methodInfo.isConstructor &&
-                        MultiLevel.isE2Immutable(typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
+                        typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }
                 return getPropertyCheckOverrides(VariableProperty.MODIFIED);
