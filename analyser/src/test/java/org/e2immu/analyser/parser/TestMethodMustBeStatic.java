@@ -5,6 +5,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,14 +19,11 @@ public class TestMethodMustBeStatic extends CommonTestRunner {
         super(false);
     }
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo stream = typeContext.getFullyQualified(Stream.class);
-            Assert.assertNotNull(stream);
-            MethodInfo of = stream.typeInspection.get().methods.stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
-            Assert.assertEquals(0, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo stream = typeContext.getFullyQualified(Stream.class);
+        Assert.assertNotNull(stream);
+        MethodInfo of = stream.typeInspection.get().methods.stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
+        Assert.assertEquals(MultiLevel.NULLABLE, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     @Test
