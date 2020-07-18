@@ -422,11 +422,13 @@ public class MethodAnalyser {
         return changes;
     }
 
+    // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
+    // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
     private boolean propertyOfReturnStatements(VariableProperty variableProperty,
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
-        if (currentValue != Level.DELAY) return false;
+        if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL) return false;
 
         boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(variableProperty));
         if (delays) {

@@ -805,7 +805,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param translationMap from the type parameters of this to the concrete types of the sub-type
      * @return the method of this, if deemed the same
      */
-    private MethodInfo findMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
+    private MethodInfo findUniqueMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
         for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
             if (methodInfo.sameMethod(target, translationMap)) {
                 return methodInfo;
@@ -895,7 +895,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                     index++;
                 }
             }
-            MethodInfo override = superType.typeInfo.findMethod(methodInfo, translationMapOfSuperType);
+            MethodInfo override = superType.typeInfo.findUniqueMethod(methodInfo, translationMapOfSuperType);
             if (override != null) {
                 result.add(override);
             }
@@ -1099,5 +1099,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isEffectivelyE2Immutable() {
         return typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+    }
+
+    public MethodInfo findUniqueMethod(String methodName, int parameters) {
+        return typeInspection.get().methods.stream().
+                filter(m -> m.name.equals(methodName) && m.methodInspection.get().parameters.size() == parameters)
+                .findAny().orElseThrow();
     }
 }

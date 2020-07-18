@@ -149,23 +149,24 @@ public abstract class Analysis {
             }
         }
 
-        // container and immutable
-        int container = getProperty(VariableProperty.CONTAINER);
-        boolean haveContainer = container == Level.TRUE;
-        boolean noContainer = container == Level.FALSE;
-        int minContainer = minimalValue(VariableProperty.CONTAINER);
-        int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
-        boolean isType = this instanceof TypeAnalysis;
-
-        if (noContainer) {
-            annotations.put(typeContext.container.get(), false);
-        }
-        if (isType) {
-            annotations.put(typeContext.modifiesArguments.get(), noContainer);
-        }
-
         boolean isNotAConstructorOrVoidMethod = isNotAConstructorOrVoidMethod();
-        if(isNotAConstructorOrVoidMethod) {
+        if (isNotAConstructorOrVoidMethod) {
+
+            // container and immutable
+            int container = getProperty(VariableProperty.CONTAINER);
+            boolean haveContainer = container == Level.TRUE;
+            boolean noContainer = container == Level.FALSE;
+            int minContainer = minimalValue(VariableProperty.CONTAINER);
+            int minImmutable = minimalValue(VariableProperty.IMMUTABLE);
+            boolean isType = this instanceof TypeAnalysis;
+
+            if (noContainer) {
+                annotations.put(typeContext.container.get(), false);
+            }
+            if (isType) {
+                annotations.put(typeContext.modifiesArguments.get(), noContainer);
+            }
+
             int immutable = getProperty(VariableProperty.IMMUTABLE);
             if (immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
                 if (isType) {
@@ -220,9 +221,7 @@ public abstract class Analysis {
                     }
                 }
             }
-        }
-
-        if(isNotAConstructorOrVoidMethod) {
+            
             boolean doNullable = !isType;
 
             // not null

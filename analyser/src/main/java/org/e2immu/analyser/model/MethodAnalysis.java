@@ -111,12 +111,12 @@ public class MethodAnalysis extends Analysis {
                 return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
 
             case CONTAINER:
-                // don't understand why this code is here... return type @E2Immutable does NOT imply container
-                //  if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR) return Level.FALSE;
-                //  if (Level.haveTrueAt(returnType.getProperty(variableProperty), Level.E2IMMUTABLE)) {
-                //      return variableProperty.best;
-                //   }
-                //  return super.getProperty(variableProperty);
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
+                    throw new UnsupportedOperationException(); //we should not even be asking
+                int container = returnType.getProperty(VariableProperty.CONTAINER);
+                if (container == Level.DELAY) return Level.DELAY;
+                return Level.best(getPropertyCheckOverrides(VariableProperty.CONTAINER), container);
+
             default:
         }
         return super.getProperty(variableProperty);
