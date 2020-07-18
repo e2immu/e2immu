@@ -338,8 +338,9 @@ public class StatementAnalyser {
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
                 variableProperties.createLocalVariableOrParameter(lvr);
-                if (assignedInLoop)
-                    variableProperties.addProperty(theLocalVariableReference, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                if (assignedInLoop) {
+                    variableProperties.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                }
             }
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);

@@ -402,7 +402,8 @@ class VariableProperties implements EvaluationContext {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             if (!fieldInfo.hasBeenDefined() || aboutVariable.resetValue instanceof VariableValue) {
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-                    int value = fieldInfo.fieldAnalysis.get().properties.getOtherwise(variableProperty, variableProperty.falseValue);
+                    int value = fieldInfo.fieldAnalysis.get().getProperty(variableProperty);
+                    if (value == Level.DELAY) value = variableProperty.falseValue;
                     aboutVariable.setProperty(variableProperty, value);
                 }
             }
@@ -463,6 +464,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
+        Objects.requireNonNull(variable);
         AboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return;
         int current = aboutVariable.getProperty(variableProperty);

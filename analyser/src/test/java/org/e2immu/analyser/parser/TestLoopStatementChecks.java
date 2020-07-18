@@ -39,13 +39,13 @@ public class TestLoopStatementChecks extends CommonTestRunner {
             if ("method3".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
                 Assert.assertNotNull(tv);
-                Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
-                Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.NOT_NULL)); // (3)
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL)); // (3)
             }
             if ("method3bis".equals(methodInfo.name)) {
                 TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
                 Assert.assertNotNull(tv);
-                Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -62,7 +62,7 @@ public class TestLoopStatementChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method3".equals(d.methodInfo.name) && "res".equals(d.variableName)) {
             if ("2".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL)); // (1)
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL)); // (1)
             }
         }
         if ("method1".equals(d.methodInfo.name) && "res1".equals(d.variableName)) {
