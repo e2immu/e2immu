@@ -66,7 +66,7 @@ class VariableProperties implements EvaluationContext {
     final DependencyGraph<Variable> dependencyGraphWorstCase;
 
     // modified by adding errors
-    final Messages messages = new Messages();
+    final Messages messages;
     final TypeContext typeContext;
 
     // the rest should be not modified
@@ -87,7 +87,7 @@ class VariableProperties implements EvaluationContext {
     private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
     private final Set<ObjectFlow> internalObjectFlows;
 
-    // in type analyser, for fields
+    // TEST ONLY, in type analyser, for fields
     public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
         this(typeContext, currentType, iteration, debugConfiguration, null, null, new HashSet<>());
     }
@@ -124,6 +124,7 @@ class VariableProperties implements EvaluationContext {
         guaranteedToBeReachedByParentStatement = true;
         inSyncBlock = currentMethod != null && currentMethod.isSynchronized();
         this.internalObjectFlows = internalObjectFlows;
+        this.messages = new Messages();
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
@@ -158,6 +159,7 @@ class VariableProperties implements EvaluationContext {
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
         this.internalObjectFlows = parent.internalObjectFlows;
+        this.messages = parent.messages;
     }
 
     @Override

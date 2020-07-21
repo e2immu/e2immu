@@ -151,7 +151,7 @@ public class TypeAnalyser {
                     for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
                         methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
                     }
-
+                    messages.addAll(methodProperties.messages);
                 } else {
                     FieldInfo fieldInfo = (FieldInfo) member;
                     // these are the "hidden" methods: fields of functional interfaces
@@ -170,6 +170,7 @@ public class TypeAnalyser {
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
                                 methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
                             }
+                            messages.addAll(methodProperties.messages);
                         }
                     }
 
@@ -182,6 +183,7 @@ public class TypeAnalyser {
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
                         fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
+                    messages.addAll(fieldProperties.messages);
                 }
             }
 
