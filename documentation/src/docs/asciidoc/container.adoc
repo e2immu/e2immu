@@ -1,0 +1,46 @@
+=== Containers
+
+The current definition of a container is that of a type which does not modify the parameters of its methods.
+It ensures that a container does not modify the objects that it holds, much like a shipping container: you have no idea how the objects will be packed together, where they will be delivered, but they'll come out intact in the end.
+
+NOTE: Explicitly marked `@Output` parameters are exempt from this requirement to allow for frameworks like vertx.io which use a parameter to return values, the method typically being `@Fluent`.
+
+Many `@E2Immutable` types will be containers.
+Builders for `@E2Immutable` types, which by nature are not immutable in any way, will often be containers as well.
+Non-containers are typically long-lived mutable objects, passed around in the code.
+
+If we define a type to be `@NotNullX` if all its accessible data (non-private fields, return values of methods, output of parameters) is not null (at level X), the combination with container simply drops the third way of accessing data: via the modification of parameters.
+
+Using these definitions, we will ensure that the common collections in the JDK are `@NotNull1 @Container`, by removing the possibility of storing `null` as a value in the collection.
+(We achieve the `@Container` property by adding an `@Output` annotation to the `toArray(T[])` method.)
+Immutable collections (like `Set.of()`, or the Guava `ImmutableSet`) will become `@NotNull1 @E2Container`.
+
+We allow for not-null and immutable properties to be eventual; we do not allow this for the container property.
+
+==== In the implementation of the analyser
+
+The `EvaluationContext`, which is modified during analysis, is passed on as an argument to the `evaluate` method of every `Expression` implementation.
+As a consequence, almost none of the `Expression` implementations can be a `@Container`.
+
+This could be overcome by not modifying the evaluation context in the `Expression` methods, but by returning change sets which are applied after an evaluation step.
+Given the stack-like nature of recursive analysis of expressions and statements, that may not be such a bad idea at all.
+
+The current signature is:
+[source,java]
+----
+public Value evaluate(@Modified EvaluationContext evaluationContext,
+                      EvaluationVisitor visitor,
+                      ForwardEvaluationInfo forwardEvaluationInfo);
+----
+We could refactor it to become:
+[source,java]
+----
+public Pair<Value,EvaluationContext> evaluate(
+        @NotModified EvaluationContext evaluationContext,
+        EvaluationVisitor visitor,
+        ForwardEvaluationInfo forwardEvaluationInfo) {
+----
+This approach is much more functional, immutable in nature.
+
+Part of the evaluation context, the current `TypeContext` object contains an error registry which will be written to over the course of type, method and field analysis.
+If we split that off, the type context becomes eventually content immutable, content not null after the inspection phase.

@@ -23,11 +23,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Means that this method returns a functional interface whose return value
- * cannot be null. Same reasoning applies to fields.
+ * Marks that the content of content is not null
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE, ElementType.PARAMETER})
 public @interface NotNull2 {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    /**
+     * @return when the type is effectively content's content not null.
+     */
+    String after() default "";
 }

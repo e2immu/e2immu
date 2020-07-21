@@ -20,14 +20,18 @@ package org.e2immu.analyser.parser;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Location;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.Map;
+import java.util.Objects;
 
+@E2Container
+@NotNull // but not @NotNull1, Location has many null components
 public class Message {
 
     public enum Severity {
-        DEBUG,
-        INFO,
         WARN,
         ERROR
     }
@@ -79,6 +83,7 @@ public class Message {
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
 
+    @NotNull1 @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
@@ -144,9 +149,9 @@ public class Message {
     }
 
     public Message(Severity severity, Location location, String message) {
-        this.message = message;
-        this.severity = severity;
-        this.location = location;
+        this.message = Objects.requireNonNull(message);
+        this.severity = Objects.requireNonNull(severity);
+        this.location = Objects.requireNonNull(location);
     }
 
     @Override
