@@ -29,7 +29,6 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -49,13 +49,11 @@ import static org.e2immu.analyser.util.Logger.log;
 public class StatementAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
-    private final TypeContext typeContext;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
     private final Messages messages = new Messages();
 
-    public StatementAnalyser(TypeContext typeContext, MethodInfo methodInfo) {
-        this.typeContext = typeContext;
+    public StatementAnalyser(MethodInfo methodInfo) {
         this.methodAnalysis = methodInfo.methodAnalysis.get();
         this.methodInfo = methodInfo;
     }
@@ -609,6 +607,10 @@ public class StatementAnalyser {
                 .flatMap(a -> a.assignmentTarget().stream())
                 .filter(variableProperties::isKnown)
                 .collect(Collectors.toSet());
+    }
+
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
     }
 
     // recursive evaluation of an Expression

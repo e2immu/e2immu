@@ -32,6 +32,7 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -69,6 +70,11 @@ public class TypeAnalyser {
         fieldAnalyser = new FieldAnalyser(typeContext);
         methodAnalyser = new MethodAnalyser(typeContext);
         this.typeContext = Objects.requireNonNull(typeContext);
+    }
+
+    public Stream<Message> getMessageStream() {
+        return Stream.concat(Stream.concat(fieldAnalyser.getMessageStream(),
+                methodAnalyser.getMessageStream()), messages.getMessageStream());
     }
 
     public void check(SortedType sortedType) {
@@ -426,7 +432,7 @@ public class TypeAnalyser {
         // RULE 5: RETURN TYPES
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            if(methodInfo.isVoid()) continue; // we're looking at return types
+            if (methodInfo.isVoid()) continue; // we're looking at return types
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             // in the eventual case, we only need to look at the non-modifying methods
             if (modified == Level.FALSE || !eventual) {

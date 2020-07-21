@@ -37,6 +37,7 @@ import org.e2immu.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -659,5 +660,9 @@ public class FieldAnalyser {
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
         });
+    }
+
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
     }
 }

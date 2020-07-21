@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -59,13 +60,12 @@ public class MethodAnalyser {
 
     private final TypeContext typeContext;
     private final ParameterAnalyser parameterAnalyser;
-    private final ComputeLinking computeLinking;
+    private final ComputeLinking computeLinking = new ComputeLinking();
     private final Messages messages = new Messages();
 
     public MethodAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
         this.parameterAnalyser = new ParameterAnalyser(typeContext);
-        this.computeLinking = new ComputeLinking(typeContext);
     }
 
     public void check(MethodInfo methodInfo) {
@@ -146,7 +146,7 @@ public class MethodAnalyser {
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
 
             // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
-            if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, methodInfo, methodProperties))
+            if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, messages, methodInfo, methodProperties))
                 changes = true;
             if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
@@ -714,5 +714,9 @@ public class MethodAnalyser {
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    public Stream<Message> getMessageStream() {
+        return Stream.concat(messages.getMessageStream(), parameterAnalyser.getMessageStream());
     }
 }

@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -123,5 +124,9 @@ public class ParameterAnalyser {
         boolean accept = modified != Level.TRUE;
         log(SIZE, "To copy the SIZE property on {}, we look at MODIFIED. Copy? {}", parameterInfo.detailedString(), accept);
         return accept;
+    }
+
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
     }
 }

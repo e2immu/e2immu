@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
@@ -17,25 +18,23 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ComputeLinking {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputeLinking.class);
 
-    public final TypeContext typeContext;
-
-    public ComputeLinking(TypeContext typeContext) {
-        this.typeContext = typeContext;
-    }
+    private final Messages messages = new Messages();
 
     // we need a recursive structure because local variables can be defined in blocks, a little later,
     // they disappear again. But, we should also be able to add properties simply for a block, so that those
     // properties disappear when that level disappears
 
-    public boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements, MethodInfo methodInfo,
+    public boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements,
+                                                     Messages messages,
+                                                     MethodInfo methodInfo,
                                                      VariableProperties methodProperties) {
         boolean changes = false;
         try {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            StatementAnalyser statementAnalyser = new StatementAnalyser(typeContext, methodInfo);
+            StatementAnalyser statementAnalyser = new StatementAnalyser(methodInfo);
             NumberedStatement startStatement = statements.get(0);
             if (statementAnalyser.computeVariablePropertiesOfBlock(startStatement, methodProperties)) changes = true;
-
+            messages.addAll(statementAnalyser.getMessageStream());
             // this method computes, ONLY THE FIRST TIME, the values for READ, ASSIGNED, METHOD_CALLED on fields and this
             if (copyFieldAndThisProperties(methodInfo, methodProperties)) changes = true;
 

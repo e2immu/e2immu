@@ -22,6 +22,11 @@ public class Messages {
     }
 
     @Modified
+    public void addAll(@NotNull1 @NotModified Stream<Message> messageStream) {
+        messageStream.forEach(messages::add);
+    }
+
+    @Modified
     public void add(Message message) {
         this.messages.add(message);
     }

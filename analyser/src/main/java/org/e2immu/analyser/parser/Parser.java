@@ -140,6 +140,7 @@ public class Parser {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, globalTypeContext);
             annotationUploader.add(sortedTypes);
         }
+        messages.addAll(typeAnalyser.getMessageStream());
         return sortedTypes;
     }
 

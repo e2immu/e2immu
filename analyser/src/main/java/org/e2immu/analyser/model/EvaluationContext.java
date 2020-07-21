@@ -28,11 +28,13 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface EvaluationContext {
 
@@ -208,4 +210,6 @@ public interface EvaluationContext {
 
     default void modifyingMethodAccess(Variable variable) {
     }
+
+    default void copyMessages(Stream<Message> messageStream) {}
 }

@@ -166,6 +166,11 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
+    public void copyMessages(Stream<Message> messageStream) {
+        messages.addAll(messageStream);
+    }
+
+    @Override
     public org.e2immu.analyser.objectflow.Location getLocation() {
         if (currentStatement != null) {
             return new org.e2immu.analyser.objectflow.Location(getCurrentMethod(), currentStatement);
