@@ -17,8 +17,13 @@ public class Messages {
     private final List<Message> messages = new LinkedList<>();
 
     @Modified
-    public void add(@NotNull1 @NotModified Messages messages) {
+    public void addAll(@NotNull1 @NotModified Messages messages) {
         this.messages.addAll(messages.messages);
+    }
+
+    @Modified
+    public void add(Message message) {
+        this.messages.add(message);
     }
 
     @NotNull1

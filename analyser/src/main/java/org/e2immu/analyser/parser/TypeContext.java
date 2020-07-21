@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.parser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -27,8 +26,6 @@ import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.*;
 import org.e2immu.annotation.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,13 +38,10 @@ import static org.e2immu.analyser.util.Logger.log;
  * This context is inherently recursive, dependent on the container.
  */
 public class TypeContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeContext.class);
-
     private final TypeContext parentContext;
 
     public final TypeStore typeStore;
     public final String packageName; // this one is filled in UNLESS parentContext == null, because that is the root level
-    private final List<Message> messages;
     private final List<TypeInfo> importStaticAsterisk;
     private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
 
@@ -89,7 +83,6 @@ public class TypeContext {
         typeStore = new MapBasedTypeStore();
         parentContext = null;
         packageName = null;
-        messages = new LinkedList<>();
         importStaticAsterisk = new ArrayList<>();
         importStaticMemberToTypeInfo = new HashMap<>();
     }
@@ -99,7 +92,6 @@ public class TypeContext {
         typeStore = parentContext.typeStore;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
-        messages = List.of();
         this.packageName = packageName;
     }
 
@@ -116,7 +108,6 @@ public class TypeContext {
         this.typeStore = typeStore;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
-        messages = List.of();
         this.packageName = packageName;
     }
 
@@ -348,7 +339,7 @@ public class TypeContext {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
-            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, staticOnly);
+            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
         if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
@@ -387,17 +378,6 @@ public class TypeContext {
         HashMap<NamedType, ParameterizedType> res = new HashMap<>(previous);
         res.putAll(target.initialTypeParameterMap());
         return res;
-    }
-
-    public void addMessage(Message message) {
-        TypeContext parent = this;
-        while (parent.parentContext != null) parent = parent.parentContext;
-        parent.messages.add(message);
-        LOGGER.info("Add message: {}", message);
-    }
-
-    public List<Message> getMessages() {
-        return ImmutableList.copyOf(messages);
     }
 
     public boolean isPackagePrefix(PackagePrefix packagePrefix) {

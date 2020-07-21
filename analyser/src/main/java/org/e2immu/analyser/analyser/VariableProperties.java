@@ -31,6 +31,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
@@ -65,7 +66,7 @@ class VariableProperties implements EvaluationContext {
     final DependencyGraph<Variable> dependencyGraphWorstCase;
 
     // modified by adding errors
-
+    final Messages messages = new Messages();
     final TypeContext typeContext;
 
     // the rest should be not modified
@@ -157,6 +158,11 @@ class VariableProperties implements EvaluationContext {
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
         this.internalObjectFlows = parent.internalObjectFlows;
+    }
+
+    @Override
+    public Messages getMessages() {
+        return messages;
     }
 
     @Override
@@ -1007,7 +1013,7 @@ class VariableProperties implements EvaluationContext {
     public void raiseError(String error) {
         if (currentStatement != null && !currentStatement.inErrorState()) {
             Message message = Message.newMessage(location(), error);
-            getTypeContext().addMessage(message);
+            messages.add(message);
             currentStatement.errorValue.set(true);
         }
     }
@@ -1016,7 +1022,7 @@ class VariableProperties implements EvaluationContext {
     public void raiseError(String error, String extra) {
         if (currentStatement != null && !currentStatement.inErrorState()) {
             Message message = Message.newMessage(location(), error, extra);
-            getTypeContext().addMessage(message);
+            messages.add(message);
             currentStatement.errorValue.set(true);
         }
     }

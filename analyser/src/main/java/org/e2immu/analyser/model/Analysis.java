@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.Pair;
@@ -259,14 +260,14 @@ public abstract class Analysis {
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
     private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
 
-    public void fromAnnotationsIntoProperties(boolean hasBeenDefined,
+    public Messages fromAnnotationsIntoProperties(boolean hasBeenDefined,
                                               List<AnnotationExpression> annotations,
                                               TypeContext typeContext,
                                               boolean overwrite) {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         boolean container = false;
-        boolean beforeMark = false;
+        Messages messages = new Messages();
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
@@ -283,8 +284,6 @@ public abstract class Analysis {
                 } else if (typeContext.e2Container.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                     container = true;
-                } else if (typeContext.beforeImmutableMark.get().typeInfo == t) {
-                    beforeMark = true;
                 } else if (typeContext.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
@@ -335,7 +334,7 @@ public abstract class Analysis {
                 } else if (typeContext.linked.get().typeInfo == t) {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
                 } else if (typeContext.size.get().typeInfo == t) {
-                    method.accept(VariableProperty.SIZE, extractSizeMin(typeContext, annotationExpression));
+                    method.accept(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
                 } else if (typeContext.precondition.get().typeInfo == t) {
                     String value = annotationExpression.extract("value", "");
@@ -397,6 +396,7 @@ public abstract class Analysis {
             }
             method.accept(variableProperty, nn);
         }
+        return messages;
     }
 
     protected void writePrecondition(String value) {
@@ -409,7 +409,7 @@ public abstract class Analysis {
      * @param annotationExpression the annotation
      * @return encoded value
      */
-    public int extractSizeMin(TypeContext typeContext, AnnotationExpression annotationExpression) {
+    public int extractSizeMin(Messages messages, AnnotationExpression annotationExpression) {
         Integer min = annotationExpression.extract("min", -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
@@ -428,7 +428,7 @@ public abstract class Analysis {
             return Level.encodeSizeEquals(equals);
         }
         // ignore! raise warning
-        typeContext.addMessage(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
+        messages.add(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
         return Level.DELAY;
     }
 

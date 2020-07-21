@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnceMap;
 
@@ -75,7 +76,7 @@ public class StaticModifier {
         return true; // continue
     }
 
-    public static void detectMissingStaticModifier(TypeContext typeContext, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public static void detectMissingStaticModifier(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.complainedAboutMissingStaticModifier.isSet()) {
             if (!methodInfo.isStatic) {
                 // we need to check if there's fields being read/assigned/
@@ -85,7 +86,7 @@ public class StaticModifier {
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation &&
                         methodAnalysis.staticMethodCallsOnly.isSet() && methodAnalysis.staticMethodCallsOnly.get()) {
-                    typeContext.addMessage(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
+                    messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
                     methodAnalysis.complainedAboutMissingStaticModifier.set(true);
                     return;
                 }

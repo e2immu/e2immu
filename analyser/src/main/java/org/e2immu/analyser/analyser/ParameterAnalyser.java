@@ -21,6 +21,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
@@ -32,6 +33,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
     private final TypeContext typeContext;
+    private final Messages messages = new Messages();
 
     public ParameterAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -54,14 +56,14 @@ public class ParameterAnalyser {
         check(parameterInfo, Nullable.class, typeContext.nullable.get());
         check(parameterInfo, Modified.class, typeContext.modified.get());
 
-        CheckSize.checkSizeForParameters(typeContext, parameterInfo);
+        CheckSize.checkSizeForParameters(messages, parameterInfo);
     }
 
     private void check(ParameterInfo parameterInfo, Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
         parameterInfo.error(annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            typeContext.addMessage(error);
+            messages.add(error);
         });
     }
 
@@ -69,7 +71,7 @@ public class ParameterAnalyser {
         parameterInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            typeContext.addMessage(error);
+            messages.add(error);
         });
     }
 

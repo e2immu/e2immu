@@ -28,10 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.parser.TypeStore;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotNull;
@@ -994,8 +991,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isNestedType() && isPrivate();
     }
 
-    public void copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
+    public Messages copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
         boolean hasBeenDefined = hasBeenDefined();
+        Messages messages = new Messages();
         if (this.typeAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Type analysis already set for " + fullyQualifiedName);
@@ -1003,11 +1001,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             TypeAnalysis typeAnalysis = new TypeAnalysis(this);
             this.typeAnalysis.set(typeAnalysis);
         }
-        typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite);
+        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite));
         typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
-                methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined));
+                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined)));
         typeInspection.get().fields.forEach(fieldInfo ->
-                fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined));
+                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined)));
+        return messages;
     }
 
     public void resolveAllAnnotations(ExpressionContext expressionContext) {

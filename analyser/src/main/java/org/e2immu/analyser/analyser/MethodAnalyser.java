@@ -36,6 +36,7 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.pattern.JoinReturnStatements;
@@ -59,6 +60,7 @@ public class MethodAnalyser {
     private final TypeContext typeContext;
     private final ParameterAnalyser parameterAnalyser;
     private final ComputeLinking computeLinking;
+    private final Messages messages = new Messages();
 
     public MethodAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -87,7 +89,7 @@ public class MethodAnalyser {
                 check(methodInfo, E2Container.class, typeContext.e2Container.get());
                 check(methodInfo, BeforeImmutableMark.class, typeContext.beforeImmutableMark.get());
                 check(methodInfo, BeforeNotNullMark.class, typeContext.beforeNotNullMark.get());
-                CheckConstant.checkConstantForMethods(typeContext, methodInfo);
+                CheckConstant.checkConstantForMethods(messages, methodInfo);
             }
 
 
@@ -97,10 +99,10 @@ public class MethodAnalyser {
         }
         check(methodInfo, Modified.class, typeContext.modified.get());
 
-        CheckSize.checkSizeForMethods(typeContext, methodInfo);
-        CheckPrecondition.checkPrecondition(typeContext, methodInfo);
-        CheckOnly.checkOnly(typeContext, methodInfo);
-        CheckOnly.checkMark(typeContext, methodInfo);
+        CheckSize.checkSizeForMethods(messages, methodInfo);
+        CheckPrecondition.checkPrecondition(messages, methodInfo);
+        CheckOnly.checkOnly(messages, methodInfo);
+        CheckOnly.checkMark(messages, methodInfo);
 
         methodInfo.methodInspection.get().parameters.forEach(parameterAnalyser::check);
     }
@@ -109,7 +111,7 @@ public class MethodAnalyser {
         methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(methodInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            typeContext.addMessage(error);
+            messages.add(error);
         });
     }
 
@@ -163,7 +165,7 @@ public class MethodAnalyser {
                 if (methodInfo.isStatic) {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
-                StaticModifier.detectMissingStaticModifier(typeContext, methodInfo, methodAnalysis);
+                StaticModifier.detectMissingStaticModifier(messages, methodInfo, methodAnalysis);
             }
             // even though all constructors should be modifying...
             if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
@@ -442,7 +444,7 @@ public class MethodAnalyser {
         IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                 .mapToInt(entry -> entry.getValue().getProperty(variableProperty));
         int value = variableProperty == VariableProperty.SIZE ?
-                safeMinimum(typeContext, new Location(methodInfo), stream) :
+                safeMinimum(messages, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);
 
         if (value == Level.DELAY) {
@@ -477,7 +479,7 @@ public class MethodAnalyser {
                 }
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
-                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimum(typeContext, new Location(methodInfo), stream));
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimum(messages, new Location(methodInfo), stream));
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
@@ -599,10 +601,10 @@ public class MethodAnalyser {
         return Level.DELAY;
     }
 
-    static int safeMinimum(TypeContext typeContext, Location location, IntStream intStream) {
+    static int safeMinimum(Messages messages, Location location, IntStream intStream) {
         int res = intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
             if (Level.haveEquals(v1) && Level.haveEquals(v2) && v1 != v2) {
-                typeContext.addMessage(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
+                messages.add(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
                         "Equal to " + Level.decodeSizeEquals(v1) + ", equal to " + Level.decodeSizeEquals(v2)));
             }
             return Math.min(v1, v2);

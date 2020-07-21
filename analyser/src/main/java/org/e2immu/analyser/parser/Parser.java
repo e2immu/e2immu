@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class Parser {
@@ -49,6 +50,7 @@ public class Parser {
     private final ByteCodeInspector byteCodeInspector;
     private final AnnotationStore annotationStore;
     private final TypeStore sourceTypeStore;
+    private final Messages messages = new Messages();
 
     public Parser() throws IOException {
         // all the defaults will do...
@@ -162,7 +164,7 @@ public class Parser {
         return byteCodeInspector;
     }
 
-    public List<Message> getMessages() {
-        return globalTypeContext.getMessages();
+    public Stream<Message> getMessages() {
+        return messages.getMessageStream();
     }
 }

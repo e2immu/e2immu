@@ -30,6 +30,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
@@ -44,6 +45,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class FieldAnalyser {
     private final TypeContext typeContext;
+    private final Messages messages = new Messages();
 
     public FieldAnalyser(TypeContext typeContext) {
         this.typeContext = typeContext;
@@ -209,7 +211,7 @@ public class FieldAnalyser {
 
         if (valueFromContext > valueFromAssignment) {
             log(SIZE, "Problematic: assignments have lower value than requirements for @Size");
-            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_SIZE_PROBLEM));
+            messages.add(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_SIZE_PROBLEM));
         }
         int finalValue = Level.best(valueFromAssignment, valueFromContext);
         log(SIZE, "Set property @Size on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
@@ -319,7 +321,7 @@ public class FieldAnalyser {
                 boolean notRead = readInMethods == Level.FALSE;
                 fieldAnalysis.fieldError.set(notRead);
                 if (notRead) {
-                    typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
                 }
                 return true;
             }
@@ -329,7 +331,7 @@ public class FieldAnalyser {
             boolean record = fieldInfo.owner.isRecord();
             fieldAnalysis.fieldError.set(!record);
             if (!record) {
-                typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
+                messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
             } // else: nested private types can have fields the way they like it
             return true;
         }
@@ -414,7 +416,7 @@ public class FieldAnalyser {
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
         IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
         IntStream combined = IntStream.concat(assignments, initialiser);
-        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(typeContext, new Location(fieldInfo), combined) : combined.min().orElse(property.falseValue);
+        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(messages, new Location(fieldInfo), combined) : combined.min().orElse(property.falseValue);
         if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
     }
@@ -582,7 +584,7 @@ public class FieldAnalyser {
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
         if (isFinal && fieldInfo.type.isRecordType()) {
-            typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
+            messages.add(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
         log(FINAL, "Mark field {} as " + (isFinal ? "" : "not ") +
                 "effectively final", fieldInfo.fullyQualifiedName());
@@ -647,15 +649,15 @@ public class FieldAnalyser {
         check(fieldInfo, Modified.class, typeContext.modified.get());
         check(fieldInfo, Nullable.class, typeContext.nullable.get());
 
-        CheckConstant.checkConstantForFields(typeContext, fieldInfo);
-        CheckSize.checkSizeForFields(typeContext, fieldInfo);
+        CheckConstant.checkConstantForFields(messages, fieldInfo);
+        CheckSize.checkSizeForFields(messages, fieldInfo);
     }
 
     private void check(FieldInfo fieldInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
         fieldInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(fieldInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            typeContext.addMessage(error);
+            messages.add(error);
         });
     }
 }

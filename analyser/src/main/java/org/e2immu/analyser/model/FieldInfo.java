@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
@@ -169,7 +170,9 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public void copyAnnotationsIntoFieldAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
+    public Messages copyAnnotationsIntoFieldAnalysisProperties(TypeContext typeContext,
+                                                               boolean overwrite,
+                                                               boolean hasBeenDefined) {
         if (fieldAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Field analysis already set for " + fullyQualifiedName());
@@ -177,11 +180,12 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             FieldAnalysis fieldAnalysis = new FieldAnalysis(this);
             this.fieldAnalysis.set(fieldAnalysis);
         }
-        fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInspection.get().annotations,
-                typeContext, overwrite);
+        Messages messages = new Messages();
+        messages.addAll(fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInspection.get().annotations,
+                typeContext, overwrite));
         if (fieldInspection.get().initialiser.isSet() &&
                 fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null) {
-            fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod.typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite);
+            messages.addAll(fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod.typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
         }
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
@@ -189,6 +193,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         if (isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
             fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
         }
+        return messages;
     }
 
     @Override

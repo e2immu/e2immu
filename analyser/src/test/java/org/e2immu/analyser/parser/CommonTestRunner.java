@@ -130,12 +130,12 @@ public abstract class CommonTestRunner {
         for (SortedType sortedType : types) {
             LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
         }
-        for (Message message : parser.getMessages()) {
+        parser.getMessages().forEach(message -> {
             LOGGER.info(message.toString());
-        }
-        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages().stream()
+        });
+        Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.ERROR).count());
-        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages().stream()
+        Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.WARN).count());
         return parser.getTypeContext();
     }

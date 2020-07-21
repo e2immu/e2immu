@@ -2,7 +2,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;

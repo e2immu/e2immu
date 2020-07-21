@@ -8,6 +8,7 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.Constant;
 
@@ -51,26 +52,26 @@ public class CheckConstant {
     }
 
 
-    public static void checkConstantForFields(TypeContext typeContext, FieldInfo fieldInfo) {
+    public static void checkConstantForFields(Messages messages, FieldInfo fieldInfo) {
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         Value singleReturnValue = fieldAnalysis.effectivelyFinalValue.isSet() ?
                 fieldAnalysis.effectivelyFinalValue.get() : UnknownValue.NO_VALUE;
-        checkConstant(typeContext,
+        checkConstant(messages,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().annotations,
                 new Location(fieldInfo));
     }
 
-    public static void checkConstantForMethods(TypeContext typeContext, MethodInfo methodInfo) {
+    public static void checkConstantForMethods(Messages messages, MethodInfo methodInfo) {
         Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.isSet() ?
                 methodInfo.methodAnalysis.get().singleReturnValue.get() : UnknownValue.NO_VALUE;
-        checkConstant(typeContext,
+        checkConstant(messages,
                 singleReturnValue,
                 methodInfo.methodInspection.get().annotations,
                 new Location(methodInfo));
     }
 
-    private static void checkConstant(TypeContext typeContext, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
+    private static void checkConstant(Messages messages, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
 
         // NOTE: the reason we do not check @Constant in the same way is that there can be many types
         // of constants, and we have not yet provided them all in @Constant. At the same time,
@@ -81,16 +82,16 @@ public class CheckConstant {
         boolean haveConstantValue = singleReturnValue instanceof org.e2immu.analyser.model.Constant;
         if (toTest.verifyAbsent) {
             if (haveConstantValue) {
-                typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Constant"));
+                messages.add(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Constant"));
             }
             return;
         }
         if (!haveConstantValue) {
-            typeContext.addMessage(Message.newMessage(where, Message.ANNOTATION_ABSENT, "Constant"));
+            messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, "Constant"));
             return;
         }
         if (toTest.valueToTest != null && !toTest.valueToTest.equals(singleReturnValue)) {
-            typeContext.addMessage(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
+            messages.add(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
                     toTest.valueToTest + "' of type " + toTest.valueToTest.getClass().getSimpleName() +
                     ", found " + singleReturnValue));
         }

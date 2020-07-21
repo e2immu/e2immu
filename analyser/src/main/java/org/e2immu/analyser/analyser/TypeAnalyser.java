@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
@@ -59,6 +60,8 @@ public class TypeAnalyser {
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
     private final TypeContext typeContext;
+    private final Messages messages = new Messages();
+
     public static final BinaryOperator<Boolean> TERNARY_OR = (val, acc) -> val == null || acc == null ? null : val || acc;
     public static final BinaryOperator<Boolean> TERNARY_AND = (val, acc) -> val == null || acc == null ? null : val && acc;
 
@@ -112,7 +115,7 @@ public class TypeAnalyser {
         typeInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(typeInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            typeContext.addMessage(error);
+            messages.add(error);
         });
     }
 

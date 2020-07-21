@@ -28,12 +28,15 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
 
 public interface EvaluationContext {
+
+    default Messages getMessages() { throw new UnsupportedOperationException(); }
 
     default int getIteration() {
         return 0;

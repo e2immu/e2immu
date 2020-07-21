@@ -54,6 +54,7 @@ public class InspectAnnotatedAPIs {
     private final TypeContext globalTypeContext;
     private final TypeStore localTypeStore = new MapBasedTypeStore();
     private final ByteCodeInspector byteCodeInspector;
+    private final Messages messages = new Messages();
 
     public InspectAnnotatedAPIs(TypeContext globalTypeContext, ByteCodeInspector byteCodeInspector) {
         this.globalTypeContext = globalTypeContext;
@@ -139,9 +140,10 @@ public class InspectAnnotatedAPIs {
         });
     }
 
-    private List<MethodInfo> findMissingCheckOverride(TypeInfo typeFrom,
-                                                      TypeInfo typeTo,
-                                                      Function<TypeInspection, List<MethodInfo>> extractor) {
+    private List<MethodInfo> findMissingCheckOverride(
+            TypeInfo typeFrom,
+            TypeInfo typeTo,
+            Function<TypeInspection, List<MethodInfo>> extractor) {
         List<MethodInfo> res = new ArrayList<>();
         Map<String, MethodInfo> inTypeTo = extractor.apply(typeTo.typeInspection.get())
                 .stream()
@@ -155,7 +157,7 @@ public class InspectAnnotatedAPIs {
                 Set<MethodInfo> overrides = typeTo.overrides(copy, false);
                 if (overrides.isEmpty()) {
                     Message error = Message.newMessage(new Location(methodInfo), Message.CANNOT_FIND_METHOD_IN_SUPER_TYPE, distinguishingName);
-                    globalTypeContext.addMessage(error);
+                    messages.add(error);
                 } else {
                     log(MERGE_ANNOTATIONS, "Add copy of {}", distinguishingName);
                     res.add(copy);

@@ -24,10 +24,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
@@ -170,7 +167,7 @@ public class Assignment implements Expression {
 
     private void doAssignmentWork(EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod();
-        TypeContext typeContext = evaluationContext.getTypeContext();
+        Messages messages = evaluationContext.getMessages();
         NumberedStatement statement = evaluationContext.getCurrentStatement();
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
@@ -180,7 +177,7 @@ public class Assignment implements Expression {
             // only change fields of "our" class, otherwise, raise error
             if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
                 if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
-                    typeContext.addMessage(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
                     fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
                 }
                 return;
@@ -196,7 +193,7 @@ public class Assignment implements Expression {
             }
         } else if (at instanceof ParameterInfo) {
             if (!statement.inErrorState()) {
-                typeContext.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
+                messages.add(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                 statement.errorValue.set(true);
                 return;
             }

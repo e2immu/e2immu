@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class StatementAnalyser {
     private final TypeContext typeContext;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
+    private final Messages messages = new Messages();
 
     public StatementAnalyser(TypeContext typeContext, MethodInfo methodInfo) {
         this.typeContext = typeContext;
@@ -259,7 +261,7 @@ public class StatementAnalyser {
                 LocalVariable localVariable = ((LocalVariableReference) aboutVariable.variable).variable;
                 if (!methodAnalysis.unusedLocalVariables.isSet(localVariable)) {
                     methodAnalysis.unusedLocalVariables.put(localVariable, true);
-                    typeContext.addMessage(Message.newMessage(new Location(methodInfo), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
+                    messages.add(Message.newMessage(new Location(methodInfo), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
                     changes = true;
                 }
             }
@@ -294,7 +296,7 @@ public class StatementAnalyser {
                 if (useless) {
                     if (!methodAnalysis.uselessAssignments.isSet(aboutVariable.variable)) {
                         methodAnalysis.uselessAssignments.put(aboutVariable.variable, true);
-                        typeContext.addMessage(Message.newMessage(new Location(methodInfo), Message.USELESS_ASSIGNMENT, aboutVariable.name));
+                        messages.add(Message.newMessage(new Location(methodInfo), Message.USELESS_ASSIGNMENT, aboutVariable.name));
                         changes = true;
                     }
                     if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
@@ -468,7 +470,7 @@ public class StatementAnalyser {
 
             if (combinedWithConditional.isConstant() || noEffect) {
                 if (!statement.inErrorState()) {
-                    typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
                     statement.errorValue.set(true);
                 }
             }
@@ -482,7 +484,7 @@ public class StatementAnalyser {
             if (value != null && statement.statement instanceof ForEachStatement) {
                 int size = variableProperties.getProperty(value, VariableProperty.SIZE);
                 if (size == Level.SIZE_EMPTY && !statement.inErrorState()) {
-                    typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
+                    messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
                 }
             }
@@ -658,7 +660,7 @@ public class StatementAnalyser {
             case SIDE_EFFECT:
                 return; // nothing to be done about these
             default:
-                typeContext.addMessage(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
+                messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
                         Message.IGNORING_RESULT_OF_METHOD_CALL));
                 statement.errorValue.set(true);
         }

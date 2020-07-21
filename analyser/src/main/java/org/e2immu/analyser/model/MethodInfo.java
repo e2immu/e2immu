@@ -30,9 +30,7 @@ import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
@@ -542,7 +540,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
-    public void copyAnnotationsIntoMethodAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
+    public Messages copyAnnotationsIntoMethodAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
         if (methodAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Method analysis already set for " + distinguishingName());
@@ -550,8 +548,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             MethodAnalysis methodAnalysis = new MethodAnalysis(this);
             this.methodAnalysis.set(methodAnalysis);
         }
-        methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInspection.get().annotations,
-                typeContext, overwrite);
+        Messages messages = new Messages();
+        messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInspection.get().annotations,
+                typeContext, overwrite));
         methodInspection.get().parameters.forEach(parameterInfo -> {
             if (parameterInfo.parameterAnalysis.isSet()) {
                 if (!overwrite)
@@ -560,9 +559,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo);
                 parameterInfo.parameterAnalysis.set(parameterAnalysis);
             }
-            parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
-                    parameterInfo.parameterInspection.get().annotations, typeContext, overwrite);
+            messages.addAll(parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
+                    parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
         });
+        return messages;
     }
 
     @Override
