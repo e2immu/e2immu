@@ -21,7 +21,6 @@ public class E2ImmuAnnotationExpressions {
         this.typeStore = typeStore;
     }
 
-    // TODO at some point move the lazy's to typeStore, and use methods here to grab them
     public final Lazy<AnnotationExpression> beforeImmutableMark = new Lazy<>(() -> create(BeforeImmutableMark.class));
     public final Lazy<AnnotationExpression> beforeNotNullMark = new Lazy<>(() -> create(BeforeNotNullMark.class));
     public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));

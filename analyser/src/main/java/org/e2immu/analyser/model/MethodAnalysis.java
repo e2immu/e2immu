@@ -277,9 +277,9 @@ public class MethodAnalysis extends Analysis {
     }
 
     @Override
-    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions typeContext) {
+    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         if (precondition.isSet()) {
-            AnnotationExpression ae = typeContext.precondition.get().copyWith("value", precondition.get().toString());
+            AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get().copyWith("value", precondition.get().toString());
             annotations.put(ae, true);
         }
     }

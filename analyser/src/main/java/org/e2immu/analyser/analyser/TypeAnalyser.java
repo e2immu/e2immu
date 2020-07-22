@@ -57,16 +57,13 @@ public class TypeAnalyser {
     public static final int POST_ANALYSIS = 100;
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
-    private final E2ImmuAnnotationExpressions typeContext;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Messages messages = new Messages();
 
-    public static final BinaryOperator<Boolean> TERNARY_OR = (val, acc) -> val == null || acc == null ? null : val || acc;
-    public static final BinaryOperator<Boolean> TERNARY_AND = (val, acc) -> val == null || acc == null ? null : val && acc;
-
-    public TypeAnalyser(@NotNull E2ImmuAnnotationExpressions typeContext) {
-        fieldAnalyser = new FieldAnalyser(typeContext);
-        methodAnalyser = new MethodAnalyser(typeContext);
-        this.typeContext = Objects.requireNonNull(typeContext);
+    public TypeAnalyser(@NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        fieldAnalyser = new FieldAnalyser(e2ImmuAnnotationExpressions);
+        methodAnalyser = new MethodAnalyser(e2ImmuAnnotationExpressions);
+        this.e2ImmuAnnotationExpressions = Objects.requireNonNull(e2ImmuAnnotationExpressions);
     }
 
     public Stream<Message> getMessageStream() {
@@ -78,7 +75,7 @@ public class TypeAnalyser {
         TypeInfo typeInfo = sortedType.typeInfo;
 
         // before we check, we copy the properties into annotations
-        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(typeContext);
+        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
@@ -95,23 +92,23 @@ public class TypeAnalyser {
                 fieldAnalyser.check(fieldInfo);
             }
         }
-        check(typeInfo, UtilityClass.class, typeContext.utilityClass.get());
-        check(typeInfo, E1Immutable.class, typeContext.e1Immutable.get());
-        check(typeInfo, E1Container.class, typeContext.e1Container.get());
-        check(typeInfo, ExtensionClass.class, typeContext.extensionClass.get());
-        check(typeInfo, Container.class, typeContext.container.get());
-        check(typeInfo, E2Immutable.class, typeContext.e2Immutable.get());
-        check(typeInfo, E2Container.class, typeContext.e2Container.get());
-        check(typeInfo, NotNull.class, typeContext.notNull.get());
-        check(typeInfo, NotNull1.class, typeContext.notNull1.get());
-        check(typeInfo, NotNull2.class, typeContext.notNull2.get());
+        check(typeInfo, UtilityClass.class, e2ImmuAnnotationExpressions.utilityClass.get());
+        check(typeInfo, E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
+        check(typeInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
+        check(typeInfo, ExtensionClass.class, e2ImmuAnnotationExpressions.extensionClass.get());
+        check(typeInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
+        check(typeInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
+        check(typeInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
+        check(typeInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
+        check(typeInfo, NotNull1.class, e2ImmuAnnotationExpressions.notNull1.get());
+        check(typeInfo, NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
         // TODO there's a "where" which complicates things!! check(typeInfo, NotModified.class, typeContext.e2Immutable.get());
         // already implemented for "reading", but not yet for checking
 
         // opposites
-        check(typeInfo, Mutable.class, typeContext.mutable.get());
-        check(typeInfo, BeforeImmutableMark.class, typeContext.beforeImmutableMark.get());
-        check(typeInfo, ModifiesArguments.class, typeContext.modifiesArguments.get());
+        check(typeInfo, Mutable.class, e2ImmuAnnotationExpressions.mutable.get());
+        check(typeInfo, BeforeImmutableMark.class, e2ImmuAnnotationExpressions.beforeImmutableMark.get());
+        check(typeInfo, ModifiesArguments.class, e2ImmuAnnotationExpressions.modifiesArguments.get());
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

@@ -118,17 +118,17 @@ public abstract class Analysis {
 
     public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext);
 
-    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions typeContext) {
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         ImmutableMap.Builder<VariableProperty, AnnotationExpression> minMapBuilder = new ImmutableMap.Builder<>();
-        minMapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
-        minMapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
-        minMapBuilder.put(VariableProperty.IDENTITY, typeContext.identity.get());
-        minMapBuilder.put(VariableProperty.INDEPENDENT, typeContext.independent.get());
-        minMapBuilder.put(VariableProperty.UTILITY_CLASS, typeContext.utilityClass.get());
-        minMapBuilder.put(VariableProperty.EXTENSION_CLASS, typeContext.extensionClass.get());
-        minMapBuilder.put(VariableProperty.MODIFIED, typeContext.modified.get());
-        minMapBuilder.put(VariableProperty.OUTPUT, typeContext.output.get());
-        minMapBuilder.put(VariableProperty.SINGLETON, typeContext.singleton.get());
+        minMapBuilder.put(VariableProperty.FINAL, e2ImmuAnnotationExpressions.effectivelyFinal.get());
+        minMapBuilder.put(VariableProperty.FLUENT, e2ImmuAnnotationExpressions.fluent.get());
+        minMapBuilder.put(VariableProperty.IDENTITY, e2ImmuAnnotationExpressions.identity.get());
+        minMapBuilder.put(VariableProperty.INDEPENDENT, e2ImmuAnnotationExpressions.independent.get());
+        minMapBuilder.put(VariableProperty.UTILITY_CLASS, e2ImmuAnnotationExpressions.utilityClass.get());
+        minMapBuilder.put(VariableProperty.EXTENSION_CLASS, e2ImmuAnnotationExpressions.extensionClass.get());
+        minMapBuilder.put(VariableProperty.MODIFIED, e2ImmuAnnotationExpressions.modified.get());
+        minMapBuilder.put(VariableProperty.OUTPUT, e2ImmuAnnotationExpressions.output.get());
+        minMapBuilder.put(VariableProperty.SINGLETON, e2ImmuAnnotationExpressions.singleton.get());
 
         for (Map.Entry<VariableProperty, AnnotationExpression> entry : minMapBuilder.build().entrySet()) {
             VariableProperty variableProperty = entry.getKey();
@@ -142,7 +142,7 @@ public abstract class Analysis {
             }
         }
 
-        for (Map.Entry<VariableProperty, AnnotationExpression> entry : oppositesMap(typeContext).entrySet()) {
+        for (Map.Entry<VariableProperty, AnnotationExpression> entry : oppositesMap(e2ImmuAnnotationExpressions).entrySet()) {
             VariableProperty variableProperty = entry.getKey();
             AnnotationExpression annotationExpression = entry.getValue();
             int value = getProperty(variableProperty);
@@ -158,7 +158,7 @@ public abstract class Analysis {
         if (isNotAConstructorOrVoidMethod) {
             boolean isType = this instanceof TypeAnalysis;
 
-            doImmutableContainer(typeContext, isType);
+            doImmutableContainer(e2ImmuAnnotationExpressions, isType);
 
             boolean doNullable = !isType;
 
@@ -166,28 +166,28 @@ public abstract class Analysis {
             int minNotNull = minimalValue(VariableProperty.NOT_NULL);
             int notNull = getProperty(VariableProperty.NOT_NULL);
             if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
-                if (notNull > minNotNull) annotations.put(typeContext.notNull2.get(), true);
-                if (doNullable) annotations.put(typeContext.nullable.get(), false);
+                if (notNull > minNotNull) annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), true);
+                if (doNullable) annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
             } else {
-                if (notNull != Level.DELAY) annotations.put(typeContext.notNull2.get(), false);
+                if (notNull != Level.DELAY) annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), false);
 
                 if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
-                    if (notNull > minNotNull) annotations.put(typeContext.notNull1.get(), true);
-                    if (doNullable) annotations.put(typeContext.nullable.get(), false);
+                    if (notNull > minNotNull) annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), true);
+                    if (doNullable) annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
                 } else {
                     if (notNull > Level.DELAY) {
-                        annotations.put(typeContext.notNull1.get(), false);
+                        annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), false);
                     }
                     if (notNull >= MultiLevel.EVENTUAL && notNull > minNotNull) {
-                        annotations.put(typeContext.notNull.get(), true);
+                        annotations.put(e2ImmuAnnotationExpressions.notNull.get(), true);
                     } else if (notNull > Level.DELAY) {
-                        annotations.put(typeContext.notNull.get(), false);
+                        annotations.put(e2ImmuAnnotationExpressions.notNull.get(), false);
                     }
                     if (doNullable) {
                         int max = maximalValue(VariableProperty.NOT_NULL);
                         boolean nullablePresent = max != Level.FALSE && notNull < MultiLevel.EVENTUAL;
                         // a delay on notNull0 on a non-primitive will get nullable present
-                        annotations.put(typeContext.nullable.get(), nullablePresent);
+                        annotations.put(e2ImmuAnnotationExpressions.nullable.get(), nullablePresent);
                     }
                 }
             }
@@ -198,9 +198,9 @@ public abstract class Analysis {
         int size = getProperty(VariableProperty.SIZE);
         if (size > minSize) {
             if (Level.haveEquals(size)) {
-                annotations.put(sizeAnnotation(typeContext, "equals", Level.decodeSizeEquals(size)), true);
+                annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "equals", Level.decodeSizeEquals(size)), true);
             } else {
-                annotations.put(sizeAnnotation(typeContext, "min", Level.decodeSizeMin(size)), true);
+                annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "min", Level.decodeSizeMin(size)), true);
             }
         }
 
@@ -209,14 +209,14 @@ public abstract class Analysis {
         int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
         if (sizeCopy > minSizeCopy) {
             if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
-                annotations.put(sizeAnnotationTrue(typeContext, "copyMin"), true);
+                annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
             } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
-                annotations.put(sizeAnnotationTrue(typeContext, "copy"), true);
+                annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
             }
         }
 
         // precondition
-        preconditionFromAnalysisToAnnotation(typeContext);
+        preconditionFromAnalysisToAnnotation(e2ImmuAnnotationExpressions);
     }
 
     private void doImmutableContainer(E2ImmuAnnotationExpressions typeContext, boolean isType) {
@@ -247,16 +247,16 @@ public abstract class Analysis {
         return true;
     }
 
-    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions typeContext) {
+    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         // nothing to be done; override in method analysis
     }
 
-    private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions typeContext, String parameter) {
-        return typeContext.size.get().copyWith(parameter, true);
+    private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter) {
+        return e2ImmuAnnotationExpressions.size.get().copyWith(parameter, true);
     }
 
-    private AnnotationExpression sizeAnnotation(E2ImmuAnnotationExpressions typeContext, String parameter, int value) {
-        return typeContext.size.get().copyWith(parameter, value);
+    private AnnotationExpression sizeAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter, int value) {
+        return e2ImmuAnnotationExpressions.size.get().copyWith(parameter, value);
     }
 
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
@@ -264,7 +264,7 @@ public abstract class Analysis {
 
     public Messages fromAnnotationsIntoProperties(boolean hasBeenDefined,
                                                   List<AnnotationExpression> annotations,
-                                                  E2ImmuAnnotationExpressions typeContext,
+                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                                   boolean overwrite) {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
@@ -277,68 +277,68 @@ public abstract class Analysis {
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
                 TypeInfo t = annotationExpression.typeInfo;
-                if (typeContext.e1Immutable.get().typeInfo == t) {
+                if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
-                } else if (typeContext.mutable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.mutable.get().typeInfo == t) {
                     immutable = -1;
-                } else if (typeContext.e2Immutable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e2Immutable.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
-                } else if (typeContext.e2Container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e2Container.get().typeInfo == t) {
                     immutable = Math.max(1, immutable);
                     container = true;
-                } else if (typeContext.e1Container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
-                } else if (typeContext.container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.container.get().typeInfo == t) {
                     container = true;
-                } else if (typeContext.modifiesArguments.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.modifiesArguments.get().typeInfo == t) {
                     container = false;
-                } else if (typeContext.nullable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.nullable.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, -1));
-                } else if (typeContext.notNull.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 0));
-                } else if (typeContext.notNull1.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull1.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 1));
-                } else if (typeContext.notNull2.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 2));
-                } else if (typeContext.notModified.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo == t) {
                     method.accept(VariableProperty.MODIFIED, Level.FALSE);
-                } else if (typeContext.modified.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo == t) {
                     method.accept(VariableProperty.MODIFIED, Level.TRUE);
-                } else if (typeContext.effectivelyFinal.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.effectivelyFinal.get().typeInfo == t) {
                     method.accept(VariableProperty.FINAL, Level.TRUE);
-                } else if (typeContext.variableField.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.variableField.get().typeInfo == t) {
                     method.accept(VariableProperty.FINAL, Level.FALSE);
-                } else if (typeContext.constant.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.constant.get().typeInfo == t) {
                     method.accept(VariableProperty.CONSTANT, Level.TRUE);
-                } else if (typeContext.extensionClass.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.extensionClass.get().typeInfo == t) {
                     method.accept(VariableProperty.EXTENSION_CLASS, Level.TRUE);
-                } else if (typeContext.fluent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.fluent.get().typeInfo == t) {
                     method.accept(VariableProperty.FLUENT, Level.TRUE);
-                } else if (typeContext.identity.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo == t) {
                     method.accept(VariableProperty.IDENTITY, Level.TRUE);
-                } else if (typeContext.ignoreModifications.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
                     method.accept(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
-                } else if (typeContext.independent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
                     method.accept(VariableProperty.INDEPENDENT, Level.TRUE);
-                } else if (typeContext.dependent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
                     method.accept(VariableProperty.INDEPENDENT, Level.FALSE);
-                } else if (typeContext.mark.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
                     method.accept(VariableProperty.MARK, Level.TRUE);
-                } else if (typeContext.only.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
                     method.accept(VariableProperty.ONLY, Level.TRUE);
-                } else if (typeContext.output.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.output.get().typeInfo == t) {
                     method.accept(VariableProperty.OUTPUT, Level.TRUE);
-                } else if (typeContext.singleton.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
                     method.accept(VariableProperty.SINGLETON, Level.TRUE);
-                } else if (typeContext.utilityClass.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo == t) {
                     method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
-                } else if (typeContext.linked.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo == t) {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
-                } else if (typeContext.size.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
                     method.accept(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
-                } else if (typeContext.precondition.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     String value = annotationExpression.extract("value", "");
                     writePrecondition(value);
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);

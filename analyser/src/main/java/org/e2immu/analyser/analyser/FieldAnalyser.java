@@ -32,7 +32,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -46,11 +45,11 @@ import static org.e2immu.analyser.util.Logger.log;
 
 
 public class FieldAnalyser {
-    private final E2ImmuAnnotationExpressions typeContext;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Messages messages = new Messages();
 
-    public FieldAnalyser(E2ImmuAnnotationExpressions typeContext) {
-        this.typeContext = typeContext;
+    public FieldAnalyser(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     public boolean analyse(FieldInfo fieldInfo, Variable thisVariable, VariableProperties fieldProperties) {
@@ -504,12 +503,12 @@ public class FieldAnalyser {
 
         if (effectivelyFinalValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2ImmuAnnotationExpressions, value);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
             log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.annotations.put(typeContext.constant.get(), false);
+            fieldAnalysis.annotations.put(e2ImmuAnnotationExpressions.constant.get(), false);
         }
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
@@ -552,7 +551,7 @@ public class FieldAnalyser {
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
 
         // explicitly adding the annotation here; it will not be inspected.
-        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(typeContext, links);
+        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(e2ImmuAnnotationExpressions, links);
         fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
         return true;
     }
@@ -629,27 +628,27 @@ public class FieldAnalyser {
 
     public void check(FieldInfo fieldInfo) {
         // before we check, we copy the properties into annotations
-        fieldInfo.fieldAnalysis.get().transferPropertiesToAnnotations(typeContext);
+        fieldInfo.fieldAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
         // TODO check the correct field name in @Linked(to="xxxx")
-        check(fieldInfo, Linked.class, typeContext.linked.get());
-        check(fieldInfo, NotModified.class, typeContext.notModified.get());
-        check(fieldInfo, NotNull.class, typeContext.notNull.get());
-        check(fieldInfo, Final.class, typeContext.effectivelyFinal.get());
+        check(fieldInfo, Linked.class, e2ImmuAnnotationExpressions.linked.get());
+        check(fieldInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
+        check(fieldInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
+        check(fieldInfo, Final.class, e2ImmuAnnotationExpressions.effectivelyFinal.get());
 
         // dynamic type annotations
-        check(fieldInfo, E1Immutable.class, typeContext.e1Immutable.get());
-        check(fieldInfo, E2Immutable.class, typeContext.e2Immutable.get());
-        check(fieldInfo, Container.class, typeContext.container.get());
-        check(fieldInfo, E1Container.class, typeContext.e1Container.get());
-        check(fieldInfo, E2Container.class, typeContext.e2Container.get());
+        check(fieldInfo, E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
+        check(fieldInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
+        check(fieldInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
+        check(fieldInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
+        check(fieldInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
 
         // opposites
-        check(fieldInfo, org.e2immu.annotation.Variable.class, typeContext.variableField.get());
-        check(fieldInfo, Modified.class, typeContext.modified.get());
-        check(fieldInfo, Nullable.class, typeContext.nullable.get());
+        check(fieldInfo, org.e2immu.annotation.Variable.class, e2ImmuAnnotationExpressions.variableField.get());
+        check(fieldInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
+        check(fieldInfo, Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
 
         CheckConstant.checkConstantForFields(messages, fieldInfo);
         CheckSize.checkSizeForFields(messages, fieldInfo);

@@ -23,8 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
 
 import java.util.List;
@@ -34,29 +32,29 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
-    private final E2ImmuAnnotationExpressions typeContext;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Messages messages = new Messages();
 
-    public ParameterAnalyser(E2ImmuAnnotationExpressions typeContext) {
-        this.typeContext = typeContext;
+    public ParameterAnalyser(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     public void check(ParameterInfo parameterInfo) {
         // before we check, we copy the properties into annotations
-        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(typeContext);
+        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
-        check(parameterInfo, NotModified.class, typeContext.notModified.get());
-        check(parameterInfo, NotNull.class, List.of(typeContext.notNull.get(),
-                typeContext.notNull1.get(),
-                typeContext.notNull2.get()));
-        check(parameterInfo, NotNull1.class, List.of(typeContext.notNull1.get(), typeContext.notNull2.get()));
-        check(parameterInfo, NotNull2.class, typeContext.notNull2.get());
+        check(parameterInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
+        check(parameterInfo, NotNull.class, List.of(e2ImmuAnnotationExpressions.notNull.get(),
+                e2ImmuAnnotationExpressions.notNull1.get(),
+                e2ImmuAnnotationExpressions.notNull2.get()));
+        check(parameterInfo, NotNull1.class, List.of(e2ImmuAnnotationExpressions.notNull1.get(), e2ImmuAnnotationExpressions.notNull2.get()));
+        check(parameterInfo, NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
 
         // opposites
-        check(parameterInfo, Nullable.class, typeContext.nullable.get());
-        check(parameterInfo, Modified.class, typeContext.modified.get());
+        check(parameterInfo, Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
+        check(parameterInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
 
         CheckSize.checkSizeForParameters(messages, parameterInfo);
     }

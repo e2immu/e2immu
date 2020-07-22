@@ -55,46 +55,46 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
 
-    private final E2ImmuAnnotationExpressions typeContext;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final ParameterAnalyser parameterAnalyser;
     private final ComputeLinking computeLinking = new ComputeLinking();
     private final Messages messages = new Messages();
 
-    public MethodAnalyser(E2ImmuAnnotationExpressions typeContext) {
-        this.typeContext = typeContext;
-        this.parameterAnalyser = new ParameterAnalyser(typeContext);
+    public MethodAnalyser(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.parameterAnalyser = new ParameterAnalyser(e2ImmuAnnotationExpressions);
     }
 
     public void check(MethodInfo methodInfo) {
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(typeContext);
+        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
-        check(methodInfo, Independent.class, typeContext.independent.get());
-        check(methodInfo, NotModified.class, typeContext.notModified.get());
+        check(methodInfo, Independent.class, e2ImmuAnnotationExpressions.independent.get());
+        check(methodInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
 
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
-                check(methodInfo, NotNull.class, typeContext.notNull.get());
-                check(methodInfo, Fluent.class, typeContext.fluent.get());
-                check(methodInfo, Identity.class, typeContext.identity.get());
-                check(methodInfo, E1Immutable.class, typeContext.e1Immutable.get());
-                check(methodInfo, E1Container.class, typeContext.e1Container.get());
-                check(methodInfo, Container.class, typeContext.container.get());
-                check(methodInfo, E2Immutable.class, typeContext.e2Immutable.get());
-                check(methodInfo, E2Container.class, typeContext.e2Container.get());
-                check(methodInfo, BeforeImmutableMark.class, typeContext.beforeImmutableMark.get());
-                check(methodInfo, BeforeNotNullMark.class, typeContext.beforeNotNullMark.get());
+                check(methodInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
+                check(methodInfo, Fluent.class, e2ImmuAnnotationExpressions.fluent.get());
+                check(methodInfo, Identity.class, e2ImmuAnnotationExpressions.identity.get());
+                check(methodInfo, E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
+                check(methodInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
+                check(methodInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
+                check(methodInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
+                check(methodInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
+                check(methodInfo, BeforeImmutableMark.class, e2ImmuAnnotationExpressions.beforeImmutableMark.get());
+                check(methodInfo, BeforeNotNullMark.class, e2ImmuAnnotationExpressions.beforeNotNullMark.get());
                 CheckConstant.checkConstantForMethods(messages, methodInfo);
             }
 
 
             // opposites
-            check(methodInfo, Dependent.class, typeContext.dependent.get());
-            check(methodInfo, Nullable.class, typeContext.nullable.get());
+            check(methodInfo, Dependent.class, e2ImmuAnnotationExpressions.dependent.get());
+            check(methodInfo, Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
         }
-        check(methodInfo, Modified.class, typeContext.modified.get());
+        check(methodInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
 
         CheckSize.checkSizeForMethods(messages, methodInfo);
         CheckPrecondition.checkPrecondition(messages, methodInfo);
@@ -235,11 +235,11 @@ public class MethodAnalyser {
                 markLabel = approvedPreconditions.get(negated);
             } else {
                 log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                if (!methodAnalysis.annotations.isSet(typeContext.mark.get())) {
-                    methodAnalysis.annotations.put(typeContext.mark.get(), false);
+                if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.mark.get())) {
+                    methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
                 }
-                if (!methodAnalysis.annotations.isSet(typeContext.only.get())) {
-                    methodAnalysis.annotations.put(typeContext.only.get(), false);
+                if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.only.get())) {
+                    methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
                 }
                 return false;
             }
@@ -267,15 +267,15 @@ public class MethodAnalyser {
         methodAnalysis.onlyData.set(onlyData);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), onlyData);
         if (mark) {
-            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.mark.get().typeInfo,
+            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.mark.get().typeInfo,
                     List.of(new MemberValuePair("value", new StringConstant(markLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
-            methodAnalysis.annotations.put(typeContext.only.get(), false);
+            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
         } else {
-            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(typeContext.only.get().typeInfo,
+            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.only.get().typeInfo,
                     List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(markLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
-            methodAnalysis.annotations.put(typeContext.mark.get(), false);
+            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
         }
         return true;
     }
@@ -376,10 +376,10 @@ public class MethodAnalyser {
 
         methodAnalysis.singleReturnValue.set(value);
         if (isConstant) {
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(typeContext, value);
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2ImmuAnnotationExpressions, value);
             methodAnalysis.annotations.put(constantAnnotation, true);
         } else {
-            methodAnalysis.annotations.put(typeContext.constant.get(), false);
+            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.constant.get(), false);
         }
         methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
 
