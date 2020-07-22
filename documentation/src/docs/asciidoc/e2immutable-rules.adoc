@@ -44,7 +44,7 @@ A @Container is a 'safe place' to store objects, allowing you complete freedom t
 @E1Container on type:: @E1Immutable and @Container type; maybe not that important a type, but we'll see it often. `Pair` is the archetypal example.
 
 @E2Immutable on type:: a type is effectively or eventually (level 2 or content) immutable when
-. all its fields are @E1Immutable
+. all its fields are @Final
 . all its fields are <<notmodified-annotation>>
 . all its fields are either private, or <<e2immutable-annotation>> themselves
 . all its constructors and non-private methods are <<independent-annotation>>.

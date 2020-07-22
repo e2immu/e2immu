@@ -22,27 +22,22 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.google.common.collect.ImmutableList;
-import javassist.expr.Expr;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.util.*;
 
-@E2Immutable
+/*
+ Eventually E2Immutable (TypeInfo is definitely @E1Immutable, FirstThen is eventually @E1Immutable)
+ */
 @NotNull
+@E2Immutable(after = "expressions")
 public class AnnotationExpression {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationExpression.class);
 
@@ -259,6 +254,7 @@ public class AnnotationExpression {
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 
+    @Container(builds = AnnotationExpression.class)
     public static class AnnotationExpressionBuilder {
         private final TypeInfo typeInfo;
         private final List<Expression> expressions = new ArrayList<>();
@@ -267,60 +263,17 @@ public class AnnotationExpression {
             this.typeInfo = typeInfo;
         }
 
+        @Fluent
+        @Modified
         public AnnotationExpressionBuilder addExpression(Expression expression) {
             expressions.add(expression);
             return this;
         }
 
+        @NotModified
         public AnnotationExpression build() {
             return AnnotationExpression.fromAnalyserExpressions(typeInfo, ImmutableList.copyOf(expressions));
         }
     }
 
-    public static AnnotationExpression container(E2ImmuAnnotationExpressions typeContext, int immutable) {
-        TypeInfo typeInfo;
-        switch (immutable) {
-            case 0:
-                typeInfo = typeContext.container.get().typeInfo;
-                break;
-            case 1:
-                typeInfo = typeContext.e1Container.get().typeInfo;
-                break;
-            case 2:
-                typeInfo = typeContext.e2Container.get().typeInfo;
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        return new AnnotationExpressionBuilder(typeInfo)
-                .build();
-    }
-
-    public static AnnotationExpression immutable(E2ImmuAnnotationExpressions typeContext, int immutable) {
-        TypeInfo typeInfo;
-        switch (immutable) {
-            case 1:
-                typeInfo = typeContext.e1Immutable.get().typeInfo;
-                break;
-            case 2:
-                typeInfo = typeContext.e2Immutable.get().typeInfo;
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
-        return new AnnotationExpressionBuilder(typeInfo)
-                .build();
-    }
-/*
-    default Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {
-        int container = getProperty(evaluationContext, VariableProperty.CONTAINER);
-        int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
-        boolean noContainer = container == Level.UNDEFINED;
-        boolean noImmutable = immutable == Level.UNDEFINED;
-
-        if (noContainer && noImmutable) return Set.of();
-        if (noContainer) return Set.of(AnnotationExpression.immutable(evaluationContext.getTypeContext(), immutable));
-        return Set.of(AnnotationExpression.container(evaluationContext.getTypeContext(), noImmutable ? 0 : immutable));
-    }
-*/
 }

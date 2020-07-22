@@ -20,25 +20,41 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.annotation.*;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+@E2Container(after = "freeze")
 public interface TypeStore {
+    
+    @Only(before = "freeze")
+    @Modified
     TypeInfo getOrCreate(String fullyQualifiedName);
 
+    @NotModified
     TypeInfo get(String fullyQualifiedName);
 
+    @Only(before = "freeze")
     void add(TypeInfo typeInfo);
 
+    @NotModified
     boolean isPackagePrefix(PackagePrefix packagePrefix);
 
+    @NotModified
     void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
+    @NotModified
     void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
+    @Only(before = "freeze")
+    @Modified
     void visitAllNewlyCreatedTypes(Consumer<TypeInfo> typeInfoConsumer);
 
+    @NotModified
     boolean containsPrefix(String fullyQualifiedName);
+
+    @Mark("freeze")
+    void freeze();
 }

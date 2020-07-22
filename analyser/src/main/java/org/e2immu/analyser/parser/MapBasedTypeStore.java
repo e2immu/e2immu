@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  */
 public class MapBasedTypeStore implements TypeStore {
 
-    private Trie<TypeInfo> trie = new Trie<>();
+    private final Trie<TypeInfo> trie = new Trie<>();
     private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
 
     public TypeInfo getOrCreate(String fullyQualifiedName) {
@@ -98,5 +98,10 @@ public class MapBasedTypeStore implements TypeStore {
             newlyCreatedTypes.clear();
         }
         toIterate.forEach(typeInfoConsumer);
+    }
+
+    @Override
+    public void freeze() {
+        trie.freeze();
     }
 }

@@ -32,17 +32,13 @@ import java.util.function.Supplier;
  * @param <T> the container's content
  */
 
-@E1Container(type = AnnotationType.VERIFY_ABSENT) //(after = "get")
-@E1Immutable(type = AnnotationType.VERIFY_ABSENT) // remove me later
-@Container // this one is safe
+@E1Container(after = "get")
 public class Lazy<T> {
     @NotModified
     @NotNull
     @Linked(to = "supplierParam") // the parameter
     private final Supplier<T> supplier;
 
-    @Linked(type = AnnotationType.VERIFY_ABSENT)
-    @Final(type = AnnotationType.VERIFY_ABSENT) // later after mark
     private volatile T t;
 
     /**
@@ -51,7 +47,7 @@ public class Lazy<T> {
      * @param supplierParam the supplier that will compute the value
      * @throws NullPointerException when the argument is <code>null</code>
      */
-    public Lazy(@NotNull Supplier<T> supplierParam) {
+    public Lazy(@NotNull1 Supplier<T> supplierParam) {
         if (supplierParam == null) throw new NullPointerException("Null not allowed");
         this.supplier = supplierParam;
     }
@@ -63,8 +59,8 @@ public class Lazy<T> {
      * @throws NullPointerException if the evaluation returns <code>null</code>
      */
     @NotNull
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
-    //@Mark("get")
+    @Modified
+    @Mark("get")
     public T get() {
         T localT = t;
         if (localT != null) return localT;

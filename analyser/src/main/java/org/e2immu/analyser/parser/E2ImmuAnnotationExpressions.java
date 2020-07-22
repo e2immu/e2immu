@@ -13,11 +13,25 @@ import org.e2immu.annotation.*;
 import java.util.List;
 import java.util.Objects;
 
+/*
+ This class quite trivially @E1Immutable (there is only one field, and it is final) and a @Container.
+
+ Let's check if this class can be @E2Container. According to the definition:
+ - Because the Lazy fields are non-private, they must be @E1Immutable themselves.
+   A Lazy field is eventually @E1Immutable, so that's great.
+ - The independence requirement on the constructor means that no modifications can be
+   made to the TypeStore -- this is fine.
+
+ We can conclude the type is eventually @E2Container
+ */
+
+@E2Container(after = "fields")
 public class E2ImmuAnnotationExpressions {
 
+    @NotModified
     private final TypeStore typeStore;
 
-    public E2ImmuAnnotationExpressions(TypeStore typeStore) {
+    public E2ImmuAnnotationExpressions(@NotNull TypeStore typeStore) {
         this.typeStore = typeStore;
     }
 
@@ -60,6 +74,7 @@ public class E2ImmuAnnotationExpressions {
      * @param clazz must have a method called type of Enum type AnnotationType
      * @return an annotation expression
      */
+    @NotModified
     private AnnotationExpression create(Class<?> clazz) {
         TypeInfo annotationType = typeStore.get(AnnotationType.class.getCanonicalName());
         FieldInfo computed = Primitives.PRIMITIVES.annotationTypeComputed;
@@ -70,7 +85,9 @@ public class E2ImmuAnnotationExpressions {
                 List.of(new MemberValuePair("type", computedAccess)));
     }
 
-    public TypeInfo getFullyQualified(String fqn) {
+    @NotModified
+    @NotNull
+    public TypeInfo getFullyQualified(@NotNull String fqn) {
         return Objects.requireNonNull(typeStore.get(fqn));
     }
 }

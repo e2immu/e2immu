@@ -1,0 +1,73 @@
+=== @E2Immutable, new discussion
+
+A `@Container` is a type to which you can safely pass on your objects, it will not modify them.
+This is the formal rule:
+
+`@Container` on a type:: when none of the parameters of the methods and constructors of the type are `@Modified`.
+
+We proceed with effectively final fields, and the first level of immutability:
+
+`@Final` on a field:: a field is effectively final when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private methods.
+
+`@E1Immutable` on a type:: when all fields are effectively final.
+
+A typical `@E1Container` (a combination of `@Container` and `@E1Immutable`) is `Pair`: it is a type that holds two objects of two different types.
+
+[source,java]
+----
+public class Pair<K,V> {
+    public final K k;
+    public final V v;
+    public Pair(K k, V v) {
+        this.k = k;
+        this.v = v;
+    }
+}
+----
+
+Note that since `K` and `V` are unbound types, it is not possible to modify their content, since there are no modifying methods one can call on unbound types.
+
+The field `Pair.k` is linked to the parameter `k` in the constructor.
+Therefore, any field that holds an object inside an `@E1Container` passed on via the constructor, cannot be `@Modified`.
+
+In summary, after construction an `@E1Container` holds a fixed number of objects, and the container will not change their content, nor exchange them for other objects.
+
+Because an `@E1Container` cannot store additional, modifiable state, it follows that every method call on the container object with the same arguments will render the same result.
+(One could generate a random number with a time-based seed inside a method, but then the generator reads the time from an external source, which should actually be a parameter.)
+
+In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have 'support data': think an array, a tree structure, buckets for a hash table, etc.
+The difference between `@E1Container` and `@E2Container` is essentially about expressing the immutability of the support data.
+After construction, an `@E2Container` type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects.
+
+We formally define a type to be `@E2Immutable` if:
+
+@E2Immutable on type:: a type is effectively level 2 (or content) immutable when
+. all its fields are `@Final` (i.e., it is `@E1Immutable`)
+. all its fields are `@NotModified`
+. all its fields are either private, or `@E2Immutable` themselves
+. all its constructors and non-private methods are `@Independent`.
+
+From items 1 and 2 it follows that all methods are `@NotModified`.
+So what is the reason for rules 3 and 4? We need to ensure that the supporting data cannot be modified externally.
+Here are two examples of types where this is possible:
+
+[source,java]
+----
+class ArrayContainer<T> {
+    public final T[] data;
+    public ArrayContainer(T[] ts) {
+        this.data = new T[ts.length];
+        System.arraycopy(ts, 0, data, 0, ts.length);
+    }
+    public Stream<T> stream() {
+        return Arrays.stream(data);
+    }
+}
+----
+If `data` were private, this type would satisfy the intuitive description of holding a fixed number of objects, the type not changing their content, nor exchanging them for other objects.
+
+
+
+
+Note that for an `@E2Immutable` type not to be a `@Container`, it must modify parameters of methods that are not part of the content of the type.
+This happens quite often in the code analyser: the expression and evaluation contexts are a good example.

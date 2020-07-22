@@ -79,4 +79,9 @@ public class DelegatingTypeStore implements TypeStore {
     public boolean containsPrefix(String fullyQualifiedName) {
         return local.containsPrefix(fullyQualifiedName) || delegate.containsPrefix(fullyQualifiedName);
     }
+
+    @Override
+    public void freeze() {
+        delegate.freeze();
+    }
 }
