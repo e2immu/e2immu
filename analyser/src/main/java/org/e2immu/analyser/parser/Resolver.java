@@ -39,14 +39,14 @@ import static org.e2immu.analyser.util.Logger.log;
 public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
-    public static List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
+    public static List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
-                recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue());
+                recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue(), e2ImmuAnnotationExpressions);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
                 throw rte;
@@ -59,8 +59,12 @@ public class Resolver {
     // one level down, it contains the imports, the top-level types, and for one top-level type, all sub-level types
 
     // the typeContextOfFile contains the types imported; we have no other access to import statements here
-    private static void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph, Map<TypeInfo, SortedType> toSortedType,
-                                                  Set<TypeInfo> stayWithin, TypeInfo typeInfo, TypeContext typeContextOfFile) {
+    private static void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
+                                                  Map<TypeInfo, SortedType> toSortedType,
+                                                  Set<TypeInfo> stayWithin,
+                                                  TypeInfo typeInfo,
+                                                  TypeContext typeContextOfFile,
+                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         Set<TypeInfo> typeDependencies = new HashSet<>();
 
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -73,11 +77,11 @@ public class Resolver {
         ti.subTypes.forEach(typeContextOfType::addToContext);
         ti.subTypes.forEach(subType -> {
             stayWithin.add(subType);
-            recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType);
+            recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType, e2ImmuAnnotationExpressions);
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
 
-        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContextOfFile, false);
+        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false);
         fillInternalMethodCalls(methodGraph);
 
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));

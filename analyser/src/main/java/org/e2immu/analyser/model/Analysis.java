@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
@@ -115,9 +116,9 @@ public abstract class Analysis {
         return Integer.MAX_VALUE;
     }
 
-    public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext);
+    public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext);
 
-    public void transferPropertiesToAnnotations(TypeContext typeContext) {
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions typeContext) {
         ImmutableMap.Builder<VariableProperty, AnnotationExpression> minMapBuilder = new ImmutableMap.Builder<>();
         minMapBuilder.put(VariableProperty.FINAL, typeContext.effectivelyFinal.get());
         minMapBuilder.put(VariableProperty.FLUENT, typeContext.fluent.get());
@@ -218,7 +219,7 @@ public abstract class Analysis {
         preconditionFromAnalysisToAnnotation(typeContext);
     }
 
-    private void doImmutableContainer(TypeContext typeContext, boolean isType) {
+    private void doImmutableContainer(E2ImmuAnnotationExpressions typeContext, boolean isType) {
         Pair<Boolean, Integer> pair = getImmutablePropertyAndBetterThanFormal();
         int immutable = pair.v;
         boolean betterThanFormal = pair.k;
@@ -236,7 +237,8 @@ public abstract class Analysis {
             } else {
                 list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(), new StringConstant(e.getValue()))).collect(Collectors.toList());
             }
-            AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(typeContext.getFullyQualified(entry.getKey()), list);
+            AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(
+                    typeContext.getFullyQualified(entry.getKey().getCanonicalName()), list);
             annotations.put(expression, true);
         }
     }
@@ -245,15 +247,15 @@ public abstract class Analysis {
         return true;
     }
 
-    protected void preconditionFromAnalysisToAnnotation(TypeContext typeContext) {
+    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions typeContext) {
         // nothing to be done; override in method analysis
     }
 
-    private AnnotationExpression sizeAnnotationTrue(TypeContext typeContext, String parameter) {
+    private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions typeContext, String parameter) {
         return typeContext.size.get().copyWith(parameter, true);
     }
 
-    private AnnotationExpression sizeAnnotation(TypeContext typeContext, String parameter, int value) {
+    private AnnotationExpression sizeAnnotation(E2ImmuAnnotationExpressions typeContext, String parameter, int value) {
         return typeContext.size.get().copyWith(parameter, value);
     }
 
@@ -261,9 +263,9 @@ public abstract class Analysis {
     private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
 
     public Messages fromAnnotationsIntoProperties(boolean hasBeenDefined,
-                                              List<AnnotationExpression> annotations,
-                                              TypeContext typeContext,
-                                              boolean overwrite) {
+                                                  List<AnnotationExpression> annotations,
+                                                  E2ImmuAnnotationExpressions typeContext,
+                                                  boolean overwrite) {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         boolean container = false;

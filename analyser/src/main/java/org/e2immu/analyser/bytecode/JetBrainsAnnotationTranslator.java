@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
@@ -33,9 +34,9 @@ public class JetBrainsAnnotationTranslator {
     private static final String ORG_JETBRAINS_ANNOTATIONS_NOTNULL = "org.jetbrains.annotations.NotNull";
     private static final String E2IMMU = "org.e2immu.annotation";
 
-    private final TypeContext typeContext;
+    private final E2ImmuAnnotationExpressions typeContext;
 
-    public JetBrainsAnnotationTranslator(TypeContext typeContext) {
+    public JetBrainsAnnotationTranslator(E2ImmuAnnotationExpressions typeContext) {
         this.typeContext = typeContext;
     }
 
@@ -56,7 +57,7 @@ public class JetBrainsAnnotationTranslator {
     }
 
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
-        TypeInfo typeInfo = typeContext.getFullyQualified(annotation.name, true);
+        TypeInfo typeInfo = typeContext.getFullyQualified(annotation.name);
         MemberValuePair contractExpression = new MemberValuePair("type",
                 new VariableExpression(
                         new FieldReference(

@@ -57,7 +57,7 @@ public class Input {
     private final Resources sourcePath = new Resources();
     private final TypeContext globalTypeContext = new TypeContext();
     private final TypeStore sourceTypeStore = new MapBasedTypeStore();
-
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext.typeStore);
     private final AnnotationStore annotationStore;
     private final ByteCodeInspector byteCodeInspector;
     private final List<URL> annotatedAPIs;
@@ -69,7 +69,7 @@ public class Input {
         assembleClassPath(classPath, "Classpath", configuration.inputConfiguration.classPathParts);
         annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from annotation.xml files in classpath", annotationStore.getNumberOfAnnotations());
-        byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
         preload("org.e2immu.annotation"); // needed for our own stuff
         preload("java.lang"); // there are needed to help with implicit imports
         preload("java.util.function"); // they are needed for functional interfaces that lurk in the background
@@ -223,5 +223,9 @@ public class Input {
 
     public TypeStore getSourceTypeStore() {
         return sourceTypeStore;
+    }
+
+    public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        return e2ImmuAnnotationExpressions;
     }
 }

@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
@@ -33,10 +34,10 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
-    private final TypeContext typeContext;
+    private final E2ImmuAnnotationExpressions typeContext;
     private final Messages messages = new Messages();
 
-    public ParameterAnalyser(TypeContext typeContext) {
+    public ParameterAnalyser(E2ImmuAnnotationExpressions typeContext) {
         this.typeContext = typeContext;
     }
 

@@ -21,6 +21,7 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Resources;
@@ -40,11 +41,13 @@ public class ByteCodeInspector implements OnDemandInspection {
     private final Resources classPath;
     private final TypeContext typeContext;
     private final AnnotationStore annotationStore;
-
-    public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext) {
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+    public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext,
+                             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.classPath = classPath;
         this.typeContext = typeContext;
         this.annotationStore = annotationStore;
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     /**
@@ -108,6 +111,7 @@ public class ByteCodeInspector implements OnDemandInspection {
         MyClassVisitor myClassVisitor = new MyClassVisitor(this,
                 annotationStore,
                 new TypeContext(parentTypeContext),
+                e2ImmuAnnotationExpressions,
                 types,
                 inProcess,
                 enclosingTypes);

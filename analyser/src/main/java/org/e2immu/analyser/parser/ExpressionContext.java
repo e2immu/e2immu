@@ -48,6 +48,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ExpressionContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionContext.class);
 
+    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     public final TypeContext typeContext;
     public final TypeInfo enclosingType;
     public final TypeInfo primaryType;
@@ -104,6 +105,7 @@ public class ExpressionContext {
         this.variableContext = variableContext;
         this.dependenciesOnOtherTypes = dependenciesOnOtherTypes;
         this.dependenciesOnOtherMethodsAndFields = dependenciesOnOtherMethods;
+        this.e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(typeContext.typeStore);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
@@ -344,7 +346,7 @@ public class ExpressionContext {
         TypeInfo typeInfo = new TypeInfo(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
-        Resolver.sortTypes(Map.of(typeInfo, typeContext));
+        Resolver.sortTypes(Map.of(typeInfo, typeContext), e2ImmuAnnotationExpressions);
         return new LocalClassDeclaration(typeInfo);
     }
 

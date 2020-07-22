@@ -26,6 +26,7 @@ import javassist.expr.Expr;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -276,7 +277,7 @@ public class AnnotationExpression {
         }
     }
 
-    public static AnnotationExpression container(TypeContext typeContext, int immutable) {
+    public static AnnotationExpression container(E2ImmuAnnotationExpressions typeContext, int immutable) {
         TypeInfo typeInfo;
         switch (immutable) {
             case 0:
@@ -295,7 +296,7 @@ public class AnnotationExpression {
                 .build();
     }
 
-    public static AnnotationExpression immutable(TypeContext typeContext, int immutable) {
+    public static AnnotationExpression immutable(E2ImmuAnnotationExpressions typeContext, int immutable) {
         TypeInfo typeInfo;
         switch (immutable) {
             case 1:

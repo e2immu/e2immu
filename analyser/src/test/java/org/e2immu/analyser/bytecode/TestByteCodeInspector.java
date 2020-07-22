@@ -21,6 +21,7 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
@@ -49,7 +50,9 @@ public class TestByteCodeInspector {
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
+        TypeContext typeContext = new TypeContext();
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
+                new E2ImmuAnnotationExpressions(typeContext.typeStore));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         return types.get(0);
     }
@@ -60,7 +63,9 @@ public class TestByteCodeInspector {
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, new TypeContext());
+        TypeContext typeContext = new TypeContext();
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
+                new E2ImmuAnnotationExpressions(typeContext.typeStore));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         if (types.isEmpty()) throw new UnsupportedOperationException("Cannot find path " + path);
         return types.get(0);

@@ -540,7 +540,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
-    public Messages copyAnnotationsIntoMethodAnalysisProperties(TypeContext typeContext, boolean overwrite, boolean hasBeenDefined) {
+    public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, boolean hasBeenDefined) {
         if (methodAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Method analysis already set for " + distinguishingName());

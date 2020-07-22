@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
@@ -170,7 +171,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public Messages copyAnnotationsIntoFieldAnalysisProperties(TypeContext typeContext,
+    public Messages copyAnnotationsIntoFieldAnalysisProperties(E2ImmuAnnotationExpressions typeContext,
                                                                boolean overwrite,
                                                                boolean hasBeenDefined) {
         if (fieldAnalysis.isSet()) {

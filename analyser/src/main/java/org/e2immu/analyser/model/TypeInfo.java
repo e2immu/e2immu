@@ -208,7 +208,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         MethodInfo nameMethodInfo = new MethodInfo(this, "name", List.of(),
                 PRIMITIVES.stringParameterizedType, false);
         nameMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .addAnnotation(expressionContext.typeContext.notModified.get())
+                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
                 .setReturnType(PRIMITIVES.stringParameterizedType)
                 .build(nameMethodInfo));
 
@@ -216,10 +216,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 PRIMITIVES.stringParameterizedType, true);
         ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
-                .addAnnotation(expressionContext.typeContext.notNull.get())
+                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get())
                 .build(valueOfMethodInfo));
         valueOfMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .addAnnotation(expressionContext.typeContext.notModified.get())
+                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
                 .setReturnType(asParameterizedType())
                 .addParameter(valueOfP0)
                 .build(valueOfMethodInfo));
@@ -991,7 +991,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isNestedType() && isPrivate();
     }
 
-    public Messages copyAnnotationsIntoTypeAnalysisProperties(TypeContext typeContext, boolean overwrite) {
+    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
         boolean hasBeenDefined = hasBeenDefined();
         Messages messages = new Messages();
         if (this.typeAnalysis.isSet()) {

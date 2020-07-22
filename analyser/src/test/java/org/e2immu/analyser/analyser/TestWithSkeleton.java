@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Input;
-import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.testexample.withannotatedapi.TestSkeleton;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +55,7 @@ public class TestWithSkeleton {
 
     private TypeContext typeContext;
     private TypeInfo testSkeleton;
+    private E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
     @Before
     public void before() throws IOException {
@@ -79,6 +77,7 @@ public class TestWithSkeleton {
         Parser parser = new Parser(configuration);
         parser.run();
         typeContext = parser.getTypeContext();
+        e2ImmuAnnotationExpressions = parser.getE2ImmuAnnotationExpressions();
         testSkeleton = typeContext.typeStore.get(TestSkeleton.class.getCanonicalName());
         Assert.assertNotNull(testSkeleton);
     }
@@ -88,7 +87,7 @@ public class TestWithSkeleton {
         TypeInfo set = typeContext.typeStore.get("java.util.Set");
         Assert.assertNotNull(set);
         Assert.assertFalse(set.typeInspection.get().hasBeenDefined);
-        Assert.assertTrue(set.annotatedWith(typeContext.container.get()));
+        Assert.assertTrue(set.annotatedWith(e2ImmuAnnotationExpressions.container.get()));
         TypeAnalysis setAnalysis = set.typeAnalysis.get();
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));

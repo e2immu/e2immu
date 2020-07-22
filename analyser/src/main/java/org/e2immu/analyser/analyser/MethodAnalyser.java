@@ -35,10 +35,7 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.JoinReturnStatements;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -58,12 +55,12 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
 
-    private final TypeContext typeContext;
+    private final E2ImmuAnnotationExpressions typeContext;
     private final ParameterAnalyser parameterAnalyser;
     private final ComputeLinking computeLinking = new ComputeLinking();
     private final Messages messages = new Messages();
 
-    public MethodAnalyser(TypeContext typeContext) {
+    public MethodAnalyser(E2ImmuAnnotationExpressions typeContext) {
         this.typeContext = typeContext;
         this.parameterAnalyser = new ParameterAnalyser(typeContext);
     }

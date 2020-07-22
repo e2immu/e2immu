@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
@@ -45,10 +46,10 @@ import static org.e2immu.analyser.util.Logger.log;
 
 
 public class FieldAnalyser {
-    private final TypeContext typeContext;
+    private final E2ImmuAnnotationExpressions typeContext;
     private final Messages messages = new Messages();
 
-    public FieldAnalyser(TypeContext typeContext) {
+    public FieldAnalyser(E2ImmuAnnotationExpressions typeContext) {
         this.typeContext = typeContext;
     }
 

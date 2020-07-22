@@ -31,6 +31,7 @@ import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
@@ -68,7 +69,7 @@ public class AnnotationUploader {
         return clazz.getSimpleName().toLowerCase();
     }
 
-    public AnnotationUploader(UploadConfiguration configuration, TypeContext typeContext) {
+    public AnnotationUploader(UploadConfiguration configuration, E2ImmuAnnotationExpressions typeContext) {
         this.configuration = configuration;
 
         typePairs = List.of(

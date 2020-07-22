@@ -24,10 +24,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.SortedType;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -60,13 +57,13 @@ public class TypeAnalyser {
     public static final int POST_ANALYSIS = 100;
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
-    private final TypeContext typeContext;
+    private final E2ImmuAnnotationExpressions typeContext;
     private final Messages messages = new Messages();
 
     public static final BinaryOperator<Boolean> TERNARY_OR = (val, acc) -> val == null || acc == null ? null : val || acc;
     public static final BinaryOperator<Boolean> TERNARY_AND = (val, acc) -> val == null || acc == null ? null : val && acc;
 
-    public TypeAnalyser(@NotNull TypeContext typeContext) {
+    public TypeAnalyser(@NotNull E2ImmuAnnotationExpressions typeContext) {
         fieldAnalyser = new FieldAnalyser(typeContext);
         methodAnalyser = new MethodAnalyser(typeContext);
         this.typeContext = Objects.requireNonNull(typeContext);

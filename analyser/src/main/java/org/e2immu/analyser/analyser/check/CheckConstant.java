@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.TypeContext;
@@ -98,7 +99,7 @@ public class CheckConstant {
     }
 
 
-    public static AnnotationExpression createConstantAnnotation(TypeContext typeContext, Value value) {
+    public static AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Value value) {
         Expression test;
         Expression valueExpression;
         Expression computed = typeContext.constant.get().expressions.get().get(0);

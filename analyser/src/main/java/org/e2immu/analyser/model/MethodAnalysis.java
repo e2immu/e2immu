@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.Pair;
@@ -202,7 +203,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     @Override
-    public Map<VariableProperty, AnnotationExpression> oppositesMap(TypeContext typeContext) {
+    public Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext) {
         return Map.of(
                 VariableProperty.MODIFIED, typeContext.notModified.get(),
                 VariableProperty.INDEPENDENT, typeContext.dependent.get());
@@ -276,7 +277,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     @Override
-    protected void preconditionFromAnalysisToAnnotation(TypeContext typeContext) {
+    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions typeContext) {
         if (precondition.isSet()) {
             AnnotationExpression ae = typeContext.precondition.get().copyWith("value", precondition.get().toString());
             annotations.put(ae, true);

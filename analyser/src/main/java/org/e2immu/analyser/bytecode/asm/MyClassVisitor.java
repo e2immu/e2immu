@@ -27,6 +27,7 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.*;
@@ -63,6 +64,7 @@ public class MyClassVisitor extends ClassVisitor {
     public MyClassVisitor(OnDemandInspection onDemandInspection,
                           AnnotationStore annotationStore,
                           TypeContext typeContext,
+                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                           List<TypeInfo> types,
                           Set<TypeInfo> inProcess,
                           Stack<TypeInfo> enclosingTypes) {
@@ -73,7 +75,7 @@ public class MyClassVisitor extends ClassVisitor {
         this.typeContext = typeContext;
         this.onDemandInspection = onDemandInspection;
         this.annotationStore = annotationStore;
-        jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(typeContext) : null;
+        jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(e2ImmuAnnotationExpressions) : null;
     }
 
     @Override
