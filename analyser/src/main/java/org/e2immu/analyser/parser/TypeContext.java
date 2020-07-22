@@ -36,6 +36,8 @@ import static org.e2immu.analyser.util.Logger.log;
 /**
  * Inside a compilation unit, there is a context in which names are known.
  * This context is inherently recursive, dependent on the container.
+ *
+ * TODO Should become eventual @E2Container
  */
 public class TypeContext {
     private final TypeContext parentContext;

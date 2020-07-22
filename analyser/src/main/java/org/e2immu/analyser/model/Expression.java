@@ -103,14 +103,6 @@ public interface Expression {
     // *************************** methods that are not meant to be overridden *****************
 
     @NotModified
-    // @Immutable
-    default List<LocalVariableReference> allNewLocalVariables() {
-        List<LocalVariableReference> result = new ArrayList<>();
-        collect(Expression::newLocalVariables, result::addAll);
-        return ImmutableList.copyOf(result);
-    }
-
-    @NotModified
     default <T> void collect(Function<Expression, List<T>> collector, Consumer<List<T>> resultHandler) {
         resultHandler.accept(collector.apply(this));
         for (Expression sub : subExpressions()) {

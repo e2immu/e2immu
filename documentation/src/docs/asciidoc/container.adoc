@@ -41,6 +41,3 @@ public Pair<Value,EvaluationContext> evaluate(
         ForwardEvaluationInfo forwardEvaluationInfo) {
 ----
 This approach is much more functional, immutable in nature.
-
-Part of the evaluation context, the current `TypeContext` object contains an error registry which will be written to over the course of type, method and field analysis.
-If we split that off, the type context becomes eventually content immutable, content not null after the inspection phase.
