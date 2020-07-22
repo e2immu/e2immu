@@ -67,7 +67,6 @@ class VariableProperties implements EvaluationContext {
 
     // modified by adding errors
     final Messages messages;
-    final TypeContext typeContext;
 
     // the rest should be not modified
 
@@ -88,22 +87,21 @@ class VariableProperties implements EvaluationContext {
     private final Set<ObjectFlow> internalObjectFlows;
 
     // TEST ONLY, in type analyser, for fields
-    public VariableProperties(TypeContext typeContext, TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
-        this(typeContext, currentType, iteration, debugConfiguration, null, null, new HashSet<>());
+    public VariableProperties(TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
+        this(currentType, iteration, debugConfiguration, null, null, new HashSet<>());
     }
 
     // in type analyser, for methods
-    public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
-        this(typeContext, currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null, new HashSet<>());
+    public VariableProperties(int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
+        this(currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null, new HashSet<>());
     }
 
     // in type analyser, for fields
-    public VariableProperties(TypeContext typeContext, int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
-        this(typeContext, currentField.owner, iteration, debugConfiguration, null, currentField, new HashSet<>());
+    public VariableProperties(int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
+        this(currentField.owner, iteration, debugConfiguration, null, currentField, new HashSet<>());
     }
 
-    private VariableProperties(TypeContext typeContext,
-                               TypeInfo currentType,
+    private VariableProperties(TypeInfo currentType,
                                int iteration,
                                DebugConfiguration debugConfiguration,
                                MethodInfo currentMethod,
@@ -115,7 +113,6 @@ class VariableProperties implements EvaluationContext {
         this.parent = null;
         conditionalManager = new ConditionalManager(null);
         uponUsingConditional = null;
-        this.typeContext = typeContext;
         this.currentMethod = currentMethod;
         this.currentField = currentField;
         this.currentType = currentType;
@@ -149,7 +146,6 @@ class VariableProperties implements EvaluationContext {
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
         this.conditionalManager = new ConditionalManager(conditional);
-        this.typeContext = parent.typeContext;
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
         this.currentType = parent.currentType;
@@ -212,11 +208,6 @@ class VariableProperties implements EvaluationContext {
     @Override
     public MethodInfo getCurrentMethod() {
         return currentMethod;
-    }
-
-    @Override
-    public FieldInfo getCurrentField() {
-        return currentField;
     }
 
     @Override
@@ -601,13 +592,6 @@ class VariableProperties implements EvaluationContext {
         // TODO ObjectFlow
         return new VariableValue(this, variable, aboutVariable.name);
     }
-
-
-    @Override
-    public TypeContext getTypeContext() {
-        return typeContext;
-    }
-
 
     public void setGuaranteedToBeReachedInCurrentBlock(boolean guaranteedToBeReachedInCurrentBlock) {
         this.guaranteedToBeReachedInCurrentBlock = guaranteedToBeReachedInCurrentBlock;

@@ -53,10 +53,6 @@ public interface EvaluationContext {
         return null;
     }
 
-    default FieldInfo getCurrentField() {
-        return null;
-    }
-
     default NumberedStatement getCurrentStatement() {
         return null;
     }
@@ -80,12 +76,6 @@ public interface EvaluationContext {
     default EvaluationContext child(@NotNull Value conditional,
                                     Runnable uponUsingConditional,
                                     boolean guaranteedToBeReachedByParentStatement) {
-        throw new UnsupportedOperationException();
-    }
-
-    // used in LambdaBlock to create a new StatementAnalyser, which needs the typeContext...
-    @NotNull
-    default TypeContext getTypeContext() {
         throw new UnsupportedOperationException();
     }
 

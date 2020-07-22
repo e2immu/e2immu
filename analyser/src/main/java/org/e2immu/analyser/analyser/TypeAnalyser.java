@@ -141,7 +141,7 @@ public class TypeAnalyser {
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(typeContext, iteration, debugConfiguration, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration, (MethodInfo) member);
 
                     for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
                         methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
@@ -158,7 +158,7 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(typeContext, iteration, debugConfiguration,
+                            VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
 
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
@@ -177,7 +177,7 @@ public class TypeAnalyser {
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.beforeFieldAnalyserVisitors) {
                         fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
-                    VariableProperties fieldProperties = new VariableProperties(typeContext, iteration, debugConfiguration, fieldInfo);
+                    VariableProperties fieldProperties = new VariableProperties(iteration, debugConfiguration, fieldInfo);
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {

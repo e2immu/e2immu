@@ -154,11 +154,11 @@ public class TestWithSkeleton {
     }
 
     private VariableProperties newVariableProperties(MethodInfo method) {
-        return new VariableProperties(typeContext, 0, new DebugConfiguration.Builder().build(), method);
+        return new VariableProperties(0, new DebugConfiguration.Builder().build(), method);
     }
 
     private VariableProperties newVariableProperties(TypeInfo typeInfo) {
-        return new VariableProperties(typeContext, typeInfo, 0, new DebugConfiguration.Builder().build());
+        return new VariableProperties(typeInfo, 0, new DebugConfiguration.Builder().build());
     }
 
     @Test
