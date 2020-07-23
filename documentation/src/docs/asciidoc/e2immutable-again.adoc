@@ -1,20 +1,30 @@
 === @E2Immutable, new discussion
 
-A `@Container` is a type to which you can safely pass on your objects, it will not modify them.
+Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
 This is the formal rule:
 
-`@Container` on a type:: when none of the parameters of the methods and constructors of the type are `@Modified`.
+A type is a `@Container`::
+when none of the parameters of the methods and constructors of the type are `@Modified`.
 
-We proceed with effectively final fields, and the first level of immutability:
+We proceed with effectively final fields, and the first level of immutability.
+Both ensure that once construction is over, the fields are not assigned to anymore:
 
-`@Final` on a field:: a field is effectively final when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private methods.
+A field is `@Final`::
+when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private (non-constructor) methods.
+The field is then 'effectively final'.
 
-`@E1Immutable` on a type:: when all fields are effectively final.
+A type is `@E1Immutable`::
+when all fields are effectively final.
+It is 'level 1 immutable'.
 
-A typical `@E1Container` (a combination of `@Container` and `@E1Immutable`) is `Pair`: it is a type that holds two objects of two different types.
+A type is `@E1Container`::
+when it is both level 1 immutable and it is a container.
+
+The following example is typical of a level 1 immutable container:
 
 [source,java]
 ----
+@E1Container
 public class Pair<K,V> {
     public final K k;
     public final V v;
@@ -30,32 +40,53 @@ Note that since `K` and `V` are unbound types, it is not possible to modify thei
 The field `Pair.k` is linked to the parameter `k` in the constructor.
 Therefore, any field that holds an object inside an `@E1Container` passed on via the constructor, cannot be `@Modified`.
 
-In summary, after construction an `@E1Container` holds a fixed number of objects, and the container will not change their content, nor exchange them for other objects.
+Let us summarize the loose definition for a level 1 immutable container, and generalize it straight away by dropping the level descriptor:
 
-Because an `@E1Container` cannot store additional, modifiable state, it follows that every method call on the container object with the same arguments will render the same result.
-(One could generate a random number with a time-based seed inside a method, but then the generator reads the time from an external source, which should actually be a parameter.)
+IMPORTANT: After construction, an immutable container holds a number of objects, and the container will not change their content, nor will it exchange them for other objects, or allow others to do so.
+The container is not responsible for what others do to the content of the objects it is given.
+
+Assuming the type's goal is to store a number of objects, it is easy to see that a level 1 immutable container cannot hold additional, modifiable state.
+It follows that every method call on the container object with the same arguments will render the same result.
+(Note that this can be bypassed in Java by using _static_ state, i.e., state specific to the type rather than the object.
+Let us ignore that for now.)
 
 In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have 'support data': think an array, a tree structure, buckets for a hash table, etc.
 The difference between `@E1Container` and `@E2Container` is essentially about expressing the immutability of the support data.
-After construction, an `@E2Container` type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects.
+After construction, a level 2 immutable type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects, nor allow others to exchange them.
 
-We formally define a type to be `@E2Immutable` if:
+Let us formalize this definition.
 
-@E2Immutable on type:: a type is effectively level 2 (or content) immutable when
+A type is `@E2Immutable`:: or effectively level 2 immutable, when
 . all its fields are `@Final` (i.e., it is `@E1Immutable`)
 . all its fields are `@NotModified`
 . all its fields are either private, or `@E2Immutable` themselves
 . all its constructors and non-private methods are `@Independent`.
 
 From items 1 and 2 it follows that all methods are `@NotModified`.
-So what is the reason for rules 3 and 4? We need to ensure that the supporting data cannot be modified externally.
-Here are two examples of types where this is possible:
+So what is the reason for rules 3 and 4? We need to ensure that the 'supporting data' cannot be modified externally.
+Here are a number of examples of types where this is possible:
 
+.Example with array, v1
 [source,java]
 ----
-class ArrayContainer<T> {
-    public final T[] data;
-    public ArrayContainer(T[] ts) {
+class ArrayContainer1<T> {
+    private final T[] data;
+    public ArrayContainer1(T[] ts) {
+        this.data = ts; // <1>
+    }
+    public Stream<T> stream() {
+        return Arrays.stream(data);
+    }
+}
+----
+<1> After creation, changes to the source array are effectively changes to the data.
+
+.Example with array, v2, still not OK
+[source,java]
+----
+class ArrayContainer2<T> {
+    public final T[] data; // <1>
+    public ArrayContainer2(T[] ts) {
         this.data = new T[ts.length];
         System.arraycopy(ts, 0, data, 0, ts.length);
     }
@@ -64,10 +95,117 @@ class ArrayContainer<T> {
     }
 }
 ----
-If `data` were private, this type would satisfy the intuitive description of holding a fixed number of objects, the type not changing their content, nor exchanging them for other objects.
+<1> Users of this type can modify the content of the array!
+
+.Example with array, v3, safe
+[source,java]
+----
+class ArrayContainer3<T> {
+    private final T[] data; // <1>
+    public ArrayContainer3(T[] ts) {
+        this.data = new T[ts.length]; // <2>
+        System.arraycopy(ts, 0, data, 0, ts.length);
+    }
+    public Stream<T> stream() {
+        return Arrays.stream(data);
+    }
+}
+----
+<1> The array is private, and therefore protected from modification.
+<2> The array has been copied, and therefore is independent of the one passed in the parameter.
+
+The independence rule enforces the type to have its own structure rather than someone else's.
+Here's the same group of example, now with JDK Collections:
+
+.Example with collection, v1
+[source,java]
+----
+class SetBasedContainer1<T> {
+    private final Set<T> data;
+    public SetBasedContainer1(Set<T> ts) {
+        this.data = ts; // <1>
+    }
+    public Stream<T> stream() {
+        return data.stream();
+    }
+}
+----
+<1> After creation, changes to the source set are effectively changes to the data.
+
+.Example with collection, v2, still not OK
+[source,java]
+----
+class SetBasedContainer2<T> {
+    public final Set<T> data; // <1>
+    public SetBasedContainer2(Set<T> ts) {
+        this.data = new HashSet<>(ts);
+    }
+    public Stream<T> stream() {
+        return data.stream();
+    }
+}
+----
+<1> Users of this type can modify the content of the set after creation!
+
+.Example with set, v3, safe
+[source,java]
+----
+class SetBasedContainer3<T> {
+    private final Set<T> data; // <1>
+    public SetBasedContainer3(Set<T> ts) {
+        this.data = new HashSet<>(ts); // <2>
+    }
+    public Stream<T> stream() {
+        return data.stream();
+    }
+}
+----
+<1> The set is private, and therefore protected from external modification.
+<2> The set has been copied, and therefore is independent of the one passed in the parameter.
+
+We now need to elaborate a bit more on the four rules in the definition.
+Assuming 'support data', rather than direct assignment of the objects to hold to fields, we stipulate that the type cannot change its support data using rules 1 and 2: after construction, no method inside the type can modify it.
+Rules 3 and 4 are there to make sure others don't change the support data.
+When the support data is private, it is safe enough.
+Non-private data is hard to protect, and we can only require the same level of protection as we intend to have for the type: level 2 immutable.
+Why not level 1? Because of the general complexity of the support data:
+
+.Example with set, v4, safe
+[source,java]
+----
+class SetBasedContainer4<T> {
+    public final ImmutableSet<T> data; // <1>
+    public SetBasedContainer4(Set<T> ts) {
+        this.data = ImmutableSet.copyOf(ts); // <2>
+    }
+    public Stream<T> stream() {
+        return data.stream();
+    }
+}
+----
+<1> the data is public, but the `ImmutableSet` is `@E2Immutable` itself.
+<2> Independence guaranteed.
+
+The independence rule 4 is there to ensure that the type does not expose its support data through parameters and return types:
+
+.Example with set, v5, unsafe
+[source,java]
+----
+class SetBasedContainer5<T> {
+    private final Set<T> data; // <1>
+    public SetBasedContainer5(Set<T> ts) {
+        this.data = new HashSet<>(ts); // <2>
+    }
+    public Set<T> getSet() {
+        return data; // <3>
+    }
+}
+----
+<1> No exposure via the field
+<2> No exposure via the parameter of the constructor
+<3> ... but exposure via the getter. We could as well have made the field `public final`.
 
 
 
-
-Note that for an `@E2Immutable` type not to be a `@Container`, it must modify parameters of methods that are not part of the content of the type.
+As a bit of an afterthought, note that for an `@E2Immutable` type not to be a `@Container`, it must modify parameters of methods that are not part of the content of the type.
 This happens quite often in the code analyser: the expression and evaluation contexts are a good example.
