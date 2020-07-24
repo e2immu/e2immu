@@ -1,4 +1,8 @@
-=== @E2Immutable, new discussion
+=== Modification
+
+We need to define `@NotModified` and `@Independent` here.
+
+=== Immutability
 
 Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
 This is the formal rule:
@@ -6,19 +10,35 @@ This is the formal rule:
 A type is a `@Container`::
 when none of the parameters of the methods and constructors of the type are `@Modified`.
 
+Whatever else the container does, storing them in fields or not, it will not change your objects.
+You obviously remain free to change them, and the container will keep on holding the changed object, not some copy.
+
 We proceed with effectively final fields, and the first level of immutability.
-Both ensure that once construction is over, the fields are not assigned to anymore:
+The former ensures that once construction is over, the fields cannot be assigned anymore:
 
 A field is `@Final`::
 when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private (non-constructor) methods.
 The field is then 'effectively final'.
 
 A type is `@E1Immutable`::
-when all fields are effectively final.
+when all fields are both `@Final` and `@NotModified`.
 It is 'level 1 immutable'.
 
+****
+Notes
+
+. in rule 2, requiring that all fields are `@NotModified` is equivalent to requiring that all methods that are not part of the construction phase, are `@NotModified`.
+
+. Rule 1 follows from rule 2, because `@NotModified` is stronger than `@Final`.
+#TODO# this is not too important, but we need to check our implementation.
+****
+
 A type is `@E1Container`::
-when it is both level 1 immutable and it is a container.
+when it is both `@E1Immutable` and `@Container`.
+
+****
+Note: Rule 2 in `@E1Immutable` is different from the requirement that no parameter is `@NotModified`, however, when the fields are directly assigned from parameters in the constructor, the rules amount to the same.
+****
 
 The following example is typical of a level 1 immutable container:
 
@@ -36,35 +56,45 @@ public class Pair<K,V> {
 ----
 
 Note that since `K` and `V` are unbound types, it is not possible to modify their content, since there are no modifying methods one can call on unbound types.
+This example doesn't even have non-constructor methods.
 
-The field `Pair.k` is linked to the parameter `k` in the constructor.
-Therefore, any field that holds an object inside an `@E1Container` passed on via the constructor, cannot be `@Modified`.
+The field `k` is linked to the parameter `k` in the constructor.
+The `@NotModified` requirement on the parameter directly translates to an `@NotModified` on the field.
 
-Let us summarize the loose definition for a level 1 immutable container, and generalize it straight away by dropping the level descriptor:
+Let us summarize the loose definition for a level 1 immutable type, and generalize it straight away by dropping the level descriptor:
 
 IMPORTANT: After construction, an immutable container holds a number of objects, and the container will not change their content, nor will it exchange them for other objects, or allow others to do so.
-The container is not responsible for what others do to the content of the objects it is given.
+The container is not responsible for what others do to the content of the objects it has been given.
 
-Assuming the type's goal is to store a number of objects, it is easy to see that a level 1 immutable container cannot hold additional, modifiable state.
+Assuming the type's goal is to store a number of objects, it is easy to see that a level 1 immutable type cannot hold additional, modifiable state.
 It follows that every method call on the container object with the same arguments will render the same result.
 (Note that this can be bypassed in Java by using _static_ state, i.e., state specific to the type rather than the object.
 Let us ignore that for now.)
 
 In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have 'support data': think an array, a tree structure, buckets for a hash table, etc.
-The difference between `@E1Container` and `@E2Container` is essentially about expressing the immutability of the support data.
+The difference between `@E1Immutable` and `@E2Immutable` is essentially about expressing the immutability of the support data.
 After construction, a level 2 immutable type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects, nor allow others to exchange them.
 
 Let us formalize this definition.
 
-A type is `@E2Immutable`:: or effectively level 2 immutable, when
-. all its fields are `@Final` (i.e., it is `@E1Immutable`)
-. all its fields are `@NotModified`
-. all its fields are either private, or `@E2Immutable` themselves
+A type is `@E2Immutable` or effectively level 2 immutable, when
+
+. it is `@E1Immutable`
+. all its fields are either private, or are at least `@E1Immutable`.
 . all its constructors and non-private methods are `@Independent`.
 
-From items 1 and 2 it follows that all methods are `@NotModified`.
-So what is the reason for rules 3 and 4? We need to ensure that the 'supporting data' cannot be modified externally.
-Here are a number of examples of types where this is possible:
+****
+Notes
+
+. rule 2 is there to ensure that the content of the object cannot be modified through access to the non-private fields.
+
+. rule 3 is there to ensure that the content of the object cannot be modified externally.
+****
+
+Both properties can be reached _eventually_ if there is one or more methods that effect a transition from the mutable to the immutable state.
+In the case of `@E1Immutable`, this means that all methods that assign or modify fields become off-limits after calling this marker method.
+
+The `@Container` property can currently not be made eventual.
 
 .Example with array, v1
 [source,java]
@@ -79,7 +109,7 @@ class ArrayContainer1<T> {
     }
 }
 ----
-<1> After creation, changes to the source array are effectively changes to the data.
+<1> After creation, changes to the source array are effectively changes to the data. Fails rule 3, independence.
 
 .Example with array, v2, still not OK
 [source,java]
@@ -95,7 +125,7 @@ class ArrayContainer2<T> {
     }
 }
 ----
-<1> Users of this type can modify the content of the array!
+<1> Users of this type can modify the content of the array! Fails rule 2.
 
 .Example with array, v3, safe
 [source,java]
@@ -163,13 +193,6 @@ class SetBasedContainer3<T> {
 <1> The set is private, and therefore protected from external modification.
 <2> The set has been copied, and therefore is independent of the one passed in the parameter.
 
-We now need to elaborate a bit more on the four rules in the definition.
-Assuming 'support data', rather than direct assignment of the objects to hold to fields, we stipulate that the type cannot change its support data using rules 1 and 2: after construction, no method inside the type can modify it.
-Rules 3 and 4 are there to make sure others don't change the support data.
-When the support data is private, it is safe enough.
-Non-private data is hard to protect, and we can only require the same level of protection as we intend to have for the type: level 2 immutable.
-Why not level 1? Because of the general complexity of the support data:
-
 .Example with set, v4, safe
 [source,java]
 ----
@@ -186,7 +209,7 @@ class SetBasedContainer4<T> {
 <1> the data is public, but the `ImmutableSet` is `@E2Immutable` itself.
 <2> Independence guaranteed.
 
-The independence rule 4 is there to ensure that the type does not expose its support data through parameters and return types:
+The independence rule 3 is there to ensure that the type does not expose its support data through parameters and return types:
 
 .Example with set, v5, unsafe
 [source,java]
@@ -203,9 +226,154 @@ class SetBasedContainer5<T> {
 ----
 <1> No exposure via the field
 <2> No exposure via the parameter of the constructor
-<3> ... but exposure via the getter. We could as well have made the field `public final`.
+<3> ... but exposure via the getter.
+We could as well have made the field `public final`.
 
+==== Examples
 
+This is a `@Container`, the field is `@Final`, but the field is not `@NotModified`:
 
-As a bit of an afterthought, note that for an `@E2Immutable` type not to be a `@Container`, it must modify parameters of methods that are not part of the content of the type.
-This happens quite often in the code analyser: the expression and evaluation contexts are a good example.
+[source,java]
+----
+class Example2 {
+    @Final
+    @Modified
+    public final Set<T> set = new HashSet<>();
+
+    @Modified
+    public void add(T t) { set.add(t); }
+
+    @NotModified
+    public Stream<T> stream() { return set.stream(); }
+}
+----
+
+==== Case Lazy
+
+`Lazy` implements a lazily-initialized immutable field, of unbound generic type `T`.
+As such, it is eventually an `@E1Container`.
+
+[source,java]
+----
+@E1Container(after = "get")
+public class Lazy<T> {
+    private final Supplier<T> supplier;
+    private volatile T t;
+
+    public Lazy(Supplier<T> supplier) {
+        this.supplier = supplier;
+    }
+
+    @Modified
+    @Mark("get")
+    public T get() {
+        T localT = t;
+        if (localT != null) return localT;
+
+        synchronized (this) {
+            if (t == null) {
+                t = Objects.requireNonNull(supplier.get());
+            }
+            return t;
+        }
+    }
+}
+----
+
+After calling the marker method `get()`, `t` cannot be assigned anymore.
+Because it is of an unbound type, the field `t` is `@NotModified`.
+Because it is a functional type, `supplier` is `@NotModified`.
+The type is also clearly a container.
+Tte type violates the independence rule, so it is not a `@E2Container`.
+
+==== Case E2ImmuAnnotationExpressions
+
+Code can be summarized as:
+
+[source,java]
+----
+public class E2ImmuAnnotationExpressions {
+
+    @NotModified
+    private final TypeStore typeStore;
+
+    public E2ImmuAnnotationExpressions(@NotNull TypeStore typeStore) {
+        this.typeStore = typeStore;
+    }
+
+    public final Lazy<AnnotationExpression> beforeImmutableMark =
+      new Lazy<>(() -> create(BeforeImmutableMark.class));
+    // ... like beforeImmutableMark there's many more
+
+    @NotModified
+    private AnnotationExpression create(Class<?> clazz) {
+      ... // reads from the typeStore
+    }
+
+    @NotModified
+    @NotNull
+    public TypeInfo getFullyQualified(@NotNull String fqn) {
+        return Objects.requireNonNull(typeStore.get(fqn));
+    }
+}
+----
+
+The `TypeStore` is eventually an `@E2Container`, once all types have been added.
+The types in the store are of class `TypeInfo`.
+They are independent of the `typeStore`, so rule 3 is satisfied both for constructor and `getFullyQualified` method.
+
+The type `Lazy` is eventually an `@E1Container`, which makes it irrelevant what the nature of `AnnotationExpression` is.
+
+We can therefore conclude that `E2ImmuAnnotationExpressions` as depicted here is eventually an `@E2Container`.
+
+Let's now remove the `Lazy` intermediate, by changing the code to:
+
+[source,java]
+----
+public class E2ImmuAnnotationExpressions2 {
+
+    @NotModified
+    private final TypeStore typeStore;
+
+    public final AnnotationExpression beforeImmutableMark;
+
+    public E2ImmuAnnotationExpressions2(@NotNull TypeStore typeStore) {
+        this.typeStore = typeStore;
+        this.beforeImmutableMark = create(BeforeImmutableMark.class);
+    }
+    ...
+}
+----
+
+Because `Lazy` has gone, we would have an `@E1Immutable` restriction on `AnnotationExpression`
+to maintain `@E2Immutable`.
+Similarly, if we change the code to:
+
+[source,java]
+----
+public class E2ImmuAnnotationExpressions3 {
+
+    @NotModified
+    private final TypeStore typeStore;
+
+    private final AnnotationExpression beforeImmutableMark;
+
+    public E2ImmuAnnotationExpressions3(@NotNull TypeStore typeStore) {
+        this.typeStore = typeStore;
+        this.beforeImmutableMark = create(BeforeImmutableMark.class);
+    }
+
+    public AnnotationExpression getBeforeImmutableMark() {
+        return this.beforeImmutableMark;
+    }
+
+    ...
+}
+----
+
+We again have an independence rule to contend with, which demands that `AnnotationExpression` is at least `@E1Container`
+if we want to maintain `@E2Immutable`.
+
+It is important to realize that `@E1Immutable` is not _less desirable_ than `@E2Immutable`.
+The former exists merely for simpler constructs than the latter.
+Where there is a mixture of fields with constructs which require support data, and fields which don't, intermediates such as `Lazy` may be necessary for the overall `@E2Immutable` to be reached.
