@@ -1,6 +1,257 @@
+
+=== Plan
+
+. effectively final
+. deeply immutable using types composed of primitives, `Object`, and `String`
+. combination of effectively final and unbound parameter types, `Pair`
+. we do not have to live with only deeply immutable
+. example where the components of `Pair` can be modified
+. definition of modification
+. modifying methods in collections
+. intuitive definitions of independence and linking using collections
+. back to `Pair`, level 1 immutability
+. back to collections: level 1 immutability is not good enough
+. level 2 immutability
+. formal definition of linking: when should we insist on level 2??
+. from which follows the formal definition of independence.
+
+=== Effectively final
+
+We will annotate a field as `@Final` when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private (non-constructor) methods.
+The field is then 'effectively final'.
+Fields that are not `@Final` are marked `@Variable`.
+
+When an object consists solely of primitives, or deeply immutable objects such as `java.lang.String`, having all fields effectively final is enough to generate an object that is again deeply immutable.
+
+.Example 1, an object consisting of primitives and a ``String``
+[source,java]
+----
+class DeeplyImmutable {
+    public int x;
+    public int y;
+    public String message;
+
+    public DeeplyImmutable(int x, int y, String message) {
+        this.message = message;
+        this.x = x;
+        this.y = y;
+    }
+}
+----
+
+It is not feasible (and we do not wish to) work with deeply immutable objects only.
+To continue, we must first understand the notion of modification.
+
 === Modification
 
-We need to define `@NotModified` and `@Independent` here.
+A method is modifying if it causes an assignment in the object graph of the fields of this object.
+Consequently, a method is not modifying if it only reads from the object graph of the fields.
+We use the annotations `@NotModified` and `@Modified`.
+
+For clarity, we will say that directly assigning to the fields also constitutes a modification.
+As an example, setters are `@Modified`, while getters are `@NotModified`:
+
+[source,java]
+----
+class Message {
+    @Variable
+    private String message;
+
+    @NotModified
+    public String getMessage() {
+        return message;
+    }
+
+    @Modified
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
+
+class Example2 {
+    @Final
+    @Modified
+    private final Message message = new Message();
+
+    public Example2() {
+        message.setMessage("No message yet");
+    }
+
+    @Modified
+    public void inform(String info) {
+        this.message.setMessage(info);
+    }
+}
+----
+
+All non-trivial constructors are modifying, so we will not annotate them.
+
+A parameter will be annotated `@NotModified` when the parameter's method does not apply modifying methods on the object that enters the method via the parameter.
+This restriction holds in the strongest possible way, a topic which we will elaborate on later.
+If a parameter is not `@NotModified`, it is `@Modified`.
+
+We will apply exactly the same reasoning to a field.
+A field will be annotated `@NotModified` when none of the type's methods, transitively reachable from a non-private non-constructor method, does not apply modifying methods on this field.
+This restriction again holds in the strongest possible way.
+If a field is not `@NotModified`, it is `@Modified`.
+
+Clearly `@NotModified` is stronger than `@Final`: a field that is not `@Final` cannot be `@NotModified`.
+At the same time, a field that is `@NotModified` must be `@Final`.
+
+Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all `@NotModified`.
+Note also that we cannot add modifying methods to the type `DeeplyImmutable` in Example 1.
+
+For clarity, let's also look at (a part of) the `Collection` interface, where we've restricted the annotations to `@NotModified` and `@Modified`:
+
+[source,java]
+----
+public interface Collection<E> extends Iterable<E> {
+    @Modified
+    boolean add(E e);
+
+    @Modified
+    boolean addAll(@NotModified Collection<? extends E> collection);
+
+    @NotModified
+    boolean contains(Object object);
+
+    @NotModified
+    boolean containsAll(@NotModified Collection<?> c);
+
+    @NotModified
+    void forEach(Consumer<? super E> action);
+
+    @NotModified
+    boolean isEmpty();
+
+    @Modified
+    boolean remove(Object object);
+
+    @Modified
+    boolean removeAll(@NotModified Collection<?> c);
+
+    @NotModified
+    int size();
+
+    @NotModified
+    Stream<E> stream();
+
+    @NotModified
+    Object[] toArray();
+}
+----
+
+Adding an object to a collection (set, list) will cause some assignment somewhere inside the data structure.
+Returning the size should not.
+
+
+=== Linking, intuitively
+
+Let us now elaborate on how we will compute modifications.
+Consider the following example:
+
+[source,java]
+----
+class WithSet<X> {
+    private final Set<X> set;
+
+    public WithSet(Set<X> xs) {
+        this.set = xs;
+    }
+    public void add(X x) {
+        set.add(x);
+    }
+}
+----
+
+The parameter `xs` is _linked_ to the field `set`, which is modified in the `add` method by `set.add()` call.
+This implies that calling `WithSet.add` modifies the source set, passed to the constructor.
+The following annotations emerge:
+
+[source,java]
+----
+class WithSet<X> {
+    @Modified
+    private final Set<X> set;
+
+    public WithSet(@Modified Set<X> xs) {
+        this.set = xs;
+    }
+
+    @Modified
+    public void add(X x) {
+        set.add(x);
+    }
+}
+----
+
+The parameter `x` of `WithSet.add` is `@NotModified`.
+We have not marked it, because unbound parameter types have no modifying methods that can be called on them.
+If they occur as a parameter, which we never allow to be assigned to, they are always `@NotModified`.
+
+Linking looks at the underlying object, and not at the variable.
+Consider the following alternative `add` method:
+
+[source,java]
+----
+@Modified
+public void add(X x) {
+    Set<X> theSet = this.set;
+    X theX = x;
+    theSet.add(theX);
+}
+----
+
+Nothing has changed, obviously.
+The example is illustrative in that it shows that we need to treat complex composite objects differently from , but not for primitives and deeply immutable objects, because we cannot change them anyway.
+
+=== Linking, more formally
+
+A field can be linked to another field or parameter.
+Intuitively, this happens when a modification on one object implies a modification on the other.
+This implies a 'connection' between the variables, some shared object.
+
+Primitives cannot be linked.
+Fully immutable types like `String` cannot be linked, because one cannot modify them.
+
+A method's result can be linked to a field in the class, or a parameter of the same or one of the other methods.
+The goal of linking is to help the computation of the `@NotModified` annotation by ensuring that a field or parameter can only be
+`@NotModified` when there are no modifications on any of the linked variables.
+
+Intuitively,
+
+* directly initialising a field from a constructor's parameter (`this.t = t`) causes linking
+* the `add(T t)` method in collections does not imply a linking between the parameter and the support structure organising the collection:
+changing `t` will not change the collection itself.
+* by extension, the collection `ts` in `addAll(Collection<T> ts)` will still be independent (or not linked) of the object's collection.
+Adding an element to `ts` afterwards, will not change the object collection.
+* if two containers share their 'support data', then they are linked
+
+Technically, the value that a field receives during construction determines how it is linked.
+If it is directly assigned to a parameter, it will be linked to that parameter.
+If the assignment expression contains a method call, in general it is linked to the object of the method call and all the parameters.
+If there are multiple assignments conditionally executed, we have to consider the worst case and link the variable to the union of the fields and parameters of the expressions.
+Improving the situation are primitives and immutable objects.
+We will make definitions in such a way that we can reduce linking, and define some measure of independence.
+
+==== Independence
+
+When added to a non-private method, this annotation implies that the object returned is not linked to any of the fields of the class.
+When added to a constructor, the annotation implies that the resulting instance is not linked to the parameters of the constructor.
+If a method does not return a value (it is `void`), and it has consumer parameters, the annotation indicates that the objects linked to the consumers are not linked to the fields of the class or other parameters of the method.
+The annotation is then added to the consumer (not implemented yet).
+
+Linking means that modifying a given object implies potentially modifying the linked object as well.
+Remember that as explained in <<linked-annotation>>, primitives, unbound type parameters, and classes marked <<e2immutable-annotation>> break the chain because of their content immutability.
+
+It follows that:
+
+- empty constructors of top-level types and static sub-types (but not necessarily sub types-that are not static!) are always independent; no need to annotate
+- methods that return effectively immutable objects are independent, since these objects cannot be modified
+
+#This needs to be verified#
+
+The problem at the moment: should the definition of linking
 
 === Immutability
 
@@ -16,21 +267,12 @@ You obviously remain free to change them, and the container will keep on holding
 We proceed with effectively final fields, and the first level of immutability.
 The former ensures that once construction is over, the fields cannot be assigned anymore:
 
-A field is `@Final`::
-when it is either marked `final`, or it is not assigned to in methods that can be transitively called from non-private (non-constructor) methods.
-The field is then 'effectively final'.
-
 A type is `@E1Immutable`::
-when all fields are both `@Final` and `@NotModified`.
-It is 'level 1 immutable'.
+when all its fields are `@NotModified`.
+We call this 'level 1 immutable'.
 
 ****
-Notes
-
-. in rule 2, requiring that all fields are `@NotModified` is equivalent to requiring that all methods that are not part of the construction phase, are `@NotModified`.
-
-. Rule 1 follows from rule 2, because `@NotModified` is stronger than `@Final`.
-#TODO# this is not too important, but we need to check our implementation.
+Note: requiring that all fields are `@NotModified` is equivalent to requiring that all non-private fields are `@Final`, and that methods that are not part of the construction phase, are `@NotModified`.
 ****
 
 A type is `@E1Container`::
@@ -109,7 +351,8 @@ class ArrayContainer1<T> {
     }
 }
 ----
-<1> After creation, changes to the source array are effectively changes to the data. Fails rule 3, independence.
+<1> After creation, changes to the source array are effectively changes to the data.
+Fails rule 3, independence.
 
 .Example with array, v2, still not OK
 [source,java]
@@ -125,7 +368,8 @@ class ArrayContainer2<T> {
     }
 }
 ----
-<1> Users of this type can modify the content of the array! Fails rule 2.
+<1> Users of this type can modify the content of the array!
+Fails rule 2.
 
 .Example with array, v3, safe
 [source,java]
@@ -377,3 +621,6 @@ if we want to maintain `@E2Immutable`.
 It is important to realize that `@E1Immutable` is not _less desirable_ than `@E2Immutable`.
 The former exists merely for simpler constructs than the latter.
 Where there is a mixture of fields with constructs which require support data, and fields which don't, intermediates such as `Lazy` may be necessary for the overall `@E2Immutable` to be reached.
+
+In other words, the analyser will compute the level of immutability achieved.
+If the analyser finds level 1, and the programmer expects level 2, an error will be raised.
