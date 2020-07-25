@@ -281,8 +281,7 @@ Note: Rule 2 in `@E1Immutable` is different from the requirement that no paramet
 ****
 
 ****
-Note: Effective level 1 immutability can also be achieved by presenting a restricted view to the user,
-by means of an interface which consists of the non-modifying methods only.
+Note: Effective level 1 immutability can also be achieved by presenting a restricted view to the user, by means of an interface which consists of the non-modifying methods only.
 ****
 
 The following example is typical of a level 1 immutable container:
@@ -642,7 +641,7 @@ Otherwise, level 1 immutability is sufficient.
 
 ****
 Rule?
-If a type _A_ appears in a field, and type _B_, which is held by _A_, appears in public methods, then we need level 1 immutability in rules 2 and 3 for that particular field.
+If a type _A_ appears in a field, and type _B_, which is held by _A_, appears in public methods (directly, or held in a different way), then we need level 1 immutability in rules 2 and 3 for that particular field.
 Otherwise, we skip rules 2 and 3 for the field.
 ****
 
@@ -770,12 +769,122 @@ The two public fields are of type `Lazy`, which holds `TypeInfo`, and `TypeInfo`
 As a consequence, `Lazy` must be at least `@E1Immutable`, but that is fine.
 In this second example, `Lazy` acts as a data structure.
 
+The following example shows that `Stream<M>` should trigger the rules of `@E2Immutable`:
+
+[source,java]
+----
+class ImmutableMSet {
+    private Set<M> ms;
+    public ImmutableMSet(Set<M> ms) {
+        this.ms = new HashSet<>(ms);
+    }
+    public Stream<M> stream() {
+        return ms.stream();
+    }
+}
+----
+
 === Realize that
 
 this version of the level 2 immutability definition is more like an _as immutable as it 's going to get_ definition.
 It does accord with the intuitive definition.
 The number (level 1, level 2) has less to do with the effective depth.
 
+=== Additional requirements
+
+. Having `@Immutable` objects in an `@E1Immutable` object such as `Pair` makes the object effectively or eventually `@Immutable`.
+
+. Having deeply immutable objects in an `@E2Immutable` object makes the object deeply immutable.
+
+We may need better terminology, however, deeply immutable is not relevant to what we're doing.
+
 === To check
 
 Is linking using this new definition of `@E2Immutable` sufficient?
+
+Rules center around
+
+. direct assignment
+. assignment to sub-field
+. method result, with various limitations when a type is immutable
+
+How do these limitations work?
+For deeply immutable objects, this is trivial: there's no point in linking because no modifications can be made.
+For other objects, the level of immutability will have an effect.
+
+Let type `M` be `@Mutable`.
+Then `SetOnce<M>` is `@E1Immutable` but not deeply immutable.
+
+In the following example, the rules for `@E2Immutable` are not triggered, because `M` remains hidden.
+It is therefore immaterial what type `SetOnce` is:
+
+[source,java]
+----
+class CopyOfSetOnce {
+    private SetOnce<M> m1;
+    public CopyOfSetOnce(SetOnce<M> m1) {
+        this.m1 = m1;
+    }
+    public SetOnce<M> getM() {
+        return m1;
+    }
+}
+----
+
+It is therefore "equivalent" to:
+
+[source,java]
+----
+class CopyOfM {
+    private M m;
+    public CopyOfM(M m) {
+        this.m = m;
+    }
+    public M getM() {
+        return m;
+    }
+}
+----
+
+Once you give it the `m` object, it'll keep it.
+You can change the content of `m`, but that's immaterial.
+
+This will trigger the `@E2Immutable` rules:
+
+[source,java]
+----
+class CopyOfSetOnce {
+    private SetOnce<M> m1;
+    public CopyOfSetOnce(SetOnce<M> m1) {
+        this.m1 = m1;
+    }
+    public M getM() {
+        return m1.get();
+    }
+}
+----
+
+Because the argument is `@E1Immutable` we will always have the same `m` in the getter!
+Here _as immutable as it gets_ is fine; level 1 immutability breaks the linking.
+
+Changing the `SetOnce` for a `List`, which will need level 2:
+
+[source,java]
+----
+class DirectAssignmentOfSet {
+    private List<M> ms;
+    public DirectAssignmentOfSet(List<M> ms) {
+        this.ms = ms;
+    }
+    public M getFirst() {
+        return ms.get(0);
+    }
+}
+----
+
+Clearly the field `ms` is linked to the parameter of the constructor.
+This link can only be broken with level 1 immutability, otherwise, the user can change the result of `getFirst` by modifying the list after constructing an instance of the type.
+The level 2 extensions do not seem to be necessary in this example: as long as we can ensure that the list does not change, we're fine.
+Level 1 will ensure that no modifying objects can be called.
+Recursively, this implementation of `List` may be modifiable from the outside.
+We conclude we need level 2 extensions in the independence computation.
