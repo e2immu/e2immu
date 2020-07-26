@@ -1,3 +1,5 @@
+== The road to immutability
+
 === Level 1 immutability
 
 Let us start with a definition:
@@ -94,10 +96,33 @@ We use this concept to define a first level of immutability:
 ****
 
 The code analyser annotates level 1 immutable types with `@E1Immutable`.
+Types that are not `@E1Immutable` because they have at least one `@Variable` field, are annotated `@Mutable`.
 
 As above with effective finality, the term _effective_ is present to make a distinction between formal immutability, and immutability that the code analyser computes.
 It will also serve to distinguish from _eventual_ immutability, where (in this case) the finality will be achieved only after the code reaches a certain state.
-More on this later.
+More on this later, but here is a first example of an eventually level 1 immutable type:
+
+.Simplified version of `SetOnce`
+[source,java]
+----
+@E1Immutable(after="set")
+class SetOnce<T> {
+    private T t;
+    @Mark("set")
+    public void set(T t) {
+        if(t == null) throw new NullPointerException();
+        if(this.t == null) throw new UnsupportedOperationException("Already set");
+        this.t = t;
+    }
+    @Only(after="set")
+    public void get() {
+        if(t == null) throw new UnsupportedOperationException("Not yet set");
+        return t;
+    }
+}
+----
+
+Once a value has been set, the field `t` cannot be assigned anymore.
 
 We have just observed that if one restricts to primitives and types like `java.lang.String`, level 1 immutability is sufficient to guarantee deep immutability.
 It is not feasible (and we do not wish to) work with deeply immutable objects only.
@@ -145,6 +170,7 @@ As an example, setters are `@Modified`, while getters are `@NotModified`:
 
 [source,java]
 ----
+@Mutable
 class Message {
     @Variable
     private String message;
@@ -255,11 +281,54 @@ Other types in the parameters do not have a `@NotModified` annotation:
 
 The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
 
+=== Containers
+
+Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
+This is the formal rule:
+
+****
+*Definition*: a type is a *container* when none of the parameters of the non-private methods and constructors of the type are modifying.
+****
+
+Whatever else the container does, storing the parameters in fields or not, it will not change your objects.
+You obviously remain free to change them, and the container will keep on holding the changed object, not some copy.
+
+Containers are complementary to immutable objects, and we will find that many immutable objects are containers, while some containers can be modified to become immutable.
+There are two archetypes for containers: collections and builders.
+
+The code analyser will annotate a type that is both level 1 immutable, and a container, with `@E1Container`.
+This occurs frequently enough to justify a separate annotation.
+The simple but useful utility type `Pair` trivially satisfies both requirements:
+
+.A pair of objects
+[source,java]
+----
+@E1Container
+public class Pair<K,V> {
+    public final K k;
+    public final V v;
+    public Pair(K k, V v) {
+        this.k = k;
+        this.v = v;
+    }
+    public K getK() {
+        return k;
+    }
+    public V getV() {
+        return v;
+    }
+}
+----
+
+While it is clearly level 1 immutable, it will remain to be seen if it satisfies all criteria for intuitive immutability.
+However, it is more visible as a container: a type you use and trust to hold objects.
+
 === Linking, intuitively
 
-Let us now elaborate on how we will compute modifications.
+Let us now elaborate on how we will compute modifications, in a path towards level 2 immutability.
 Consider the following example:
 
+.Example 6, field linked to constructor parameter
 [source,java]
 ----
 class WithSet<X> {
@@ -274,10 +343,14 @@ class WithSet<X> {
 }
 ----
 
-The parameter `xs` is _linked_ to the field `set`, which is modified in the `add` method by `set.add()` call.
-This implies that calling `WithSet.add` modifies the source set, passed to the constructor.
-The following annotations emerge:
+After construction, an instance of `WithSet` contains a reference to the set that was passed as an argument to its constructor.
+We say the field `set` links to the parameter `xs` of the constructor.
+In this example, this is an expensive way of saying that there is an assignment from one to the other.
+However, linking can become more complicated.
 
+The code analyser will add modification annotations as follows:
+
+.Example 7, field linked to constructor parameter, with annotations
 [source,java]
 ----
 class WithSet<X> {
@@ -300,6 +373,7 @@ As noted above, the parameter `x` of `WithSet.add` is trivially `@NotModified`  
 Linking looks at the underlying object, and not at the variable.
 Consider the following alternative `add` method:
 
+.Example 8, alternative `add` method
 [source,java]
 ----
 @Modified
@@ -312,65 +386,62 @@ public void add(X x) {
 
 Nothing has changed, obviously.
 
+****
+Intuitively, linking means that modifying the source object implies that the linked object may be modified too.
+Linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
+****
+
 We will discuss linking more formally later.
 For now, assume that a field links to another field, or to a parameter, if there is a possibility that the object represented by both is the same.
 
-==== Independence
+=== Independence
 
 The opposite of linking is independence.
-We will annotate independence on methods and constructors, and to parameters in one specific case.
+While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and to parameters in one specific case.
 
-When added to a non-private method, the annotation implies that the object returned does not link to any of the fields of the class.
-When added to a constructor, the annotation implies that the fields of the resulting instance do not link to the parameters of the constructor.
-If a method does not return a value (it is `void`), and it has consumer parameters, the annotation indicates that the objects linked to the consumers do not link to the fields of the class or other parameters of the method.
-The annotation is then added to the consumer (not implemented yet).
+****
+*Definition*: A non-private method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the class.
+****
 
-Linking means that modifying a given object implies potentially modifying the linked object as well.
-Remember that as explained in <<linked-annotation>>, primitives, unbound type parameters, and classes marked <<e2immutable-annotation>> break the chain because of their content immutability.
+The definition for independence on a constructor is very similar:
 
-It follows that:
+****
+*Definition: A constructor is *independent* when the fields of the resulting instance do not link to the parameters of the constructor.
+****
+
+Finally, there is a definition for cases where method results are transported via parameters rather than the return type, as is often the case when using the vertx.io framework, for example:
+
+****
+*Definition*: if a method does not return a real value (it is `void`, or it returns `this`), and it has consumer parameters, then it is *independent* when the objects linking to the consumers do not link to the fields of the class or other parameters of the method.
+****
+
+It follows immediately that:
 
 - empty constructors of top-level types and static sub-types (but not necessarily sub types-that are not static!) are always independent; no need to annotate
-- methods that return effectively immutable objects are independent, since these objects cannot be modified
+- methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
 
-#This needs to be verified#
+=== Level 2 immutability
 
-The problem at the moment: should the definition of linking
-
-=== Immutability
-
-Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
-This is the formal rule:
-
-A type is a `@Container`::
-when none of the parameters of the methods and constructors of the type are `@Modified`.
-
-Whatever else the container does, storing them in fields or not, it will not change your objects.
-You obviously remain free to change them, and the container will keep on holding the changed object, not some copy.
-
-We proceed with effectively final fields, and the first level of immutability.
-The former ensures that once construction is over, the fields cannot be assigned anymore:
-
-A type is `@E1Immutable`::
-when all its fields are `@NotModified`.
-We call this 'level 1 immutable'.
+First, what do we want intuitively?
+A useful form of immutability, less strong than deeply immutable, but better than level 1 immutability for quite some situations.
+We propose the following:
 
 ****
-Note: requiring that all fields are `@NotModified` is equivalent to requiring that all non-private fields are `@Final`, and that methods that are not part of the construction phase, are `@NotModified`.
+After construction, an immutable type holds a number of objects; the type will not change their content, nor will it exchange them for other objects, or allow others to do so.
+The type is not responsible for what others do to the content of the objects it has been given.
 ****
 
-A type is `@E1Container`::
-when it is both `@E1Immutable` and `@Container`.
+Technically, level 2 immutability is much harder to define than level 1 immutability.
+We identify three rules, one of which must be observed at all times:
 
 ****
-Note: Rule 2 in `@E1Immutable` is different from the requirement that no parameter is `@NotModified`, however, when the fields are directly assigned from parameters in the constructor, the rules amount to the same.
+*Definition*: the *first rule of level 2 immutability* is that all fields must be `@NotModified`.
 ****
 
-****
-Note: Effective level 1 immutability can also be achieved by presenting a restricted view to the user, by means of an interface which consists of the non-modifying methods only.
-****
+By decomposing all definitions, we observe that requiring all fields to be `@NotModified` is equivalent to requiring that all non-private fields have the `final` modifier, and that methods that are not part of the construction phase, are `@NotModified`.
 
-The following example is typical of a level 1 immutable container:
+Clearly, level 2 immutable types will be level 1 immutable as well, given that `@NotModified` implies `@Final` on fields.
+Our friend the `Pair` satisfies this first rule:
 
 [source,java]
 ----
@@ -388,43 +459,108 @@ public class Pair<K,V> {
 Note that since `K` and `V` are unbound types, it is not possible to modify their content, since there are no modifying methods one can call on unbound types.
 This example doesn't even have non-constructor methods.
 
-The field `k` is linked to the parameter `k` in the constructor.
-The `@NotModified` requirement on the parameter directly translates to an `@NotModified` on the field.
+How does it fit the intuitive rule for immutability?
+The type `Pair` holds two objects.
+The type does not change their content, nor will it exchange these two objects for others, or allow others to do so.
+It is clear the users of `Pair` may be able to change the content of the objects they put in the `Pair`.
+Summarizing: `Pair` fits the intuitive definition without any problem.
 
-Let us summarize the loose definition for a level 1 immutable type, and generalize it straight away by dropping the level descriptor:
+Here is an example which shows the necessity of the first rule more explicitly:
 
-IMPORTANT: After construction, an immutable container holds a number of objects, and the container will not change their content, nor will it exchange them for other objects, or allow others to do so.
-The container is not responsible for what others do to the content of the objects it has been given.
+[source,java]
+----
+@Mutable
+class Point {
+    @Variable
+    private double x;
+    @Variable
+    private double y;
 
-Assuming the type's goal is to store a number of objects, it is easy to see that a level 1 immutable type cannot hold additional, modifiable state.
+    public double getX() {
+        return x;
+    }
+    public void setX(double x) {
+        this.x = x;
+    }
+    public double getY() {
+        return y;
+    }
+    public void setY(double y) {
+        this.y = y;
+    }
+}
+
+class Line {
+    @Final
+    private Point point1;
+    @Final
+    private Point point2;
+
+    public Line(Point point1, Point point2) {
+        this.point1 = point1;
+        this.point2 = point2;
+    }
+
+    @NotModified
+    public Point middle() {
+        return new Point((point1.getX() + point2.getX())/2.0,
+             (point1.getY()+point2.getY())/2.0);
+    }
+
+    @Modified
+    public void translateHorizontally(double x) {
+        point1.setX(point1.getX() + x);
+        point2.setX(point2.getX() + x);
+    }
+}
+----
+
+The fields `point1` and `point2` are effectively final.
+Without the translation method, the fields would be `@NotModified` as well.
+The translation method modifies their content, rendering the type not level 2 immutable.
+
+Assuming a type's goal is to store a number of objects, it is easy to see that a level 1 immutable type cannot hold additional, modifiable state.
 It follows that every method call on the container object with the same arguments will render the same result.
 (Note that this can be bypassed in Java by using _static_ state, i.e., state specific to the type rather than the object.
 Let us ignore that for now.)
 
 In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have 'support data': think an array, a tree structure, buckets for a hash table, etc.
-The difference between `@E1Immutable` and `@E2Immutable` is essentially about expressing the immutability of the support data.
+The difference between effectively final fields and the rest of the definition of level 2 immutability is essentially about expressing the immutability of the support data.
 After construction, a level 2 immutable type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects, nor allow others to exchange them.
 
-Let us formalize this definition.
-
-A type is `@E2Immutable` or effectively level 2 immutable, when
-
-. it is `@E1Immutable`
-. all its fields are either private, or are at least `@E1Immutable`.
-. all its constructors and non-private methods are `@Independent`.
+We will introduce two additional rules to the definition of level 2 immutability.
+They will only have to be satisfied by _some_ fields; requiring them for all fields results in too strong a definition, and we have seen higher up that there are situations where the first rule is sufficient.
+The fields we target with those additional rules are the fields containing the support data.
+For now, we try to catch the support data with the following, most likely imperfect rule:
 
 ****
-Notes
+If a type _A_ is the type of a field, and type _B_, which is held by _A_, appears as type of parameter or as return type in non-private methods (directly, or held by a different type _C_), then we need the level 2 immutability rules 2 and 3 for that particular field.
+Otherwise, we skip rules 2 and 3 for the field.
 
-. rule 2 is there to ensure that the content of the object cannot be modified through access to the non-private fields.
-
-. rule 3 is there to ensure that the content of the object cannot be modified externally.
+A type _B_ is held by the type _A_ if _B_ is the type of a field in _A_, directly or via generics, and potentially transitively.
 ****
 
-Both properties can be reached _eventually_ if there is one or more methods that effect a transition from the mutable to the immutable state.
-In the case of `@E1Immutable`, this means that all methods that assign or modify fields become off-limits after calling this marker method.
+Many examples will follow, but it should be clear from the description that types that appear both in fields and in non-private methods, do not need to satisfy rules 2 and 3. This is the case for `Pair`.
 
-The `@Container` property can currently not be made eventual.
+We now write rules 2 and 3 as:
+
+****
+*Rule 2 of level 2 immutability*: a field is either private, or level 2 immutable itself.
+This rule applies to all fields of types of support data types.
+
+*Rule 3 of level 2 immutability*: all constructors and non-private methods are `@Independent`.
+The independence applies to all support data types.
+****
+
+Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.
+Rule 3 ensures that the content of the object cannot be modified externally.
+
+The first rule can be reached _eventually_ if there is one or more methods that effect a transition from the mutable to the immutable state.
+This typically means that all methods that assign or modify fields become off-limits after calling this marker method.
+Eventuality for rules 2 and 3 seems too far-fetched.
+More on this topic in the section on eventual immutability.
+
+Let us go to examples immediately.
 
 .Example with array, v1
 [source,java]
@@ -432,21 +568,23 @@ The `@Container` property can currently not be made eventual.
 class ArrayContainer1<T> {
     private final T[] data;
     public ArrayContainer1(T[] ts) {
-        this.data = ts; // <1>
+        this.data = ts;
     }
     public Stream<T> stream() {
         return Arrays.stream(data);
     }
 }
 ----
-<1> After creation, changes to the source array are effectively changes to the data.
-Fails rule 3, independence.
+
+After creation, changes to the source array `ts` are effectively changes to the data array `data`.
+This construct fails rule 3, independence.
+Here the array of type `T[]` is the support data that holds `T`, which also appears in the return type of the `stream` method, held by `Stream`.
 
 .Example with array, v2, still not OK
 [source,java]
 ----
 class ArrayContainer2<T> {
-    public final T[] data; // <1>
+    public final T[] data;
     public ArrayContainer2(T[] ts) {
         this.data = new T[ts.length];
         System.arraycopy(ts, 0, data, 0, ts.length);
@@ -456,8 +594,9 @@ class ArrayContainer2<T> {
     }
 }
 ----
-<1> Users of this type can modify the content of the array!
-Fails rule 2.
+
+Users of this type can modify the content of the array using direct field access!
+This construct fails rule 2, which applies for the same reasons as in the previous example.
 
 .Example with array, v3, safe
 [source,java]
