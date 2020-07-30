@@ -1,0 +1,171 @@
+
+== Containers
+
+Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
+This is the formal rule:
+
+****
+*Definition*: a type is a *container* when none of the parameters of the non-private methods and constructors of the type are modifying.
+****
+
+Whatever else the container does, storing the parameters in fields or not, it will not change your objects.
+You obviously remain free to change them, and the container will keep on holding the changed object, not some copy.
+
+Containers are complementary to immutable objects, and we will find that many immutable objects are containers, while some containers can be modified to become immutable.
+There are two archetypes for containers: collections and builders.
+
+The code analyser will annotate a type that is both level 1 immutable, and a container, with `@E1Container`.
+This occurs frequently enough to justify a separate annotation.
+The simple but useful utility type `Pair` trivially satisfies both requirements:
+
+.A pair of objects
+[source,java]
+----
+@E1Container
+public class Pair<K,V> {
+    public final K k;
+    public final V v;
+    public Pair(K k, V v) {
+        this.k = k;
+        this.v = v;
+    }
+    public K getK() {
+        return k;
+    }
+    public V getV() {
+        return v;
+    }
+}
+----
+
+While it is clearly level 1 immutable, it will remain to be seen if it satisfies all criteria for intuitive immutability.
+However, it is easily recognized as a container: a type you use and trust to hold objects.
+
+Let us conclude this section with an example two types, one which is a container according to the contract, and one which is not:
+
+[source,java]
+----
+@Container
+interface ErrorRegistry {
+    @NotModified
+    List<ErrorMessage> getErrors();
+
+    @Modified
+    void addError(@NotModified ErrorMessage errorMessage);
+}
+
+class BinaryExpression extends Expression {
+    public final Expression lhs;
+    public final Expression rhs;
+
+    // ...
+
+    public void evaluate(@Modified ErrorRegistry errorRegistry) {
+        // ...
+        if(lhs instanceof NullConstant || rhs instanceof NullConstant) {
+            errorRegistry.addError(new ErrorMessage(...));
+        }
+        // ...
+    }
+}
+----
+
+The `BinaryExpression` is not a container, because it uses one of the parameters of its methods as a writable container.
+
+== Linking, intuitively
+
+Let us now elaborate on how we will compute modifications, in a path towards level 2 immutability.
+Consider the following example:
+
+.Example 6, field linked to constructor parameter
+[source,java]
+----
+class LinkExample1<X> {
+    private final Set<X> set;
+
+    public LinkExample1(Set<X> xs) {
+        this.set = xs;
+    }
+
+    public void add(X x) {
+        set.add(x);
+    }
+}
+----
+
+After construction, an instance of `LinkExample1` contains a reference to the set that was passed as an argument to its constructor.
+We say the field `set` links to the parameter `xs` of the constructor.
+In this example, this is an expensive way of saying that there is an assignment from one to the other.
+However, linking can become more complicated.
+
+The code analyser will add modification annotations as follows:
+
+.Example 7, field linked to constructor parameter, with annotations
+[source,java]
+----
+class LinkExample1<X> {
+    @Modified
+    private final Set<X> set;
+
+    public LinkExample1(@Modified Set<X> xs) {
+        this.set = xs;
+    }
+
+    @Modified
+    public void add(X x) {
+        set.add(x);
+    }
+}
+----
+
+As noted above, the parameter `x` of `WithSet.add` is trivially `@NotModified`  because unbound parameter types have no modifying methods that can be called on them.
+
+Linking looks at the underlying object, and not at the variable.
+Consider the following alternative `add` method:
+
+.Example 8, alternative `add` method
+[source,java]
+----
+@Modified
+public void add(X x) {
+    Set<X> theSet = this.set;
+    X theX = x;
+    theSet.add(theX);
+}
+----
+
+Nothing has changed, obviously.
+
+****
+Intuitively, linking means that modifying the source object implies that the linked object may be modified too.
+Linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
+****
+
+We will discuss linking more formally later.
+For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent the same object.
+
+The opposite of linking is independence.
+While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, to parameters.
+
+****
+*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
+****
+
+The definition for independence on a constructor is very similar:
+
+****
+*Definition*: A constructor is *independent* when the fields of the resulting instance do not link to the parameters of the constructor.
+****
+
+Finally, we provide a definition for cases where programmers choose to systematically return method results via parameters rather than the return type, as is often the case when using, for example, the vertx.io framework:
+
+****
+*Definition*: if a method does not return a real value (it is `void`, or it returns `this`), and it has consumer parameters, then it is *independent* when the objects linking to the consumers do not link to the fields of the class or other parameters of the method.
+****
+
+It follows immediately that:
+
+- empty constructors of top-level types and static sub-types (but not necessarily sub types-that are not static!) are always independent; no need to annotate
+- methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
+
+Examples follow soon, once immutability has been defined in more detail.

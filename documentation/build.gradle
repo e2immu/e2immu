@@ -4,7 +4,8 @@ plugins {
 
 asciidoctor {
     sources {
-        include 'main.adoc'   
+        include 'main.adoc'
+        include 'road-to-immutability/00-main.adoc'
     }
     resources {
         from(sourceDir) {

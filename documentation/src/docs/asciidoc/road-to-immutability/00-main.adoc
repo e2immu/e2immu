@@ -1,0 +1,46 @@
+= The road to immutability
+:source-highlighter: coderay
+:source-language: java
+:description: A walk-through of the concepts and definitions of _e2immu_
+:author: Bart Naudts
+:sectnums:
+:icons: font
+:toc: left
+
+:e2immu: pass:normal[_e2immu_]
+:nn: pass:normal[`@NotNull1`]
+:nn1: pass:normal[`@NotNull1`]
+:nn2: pass:normal[`@NotNull2`]
+:nm: pass:normal[`@NotModified`]
+:e2immutable: pass:normal[`@E1Immutable`]
+:e2immutable: pass:normal[`@E2Immutable`]
+
+// all introductory sections
+include::{includedir}/road-to-immutability/01-intro.adoc[]
+
+// e1immutable includes modification
+include::{includedir}/road-to-immutability/02-e1immutable.adoc[]
+include::{includedir}/road-to-immutability/03-contract.adoc[]
+
+// container includes linking
+include::{includedir}/road-to-immutability/04-container.adoc[]
+include::{includedir}/road-to-immutability/05-e2immutable.adoc[]
+include::{includedir}/road-to-immutability/06-eventual.adoc[]
+include::{includedir}/road-to-immutability/07-examples.adoc[]
+include::{includedir}/road-to-immutability/08-other-annotations.adoc[]
+
+== Copyright and License
+
+Copyright (C) 2020, Bart Naudts
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

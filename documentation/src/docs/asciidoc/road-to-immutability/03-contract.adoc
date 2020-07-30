@@ -1,0 +1,19 @@
+
+== Contracts
+
+Annotating an interface like we did in the previous section allows the user to explicitly state that implementations must follow certain immutability rules.
+This is very important.
+While it may be commonly understood that an `equals` call will not cause modifications, the `e2immu` system will simply forbid overriding the `equals` method in a modifying way.
+
+The analyser's rule system is very strict with respect to visibility modifiers.
+If for some reason certain fields must be non-private outside the user's control, a contract annotation can always override the result of the analyser's computation.
+Example:
+
+[source,java]
+----
+
+----
+
+See IntelliJ JetBrains contract system.
+
+Annotating libraries: you only have to do the interfaces.

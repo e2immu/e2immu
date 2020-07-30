@@ -1,0 +1,19 @@
+== Other annotations
+
+The {e2immu} project defines a whole host of annotations complementary to the ones required for immutability.
+
+
+=== Nullable, not null
+
+
+=== Identity and fluent
+
+
+
+=== Extensions
+
+Static classes can be used to 'extend' closed types, as promoted by the Xtend project.
+Level 2 immutable classes can also play the role of extension facilitators, with the additional benefit of having some immutable data to be used as a context.
+
+=== Utility class
+

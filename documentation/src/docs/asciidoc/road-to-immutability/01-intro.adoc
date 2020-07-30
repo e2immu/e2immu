@@ -1,0 +1,26 @@
+
+== About this document
+
+This document aims to be a logical walk through of the concepts of the e2immu project.
+It does not intend to be complete, and is not structured for reference.
+
+== Goals and assumptions
+
+The overarching aim is to improve every day programming by making code more readable, more robust, and more future-proof.
+More concretely, this project focuses on adding immutability protections in various forms to your code base, by making the immutable nature of the types more visible.
+
+We assume that the reader already employs some of the more trivial steps towards immutability and code encapsulation.
+
+* we make no distinction between the various non-private access modifiers (package-private, protected, public).
+Either a field, method or type is private, or it is not.
+* we assume that parameters to methods are read-only, i.e., they are not assigned to (implicitly final).
+* we encourage, where possible, to not re-use local variables.
+Ideally they are (implicitly) final.
+* Exceptions are not part of the normal flow of the code
+* Synchronization support and thread-local fields are outside of the scope of this document
+
+== The purpose of annotations
+
+In this document we will add many annotations to the code fragments shown.
+We are acutely aware they clutter the code and can make it less readable.
+In practice the e2immu code analyser computes almost all of these annotations, and our IDE plugin uses them to color code types, methods and fields.
