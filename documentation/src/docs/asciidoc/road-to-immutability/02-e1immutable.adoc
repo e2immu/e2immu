@@ -308,3 +308,5 @@ Other types in the parameters do not have a `@NotModified` annotation:
 * `Consumer` because it is a functional type, with only one method, which is always `@NotModified`.
 
 The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
+
+// ensure a newline at the end

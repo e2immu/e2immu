@@ -3,21 +3,28 @@
 === Lazy
 
 `Lazy` implements a lazily-initialized immutable field, of unbound generic type `T`.
-As such, it is eventually an `@E1Container`.
+As such, it is eventually an `@E2Container`.
 
+.Code fragment: The code analyser's Lazy type.
 [source,java]
 ----
-@E1Container(after = "get")
+package org.e2immu.analyser.util;
+
+import org.e2immu.annotation.*;
+import java.util.Objects;
+import java.util.function.Supplier;
+
+@E2Container(after = "get")
 public class Lazy<T> {
     private final Supplier<T> supplier;
     private volatile T t;
 
-    public Lazy(Supplier<T> supplier) {
+    public Lazy(@NotNull1 Supplier<T> supplier) {
         this.supplier = supplier;
     }
 
     @Modified
-    @Mark("get")
+    @Mark("get") // <1>
     public T get() {
         T localT = t;
         if (localT != null) return localT;
@@ -31,23 +38,107 @@ public class Lazy<T> {
     }
 }
 ----
+<1> The `@Mark("xx")` annotation generally implies `@Only(before="xx")`.
+This cannot be the case here, as we intend to use the method afterwards as well.
+#TODO needs sorting out#
 
 After calling the marker method `get()`, `t` cannot be assigned anymore.
-Because it is of an unbound type, the field `t` is `@NotModified`.
+Because it is of an unbound type, the field `t` then becomes `@NotModified`.
 Because it is a functional type, `supplier` is `@NotModified`.
 The type is also clearly a container.
-Tte type violates the independence rule, so it is not a `@E2Container`.
+Rules 2 and 3 are not required for type `T`.
+They are for the `supplier`: it is private, and independent because it is immutable itself as a functional type.
+
+=== FirstThen
+
+[source,java]
+----
+package org.e2immu.analyser.util;
+
+import org.e2immu.annotation.*;
+import java.util.Objects;
+
+@E2Container(after = "mark")
+public class FirstThen<S, T> {
+    private volatile S first;
+    private volatile T then;
+
+    public FirstThen(@NotNull S first) {
+        this.first = Objects.requireNonNull(first);
+    }
+
+    @NotModified
+    public boolean isFirst() {
+        return first != null;
+    }
+
+    @NotModified
+    public boolean isSet() {
+        return first == null;
+    }
+
+    @Mark("mark")
+    public void set(@NotNull T then) {
+        Objects.requireNonNull(then);
+        synchronized (this) {
+            if (first == null) throw new UnsupportedOperationException("Already set");
+            this.then = then;
+            first = null;
+        }
+    }
+
+    @NotNull @NotModified @Only(before = "mark")
+    public S getFirst() {
+        if (first == null)
+            throw new UnsupportedOperationException("Then has been set"); // <1>
+        S s = first;
+        if (s == null) throw new NullPointerException();
+        return s;
+    }
+
+    @NotNull @NotModified @Only(after = "mark")
+    public T get() {
+        if (first != null) throw new UnsupportedOperationException("Not yet set"); // <2>
+        T t = then;
+        if (t == null) throw new NullPointerException();
+        return t;
+    }
+
+    @Override // <3>
+    public boolean equals(@Nullable Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FirstThen<?, ?> firstThen = (FirstThen<?, ?>) o;
+        return Objects.equals(first, firstThen.first) &&
+                Objects.equals(then, firstThen.then);
+    }
+
+    @Override // <3>
+    public int hashCode() {
+        return Objects.hash(first, then);
+    }
+}
+----
+<1> This is a bit convoluted.
+The precondition is on the field `first`, and the current implementation of the precondition analyser requires an explicit check on the field.
+Because this field is not final, we cannot assume that it is still null after the initial check; therefore, we assign it to a local variable, and do another null check to guarantee that the result that we return is `@NotNull`.
+
+<2> Largely in line with the previous comment: we stick to the precondition on `first`, and have to check `then` to guarantee that the result is `@NotNull`.
+<3> The `equals` and `hashCode` methods inherit the {nm} annotation from `java.lang.Object`.
+
+Note that if we were to annotate the methods as contracts, rather than relying on the analyser to detect them, we could have a slightly more efficient implementation.
 
 === Trie
 
 As a second example, let's look at the code analyser's implementation of a trie, a real, non-trivial data structure.
 We have added the nullability annotations, as defined in the next section, but we removed some duplicate ones to avoid overloading the text.
 
-.Code fragment: The code analyser's Trie type.
+.Code fragment: The code analyser's Trie type, slightly reduced in size.
 [source,java]
 ----
 package org.e2immu.analyser.util;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.*;
 import java.util.*;
 import java.util.function.*;
@@ -86,7 +177,7 @@ public class Trie<T> extends Freezable {
     @Nullable @NotModified
     public List<T> get(@NotNull1 String[] strings) {
         TrieNode<T> node = goTo(strings);
-        return node == null ? null : node.data;
+        return node == null ? null : ImmutableList.copyOf(node.data);
     }
 
     @NotNull @Modified @Only(before = "freeze")
@@ -116,7 +207,7 @@ public class Trie<T> extends Freezable {
                                              Stack<String> strings,
                                              BiConsumer<String[], List<T>> visitor) {
         if (node.data != null) {
-            visitor.accept(strings.toArray(String[]::new), node.data);
+            visitor.accept(strings.toArray(String[]::new), ImmutableList.copyOf(node.data));
         }
         if (node.map != null) {
             node.map.forEach((s, n) -> {
@@ -128,7 +219,7 @@ public class Trie<T> extends Freezable {
     }
 
     @NotNull @Modified @Only(before = "freeze")
-    public void add(@NotNull1 String[] strings, @NotNull T data) {
+    public void add(@NotNull1 String[] strings, @NotNull T t) {
         if(frozen) throw new UnsupportedOperationException("Already frozen");
 
         TrieNode<T> node = root;
@@ -148,29 +239,37 @@ public class Trie<T> extends Freezable {
             node = newTrieNode;
         }
         if (node.data == null) node.data = new LinkedList<>();
-        node.data.add(Objects.requireNonNull(data));
+        node.data.add(Objects.requireNonNull(t));
     }
 
     @Modified @Mark("freeze")
     public void freeze() {
         if(frozen) throw new UnsupportedOperationException("Already frozen");
-        frozen = true;
+
+        frozen = true; // <3>
     }
 }
 ----
 <1> {nn1} here means that `strings` cannot be null, and neither can it hold null elements.
 Because the type is a container, the implicit `@NotModified` annotation guarantees that the trie will not write to the array.
 <2> {nn2} here means that the `visitor` should not be null, but also that the data offered to the visitor will not be null, and neither will its content.
+<3> Once true, there is no way to change `frozen` back to false.
+After this state change, the trie object becomes effectively level 2 immutable because the modifying methods cannot be called anymore.
 
 Until the user of this trie calls the `freeze` method, elements can be added via the `add` and `getOrCompute` methods.
 Visiting the trie can be done at any time; the `visit` method offers the elements for consumption via the `BiConsumer` parameter.
 Verifying that the trie is level 2 immutable, we observe that, after having called `freeze`,
 
-. all fields are `@NotModified`,
-. `freeze` is a primitive, so rules 2 and 3 do not apply,
+. all fields are `@NotModified`;
+. `freeze` is a primitive, so rules 2 and 3 do not apply;
 . rules 2 and 3 do apply to `root`, as it is of a type (`TrieNode`) which holds one of the types in the parameters of public methods (`T`).
 The field is private, so rule 2 is easily satisfied.
 There are no constructors with parameters, so we only have to show that the public non-modifying methods return objects that are independent of the `root` field.
++
+Looking at the remaining accessible methods, `get` and `visit`, we observe that the code returns immutable copies of the data, which are independent.
+(Note that they are independent _by annotation_ rather than _by definition_: we have manually annotated the `copyOf` method to return a level 2 immutable object, which is independent.)
 
+When freezing a data structure with modifiable sub-structures, there are generally two ways to go about making them independent: turning them into immutable objects at the moment of freezing, or returning copies on-demand.
+The user needs to carry out a dynamic code analysis to find out which approach will be most performant.
 
 // leave an empty line!

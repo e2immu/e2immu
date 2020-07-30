@@ -169,3 +169,5 @@ It follows immediately that:
 - methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
 
 Examples follow soon, once immutability has been defined in more detail.
+
+// ensure a newline at the end

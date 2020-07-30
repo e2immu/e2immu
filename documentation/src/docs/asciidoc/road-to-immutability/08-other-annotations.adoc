@@ -17,3 +17,5 @@ Level 2 immutable classes can also play the role of extension facilitators, with
 
 === Utility class
 
+
+// ensure a newline at the end

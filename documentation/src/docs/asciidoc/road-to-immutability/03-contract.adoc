@@ -17,3 +17,5 @@ Example:
 See IntelliJ JetBrains contract system.
 
 Annotating libraries: you only have to do the interfaces.
+
+// ensure a newline at the end

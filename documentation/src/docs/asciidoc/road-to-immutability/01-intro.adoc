@@ -24,3 +24,5 @@ Ideally they are (implicitly) final.
 In this document we will add many annotations to the code fragments shown.
 We are acutely aware they clutter the code and can make it less readable.
 In practice the e2immu code analyser computes almost all of these annotations, and our IDE plugin uses them to color code types, methods and fields.
+
+// ensure a newline at the end

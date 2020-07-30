@@ -1,0 +1,87 @@
+== Eventual immutability
+
+There are many constraints on real-world use cases where immutability is not immediate.
+The type then follows a life cycle described as create, use, drop.
+
+Challenges:
+
+* external frameworks insist on a way of working perpendicular to that of your project
+* some graph-like data structures simply cannot be made immutable using conventional tools
+* once you go eventually immutable, how is the propagation organized?
+
+We propose a system of eventual immutability based on a single transition of state inside an object.
+
+.First example of frozen class
+[source,java]
+----
+@E2Container(after="freeze")
+class SimpleImmutableSet1<T> {
+    private final Set<T> set = new HashSet<>();
+    private boolean frozen;
+
+    @Only(before="freeze")
+    public boolean add(T t) {
+        if(frozen) throw new UnsupportedOperationException();
+        set.add(t);
+    }
+
+    @Mark("freeze")
+    public void freeze() {
+        if(frozen) throw new UnsupportedOperationException();
+        frozen = true;
+    }
+
+    @Only(after="freeze")
+    public Stream<T> stream() {
+        if(!frozen) throw new UnsupportedOperationException();
+        return set.stream();
+    }
+
+    public int size() { // <1>
+        return set.size();
+    }
+}
+----
+<1> This method can be called at any time.
+
+The analyser has no problem detecting the presence of preconditions, and observing that one method changes its own precondition.
+The rules, however, are sufficiently general to support arbitrary preconditions, as shown in the following variant.
+This example does not require an additional field, but relies on the empty/not-empty state change:
+
+.Second example of frozen class
+[source,java]
+----
+@E2Container(after="freeze")
+class SimpleImmutableSet2<T> {
+    private final Set<T> set = new HashSet<>();
+
+    @Mark("freeze")
+    public boolean initialize(Set<T> data) {
+        if(!set.isEmpty()) throw new UnsupportedOperationException();
+        if(data.isEmpty()) throw new IllegalArgumentException();
+        set.addAll(data);
+    }
+
+    @Only(after="freeze")
+    public Stream<T> stream() {
+        if(set.isEmpty()) throw new UnsupportedOperationException();
+        return set.stream();
+    }
+
+    public int size() {
+        return set.size();
+    }
+}
+----
+
+At this point the project intends to implement this form of eventuality for immutability and nullability, but not for the container property.
+
+=== Object flows
+
+=== Propagation
+
+A type with fields which satisfies all the rules for (eventual) level 2 immutability, with the caveat that some of its fields are eventually immutable themselves, can become level 2 immutable only in situations where these fields have reached immutability.
+This means that the object flow analyser has to be able to verify that at some point in the object flow reaching the fields, the mark should be present.
+
+
+// ensure a newline at the end
