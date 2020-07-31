@@ -128,7 +128,9 @@ public class TypeAnalyser {
         TypeInfo typeInfo = sortedType.typeInfo;
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
-        boolean changes = true;
+        // this needs to be done as soon as, so that @Independent computations can be based on the support data only
+        boolean changes = analyseSupportDataTypes(typeInfo);
+
         int cnt = 0;
         while (changes) {
             log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
@@ -191,7 +193,6 @@ public class TypeAnalyser {
             }
 
             if (typeInfo.hasBeenDefined()) {
-                if (analyseSupportDataTypes(typeInfo)) changes = true;
                 if (analyseOnlyAndMark(typeInfo)) changes = true;
                 if (analyseE1Immutable(typeInfo)) changes = true;
                 if (analyseE2Immutable(typeInfo)) changes = true;
@@ -378,8 +379,21 @@ public class TypeAnalyser {
         return true;
     }
 
+    /**
+     * Rules as of 30 July 2020:
+     * <p>
+     * RULE 1: All fields must be @NotModified. This implies that the type must be @E1Immutable, which we check first.
+     * <p>
+     * RULE 2: All @SupportData fields must be private, or their types must be level 2 immutable
+     * <p>
+     * RULE 3: All methods and constructors must be independent of the @SupportData fields
+     *
+     * @param typeInfo The type to be analysed
+     * @return true if a change was made to typeAnalysis
+     */
     private boolean analyseE2Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE2Immutable = MultiLevel.value(typeImmutable, MultiLevel.E2IMMUTABLE);
         if (typeE2Immutable != MultiLevel.DELAY) return false; // we have a decision already
@@ -390,14 +404,20 @@ public class TypeAnalyser {
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
         boolean eventual = typeAnalysis.isEventual();
+        boolean haveSupportData = false;
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+            if (!fieldAnalysis.supportData.isSet()) {
+                log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
+                return false;
+            }
+            boolean supportData = fieldAnalysis.supportData.get();
+            haveSupportData |= supportData;
 
-            // RULE 1: ALL FIELDS ARE EFFECTIVELY FINAL
-            // checked with @E1Immutable, or eventual
+            // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
-            // RULE 2: ALL FIELDS HAVE BEEN ANNOTATED @NotModified UNLESS THEY ARE PRIMITIVE OR @E2Immutable
+            // this follows automatically if they are primitive or E2Immutable themselves
 
             int fieldImmutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
             int fieldE2Immutable = MultiLevel.value(fieldImmutable, MultiLevel.E2IMMUTABLE);
@@ -426,10 +446,10 @@ public class TypeAnalyser {
                     return true;
                 }
 
-                // RULE 4: ALL FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
+                // RULE 2: ALL @SupportData FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
-                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE)) {
-                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and also exposed (not private)",
+                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE) && supportData) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, is support data, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
                         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                         return true;
@@ -442,51 +462,56 @@ public class TypeAnalyser {
 
         // RULE 3: INDEPENDENCE OF CONSTRUCTORS
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
-            int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            if (independent == Level.DELAY) {
-                log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
-                return false; //not decided
-            }
-            if (independent == Level.FALSE) {
-                log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
-                        typeInfo.fullyQualifiedName, methodInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                return true;
-            }
-        }
-
-        // RULE 5: RETURN TYPES
-
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
-            if (methodInfo.isVoid()) continue; // we're looking at return types
-            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-            // in the eventual case, we only need to look at the non-modifying methods
-            if (modified == Level.FALSE || !eventual) {
-                MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-                int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
-                if (returnTypeE2Immutable == MultiLevel.DELAY) {
-                    log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
-                    return false;
+        if (haveSupportData) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
+                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+                if (independent == Level.DELAY) {
+                    log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
+                    return false; //not decided
                 }
-                if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
-                    // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent
-                    int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-                    if (independent == Level.DELAY) {
-                        log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                                typeInfo.fullyQualifiedName, methodInfo.name);
-                        return false; //not decided
-                    }
-                    if (independent == Level.FALSE) {
-                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                                typeInfo.fullyQualifiedName, methodInfo.name);
-                        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
-                        return true;
-                    }
+                if (independent == Level.FALSE) {
+                    log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
+                            typeInfo.fullyQualifiedName, methodInfo.name);
+                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                    return true;
                 }
             }
         }
+
+        // RULE 3: RETURN TYPES OF METHODS
+
+        if (haveSupportData) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+                if (methodInfo.isVoid()) continue; // we're looking at return types
+                int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                // in the eventual case, we only need to look at the non-modifying methods
+                if (modified == Level.FALSE || !eventual) {
+                    MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+                    int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                    int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
+                    if (returnTypeE2Immutable == MultiLevel.DELAY) {
+                        log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
+                        return false;
+                    }
+                    if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
+                        // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
+                        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                        if (independent == Level.DELAY) {
+                            log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
+                                    typeInfo.fullyQualifiedName, methodInfo.name);
+                            return false; //not decided
+                        }
+                        if (independent == Level.FALSE) {
+                            log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
+                                    typeInfo.fullyQualifiedName, methodInfo.name);
+                            typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
         int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));

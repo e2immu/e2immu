@@ -27,14 +27,13 @@ import java.util.Objects;
  * holds an object of type <code>T</code>.
  * <p>
  * This class is eventually immutable: once the second stage has been reached, its fields cannot be changed anymore.
- * There is no requirement on content modifications, therefore, once the immutable phase has been reached, the class
- * becomes a {@link E1Immutable}.
+ * There is no support data and no possibility of content modification; therefore, the type is eventually {@link E2Immutable}.
  *
  * @param <S> type of the initial stage
  * @param <T> type of the final stage
  */
 
-@E1Container(after = "mark")
+@E2Container(after = "mark")
 public class FirstThen<S, T> {
     @Linked(to = {"first"})
     private volatile S first;

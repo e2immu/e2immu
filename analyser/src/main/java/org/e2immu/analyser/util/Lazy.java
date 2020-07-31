@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * @param <T> the container's content
  */
 
-@E1Container(after = "get")
+@E2Container(after = "get")
 public class Lazy<T> {
     @NotModified
     @NotNull

@@ -18,16 +18,18 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.annotation.E1Container;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Linked;
 
 /**
- * Classic key-value object, typical example of value class
+ * Classic key-value object, typical example of level 2 immutable class
+ * without support data: neither constructor nor getters are independent
+ * (the fields link to the parameters) but that is OK for an unbound type.
  *
  * @param <K> type of key
  * @param <V> type of value
  */
-@E1Container
+@E2Container
 public class Pair<K, V> {
 
     @Linked(to = {"k"})

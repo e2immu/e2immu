@@ -25,13 +25,13 @@ import java.util.Objects;
 /**
  * An object holding either an object of type <code>A</code>, or one of type <code>B</code>; it cannot hold both or neither.
  *
- * <code>Either</code> is a typical example of a {@link E1Container}: final fields, therefore immutable at the
- * first level. All parameters of the methods are {@link NotModified}.
+ * <code>Either</code> is a typical example of a {@link E2Container} without support data:
+ * final fields of an unbound parameter type, that are {@link NotModified}.
  *
  * @param <A>
  * @param <B>
  */
-@E1Container
+@E2Container
 public class Either<A, B> {
 
     @Nullable
