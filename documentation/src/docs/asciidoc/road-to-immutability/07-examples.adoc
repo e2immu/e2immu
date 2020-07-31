@@ -49,6 +49,7 @@ The type is also clearly a container.
 Rules 2 and 3 are not required for type `T`.
 They are for the `supplier`: it is private, and independent because it is immutable itself as a functional type.
 
+[#firstthen]
 === FirstThen
 
 [source,java]

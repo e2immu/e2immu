@@ -122,11 +122,11 @@ Many examples will follow, but it should be clear from the description that type
 We now write rules 2 and 3 as:
 
 ****
-*Rule 2 of level 2 immutability*: a field is either private, or level 2 immutable itself.
-This rule applies to all fields of types of support data types.
+*Definition: level 2 immutability*: additional rules for support data types.
 
-*Rule 3 of level 2 immutability*: all constructors and non-private methods are `@Independent`.
-The independence applies to all support data types.
+*Rule 2*: a field is either private, or level 2 immutable itself.
+
+*Rule 3*: all constructors and non-private methods are `@Independent`.
 ****
 
 Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.

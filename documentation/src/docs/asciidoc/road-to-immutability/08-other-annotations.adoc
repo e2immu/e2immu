@@ -2,20 +2,46 @@
 
 The {e2immu} project defines a whole host of annotations complementary to the ones required for immutability.
 
-
 === Nullable, not null
 
+=== Identity and fluent methods
 
-=== Identity and fluent
+=== Utility class, extensions
 
+Using the simple and common definition:
 
+****
+*Definition*: a *utility class* is a class which cannot be instantiated: it has no non-static fields, and has a single, private, unused constructor.
+****
 
-=== Extensions
+the code analyser recognizes classes that only contain an assortment of static fields and methods.
+The value of recognizing this type is twofold: firstly, it enforces the private constructor; secondly, it allows for the detection of extension classes.
+
+In Java, many classes cannot easily be extended.
+Implementations of extensions typically use a utility class with the convention that the first parameter of the static method is the object of the extended method call:
+
+[source,java]
+----
+@Extension(of=String[].class)
+class ExtendString {
+    private ExtendString() { throw new UnsupportedOperationException(); }
+
+    public static String weave(@NotModified String[] strings) {
+        // generate a new string by weaving the given strings (concat 1st chars, etc.)
+    }
+
+    public static int appendEach(@Modified String[] strings, String append) {
+        // append the parameter 'append' to each of the strings in the array
+    }
+}
+----
+We use the following criteria to designate a utility class as an extension:
+
+****
+*Definition*:
+****
 
 Static classes can be used to 'extend' closed types, as promoted by the Xtend project.
 Level 2 immutable classes can also play the role of extension facilitators, with the additional benefit of having some immutable data to be used as a context.
-
-=== Utility class
-
 
 // ensure a newline at the end

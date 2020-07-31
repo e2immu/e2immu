@@ -1,4 +1,3 @@
-
 == Containers
 
 Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
@@ -41,6 +40,9 @@ public class Pair<K,V> {
 While it is clearly level 1 immutable, it will remain to be seen if it satisfies all criteria for intuitive immutability.
 However, it is easily recognized as a container: a type you use and trust to hold objects.
 
+Containers occur frequently as static sub-types to build immutable objects.
+Examples will follow later, after the definition of level 2 immutability.
+
 Let us conclude this section with an example two types, one which is a container according to the contract, and one which is not:
 
 [source,java]
@@ -54,6 +56,7 @@ interface ErrorRegistry {
     void addError(@NotModified ErrorMessage errorMessage);
 }
 
+@ModifiesArguments
 class BinaryExpression extends Expression {
     public final Expression lhs;
     public final Expression rhs;
@@ -71,8 +74,9 @@ class BinaryExpression extends Expression {
 ----
 
 The `BinaryExpression` is not a container, because it uses one of the parameters of its methods as a writable container.
+We use the annotation `@ModifiesArguments` to explicitly indicate that a type is not a container.
 
-== Linking, intuitively
+== Linking and independence
 
 Let us now elaborate on how we will compute modifications, in a path towards level 2 immutability.
 Consider the following example:

@@ -9,6 +9,79 @@ Challenges:
 * some graph-like data structures simply cannot be made immutable using conventional tools
 * once you go eventually immutable, how is the propagation organized?
 
+When possible, use a builder.
+
+=== Builders
+
+[source,java]
+----
+@E2Container
+class Point {
+    public final double x;
+    public final double y;
+
+    public Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+@E2Container
+class Polygon {
+
+    public final List<Point> points;
+
+    private Polygon(List<Point> points) { // <1>
+        this.points = points;
+    }
+
+    @Container(builds=Polygon.class)
+    static class PolygonBuilder {
+        private List<Point> points = new ArrayList<>();
+
+        public void addPoint(Point point) {
+            points.add(point);
+        }
+
+        public Polygon build() {
+            return new Polygon(ImmutableList.copyOf(points));
+        }
+    }
+}
+----
+<1> The private constructor combined with the construction of an immutable copy in the `build` method guarantees level 2 immutability.
+
+If your code can live with two different types (`PolygonBuilder`, `Polygon`) to represent polygons in their different stages (mutable, immutable), the builder paradigm is great.
+If, on the other hand, you want to hold polygons in a type that spans both stages of the polygon lifecycle, it becomes difficult to do this with an eye on immutability.
+The <<firstthen>> type, as detailed further, can assist in this situation: it holds an initial object (the _first_) until a state change occurs, and it is forced to hold a second object (the _then_).
+Once it is in the final state, it cannot change anymore.
+It is _eventually immutable_:
+
+[source,java]
+----
+class PolygonManager {
+    // initially, the polygon is in builder phase
+    public final FirstThen<Polygon.PolygonBuilder, Polygon> polygon =
+        new FirstThen<>(new Polygon.PolygonBuilder());
+
+    // ...
+
+    public void construct() {
+        // in builder phase ...
+        polygon.getFirst().add(point);
+        // transition
+        polygon.set(polygon.getFirst().build());
+        // from here on, polygon is immutable!
+    }
+
+    public Point firstPoint() {
+        return polygon.get().points.get(0);
+    }
+}
+----
+
+=== Definition
+
 We propose a system of eventual immutability based on a single transition of state inside an object.
 
 .First example of frozen class
