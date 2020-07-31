@@ -84,6 +84,8 @@ public class FieldAnalysis extends Analysis {
 
     public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
+    public final SetOnce<Boolean> supportData = new SetOnce<>();
+
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {

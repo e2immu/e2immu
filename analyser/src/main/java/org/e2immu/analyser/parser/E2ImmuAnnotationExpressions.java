@@ -57,6 +57,7 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> precondition = new Lazy<>(() -> create(Precondition.class));
     public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
     public final Lazy<AnnotationExpression> size = new Lazy<>(() -> create(Size.class));
+    public final Lazy<AnnotationExpression> supportData = new Lazy<>(() -> create(SupportData.class));
     public final Lazy<AnnotationExpression> utilityClass = new Lazy<>(() -> create(UtilityClass.class));
     public final Lazy<AnnotationExpression> variableField = new Lazy<>(() -> create(Variable.class));
 

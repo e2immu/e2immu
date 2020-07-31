@@ -61,6 +61,10 @@ public class FieldAnalyser {
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord();
 
+        // STEP 0: support data: does this field have to satisfy rules 2 and 3 of level 2 immutability?
+
+        if (computeSupportData(fieldInfo, fieldAnalysis)) changes = true;
+
         // STEP 1: THE INITIALISER
 
         Value value;
@@ -128,6 +132,15 @@ public class FieldAnalyser {
         return changes;
     }
 
+    private boolean computeSupportData(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        if (fieldAnalysis.supportData.isSet()) return false;
+        TypeAnalysis typeAnalysis = fieldInfo.owner.typeAnalysis.get();
+        if (!typeAnalysis.supportDataTypes.isSet()) return false;
+        boolean isSupportData = typeAnalysis.supportDataTypes.get().contains(fieldInfo.type);
+        fieldAnalysis.supportData.set(isSupportData);
+        fieldAnalysis.annotations.put(e2ImmuAnnotationExpressions.supportData.get(), isSupportData);
+        return true;
+    }
 
     private boolean makeInternalObjectFlowsPermanent(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis, VariableProperties fieldProperties) {
         if (fieldAnalysis.internalObjectFlows.isSet()) return false; // already done
@@ -634,6 +647,7 @@ public class FieldAnalyser {
 
         // TODO check the correct field name in @Linked(to="xxxx")
         check(fieldInfo, Linked.class, e2ImmuAnnotationExpressions.linked.get());
+        check(fieldInfo, SupportData.class, e2ImmuAnnotationExpressions.supportData.get());
         check(fieldInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
         check(fieldInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
         check(fieldInfo, Final.class, e2ImmuAnnotationExpressions.effectivelyFinal.get());

@@ -1,4 +1,3 @@
-
 == Level 1 immutability
 
 Let us start with a definition:
@@ -27,7 +26,11 @@ class EffectivelyFinal1 {
         random = new Random(seed);
     }
 
-    // no public methods access initialize()
+    // no methods access initialize()
+
+    public int nextInt() {
+        return random.nextInt();
+    }
 }
 ----
 
@@ -51,11 +54,15 @@ class EffectivelyFinal2 {
     private void initialize(long seed) {
         random = new Random(seed);
     }
+
+    public int nextInt() {
+        return random.nextInt();
+    }
 }
 ----
 
-Please note that it is perfectly possible to rewrite the first example in such a way that the `final` modifier can be used.
-From the point of view of the code analyser, it does not matter.
+Note that it is perfectly possible to rewrite the first example in such a way that the `final` modifier can be used.
+From the point of view of the code analyser, this does not matter.
 The wider definition will allow for more situations to be recognized for what they really are.
 
 When an object consists solely of primitives, or deeply immutable objects such as `java.lang.String`, having all fields effectively final is sufficient to generate an object that is again deeply immutable.
@@ -250,9 +257,7 @@ A field that is `@NotModified` must be `@Final`.
 
 Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all `@NotModified`.
 This is pretty obvious in the case of `toString`, `hashCode`, `getClass`.
-It is less obvious for the `wait` and other synchronization-related methods.
-
-IMPORTANT: As a general rule, we will exclude synchronization support from this discussion.
+It is less obvious for the `wait` and other synchronization-related methods, but remember that as a general rule, we exclude synchronization support from this discussion.
 
 Note also that we cannot add modifying methods to the type `DeeplyImmutable1` in Example 3.
 

@@ -110,12 +110,16 @@ class SimpleImmutableSet1<T> {
         return set.stream();
     }
 
+    public boolean isFrozen() { // <1>
+        return frozen;
+    }
+
     public int size() { // <1>
         return set.size();
     }
 }
 ----
-<1> This method can be called at any time.
+<1> These methods can be called any time.
 
 The analyser has no problem detecting the presence of preconditions, and observing that one method changes its own precondition.
 The rules, however, are sufficiently general to support arbitrary preconditions, as shown in the following variant.
@@ -150,6 +154,69 @@ class SimpleImmutableSet2<T> {
 At this point the project intends to implement this form of eventuality for immutability and nullability, but not for the container property.
 
 === Object flows
+
+So how does the analyser know whether the state change has happened?
+The answer lies in computing _object flows_: traces of how and in which order the code accesses an object's methods, and of how these objects travel via assignments and through method calls.
+
+A typical _origin_ of an object flow is a new object creation expression, which takes place in either a method, or a field assignment.
+In the following example statement, the expression creates a `StringBuilder` object, accesses the `append` method repeatedly, and then discards the `StringBuilder` object (in favour of a `String`):
+
+[source,java]
+----
+return new StringBuider().append(i).append("+").append(j).toString();
+----
+
+In general, there are three different ways of moving the object outside the creating method:
+
+. the method returns the newly created object,
+. the method passes on the newly created object as an argument to a method call (either static, or on another object),
+. the method assigns the newly created object to a field inside the class.
+
+Some different origins or starting points for an object flow are:
+
+. new object creation, as in `Point p = new Point(x, y)`, which starts a flow residing in the local variable `p`;
+. incoming flows as a return value of method calls or operators, as in `int s = set.size()`, which starts a flow in `s`;
+. reading the value of a field;
+. literals (attached as statics in the type), as in `Random r = new Random(123L)`, where the long constant starts a flow which 'travels' to the `seed` parameter of the constructor.
+. incoming flows from outside the method via parameters, as in the `seed` parameter of the `Random(long seed)` constructor.
+
+Once a flow has started, the code has the opportunity to execute the object's methods.
+These methods can be modifying, or not; in the same way, passing the object as an argument of a method can be modifying or not.
+While tracking non-modifying methods and arguments is useful from a code analysis' point of view, tracking the modifying methods and arguments is important to determine when the immutability state changes.
+After executing the marked method, `freeze` in the example above, the object has changed state and has become immutable:
+
+[source,java]
+----
+static int method1() {
+    SimpleImmutableSet1 set1 = new SimpleImmutableSet1();
+    set1.add("abc");
+    set1.add("def");
+    if (set1.isFrozen()) throw new UnsupportedOperationException();
+    set1.freeze();
+    if (!set1.isFrozen()) throw new UnsupportedOperationException();
+    return (int) set1.stream().count();
+}
+
+static int method2() {
+    FreezableSet set2 = new FreezableSet();
+    set2.add("abc");
+    set2.add("def");
+    return (int) set2.stream().count(); // <1>
+}
+
+static int method3() {
+    FreezableSet set3 = new FreezableSet();
+    set3.add("abc");
+    set3.freeze();
+    set3.add("def");  // <1>
+    return (int) set3.stream().count();
+}
+----
+<1> The code analyser marks these statements as errors!
+
+
+The analyser chains together the different flows; in this way, it is mostly able to detect whether an object is a mutable or immutable state.
+Once the analyser confirms the object's state change has happened, it can add the `@E2Immutable` annotation to the field or method, as detailed in <<propagation-dynamic>>.
 
 === Propagation
 

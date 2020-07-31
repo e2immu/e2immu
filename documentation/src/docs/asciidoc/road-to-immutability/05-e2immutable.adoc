@@ -305,6 +305,7 @@ Linking rules:
 . an assignment of a parameter or field to that parameter links the field to that other field or parameter
 . an assignment to th
 
+[#propagation-dynamic]
 === Propagation
 
 When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the `@E2Immutable` annotation can 'travel':

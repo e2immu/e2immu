@@ -93,4 +93,6 @@ public class TypeAnalysis extends Analysis {
     public Set<String> marksRequiredForImmutable() {
         return approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.toSet());
     }
+
+    public final SetOnce<Set<ParameterizedType>> supportDataTypes = new SetOnce<>();
 }

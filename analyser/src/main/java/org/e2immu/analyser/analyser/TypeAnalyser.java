@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -25,10 +26,14 @@ import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -184,10 +189,9 @@ public class TypeAnalyser {
             for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.beforeTypePropertyComputations) {
                 typeAnalyserVisitor.visit(iteration, typeInfo);
             }
-            // TODO at some point we will have overlapping qualities
-            // this is caused by the fact that some knowledge may come later.
-            // at the moment I'd rather not delay too much, and live with @Container @E1Immutable @E2Immutable @E2Container on a type
+
             if (typeInfo.hasBeenDefined()) {
+                if (analyseSupportDataTypes(typeInfo)) changes = true;
                 if (analyseOnlyAndMark(typeInfo)) changes = true;
                 if (analyseE1Immutable(typeInfo)) changes = true;
                 if (analyseE2Immutable(typeInfo)) changes = true;
@@ -217,6 +221,33 @@ public class TypeAnalyser {
             postAnalysisIntoNestedTypes(typeInfo, debugConfiguration);
             typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
         }
+    }
+
+    private boolean analyseSupportDataTypes(TypeInfo typeInfo) {
+        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+        if (typeAnalysis.supportDataTypes.isSet()) return false;
+
+        log(E2IMMUTABLE, "Computing support types for {}", typeInfo.fullyQualifiedName);
+        Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
+                .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
+        typesOfFields.removeIf(ParameterizedType::isPrimitive);
+        if (!typesOfFields.isEmpty()) {
+            Set<ParameterizedType> typesOfMethodsAndConstructors = typeInfo.typesOfMethodsAndConstructors();
+            // immediately remove type parameters
+            for (ParameterizedType type : typesOfMethodsAndConstructors) {
+                if (type.isTypeParameter()) {
+                    typesOfFields.remove(type);
+                }
+            }
+            if (!typesOfFields.isEmpty()) {
+                // if there are remaining types, we'll have to build a dependency tree
+                log(E2IMMUTABLE, "Need a more complicated algorithm!");
+            }
+        }
+        typeAnalysis.supportDataTypes.set(ImmutableSet.copyOf(typesOfFields));
+        log(E2IMMUTABLE, "Support types for {} are: [{}]", typeInfo.fullyQualifiedName,
+                StringUtil.join(typesOfFields, ParameterizedType::detailedString));
+        return true;
     }
 
     /**

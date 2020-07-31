@@ -9,7 +9,9 @@ import java.util.stream.Stream;
 @E2Container(after = "freeze")
 public class FreezableSet1 {
 
+    @SupportData
     private final Set<String> set = new HashSet<>();
+    @SupportData(type = AnnotationType.VERIFY_ABSENT)
     private boolean frozen;
 
     // here to see how preconditions work properly with parameters
