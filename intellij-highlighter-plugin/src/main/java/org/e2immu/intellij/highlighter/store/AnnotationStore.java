@@ -27,12 +27,12 @@ public class AnnotationStore {
 
     public static final AnnotationStore INSTANCE = new AnnotationStore();
 
-    private final Cache<String, String> cache = new LRUCache<>(500);
+    private final LRUCache<String, String> cache = new LRUCache<>(500, 1000L * 60 * 30);
 
     public void mapAndMark(String element, String context, Consumer<String> uponResult) {
         String hardCoded = Constants.HARDCODED_ANNOTATION_MAP.get(element);
         if (hardCoded != null) {
-            String result = hardCoded+context;
+            String result = hardCoded + context;
             LOGGER.warn("Found " + element + " hardcoded: '" + hardCoded + "', returning '" + result + "'");
             uponResult.accept(result);
             return;
@@ -40,7 +40,7 @@ public class AnnotationStore {
         String inCache = cache.get(element);
         if (inCache != null) {
             uponResult.accept(inCache);
-            LOGGER.warn("Found " + element + " in cache: '" + inCache + "'");
+            LOGGER.warn("Found " + element + " in cache: '" + inCache + "', hits " + cache.getHits() + ", misses " + cache.getMisses());
             return;
         }
         ProgressManager.checkCanceled();
@@ -76,7 +76,7 @@ public class AnnotationStore {
      * The system at the moment only expects one annotation per identifier (it's highlighting, very difficult
      * to highlight in 2 different colors!!
      *
-     * @param nextString      a CSV of annotations in LC
+     * @param nextString a CSV of annotations in LC
      * @return a single annotation name
      */
     static String select(String nextString) {

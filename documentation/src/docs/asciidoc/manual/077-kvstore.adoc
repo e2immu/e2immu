@@ -1,4 +1,4 @@
-== Key-value store
+=== Key-value store
 
 The key-value store is a simple, two-class implementation of an independent key-value store acting as a bridge between the {e2immu} analyser and the {intellij} plugin.
 It is mostly agnostic to the purpose in the project: it stores key-value pairs in sub-stores called projects.

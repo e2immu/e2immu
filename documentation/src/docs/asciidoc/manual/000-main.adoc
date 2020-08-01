@@ -15,13 +15,27 @@
 :nn1: pass:normal[`@NotNull1`]
 :nn2: pass:normal[`@NotNull2`]
 :nm: pass:normal[`@NotModified`]
-:e2immutable: pass:normal[`@E1Immutable`]
-:e2immutable: pass:normal[`@E2Immutable`]
-:container:  pass:normal[`@Container`]
+:e1immutable: pass:normal[ `@E1Immutable` ]
+
+:e2immutable: pass:normal[ `@E2Immutable` ]
+:e2container: pass:normal[ `@E2Container` ]
+:container:  pass:normal[ `@Container` ]
+:e1immutable: pass:normal[ `@E1Immutable` ]
+:e1container: pass:normal[ `@E1Container` ]
+:final:  pass:normal[ `@Final` ]
+:variable:  pass:normal[ `@Variable` ]
+:independent:  pass:normal[ `@Independent` ]
+:dependent:  pass:normal[`@Dependent`]
+:modified:  pass:normal[`@Modified`]
+:mutable: pass:normal[`@Mutable`]
+:modifiesArguments: pass:normal[`@ModifiesArguments`]
+:supportData: pass:normal[`@SupportData`]
+
 
 include::{includedir}/manual/010-intro.adoc[]
 
 :sectnums!:
+
 == _Using e2immu_
 :sectnums:
 include::{includedir}/manual/020-install.adoc[]
@@ -29,22 +43,30 @@ include::{includedir}/manual/020-install.adoc[]
 include::{includedir}/manual/030-use.adoc[]
 
 :sectnums!:
+
 == _Reference_
 :sectnums:
 
 include::{includedir}/manual/060-reference.adoc[]
 
 :sectnums!:
+
 == _Technical_
 :sectnums:
 
 include::{includedir}/manual/070-technical.adoc[]
 
+== Supporting tools
+
+include::{includedir}/manual/076-gradle-plugin.adoc[]
 
 include::{includedir}/manual/077-kvstore.adoc[]
 
+include::{includedir}/manual/078-intellij-plugin.adoc[]
+
 
 :sectnums!:
+
 == _Where next?_
 :sectnums:
 
@@ -54,14 +76,10 @@ include::{includedir}/manual/090-wherenext.adoc[]
 
 Copyright (C) 2020, Bart Naudts
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and limitations under the License.

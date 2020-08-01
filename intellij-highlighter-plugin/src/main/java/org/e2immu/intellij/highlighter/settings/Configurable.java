@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class Configurable implements SearchableConfigurable {
 
-    private ConfigurableGui gui = new ConfigurableGui();
+    private final ConfigurableGui gui = new ConfigurableGui();
 
     public Configurable() {
         JLabel noSupportedLanguage = new JLabel(Bundle.INSTANCE.get("e2i.settings.custom.global.noLang"));

@@ -69,40 +69,30 @@ public class AnnotationUploader {
         return clazz.getSimpleName().toLowerCase();
     }
 
-    public AnnotationUploader(UploadConfiguration configuration, E2ImmuAnnotationExpressions typeContext) {
+    public AnnotationUploader(UploadConfiguration configuration, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.configuration = configuration;
 
         typePairs = List.of(
-                new Pair<>(lc(E2Immutable.class), typeContext.e2Immutable.get()),
-                new Pair<>(lc(E1Immutable.class), typeContext.e1Immutable.get()),
-                new Pair<>(lc(E1Container.class), typeContext.e1Container.get()),
-                new Pair<>(lc(E2Container.class), typeContext.e2Container.get()),
-                new Pair<>(lc(Container.class), typeContext.container.get()),
-                new Pair<>(lc(Singleton.class), typeContext.singleton.get()),
-                new Pair<>(lc(UtilityClass.class), typeContext.utilityClass.get()),
-                new Pair<>(lc(ExtensionClass.class), typeContext.extensionClass.get())
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
+                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
+                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container.get())
         );
         methodPairs = List.of(
-                new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
-                new Pair<>(lc(NotNull.class), typeContext.notNull.get()),
-                new Pair<>(lc(Identity.class), typeContext.identity.get()),
-                new Pair<>(lc(Constant.class), typeContext.constant.get()),
-                new Pair<>(lc(Independent.class), typeContext.independent.get()),
-                new Pair<>(lc(Fluent.class), typeContext.fluent.get())
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified.get()),
+                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent.get())
         );
         fieldPairs = List.of(
-                new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
-                new Pair<>(lc(Constant.class), typeContext.constant.get()),
-                new Pair<>(lc(Final.class), typeContext.effectivelyFinal.get()),
-                new Pair<>(lc(NotNull.class), typeContext.notNull.get()),
-                new Pair<>(lc(NotNull1.class), typeContext.notNull1.get()),
-                new Pair<>(lc(NotNull1.class), typeContext.notNull2.get())
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get()),
+                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.effectivelyFinal.get()),
+                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get()),
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
+                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get())
         );
         parameterPairs = List.of(
-                new Pair<>(lc(NotModified.class), typeContext.notModified.get()),
-                new Pair<>(lc(NotNull.class), typeContext.notNull.get()),
-                new Pair<>(lc(NotNull1.class), typeContext.notNull1.get()),
-                new Pair<>(lc(NotNull2.class), typeContext.notNull2.get())
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get())
         );
     }
 

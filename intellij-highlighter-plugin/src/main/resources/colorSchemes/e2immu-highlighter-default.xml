@@ -1,58 +1,87 @@
 <?xml version='1.0'?>
 <list>
-    <option name="E2Immu highlighter defaults">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
+
+    <!-- TYPES -->
+
     <option name="e2i-e2immutable-t">
         <value>
-            <option name="BACKGROUND" value="E8E8E8" />
+            <option name="FOREGROUND" value="006600"/>
         </value>
     </option>
-    <option name="e2i-e2final-t">
+    <option name="e2i-e2container-t">
         <value>
-            <option name="BACKGROUND" value="E8E8E8" />
+            <option name="FOREGROUND" value="E8E8E8"/>
         </value>
     </option>
     <option name="e2i-container-t">
         <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i-notmodified-m">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i-notmodified-p">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i-notmodified-f">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i--m">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i--p">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
-        </value>
-    </option>
-    <option name="e2i--f">
-        <value>
-            <option name="BACKGROUND" value="E8E8E8" />
+            <option name="FOREGROUND" value="006600"/>
         </value>
     </option>
     <option name="e2i--t">
+    </option>
+
+    <!-- METHODS -->
+
+    <option name="e2i-notmodified-m">
         <value>
-            <option name="BACKGROUND" value="E8E8E8" />
+            <option name="FOREGROUND" value="006600"/>
         </value>
+    </option>
+    <option name="e2i-independent-m">
+    </option>
+    <option name="e2i-modified-m">
+        <value>
+            <option name="FOREGROUND" value="660000"/>
+        </value>
+    </option>
+    <option name="e2i--m">
+    </option>
+
+    <!-- FIELDS -->
+
+    <option name="e2i-notmodified-f">
+        <value>
+            <option name="FOREGROUND" value="006600"/>
+        </value>
+    </option>
+    <option name="e2i-modified-f">
+        <value>
+            <option name="FOREGROUND" value="660000"/>
+        </value>
+    </option>
+    <option name="e2i-e2immutable-f">
+        <value>
+            <option name="FOREGROUND" value="006600"/>
+        </value>
+    </option>
+    <option name="e2i-e2container-f">
+        <value>
+            <option name="FOREGROUND" value="006600"/>
+        </value>
+    </option>
+    <option name="e2i-final-f">
+    </option>
+    <option name="e2i-variable-f">
+        <value>
+            <option name="FOREGROUND" value="660000"/>
+        </value>
+    </option>
+    <option name="e2i--f">
+    </option>
+
+    <!-- PARAMETERS -->
+
+    <option name="e2i-notmodified-p">
+        <value>
+            <option name="FOREGROUND" value="006600"/>
+        </value>
+    </option>
+    <option name="e2i-modified-p">
+        <value>
+            <option name="FOREGROUND" value="660000"/>
+        </value>
+    </option>
+    <option name="e2i--p">
     </option>
 </list>
