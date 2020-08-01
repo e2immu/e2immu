@@ -6,45 +6,46 @@
 :sectnums:
 :icons: font
 :toc: left
-:imagesdir: images
+:imagesdir: {includedir}/images
 
 :e2immu: pass:normal[_e2immu_]
+:nn: pass:normal[`@NotNull1`]
+:nn1: pass:normal[`@NotNull1`]
+:nn2: pass:normal[`@NotNull2`]
+:nm: pass:normal[`@NotModified`]
+:e2immutable: pass:normal[`@E1Immutable`]
+:e2immutable: pass:normal[`@E2Immutable`]
+:container:  pass:normal[`@Container`]
 
-include::{includedir}/abstract.adoc[]
-include::{includedir}/about.adoc[]
-include::{includedir}/motivation.adoc[]
+include::{includedir}/manual/010-intro.adoc[]
 
 :sectnums!:
 == _Using e2immu_
 :sectnums:
-include::{includedir}/install.adoc[]
-include::{includedir}/use.adoc[]
+include::{includedir}/manual/020-install.adoc[]
 
-include::{includedir}/spring.adoc[]
-include::{includedir}/other_dependency_injection.adoc[]
-include::{includedir}/vertx-integration.adoc[]
+include::{includedir}/manual/030-use.adoc[]
 
 :sectnums!:
 == _Reference_
 :sectnums:
-include::{includedir}/list-of-annotations.adoc[]
-include::{includedir}/see-also.adoc[]
+
+include::{includedir}/manual/060-reference.adoc[]
 
 :sectnums!:
 == _Technical_
 :sectnums:
 
 == Technical aspects of the analyser
-include::{includedir}/competing-definitions.adoc[]
-include::{includedir}/overview-of-inspection-and-resolution.adoc[]
-include::{includedir}/overview-of-analyser.adoc[]
-include::{includedir}/e2immutable-rules.adoc[]
+
+include::{includedir}/manual/070-technical.adoc[]
+
 
 :sectnums!:
 == _Where next?_
 :sectnums:
 
-include::{includedir}/analysis-of-expressions.adoc[]
+include::{includedir}/manual/090-wherenext.adoc[]
 
 == Copyright and License
 

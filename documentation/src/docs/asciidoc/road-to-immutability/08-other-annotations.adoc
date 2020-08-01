@@ -1,12 +1,79 @@
 == Other annotations
 
 The {e2immu} project defines a whole host of annotations complementary to the ones required for immutability.
+We discuss them briefly, and refer to the user manual for an in-depth analysis.
 
 === Nullable, not null
 
 === Identity and fluent methods
 
-=== Utility class, extensions
+The analyser marks methods which returns their first parameter with `@Identity`, and methods which return `this` with `@Fluent`.
+The former are convenient to introduce preconditions, the latter occur frequently when chaining methods in builders.
+Here is an integrated example:
+
+[source,java]
+----
+@Container(builds=Set.class)
+class Builder {
+    @NotNull @NotModified @Identity
+    private static <T> T requireNonNull(@NotNull T t) {
+        if(t == null) throw new UnsupportedOperationException();
+        return t;
+    }
+
+    private final List<String> list = new ArrayList<>();
+
+    @Fluent
+    public Builder add(@NotNull String s) {
+        list.add(requireNonNull(s));
+        return this;
+    }
+
+    @Fluent
+    public Builder add(int i) {
+        list.add(Integer.toString(i));
+        return this;
+    }
+
+    @E2Container
+    public List<String> build() {
+        return ImmutableList.copyOf(list);
+    }
+
+    public static final Set<String> one23 = new Builder().add(1).add(2).add(3).add("go").build();
+}
+----
+
+=== Size
+
+The `@Size` annotations are conceptually similar to the nullability markers.
+When presented with the precondition:
+
+[source,java]
+----
+public boolean process(Set<T> set) {
+    if(set.isEmpty()) throw new UnsupportedOperationException();
+    // ...
+}
+----
+
+the {e2immu} code analyser adds a `@Size(min = 1)` annotation.
+This leads to a similar check method:
+
+[source,java]
+----
+@Identity @Size(min=1) @NotModified @NotNull
+public static <T> Collection<T> requireNonEmpty(
+        @Size(min = 1) @NotModified @NotNull Collection<T> collection) {
+    if(collection.isEmpty()) throw new UnsupportedOperationException();
+    return collection;
+}
+----
+
+with apologies for the massive amount of annotations.
+Internally the analyser translates the `isEmpty` method to the expression `collection.size() >= 1`, which allows for further comparisons and analysis.
+
+=== Utility class, extensions, singleton
 
 Using the simple and common definition:
 
@@ -35,6 +102,7 @@ class ExtendString {
     }
 }
 ----
+
 We use the following criteria to designate a utility class as an extension:
 
 ****

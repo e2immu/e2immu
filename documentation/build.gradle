@@ -4,7 +4,7 @@ plugins {
 
 asciidoctor {
     sources {
-        include 'main.adoc'
+        include 'manual/000-main.adoc'
         include 'road-to-immutability/00-main.adoc'
     }
     resources {

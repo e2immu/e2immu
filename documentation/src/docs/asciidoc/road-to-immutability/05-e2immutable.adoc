@@ -1,4 +1,3 @@
-
 == Level 2 immutability
 
 First, what do we want intuitively?
@@ -124,9 +123,9 @@ We now write rules 2 and 3 as:
 ****
 *Definition: level 2 immutability*: additional rules for support data types.
 
-*Rule 2*: a field is either private, or level 2 immutable itself.
+*Rule 2*: a field is either private, or level 2 immutable itself (by type or dynamic annotation).
 
-*Rule 3*: all constructors and non-private methods are `@Independent`.
+*Rule 3*: all constructors and non-private methods are `@Independent` of the fields of support data types.
 ****
 
 Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.

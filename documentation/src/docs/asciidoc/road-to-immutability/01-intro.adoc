@@ -58,5 +58,6 @@ Each time the code analyser runs, and the computation finds the type is not immu
 
 The other situation where explicit annotations in the code are important, is for the development of the analyser.
 We add them to the code as a means of verification: the analyser will check if it generates the same annotation at that location.
+A number of annotations serve no other purpose than debugging: `@Linked`, `@Independent`, `@Constant`, ...
 
 // ensure a newline at the end
