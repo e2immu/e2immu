@@ -153,7 +153,7 @@ public class MethodAnalyser {
             if (!methodInfo.isConstructor) {
                 if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
                     // internal check
-                    if(methodInfo.isVoid()) throw new UnsupportedOperationException();
+                    if (methodInfo.isVoid()) throw new UnsupportedOperationException();
                     if (propertiesOfReturnStatements(methodInfo, methodAnalysis))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
@@ -431,7 +431,8 @@ public class MethodAnalyser {
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
-        if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL) return false;
+        if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
+            return false;
 
         boolean delays = methodAnalysis.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(variableProperty));
         if (delays) {
@@ -676,13 +677,13 @@ public class MethodAnalyser {
             }
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
             int e2ImmutableStatusOfFieldRefs = variables.stream()
-                    .filter(v -> v instanceof FieldReference)
+                    .filter(MethodAnalyser::isSupportDataField)
                     .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                     .min().orElse(MultiLevel.EFFECTIVE);
             if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
                 log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                         variables.stream()
-                                .filter(v -> v instanceof FieldReference &&
+                                .filter(v -> isSupportDataField(v) &&
                                         MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
                                                 MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                                 .map(Variable::detailedString)
@@ -702,6 +703,8 @@ public class MethodAnalyser {
                         LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
                 })
                 .map(e -> e.getValue().linkedVariables.get())
+                .map(set -> set.stream().filter(MethodAnalyser::isSupportDataField).collect(Collectors.toSet()))
+                .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
                 .allMatch(set -> Collections.disjoint(set, parameters));
 
         // conclusion
@@ -711,6 +714,11 @@ public class MethodAnalyser {
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    public static boolean isSupportDataField(Variable variable) {
+        if (!(variable instanceof FieldReference)) return false;
+        return ((FieldReference) variable).fieldInfo.fieldAnalysis.get().supportData.get();
     }
 
     public Stream<Message> getMessageStream() {

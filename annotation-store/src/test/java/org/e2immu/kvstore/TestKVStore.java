@@ -2,6 +2,7 @@ package org.e2immu.kvstore;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -32,7 +33,7 @@ public class TestKVStore {
     @Rule
     public RunTestOnContext rule = new RunTestOnContext();
 
-    private static Vertx vertxOfServer = Vertx.vertx();
+    private static final Vertx vertxOfServer = Vertx.vertx();
 
     @BeforeClass
     public static void beforeClass() {
@@ -48,7 +49,7 @@ public class TestKVStore {
     public void test_01_putOneKey(TestContext ctx) {
         WebClient webClient = WebClient.create(rule.vertx());
         Async async = ctx.async();
-        webClient.get(Store.DEFAULT_PORT, LOCALHOST, "/" + PROJECT + "/" + JAVA_UTIL_SET + "/" + CONTAINER)
+        webClient.get(Store.DEFAULT_PORT, LOCALHOST, Store.API_VERSION + "/set/" + PROJECT + "/" + JAVA_UTIL_SET + "/" + CONTAINER)
                 .send(ar -> {
                     if (ar.failed()) {
                         LOGGER.error("Failure: {}", ar.cause().getMessage());
@@ -56,15 +57,20 @@ public class TestKVStore {
                         ctx.fail();
                     } else {
                         ctx.assertTrue(ar.succeeded());
-                        JsonObject result = ar.result().bodyAsJsonObject();
-                        if (ar.result().statusCode() != 200) {
-                            LOGGER.error("ERROR: " + result);
-                        }
+                        try {
+                            JsonObject result = ar.result().bodyAsJsonObject();
+                            if (ar.result().statusCode() != 200) {
+                                LOGGER.error("ERROR: " + result);
+                            }
 
-                        ctx.assertEquals(200, ar.result().statusCode());
-                        LOGGER.info("Got update summary: " + result);
-                        int updated = result.getInteger("updated");
-                        ctx.assertEquals(1, updated);
+                            ctx.assertEquals(200, ar.result().statusCode());
+                            LOGGER.info("Got update summary: " + result);
+                            int updated = result.getInteger("updated");
+                            ctx.assertEquals(1, updated);
+                        } catch (DecodeException decodeException) {
+                            LOGGER.error("Received: " + ar.result().bodyAsString());
+                            ctx.fail();
+                        }
                     }
                     async.complete();
                 });
@@ -74,7 +80,7 @@ public class TestKVStore {
     public void test_02_getOneKey(TestContext ctx) {
         WebClient webClient = WebClient.create(rule.vertx());
         Async async = ctx.async();
-        webClient.get(Store.DEFAULT_PORT, LOCALHOST, "/" + PROJECT + "/" + JAVA_UTIL_SET)
+        webClient.get(Store.DEFAULT_PORT, LOCALHOST, Store.API_VERSION + "/get/" + PROJECT + "/" + JAVA_UTIL_SET)
                 .send(ar -> {
                     if (ar.failed()) {
                         LOGGER.error("Failure: {}", ar.cause().getMessage());
@@ -104,7 +110,7 @@ public class TestKVStore {
                 .put(JAVA_UTIL_MAP, CONTAINER)
                 .put(ORG_E2IMMU_KVSTORE_STORE_READ_WITHIN_MILLIS, E2IMMU);
         Buffer body = Buffer.buffer(putObject.encode());
-        webClient.put(Store.DEFAULT_PORT, LOCALHOST, "/" + PROJECT)
+        webClient.put(Store.DEFAULT_PORT, LOCALHOST, Store.API_VERSION + "/set/" + PROJECT)
                 .sendBuffer(body, ar -> {
                     if (ar.failed()) {
                         LOGGER.error("Failure: " + ar.cause().getMessage());
@@ -132,7 +138,7 @@ public class TestKVStore {
     public void test_04_getOneKey_Expect2(TestContext ctx) {
         WebClient webClient = WebClient.create(rule.vertx());
         Async async = ctx.async();
-        webClient.get(Store.DEFAULT_PORT, LOCALHOST, "/" + PROJECT + "/" + JAVA_UTIL_MAP)
+        webClient.get(Store.DEFAULT_PORT, LOCALHOST, Store.API_VERSION + "/get/" + PROJECT + "/" + JAVA_UTIL_MAP)
                 .send(ar -> {
                     if (ar.failed()) {
                         LOGGER.error("Failure: {}", ar.cause().getMessage());

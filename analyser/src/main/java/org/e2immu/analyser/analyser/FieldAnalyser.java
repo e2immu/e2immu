@@ -611,6 +611,16 @@ public class FieldAnalyser {
                                        TypeInspection typeInspection,
                                        boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.MODIFIED) != Level.UNDEFINED) return false;
+        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (isFinal == Level.DELAY) {
+            log(DELAYED, "Delaying @NotModified on {} until we know about @Final", fieldInfo.fullyQualifiedName());
+            return false;
+        }
+        if (isFinal == Level.FALSE) {
+            log(NOT_MODIFIED, "Field {} cannot be @NotModified, as it is not @Final", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, true);
+            return true;
+        }
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int e2immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
         if (e2immutable == MultiLevel.DELAY) {

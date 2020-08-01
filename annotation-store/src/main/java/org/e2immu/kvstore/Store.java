@@ -12,13 +12,10 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Store {
-    private static final String API_VERSION = "/v1";
+    public static final String API_VERSION = "/v1";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Store.class);
     public static final int DEFAULT_PORT = 8281;
@@ -178,11 +175,7 @@ public class Store {
                 String key = (String) element;
                 queried.add(key);
                 String annotation = project.get(key);
-                if (annotation != null) {
-                    result.put(key, annotation);
-                } else {
-                    result.put(key, "");
-                }
+                result.put(key, Objects.requireNonNullElse(annotation, ""));
             }
         }
         Map<String, String> recent = project.recentlyReadAndUpdatedAfterwards(queried, readWithinMillis);

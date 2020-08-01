@@ -9,6 +9,8 @@
 :imagesdir: {includedir}/images
 
 :e2immu: pass:normal[_e2immu_]
+:intellij: pass:normal[IntelliJ IDEA]
+
 :nn: pass:normal[`@NotNull1`]
 :nn1: pass:normal[`@NotNull1`]
 :nn2: pass:normal[`@NotNull2`]
@@ -36,9 +38,10 @@ include::{includedir}/manual/060-reference.adoc[]
 == _Technical_
 :sectnums:
 
-== Technical aspects of the analyser
-
 include::{includedir}/manual/070-technical.adoc[]
+
+
+include::{includedir}/manual/077-kvstore.adoc[]
 
 
 :sectnums!:
