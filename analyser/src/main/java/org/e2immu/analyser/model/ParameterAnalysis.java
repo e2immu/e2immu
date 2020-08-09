@@ -50,7 +50,7 @@ public class ParameterAnalysis extends Analysis {
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
-        this.owner = parameterInfo.parameterInspection.get().owner;
+        this.owner = parameterInfo.owner;
         this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
         this.parameterizedType = parameterInfo.parameterizedType;
         this.location = new Location(parameterInfo);

@@ -80,7 +80,7 @@ public class Primitives {
 
     public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
     public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypeTypeInfo, "DEFENSIVE", annotationModeTypeInfo);
-    public final FieldInfo annotationModeOffensive= new FieldInfo(annotationTypeTypeInfo, "OFFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeOffensive = new FieldInfo(annotationTypeTypeInfo, "OFFENSIVE", annotationModeTypeInfo);
 
     public final TypeInfo functionalInterface = new TypeInfo("java.lang.FunctionalInterface");
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
@@ -92,8 +92,7 @@ public class Primitives {
     public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
 
     public final MethodInfo plusOperatorInt = new MethodInfo(intTypeInfo, "+",
-            List.of(new ParameterInfo(null, intParameterizedType, "lhs", 0),
-                    new ParameterInfo(null, intParameterizedType, "rhs", 1)), intParameterizedType, true);
+            List.of(), intParameterizedType, true);
 
     public final MethodInfo minusOperatorInt = new MethodInfo(intTypeInfo, "-",
             List.of(), intParameterizedType, true);
@@ -132,9 +131,7 @@ public class Primitives {
             List.of(), booleanParameterizedType, true);
 
     public final MethodInfo multiplyOperatorInt = new MethodInfo(intTypeInfo, "*",
-            List.of(new ParameterInfo(null, intParameterizedType, "lhs", 0),
-                    new ParameterInfo(null, intParameterizedType, "rhs", 1)),
-            intParameterizedType, true);
+            List.of(), intParameterizedType, true);
 
     public final MethodInfo assignOperatorInt = new MethodInfo(intTypeInfo, "=",
             List.of(), intParameterizedType, true);
@@ -229,8 +226,7 @@ public class Primitives {
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInfo valueOf = new MethodInfo(typeInfo, "valueOf", true);
         ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
-        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
-                .build(valueOf));
+        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .setReturnType(typeInfo)
                 .addParameter(valueOf1)

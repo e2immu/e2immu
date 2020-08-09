@@ -199,7 +199,7 @@ public class InspectAnnotatedAPIs {
             newParameter.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                     .setVarArgs(parameterInfo.parameterInspection.get().varArgs)
                     .addAnnotations(parameterInfo.parameterInspection.get().annotations)
-                    .build(copy));
+                    .build());
             builder.addParameter(newParameter);
         });
         methodInspection.exceptionTypes.forEach(parameterizedType -> builder.addExceptionType(parameterizedType.copy(localTypeContext)));

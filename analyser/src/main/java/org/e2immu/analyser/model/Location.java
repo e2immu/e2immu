@@ -40,7 +40,7 @@ public class Location {
 
     public Location(ParameterInfo parameterInfo) {
         this.parameterInfo = parameterInfo;
-        this.methodInfo = parameterInfo.parameterInspection.get().owner;
+        this.methodInfo = parameterInfo.owner;
         this.typeInfo = this.methodInfo == null ? null : this.methodInfo.typeInfo;
         this.statementId = null;
         this.fieldInfo = null;

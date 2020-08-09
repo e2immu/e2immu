@@ -56,7 +56,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.index = index;
-        this.owner = owner;
+        this.owner = Objects.requireNonNull(owner);
     }
 
     @Override
@@ -91,7 +91,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     @Override
     public boolean hasBeenDefined() {
-        MethodInfo owner = parameterInspection.get().owner;
         // owner == null means a parameter of an inline lambda expression, which can have properties!
         return owner == null || owner.hasBeenDefined();
     }
@@ -101,13 +100,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ParameterInfo that = (ParameterInfo) o;
-        return parameterizedType.equals(that.parameterizedType) &&
-                name.equals(that.name);
+        return index == that.index &&
+                owner.equals(that.owner);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, name);
+        return Objects.hash(index, owner);
     }
 
     @Override
@@ -158,13 +157,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return imports;
     }
 
-    public void inspect(MethodInfo owner, Parameter parameter, ExpressionContext expressionContext, boolean isVarArgs) {
+    public void inspect(Parameter parameter, ExpressionContext expressionContext, boolean isVarArgs) {
         ParameterInspection.ParameterInspectionBuilder builder = new ParameterInspection.ParameterInspectionBuilder();
         for (AnnotationExpr ae : parameter.getAnnotations()) {
             builder.addAnnotation(AnnotationExpression.from(ae, expressionContext));
         }
         builder.setVarArgs(isVarArgs);
-        parameterInspection.set(builder.build(owner));
+        parameterInspection.set(builder.build());
     }
 
     @Override
@@ -180,7 +179,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromParameter.isPresent()) return fromParameter;
         if (NotNull.class.equals(annotation)) {
-            return parameterInspection.get().owner.typeInfo.hasTestAnnotation(annotation);
+            return owner.typeInfo.hasTestAnnotation(annotation);
         }
         return Optional.empty(); // do not copy from type!
     }

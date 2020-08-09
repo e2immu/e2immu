@@ -157,7 +157,7 @@ public class MethodTypeParameterMap {
             if (p.parameterInspection.get().varArgs) {
                 pib.setVarArgs(true);
             }
-            newParameter.parameterInspection.set(pib.build(copy));
+            newParameter.parameterInspection.set(pib.build());
         }
         mib.setReturnType(getConcreteReturnType());
 

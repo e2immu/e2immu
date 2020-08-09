@@ -92,7 +92,7 @@ public class MyMethodVisitor extends MethodVisitor {
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, name, parameterIndex);
-            parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build(methodInfo));
+            parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build());
             methodInspectionBuilder.addParameter(parameterInfo);
             hasNameFromLocalVar[parameterIndex] = true;
         }
@@ -109,7 +109,7 @@ public class MyMethodVisitor extends MethodVisitor {
                 ParameterInfo parameterInfo = new ParameterInfo(methodInfo, type, parameterName, i);
                 methodInspectionBuilder.addParameter(parameterInfo);
 
-                parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build(methodInfo));
+                parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build());
                 log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
             }
         }

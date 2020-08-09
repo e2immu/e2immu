@@ -222,7 +222,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs());
             ParameterInfo parameterInfo = new ParameterInfo(this, pt, parameter.getNameAsString(), i++);
-            parameterInfo.inspect(this, parameter, expressionContext, parameter.isVarArgs());
+            parameterInfo.inspect(parameter, expressionContext, parameter.isVarArgs());
             builder.addParameter(parameterInfo);
         }
     }

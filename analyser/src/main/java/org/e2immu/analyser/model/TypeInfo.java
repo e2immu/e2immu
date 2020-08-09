@@ -56,6 +56,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public final SetOnceSupply<TypeInspection> typeInspection = new SetOnceSupply<>();
     public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
 
+    // immutable after inspection
+    private final AtomicInteger identifierForAnonymousSubTypes = new AtomicInteger();
+
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
         simpleName = enclosingType.simpleName + "$" + number;
@@ -217,7 +220,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, PRIMITIVES.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get())
-                .build(valueOfMethodInfo));
+                .build());
         valueOfMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
                 .setReturnType(asParameterizedType())
@@ -1117,5 +1120,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         return result;
+    }
+
+    public int nextIdentifier() {
+        return identifierForAnonymousSubTypes.incrementAndGet();
     }
 }

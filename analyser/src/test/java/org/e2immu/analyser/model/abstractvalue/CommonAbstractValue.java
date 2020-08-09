@@ -36,6 +36,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,8 +90,14 @@ public abstract class CommonAbstractValue {
     }
 
     static ParameterInfo createParameter(String name) {
-        ParameterInfo pi = new ParameterInfo(null, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
-        pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(null));
+        TypeInfo someType = new TypeInfo("some.type");
+        someType.typeAnalysis.set(new TypeAnalysis(someType));
+        someType.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                .setPackageName("org.e2immu.test")
+                .build(true, someType));
+        MethodInfo methodInfo = new MethodInfo(someType, List.of());
+        ParameterInfo pi = new ParameterInfo(methodInfo, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
+        pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         pi.parameterAnalysis.set(new ParameterAnalysis(pi));
         return pi;
     }

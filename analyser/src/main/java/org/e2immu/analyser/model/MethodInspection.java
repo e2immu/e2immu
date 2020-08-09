@@ -28,6 +28,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -139,6 +140,12 @@ public class MethodInspection extends Inspection {
         }
 
         @Fluent
+        public MethodInspectionBuilder addParameters(@NotNull Collection<ParameterInfo> parameters) {
+            this.parameters.addAll(parameters);
+            return this;
+        }
+
+        @Fluent
         public MethodInspectionBuilder addModifier(@NotNull MethodModifier methodModifier) {
             modifiers.add(methodModifier);
             return this;
@@ -179,13 +186,10 @@ public class MethodInspection extends Inspection {
                     throw new UnsupportedOperationException("I cannot have type parameters owned by another method!");
                 }
             }
-            for (ParameterInfo parameterInfo : parameters) {
-                if (parameterInfo.parameterizedType.typeParameter != null
-                        && parameterInfo.parameterizedType.typeParameter.isMethodTypeParameter()
-                        && parameterInfo.parameterizedType.typeParameter.owner.getRight() != methodInfo) {
-                    throw new UnsupportedOperationException("I cannot have parameters of a type being a type parameter owned by another method!");
-                }
-            }
+            // removed a check that the type parameter, if it belonged to a method, had to be this method.
+            // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
+            // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
+            
             return new MethodInspection(methodInfo,
                     ImmutableList.copyOf(modifiers),
                     ImmutableList.copyOf(parameters),

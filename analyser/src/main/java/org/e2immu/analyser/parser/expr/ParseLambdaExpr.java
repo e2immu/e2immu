@@ -50,6 +50,9 @@ public class ParseLambdaExpr {
         int cnt = 0;
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
+
+        MethodInfo owner = createAnonymousTypeAndApplyMethod(expressionContext.enclosingType);
+
         for (Parameter parameter : lambdaExpr.getParameters()) {
             ParameterizedType parameterType = null;
             if (parameter.getType() != null && !parameter.getType().asString().isEmpty()) {
@@ -65,8 +68,8 @@ public class ParseLambdaExpr {
                 break;
             }
             types.add(parameterType);
-            ParameterInfo parameterInfo = new ParameterInfo(null, parameterType, parameter.getName().asString(), cnt++);
-            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build(null));
+            ParameterInfo parameterInfo = new ParameterInfo(owner, parameterType, parameter.getName().asString(), cnt++);
+            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
             parameterInfo.parameterAnalysis.set(new ParameterAnalysis(parameterInfo));
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);
@@ -77,7 +80,8 @@ public class ParseLambdaExpr {
         }
         ExpressionContext newExpressionContext = expressionContext.newVariableContext(newVariableContext, "lambda");
 
-        if (lambdaExpr.getExpressionBody().isPresent()) {
+        boolean isExpression = lambdaExpr.getExpressionBody().isPresent();
+        if (isExpression) {
             Expression expr = newExpressionContext.parseExpression(lambdaExpr.getExpressionBody());
             if (expr instanceof UnevaluatedMethodCall) {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
@@ -85,16 +89,16 @@ public class ParseLambdaExpr {
             }
             ParameterizedType inferredReturnType = expr.returnType();
             ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
+            ParameterizedType anonymousType = createAnonymousType(expressionContext.enclosingType, owner, parameters, functionalType);
             log(LAMBDA, "End parsing lambda as expression, inferred functional type {}", functionalType);
-            return new LambdaExpression(parameters, expr, functionalType, createFunctionalType(expressionContext.enclosingType,
-                    expressionContext.typeContext, parameters, functionalType));
+            return new LambdaExpression(parameters, expr, functionalType, anonymousType);
         }
         Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-        ParameterizedType inferredReturnType = Primitives.PRIMITIVES.voidParameterizedType; // TODO
+        ParameterizedType inferredReturnType = block.mostSpecificReturnType();
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
+        ParameterizedType anonymousType = createAnonymousType(expressionContext.enclosingType, owner, parameters, functionalType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}", functionalType);
-        return new LambdaBlock(parameters, block, functionalType, createFunctionalType(expressionContext.enclosingType,
-                expressionContext.typeContext, parameters, functionalType));
+        return new LambdaBlock(parameters, block, functionalType, anonymousType);
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
@@ -103,25 +107,31 @@ public class ParseLambdaExpr {
         return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()), lambdaExpr.getExpressionBody().isPresent() ? true : null);
     }
 
-    private static ParameterizedType createFunctionalType(TypeInfo enclosingType,
-                                                          TypeContext typeContext,
-                                                          List<ParameterInfo> parameters,
-                                                          @NotNull ParameterizedType returnType) {
-        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + Math.abs(new Random().nextLong()));
+    private static MethodInfo createAnonymousTypeAndApplyMethod(TypeInfo enclosingType) {
+        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + enclosingType.nextIdentifier());
         TypeAnalysis typeAnalysis = new TypeAnalysis(typeInfo);
         typeInfo.typeAnalysis.set(typeAnalysis);
-        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
-        typeInspectionBuilder.setTypeNature(TypeNature.INTERFACE);
-        typeInspectionBuilder.setEnclosingType(enclosingType);
-        typeInspectionBuilder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
-        MethodInfo methodInfo = new MethodInfo(typeInfo, "apply", false);
+        return new MethodInfo(typeInfo, "apply", false);
+    }
+
+    private static ParameterizedType createAnonymousType(TypeInfo enclosingType,
+                                                         MethodInfo methodInfo,
+                                                         List<ParameterInfo> parameters,
+                                                         ParameterizedType returnType) {
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(returnType));
+        methodInspectionBuilder.addParameters(parameters);
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
         MethodAnalysis methodAnalysis = MethodAnalysis.newMethodAnalysisForLambdaBlocks(methodInfo);
         methodInfo.methodAnalysis.set(methodAnalysis);
 
+        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
+        typeInspectionBuilder.setTypeNature(TypeNature.INTERFACE);
+        typeInspectionBuilder.setEnclosingType(enclosingType);
+        typeInspectionBuilder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
         typeInspectionBuilder.addMethod(methodInfo);
+
+        TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
         // TODO this is the absolute minimum to recognize the type + method as functional interface. More needs to be done
         return typeInfo.asParameterizedType();

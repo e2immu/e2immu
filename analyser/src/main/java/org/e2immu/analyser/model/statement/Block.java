@@ -20,10 +20,8 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.HasStatements;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
@@ -122,5 +120,10 @@ public class Block implements Statement, HasStatements {
     @Override
     public List<Statement> getStatements() {
         return statements;
+    }
+
+    public ParameterizedType mostSpecificReturnType() {
+        // TODO loop over return statements, distill type
+        return Primitives.PRIMITIVES.voidParameterizedType;
     }
 }

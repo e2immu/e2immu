@@ -28,19 +28,16 @@ import java.util.List;
 @NotNull
 public class ParameterInspection extends Inspection {
 
-    // NOTE: owner can be null, when this is a parameter of a lambda expression
-    public final MethodInfo owner;
     public final boolean varArgs;
 
-    private ParameterInspection(MethodInfo owner, List<AnnotationExpression> annotations, boolean varArgs) {
+    private ParameterInspection(List<AnnotationExpression> annotations, boolean varArgs) {
         super(annotations);
-        this.owner = owner;
         this.varArgs = varArgs;
     }
 
     @NotNull
     public ParameterInspection copy(@NotNull @NotModified List<AnnotationExpression> alternativeAnnotations) {
-        return new ParameterInspection(owner, ImmutableList.copyOf(alternativeAnnotations), varArgs);
+        return new ParameterInspection(ImmutableList.copyOf(alternativeAnnotations), varArgs);
     }
 
     @Container(builds = ParameterInspection.class)
@@ -70,8 +67,8 @@ public class ParameterInspection extends Inspection {
 
         @NotModified
         @NotNull
-        public ParameterInspection build(MethodInfo owner) {
-            return new ParameterInspection(owner, ImmutableList.copyOf(annotations), varArgs);
+        public ParameterInspection build() {
+            return new ParameterInspection(ImmutableList.copyOf(annotations), varArgs);
         }
 
     }
