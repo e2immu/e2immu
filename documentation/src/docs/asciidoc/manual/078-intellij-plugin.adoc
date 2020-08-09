@@ -71,7 +71,7 @@ To be consistent with the system for methods, the analyser will only emit the an
 | no support data | black | black
 |===
 
-The situation of parameters is binary:
+The situation of parameters is binary. The analyser colors the
 
 [options=header]
 |===
@@ -79,6 +79,7 @@ The situation of parameters is binary:
 | {nm} | green | black
 | {modified} | black | red
 |===
+
 
 ==== Information flow
 

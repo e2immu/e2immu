@@ -676,6 +676,11 @@ public class MethodAnalyser {
                 return false;
             }
             Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
+            boolean supportDataSet = variables.stream().allMatch(MethodAnalyser::isSupportDataFieldSet);
+            if (!supportDataSet) {
+                log(DELAYED, "Delaying @Independent on {}, support data not known for all field references", methodInfo.distinguishingName());
+                return false;
+            }
             int e2ImmutableStatusOfFieldRefs = variables.stream()
                     .filter(MethodAnalyser::isSupportDataField)
                     .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
@@ -697,15 +702,25 @@ public class MethodAnalyser {
 
         // PART 2: check parameters
         List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
+
+        boolean supportDataSet = methodAnalysis.fieldSummaries.stream()
+                .flatMap(e -> e.getValue().linkedVariables.get().stream())
+                .allMatch(MethodAnalyser::isSupportDataFieldSet);
+        if (!supportDataSet) {
+            log(DELAYED, "Delaying @Independent on {}, support data not known for all field references", methodInfo.distinguishingName());
+            return false;
+        }
+
         boolean parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream()
                 .peek(e -> {
                     if (!e.getValue().linkedVariables.isSet())
                         LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
                 })
-                .map(e -> e.getValue().linkedVariables.get())
-                .map(set -> set.stream().filter(MethodAnalyser::isSupportDataField).collect(Collectors.toSet()))
+                .flatMap(e -> e.getValue().linkedVariables.get().stream())
+                .filter(v -> v instanceof ParameterInfo)
+                .map(v -> (ParameterInfo) v)
                 .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
-                .allMatch(set -> Collections.disjoint(set, parameters));
+                .noneMatch(parameters::contains);
 
         // conclusion
 
@@ -714,6 +729,10 @@ public class MethodAnalyser {
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    public static boolean isSupportDataFieldSet(Variable v) {
+        return !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.fieldAnalysis.get().supportData.isSet();
     }
 
     public static boolean isSupportDataField(Variable variable) {

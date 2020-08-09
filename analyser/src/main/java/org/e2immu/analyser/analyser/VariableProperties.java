@@ -154,7 +154,7 @@ class VariableProperties implements EvaluationContext {
         dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
-        this.internalObjectFlows = parent.internalObjectFlows;
+        this.internalObjectFlows = parent.internalObjectFlows; // TODO this is wrong; we should be making a child object flow
         this.messages = parent.messages;
     }
 
@@ -378,7 +378,7 @@ class VariableProperties implements EvaluationContext {
             objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.PARAMETER);
             if (!internalObjectFlows.add(objectFlow))
-                throw new UnsupportedOperationException("? should not yet be there");
+                throw new UnsupportedOperationException("? should not yet be there: "+objectFlow+" vs "+internalObjectFlows);
         } else if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
             ObjectFlow fieldObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),

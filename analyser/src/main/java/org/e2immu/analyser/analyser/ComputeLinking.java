@@ -81,10 +81,12 @@ public class ComputeLinking {
         }
         Set<Variable> variablesInvolved = methodAnalysis.returnStatementSummaries.stream()
                 .flatMap(e -> e.getValue().linkedVariables.get().stream()).collect(Collectors.toSet());
+
         for (Variable variable : variablesInvolved) {
             Set<Variable> dependencies;
             if (variable instanceof FieldReference) {
-                if (!((FieldReference) variable).fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet()) {
+                FieldAnalysis fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
+                if (!fieldAnalysis.variablesLinkedToMe.isSet()) {
                     log(DELAYED, "Dependencies of {} have not yet been established", variable.detailedString());
                     return false;
                 }
