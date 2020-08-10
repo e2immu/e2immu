@@ -74,7 +74,7 @@ class BinaryExpression extends Expression {
 ----
 
 The `BinaryExpression` is not a container, because it uses one of the parameters of its methods as a writable container.
-We use the annotation `@ModifiesArguments` to explicitly indicate that a type is not a container.
+We use the annotation `MutableModifiesArguments` to explicitly indicate that a type is not a container.
 
 == Linking and independence
 

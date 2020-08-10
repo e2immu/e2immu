@@ -4,8 +4,7 @@ import org.e2immu.annotation.*;
 
 import java.util.Collection;
 
-@ModifiesArguments
-@Mutable
+@MutableModifiesArguments
 public class BasicsOpposite {
 
     @Variable

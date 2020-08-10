@@ -14,20 +14,20 @@ public class TestGenerateAnnotationsImmutable {
 
     @Test
     public void testBefore() {
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK, 0, false));
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK, 1, false));
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 0, false));
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE),
                 generate(EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 1, false));
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE, E1Immutable.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE, E1Immutable.class, TRUE),
                 generate(EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 0, false));
-        Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE, E1Container.class, TRUE),
+        Assert.assertEquals(Map.of(BeforeMark.class, TRUE, E1Container.class, TRUE),
                 generate(EFFECTIVELY_E1_EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, 1, false));
         try {
-            Assert.assertEquals(Map.of(BeforeImmutableMark.class, TRUE),
+            Assert.assertEquals(Map.of(BeforeMark.class, TRUE),
                     generate(EVENTUALLY_E1IMMUTABLE_BEFORE_MARK, 0, true));
             Assert.fail();
         } catch (RuntimeException rte) {
@@ -100,7 +100,6 @@ public class TestGenerateAnnotationsImmutable {
     public void testOnlyContainer() {
         Assert.assertTrue(generate(MUTABLE, 0, false).isEmpty());
         Assert.assertTrue(generate(MUTABLE, 1, false).isEmpty());
-        Assert.assertEquals(Map.of(Mutable.class, TRUE, ModifiesArguments.class, TRUE), generate(MUTABLE, 0, true));
-        Assert.assertEquals(Map.of(Mutable.class, TRUE, Container.class, TRUE), generate(MUTABLE, 1, true));
+        Assert.assertEquals(Map.of(MutableModifiesArguments.class, TRUE, MutableModifiesArguments.class, TRUE), generate(MUTABLE, 0, true));
     }
 }

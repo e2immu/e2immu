@@ -1,7 +1,5 @@
 package org.e2immu.intellij.highlighter.example;
 
-import org.jetbrains.annotations.Contract;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +11,6 @@ public class Example1 {
         strings = new ArrayList<>();
     }
 
-    @Contract()
     void add(String message) {
         strings.add("message: "+message);
     }

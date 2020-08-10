@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -279,20 +278,19 @@ public abstract class Analysis {
                 TypeInfo t = annotationExpression.typeInfo;
                 if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
-                } else if (e2ImmuAnnotationExpressions.mutable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.get().typeInfo == t) {
                     immutable = -1;
+                    container = false;
                 } else if (e2ImmuAnnotationExpressions.e2Immutable.get().typeInfo == t) {
-                    immutable = Math.max(1, immutable);
+                    immutable = 1;
                 } else if (e2ImmuAnnotationExpressions.e2Container.get().typeInfo == t) {
-                    immutable = Math.max(1, immutable);
+                    immutable = 1;
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.e1Container.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.container.get().typeInfo == t) {
                     container = true;
-                } else if (e2ImmuAnnotationExpressions.modifiesArguments.get().typeInfo == t) {
-                    container = false;
                 } else if (e2ImmuAnnotationExpressions.nullable.get().typeInfo == t) {
                     extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, -1));
                 } else if (e2ImmuAnnotationExpressions.notNull.get().typeInfo == t) {

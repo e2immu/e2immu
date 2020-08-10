@@ -6,6 +6,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+/*
+
+https://github.com/bnaudts/e2immu/issues/7
+
+ */
+
 public class TestVerticle extends CommonTestRunner {
 
     public TestVerticle() {

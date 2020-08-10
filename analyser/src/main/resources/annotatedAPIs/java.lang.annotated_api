@@ -224,17 +224,18 @@ public interface CharSequence {
 }
 
 @E2Container
-@NotNull
 public class String implements CharSequence {
     public String() {
     }
 
     @Size(copy = true)
+    @NotNull
     IntStream chars() {
     }
 
     @Size(copyMin = true)
-    public String concat(String str) {
+    @NotNull
+    public String concat(@NotNull String str) {
     }
 
     @Size(min = 0)
@@ -249,32 +250,38 @@ public class String implements CharSequence {
     }
 
     @Size(copy = true)
+    @NotNull
     public String intern() {
     }
 
     public int lastIndexOf(int ch) {
     }
 
+    @NotNull
     public String repeat(int count) {
     }
 
-    public boolean startsWith(String s) {
+    public boolean startsWith(@NotNull String s) {
     }
 
-    public boolean startsWith(String s, int i) {
+    public boolean startsWith(@NotNull String s, int i) {
     }
 
     @Size(copy = true)
+    @NotNull
     public String toLowerCase() {
     }
 
     @Size(copy = true)
+    @NotNull
     public String toUpperCase() {
     }
 
+    @NotNull
     public String trim() {
     }
 
+    @NotNull
     public String strip() {
     }
 }

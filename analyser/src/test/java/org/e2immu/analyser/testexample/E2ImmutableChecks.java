@@ -96,7 +96,7 @@ public class E2ImmutableChecks {
     }
 
     @E2Immutable
-    @ModifiesArguments //  not a @Container!
+    @MutableModifiesArguments //  not a @Container!
     static class E2Immutable4 {
         @E2Container
         public final Set<String> strings4;

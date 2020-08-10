@@ -19,21 +19,17 @@
 
 package org.e2immu.analyser.parserfailing;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
+/*
+https://github.com/bnaudts/e2immu/issues/10
+ */
 public class TestPreconditionChecks extends CommonTestRunner {
 
     public TestPreconditionChecks() {

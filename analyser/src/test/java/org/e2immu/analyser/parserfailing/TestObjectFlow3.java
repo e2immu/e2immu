@@ -37,6 +37,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Set;
 
+/*
+
+https://github.com/bnaudts/e2immu/issues/9
+
+ */
 public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
 
@@ -112,7 +117,9 @@ public class TestObjectFlow3 extends CommonTestRunner {
 
         // The go() method in main creates an InBetween flow
         MethodInfo goMethodMain = main.typeInspection.get().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
-        goMethodMain.methodAnalysis.get().internalObjectFlows.get().forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
+        MethodAnalysis goMethodAnalysis =  goMethodMain.methodAnalysis.get();
+        Set<ObjectFlow> goMethodObjectFlows = goMethodAnalysis.internalObjectFlows.get();
+        goMethodObjectFlows.forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
         TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
         Assert.assertEquals(2L, goMethodMain.methodAnalysis.get().internalObjectFlows.get().size());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().internalObjectFlows.get().stream().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();

@@ -45,7 +45,7 @@ public class GenerateAnnotationsImmutable {
             if (e1 == MultiLevel.EFFECTIVE) {
                 res.put(e1(haveContainer), TRUE);
             }
-            res.put(BeforeImmutableMark.class, TRUE);
+            res.put(BeforeMark.class, TRUE);
             return res;
         }
 
@@ -73,10 +73,9 @@ public class GenerateAnnotationsImmutable {
         if(isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
-            } else if(container == Level.FALSE) {
-                res.put(ModifiesArguments.class, TRUE);
+            }  if(container == Level.FALSE) {
+                res.put(MutableModifiesArguments.class, TRUE);
             }
-            res.put(Mutable.class, TRUE);
         }
         return res;
     }

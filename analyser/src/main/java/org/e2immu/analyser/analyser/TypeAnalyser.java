@@ -26,13 +26,10 @@ import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 
 import java.util.*;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -104,16 +101,10 @@ public class TypeAnalyser {
         check(typeInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
         check(typeInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
         check(typeInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
-        check(typeInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
-        check(typeInfo, NotNull1.class, e2ImmuAnnotationExpressions.notNull1.get());
-        check(typeInfo, NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
-        // TODO there's a "where" which complicates things!! check(typeInfo, NotModified.class, typeContext.e2Immutable.get());
-        // already implemented for "reading", but not yet for checking
 
         // opposites
-        check(typeInfo, Mutable.class, e2ImmuAnnotationExpressions.mutable.get());
-        check(typeInfo, BeforeImmutableMark.class, e2ImmuAnnotationExpressions.beforeImmutableMark.get());
-        check(typeInfo, ModifiesArguments.class, e2ImmuAnnotationExpressions.modifiesArguments.get());
+        check(typeInfo, BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
+        check(typeInfo, MutableModifiesArguments.class, e2ImmuAnnotationExpressions.mutableModifiesArguments.get());
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
@@ -199,7 +190,6 @@ public class TypeAnalyser {
                 if (analyseContainer(typeInfo)) changes = true;
                 if (analyseUtilityClass(typeInfo)) changes = true;
                 if (analyseExtensionClass(typeInfo)) changes = true;
-                if (analyseNotNull(typeInfo)) changes = true;
             }
 
             for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.afterTypePropertyComputations) {
@@ -515,50 +505,6 @@ public class TypeAnalyser {
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
         int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
-        return true;
-    }
-
-    // this one analyses NotNull at level 0, for the whole type
-    // TODO we should split this up for methods, fields, parameters, with a "where" variable
-
-    private boolean analyseNotNull(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        int typeNotNull = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-        if (typeNotNull != MultiLevel.DELAY) return false;
-
-        // all fields should be @NN, all methods, and all parameters...
-        boolean isNotNull = true;
-        methodLoop:
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
-            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
-                int notNull = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-                if (notNull == MultiLevel.DELAY) return false;
-                if (notNull == MultiLevel.FALSE) {
-                    isNotNull = false;
-                    break;
-                }
-            }
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                int notNull = MultiLevel.value(parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-                if (notNull == MultiLevel.DELAY) return false;
-                if (notNull == MultiLevel.FALSE) {
-                    isNotNull = false;
-                    break methodLoop;
-                }
-            }
-        }
-        if (isNotNull) {
-            for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
-                int notNull = MultiLevel.value(fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-                if (notNull == MultiLevel.DELAY) return false;
-                if (notNull == MultiLevel.FALSE) {
-                    isNotNull = false;
-                    break;
-                }
-            }
-        }
-        typeAnalysis.setProperty(VariableProperty.NOT_NULL, isNotNull ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
-        log(NOT_NULL, "Marked type {} as " + (isNotNull ? "" : "NOT ") + " @NotNull", typeInfo.fullyQualifiedName);
         return true;
     }
 

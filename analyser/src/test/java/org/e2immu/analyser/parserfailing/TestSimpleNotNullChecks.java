@@ -14,6 +14,11 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+/*
+
+https://github.com/bnaudts/e2immu/issues/8
+
+ */
 public class TestSimpleNotNullChecks extends CommonTestRunner {
     public TestSimpleNotNullChecks() {
         super(false);

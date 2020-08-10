@@ -37,6 +37,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
+/*
+https://github.com/bnaudts/e2immu/issues/14
+ */
+
 public class TestTrie extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {

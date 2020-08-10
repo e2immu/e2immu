@@ -68,7 +68,7 @@ Usage of a type is typically analyser later than the type itself.
 This does not sit well with the idea that all downstream use should be marked automatically: unless there is another trick up our sleeve, we will have to manually mark `Config` as `@E2Immutable` in every constructor.
 
 We can move in the other direction if we annotate an eventually `@E2Immutable` type `@E1Immutable` when we can guarantee that in that location, the method will modify the type's content.
-Similarly, we annotate an eventually `@E1Immutable` type `BeforeImmutableMark` if in that location the method makes assignments to the type's fields.
+Similarly, we annotate an eventually `@E1Immutable` type `@BeforeMark` if in that location the method makes assignments to the type's fields.
 Consider
 
 [source,java]
@@ -166,14 +166,14 @@ The `IMMUTABLE` property has the following values, shown as two 3-bit components
 | 0,0   | delay | - | -
 | 1,0   | not level 1 immutable | -  | `@Mutable`
 | 2,0   | eventually level 1 immutable; value for type | `@E1Immutable` when formal type is not (eventually) level 1 immutable | `@E1Immutable(after="...")`
-| 3,0   | eventually level 1 immutable, before mark | `@BeforeImmutableMark` | -
+| 3,0   | eventually level 1 immutable, before mark | `@BeforeMark` | -
 | 4,0   | eventually level 1 immutable, after mark | `@E1Immutable` | -
 | 5,0   | effectively level 1 immutable, no idea level 2 .2+| `@E1Immutable` when formal type is not (eventually) level 1 immutable .2+|`@E1Immutable`
 | 5,1   | effectively level 1 immutable, not level 2
 | 1,1   | not level 1, not level 2 immutable | - | -
 | 2,2   | eventually level 1 & 2 immutable  | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable(after="...")`
 | 5,2   | effectively level 1, eventually level 2 immutable  | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable(after="...")`
-| 3,3   | eventually level 1 & 2 immutable, before mark | `@BeforeImmutableMark` | -
+| 3,3   | eventually level 1 & 2 immutable, before mark | `@BeforeMark` | -
 | 5,3   | effectively level 1, eventually level 2 immutable, before mark | `@E1Immutable @BeforeImmutableMark` | -
 | 4,4   | eventually level 2 immutable after mark | `@E2Immutable` | -
 | 5,5   | effectively level 2 immutable | `@E2Immutable` when formal type is not (eventually) level 2 immutable | `@E2Immutable`

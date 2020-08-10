@@ -8,26 +8,27 @@ We based our initial implementation on the link:https://plugins.jetbrains.com/pl
 ==== Visual objectives
 
 For the proof of concept, we aim to color elements of the source code in such a way that there is visual information explaining why a type is not {e2immutable} or {container}.
-We propose two schemes, one highlighting the immutable elements, useful when they are sparse, and another one warning for mutable ones in an otherwise pretty immutable environment:
+In the green mode, we highlight the immutable elements, which useful when they are sparse.
+In the red mode, we warn for mutable ones in an otherwise pretty immutable environment:
 
-Following the annotation hierarchy for types, we color:
+Following the <<annotation-hierarchy>> for types, we color:
 
 [options=header]
 |===
-| annotation on type | scheme 1 | scheme 2
+| annotation on type | green mode | red mode
 | {e2container} (incl. primitives) | green | black
 | {e2immutable} | green | black
 | {e1container} | orange | orange
 | {e1immutable} | orange | orange
 | {container} | blue | blue
-| {mutable} {modifiesArguments} | black | red
+| {mutableModifiesArguments} | black | red
 |===
 
 We color the annotation hierarchy for fields as:
 
 [cols="60,20,20",options=header]
 |===
-| annotation on field | scheme 1 | scheme 2
+| annotation on field | green mode | red mode
 | {variable}  | black | red
 | {modified} | orange | orange
 | {nm} | green | black
@@ -53,7 +54,7 @@ Independence is not necessary when there are no support types, and, given that w
 
 [cols="60,20,20",options=header]
 |===
-| annotation on method | scheme 1 | scheme 2
+| annotation on method | green mode | red mode
 | {independent} (implying {nm}) | green |black
 | {dependent} (implying {nm}) | orange | orange
 | {nm} (no support data) | green | black
@@ -65,21 +66,21 @@ To be consistent with the system for methods, the analyser will only emit the an
 
 [cols="60,20,20",options=header]
 |===
-| annotation on constructor | scheme 1 | scheme 2
+| annotation on constructor | green mode | red mode
 | {independent} (when support data) | green | black
 | {dependent} (when support data) | orange | orange
 | no support data | black | black
 |===
 
-The situation of parameters is binary. The analyser colors the
+The situation of parameters is binary.
+The analyser colors:
 
 [options=header]
 |===
-| annotation on parameter | scheme 1 | scheme 2
+| annotation on parameter | green mode | red mode
 | {nm} | green | black
 | {modified} | black | red
 |===
-
 
 ==== Information flow
 

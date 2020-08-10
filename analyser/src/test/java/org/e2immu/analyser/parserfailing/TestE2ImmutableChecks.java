@@ -18,6 +18,11 @@ import java.util.Map;
 
 // the @NotNull on value1 travels from isAbc to value1 to value as parameter of the constructor
 
+/*
+
+https://github.com/bnaudts/e2immu/issues/13
+
+ */
 public class TestE2ImmutableChecks extends CommonTestRunner {
     public TestE2ImmutableChecks() {
         super(true);

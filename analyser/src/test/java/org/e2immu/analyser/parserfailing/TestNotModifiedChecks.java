@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
+/*
+https://github.com/bnaudts/e2immu/issues/11
+ */
 public class TestNotModifiedChecks extends CommonTestRunner {
     public TestNotModifiedChecks() {
         super(true);

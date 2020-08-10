@@ -26,7 +26,7 @@ import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 @Container(type = VERIFY_ABSENT)
 @E1Container(type = VERIFY_ABSENT)
-@ModifiesArguments
+@MutableModifiesArguments
 public class NotModifiedChecks {
     @NotModified
     @Linked(to = {"list"})

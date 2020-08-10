@@ -1,0 +1,94 @@
+[#annotation-hierarchy]
+=== Annotation hierarchy
+
+The purpose of "opposite" annotations is to be able to work in a "mode" that suits the code:
+
+Green mode:: in the green mode, the default is mutable, and immutable is special.
+
+Red mode:: in the red mode, the default is immutable, and any form of mutability has to be marked.
+
+This can save a lot of time when marking libraries.
+
+Because the analyser also deals with nullability and a whole host of other annotations, the user can create custom modes.
+
+We aim to restrict the amount of annotations per object as much as possible.
+However, the analyser will emit at least one annotation per declaration, so that the highlighter can color properly.
+
+==== On types
+
+Implications and equivalences:
+
+* {e2container} is equivalent to {e2immutable} {container}.
+* {e2immutable} implies {e1immutable}
+* {e1container} is equivalent to {e1immutable} {container}
+
+Opposites:
+
+* a type is either {e1immutable} (green), {container} (green) or {mutableModifiesArguments} (red)
+
+When a type is {mutableModifiesArguments}, there will be {variable} fields and {modified} parameters.
+Types without fields are {e2immutable} by definition.
+
+==== On fields
+
+The analyser marks a field as {supportData} only when
+
+. it is {nm}, and
+. the type declaring the field is {e1immutable}.
+
+The annotation is present to highlight the fields burdened with extra restrictions to for the type to reach {e2immutable} status.
+
+Implications:
+
+* {nm} implies {final}, {variable} implies {modified}
+
+Note that {variable} fields can be {nn}!
+This obviously requires a not-null initialiser to be present; all other assignments must be not-null as well.
+The opposite, a {final} field that is {nullable}, is not that useful.
+It seems difficult to forbid, though, so we do not issue a formal implication.
+
+Opposites:
+
+* a field is either {final} (green) or {variable} (red)
+* a field is either {nm} or (green) {modified} (red)
+* a field is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
+
+==== On constructors
+
+A constructor is either {independent} (green) or {dependent}.
+This property is only relevant when there is support data.
+We assume that the constructor has the {modified} property.
+
+==== On methods
+
+Opposites:
+
+* a method is either {nm} (green) or {modified} (red)
+* a method is either {independent} (green) or {dependent} (red).
+This property is only relevant when there is support data, and the method is {nm}
+* a method is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
+
+==== On parameters
+
+Opposites:
+
+* a parameter is either {nm} (green) or {modified} (red)
+* a parameter is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
+
+==== Nullability
+
+By convention,
+
+* {nn1} implies {nn}
+* {nn2} implies {nn}, {nn1}
+* etc.
+
+This way of working makes most sense in an immutable setting.
+
+==== Eventually and effectively immutable
+
+Field types and method return types can be eventually or effectively immutable when their formal type is not level 1 or level 2 immutable, but the dynamic or computed type is.
+In the latter case, static analysis shows that all assignments to the field, or all return statements, result in an immutable object.
+In the former case, object flow computation proves that the mark has been passed for this object to have become immutable.
+
+When a type is level 1 or level 2 eventually immutable, and the object flow computation proves that all assignments or return statements yield an object which is in a state _before_ the mark, the analyser will emit {beforeMark}.

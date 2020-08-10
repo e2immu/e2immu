@@ -1,28 +1,3 @@
-/*
- * e2immu-annot: annotations for effective and eventual immutability
- * Copyright 2020, Bart Naudts, https://www.e2immu.org
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * -------
- *
- * The content of this file reflects a part of the public API
- * of the Java SDK. The only intended contribution of the
- * e2immu-annot project is to annotate some of the the publicly accessible
- * classes, methods and fields. The fact that this file resembles the Java
- * syntax is only done to facilitate the description and storage of the association
- * between annotations and the publicly accessible API elements of the Java SDK.
- */
 package java.util.stream;
 
 import org.e2immu.annotation.*;
@@ -62,7 +37,6 @@ public class Collectors {
     static <T> Collector<T, ?, List<T>> toList();
 }
 
-@NotNull
 @E2Container
 public interface IntStream {
     @Size(min = 0)
@@ -71,36 +45,45 @@ public interface IntStream {
     int sum();
 
     @Size(copy = true)
+    @NotNull
     IntStream sorted();
 }
 
-@NotNull
 @E2Container
 public interface Stream<T> {
 
     @Size(equals = 0)
+    @NotNull
     static <T> Stream<T> empty();
 
     @Size(equals = 1)
+    @NotNull
     static <T> Stream<T> of(T t);
 
+    @NotNull
     static <T> Stream<T> of(@Size(copy = true) T... t);
 
     @Size(min = 0)
     long count();
 
     @Size(copy = true)
+    @NotNull
     <R> Stream<R> map(Function<? super T, ? extends R> mapper);
 
+    @NotNull
     <R, A> R collect(Collector<? super T, A, R> collector);
 
+    @NotNull
     Stream<T> filter(Predicate<? super T> predicate);
 
+    @NotNull
     @Size(copy = true)
     IntStream mapToInt(ToIntFunction<? super T> mapper);
 
+    @NotNull
     Optional<T> min(Comparator<? super T> comparator);
 
+    @NotNull
     @Size(copy = true)
     Stream<T> sorted();
 }

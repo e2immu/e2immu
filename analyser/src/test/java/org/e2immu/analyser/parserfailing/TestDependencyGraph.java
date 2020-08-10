@@ -35,6 +35,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
+/*
+https://github.com/bnaudts/e2immu/issues/16
+ */
 public class TestDependencyGraph extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {

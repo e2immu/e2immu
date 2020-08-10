@@ -8,13 +8,14 @@
 :toc: left
 :imagesdir: {includedir}/images
 
-:e2immu: pass:normal[_e2immu_]
-:intellij: pass:normal[IntelliJ IDEA]
+:e2immu: pass:normal[ _e2immu_ ]
+:intellij: pass:normal[ IntelliJ IDEA ]
 
-:nn: pass:normal[`@NotNull1`]
-:nn1: pass:normal[`@NotNull1`]
-:nn2: pass:normal[`@NotNull2`]
-:nm: pass:normal[`@NotModified`]
+:nn: pass:normal[ `@NotNull` ]
+:nn1: pass:normal[ `@NotNull1` ]
+:nn2: pass:normal[ `@NotNull2` ]
+:nullable: pass:normal[ `@Nullable` ]
+:nm: pass:normal[ `@NotModified`]
 :e1immutable: pass:normal[ `@E1Immutable` ]
 
 :e2immutable: pass:normal[ `@E2Immutable` ]
@@ -25,12 +26,10 @@
 :final:  pass:normal[ `@Final` ]
 :variable:  pass:normal[ `@Variable` ]
 :independent:  pass:normal[ `@Independent` ]
-:dependent:  pass:normal[`@Dependent`]
-:modified:  pass:normal[`@Modified`]
-:mutable: pass:normal[`@Mutable`]
-:modifiesArguments: pass:normal[`@ModifiesArguments`]
-:supportData: pass:normal[`@SupportData`]
-
+:dependent:  pass:normal[ `@Dependent` ]
+:modified:  pass:normal[ `@Modified` ]
+:mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
+:supportData: pass:normal[ `@SupportData` ]
 
 include::{includedir}/manual/010-intro.adoc[]
 
@@ -48,6 +47,7 @@ include::{includedir}/manual/030-use.adoc[]
 :sectnums:
 
 include::{includedir}/manual/060-reference.adoc[]
+include::{includedir}/manual/067-annotation-hierarchy.adoc[]
 
 :sectnums!:
 

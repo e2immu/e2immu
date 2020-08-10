@@ -114,8 +114,7 @@ public class TypeInspection extends Inspection {
             Modified.class.getCanonicalName(),
             Nullable.class.getCanonicalName(),
             Dependent.class.getCanonicalName(),
-            Mutable.class.getCanonicalName(),
-            ModifiesArguments.class.getCanonicalName(),
+            MutableModifiesArguments.class.getCanonicalName(),
             org.e2immu.annotation.Variable.class.getCanonicalName());
 
     private static AnnotationMode annotationMode(List<AnnotationExpression> annotations) {

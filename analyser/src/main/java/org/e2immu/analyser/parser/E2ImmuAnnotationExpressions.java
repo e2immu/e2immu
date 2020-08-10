@@ -27,8 +27,7 @@ public class E2ImmuAnnotationExpressions {
         this.typeStore = typeStore;
     }
 
-    public final Lazy<AnnotationExpression> beforeImmutableMark = new Lazy<>(() -> create(BeforeImmutableMark.class));
-    public final Lazy<AnnotationExpression> beforeNotNullMark = new Lazy<>(() -> create(BeforeNotNullMark.class));
+    public final Lazy<AnnotationExpression> beforeMark = new Lazy<>(() -> create(BeforeMark.class));
     public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));
     public final Lazy<AnnotationExpression> container = new Lazy<>(() -> create(Container.class));
     public final Lazy<AnnotationExpression> dependent = new Lazy<>(() -> create(Dependent.class));
@@ -45,8 +44,7 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> linked = new Lazy<>(() -> create(Linked.class));
     public final Lazy<AnnotationExpression> mark = new Lazy<>(() -> create(Mark.class));
     public final Lazy<AnnotationExpression> modified = new Lazy<>(() -> create(Modified.class));
-    public final Lazy<AnnotationExpression> modifiesArguments = new Lazy<>(() -> create(ModifiesArguments.class));
-    public final Lazy<AnnotationExpression> mutable = new Lazy<>(() -> create(Mutable.class));
+    public final Lazy<AnnotationExpression> mutableModifiesArguments = new Lazy<>(() -> create(MutableModifiesArguments.class));
     public final Lazy<AnnotationExpression> notModified = new Lazy<>(() -> create(NotModified.class));
     public final Lazy<AnnotationExpression> notNull = new Lazy<>(() -> create(NotNull.class));
     public final Lazy<AnnotationExpression> notNull1 = new Lazy<>(() -> create(NotNull1.class));

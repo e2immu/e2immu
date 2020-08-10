@@ -84,7 +84,7 @@ public class ObjectFlowFreezableSet {
 
     // not frozen yet
     @E2Container(type = AnnotationType.VERIFY_ABSENT)
-    @BeforeImmutableMark
+    @BeforeMark
     @NotModified
     static FreezableSet method6() {
         FreezableSet set6 = new FreezableSet();

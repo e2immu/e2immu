@@ -69,6 +69,7 @@ public class Parser {
     }
 
     public List<SortedType> run() throws IOException {
+        LOGGER.info("Running with configuration: {}", configuration);
         List<URL> annotatedAPIs = input.getAnnotatedAPIs();
         if (!annotatedAPIs.isEmpty()) runAnnotatedAPIs(annotatedAPIs);
         return parseJavaFiles(input.getSourceURLs());

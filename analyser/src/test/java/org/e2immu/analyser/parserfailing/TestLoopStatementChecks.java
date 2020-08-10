@@ -23,6 +23,9 @@ import java.util.Map;
  * following the @NotNull from `res` (1) into the return statement summary (2) into the method's return value (3)
  * <p>
  * Method 1:
+ *
+ * https://github.com/bnaudts/e2immu/issues/12
+ *
  */
 public class TestLoopStatementChecks extends CommonTestRunner {
     public TestLoopStatementChecks() {

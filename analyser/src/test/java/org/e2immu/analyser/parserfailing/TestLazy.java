@@ -32,6 +32,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
+/*
+https://github.com/bnaudts/e2immu/issues/15
+ */
 public class TestLazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

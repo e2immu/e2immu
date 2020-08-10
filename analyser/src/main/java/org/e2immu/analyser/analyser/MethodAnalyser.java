@@ -84,8 +84,7 @@ public class MethodAnalyser {
                 check(methodInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
                 check(methodInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
                 check(methodInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
-                check(methodInfo, BeforeImmutableMark.class, e2ImmuAnnotationExpressions.beforeImmutableMark.get());
-                check(methodInfo, BeforeNotNullMark.class, e2ImmuAnnotationExpressions.beforeNotNullMark.get());
+                check(methodInfo, BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
                 CheckConstant.checkConstantForMethods(messages, methodInfo);
             }
 

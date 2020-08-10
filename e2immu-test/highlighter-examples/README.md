@@ -1,1 +1,1 @@
-# e2immu-highlighter-examples
+# highlighter-examples
