@@ -10,26 +10,31 @@
     <option name="e2i-e2container-t">
         <value>
             <option name="FOREGROUND" value="546d1b"/>
+            <option name="FONT_TYPE" value="1" /> <!-- bold -->
         </value>
     </option>
     <option name="e2i-e2immutable-t">
         <value>
             <option name="FOREGROUND" value="546d1b"/>
+            <option name="FONT_TYPE" value="1" /> <!-- bold -->
         </value>
     </option>
     <option name="e2i-e1container-t">
         <value>
             <option name="FOREGROUND" value="724728"/>
+            <option name="FONT_TYPE" value="2" /> <!-- italics -->
         </value>
     </option>
     <option name="e2i-e1immutable-t">
         <value>
             <option name="FOREGROUND" value="724728"/>
+            <option name="FONT_TYPE" value="2" /> <!-- italics -->
         </value>
     </option>
     <option name="e2i-container-t">
         <value>
             <option name="FOREGROUND" value="35399d"/>
+            <option name="FONT_TYPE" value="2" /> <!-- italics -->
         </value>
     </option>
     <option name="e2i-mutablemodifiesarguments-t">
@@ -37,6 +42,7 @@
     <option name="e2i-beforemark-t">
         <value>
             <option name="FOREGROUND" value="792aac"/>
+            <option name="FONT_TYPE" value="2" /> <!-- italics -->
         </value>
     </option>
     <option name="e2i--t">

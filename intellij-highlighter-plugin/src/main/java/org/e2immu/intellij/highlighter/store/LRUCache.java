@@ -46,6 +46,18 @@ public class LRUCache<K, V> {
         }
     }
 
+    public void clear() {
+        lock.lock();
+        try {
+            recency.clear();
+            dates.clear();
+            map.clear();
+            if(created != null) created.clear();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public V get(K k) {
         lock.lock();
         try {

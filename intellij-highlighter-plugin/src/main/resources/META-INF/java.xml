@@ -5,6 +5,7 @@
                 implementationClass="org.e2immu.intellij.highlighter.java.JavaAnnotator"
         />
         <applicationConfigurable
+                groupId="org.e2immu"
                 parentId="preferences.E2ImmuHighlighter"
                 id="preferences.E2ImmuHighlighter.java"
                 key="e2i.settings.java"

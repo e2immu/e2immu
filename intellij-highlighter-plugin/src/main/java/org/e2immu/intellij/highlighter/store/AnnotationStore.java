@@ -114,4 +114,8 @@ public class AnnotationStore {
         }
     }
 
+    public void clearCache() {
+        LOGGER.warn("Clearing cache");
+        cache.clear();
+    }
 }

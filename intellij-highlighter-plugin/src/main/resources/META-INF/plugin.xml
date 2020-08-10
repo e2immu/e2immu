@@ -9,11 +9,11 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <additionalTextAttributes scheme="Default" file="colorSchemes/e2immu-highlighter-green.xml" />
-        <additionalTextAttributes scheme="Default" file="colorSchemes/e2immu-highlighter-red.xml" />
+        <!--<additionalTextAttributes scheme="Default" file="colorSchemes/e2immu-highlighter-red.xml" />-->
         <colorSettingsPage implementation="org.e2immu.intellij.highlighter.settings.E2ImmuColorSettingsPage" />
         <applicationConfigurable
-                groupId="other"
-                id="preferences.ReturnHighlighter"
+                groupId="org.e2immu"
+                id="preferences.E2ImmuHighlighter"
                 key="e2i.app.presentableName"
                 bundle="messages.E2ImmuHighlighterBundle"
                 instance="org.e2immu.intellij.highlighter.settings.Configurable"

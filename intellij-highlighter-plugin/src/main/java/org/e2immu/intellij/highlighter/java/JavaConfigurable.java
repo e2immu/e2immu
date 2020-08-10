@@ -6,6 +6,7 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.intellij.highlighter.Bundle;
 import org.e2immu.intellij.highlighter.Constants;
+import org.e2immu.intellij.highlighter.store.AnnotationStore;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,12 +50,20 @@ public class JavaConfigurable implements SearchableConfigurable {
         return gui.isHighlightDeclarations() != state.isHighlightDeclarations() ||
                 gui.isHighlightStatements() != state.isHighlightStatements() ||
                 gui.isHighlightUnknownTypes() != state.isHighlightUnknownTypes() ||
-                !gui.getAnnotationProject().equals(state.getAnnotationProject()) ||
+                isProjectOrServerChanged(state);
+    }
+
+    private boolean isProjectOrServerChanged(ConfigData state) {
+        return !gui.getAnnotationProject().equals(state.getAnnotationProject()) ||
                 !gui.getAnnotationServerUrl().equals(state.getAnnotationServerUrl());
     }
 
     @Override
     public void apply() {
+        ConfigData state = config.getState();
+        if(isProjectOrServerChanged(state)) {
+            AnnotationStore.INSTANCE.clearCache();
+        }
         config.setState(new ConfigData(
                 gui.isHighlightDeclarations(),
                 gui.isHighlightUnknownTypes(),
