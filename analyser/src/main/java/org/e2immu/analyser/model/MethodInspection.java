@@ -189,7 +189,7 @@ public class MethodInspection extends Inspection {
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
             // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
-            
+
             return new MethodInspection(methodInfo,
                     ImmutableList.copyOf(modifiers),
                     ImmutableList.copyOf(parameters),

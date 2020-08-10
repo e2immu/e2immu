@@ -23,7 +23,7 @@ repositories {
     mavenCentral()
 }
 
-version '0.0.8'
+version '0.0.9'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -66,7 +66,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'e2immu'
             artifactId = 'annotations'
-            version = '0.0.8'
+            version = '0.0.9'
 
             from components.java
         }
