@@ -14,10 +14,10 @@ import java.util.List;
  */
 
 @E1Container
-@NotNull1(after = "assigned")
 public class EventuallyNotNull1 {
 
-    @NotNull1 // effectively not null eventually content not null, but we cannot mark before or after
+    // effectively not null eventually content not null, but we cannot mark before or after
+    @NotNull1(after = "assigned")
     public final String[] strings;
 
     public EventuallyNotNull1(int n) {

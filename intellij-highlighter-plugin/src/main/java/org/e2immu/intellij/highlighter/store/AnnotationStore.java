@@ -29,6 +29,11 @@ public class AnnotationStore {
 
     private final LRUCache<String, String> cache = new LRUCache<>(500, 1000L * 60 * 30);
 
+    /**
+     * @param element    FQN of the element, according to the rules in the manual.
+     * @param context    One of Constants.METHOD, FIELD, PARAM, TYPE, TYPE_OF_METHOD, TYPE_OF_PARAM
+     * @param uponResult The annotation name in lower case + context (e2immutable_f)
+     */
     public void mapAndMark(String element, String context, Consumer<String> uponResult) {
         String hardCoded = Constants.HARDCODED_ANNOTATION_MAP.get(element);
         if (hardCoded != null) {

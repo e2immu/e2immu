@@ -25,7 +25,6 @@ import org.e2immu.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@NotNull
 public class ParameterInspection extends Inspection {
 
     public final boolean varArgs;

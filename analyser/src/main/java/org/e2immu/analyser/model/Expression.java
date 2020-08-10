@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 // at the moment we're modifying evaluation context, we want to be @E2Container
-@NotNull
 public interface Expression {
 
     @NotModified

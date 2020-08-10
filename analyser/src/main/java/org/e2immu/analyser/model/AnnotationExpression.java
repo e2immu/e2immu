@@ -36,7 +36,6 @@ import java.util.*;
 /*
  Eventually E2Immutable (TypeInfo is definitely @E1Immutable, FirstThen is eventually @E1Immutable)
  */
-@NotNull
 @E2Immutable(after = "expressions")
 public class AnnotationExpression {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationExpression.class);

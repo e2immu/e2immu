@@ -35,7 +35,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.stream.IntStream;
 
-@NotNull
 public class MethodAnalysis extends Analysis {
 
     public final Set<MethodInfo> overrides;

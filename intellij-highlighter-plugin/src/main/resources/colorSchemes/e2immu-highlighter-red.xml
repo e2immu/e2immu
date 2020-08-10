@@ -1,0 +1,94 @@
+<?xml version='1.0'?>
+<list>
+
+    <!-- green: 546d1b, brown: 724728, blue: 35399d, red: a12722, purple: 792aac
+    very light grey: d5d5d5
+     from https://www.color-hex.com/color-palette/96108 -->
+
+    <!-- TYPES -->
+
+    <option name="e2i-e2container-t">
+    </option>
+    <option name="e2i-e2immutable-t">
+    </option>
+    <option name="e2i-e1container-t">
+        <value>
+            <option name="FOREGROUND" value="724728"/>
+        </value>
+    </option>
+    <option name="e2i-e1immutable-t">
+        <value>
+            <option name="FOREGROUND" value="724728"/>
+        </value>
+    </option>
+    <option name="e2i-container-t">
+        <value>
+            <option name="FOREGROUND" value="35399d"/>
+        </value>
+    </option>
+    <option name="e2i-mutablemodifiesarguments-t">
+        <value>
+            <option name="FOREGROUND" value="a12722"/>
+        </value>
+    </option>
+    <option name="e2i-beforemark-t">
+        <value>
+            <option name="FOREGROUND" value="792aac"/>
+        </value>
+    </option>
+    <option name="e2i--t">
+    </option>
+
+    <!-- METHODS -->
+
+    <option name="e2i-independent-m">
+    </option>
+    <option name="e2i-dependent-m">
+        <value>
+            <option name="FOREGROUND" value="724728"/>
+        </value>
+    </option>
+    <option name="e2i-notmodified-m">
+    </option>
+    <option name="e2i-modified-m">
+        <value>
+            <option name="FOREGROUND" value="a12722"/>
+        </value>
+    </option>
+    <option name="e2i--m">
+    </option>
+
+    <!-- FIELDS -->
+
+    <option name="e2i-notmodified-f">
+    </option>
+    <option name="e2i-supportdata-f">
+        <value>
+            <option name="BACKGROUND" value="d5d5d5"/>
+        </value>
+    </option>
+    <option name="e2i-modified-f">
+        <value>
+            <option name="FOREGROUND" value="724728"/>
+        </value>
+    </option>
+    <option name="e2i-variable-f">
+        <value>
+            <option name="FOREGROUND" value="a12722"/>
+        </value>
+    </option>
+    <option name="e2i--f">
+    </option>
+
+    <!-- PARAMETERS -->
+
+    <option name="e2i-notmodified-p">
+    </option>
+    <option name="e2i-modified-p">
+        <value>
+            <option name="FOREGROUND" value="a12722"/>
+        </value>
+    </option>
+    <option name="e2i--p">
+    </option>
+</list>

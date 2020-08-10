@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 
 @E2Container
-@NotNull // but not @NotNull1, Location has many null components
 public class Message {
 
     public enum Severity {

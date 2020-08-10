@@ -166,11 +166,11 @@ public class ContainerChecks {
     }
 
     @E1Container
-    @NotNull
     static class Container5 {
         @NotModified(type = VERIFY_ABSENT)
         @Modified
         @Linked(type = VERIFY_ABSENT)
+        @NotNull
         private final List<String> list;
 
         @Independent
@@ -179,20 +179,20 @@ public class ContainerChecks {
         }
 
         @Independent
-        public Container5(Collection<String> coll5) {
+        public Container5(@NotNull Collection<String> coll5) {
             this();
             addAll(coll5);
         }
 
         @NotModified(type = VERIFY_ABSENT)
-        public void addAll(Collection<String> collection) {
+        public void addAll(@NotNull Collection<String> collection) {
             list.addAll(collection);
         }
 
         @NotModified
         @Independent
         // note: a t m we do not want @NotModified on consumer, because it is @NotModified by default (functional interface)
-        public void visit(Consumer<String> consumer) {
+        public void visit(@NotNull1 Consumer<String> consumer) {
             list.forEach(consumer);
         }
     }

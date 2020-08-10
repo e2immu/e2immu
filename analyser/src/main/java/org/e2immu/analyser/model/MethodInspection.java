@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@NotNull
 public class MethodInspection extends Inspection {
 
     public final String fullyQualifiedName;

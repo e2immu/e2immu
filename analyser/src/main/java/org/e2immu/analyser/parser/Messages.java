@@ -1,15 +1,11 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
-@NotNull1
 @Container
 public class Messages {
 
@@ -27,7 +23,7 @@ public class Messages {
     }
 
     @Modified
-    public void add(Message message) {
+    public void add(@NotNull Message message) {
         this.messages.add(message);
     }
 

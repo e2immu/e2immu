@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 /**
  * all the fields are deeply immutable or in the case of TypeInfo, eventually immutable.
  */
-@NotNull
 public class TypeInspection extends Inspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;

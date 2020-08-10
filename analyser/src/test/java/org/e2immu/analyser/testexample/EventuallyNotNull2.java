@@ -15,14 +15,12 @@ import java.util.stream.Stream;
  */
 
 @E1Container
-@NotNull2(after = "assigned")
 public class EventuallyNotNull2 {
 
     // this @E1Container becomes an eventually @E2Container when we restrict reInitialize to be called exactly once
     @E1Container
-    @NotNull1(after = "assigned")
     static class EventuallyNotNull1Container {
-        @NotNull1 // effectively not null eventually content not null, but we cannot mark before or after
+        @NotNull1(after = "assigned")
         private final String[] strings;
 
         public EventuallyNotNull1Container(int n) {

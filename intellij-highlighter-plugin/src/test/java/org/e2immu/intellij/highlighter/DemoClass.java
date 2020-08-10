@@ -22,7 +22,7 @@ e2i.settings.colors.attr.-f=Unannotated field
 public class DemoClass {
 
     private int count; // count = variable field
-    // Set, HashSet = container, String = E2Container; strings = not modified
+    // Set, HashSet = container, String = E2Container; strings = modified
     private final Set<String> strings = new HashSet<>();
 
     // input = non-modified parameter, count = not annotated parameter

@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @E2Container
-@NotNull
 public interface Statement {
 
     String statementString(int indent);

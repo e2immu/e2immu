@@ -18,10 +18,11 @@ Following the <<annotation-hierarchy>> for types, we color:
 | annotation on type | green mode | red mode
 | {e2container} (incl. primitives) | green | black
 | {e2immutable} | green | black
-| {e1container} | orange | orange
-| {e1immutable} | orange | orange
+| {e1container} | brown | brown
+| {e1immutable} | brown | brown
 | {container} | blue | blue
 | {mutableModifiesArguments} | black | red
+| {beforeMark} | purple | purple
 |===
 
 We color the annotation hierarchy for fields as:
@@ -30,7 +31,7 @@ We color the annotation hierarchy for fields as:
 |===
 | annotation on field | green mode | red mode
 | {variable}  | black | red
-| {modified} | orange | orange
+| {modified} | brown | brown
 | {nm} | green | black
 | {supportData} (when field {nm} and type {e1immutable}) | green italics | black italics
 |===
@@ -56,7 +57,7 @@ Independence is not necessary when there are no support types, and, given that w
 |===
 | annotation on method | green mode | red mode
 | {independent} (implying {nm}) | green |black
-| {dependent} (implying {nm}) | orange | orange
+| {dependent} (implying {nm}) | brown | brown
 | {nm} (no support data) | green | black
 | {modified} | black | red
 |===
@@ -68,7 +69,7 @@ To be consistent with the system for methods, the analyser will only emit the an
 |===
 | annotation on constructor | green mode | red mode
 | {independent} (when support data) | green | black
-| {dependent} (when support data) | orange | orange
+| {dependent} (when support data) | brown | brown
 | no support data | black | black
 |===
 

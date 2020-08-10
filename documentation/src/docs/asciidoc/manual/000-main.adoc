@@ -30,6 +30,7 @@
 :modified:  pass:normal[ `@Modified` ]
 :mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
 :supportData: pass:normal[ `@SupportData` ]
+:beforeMark: pass:normal[ `@BeforeMark` ]
 
 include::{includedir}/manual/010-intro.adoc[]
 
