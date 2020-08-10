@@ -37,8 +37,8 @@ java {
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:16.0.2'
-    implementation project(':annotations')
+    implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
+    implementation group: 'org.e2immu', name: 'annotations', version: '0.0.10'
 
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
     implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0

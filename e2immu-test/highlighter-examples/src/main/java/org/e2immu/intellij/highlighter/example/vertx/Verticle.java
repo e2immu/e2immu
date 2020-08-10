@@ -41,7 +41,7 @@ import java.util.List;
  * a call to its {@code init()} method. Here we override the {@link #start()} method; this method acts as our local
  * eventually final marker. The Vertx.io framework is responsible for both initialisation calls.
  * <p>
- * The fact that we mark this class @EventuallyFinal also means that we're willing to make it a container,
+ * The fact that we mark this class @E1Immutable also means that we're willing to make it a container,
  * in other words, all parameters of public methods will be marked @NotModified. The only parameter we have to study
  * is {@code startPromise}, of a @Container type. Two of its methods are called, and both cause modifications of the container.
  * This is not a problem because the parameter is an @Output parameter!

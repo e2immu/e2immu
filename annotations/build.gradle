@@ -16,14 +16,12 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-
-repositories {
-    mavenCentral()
+plugins {
+    id 'java'
+    id 'maven-publish'
 }
 
-version '0.0.9'
+version '0.0.10'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -34,12 +32,27 @@ jar {
     from sourceSets.main.java
 }
 
+// the reason the groupId is 'e2immu' and not 'org.e2immu' is that this reflects Gradle's project structure.
+// we push to mavenLocal() so that we can use/test the gradle-plugin locally
 /*
+publishing {
+    repositories {
+        mavenLocal()
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'e2immu'
+            artifactId = 'annotations'
+            from components.java
+        }
+    }
+}*/
+
 publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/bnaudts/e2immu-annot")
+            url = uri("https://maven.pkg.github.com/bnaudts/e2immu")
             credentials {
                 username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
                 password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
@@ -49,27 +62,8 @@ publishing {
     publications {
         gpr(MavenPublication) {
             groupId = 'org.e2immu'
-            artifactId = 'annot'
+            artifactId = 'annotations'
             from(components.java)
         }
     }
 }
-*/
-
-// for now, we publish to maven local, so that we can use the plugin locally
-
-publishing {
-    repositories {
-        mavenLocal()
-    }
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'e2immu'
-            artifactId = 'annotations'
-            version = '0.0.9'
-
-            from components.java
-        }
-    }
-}
-

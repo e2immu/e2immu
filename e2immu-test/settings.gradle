@@ -1,0 +1,19 @@
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenLocal()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.namespace == 'org.e2immu') {
+                useModule('e2immu:gradle-plugin:0.0.1')
+            }
+        }
+    }
+}
+
+rootProject.name = 'e2immu-test'
+include 'reactive'
+include 'highlighter-examples'
+

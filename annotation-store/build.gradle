@@ -1,11 +1,10 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.e2immu.analyser'
 }
 
 group 'org.e2immu'
-version '1.0-SNAPSHOT'
+version '0.0.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_13
@@ -27,13 +26,17 @@ dependencies {
 
 application {
     mainClassName = 'org.e2immu.kvstore.Store'
+
+    // uncomment here to change port and read timing each time you execute
+    //  gradle run
+    //applicationDefaultJvmArgs = ['-De2immu-port=9999 -De2immu-read-within-millis=10000']
 }
 
-e2immu {
-    skipProject = false
-    sourcePackages = 'org.e2immu.'
-    jmods = 'java.base.jmod,java.se.jmod'
-    //jre = '/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/'
-    writeAnnotatedAPIPackages = 'org.e2immu.'
-    writeAnnotationXMLPackages = 'org.e2immu.'
+// the following block copies two system properties from Gradle's JVM to the JVM that starts the Store
+// this allows us to execute
+//   gradle run -De2immu-port=9999
+
+run {
+    systemProperty "e2immu-port", System.getProperty("e2immu-port")
+    systemProperty "e2immu-read-within-millis", System.getProperty("e2immu-read-within-millis")
 }

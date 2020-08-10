@@ -35,13 +35,23 @@ public class Store {
                 System.exit(1);
             } else {
                 JsonObject config = ar.result();
-                Integer port = config.getInteger("e2immu-port");
-                int thePort = port == null ? DEFAULT_PORT : port;
-                Long readWithinMillis = config.getLong("e2immu-read-within-millis");
-                this.readWithinMillis = readWithinMillis == null ? DEFAULT_READ_WITHIN_MILLIS : readWithinMillis;
-                initServer(thePort);
+                int port = (int) flexible(config.getValue("e2immu-port"), DEFAULT_PORT);
+                this.readWithinMillis = flexible(config.getValue("e2immu-read-within-millis"), DEFAULT_READ_WITHIN_MILLIS);
+                initServer(port);
             }
         });
+    }
+
+    private static long flexible(Object object, long defaultValue) {
+        LOGGER.info("Parsing " + object);
+        if (object == null) return defaultValue;
+        String s = object.toString();
+        try {
+            double d = Double.parseDouble(s);
+            return (long) d;
+        } catch (NumberFormatException nfe) {
+            return defaultValue;
+        }
     }
 
     private void initServer(int port) {
@@ -113,8 +123,8 @@ public class Store {
 
     private void handleListProject(RoutingContext rc, String projectName) {
         Project inMap = projects.get(projectName);
-        if(inMap == null) {
-            badRequest(rc, "Unknown project "+projectName);
+        if (inMap == null) {
+            badRequest(rc, "Unknown project " + projectName);
             return;
         }
         JsonObject result = new JsonObject();

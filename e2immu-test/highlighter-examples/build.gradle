@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id 'org.e2immu.analyser'
+}
 
 repositories {
     mavenCentral()
@@ -37,8 +40,8 @@ java {
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:16.0.2'
-    implementation project(':annotations')
+    implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
+    implementation group: 'org.e2immu', name: 'annotations', version: '0.0.10'
 
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
     implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
@@ -50,4 +53,14 @@ dependencies {
 
 jar {
     from sourceSets.main.java
+}
+
+
+e2immu {
+    //skipProject = false
+    sourcePackages = 'org.e2immu.'
+    jmods = 'java.base.jmod,java.se.jmod'
+    //jre = '/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/'
+    writeAnnotatedAPIPackages = 'org.e2immu.'
+    writeAnnotationXMLPackages = 'org.e2immu.'
 }

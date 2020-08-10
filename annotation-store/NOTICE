@@ -1,4 +1,4 @@
-e2immu/annotations: annotations for effective and eventual immutability
+e2immu/annotation-store: annotations for effective and eventual immutability
 Copyright 2020, Bart Naudts, https://www.e2immu.org
 
 Licensed under the Apache License, Version 2.0.
