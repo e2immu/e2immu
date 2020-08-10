@@ -126,7 +126,7 @@ public class ParameterizedType {
             } else {
                 // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
                 // could be a subtype of one of the interfaces (here, we're in an implementation of Expression, and InScopeType is a subtype of Expression)
-                LOGGER.debug("?");
+                // TODO
             }
         } else {
             name = baseType.asString();

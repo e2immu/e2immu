@@ -68,7 +68,7 @@ public class Input {
         initializeClassPath();
         assembleClassPath(classPath, "Classpath", configuration.inputConfiguration.classPathParts);
         annotationStore = new AnnotationXmlReader(classPath);
-        LOGGER.info("Read {} annotations from annotation.xml files in classpath", annotationStore.getNumberOfAnnotations());
+        LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
         preload("org.e2immu.annotation"); // needed for our own stuff
         preload("java.lang"); // there are needed to help with implicit imports

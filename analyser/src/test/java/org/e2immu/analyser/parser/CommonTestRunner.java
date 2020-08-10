@@ -96,6 +96,7 @@ public abstract class CommonTestRunner {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")
                         .build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
