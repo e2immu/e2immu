@@ -20,11 +20,17 @@ package org.e2immu.analyser.testexample.withannotatedapi;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
-import org.e2immu.annotation.E2Container;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+// the error occurs when Verticle is a subclass of AbstractVerticle
+// there already IS an interface called Verticle, implemented by AbstractVerticle.
+
+// so the situation is org.e2immu...Verticle -> io.vertx.core.AbstractVerticle -> io.vertx.core.Verticle
+
+// what happens is that Verticle in the 1st line of 'main' is taken to be the interface rather than the local class.
 
 public class Verticle extends AbstractVerticle {
     private static final Logger LOGGER = LoggerFactory.getLogger(Verticle.class);
@@ -39,17 +45,6 @@ public class Verticle extends AbstractVerticle {
 
     private Configuration configuration;
 
-    //@Override
-    //public void start(Promise<Void> startPromise) {
-        // do nothing here
-    //}
-
-    //@Override
-    public void stop() {
-        LOGGER.info("Closed http server");
-    }
-
-    @E2Container
     static class Configuration {
         public final String a;
 

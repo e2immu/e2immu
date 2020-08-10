@@ -1,7 +1,0 @@
-org/e2immu/intellij/highlighter/example/TestHighlighter.java
- org.e2immu.intellij.highlighter.example.TestHighlighter
-org/e2immu/intellij/highlighter/example/Example1.java
- org.e2immu.intellij.highlighter.example.Example1
-org/e2immu/intellij/highlighter/example/vertx/Verticle.java
- org.e2immu.intellij.highlighter.example.vertx.Verticle
- org.e2immu.intellij.highlighter.example.vertx.Verticle$Configuration

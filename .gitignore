@@ -1,6 +1,7 @@
-*/build/
+**/build/
 **/.gradle/
 **/out/
 .idea
+**/.idea
 documentation/**/*.pdf
 documentation/**/*.html
