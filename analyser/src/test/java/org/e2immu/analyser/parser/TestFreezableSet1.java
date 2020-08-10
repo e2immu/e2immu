@@ -22,19 +22,13 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.objectflow.*;
-import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class TestFreezableSet1 extends CommonTestRunner {
 
@@ -45,7 +39,7 @@ public class TestFreezableSet1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
         @Override
         public void visit(int iteration, TypeInfo typeInfo) {
-            if (iteration > 0) {
+            if (iteration > 1) {
                 Assert.assertEquals(1L, typeInfo.typeAnalysis.get().approvedPreconditions.size());
                 Assert.assertEquals("mark", typeInfo.typeAnalysis.get().approvedPreconditions.stream().findFirst().orElseThrow().getValue());
             }

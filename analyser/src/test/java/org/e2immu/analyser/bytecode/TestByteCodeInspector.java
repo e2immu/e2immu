@@ -87,19 +87,19 @@ public class TestByteCodeInspector {
 
     @Test
     public void testSubTypes() throws IOException {
-        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/withannotatedapi/SubTypes");
-        Assert.assertEquals("org.e2immu.analyser.testexample.withannotatedapi.SubTypes", typeInfo.fullyQualifiedName);
+        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/SubTypes");
+        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes", typeInfo.fullyQualifiedName);
         Assert.assertEquals(3, typeInfo.typeInspection.get().subTypes.size());
 
         TypeInfo staticSubType = typeInfo.typeInspection.get().subTypes.stream()
                 .filter(st -> st.simpleName.equals("StaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.withannotatedapi.SubTypes.StaticSubType",
+        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes.StaticSubType",
                 staticSubType.fullyQualifiedName);
         Assert.assertEquals(1, staticSubType.typeInspection.get().subTypes.size());
 
         TypeInfo subSubType = staticSubType.typeInspection.get().subTypes.stream()
                 .filter(st -> st.simpleName.equals("SubTypeOfStaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.withannotatedapi.SubTypes.StaticSubType.SubTypeOfStaticSubType",
+        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes.StaticSubType.SubTypeOfStaticSubType",
                 subSubType.fullyQualifiedName);
         Assert.assertEquals(0, subSubType.typeInspection.get().subTypes.size());
     }

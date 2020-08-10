@@ -26,7 +26,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.objectflow.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.testexample.withannotatedapi.ObjectFlow2;
+import org.e2immu.analyser.testexample.ObjectFlow2;
 import org.junit.Assert;
 import org.junit.Test;
 

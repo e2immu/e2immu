@@ -49,16 +49,14 @@ public class TestTypeInfoStream {
     ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
     final MethodInfo genericContainerPutMethod = new MethodInfo(containerTypeInfo, "put",
-            List.of(new ParameterInfo(null, typeT, "value", 0)),
+            List.of(),
             typeT, false);
 
     final MethodInfo emptyConstructor = new MethodInfo(typeInfo, List.of());
     final MethodInfo toStringMethodInfo = new MethodInfo(typeInfo, "toString", List.of(),
             primitives.stringParameterizedType, false);
 
-    final MethodInfo intSum = new MethodInfo(typeInfo, "sum",
-            List.of(new ParameterInfo(null, primitives.intTypeInfo, "x", 0),
-                    new ParameterInfo(null, primitives.intTypeInfo, "y", 1)), primitives.intParameterizedType, true);
+    final MethodInfo intSum = new MethodInfo(typeInfo, "sum", List.of(), primitives.intParameterizedType, true);
 
     @Test
     public void test2() {

@@ -28,7 +28,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.testexample.withannotatedapi.TestSkeleton;
+import org.e2immu.analyser.testexample.TestSkeleton;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -65,7 +65,7 @@ public class TestWithSkeleton {
                 .setSkipAnalysis(true)
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.withannotatedapi.TestSkeleton")
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample.TestSkeleton")
                         .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")

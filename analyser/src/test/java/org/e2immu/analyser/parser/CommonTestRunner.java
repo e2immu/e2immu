@@ -84,13 +84,12 @@ public abstract class CommonTestRunner {
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
-        String path = withAnnotatedAPIs ? "withannotatedapi." : "";
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample." + path + className)
+                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className)
                         .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
