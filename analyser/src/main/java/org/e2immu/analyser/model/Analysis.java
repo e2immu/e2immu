@@ -267,6 +267,7 @@ public abstract class Analysis {
                                                   boolean overwrite) {
         Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
+        int notNull = -1;
         boolean container = false;
         Messages messages = new Messages();
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
@@ -292,13 +293,13 @@ public abstract class Analysis {
                 } else if (e2ImmuAnnotationExpressions.container.get().typeInfo == t) {
                     container = true;
                 } else if (e2ImmuAnnotationExpressions.nullable.get().typeInfo == t) {
-                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, -1));
+                    notNull = MultiLevel.NULLABLE;
                 } else if (e2ImmuAnnotationExpressions.notNull.get().typeInfo == t) {
-                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 0));
+                    notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notNull1.get().typeInfo == t) {
-                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 1));
+                    notNull = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo == t) {
-                    extractWhere(annotationExpression).forEach(et -> increaseTo(notNullMap, et, 2));
+                    notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo == t) {
                     method.accept(VariableProperty.MODIFIED, Level.FALSE);
                 } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo == t) {
@@ -359,31 +360,8 @@ public abstract class Analysis {
             }
             method.accept(VariableProperty.IMMUTABLE, value);
         }
-        for (Map.Entry<ElementType, Integer> entry : notNullMap.entrySet()) {
-            VariableProperty variableProperty;
-            if (entry.getKey() == ElementType.TYPE) {
-                variableProperty = VariableProperty.NOT_NULL;
-            } else {
-                throw new UnsupportedOperationException();
-            }
-            int nn;
-            switch (entry.getValue()) {
-                case -1:
-                    nn = MultiLevel.NULLABLE;
-                    break;
-                case 0:
-                    nn = MultiLevel.EFFECTIVELY_NOT_NULL;
-                    break;
-                case 1:
-                    nn = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                    break;
-                case 2:
-                    nn = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-            }
-            method.accept(variableProperty, nn);
+        if(notNull >= 0) {
+            method.accept(VariableProperty.NOT_NULL, notNull);
         }
         return messages;
     }
@@ -438,11 +416,6 @@ public abstract class Analysis {
 
     protected static final ElementType[] NOT_NULL_WHERE_ALL = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
     protected static final ElementType[] NOT_NULL_WHERE_TYPE = {ElementType.TYPE};
-
-    protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
-        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_TYPE);
-        return Arrays.stream(elements).collect(Collectors.toSet());
-    }
 
     public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {
         Map<VariableProperty, Integer> res = new HashMap<>();

@@ -61,12 +61,6 @@ public class Parser {
 
     public Parser(Configuration configuration) throws IOException {
         this.configuration = configuration;
-        if (configuration.quiet) {
-            org.e2immu.analyser.util.Logger.configure(Level.ERROR);
-        } else {
-            org.e2immu.analyser.util.Logger.configure(Level.INFO);
-            org.e2immu.analyser.util.Logger.activate(configuration.logTargets);
-        }
         input = new Input(configuration);
         globalTypeContext = input.getGlobalTypeContext();
         byteCodeInspector = input.getByteCodeInspector();

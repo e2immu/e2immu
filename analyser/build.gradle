@@ -69,29 +69,13 @@ dependencies {
     testImplementation group: 'io.vertx', name: 'vertx-web', version: '3.8.5'
 }
 
-// for now, we publish to maven local, so that we can use the plugin locally
-
-publishing {
-    repositories {
-        mavenLocal()
-    }
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'e2immu'
-            artifactId = 'analyser'
-            version = '0.0.1'
-
-            from components.java
-        }
-    }
-}
+version = '0.0.1'
 
 application {
     mainClassName = 'org.e2immu.analyser.cli.Main'
 }
 
-
-task buildAnnotationXmlJar(type: JavaExec) {
+task generateAnnotationXml(type: JavaExec) {
     group = "Execution"
     description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
     classpath = sourceSets.main.runtimeClasspath
@@ -106,4 +90,39 @@ task buildAnnotationXmlJar(type: JavaExec) {
             '--write-annotation-xml-dir=build/annotations',
             '--debug=INSPECT,ANNOTATION_XML_WRITER'
     )
+}
+
+task annotationXmlJar(type: Jar) {
+    from(buildDir.path + "/annotations")
+    archivesBaseName = buildDir.path + "/annotation-xml"
+
+    dependsOn(generateAnnotationXml)
+}
+
+def annotationXmlJar = file(buildDir.path + "/annotation-xml-" + project.version + ".jar")
+def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
+    type ('jar')
+    builtBy ('annotationXmlJar')
+})
+
+// for now, we publish to maven local, so that we can use the plugin locally
+
+publishing {
+    repositories {
+        mavenLocal()
+    }
+    publications {
+        mavenLocal(MavenPublication) {
+            groupId = 'e2immu'
+            artifactId = 'analyser'
+
+            from components.java
+        }
+
+        mavenLocalXml(MavenPublication) {
+           artifact annotationXmlArtifact
+            groupId = 'org.e2immu'
+            artifactId = 'annotation-xml'
+        }
+    }
 }

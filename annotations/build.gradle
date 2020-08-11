@@ -38,18 +38,6 @@ jar {
 publishing {
     repositories {
         mavenLocal()
-    }
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'e2immu'
-            artifactId = 'annotations'
-            from components.java
-        }
-    }
-}
-/*
-publishing {
-    repositories {
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/bnaudts/e2immu")
@@ -60,10 +48,16 @@ publishing {
         }
     }
     publications {
-        gpr(MavenPublication) {
+        mavenJava(MavenPublication) {
+            groupId = 'e2immu'
+            artifactId = 'annotations'
+            from components.java
+        }
+        /*gpr(MavenPublication) {
             groupId = 'org.e2immu'
             artifactId = 'annotations'
-            from(components.java)
-        }
+            from components.java
+        }*/
     }
-}*/
+}
+

@@ -20,6 +20,11 @@ plugins {
     id 'java'
     id 'maven-publish'
 }
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
 /*
 repositories {
     mavenCentral()
@@ -44,8 +49,7 @@ dependencies {
         exclude group: 'ch.qos.logback'
     }
 
-    // PLUGIN
-
+    // GRADLE PLUGIN
     implementation(gradleApi())
 
 }
