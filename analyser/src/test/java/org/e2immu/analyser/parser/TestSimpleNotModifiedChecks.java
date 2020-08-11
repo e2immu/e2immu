@@ -85,7 +85,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add6".equals(d.methodInfo.name) && "values6".equals(d.variableName)) {
             if (d.iteration > 1) {
                 Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
         }
         if ("add6".equals(d.methodInfo.name) && "example6".equals(d.variableName)) {

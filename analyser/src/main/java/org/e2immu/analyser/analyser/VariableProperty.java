@@ -53,14 +53,6 @@ public enum VariableProperty {
     NOT_NULL("@NotNull", true,
             MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
 
-    // the following three are on types only
-    NOT_NULL_FIELDS("@NotNull(where=FIELDS)", true,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-    NOT_NULL_METHODS("@NotNull(where=METHODS)", true,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-    NOT_NULL_PARAMETERS("@NotNull(where=PARAMETERS)", true,
-            MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL, MultiLevel.NULLABLE, MultiLevel.EFFECTIVELY_NOT_NULL),
-
     FINAL("@Final", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     CONTAINER("@Container", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE, MultiLevel.MUTABLE),

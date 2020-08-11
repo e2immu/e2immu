@@ -135,7 +135,7 @@ public class ContainerChecks {
     @Container(type = VERIFY_ABSENT)
     static class Container4 {
 
-        @NotNull
+        @NotNull1
         @Linked
         private final Set<String> strings4;
 

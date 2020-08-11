@@ -267,6 +267,14 @@ public class String implements CharSequence {
     public boolean startsWith(@NotNull String s, int i) {
     }
 
+    @NotNull
+    public String substring(int beginIndex) {
+    }
+
+    @NotNull
+    public String substring(int beginIndex, int endIndex) {
+    }
+
     @Size(copy = true)
     @NotNull
     public String toLowerCase() {

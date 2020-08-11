@@ -24,13 +24,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -98,11 +96,10 @@ public class MethodAnalysis extends Analysis {
 
             case NOT_NULL:
                 if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                int notNullMethods = typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_METHODS);
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                         typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                return MultiLevel.bestNotNull(notNullMethods, getPropertyCheckOverrides(VariableProperty.NOT_NULL));
+                return getPropertyCheckOverrides(VariableProperty.NOT_NULL);
 
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())

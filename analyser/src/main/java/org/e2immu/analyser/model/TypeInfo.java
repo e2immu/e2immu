@@ -806,7 +806,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @return the method of this, if deemed the same
      */
     private MethodInfo findUniqueMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInspection.get(fullyQualifiedName).methodsAndConstructors()) {
             if (methodInfo.sameMethod(target, translationMap)) {
                 return methodInfo;
             }

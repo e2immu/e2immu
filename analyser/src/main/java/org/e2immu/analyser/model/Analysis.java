@@ -361,21 +361,10 @@ public abstract class Analysis {
         }
         for (Map.Entry<ElementType, Integer> entry : notNullMap.entrySet()) {
             VariableProperty variableProperty;
-            switch (entry.getKey()) {
-                case FIELD:
-                    variableProperty = VariableProperty.NOT_NULL_FIELDS;
-                    break;
-                case METHOD:
-                    variableProperty = VariableProperty.NOT_NULL_METHODS;
-                    break;
-                case PARAMETER:
-                    variableProperty = VariableProperty.NOT_NULL_PARAMETERS;
-                    break;
-                case TYPE:
-                    variableProperty = VariableProperty.NOT_NULL;
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
+            if (entry.getKey() == ElementType.TYPE) {
+                variableProperty = VariableProperty.NOT_NULL;
+            } else {
+                throw new UnsupportedOperationException();
             }
             int nn;
             switch (entry.getValue()) {

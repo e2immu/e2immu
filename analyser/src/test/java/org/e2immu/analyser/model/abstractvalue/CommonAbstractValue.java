@@ -90,15 +90,25 @@ public abstract class CommonAbstractValue {
     }
 
     static ParameterInfo createParameter(String name) {
+        if (!Primitives.PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
+            Primitives.PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                    .setPackageName("java.lang")
+                    .build(false, Primitives.PRIMITIVES.objectTypeInfo));
+        }
         TypeInfo someType = new TypeInfo("some.type");
         someType.typeAnalysis.set(new TypeAnalysis(someType));
-        someType.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
-                .setPackageName("org.e2immu.test")
-                .build(true, someType));
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
         ParameterInfo pi = new ParameterInfo(methodInfo, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
         pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         pi.parameterAnalysis.set(new ParameterAnalysis(pi));
+        methodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+                .addParameter(pi)
+                .build(methodInfo));
+        someType.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                .setPackageName("org.e2immu.test")
+                .addMethod(methodInfo)
+                .build(true, someType));
+        methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
         return pi;
     }
 

@@ -31,6 +31,7 @@ import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
@@ -64,6 +65,7 @@ public class AnnotationUploader {
     private final List<Pair<String, AnnotationExpression>> methodPairs;
     private final List<Pair<String, AnnotationExpression>> fieldPairs;
     private final List<Pair<String, AnnotationExpression>> parameterPairs;
+    private final List<Pair<String, AnnotationExpression>> dynamicTypeAnnotations;
 
     private static String lc(Class<?> clazz) {
         return clazz.getSimpleName().toLowerCase();
@@ -73,26 +75,38 @@ public class AnnotationUploader {
         this.configuration = configuration;
 
         typePairs = List.of(
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
                 new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
-                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container.get())
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
+                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
+                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get()),
+                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container.get()),
+                new Pair<>(lc(MutableModifiesArguments.class), e2ImmuAnnotationExpressions.mutableModifiesArguments.get())
         );
+
         methodPairs = List.of(
+                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent.get()),
+                new Pair<>(lc(Dependent.class), e2ImmuAnnotationExpressions.dependent.get()),
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified.get()),
-                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent.get())
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified.get())
         );
+
         fieldPairs = List.of(
+                new Pair<>(lc(SupportData.class), e2ImmuAnnotationExpressions.supportData.get()),
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
                 new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get()),
-                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.effectivelyFinal.get()),
-                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get()),
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
-                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get())
+                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get())
         );
+
         parameterPairs = List.of(
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
                 new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get())
+        );
+
+        dynamicTypeAnnotations = List.of(
+                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
+                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
+                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get())
         );
     }
 
@@ -111,14 +125,16 @@ public class AnnotationUploader {
         String typeQn = sortedType.typeInfo.fullyQualifiedName;
         for (Pair<String, AnnotationExpression> pair : typePairs) {
             if (sortedType.typeInfo.annotatedWith(pair.v) == Boolean.TRUE) {
-                SMapList.add(map, typeQn, pair.k);
+                SMapList.add(map, typeQn, pair.k + "-t");
+                break;
             }
         }
         sortedType.typeInfo.typeInspection.get().constructorAndMethodStream().forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
-                    SMapList.add(map, methodQn, pair.k);
+                    SMapList.add(map, methodQn, pair.k + "-m");
+                    break;
                 }
             }
             int i = 0;
@@ -126,17 +142,42 @@ public class AnnotationUploader {
                 String parameterQn = methodQn + "#" + i;
                 for (Pair<String, AnnotationExpression> pair : parameterPairs) {
                     if (parameterInfo.annotatedWith(pair.v) == Boolean.TRUE) {
-                        SMapList.add(map, parameterQn, pair.k);
+                        SMapList.add(map, parameterQn, pair.k + "-p");
+                        break;
                     }
                 }
                 i++;
             }
+            if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
+                TypeInfo bestType = methodInfo.returnType().bestTypeInfo();
+                if (bestType != null) {
+                    String methodsTypeQn = bestType.fullyQualifiedName;
+                    for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
+                        if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                            SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + "-mt");
+                            break;
+                        }
+                    }
+                }
+            }
         });
         for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
             String fieldQn = typeQn + ":" + fieldInfo.name;
+            TypeInfo bestType = fieldInfo.type.bestTypeInfo();
+
             for (Pair<String, AnnotationExpression> pair : fieldPairs) {
                 if (fieldInfo.annotatedWith(pair.v) == Boolean.TRUE) {
-                    SMapList.add(map, fieldQn, pair.k);
+                    SMapList.add(map, fieldQn, pair.k + "-f");
+                    break;
+                }
+            }
+            if (bestType != null) {
+                String fieldsTypeQn = bestType.fullyQualifiedName;
+                for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
+                    if (fieldInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                        SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + "-mf");
+                        break;
+                    }
                 }
             }
         }

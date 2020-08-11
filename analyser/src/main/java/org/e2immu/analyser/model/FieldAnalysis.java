@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
@@ -96,11 +95,6 @@ public class FieldAnalysis extends Analysis {
                 if (MultiLevel.isE2Immutable(immutable)) return Level.FALSE;
                 break;
 
-            case NOT_NULL:
-                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                int notNullFields = owner.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_FIELDS);
-                return Level.best(notNullFields, super.getProperty(VariableProperty.NOT_NULL));
-
             case FINAL:
                 int immutableOwner = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
                 if (MultiLevel.isE1Immutable(immutableOwner)) return Level.TRUE;
@@ -116,6 +110,9 @@ public class FieldAnalysis extends Analysis {
             // container is, for fields, a property purely on the type
             case CONTAINER:
                 return bestType == null ? Level.TRUE : bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
+
+            case NOT_NULL:
+                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
 
             default:
         }

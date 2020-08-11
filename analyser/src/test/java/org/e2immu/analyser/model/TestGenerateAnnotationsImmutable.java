@@ -100,6 +100,6 @@ public class TestGenerateAnnotationsImmutable {
     public void testOnlyContainer() {
         Assert.assertTrue(generate(MUTABLE, 0, false).isEmpty());
         Assert.assertTrue(generate(MUTABLE, 1, false).isEmpty());
-        Assert.assertEquals(Map.of(MutableModifiesArguments.class, TRUE, MutableModifiesArguments.class, TRUE), generate(MUTABLE, 0, true));
+        Assert.assertEquals(Map.of(MutableModifiesArguments.class, TRUE), generate(MUTABLE, 0, true));
     }
 }

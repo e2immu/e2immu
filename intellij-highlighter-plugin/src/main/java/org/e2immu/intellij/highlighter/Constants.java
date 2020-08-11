@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey;
 import org.e2immu.annotation.*;
 
 import java.util.Map;
+import static org.e2immu.intellij.highlighter.ElementType.*;
 
 public interface Constants {
     static String lc(Class<?> clazz) {
@@ -14,12 +15,7 @@ public interface Constants {
     String APP_NAME = "E2Immu Highlighter";
     String STORAGE_FILE = "e2immuHighlighter.xml";
 
-    String TYPE_OF_METHOD = "-mt";
-    String METHOD = "-m";
-    String FIELD = "-f";
-    String TYPE_OF_FIELD = "-ft";
-    String PARAM = "-p";
-    String TYPE = "-t";
+
 
     String E2I = "e2i-";
     String NOT_ANNOTATED = "";

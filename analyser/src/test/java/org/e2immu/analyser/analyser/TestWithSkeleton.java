@@ -90,7 +90,6 @@ public class TestWithSkeleton {
         Assert.assertTrue(set.annotatedWith(e2ImmuAnnotationExpressions.container.get()));
         TypeAnalysis setAnalysis = set.typeAnalysis.get();
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, setAnalysis.getProperty(VariableProperty.NOT_NULL_PARAMETERS));
         Assert.assertEquals(MultiLevel.NULLABLE, setAnalysis.getProperty(VariableProperty.NOT_NULL));
 
         set.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));

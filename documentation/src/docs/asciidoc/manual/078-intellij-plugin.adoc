@@ -99,7 +99,10 @@ If the parameter type is not a type parameter, the fully qualified name suffices
 * for a parameter, we append the '#' sign followed by the index to the method's distinguishing name, starting from 0;
 * for a field, we use the fully qualified name of the type, a ':', and the name of the field.
 
-The values consist of comma separated annotation type names in lowercase, like _e2immutable,final_.
+On top of that comes the combination of a type and a field or method for the dynamic type annotations of fields and methods:
+the composite key is the field's or method's key followed by a space, and the type's key.
+
+The values consist of a single annotation type name in lowercase, like _e2immutable_ or _notmodified_.
 
 ==== Implementation
 

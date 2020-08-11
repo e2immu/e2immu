@@ -22,24 +22,17 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.log;
+import java.util.stream.IntStream;
 
 public class ParameterAnalysis extends Analysis {
 
-    private final ParameterizedType parameterizedType;
-    private final MethodInfo owner; // can be null, for lambda expressions
-    private final String logName;
-
+    private final ParameterInfo parameterInfo;
     public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
     public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
     public final Location location;
@@ -50,11 +43,10 @@ public class ParameterAnalysis extends Analysis {
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
-        this.owner = parameterInfo.owner;
-        this.logName = parameterInfo.detailedString() + (owner == null ? " in lambda" : " in " + owner.distinguishingName());
-        this.parameterizedType = parameterInfo.parameterizedType;
+        this.parameterInfo = parameterInfo;
         this.location = new Location(parameterInfo);
-        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo), parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
+        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
+                parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
     }
 
@@ -65,15 +57,12 @@ public class ParameterAnalysis extends Analysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return owner.typeInfo.typeAnalysis.get().annotationMode();
+        return parameterInfo.owner.typeInfo.typeAnalysis.get().annotationMode();
     }
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case NOT_NULL:
-                return MultiLevel.bestNotNull(super.getProperty(VariableProperty.NOT_NULL), notNullFromOwner());
-
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
                 if (notModifiedBecauseOfImmutableStatus()) return Level.FALSE;
@@ -84,7 +73,7 @@ public class ParameterAnalysis extends Analysis {
             // the only way to have a container is for the type to be a container, or for the user to have
             // contract annotated the parameter with @Container
             case CONTAINER: {
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null) return bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
                 return Level.best(super.getProperty(VariableProperty.CONTAINER), Level.FALSE);
             }
@@ -94,11 +83,11 @@ public class ParameterAnalysis extends Analysis {
             // we can only know when the method is private and the flows are known
             // (3) when the user has contract-annotated the parameter with @E2Immutable
             case IMMUTABLE: {
-                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int immutableFromType;
                 if (bestType != null) {
                     int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                    boolean objectFlowCondition = owner != null && owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType));
+                    boolean objectFlowCondition = parameterInfo.owner.isPrivate() && objectFlow.isSet() && objectFlow.get().getPrevious().allMatch(of -> of.conditionsMetForEventual(bestType));
                     immutableFromType = MultiLevel.eventual(immutable, objectFlowCondition);
                 } else {
                     immutableFromType = MultiLevel.MUTABLE;
@@ -106,9 +95,30 @@ public class ParameterAnalysis extends Analysis {
                 return Math.max(immutableFromType, MultiLevel.delayToFalse(super.getProperty(VariableProperty.IMMUTABLE)));
             }
 
+            case NOT_NULL: {
+                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                return getPropertyCheckOverrides(variableProperty);
+            }
+
+            case SIZE:
+                return getPropertyCheckOverrides(variableProperty);
+
             default:
         }
         return super.getProperty(variableProperty);
+    }
+
+    private int getPropertyCheckOverrides(VariableProperty variableProperty) {
+        IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
+        IntStream overrideValues = parameterInfo.owner.methodAnalysis.get().overrides.stream()
+                .mapToInt(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index).parameterAnalysis.get().getPropertyAsIs(variableProperty));
+        int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
+        if (max == Level.DELAY && !hasBeenDefined) {
+            // no information found in the whole hierarchy
+            return variableProperty.valueWhenAbsent(annotationMode());
+        }
+        return max;
     }
 
     @Override
@@ -117,31 +127,23 @@ public class ParameterAnalysis extends Analysis {
         return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
     }
 
-    private int notNullFromOwner() {
-        if (owner == null) return MultiLevel.DELAY;
-        return owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL_PARAMETERS);
-    }
-
     private boolean notModifiedBecauseOfImmutableStatus() {
         if (MultiLevel.value(getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER)
             return true;
         // if the parameter is an unbound generic, the same holds
-        if (parameterizedType.isUnboundParameterType()) return true;
+        if (parameterInfo.parameterizedType.isUnboundParameterType()) return true;
         // if we're inside a container and the method is not private, the parameter cannot be modified
-        return owner != null && !owner.isPrivate() &&
-                owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE;
+        return !parameterInfo.owner.isPrivate() &&
+                parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE;
     }
 
     @Override
     public int minimalValue(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case NOT_NULL:
-                return notNullFromOwner();
-
             case SIZE:
                 int modified = getProperty(VariableProperty.MODIFIED);
                 if (modified != Level.FALSE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
-                return Level.bestSize(1, parameterizedType.getProperty(variableProperty));
+                return Level.bestSize(1, parameterInfo.parameterizedType.getProperty(variableProperty));
 
             case MODIFIED:
                 if (notModifiedBecauseOfImmutableStatus()) return Integer.MAX_VALUE;
@@ -161,7 +163,7 @@ public class ParameterAnalysis extends Analysis {
         if (variableProperty == VariableProperty.MODIFIED && notModifiedBecauseOfImmutableStatus()) return Level.TRUE;
 
         if (variableProperty == VariableProperty.NOT_NULL) {
-            if (parameterizedType.isPrimitive()) return MultiLevel.NULLABLE;
+            if (parameterInfo.parameterizedType.isPrimitive()) return MultiLevel.NULLABLE;
         }
         return Integer.MAX_VALUE;
     }
