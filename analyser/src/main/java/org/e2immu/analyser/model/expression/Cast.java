@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
@@ -62,6 +63,11 @@ public class Cast implements Expression {
         Set<String> imports = new HashSet<>(expression.imports());
         if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return Sets.union(expression.typesReferenced(), parameterizedType.typesReferenced());
     }
 
     @Override

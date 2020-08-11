@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
@@ -84,6 +85,11 @@ public class InlineConditionalOperator implements Expression {
     @Independent
     public Set<String> imports() {
         return Sets.union(Sets.union(conditional.imports(), ifFalse.imports()), ifTrue.imports());
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(conditional.typesReferenced(), ifFalse.typesReferenced(), ifTrue.typesReferenced());
     }
 
     @Override

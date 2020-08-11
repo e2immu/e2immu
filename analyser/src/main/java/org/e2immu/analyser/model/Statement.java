@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -42,4 +43,6 @@ public interface Statement {
     static <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Statement statement, Class<E> clazz) {
         return statement.codeOrganization().findExpressionRecursivelyInStatements(clazz);
     }
+
+    Set<TypeInfo> typesReferenced();
 }

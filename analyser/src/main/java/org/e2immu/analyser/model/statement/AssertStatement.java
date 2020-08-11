@@ -1,9 +1,6 @@
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
@@ -45,6 +42,11 @@ public class AssertStatement implements Statement {
     @Override
     public Set<String> imports() {
         return SetUtil.immutableUnion(check.imports(), message == null ? Set.of() : message.imports());
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(check.typesReferenced(), message == null ? Set.of(): message.typesReferenced());
     }
 
     @Override

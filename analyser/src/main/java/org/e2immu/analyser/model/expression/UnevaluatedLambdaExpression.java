@@ -62,6 +62,11 @@ public class UnevaluatedLambdaExpression implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }

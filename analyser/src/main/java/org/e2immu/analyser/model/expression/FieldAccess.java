@@ -63,6 +63,11 @@ public class FieldAccess implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return expression.typesReferenced();
+    }
+
+    @Override
     @NotNull
     @Independent
     public List<Expression> subExpressions() {

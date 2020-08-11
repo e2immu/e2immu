@@ -43,6 +43,11 @@ public class LocalClassDeclaration implements Statement {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return typeInfo.typesReferenced();
+    }
+
+    @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
         return SideEffect.LOCAL;
     }

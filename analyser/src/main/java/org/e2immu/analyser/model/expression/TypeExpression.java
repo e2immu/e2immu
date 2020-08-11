@@ -55,6 +55,11 @@ public class TypeExpression implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return parameterizedType.typesReferenced();
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new TypeValue(parameterizedType, evaluationContext);
     }

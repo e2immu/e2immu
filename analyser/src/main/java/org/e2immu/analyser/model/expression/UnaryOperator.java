@@ -149,6 +149,11 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return expression.typesReferenced();
+    }
+
+    @Override
     @NotNull
     public List<Expression> subExpressions() {
         return List.of(expression);

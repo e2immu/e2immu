@@ -731,6 +731,31 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return imports;
     }
 
+    /**
+     * This is the starting place to compute all types that are referred to in any way.
+     * This is different from imports, because imports need an explicitly written type.
+     *
+     * @return
+     */
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> result = new HashSet<>();
+        result.add(this);
+
+        for (AnnotationExpression annotation : typeInspection.get().annotations) {
+            result.add(annotation.typeInfo);
+        }
+        for (TypeInfo subType : typeInspection.get().subTypes) {
+            result.addAll(subType.typesReferenced());
+        }
+        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+            result.addAll(methodInfo.typesReferenced());
+        }
+        for (FieldInfo fieldInfo : typeInspection.get().fields) {
+            result.addAll(fieldInfo.typesReferenced());
+        }
+        return result;
+    }
+
     @Override
     public String simpleName() {
         return simpleName;
@@ -1124,5 +1149,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public int nextIdentifier() {
         return identifierForAnonymousSubTypes.incrementAndGet();
+    }
+
+    public String packageName() {
+        if (typeInspection.get().packageNameOrEnclosingType.isLeft())
+            return typeInspection.get().packageNameOrEnclosingType.getLeft();
+        return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();
     }
 }

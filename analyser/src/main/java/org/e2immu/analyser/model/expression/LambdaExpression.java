@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -74,6 +75,11 @@ public class LambdaExpression implements Expression {
         Set<String> imports = new HashSet<>(expression.imports());
         parameters.forEach(pe -> imports.addAll(pe.imports()));
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(expression.typesReferenced(), parameters.stream().flatMap(p -> p.typesReferenced().stream()).collect(Collectors.toSet()));
     }
 
     // NOTE: this one is used for finding structures inside the lambda

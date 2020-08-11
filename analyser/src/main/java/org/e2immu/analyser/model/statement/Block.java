@@ -29,10 +29,7 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Block implements Statement, HasStatements {
     public static final Block EMPTY_BLOCK = new Block(List.of(), null);
@@ -44,6 +41,14 @@ public class Block implements Statement, HasStatements {
     private Block(@NotNull List<Statement> statements, String label) {
         this.label = label;
         this.statements = statements;
+    }
+
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> types = new HashSet<>();
+        for (Statement statement : statements) {
+            types.addAll(statement.typesReferenced());
+        }
+        return types;
     }
 
     @Container(builds = Block.class)

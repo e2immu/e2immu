@@ -602,6 +602,11 @@ public class ForLoop {
         }
 
         @Override
+        public Set<TypeInfo> typesReferenced() {
+            return null;
+        }
+
+        @Override
         public SideEffect sideEffect(SideEffectContext sideEffectContext) {
             return null;
         }

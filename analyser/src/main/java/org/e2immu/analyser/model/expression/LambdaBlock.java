@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -81,6 +82,11 @@ public class LambdaBlock implements Expression {
         Set<String> imports = new HashSet<>(block.imports());
         parameters.forEach(pe -> imports.addAll(pe.imports()));
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(block.typesReferenced(), parameters.stream().flatMap(p -> p.typesReferenced().stream()).collect(Collectors.toSet()));
     }
 
     @Override

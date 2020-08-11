@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -57,6 +54,11 @@ public class ExplicitConstructorInvocation implements Statement {
     @Override
     public Set<String> imports() {
         return parameterExpressions.stream().flatMap(e -> e.imports().stream()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet());
     }
 
     @Override

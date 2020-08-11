@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 
@@ -51,4 +48,8 @@ public abstract class StatementWithExpression implements Statement {
         return expression.imports();
     }
 
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return expression.typesReferenced();
+    }
 }

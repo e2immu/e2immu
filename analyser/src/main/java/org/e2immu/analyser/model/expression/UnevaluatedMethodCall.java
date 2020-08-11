@@ -60,6 +60,11 @@ public class UnevaluatedMethodCall implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return UnknownValue.NO_VALUE;
     }

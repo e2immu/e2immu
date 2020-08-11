@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
+import ch.qos.logback.classic.Level;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
@@ -49,7 +50,7 @@ public class Parser {
     private final TypeContext globalTypeContext;
     private final ByteCodeInspector byteCodeInspector;
     private final AnnotationStore annotationStore;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final TypeStore sourceTypeStore;
     private final Messages messages = new Messages();
 
@@ -60,6 +61,12 @@ public class Parser {
 
     public Parser(Configuration configuration) throws IOException {
         this.configuration = configuration;
+        if(configuration.quiet) {
+            org.e2immu.analyser.util.Logger.configure(Level.ERROR);
+        } else {
+            org.e2immu.analyser.util.Logger.configure(Level.INFO);
+            org.e2immu.analyser.util.Logger.activate(configuration.logTargets);
+        }
         input = new Input(configuration);
         globalTypeContext = input.getGlobalTypeContext();
         annotationStore = input.getAnnotationStore();
@@ -142,13 +149,14 @@ public class Parser {
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
-            annotationUploader.add(sortedTypes);
+            Map<String, String> map = annotationUploader.createMap(sortedTypes.stream().map(sortedType -> sortedType.typeInfo).collect(Collectors.toSet()));
+            annotationUploader.writeMap(map);
         }
         messages.addAll(typeAnalyser.getMessageStream());
         return sortedTypes;
     }
 
-    private void checkTypeAnalysisOfLoadedObjects( ) {
+    private void checkTypeAnalysisOfLoadedObjects() {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !typeInfo.typeAnalysis.isSet()) {

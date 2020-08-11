@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -101,6 +102,12 @@ public class NewObject implements HasParameterExpressions {
         if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
         parameterExpressions.forEach(pe -> imports.addAll(pe.imports()));
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(parameterizedType.typesReferenced(),
+                parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet()));
     }
 
     @Override

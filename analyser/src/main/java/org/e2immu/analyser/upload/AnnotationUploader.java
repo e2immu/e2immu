@@ -44,9 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.UPLOAD;
@@ -110,30 +108,46 @@ public class AnnotationUploader {
         );
     }
 
-    public void add(List<SortedType> sortedTypes) {
-        LOGGER.info("Uploading annotations of {} types", sortedTypes.size());
+    public Map<String, String> createMap(Collection<TypeInfo> types) {
+        LOGGER.info("Uploading annotations of {} types", types.size());
+        Set<TypeInfo> referredTo = new HashSet<>();
         Map<String, List<String>> map = new HashMap<>();
-        for (SortedType sortedType : sortedTypes) {
-            add(map, sortedType);
+        for (TypeInfo type : types) {
+            add(map, type);
+            log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
+            referredTo.addAll(type.typesReferenced());
         }
-        Map<String, String> csvMap = map.entrySet().stream()
+        referredTo.removeAll(types);
+
+        log(UPLOAD, "Uploading annotations of {} types referred to", referredTo.size());
+        for (TypeInfo type : referredTo) {
+            log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
+            add(map, type);
+        }
+        log(UPLOAD, "Writing {} annotations", map.size());
+        return map.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(",", e.getValue())));
-        writeMap(csvMap);
     }
 
-    private void add(Map<String, List<String>> map, SortedType sortedType) {
-        String typeQn = sortedType.typeInfo.fullyQualifiedName;
+    private void add(Map<String, List<String>> map, TypeInfo type) {
+        String typeQn = type.fullyQualifiedName;
+        if (!configuration.accept(type.packageName())) {
+            log(UPLOAD, "Rejecting type {} because of upload package configuration", typeQn);
+            return;
+        }
         for (Pair<String, AnnotationExpression> pair : typePairs) {
-            if (sortedType.typeInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+            if (type.annotatedWith(pair.v) == Boolean.TRUE) {
                 SMapList.add(map, typeQn, pair.k + "-t");
+                log(UPLOAD, "Added {} as type", pair.k);
                 break;
             }
         }
-        sortedType.typeInfo.typeInspection.get().constructorAndMethodStream().forEach(methodInfo -> {
+        type.typeInspection.get().constructorAndMethodStream().forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
                     SMapList.add(map, methodQn, pair.k + "-m");
+                    log(UPLOAD, "Added {} as method", pair.k);
                     break;
                 }
             }
@@ -161,7 +175,7 @@ public class AnnotationUploader {
                 }
             }
         });
-        for (FieldInfo fieldInfo : sortedType.typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : type.typeInspection.get().fields) {
             String fieldQn = typeQn + ":" + fieldInfo.name;
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
 
@@ -183,11 +197,11 @@ public class AnnotationUploader {
         }
     }
 
-    private void writeMap(Map<String, String> map) {
+    public void writeMap(Map<String, String> map) {
         Gson gson = new Gson();
         String jsonString = gson.toJson(map);
-        writeJson(jsonString);
         log(UPLOAD, "Json: {}", jsonString);
+        writeJson(jsonString);
     }
 
     private void writeJson(String jsonBody) {

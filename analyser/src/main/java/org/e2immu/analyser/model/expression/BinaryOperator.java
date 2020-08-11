@@ -366,6 +366,11 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return Sets.union(lhs.typesReferenced(), rhs.typesReferenced());
+    }
+
+    @Override
     @NotNull
     public List<Expression> subExpressions() {
         return List.of(lhs, rhs);

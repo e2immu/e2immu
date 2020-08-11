@@ -43,6 +43,11 @@ public class TryStatement implements Statement {
         }
 
         @Override
+        public Set<TypeInfo> typesReferenced() {
+            return unionOfTypes.stream().flatMap(pt -> pt.typesReferenced().stream()).collect(Collectors.toSet());
+        }
+
+        @Override
         public ParameterizedType returnType() {
             return null;
         }
@@ -95,6 +100,14 @@ public class TryStatement implements Statement {
         Set<String> importsOfCatchParameters = catchClauses.stream().flatMap(c -> c.k.imports().stream()).collect(Collectors.toSet());
         Set<String> importsOfCatchBlocks = catchClauses.stream().flatMap(c -> c.v.imports().stream()).collect(Collectors.toSet());
         return SetUtil.immutableUnion(tryBlock.imports(), finallyBlock.imports(), importsOfResources, importsOfCatchBlocks, importsOfCatchParameters);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> importsOfResources = resources.stream().flatMap(r -> r.typesReferenced().stream()).collect(Collectors.toSet());
+        Set<TypeInfo> importsOfCatchParameters = catchClauses.stream().flatMap(c -> c.k.typesReferenced().stream()).collect(Collectors.toSet());
+        Set<TypeInfo> importsOfCatchBlocks = catchClauses.stream().flatMap(c -> c.v.typesReferenced().stream()).collect(Collectors.toSet());
+        return SetUtil.immutableUnion(tryBlock.typesReferenced(), finallyBlock.typesReferenced(), importsOfResources, importsOfCatchBlocks, importsOfCatchParameters);
     }
 
     @Override

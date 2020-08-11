@@ -96,6 +96,18 @@ public class UploadConfiguration {
         }
     }
 
+    public boolean accept(String packageOfType) {
+        if (uploadPackages.isEmpty()) return true;
+        for (String prefix : uploadPackages) {
+            if (prefix.endsWith(".")) {
+                if (packageOfType.startsWith(prefix)) {
+                    return true;
+                }
+            } else if (prefix.equals(packageOfType)) return true;
+        }
+        return false;
+    }
+
     @Container
     public static class Builder {
         private String projectName;

@@ -193,4 +193,15 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public String detailedName() {
         return (owner == null ? "-" : owner.fullyQualifiedName()) + "#" + index;
     }
+
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> types = new HashSet<>();
+        if (hasBeenInspected()) {
+            for (AnnotationExpression annotationExpression : parameterInspection.get().annotations) {
+                types.addAll(annotationExpression.typesReferenced());
+            }
+        }
+        types.addAll(parameterizedType.typesReferenced());
+        return types;
+    }
 }

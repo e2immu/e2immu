@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
 import java.util.Objects;
@@ -59,6 +60,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         return methodInfo.returnType().typeInfo != null ?
                 Set.of(methodInfo.returnType().typeInfo.fullyQualifiedName)
                 : Set.of();
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(methodInfo.returnType().typesReferenced(), scope.typesReferenced());
     }
 
     // if we pass on one of our own methods to some other method, we need to take into account our exposure to the

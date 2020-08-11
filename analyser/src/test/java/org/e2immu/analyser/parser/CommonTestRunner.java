@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
@@ -50,27 +51,7 @@ public abstract class CommonTestRunner {
     @BeforeClass
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE,
-
-                //LAMBDA,
-                //METHOD_CALL,
-
-                //VARIABLE_PROPERTIES,
-                FINAL,
-                LINKED_VARIABLES,
-                INDEPENDENT,
-                E2IMMUTABLE,
-                ANNOTATION_EXPRESSION,
-                CONSTANT,
-                CONTAINER,
-                E1IMMUTABLE,
-                SIDE_EFFECT,
-                UTILITY_CLASS,
-                NOT_NULL,
-                NOT_MODIFIED,
-                PATTERN,
-                MARK,
-                OBJECT_FLOW);
+        org.e2immu.analyser.util.Logger.activate();
     }
 
     protected TypeContext testClass(String className, int errorsToExpect) throws IOException {
@@ -87,6 +68,28 @@ public abstract class CommonTestRunner {
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
+                .addDebugLogTargets(List.of(ANALYSER, INSPECT, RESOLVE,
+
+                        //LAMBDA,
+                        //METHOD_CALL,
+
+                        //VARIABLE_PROPERTIES,
+                        FINAL,
+                        LINKED_VARIABLES,
+                        INDEPENDENT,
+                        E2IMMUTABLE,
+                        ANNOTATION_EXPRESSION,
+                        CONSTANT,
+                        CONTAINER,
+                        E1IMMUTABLE,
+                        SIDE_EFFECT,
+                        UTILITY_CLASS,
+                        NOT_NULL,
+                        NOT_MODIFIED,
+                        PATTERN,
+                        MARK,
+                        OBJECT_FLOW).stream().map(Enum::toString).collect(Collectors.joining(",")))
+
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/test/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className)

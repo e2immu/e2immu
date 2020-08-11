@@ -19,6 +19,7 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    id 'application'
 }
 /*
 repositories {
@@ -85,3 +86,7 @@ publishing {
     }
 }
 
+
+application {
+    mainClassName = 'org.e2immu.analyser.cli.Main'
+}

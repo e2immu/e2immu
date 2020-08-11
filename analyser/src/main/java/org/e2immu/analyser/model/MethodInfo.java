@@ -250,6 +250,29 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return imports;
     }
 
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> references = new HashSet<>();
+        if (!isConstructor) {
+            references.addAll(hasBeenInspected() ? methodInspection.get().returnType.typesReferenced() :
+                    returnTypeObserved.typesReferenced());
+        }
+        for (ParameterInfo parameterInfo : (hasBeenInspected() ? methodInspection.get().parameters : parametersAsObserved)) {
+            references.addAll(parameterInfo.typesReferenced());
+        }
+        if (hasBeenInspected()) {
+            for (AnnotationExpression annotationExpression : methodInspection.get().annotations) {
+                references.addAll(annotationExpression.typesReferenced());
+            }
+            for (ParameterizedType parameterizedType : methodInspection.get().exceptionTypes) {
+                references.addAll(parameterizedType.typesReferenced());
+            }
+            if (methodInspection.get().methodBody.isSet()) {
+                references.addAll(methodInspection.get().methodBody.get().typesReferenced());
+            }
+        }
+        return references;
+    }
+
     public String stream(int indent) {
         StringBuilder sb = new StringBuilder();
         ParameterizedType returnType;

@@ -99,6 +99,16 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return Collections.singleton(typeInfo.fullyQualifiedName);
     }
 
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> types = new HashSet<>();
+        if (fieldInspection.isSet() && fieldInspection.get().initialiser.isSet()) {
+            FieldInspection.FieldInitialiser initialiser = fieldInspection.get().initialiser.get();
+            types.addAll(initialiser.initialiser.typesReferenced());
+        }
+        types.addAll(type.typesReferenced());
+        return types;
+    }
+
     public String stream(int indent) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
@@ -201,4 +211,5 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public String detailedName() {
         return fullyQualifiedName();
     }
+
 }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.Parser;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class Main {
@@ -154,7 +155,7 @@ public class Main {
         options.addOption(Option.builder("cp").longOpt(CLASSPATH).hasArg().argName("CLASSPATH")
                 .desc("Add classpath components, separated by the Java path separator '" + PATH_SEPARATOR +
                         "'. Default, when this option is absent, is '"
-                        + InputConfiguration.DEFAULT_CLASSPATH + "'.").build());
+                        + Arrays.toString(InputConfiguration.DEFAULT_CLASSPATH) + "'.").build());
 
         options.addOption(Option.builder().longOpt(JRE).hasArg().argName("DIR")
                 .desc("Provide an alternative location for the Java Runtime Environment (JRE). " +

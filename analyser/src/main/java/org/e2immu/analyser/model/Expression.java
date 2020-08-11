@@ -22,10 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -49,6 +46,8 @@ public interface Expression {
     default Set<String> imports() {
         return Set.of();
     }
+
+    default Set<TypeInfo> typesReferenced() { return Set.of(); }
 
     @NotModified
     // TODO later?

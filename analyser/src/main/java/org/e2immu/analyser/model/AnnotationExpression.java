@@ -253,6 +253,10 @@ public class AnnotationExpression {
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 
+    public Set<TypeInfo> typesReferenced() {
+        return Set.of(typeInfo);
+    }
+
     @Container(builds = AnnotationExpression.class)
     public static class AnnotationExpressionBuilder {
         private final TypeInfo typeInfo;

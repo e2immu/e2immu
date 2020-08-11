@@ -3,9 +3,12 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ForStatement extends LoopStatement {
@@ -22,6 +25,13 @@ public class ForStatement extends LoopStatement {
         // TODO we can go really far here in analysing the initialiser, condition, and updaters. We should. This will provide a better executedAtLeastOnce predicate.
         this.initialisers = ImmutableList.copyOf(initialisers);
         this.updaters = ImmutableList.copyOf(updaters);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(initialisers.stream().flatMap(i -> i.typesReferenced().stream()).collect(Collectors.toSet()),
+                updaters.stream().flatMap(i -> i.typesReferenced().stream()).collect(Collectors.toSet()),
+                super.typesReferenced());
     }
 
     @Override

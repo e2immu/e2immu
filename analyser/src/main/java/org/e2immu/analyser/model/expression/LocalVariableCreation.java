@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -73,6 +74,11 @@ public class LocalVariableCreation implements Expression {
         ParameterizedType pt = localVariable.parameterizedType;
         if (pt.typeInfo != null) imports.add(pt.typeInfo.fullyQualifiedName);
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(expression.typesReferenced(), localVariable.parameterizedType.typesReferenced());
     }
 
     @Override

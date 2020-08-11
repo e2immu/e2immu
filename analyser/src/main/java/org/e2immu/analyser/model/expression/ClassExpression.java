@@ -65,6 +65,11 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return parameterizedType.typesReferenced();
+    }
+
+    @Override
     public ParameterizedType getValue() {
         return parameterizedClassType;
     }

@@ -34,6 +34,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
@@ -435,6 +436,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Set<String> imports = new HashSet<>(object == null ? Set.of() : object.imports());
         parameterExpressions.forEach(pe -> imports.addAll(pe.imports()));
         return ImmutableSet.copyOf(imports);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(object == null ? Set.of() : object.typesReferenced(),
+                parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet()));
     }
 
     @Override

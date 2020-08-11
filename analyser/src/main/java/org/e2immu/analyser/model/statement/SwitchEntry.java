@@ -136,6 +136,13 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
+        public Set<TypeInfo> typesReferenced() {
+            return SetUtil.immutableUnion(
+                    labels.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()),
+                    statements.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()));
+        }
+
+        @Override
         public SideEffect sideEffect(SideEffectContext sideEffectContext) {
             SideEffect sideEffect = labels.stream().map(s -> s.sideEffect(sideEffectContext))
                     .reduce(SideEffect.LOCAL, SideEffect::combine);
@@ -164,6 +171,12 @@ public abstract class SwitchEntry implements Statement {
         public Set<String> imports() {
             return SetUtil.immutableUnion(labels.stream().flatMap(s -> s.imports().stream()).collect(Collectors.toSet()),
                     block.imports());
+        }
+
+        @Override
+        public Set<TypeInfo> typesReferenced() {
+            return SetUtil.immutableUnion(labels.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()),
+                    block.typesReferenced());
         }
 
         @Override

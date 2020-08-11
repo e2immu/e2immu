@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -113,5 +114,10 @@ public class InstanceOf implements Expression {
     @Override
     public List<Variable> variables() {
         return expression.variables();
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return SetUtil.immutableUnion(expression.typesReferenced(), parameterizedType.typesReferenced());
     }
 }

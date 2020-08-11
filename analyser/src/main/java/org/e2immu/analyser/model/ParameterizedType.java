@@ -47,6 +47,17 @@ public class ParameterizedType {
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
 
+    public Set<TypeInfo> typesReferenced() {
+        Set<TypeInfo> result = new HashSet<>();
+        for (ParameterizedType parameter : parameters) {
+            result.addAll(parameter.typesReferenced());
+        }
+        if (isType() && !typeInfo.isPrimitive()) {
+            result.add(typeInfo);
+        }
+        return result;
+    }
+
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS;
     }

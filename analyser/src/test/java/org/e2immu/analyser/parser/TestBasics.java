@@ -24,18 +24,11 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestBasics extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
@@ -111,23 +104,12 @@ public class TestBasics extends CommonTestRunner {
         Assert.fail();
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("getExplicitlyFinal".equals(methodInfo.name)) {
-                MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-
-            }
-        }
-    };
-
     @Test
     public void test() throws IOException {
         testClass("Basics", 0, new DebugConfiguration.Builder()
                 .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

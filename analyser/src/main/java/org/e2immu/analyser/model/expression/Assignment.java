@@ -117,6 +117,11 @@ public class Assignment implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return Sets.union(target.typesReferenced(), value.typesReferenced());
+    }
+
+    @Override
     public List<Expression> subExpressions() {
         return List.of(target, value);
     }

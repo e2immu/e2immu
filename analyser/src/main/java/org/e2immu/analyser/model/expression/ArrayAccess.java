@@ -65,6 +65,11 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
+    public Set<TypeInfo> typesReferenced() {
+        return Sets.union(expression.typesReferenced(), index.typesReferenced());
+    }
+
+    @Override
     public List<Expression> subExpressions() {
         return List.of(expression, index);
     }
