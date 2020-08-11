@@ -103,7 +103,7 @@ task buildAnnotationXmlJar(type: JavaExec) {
     args('--classpath=' + reducedClassPath.join(":") + ":src/main/resources/annotatedAPIs:jmods/java.base.jmod",
             '--source=non_existing_dir',
             '-w',
-            '--write-annotation-xml-dir=build/annotations'
-        //    '--debug=INSPECT'
+            '--write-annotation-xml-dir=build/annotations',
+            '--debug=INSPECT,ANNOTATION_XML_WRITER'
     )
 }

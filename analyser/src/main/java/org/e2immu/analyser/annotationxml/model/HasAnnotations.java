@@ -46,15 +46,10 @@ public abstract class HasAnnotations {
     protected void addAnnotations(List<AnnotationExpression> inspected, List<AnnotationExpression> analysed) {
         Set<String> e2immuAnnotationsWritten = new HashSet<>();
         for (AnnotationExpression ae : inspected) {
-            boolean accept = true;
-            if (ae.typeInfo.fullyQualifiedName.startsWith(AnnotationType.class.getPackageName())) {
-                if (ae.isVerifyAbsent()) {
-                    accept = false;
-                } else {
-                    e2immuAnnotationsWritten.add(ae.typeInfo.fullyQualifiedName);
-                }
-            }
+            boolean accept = ae.typeInfo.fullyQualifiedName.startsWith(AnnotationType.class.getPackageName())
+                    && !ae.isVerifyAbsent();
             if (accept) {
+                e2immuAnnotationsWritten.add(ae.typeInfo.fullyQualifiedName);
                 Annotation annotation = new Annotation(ae);
                 annotations.add(annotation);
             }

@@ -100,7 +100,8 @@ public class UploadConfiguration {
         if (uploadPackages.isEmpty()) return true;
         for (String prefix : uploadPackages) {
             if (prefix.endsWith(".")) {
-                if (packageOfType.startsWith(prefix)) {
+                String withoutDot = prefix.substring(0, prefix.length() - 1);
+                if (packageOfType.startsWith(withoutDot)) {
                     return true;
                 }
             } else if (prefix.equals(packageOfType)) return true;

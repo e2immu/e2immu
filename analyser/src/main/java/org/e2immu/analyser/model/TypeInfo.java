@@ -1152,6 +1152,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
+        if(!typeInspection.isSetDoNotTriggerRunnable()) return null;
         if (typeInspection.get().packageNameOrEnclosingType.isLeft())
             return typeInspection.get().packageNameOrEnclosingType.getLeft();
         return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();

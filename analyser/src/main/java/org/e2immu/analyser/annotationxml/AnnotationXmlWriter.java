@@ -22,6 +22,7 @@ import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeStore;
+import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,37 +67,27 @@ public class AnnotationXmlWriter {
         } else {
             base = new File(System.getProperty("user.dir"));
         }
+        Set<TypeInfo> typesToWrite = new HashSet<>();
+        typeStore.visit(new String[0], (packageSplit, types) -> {
+            typesToWrite.addAll(types);
+        });
         Map<String, List<TypeItem>> typeItemsPerPackage = new HashMap<>();
-        if (configuration.writeAnnotationXmlPackages.isEmpty()) {
-            // loop over everything!
-            typeStore.visit(new String[0], (packageSplit, types) -> {
-                String packageName = String.join(".", packageSplit);
-                List<TypeItem> typeItems = new ArrayList<>();
-                for(TypeInfo typeInfo: types) {
-                    typeItems.add(new TypeItem(typeInfo));
-                }
-                typeItemsPerPackage.put(packageName, typeItems);
-            });
-        } else {
-            for (String packageOrPackagePrefix : configuration.writeAnnotationXmlPackages) {
-                boolean isPrefix = packageOrPackagePrefix.endsWith(".");
-                String withoutDot;
-                if (isPrefix) {
-                    withoutDot = packageOrPackagePrefix.substring(0, packageOrPackagePrefix.length() - 1);
-                } else {
-                    withoutDot = packageOrPackagePrefix;
-                }
-                String[] split = withoutDot.split("\\.");
-                typeStore.visit(split, (packageSplit, types) -> {
-                    String packageName = String.join(".", packageSplit);
-                    boolean accept = isPrefix ? packageName.startsWith(packageOrPackagePrefix) :
-                            packageName.equals(packageOrPackagePrefix);
-                    if (accept && !typeItemsPerPackage.containsKey(packageName)) {
-                        typeItemsPerPackage.put(packageName, types.stream().map(TypeItem::new).collect(Collectors.toList()));
+        boolean isEmpty = configuration.writeAnnotationXmlPackages.isEmpty();
+        typesToWrite.forEach(typeInfo -> {
+            boolean accept = isEmpty;
+            String packageName = typeInfo.packageName();
+            if (packageName != null) {
+                for (String prefix : configuration.writeAnnotationXmlPackages) {
+                    if (prefix.endsWith(".")) {
+                        accept = packageName.startsWith(prefix.substring(0, prefix.length() - 1));
+                    } else {
+                        accept = prefix.equals(packageName);
                     }
-                });
+                    if (accept) break;
+                }
+                if (accept) SMapList.add(typeItemsPerPackage, packageName, new TypeItem(typeInfo));
             }
-        }
+        });
         writeAllPackages(base, typeItemsPerPackage);
     }
 
