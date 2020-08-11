@@ -21,7 +21,7 @@ repositories {
     mavenCentral()
     maven {
         name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/bnaudts/e2immu-annot")
+        url = uri("https://maven.pkg.github.com/bnaudts/e2immu")
         credentials {
             username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
             password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
@@ -38,7 +38,7 @@ java {
 
 dependencies {
     implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
-    implementation group: 'org.e2immu', name: 'annotations', version: '0.0.10'
+    implementation group: 'org.e2immu', name: 'annotations', version: '0.0.11a'
 
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
     implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
