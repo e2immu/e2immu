@@ -20,6 +20,7 @@ package org.e2immu.analyser.annotationxml;
 
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeStore;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.Logger;
@@ -38,10 +39,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;
@@ -59,7 +57,12 @@ public class AnnotationXmlWriter {
         File base;
         if (configuration.writeAnnotationXmlDir != null) {
             base = new File(configuration.writeAnnotationXmlDir);
-            if (!base.isDirectory()) throw new IOException("Expected " + base.isDirectory() + " to be a directory");
+            if (!base.isDirectory()) {
+                LOGGER.info("Creating directory {}", base);
+                if (!base.mkdirs()) {
+                    throw new IOException("Somehow failed to create " + base.getAbsolutePath());
+                }
+            }
         } else {
             base = new File(System.getProperty("user.dir"));
         }
@@ -68,7 +71,11 @@ public class AnnotationXmlWriter {
             // loop over everything!
             typeStore.visit(new String[0], (packageSplit, types) -> {
                 String packageName = String.join(".", packageSplit);
-                typeItemsPerPackage.put(packageName, types.stream().map(TypeItem::new).collect(Collectors.toList()));
+                List<TypeItem> typeItems = new ArrayList<>();
+                for(TypeInfo typeInfo: types) {
+                    typeItems.add(new TypeItem(typeInfo));
+                }
+                typeItemsPerPackage.put(packageName, typeItems);
             });
         } else {
             for (String packageOrPackagePrefix : configuration.writeAnnotationXmlPackages) {

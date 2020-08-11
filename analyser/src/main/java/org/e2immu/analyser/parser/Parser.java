@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
+import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeContextVisitor;
@@ -49,7 +50,6 @@ public class Parser {
     private final Input input;
     private final TypeContext globalTypeContext;
     private final ByteCodeInspector byteCodeInspector;
-    private final AnnotationStore annotationStore;
     public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final TypeStore sourceTypeStore;
     private final Messages messages = new Messages();
@@ -61,7 +61,7 @@ public class Parser {
 
     public Parser(Configuration configuration) throws IOException {
         this.configuration = configuration;
-        if(configuration.quiet) {
+        if (configuration.quiet) {
             org.e2immu.analyser.util.Logger.configure(Level.ERROR);
         } else {
             org.e2immu.analyser.util.Logger.configure(Level.INFO);
@@ -69,7 +69,6 @@ public class Parser {
         }
         input = new Input(configuration);
         globalTypeContext = input.getGlobalTypeContext();
-        annotationStore = input.getAnnotationStore();
         byteCodeInspector = input.getByteCodeInspector();
         sourceTypeStore = input.getSourceTypeStore();
         e2ImmuAnnotationExpressions = input.getE2ImmuAnnotationExpressions();
@@ -151,6 +150,14 @@ public class Parser {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
             Map<String, String> map = annotationUploader.createMap(sortedTypes.stream().map(sortedType -> sortedType.typeInfo).collect(Collectors.toSet()));
             annotationUploader.writeMap(map);
+        }
+        if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
+            try {
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, globalTypeContext.typeStore);
+            } catch (IOException ioe) {
+                LOGGER.error("Caught ioe exception writing annotation xmls");
+                throw new RuntimeException(ioe);
+            }
         }
         messages.addAll(typeAnalyser.getMessageStream());
         return sortedTypes;

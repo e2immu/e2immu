@@ -50,7 +50,7 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '28.1-jre'      // Apache License 2.0
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
     implementation group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.15.7'
-                                                                                      // LGPL or Apache License 2.0
+    // LGPL or Apache License 2.0
     implementation group: 'org.ow2.asm', name: 'asm', version: '7.2'                  // 3-clause BSD permissive license
     implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'          // Apache License 2.0
@@ -86,7 +86,24 @@ publishing {
     }
 }
 
-
 application {
     mainClassName = 'org.e2immu.analyser.cli.Main'
+}
+
+
+task buildAnnotationXmlJar(type: JavaExec) {
+    group = "Execution"
+    description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.e2immu.analyser.cli.Main'
+    Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
+    reducedClassPath += sourceSets.test.runtimeClasspath
+    reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
+
+    args('--classpath=' + reducedClassPath.join(":") + ":src/main/resources/annotatedAPIs:jmods/java.base.jmod",
+            '--source=non_existing_dir',
+            '-w',
+            '--write-annotation-xml-dir=build/annotations'
+        //    '--debug=INSPECT'
+    )
 }
