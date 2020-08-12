@@ -34,6 +34,7 @@ We color the annotation hierarchy for fields as:
 | {modified} | brown | brown
 | {supportData} (when field {nm} and type {e1immutable}) | green italics | black italics
 | {nm} | green | black
+| {final} (primitives only)   | green | black
 |===
 
 The {supportData} annotation is relevant to understand why a type is not level 2 immutable.

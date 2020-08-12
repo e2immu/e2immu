@@ -13,29 +13,28 @@ Because the analyser also deals with nullability and a whole host of other annot
 
 We aim to restrict the amount of annotations per object as much as possible.
 However, the analyser will emit at least one annotation per declaration, so that the highlighter can color properly.
+An exception to this rule are the implicit annotations, marked below.
+
+The analyser takes the implications from type to field, method, and parameter, account when annotating by hand.
 
 ==== On types
 
-Implications and equivalences:
+Note that:
 
-* {e2container} is equivalent to {e2immutable} {container}.
-* {e2immutable} implies {e1immutable}
-* {e1container} is equivalent to {e1immutable} {container}
-
-Opposites:
-
-* a type is either {e1immutable} (green), {container} (green) or {mutableModifiesArguments} (red)
-
-When a type is {mutableModifiesArguments}, there will be {variable} fields and {modified} parameters.
-Types without fields are {e2immutable} by definition.
+* {e2container} is a shorthand for the combination of {e2immutable} and {container};
+* {e1container} is a shorthand for the combination of {e1immutable} and {container};
+* {e2immutable} requires {e1immutable};
+* a type is {mutableModifiesArguments} (red) if and only if it is not {e1immutable} (green) and not {container} (green);
+* when a type is {mutableModifiesArguments}, there will be at least one field marked {variable}, and at least one parameter marked {modified};
+* by definition, types without fields are {e2immutable};
+* all primitive types are implicitly {e2container}; the analyser will not mark them.
 
 ==== On fields
 
-Implications:
+The definitions imply the following dependencies between annotations on fields:
 
-* {nm} implies {final}
-* {variable} implies {modified}
-* {supportData} implies {nm} (but failing rules 2 and 3 of {e2immutable})
+* {nm} requires {final}, so the combination of {nm} and {variable} is not possible;
+* {supportData} requires {nm} in a type that is {e1immutable}; it fails rules 2 and 3 of {e2immutable}.
 
 Note that {variable} fields can be {nn}!
 This obviously requires a not-null initialiser to be present; all other assignments must be not-null as well.
@@ -50,9 +49,15 @@ Opposites:
 
 From types, following the definitions, we obtain:
 
-* if a type is {e2immutable} (green), all its fields are {nm} (green)
-* if a type is {e1immutable} (green), all its fields are {final} (green)
-* if a type is {mutableModifiesArguments} (red), at least one of its field is {variable} (red)
+* if a type is effectively {e2immutable} (green), all its fields are {nm} (green);
+* if a type is effectively {e1immutable} (green), all its fields are {final} (green);
+* if a type is {mutableModifiesArguments} (red), at least one of its field is {variable} (red).
+
+Note that:
+
+* fields of a primitive type are always {nn}, but this is not marked.
+* as soon as fields of a primitive type are {final}, they are {nm}.
+We mark them {final}.
 
 ==== On constructors
 
@@ -71,7 +76,12 @@ This property is only relevant when there is support data, and the method is {nm
 
 Furthermore,
 
-* if a type is {e2immutable} (green), all its methods are {nm} (green).
+* if a type is effectively {e2immutable} (green), all its methods are {nm} (green).
+
+Note that:
+
+* quite trivially, `void` methods have no annotations relating to a return element
+* methods returning a primitive type are {nn}, but this is not marked
 
 ==== On parameters
 
@@ -80,11 +90,15 @@ Opposites:
 * a parameter is either {nm} (green) or {modified} (red)
 * a parameter is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
 
-Furthermore,
+Implications:
 
-* if a type is {container}, the parameters of all the methods and constructors are {nm} (green)
-* if a type is {mutableModifiesArguments} (red), at least one of its field is {modified} (red)
-* a parameter of primitive, unbound type parameter, or functional type, is always {nm} (green)
+* if a type is {container}, the parameters of all the methods and constructors are {nm} (green);
+* a parameter of primitive type, unbound parameter type, functional type, or {e2immutable} type, is always {nm} (green);
+
+Note that:
+
+* if a type is {mutableModifiesArguments} (red), at least one of its parameters is {modified} (red), which will be marked;
+* quite trivially, parameters of a primitive type are always {nn}  and {nm}, but we will not mark parameters of a primitive type.
 
 ==== Nullability
 
