@@ -72,7 +72,6 @@ public class MethodAnalyser {
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
         check(methodInfo, Independent.class, e2ImmuAnnotationExpressions.independent.get());
-        check(methodInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
 
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
@@ -87,13 +86,14 @@ public class MethodAnalyser {
                 check(methodInfo, BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
                 CheckConstant.checkConstantForMethods(messages, methodInfo);
             }
-
+            check(methodInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
 
             // opposites
-            check(methodInfo, Dependent.class, e2ImmuAnnotationExpressions.dependent.get());
             check(methodInfo, Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
+            check(methodInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
         }
-        check(methodInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
+        // opposites
+        check(methodInfo, Dependent.class, e2ImmuAnnotationExpressions.dependent.get());
 
         CheckSize.checkSizeForMethods(messages, methodInfo);
         CheckPrecondition.checkPrecondition(messages, methodInfo);

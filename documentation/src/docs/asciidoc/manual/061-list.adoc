@@ -1,0 +1,16 @@
+
+=== List of annotations
+
+==== @NotModified
+
+==== @SupportData
+
+The analyser marks a field as {supportData} only when
+
+. the type declaring the field is {e1immutable}, and
+. the field classifies as support data, and
+. it is {nm}, and
+. at least one of {e2immutable}'s rule 2 and rule 3 is not satisfied in relation to this field.
+
+The annotation is present to highlight the fields burdened with extra restrictions to for the type to reach {e2immutable} status.
+

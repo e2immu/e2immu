@@ -214,7 +214,6 @@ static int method3() {
 ----
 <1> The code analyser marks these statements as errors!
 
-
 The analyser chains together the different flows; in this way, it is mostly able to detect whether an object is a mutable or immutable state.
 Once the analyser confirms the object's state change has happened, it can add the `@E2Immutable` annotation to the field or method, as detailed in <<propagation-dynamic>>.
 
@@ -223,5 +222,41 @@ Once the analyser confirms the object's state change has happened, it can add th
 A type with fields which satisfies all the rules for (eventual) level 2 immutability, with the caveat that some of its fields are eventually immutable themselves, can become level 2 immutable only in situations where these fields have reached immutability.
 This means that the object flow analyser has to be able to verify that at some point in the object flow reaching the fields, the mark should be present.
 
+=== Annotations
+
+When a type is eventually level 1 immutable, should the field(s) of the state transition be {variable} or {final}?
+Similarly, when a type is eventually level 2 immutable, should the analyser mark the support data fields {modified} or {nm}?
+
+Basically, we propose to mark with the end state, qualifying with the parameter `after`:
+
+[options=header]
+|===
+| property | not present | eventually | effectively
+| finality of field | {variable} | `@Final(after="mark")` | {final}
+| modification of field | {modified} | `@NotModified(after="mark")` | {nm}
+|===
+
+Since in an IDE it is not too easy to have multiple visual markers, it seems best to use the same visuals as the end state.
+
+When a type is effectively level 1 immutable (not eventually), all fields are effectively final.
+The analyser wants to emphasise the rules needed to obtain (eventual) level 2 immutability, by clearly indicating which fields break the level 2 immutability rules.
+In the case of eventual level 2 immutability,
+
+* modifications to the support data cease after a given mark
+* the analyser disallows modifications to the other fields.
+
+The following arrangement uses the intermediary annotation {supportData} to indicate that rules 2 and 3 apply to reach level 2 immutability, but are currently not satisfied:
+
+[options=header,cols="50,25,25"]
+|===
+| property       | field | support data field
+| modified       | {modified} | {modified}
+| not modified   | {nm}       | {nm} {supportData}
+| eventually not modified                              |{modified} (not recognized) |  `@NotModified(after="mark")` {supportData}
+| not modified and satisfying rules 2 and 3            | - | {nm}
+| eventually not modified and satisfying rules 2 and 3 |- | `@NotModified(after="mark")`
+|===
+
+Eventual finality simply adds a  `@Final(after="mark")` annotation to each of these situations.
 
 // ensure a newline at the end

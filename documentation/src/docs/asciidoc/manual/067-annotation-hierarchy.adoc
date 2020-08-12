@@ -31,16 +31,11 @@ Types without fields are {e2immutable} by definition.
 
 ==== On fields
 
-The analyser marks a field as {supportData} only when
-
-. it is {nm}, and
-. the type declaring the field is {e1immutable}.
-
-The annotation is present to highlight the fields burdened with extra restrictions to for the type to reach {e2immutable} status.
-
 Implications:
 
-* {nm} implies {final}, {variable} implies {modified}
+* {nm} implies {final}
+* {variable} implies {modified}
+* {supportData} implies {nm} (but failing rules 2 and 3 of {e2immutable})
 
 Note that {variable} fields can be {nn}!
 This obviously requires a not-null initialiser to be present; all other assignments must be not-null as well.
@@ -53,11 +48,17 @@ Opposites:
 * a field is either {nm} or (green) {modified} (red)
 * a field is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
 
+From types, following the definitions, we obtain:
+
+* if a type is {e2immutable} (green), all its fields are {nm} (green)
+* if a type is {e1immutable} (green), all its fields are {final} (green)
+* if a type is {mutableModifiesArguments} (red), at least one of its field is {variable} (red)
+
 ==== On constructors
 
-A constructor is either {independent} (green) or {dependent}.
-This property is only relevant when there is support data.
-We assume that the constructor has the {modified} property.
+Non-trivial constructors have the {modified} property.
+When there is support data, a constructor is either {independent} (green) or {dependent} (red).
+A constructor without annotations therefore implies either that the type is not {e1immutable}, or that the constructor is not assigning to support data fields.
 
 ==== On methods
 
@@ -68,12 +69,22 @@ Opposites:
 This property is only relevant when there is support data, and the method is {nm}
 * a method is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
 
+Furthermore,
+
+* if a type is {e2immutable} (green), all its methods are {nm} (green).
+
 ==== On parameters
 
 Opposites:
 
 * a parameter is either {nm} (green) or {modified} (red)
 * a parameter is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
+
+Furthermore,
+
+* if a type is {container}, the parameters of all the methods and constructors are {nm} (green)
+* if a type is {mutableModifiesArguments} (red), at least one of its field is {modified} (red)
+* a parameter of primitive, unbound type parameter, or functional type, is always {nm} (green)
 
 ==== Nullability
 
@@ -92,3 +103,12 @@ In the latter case, static analysis shows that all assignments to the field, or 
 In the former case, object flow computation proves that the mark has been passed for this object to have become immutable.
 
 When a type is level 1 or level 2 eventually immutable, and the object flow computation proves that all assignments or return statements yield an object which is in a state _before_ the mark, the analyser will emit {beforeMark}.
+
+Fields take the annotation of the eventual state, with the qualification of `after="..."`:
+
+[options=header]
+|===
+| property | not present | eventually | effectively
+| finality of field | {variable} | `@Final(after="mark")` | {final}
+| modification of field | {modified} | `@NotModified(after="mark")` | {nm}
+|===
