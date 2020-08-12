@@ -30,6 +30,7 @@ import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class FieldAnalysis extends Analysis {
 
@@ -184,4 +185,25 @@ public class FieldAnalysis extends Analysis {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
 
+    @Override
+    protected String afterFinal() {
+        int effectivelyFinal = getProperty(VariableProperty.FINAL);
+        if (effectivelyFinal != Level.FALSE) return null;
+        int ownerImmutable = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
+            return String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+        }
+        return null;
+    }
+
+    @Override
+    protected String afterNotModified() {
+        int modified = getProperty(VariableProperty.MODIFIED);
+        if (modified != Level.TRUE) return null;
+        int ownerImmutable = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        if (ownerImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE || ownerImmutable == MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+            return String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+        }
+        return null;
+    }
 }

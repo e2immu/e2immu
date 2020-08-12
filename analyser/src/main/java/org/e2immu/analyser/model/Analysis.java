@@ -117,15 +117,36 @@ public abstract class Analysis {
 
     public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext);
 
+    // to be overridden in FieldAnalysis
+    protected String afterFinal() {
+        return null;
+    }
+
+    // to be overridden in FieldAnalysis
+    protected String afterNotModified() {
+        return null;
+    }
+
     public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         ImmutableMap.Builder<VariableProperty, AnnotationExpression> minMapBuilder = new ImmutableMap.Builder<>();
-        minMapBuilder.put(VariableProperty.FINAL, e2ImmuAnnotationExpressions.effectivelyFinal.get());
+
+        String finalMarks = afterFinal();
+        if (finalMarks != null) {
+            annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", finalMarks), true);
+        } else {
+            minMapBuilder.put(VariableProperty.FINAL, e2ImmuAnnotationExpressions.effectivelyFinal.get());
+        }
+        String notModifiedMarks = afterNotModified();
+        if (notModifiedMarks != null) {
+            annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", notModifiedMarks), true);
+        } else {
+            minMapBuilder.put(VariableProperty.MODIFIED, e2ImmuAnnotationExpressions.modified.get());
+        }
         minMapBuilder.put(VariableProperty.FLUENT, e2ImmuAnnotationExpressions.fluent.get());
         minMapBuilder.put(VariableProperty.IDENTITY, e2ImmuAnnotationExpressions.identity.get());
         minMapBuilder.put(VariableProperty.INDEPENDENT, e2ImmuAnnotationExpressions.independent.get());
         minMapBuilder.put(VariableProperty.UTILITY_CLASS, e2ImmuAnnotationExpressions.utilityClass.get());
         minMapBuilder.put(VariableProperty.EXTENSION_CLASS, e2ImmuAnnotationExpressions.extensionClass.get());
-        minMapBuilder.put(VariableProperty.MODIFIED, e2ImmuAnnotationExpressions.modified.get());
         minMapBuilder.put(VariableProperty.OUTPUT, e2ImmuAnnotationExpressions.output.get());
         minMapBuilder.put(VariableProperty.SINGLETON, e2ImmuAnnotationExpressions.singleton.get());
 
@@ -152,6 +173,7 @@ public abstract class Analysis {
                 annotations.put(annotationExpression, true);
             }
         }
+
 
         boolean isNotAConstructorOrVoidMethod = isNotAConstructorOrVoidMethod();
         if (isNotAConstructorOrVoidMethod) {
@@ -360,7 +382,7 @@ public abstract class Analysis {
             }
             method.accept(VariableProperty.IMMUTABLE, value);
         }
-        if(notNull >= 0) {
+        if (notNull >= 0) {
             method.accept(VariableProperty.NOT_NULL, notNull);
         }
         return messages;
