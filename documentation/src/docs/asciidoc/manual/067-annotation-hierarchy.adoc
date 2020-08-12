@@ -92,7 +92,7 @@ Opposites:
 
 Implications:
 
-* if a type is {container}, the parameters of all the methods and constructors are {nm} (green);
+* if a type is {container}, the parameters of all non-private methods and constructors are {nm} (green);
 * a parameter of primitive type, unbound parameter type, functional type, or {e2immutable} type, is always {nm} (green);
 
 Note that:

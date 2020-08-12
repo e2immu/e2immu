@@ -224,9 +224,9 @@ public class TypeAnalyser {
         typesOfFields.removeIf(ParameterizedType::isPrimitive);
         if (!typesOfFields.isEmpty()) {
             Set<ParameterizedType> typesOfMethodsAndConstructors = typeInfo.typesOfMethodsAndConstructors();
-            // immediately remove type parameters
+            // immediately remove "pure" unbound type parameters
             for (ParameterizedType type : typesOfMethodsAndConstructors) {
-                if (type.isTypeParameter()) {
+                if (type.isUnboundParameterType() && type.arrays == 0) {
                     typesOfFields.remove(type);
                 }
             }

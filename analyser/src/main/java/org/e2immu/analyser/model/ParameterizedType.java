@@ -359,9 +359,16 @@ public class ParameterizedType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ParameterizedType that = (ParameterizedType) o;
-        return Objects.equals(typeInfo, that.typeInfo) &&
+        return arrays == that.arrays &&
+                Objects.equals(typeInfo, that.typeInfo) &&
                 parameters.equals(that.parameters) &&
-                Objects.equals(typeParameter, that.typeParameter);
+                Objects.equals(typeParameter, that.typeParameter) &&
+                wildCard == that.wildCard;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeInfo, parameters, typeParameter, arrays, wildCard);
     }
 
     public static boolean equalsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {
@@ -378,11 +385,6 @@ public class ParameterizedType {
         if (pt1.typeParameter != null && pt2.typeParameter == null) return false;
         if (pt1.typeParameter == null) return true;
         return pt1.typeParameter.index == pt2.typeParameter.index;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(typeInfo, parameters, typeParameter);
     }
 
     public boolean isPrimitive() {

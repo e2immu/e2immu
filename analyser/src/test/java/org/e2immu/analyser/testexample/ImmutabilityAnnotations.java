@@ -20,23 +20,20 @@ package org.e2immu.analyser.testexample;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The purpose of this class is to show all immutability annotations colored in the highlighter,
  * working towards the first open source milestone.
  * <p>
- * For types:
+ * For types OK:
  * <ul>
- *     <li>@E2Container  OK String</li>
- *     <li>@E2Immutable</li>
- *     <li>@E1Container</li>
- *     <li>@E1Immutable  OK</li>
- *     <li>@MutableModifiesArguments</li>
- *     <li>@Container  OK List, Set, ...</li>
+ *     <li>@E2Container              OK String</li>
+ *     <li>@E2Immutable              OK top-most type</li>
+ *     <li>@E1Container              OK subtype ManyTs</li>
+ *     <li>@E1Immutable              OK subtype FreezableSet</li>
+ *     <li>@MutableModifiesArguments OK subtype VariableType</li>
+ *     <li>@Container                OK List, Set, ...</li>
  * </ul>
  *
  * <p>
@@ -53,23 +50,23 @@ import java.util.Set;
  *     <li>@NotModified OK</li>
  *     <li>@Modified  OK</li>
  * </ul>
- *
+ * <p>
  * additionally on the return type (or on a field, same coloring), the dynamic type annotations
  * <ul>
- *     <li>@E2Container  OK</li>
+ *     <li>@E2Container  OK copy</li>
  *     <li>@E1Container</li>
  *     <li>@E2Immutable </li>
- *     <li>@E1Immutable</li>
- *     <li>@BeforeMark</li>
+ *     <li>@E1Immutable  OK generateAfter</li>
+ *     <li>@BeforeMark   OK</li>
  * </ul>
  * <p>
  * For fields:
  * <ul>
- *     <li>@Variable</li>
- *     <li>@SupportData (implying @NotModified in a type which is (eventually) @E1Immutable)</li>
- *     <li>@Modified</li>
+ *     <li>@Variable     OK x in subtype</li>
+ *     <li>@SupportData  OK strings</li>
+ *     <li>@Modified     OK ts2 in ManyTs</li>
  *     <li>@NotModified</li>
- *     <li>@Final OK</li>
+ *     <li>@Final        OK</li>
  * </ul>
  * <p>
  * For parameters OK:
@@ -80,6 +77,7 @@ import java.util.Set;
  */
 
 
+@E2Immutable
 public class ImmutabilityAnnotations {
 
     @E1Immutable(after = "mark")
@@ -91,7 +89,7 @@ public class ImmutabilityAnnotations {
         private Set<String> strings;
 
         @Independent
-        public FreezableSet(List<String> list) {
+        public FreezableSet(@NotModified List<String> list) {
             this.strings = new HashSet<>(list);
         }
 
@@ -133,7 +131,55 @@ public class ImmutabilityAnnotations {
     }
 
     @BeforeMark
-    private static FreezableSet generate() {
+    @NotModified
+    private static FreezableSet generateBefore() {
         return new FreezableSet(List.of("a", "b"));
+    }
+
+    @E1Immutable
+    @NotModified
+    private static FreezableSet generateAfter() {
+        FreezableSet freezableSet = new FreezableSet(List.of("a", "b"));
+        freezableSet.freeze();
+        return freezableSet;
+    }
+
+    public static void addOne(@Modified Set<Integer> set) {
+        set.add(1);
+    }
+
+    @MutableModifiesArguments
+    private static class VariableType<T> {
+        @Variable
+        T t;
+
+        @Modified
+        public void setT(T t) {
+            this.t = t;
+        }
+
+        @NotModified
+        public void addT(@Modified Set<T> set) {
+            set.add(t); // Causes null-pointer warning
+        }
+    }
+
+    @E1Container
+    static class ManyTs<T> {
+        public final T[] ts1;
+        public final T[] ts2;
+
+        public ManyTs(T[] ts) {
+            this.ts1 = ts;
+            this.ts2 = ts;
+        }
+
+        public void setFirst(T t) {
+            ts2[0] = t;
+        }
+
+        public T getFirst() {
+            return ts1[0];
+        }
     }
 }
