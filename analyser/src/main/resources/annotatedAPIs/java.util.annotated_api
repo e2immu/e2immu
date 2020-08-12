@@ -132,6 +132,24 @@ public interface List<E> extends Collection<E> {
     @Size(equals = 0)
     static <EE> List<EE> of();
 
+    @NotModified
+    @NotNull1
+    @E2Container
+    @Size(equals = 1)
+    static <EE> List<EE> of(@NotNull E e1);
+
+    @NotModified
+    @NotNull1
+    @E2Container
+    @Size(equals = 2)
+    static <EE> List<EE> of(@NotNull E e1, @NotNull E e2);
+
+    @NotModified
+    @NotNull1
+    @E2Container
+    @Size(equals = 3)
+    static <EE> List<EE> of(@NotNull E e1, @NotNull E e2, @NotNull E e3);
+
     boolean remove(@NotNull Object object);
 
     @Independent

@@ -62,6 +62,8 @@
 
     <option name="e2i-notmodified-f">
     </option>
+    <option name="e2i-final-f">
+    </option>
     <option name="e2i-supportdata-f">
         <value>
             <option name="BACKGROUND" value="d5d5d5"/>

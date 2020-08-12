@@ -32,4 +32,11 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 public @interface NotModified {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    /**
+     * Used when a field is eventually not modified.
+     *
+     * @return the name of the mark
+     */
+    String after() default "";
 }

@@ -23,10 +23,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation indicating that a field is effectively final.
+ * Annotation indicating that a field is effectively or eventually final.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Final {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    /**
+     * Used when a field is eventually final.
+     *
+     * @return the name of the mark
+     */
+    String after() default "";
 }

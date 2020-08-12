@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey;
 import org.e2immu.annotation.*;
 
 import java.util.Map;
+
 import static org.e2immu.intellij.highlighter.ElementType.*;
 
 public interface Constants {
@@ -14,7 +15,6 @@ public interface Constants {
 
     String APP_NAME = "E2Immu Highlighter";
     String STORAGE_FILE = "e2immuHighlighter.xml";
-
 
 
     String E2I = "e2i-";
@@ -52,6 +52,7 @@ public interface Constants {
     String ANNOTATION_VARIABLE_FIELD = lc(Variable.class) + FIELD;
     String ANNOTATION_MODIFIED_FIELD = lc(Modified.class) + FIELD; // implies @Final
     String ANNOTATION_NOT_MODIFIED_FIELD = lc(NotModified.class) + FIELD; // implies @Final
+    String ANNOTATION_FINAL_FIELD = lc(Final.class) + FIELD; // only for primitives
     String ANNOTATION_SUPPORT_DATA_FIELD = lc(SupportData.class) + FIELD; // implies @NotModified + owning type @E1Immutable
 
     // dynamic type annotations, transferred to the field's type; NO SEPARATE COLORS!
@@ -124,6 +125,8 @@ public interface Constants {
             TAK_DEFAULT);
     TextAttributesKey TAK_MODIFIED_FIELD = TextAttributesKey.createTextAttributesKey(E2I + ANNOTATION_MODIFIED_FIELD,
             TAK_DEFAULT);
+    TextAttributesKey TAK_FINAL_FIELD = TextAttributesKey.createTextAttributesKey(E2I + ANNOTATION_FINAL_FIELD,
+            TAK_DEFAULT);
     TextAttributesKey TAK_NOT_ANNOTATED_FIELD = TextAttributesKey.createTextAttributesKey(E2I + NOT_ANNOTATED_FIELD,
             TAK_DEFAULT);
 
@@ -170,6 +173,7 @@ public interface Constants {
 
             .put(ANNOTATION_NOT_MODIFIED_FIELD, TAK_NOT_MODIFIED_FIELD)
             .put(ANNOTATION_MODIFIED_FIELD, TAK_MODIFIED_FIELD)
+            .put(ANNOTATION_FINAL_FIELD, TAK_FINAL_FIELD)
             .put(ANNOTATION_VARIABLE_FIELD, TAK_VARIABLE_FIELD)
             .put(ANNOTATION_SUPPORT_DATA_FIELD, TAK_SUPPORT_DATA_FIELD)
             .put(NOT_ANNOTATED_FIELD, TAK_NOT_ANNOTATED_FIELD)
@@ -202,5 +206,6 @@ public interface Constants {
             .put(Dependent.class.getCanonicalName(), lc(Dependent.class))
             .put(MutableModifiesArguments.class.getCanonicalName(), lc(MutableModifiesArguments.class))
             .put(BeforeMark.class.getCanonicalName(), lc(BeforeMark.class))
+            .put(Final.class.getCanonicalName(), lc(Final.class))
             .build();
 }
