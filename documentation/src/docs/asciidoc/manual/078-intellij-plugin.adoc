@@ -25,16 +25,24 @@ Following the <<annotation-hierarchy>> for types, we color:
 | {beforeMark} | purple | purple
 |===
 
-We color the annotation hierarchy for fields as:
+For fields, we note that {variable}-{final} and {nm}-{modified} can technically occur in each combination:
 
-[cols="60,20,20",options=header]
+* {variable} {modified}: impossible for unmodifiable types
+* {variable} {nm}
+* {final} {modified}: part of {e1immutable}, impossible for unmodifiable types
+* {final} {nm}: part of {e2immutable}
+
+We therefore color the annotation hierarchy for fields as:
+
+[cols="40,20,20,20",options=header]
 |===
-| annotation on field | green mode | red mode
-| {variable}  | black | red
-| {modified} | brown | brown
-| {supportData} (when field {nm} and type {e1immutable}) | green italics | black italics
-| {nm} | green | black
-| {final} (primitives only)   | green | black
+| combination | annotation on field | green mode | red mode
+| {variable} {modified} .2+| {variable} .2+| black .2+| red
+| {variable} {nm}
+| {final} {modified} | {modified} | brown | brown
+| {final} {nm}, unmodifiable types | {final}  | green | black
+| {final} {nm}, modifiable types only | {nm} | green | black
+| {supportData} (when field {nm} and owning type {e1immutable})| {supportData} | green italics | black italics
 |===
 
 The {supportData} annotation is relevant to understand why a type is not level 2 immutable.

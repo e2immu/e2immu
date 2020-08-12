@@ -31,10 +31,7 @@ Note that:
 
 ==== On fields
 
-The definitions imply the following dependencies between annotations on fields:
-
-* {nm} requires {final}, so the combination of {nm} and {variable} is not possible;
-* {supportData} requires {nm} in a type that is {e1immutable}; it fails rules 2 and 3 of {e2immutable}.
+Support data fields, marked {supportData}, require {nm} in an owning type that is {e1immutable}; it fails rules 2 and 3 of {e2immutable}.
 
 Note that {variable} fields can be {nn}!
 This obviously requires a not-null initialiser to be present; all other assignments must be not-null as well.
@@ -47,17 +44,25 @@ Opposites:
 * a field is either {nm} or (green) {modified} (red)
 * a field is either {nn} (or {nn1}, or {nn2}) (green), or {nullable} (red)
 
-From types, following the definitions, we obtain:
+For modifiable types, all the combinations {variable}-{final} and {nm}-{modified} can occur:
+
+* {variable} {modified}: impossible for unmodifiable types
+* {variable} {nm}
+* {final} {modified}: part of {e1immutable}
+* {final} {nm}: part of {e2immutable}; only in this combination, with the type {e1immutable}, the field can be marked {supportData}
+when it does not satisfy both rule 2 and 3 for level 2 immutability
+
+For unmodifiable types, there is only {variable}-{final}.
+
+From the field's owning type, following the definitions, we obtain:
 
 * if a type is effectively {e2immutable} (green), all its fields are {nm} (green);
 * if a type is effectively {e1immutable} (green), all its fields are {final} (green);
 * if a type is {mutableModifiesArguments} (red), at least one of its field is {variable} (red).
 
-Note that:
+Further, note that:
 
 * fields of a primitive type are always {nn}, but this is not marked.
-* as soon as fields of a primitive type are {final}, they are {nm}.
-We mark them {final}.
 
 ==== On constructors
 

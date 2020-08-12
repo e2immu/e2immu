@@ -13,10 +13,9 @@ Technically, level 2 immutability is much harder to define than level 1 immutabi
 We identify three rules, one of which must be observed at all times:
 
 ****
-*Definition*: the *first rule of level 2 immutability* is that all fields must be `@NotModified`.
+*Definition*: the *first rule of level 2 immutability*, on top of level 1 immutability, is that all fields must be {nm}.
 ****
 
-Clearly, level 2 immutable types will be level 1 immutable as well, given that `@NotModified` implies `@Final` on fields.
 Our friend the `Pair` satisfies this first rule:
 
 [source,java]
@@ -92,7 +91,7 @@ class Line {
 ----
 
 The fields `point1` and `point2` are effectively final.
-Without the translation method, the fields would be `@NotModified` as well.
+Without the translation method, the fields would be {nm} as well.
 The translation method modifies their content, rendering the type not level 2 immutable.
 
 Assuming a type's goal is to store a number of objects, it is easy to see that a level 1 immutable type cannot hold additional, modifiable state.
@@ -125,7 +124,7 @@ We now write rules 2 and 3 as:
 
 *Rule 2*: a field is either private, or level 2 immutable itself (by type or dynamic annotation).
 
-*Rule 3*: all constructors and non-private methods are `@Independent` of the fields of support data types.
+*Rule 3*: all constructors and non-private methods are {independent} of the fields of support data types.
 ****
 
 Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.
@@ -253,7 +252,7 @@ class SetBasedContainer4<T> {
     }
 }
 ----
-<1> the data is public, but the `ImmutableSet` is `@E2Immutable` itself.
+<1> the data is public, but the `ImmutableSet` is {e2immutable} itself.
 <2> Independence guaranteed.
 
 The independence rule 3 is there to ensure that the type does not expose its support data through parameters and return types:
@@ -276,9 +275,9 @@ class SetBasedContainer5<T> {
 <3> ... but exposure via the getter.
 We could as well have made the field `public final`.
 
-Note that by decomposing all definitions, we observe that requiring all fields to be `@NotModified` is equivalent to requiring that all non-private fields have the `final` modifier, and that methods that are not part of the construction phase, are `@NotModified`.
+Note that by decomposing all definitions, we observe that requiring all fields to be {final} and {nm} is equivalent to requiring that all non-private fields have the `final` modifier, and that methods that are not part of the construction phase, are {nm}.
 
-This is a `@Container`, the field is `@Final`, but the field is not `@NotModified`:
+The following type is {container}, the field is {final}, but the it is not {nm}:
 
 [source,java]
 ----
@@ -307,4 +306,4 @@ Linking rules:
 [#propagation-dynamic]
 === Propagation
 
-When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the `@E2Immutable` annotation can 'travel':
+When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the {e2immutable} annotation can 'travel':
