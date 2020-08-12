@@ -97,7 +97,7 @@ public class FieldAnalysis extends Analysis {
 
             case FINAL:
                 int immutableOwner = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                if (MultiLevel.isE1Immutable(immutableOwner)) return Level.TRUE;
+                if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;
                 break;
 
             case IMMUTABLE:
@@ -143,32 +143,32 @@ public class FieldAnalysis extends Analysis {
                 break;
 
             case MODIFIED:
-                if (type.isUnboundParameterType()) return Integer.MAX_VALUE;
-                if (bestType != null && MultiLevel.isE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
-                    return Integer.MAX_VALUE;
-                }
-                return Level.UNDEFINED;
+                if (type.cannotBeModified()) return Level.TRUE; // never
+                break;
 
             case FINAL:
-                if (isExplicitlyFinal) return Level.TRUE;
-                if (MultiLevel.isE1Immutable(owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE))) {
-                    // in an @E1Immutable class, all fields are effectively final, so no need to write this
-                    return Level.TRUE;
-                }
+                if (isExplicitlyFinal) return Level.TRUE; // never
+                if (type.cannotBeModified()) return Level.UNDEFINED; // always
+                int modified = getProperty(VariableProperty.MODIFIED);
+                if (modified == Level.FALSE) return Level.TRUE; // never, is already @NotModified
                 break;
-            default:
+
+
+            // dynamic type annotations
 
             case IMMUTABLE:
-                if (MultiLevel.isE2Immutable(type.getProperty(variableProperty))) return variableProperty.best;
+                if (MultiLevel.isE2Immutable(type.getProperty(VariableProperty.IMMUTABLE)))
+                    return variableProperty.best; // never
                 break;
 
             case CONTAINER:
-                if (type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE;
+                if (type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE; // never
                 break;
 
             case SIZE:
                 return 1;
 
+            default:
         }
         return Level.UNDEFINED;
     }

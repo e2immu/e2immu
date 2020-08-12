@@ -295,7 +295,11 @@ public class ObjectFlow {
 
     // for testing
     public boolean containsPrevious(ObjectFlow objectFlow) {
-        return previous.contains(objectFlow);
+        for(ObjectFlow inPrev: previous) {
+            if(inPrev.equals(objectFlow)) return true;
+        }
+        return false;
+        //return previous.contains(objectFlow);
     }
 
     /**

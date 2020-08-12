@@ -504,6 +504,10 @@ public class ParameterizedType {
     private static final int UNBOUND_WILDCARD = 1000;
 
     public int numericIsAssignableFrom(ParameterizedType type) {
+        return numericIsAssignableFrom(type, false);
+    }
+
+    private int numericIsAssignableFrom(ParameterizedType type, boolean ignoreArrays) {
         Objects.requireNonNull(type);
         if (type == this || equals(type)) return 0;
         if (type == ParameterizedType.NULL_CONSTANT) {
@@ -513,7 +517,7 @@ public class ParameterizedType {
         if (typeInfo != null) {
             if ("java.lang.Object".equals(typeInfo.fullyQualifiedName)) return IN_HIERARCHY;
             if (type.typeInfo != null) {
-                if (arrays != type.arrays) return NOT_ASSIGNABLE;
+                if (!ignoreArrays && arrays != type.arrays) return NOT_ASSIGNABLE;
                 if (typeInfo.equals(type.typeInfo)) {
                     return SAME_UNDERLYING_TYPE;
                 }
@@ -533,12 +537,12 @@ public class ParameterizedType {
                 }
 
                 for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
-                    int scoreInterface = numericIsAssignableFrom(interfaceImplemented);
+                    int scoreInterface = numericIsAssignableFrom(interfaceImplemented, true);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
                 ParameterizedType parentClass = type.typeInfo.typeInspection.get().parentClass;
                 if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-                    int scoreParent = numericIsAssignableFrom(parentClass);
+                    int scoreParent = numericIsAssignableFrom(parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }
             }
@@ -705,4 +709,7 @@ public class ParameterizedType {
         return bestType != null && bestType.isEffectivelyE2Immutable();
     }
 
+    public boolean cannotBeModified() {
+        return isPrimitive() || isEffectivelyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
+    }
 }

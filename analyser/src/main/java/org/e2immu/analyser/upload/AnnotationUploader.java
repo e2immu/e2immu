@@ -89,10 +89,11 @@ public class AnnotationUploader {
         );
 
         fieldPairs = List.of(
+                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get()),
                 new Pair<>(lc(SupportData.class), e2ImmuAnnotationExpressions.supportData.get()),
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
                 new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get()),
-                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get())
+                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.modified.get()),
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get())
         );
 
         parameterPairs = List.of(
@@ -104,8 +105,9 @@ public class AnnotationUploader {
                 new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
                 new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
                 new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
-                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get())
-        );
+                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get()),
+                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.e1Immutable.get())
+                );
     }
 
     public Map<String, String> createMap(Collection<TypeInfo> types) {

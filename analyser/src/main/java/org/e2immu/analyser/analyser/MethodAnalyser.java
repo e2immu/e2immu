@@ -144,7 +144,7 @@ public class MethodAnalyser {
             // implicit null checks on local variables, (explicitly or implicitly)-final fields, and parameters
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, messages, methodInfo, methodProperties))
                 changes = true;
-            if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
+
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;
 
@@ -162,13 +162,13 @@ public class MethodAnalyser {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
                 StaticModifier.detectMissingStaticModifier(messages, methodInfo, methodAnalysis);
-            }
-            // even though all constructors should be modifying...
-            if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
+                if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
 
-            // @Only, @Mark comes after modifications
-            if (computeOnlyMarkPrepWork(methodInfo, methodAnalysis)) changes = true;
-            if (computeOnlyMarkAnnotate(methodInfo, methodAnalysis)) changes = true;
+                // @Only, @Mark comes after modifications
+                if (computeOnlyMarkPrepWork(methodInfo, methodAnalysis)) changes = true;
+                if (computeOnlyMarkAnnotate(methodInfo, methodAnalysis)) changes = true;
+            }
+            if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
 
             // size comes after modifications
             if (computeSize(methodInfo, methodAnalysis)) changes = true;
@@ -659,9 +659,17 @@ public class MethodAnalyser {
     }
 
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) return false;
+        if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) {
+            return false; // already computed
+        }
+        if (!methodInfo.isConstructor) {
+            // we only compute @Independent/@Dependent on methods when the method is @NotModified
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            if (modified != Level.FALSE) return false;
+        } // else: for constructors, we assume @Modified so that rule is not that useful
+
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
-            log(DELAYED, "Delaying @Independent on {}, links not computed", methodInfo.fullyQualifiedName());
+            log(DELAYED, "Delaying @Independent on {}, links not yet computed", methodInfo.fullyQualifiedName());
             return false;
         }
 

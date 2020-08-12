@@ -91,12 +91,12 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @Final(type = AnnotationType.VERIFY_ABSENT) // because we're in an @E2Immutable class
+    @Final
     @Linked(type = AnnotationType.VERIFY_ABSENT)
     private String effectivelyFinal;
 
     @NotNull
-    @Final(type = AnnotationType.VERIFY_ABSENT) // because we're in an @E2Immutable class
+    @Final
     @Constant(stringValue = "abc")
     private String constant;
 
