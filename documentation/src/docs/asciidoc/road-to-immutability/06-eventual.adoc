@@ -222,6 +222,23 @@ Once the analyser confirms the object's state change has happened, it can add th
 A type with fields which satisfies all the rules for (eventual) level 2 immutability, with the caveat that some of its fields are eventually immutable themselves, can become level 2 immutable only in situations where these fields have reached immutability.
 This means that the object flow analyser has to be able to verify that at some point in the object flow reaching the fields, the mark should be present.
 
+=== Before the mark
+
+A method can return an eventually immutable object, guaranteed to be in its initial state.
+This can be annotated with {{beforeMark}}.
+Employing `SimpleImmutableSet1` from the example above,
+
+[source,java]
+----
+@BeforeMark
+public SimpleImmutableSet1 create() {
+    return new SimpleImmutableSet1();
+}
+----
+
+Similarly, the analyser can compute a parameter to be {{beforeMark}}, when in the method, at least one before-mark methods is called on the parameter.
+Finally, a field can even be {{beforeMark}}, when it is created or arrives in the type as {{beforeMark}}, and stays in this state.
+
 === Annotations
 
 When a type is eventually level 1 immutable, should the field(s) of the state transition be {variable} or {final}?
@@ -259,8 +276,7 @@ The following arrangement uses the intermediary annotation {supportData} to indi
 
 Eventual finality simply adds a  `@Final(after="mark")` annotation to each of these situations.
 
-
-==== Marking by hand
+=== Marking by hand
 
 {mark} can only be set in a modifying method.
 

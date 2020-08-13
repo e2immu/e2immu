@@ -252,19 +252,9 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> precondition = new SetOnce<>();
 
     @Override
-    protected void writeMark(String mark) {
-        preconditionForOnlyData.set(new ContractMark(mark));
-
-    }
-
-    @Override
-    protected void writeOnly(String before, String after, boolean framework) {
-        boolean isAfter = before.isEmpty();
-        // because this is coded by hand, there is no value available
-        String mark = isAfter ? after : before;
-        Value value = new ContractMark(mark);
-        OnlyData onlyData = new OnlyData(value, mark, false, isAfter);
-        preconditionForOnlyData.set(onlyData.precondition);
+    protected void writeOnlyData(OnlyData onlyData) {
+        ContractMark contractMark = new ContractMark(onlyData.markLabel);
+        preconditionForOnlyData.set(contractMark);
         this.onlyData.set(onlyData);
     }
 
@@ -274,9 +264,9 @@ public class MethodAnalysis extends Analysis {
         public final Value precondition;
         public final String markLabel;
         public final boolean mark;
-        public final boolean after; // default before
+        public final Boolean after; // null for a @Mark without @Only
 
-        public OnlyData(Value precondition, String markLabel, boolean mark, boolean after) {
+        public OnlyData(Value precondition, String markLabel, boolean mark, Boolean after) {
             this.precondition = precondition;
             this.mark = mark;
             this.markLabel = markLabel;

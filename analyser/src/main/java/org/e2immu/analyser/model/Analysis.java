@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -30,6 +31,8 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.AnnotationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.ElementType;
 import java.util.*;
@@ -37,6 +40,8 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public abstract class Analysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Analysis.class);
+
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final boolean hasBeenDefined;
@@ -210,6 +215,10 @@ public abstract class Analysis {
         boolean container = false;
         Messages messages = new Messages();
         BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
+
+        AnnotationExpression only = null;
+        AnnotationExpression mark = null;
+
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
@@ -262,13 +271,9 @@ public abstract class Analysis {
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
                     method.accept(VariableProperty.INDEPENDENT, Level.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
-                    String value = annotationExpression.extract("value", "");
-                    writeMark(value);
+                    mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
-                    String before = annotationExpression.extract("before", "");
-                    String after = annotationExpression.extract("after", "");
-                    boolean framework = annotationExpression.extract("framework", false);
-                    writeOnly(before, after, framework);
+                    only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.output.get().typeInfo == t) {
                     method.accept(VariableProperty.OUTPUT, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
@@ -306,19 +311,30 @@ public abstract class Analysis {
         if (notNull >= 0) {
             method.accept(VariableProperty.NOT_NULL, notNull);
         }
+        if (mark != null && only == null) {
+            String markValue = mark.extract("value", "");
+            writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(markValue), markValue, true, null));
+        } else if (only != null) {
+            String markValue = mark == null ? null : mark.extract("value", "");
+            String before = only.extract("before", "");
+            String after = only.extract("after", "");
+            boolean framework = only.extract("framework", false);
+            boolean isAfter = before.isEmpty();
+            String onlyMark = isAfter ? after : before;
+            if (markValue != null && !onlyMark.equals(markValue)) {
+                LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
+            }
+            writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
+        }
         return messages;
     }
 
-    protected void writeOnly(String before, String after, boolean framework) {
+    protected void writeOnlyData(MethodAnalysis.OnlyData onlyData) {
         throw new UnsupportedOperationException(); // override in MethodAnalysis
     }
 
     protected void writePrecondition(String value) {
         throw new UnsupportedOperationException(); // only for methods, please override
-    }
-
-    protected void writeMark(String value) {
-        throw new UnsupportedOperationException();// only for methods, please override
     }
 
     /**

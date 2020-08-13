@@ -37,7 +37,6 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -375,14 +374,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Optional<AnnotationExpression> fromMethod = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromMethod.isPresent()) return fromMethod;
-        if (annotation.equals(NotNull.class)) {
-            Optional<AnnotationExpression> fromType = typeInfo.hasTestAnnotation(annotation);
-            if (fromType.isPresent()) {
-                AnnotationExpression ae = fromType.get();
-                if (typeInfo.typeAnalysis.get().extractWhere(ae).contains(ElementType.METHOD))
-                    return fromType;
-            }
-        }
         if (methodInspection.isSet()) {
             for (MethodInfo interfaceMethod : methodInspection.get().implementationOf) {
                 Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasTestAnnotation(annotation));

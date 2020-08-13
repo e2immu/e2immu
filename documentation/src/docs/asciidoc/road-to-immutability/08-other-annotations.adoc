@@ -3,6 +3,7 @@
 The {e2immu} project defines a whole host of annotations complementary to the ones required for immutability.
 We discuss them briefly, and refer to the user manual for an in-depth analysis.
 
+[#nullable-section]
 === Nullable, not null
 
 === Identity and fluent methods

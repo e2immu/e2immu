@@ -193,7 +193,7 @@ To continue, we must first understand the notion of modification.
 == Modification
 
 ****
-*Definition*: a method is *modifying* if it causes an assignment in the object graph of the fields of this object.
+*Definition*: a method is *modifying* if it causes an assignment in the object graph of the fields of the object it is applied to.
 ****
 
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
@@ -243,17 +243,14 @@ class Example2 {
 We also see in the example that the `inform` method is `@Modified`.
 This is because it calls a modifying method on one of the fields: `setMessage`.
 
-The code analyser annotates a parameter with `@NotModified` when the parameter's method does not apply modifying methods on the object that enters the method via the parameter.
+The code analyser annotates a parameter with `@NotModified` when the parameter's method does not apply assignments or modifying methods on the object that enters the method via the parameter.
 This restriction holds in the strongest possible way, a topic which we will elaborate on later.
 If a parameter is not `@NotModified`, it is `@Modified`.
 
 We will apply exactly the same reasoning to a field.
-A field will be annotated `@NotModified` when none of the type's methods, transitively reachable from a non-private non-constructor method, applies modifying methods on this field.
+A field will be annotated `@NotModified` when none of the type's methods, transitively reachable from a non-private non-constructor method, applies assignments or modifying methods on this field.
 This restriction again holds in the strongest possible way.
 If a field is not `@NotModified`, it is `@Modified`.
-
-Clearly `@NotModified` is stronger than `@Final`: a field that is not `@Final` cannot be `@NotModified`.
-A field that is `@NotModified` must be `@Final`.
 
 Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all `@NotModified`.
 This is pretty obvious in the case of `toString`, `hashCode`, `getClass`.
@@ -310,8 +307,84 @@ Other types in the parameters do not have a `@NotModified` annotation:
 
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
-* `Consumer` because it is a functional type, with only one method, which is always `@NotModified`.
+* `Consumer` because it is a functional type, with only one method, which is always `@NotModified`, as detailed further on.
 
 The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
+
+=== The case of functional types
+
+The type `Consumer<? super E>` in the `forEach` method of `Collection<E>` is defined as:
+
+.Relevant part of definition of Consumer
+[source,java]
+----
+interface Consumer<T> {
+    void accept(T t);
+}
+----
+
+It could be used, for example, like:
+
+[source,java]
+----
+void addOne(Collection<Set<String>> sets, List<String> stringSource) {
+    sets.forEach(set -> {
+        if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
+    });
+}
+----
+
+The (hidden) `accept` method takes a set of strings, and modifies this set.
+Without the syntactic sugar, this reads:
+
+[source,java]
+----
+void addOne(Collection<Set<String>> sets, List<String> stringSource) {
+    Consumer<Set<String>> consumer = new Consumer<>() {
+        void accept(Set<String> set) {
+            if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
+        }
+    }
+    sets.forEach(consumer);
+}
+----
+
+The `forEach` method is modifying the individual sets, but it does not change the collection `sets` itself, which is why we marked the method {nm}.
+Neither does `forEach` change the functional type itself, which is why we (implicitly) annotated the `Consumer` parameter with `@NotModified`.
+However, this particular `accept` method is modifying its input, causing the `sets` parameter to be modified.
+
+Reshuffling yields:
+
+[source,java]
+----
+List<String> stringSource = ...
+Consumer<Set<String>> consumer = new Consumer<>() {
+    void accept(Set<String> set) {
+        if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
+    }
+};
+...
+
+void addOne(Collection<Set<String>> sets, Consumer<Set<String>> consumer) {
+    sets.forEach(consumer);
+}
+----
+
+If the `consumer`'s `apply` is modifying, then `sets` will be modified.
+If it is not modifying, for example, in the case of the consumer `String.out::println`, then `sets` will not be modified.
+We cannot realistically compute this using a static analyser.
+This is the point where the programmer needs to _show intent_ by manually adding a contract annotation on the `consumer` parameter to indicate that its method is non-modifying:
+
+[source,java]
+----
+void addOne(Collection<Set<String>> sets,
+            @NotModified1(type = CONTRACT) Consumer<Set<String>> consumer) {
+    sets.forEach(consumer);
+}
+----
+
+This annotation and the use of `...1` at the end is in line with `@NotNull1`, detailed in <<nullable-section>>, which guarantees that the parameter values of the `apply` method are never null.
+
+Once the contract annotation is in place, the analyser computes that `sets` is {nm}, that `addOne` is not a modifying method, and that, because the method does not access any fields nor overrides another method, it should be made static.
 
 // ensure a newline at the end
