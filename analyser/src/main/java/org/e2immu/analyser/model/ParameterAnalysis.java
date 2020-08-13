@@ -23,11 +23,9 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.Map;
 import java.util.stream.IntStream;
 
 public class ParameterAnalysis extends Analysis {
@@ -65,7 +63,11 @@ public class ParameterAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
-                if (notModifiedBecauseOfImmutableStatus()) return Level.FALSE;
+                if (parameterInfo.parameterizedType.cannotBeModified()) return Level.FALSE;
+                if (!parameterInfo.owner.isPrivate() &&
+                        parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
+                    return Level.FALSE;
+                }
                 // now we rely on the computed value
                 break;
             }
@@ -122,55 +124,24 @@ public class ParameterAnalysis extends Analysis {
     }
 
     @Override
-    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
-        // TODO can be better!
-        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
-    }
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
-    private boolean notModifiedBecauseOfImmutableStatus() {
-        if (MultiLevel.value(getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER)
-            return true;
-        // if the parameter is an unbound generic, the same holds
-        if (parameterInfo.parameterizedType.isUnboundParameterType()) return true;
-        // if we're inside a container and the method is not private, the parameter cannot be modified
-        return !parameterInfo.owner.isPrivate() &&
-                parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE;
-    }
+        // no annotations can be added to primitives
+        if (parameterInfo.parameterizedType.isPrimitive()) return;
 
-    @Override
-    public int minimalValue(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case SIZE:
-                int modified = getProperty(VariableProperty.MODIFIED);
-                if (modified != Level.FALSE) return Integer.MAX_VALUE; // only annotation when also @NotModified!
-                return Level.bestSize(1, parameterInfo.parameterizedType.getProperty(variableProperty));
-
-            case MODIFIED:
-                if (notModifiedBecauseOfImmutableStatus()) return Integer.MAX_VALUE;
-                return Level.UNDEFINED;
-
-            case CONTAINER:
-            case IMMUTABLE:
-                throw new UnsupportedOperationException();
-
-            default:
+        int modified = getProperty(VariableProperty.MODIFIED);
+        // @NotModified, @Modified
+        if (!parameterInfo.parameterizedType.cannotBeModified()) {
+            AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
+                    e2ImmuAnnotationExpressions.modified.get();
+            annotations.put(ae, true);
         }
-        return Level.UNDEFINED;
-    }
 
-    @Override
-    public int maximalValue(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.MODIFIED && notModifiedBecauseOfImmutableStatus()) return Level.TRUE;
+        // @Output (to be analysed later)
 
-        if (variableProperty == VariableProperty.NOT_NULL) {
-            if (parameterInfo.parameterizedType.isPrimitive()) return MultiLevel.NULLABLE;
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext) {
-        return Map.of(VariableProperty.MODIFIED, typeContext.notModified.get());
+        // @NotNull, @Size
+        doNotNull(e2ImmuAnnotationExpressions);
+        doSize(e2ImmuAnnotationExpressions);
     }
 
     public ObjectFlow getObjectFlow() {

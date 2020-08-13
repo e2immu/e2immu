@@ -138,7 +138,6 @@ public class FieldAnalyser {
         if (!typeAnalysis.supportDataTypes.isSet()) return false;
         boolean isSupportData = typeAnalysis.supportDataTypes.get().contains(fieldInfo.type);
         fieldAnalysis.supportData.set(isSupportData);
-        fieldAnalysis.annotations.put(e2ImmuAnnotationExpressions.supportData.get(), isSupportData);
         return true;
     }
 

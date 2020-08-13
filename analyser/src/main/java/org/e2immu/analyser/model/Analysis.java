@@ -85,8 +85,6 @@ public abstract class Analysis {
         return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
-    public abstract Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal();
-
     protected int getPropertyAsIs(VariableProperty variableProperty) {
         return properties.getOtherwise(variableProperty, Level.DELAY);
     }
@@ -107,16 +105,6 @@ public abstract class Analysis {
         properties.improve(variableProperty, i);
     }
 
-    public int minimalValue(VariableProperty variableProperty) {
-        return Level.UNDEFINED;
-    }
-
-    public int maximalValue(VariableProperty variableProperty) {
-        return Integer.MAX_VALUE;
-    }
-
-    public abstract Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext);
-
     // to be overridden in FieldAnalysis
     protected String afterFinal() {
         return null;
@@ -127,97 +115,43 @@ public abstract class Analysis {
         return null;
     }
 
-    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        ImmutableMap.Builder<VariableProperty, AnnotationExpression> minMapBuilder = new ImmutableMap.Builder<>();
+    public abstract void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
 
-        String finalMarks = afterFinal();
-        if (finalMarks != null) {
-            annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", finalMarks), true);
+    protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+
+        // not null
+        int notNull = getProperty(VariableProperty.NOT_NULL);
+        if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
+            annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), true);
+            annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
         } else {
-            minMapBuilder.put(VariableProperty.FINAL, e2ImmuAnnotationExpressions.effectivelyFinal.get());
-        }
-        String notModifiedMarks = afterNotModified();
-        if (notModifiedMarks != null) {
-            annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", notModifiedMarks), true);
-        } else {
-            minMapBuilder.put(VariableProperty.MODIFIED, e2ImmuAnnotationExpressions.modified.get());
-        }
-        minMapBuilder.put(VariableProperty.FLUENT, e2ImmuAnnotationExpressions.fluent.get());
-        minMapBuilder.put(VariableProperty.IDENTITY, e2ImmuAnnotationExpressions.identity.get());
-        minMapBuilder.put(VariableProperty.INDEPENDENT, e2ImmuAnnotationExpressions.independent.get());
-        minMapBuilder.put(VariableProperty.UTILITY_CLASS, e2ImmuAnnotationExpressions.utilityClass.get());
-        minMapBuilder.put(VariableProperty.EXTENSION_CLASS, e2ImmuAnnotationExpressions.extensionClass.get());
-        minMapBuilder.put(VariableProperty.OUTPUT, e2ImmuAnnotationExpressions.output.get());
-        minMapBuilder.put(VariableProperty.SINGLETON, e2ImmuAnnotationExpressions.singleton.get());
+            if (notNull != Level.DELAY) annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), false);
 
-        for (Map.Entry<VariableProperty, AnnotationExpression> entry : minMapBuilder.build().entrySet()) {
-            VariableProperty variableProperty = entry.getKey();
-            AnnotationExpression annotationExpression = entry.getValue();
-            int value = getProperty(variableProperty);
-            int minimal = minimalValue(variableProperty);
-            if (value == Level.FALSE) {
-                annotations.put(annotationExpression, false);
-            } else if (value == Level.TRUE && value > minimal) {
-                annotations.put(annotationExpression, true);
-            }
-        }
-
-        for (Map.Entry<VariableProperty, AnnotationExpression> entry : oppositesMap(e2ImmuAnnotationExpressions).entrySet()) {
-            VariableProperty variableProperty = entry.getKey();
-            AnnotationExpression annotationExpression = entry.getValue();
-            int value = getProperty(variableProperty);
-            int maximal = maximalValue(variableProperty);
-            if (value == Level.TRUE) {
-                annotations.put(annotationExpression, false);
-            } else if (value == Level.FALSE && Level.TRUE < maximal) {
-                annotations.put(annotationExpression, true);
-            }
-        }
-
-
-        boolean isNotAConstructorOrVoidMethod = isNotAConstructorOrVoidMethod();
-        if (isNotAConstructorOrVoidMethod) {
-            boolean isType = this instanceof TypeAnalysis;
-
-            doImmutableContainer(e2ImmuAnnotationExpressions, isType);
-
-            boolean doNullable = !isType;
-
-            // not null
-            int minNotNull = minimalValue(VariableProperty.NOT_NULL);
-            int notNull = getProperty(VariableProperty.NOT_NULL);
-            if (notNull >= MultiLevel.EVENTUALLY_CONTENT2_NOT_NULL) {
-                if (notNull > minNotNull) annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), true);
-                if (doNullable) annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
+            if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
+                annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
             } else {
-                if (notNull != Level.DELAY) annotations.put(e2ImmuAnnotationExpressions.notNull2.get(), false);
-
-                if (notNull >= MultiLevel.EVENTUALLY_CONTENT_NOT_NULL) {
-                    if (notNull > minNotNull) annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), true);
-                    if (doNullable) annotations.put(e2ImmuAnnotationExpressions.nullable.get(), false);
-                } else {
-                    if (notNull > Level.DELAY) {
-                        annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), false);
-                    }
-                    if (notNull >= MultiLevel.EVENTUAL && notNull > minNotNull) {
-                        annotations.put(e2ImmuAnnotationExpressions.notNull.get(), true);
-                    } else if (notNull > Level.DELAY) {
-                        annotations.put(e2ImmuAnnotationExpressions.notNull.get(), false);
-                    }
-                    if (doNullable) {
-                        int max = maximalValue(VariableProperty.NOT_NULL);
-                        boolean nullablePresent = max != Level.FALSE && notNull < MultiLevel.EVENTUAL;
-                        // a delay on notNull0 on a non-primitive will get nullable present
-                        annotations.put(e2ImmuAnnotationExpressions.nullable.get(), nullablePresent);
-                    }
+                if (notNull > Level.DELAY) {
+                    annotations.put(e2ImmuAnnotationExpressions.notNull1.get(), false);
                 }
+                if (notNull >= MultiLevel.EVENTUAL) {
+                    annotations.put(e2ImmuAnnotationExpressions.notNull.get(), true);
+                } else if (notNull > Level.DELAY) {
+                    annotations.put(e2ImmuAnnotationExpressions.notNull.get(), false);
+                }
+
+                boolean nullablePresent = notNull < MultiLevel.EVENTUAL;
+                // a delay on notNull0 on a non-primitive will get nullable present
+                annotations.put(e2ImmuAnnotationExpressions.nullable.get(), nullablePresent);
             }
         }
+    }
+
+    protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
         // size
-        int minSize = minimalValue(VariableProperty.SIZE);
         int size = getProperty(VariableProperty.SIZE);
-        if (size > minSize) {
+        if (size >= Level.IS_A_SIZE) {
             if (Level.haveEquals(size)) {
                 annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "equals", Level.decodeSizeEquals(size)), true);
             } else {
@@ -226,24 +160,15 @@ public abstract class Analysis {
         }
 
         // size copy
-        int minSizeCopy = minimalValue(VariableProperty.SIZE_COPY);
         int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
-        if (sizeCopy > minSizeCopy) {
-            if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
-                annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
-            } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
-                annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
-            }
+        if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
+            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
+        } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
+            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
         }
-
-        // precondition
-        preconditionFromAnalysisToAnnotation(e2ImmuAnnotationExpressions);
     }
 
-    private void doImmutableContainer(E2ImmuAnnotationExpressions typeContext, boolean isType) {
-        Pair<Boolean, Integer> pair = getImmutablePropertyAndBetterThanFormal();
-        int immutable = pair.v;
-        boolean betterThanFormal = pair.k;
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, boolean isType, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String mark;
         boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
@@ -259,17 +184,9 @@ public abstract class Analysis {
                 list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(), new StringConstant(e.getValue()))).collect(Collectors.toList());
             }
             AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(
-                    typeContext.getFullyQualified(entry.getKey().getCanonicalName()), list);
+                    e2ImmuAnnotationExpressions.getFullyQualified(entry.getKey().getCanonicalName()), list);
             annotations.put(expression, true);
         }
-    }
-
-    protected boolean isNotAConstructorOrVoidMethod() {
-        return true;
-    }
-
-    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        // nothing to be done; override in method analysis
     }
 
     private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter) {

@@ -23,14 +23,11 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class FieldAnalysis extends Analysis {
 
@@ -102,108 +99,83 @@ public class FieldAnalysis extends Analysis {
                 break;
 
             case IMMUTABLE:
-                int immutableType = owner == bestType || bestType == null ? Level.FALSE :
-                        bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                int myProperty = super.getProperty(variableProperty);
-                if (myProperty == Level.DELAY) return Level.DELAY;
-                return Level.best(immutableType, myProperty);
+                int fieldImmutable = super.getProperty(variableProperty);
+                if (fieldImmutable == Level.DELAY) return Level.DELAY;
+                int typeImmutable = typeImmutable();
+                return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
             // container is, for fields, a property purely on the type
             case CONTAINER:
                 return bestType == null ? Level.TRUE : bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
 
             case NOT_NULL:
-                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (type.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
 
             default:
         }
         return super.getProperty(variableProperty);
     }
 
-    @Override
-    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
-        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
-    }
-
-    @Override
-    public int maximalValue(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.MODIFIED) {
-            if (type.isUnboundParameterType()) return Level.TRUE;
-            if (bestType != null && MultiLevel.isE2Immutable(getProperty(VariableProperty.IMMUTABLE))) {
-                return Level.TRUE;
-            }
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int minimalValue(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case NOT_NULL:
-                if (type.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                break;
-
-            case MODIFIED:
-                if (type.cannotBeModified()) return Level.TRUE; // never
-                break;
-
-            case FINAL:
-                if (isExplicitlyFinal) return Level.TRUE; // never
-                if (type.cannotBeModified()) return Level.UNDEFINED; // always
-                int modified = getProperty(VariableProperty.MODIFIED);
-                if (modified == Level.FALSE) return Level.TRUE; // never, is already @NotModified
-                break;
-
-
-            // dynamic type annotations
-
-            case IMMUTABLE:
-                if (MultiLevel.isE2Immutable(type.getProperty(VariableProperty.IMMUTABLE)))
-                    return variableProperty.best; // never
-                break;
-
-            case CONTAINER:
-                if (type.getProperty(variableProperty) == Level.TRUE) return Level.TRUE; // never
-                break;
-
-            case SIZE:
-                return 1;
-
-            default:
-        }
-        return Level.UNDEFINED;
-    }
-
-    @Override
-    public Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext) {
-        return Map.of(
-                VariableProperty.MODIFIED, typeContext.notModified.get(),
-                VariableProperty.FINAL, typeContext.variableField.get());
-    }
-
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
 
-    @Override
-    protected String afterFinal() {
-        int effectivelyFinal = getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal != Level.FALSE) return null;
-        int ownerImmutable = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-        if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
-            return String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
-        }
-        return null;
-    }
 
     @Override
-    protected String afterNotModified() {
-        int modified = getProperty(VariableProperty.MODIFIED);
-        if (modified != Level.TRUE) return null;
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        int effectivelyFinal = getProperty(VariableProperty.FINAL);
         int ownerImmutable = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-        if (ownerImmutable == MultiLevel.EVENTUALLY_E1IMMUTABLE || ownerImmutable == MultiLevel.EVENTUALLY_E2IMMUTABLE) {
-            return String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+        int modified = getProperty(VariableProperty.MODIFIED);
+
+        // @Final(after=), @Final, @Variable
+        if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
+            String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+            annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", marks), true);
+        } else {
+            if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
+                annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get(), true);
+            }
+            if (effectivelyFinal == Level.FALSE) {
+                annotations.put(e2ImmuAnnotationExpressions.variableField.get(), true);
+            }
         }
-        return null;
+
+        // all other annotations cannot be added to primitives
+        if (type.isPrimitive()) return;
+
+        // @NotModified(after=), @NotModified, @Modified
+        if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
+            String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+            annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
+        } else if (!type.cannotBeModified()) {
+            AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
+                    e2ImmuAnnotationExpressions.modified.get();
+            annotations.put(ae, true);
+        }
+
+        // @SupportData
+        if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)
+                && !MultiLevel.isEventuallyE2Immutable(ownerImmutable)
+                && supportData.isSet() && supportData.get()) {
+            annotations.put(e2ImmuAnnotationExpressions.supportData.get(), true);
+        }
+
+        // @NotNull
+        doNotNull(e2ImmuAnnotationExpressions);
+
+        // @Size
+        doSize(e2ImmuAnnotationExpressions);
+
+        // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
+        int typeImmutable = typeImmutable();
+        int fieldImmutable = super.getProperty(VariableProperty.IMMUTABLE);
+        if (MultiLevel.isBetterImmutable(fieldImmutable, typeImmutable)) {
+            doImmutableContainer(e2ImmuAnnotationExpressions, false, fieldImmutable, true);
+        }
+    }
+
+    private int typeImmutable() {
+        return owner == bestType || bestType == null ? MultiLevel.FALSE :
+                bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
     }
 }

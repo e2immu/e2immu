@@ -1125,7 +1125,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isEffectivelyE2Immutable() {
-        return typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        return MultiLevel.isEffectivelyE1Immutable(typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+    }
+
+    public boolean isEventuallyE2Immutable() {
+        return MultiLevel.isEventuallyE2Immutable(typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     }
 
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
@@ -1152,7 +1156,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
-        if(!typeInspection.isSetDoNotTriggerRunnable()) return null;
+        if (!typeInspection.isSetDoNotTriggerRunnable()) return null;
         if (typeInspection.get().packageNameOrEnclosingType.isLeft())
             return typeInspection.get().packageNameOrEnclosingType.getLeft();
         return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();

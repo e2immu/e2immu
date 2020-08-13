@@ -21,8 +21,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -61,16 +59,6 @@ public class TypeAnalysis extends Analysis {
         return Arrays.stream(elements).collect(Collectors.toSet());
     }
 
-    @Override
-    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
-        return new Pair<>(false, getProperty(VariableProperty.IMMUTABLE));
-    }
-
-    @Override
-    public Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext) {
-        return Map.of();
-    }
-
     private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
 
     public ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {
@@ -95,4 +83,31 @@ public class TypeAnalysis extends Analysis {
     }
 
     public final SetOnce<Set<ParameterizedType>> supportDataTypes = new SetOnce<>();
+
+
+    public boolean haveSupportData() {
+        return supportDataTypes.isSet() && !supportDataTypes.get().isEmpty();
+    }
+
+    @Override
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+
+        // @ExtensionClass
+        if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {
+            annotations.put(e2ImmuAnnotationExpressions.extensionClass.get(), true);
+        }
+
+        // @UtilityClass
+        if (getProperty(VariableProperty.UTILITY_CLASS) == Level.TRUE) {
+            annotations.put(e2ImmuAnnotationExpressions.utilityClass.get(), true);
+        }
+
+        // @Singleton
+        if (getProperty(VariableProperty.SINGLETON) == Level.TRUE) {
+            annotations.put(e2ImmuAnnotationExpressions.singleton.get(), true);
+        }
+
+        int immutable = getProperty(VariableProperty.IMMUTABLE);
+        doImmutableContainer(e2ImmuAnnotationExpressions, true, immutable, false);
+    }
 }

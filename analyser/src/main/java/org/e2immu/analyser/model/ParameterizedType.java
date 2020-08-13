@@ -23,9 +23,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.PrimitiveValue;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -59,7 +57,7 @@ public class ParameterizedType {
     }
 
     public enum WildCard {
-        NONE, UNBOUND, SUPER, EXTENDS;
+        NONE, UNBOUND, SUPER, EXTENDS
     }
 
     @NotNull
@@ -703,13 +701,13 @@ public class ParameterizedType {
         return typeInfo.typeAnalysis.get().isEventual();
     }
 
-    public boolean isEffectivelyE2Immutable() {
+    public boolean isEventuallyE2Immutable() {
         if (isUnboundParameterType()) return true;
         TypeInfo bestType = bestTypeInfo();
-        return bestType != null && bestType.isEffectivelyE2Immutable();
+        return bestType != null && bestType.isEventuallyE2Immutable();
     }
 
     public boolean cannotBeModified() {
-        return isPrimitive() || isEffectivelyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
+        return isPrimitive() || isEventuallyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
     }
 }

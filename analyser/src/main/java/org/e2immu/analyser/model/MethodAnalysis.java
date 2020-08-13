@@ -25,7 +25,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -130,19 +129,6 @@ public class MethodAnalysis extends Analysis {
         return returnType.getProperty(VariableProperty.IMMUTABLE);
     }
 
-    @Override
-    public Pair<Boolean, Integer> getImmutablePropertyAndBetterThanFormal() {
-        int immutableType = formalImmutableProperty();
-        int immutableDynamic = dynamicImmutableProperty(immutableType);
-        boolean dynamicBetter = MultiLevel.isBetterImmutable(immutableDynamic, immutableType);
-        return new Pair<>(dynamicBetter, dynamicBetter ? immutableDynamic : immutableType);
-    }
-
-    @Override
-    protected boolean isNotAConstructorOrVoidMethod() {
-        return !methodInfo.isVoid() && !methodInfo.isConstructor;
-    }
-
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
         IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
@@ -155,54 +141,59 @@ public class MethodAnalysis extends Analysis {
     }
 
     @Override
-    public int minimalValue(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case INDEPENDENT:
-                // implicit on effectively @E2Immutable
-                if (MultiLevel.EFFECTIVELY_E2IMMUTABLE == typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE)) {
-                    return Level.TRUE;
-                }
-                break;
+    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        int modified = getProperty(VariableProperty.MODIFIED);
 
-            case NOT_NULL:
-                // don't show @NotNull on primitive types
-                if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                break;
-
-            case SIZE:
-                // do not show @Size(min = 0) on a method
-                return 1;
-
-            case IMMUTABLE:
-            case CONTAINER:
-                // we show @ExImmutable on the method only when it is eventual, and the conditions have been met
-                throw new UnsupportedOperationException("Separate computation");
-
-            default:
+        // @Precondition
+        if (precondition.isSet()) {
+            AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
+                    .copyWith("value", precondition.get().toString());
+            annotations.put(ae, true);
         }
-        return Level.UNDEFINED;
-    }
 
-    @Override
-    public int maximalValue(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case IMMUTABLE:
-                throw new UnsupportedOperationException("Separate computation");
-            case INDEPENDENT:
-            case MODIFIED:
-                IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
-                IntStream overrideTypes = overrides.stream().mapToInt(mi -> !mi.isPrivate() && MultiLevel.isE2Immutable(mi.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE)) ? Level.FALSE : Level.DELAY);
-                int max = IntStream.concat(overrideTypes, overrideValues).max().orElse(Level.DELAY);
-                if (max == Level.FALSE) return Level.TRUE;
+        // @Dependent @Independent
+        boolean haveSupportData = typeInfo.typeAnalysis.get().haveSupportData();
+        if (haveSupportData && (methodInfo.isConstructor || modified == Level.FALSE)) {
+            int independent = getProperty(VariableProperty.INDEPENDENT);
+            AnnotationExpression ae = independent == Level.FALSE ? e2ImmuAnnotationExpressions.dependent.get() :
+                    e2ImmuAnnotationExpressions.independent.get();
+            annotations.put(ae, true);
         }
-        return Integer.MAX_VALUE;
-    }
 
-    @Override
-    public Map<VariableProperty, AnnotationExpression> oppositesMap(E2ImmuAnnotationExpressions typeContext) {
-        return Map.of(
-                VariableProperty.MODIFIED, typeContext.notModified.get(),
-                VariableProperty.INDEPENDENT, typeContext.dependent.get());
+        if (methodInfo.isConstructor) return;
+
+        // @NotModified, @Modified
+        AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
+                e2ImmuAnnotationExpressions.modified.get();
+        annotations.put(ae, true);
+
+        if(returnType.isVoid()) return;
+
+        // @Identity
+        if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
+            annotations.put(e2ImmuAnnotationExpressions.identity.get(), true);
+        }
+
+        // all other annotations cannot be added to primitives
+        if (returnType.isPrimitive()) return;
+
+        // @Fluent
+        if (getProperty(VariableProperty.FLUENT) == Level.TRUE) {
+            annotations.put(e2ImmuAnnotationExpressions.fluent.get(), true);
+        }
+
+        // @NotNull
+        doNotNull(e2ImmuAnnotationExpressions);
+
+        // @Size
+        doSize(e2ImmuAnnotationExpressions);
+
+        // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
+        int formallyImmutable = formalImmutableProperty();
+        int dynamicallyImmutable = dynamicImmutableProperty(formallyImmutable);
+        if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
+            doImmutableContainer(e2ImmuAnnotationExpressions, false, dynamicallyImmutable, true);
+        }
     }
 
     // ************** LOCAL STORAGE
@@ -270,14 +261,6 @@ public class MethodAnalysis extends Analysis {
     @Override
     protected void writePrecondition(String value) {
         throw new UnsupportedOperationException(); //TODO not yet implemented--we'd have to parse our "value" language
-    }
-
-    @Override
-    protected void preconditionFromAnalysisToAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        if (precondition.isSet()) {
-            AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get().copyWith("value", precondition.get().toString());
-            annotations.put(ae, true);
-        }
     }
 
     public static class OnlyData {
