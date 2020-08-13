@@ -27,7 +27,6 @@ package java.util;
 
 import org.e2immu.annotation.*;
 
-import java.lang.annotation.ElementType;
 import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -136,19 +135,19 @@ public interface List<E> extends Collection<E> {
     @NotNull1
     @E2Container
     @Size(equals = 1)
-    static <EE> List<EE> of(@NotNull E e1);
+    static <F> List<F> of(@NotNull F e1);
 
     @NotModified
     @NotNull1
     @E2Container
     @Size(equals = 2)
-    static <EE> List<EE> of(@NotNull E e1, @NotNull E e2);
+    static <G> List<G> of(@NotNull G e1, @NotNull G e2);
 
     @NotModified
     @NotNull1
     @E2Container
     @Size(equals = 3)
-    static <EE> List<EE> of(@NotNull E e1, @NotNull E e2, @NotNull E e3);
+    static <H> List<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3);
 
     boolean remove(@NotNull Object object);
 

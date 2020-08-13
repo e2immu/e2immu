@@ -702,23 +702,38 @@ public class ParameterizedType {
     }
 
     public boolean cannotBeModified() {
-        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
+        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType()
+                // TODO is this correct??
+                || isFunctionalInterface();
     }
 
-    // Two methods part of the supportData computation
-
-    public int complexity() {
-        if (isPrimitive()) return 0;
-        if (isUnboundParameterType()) return 1;
-        TypeInfo typeInfo = bestTypeInfo();
-        if (Primitives.PRIMITIVES.boxed.contains(typeInfo)) return 2;
-        if (typeInfo == Primitives.PRIMITIVES.objectTypeInfo || typeInfo == Primitives.PRIMITIVES.stringTypeInfo)
-            return 3;
-
-        return 10;
+    public boolean cannotBeSupportData() {
+        return arrays == 0 && (isPrimitive()
+                || isUnboundParameterType()
+                || typeInfo != null && Primitives.PRIMITIVES.boxed.contains(typeInfo)
+                || typeInfo == Primitives.PRIMITIVES.objectTypeInfo
+                || typeInfo == Primitives.PRIMITIVES.stringTypeInfo
+        );
     }
 
-    public boolean isElementaryComparedTo(Set<ParameterizedType> typesOfFields) {
-        return complexity() < 10;
+    // I am the bigger type, the argument is the component
+    public boolean containsComponent(ParameterizedType component) {
+
+        // String[], String
+        if (arrays > component.arrays && numericIsAssignableFrom(component, true) != NOT_ASSIGNABLE) return true;
+        // Set<X>, X; this is a bit of a hack, but one that's clear to understand
+        if (parameters.contains(component)) return true;
+
+        TypeInfo bestType = bestTypeInfo();
+        if (bestType != null) {
+
+            // one of my fields is "component"
+            for (FieldInfo fieldInfo : bestType.typeInspection.get().fields) {
+                if (fieldInfo.type.equals(component)) return true;
+            }
+
+
+        }
+        return false;
     }
 }

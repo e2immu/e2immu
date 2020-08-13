@@ -133,7 +133,8 @@ public class ImmutabilityAnnotations {
     @BeforeMark
     @NotModified
     private static FreezableSet generateBefore() {
-        return new FreezableSet(List.of("a", "b"));
+        List<String> list = List.of("a", "b");
+        return new FreezableSet(list);
     }
 
     @E1Immutable
@@ -160,7 +161,7 @@ public class ImmutabilityAnnotations {
 
         @NotModified
         public void addT(@Modified Set<T> set) {
-            set.add(t); // Causes null-pointer warning
+            set.add(t); // WARNING! Causes null-pointer warning
         }
     }
 

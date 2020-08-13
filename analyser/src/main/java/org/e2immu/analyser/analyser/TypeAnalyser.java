@@ -221,25 +221,21 @@ public class TypeAnalyser {
         log(E2IMMUTABLE, "Computing support types for {}", typeInfo.fullyQualifiedName);
         Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.removeIf(ParameterizedType::isPrimitive);
-        if (!typesOfFields.isEmpty()) {
-            Set<ParameterizedType> typesOfMethodsAndConstructors = typeInfo.typesOfMethodsAndConstructors();
-            List<ParameterizedType> sorted = new ArrayList<>(typesOfMethodsAndConstructors);
-            sorted.sort(Comparator.comparingInt(ParameterizedType::complexity));
-            for (ParameterizedType type : typesOfMethodsAndConstructors) {
-                if (type.isElementaryComparedTo(typesOfFields)) {
-                    typesOfFields.remove(type);
-                }
-            }
-            if (!typesOfFields.isEmpty()) {
-                // if there are remaining types, we'll have to build a dependency tree
-                log(E2IMMUTABLE, "Need a more complicated algorithm!");
-            }
-        }
+        Set<ParameterizedType> typesOfMethodsAndConstructors = typeInfo.typesOfMethodsAndConstructors();
+
+        onlyKeepSupportData(typesOfMethodsAndConstructors, typesOfFields);
+
         typeAnalysis.supportDataTypes.set(ImmutableSet.copyOf(typesOfFields));
         log(E2IMMUTABLE, "Support types for {} are: [{}]", typeInfo.fullyQualifiedName,
                 StringUtil.join(typesOfFields, ParameterizedType::detailedString));
         return true;
+    }
+
+    private void onlyKeepSupportData(Set<ParameterizedType> typesOfMethodsAndConstructors, Set<ParameterizedType> supportData) {
+        supportData.removeIf(ParameterizedType::cannotBeSupportData);
+        for (ParameterizedType parameterizedType : typesOfMethodsAndConstructors) {
+            supportData.removeIf(t -> t.containsComponent(parameterizedType));
+        }
     }
 
     /**
