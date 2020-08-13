@@ -39,6 +39,7 @@ public class Lazy<T> {
     @Linked(to = "supplierParam") // the parameter
     private final Supplier<T> supplier;
 
+    @NotModified(after = "get")
     private volatile T t;
 
     /**
@@ -59,8 +60,7 @@ public class Lazy<T> {
      * @throws NullPointerException if the evaluation returns <code>null</code>
      */
     @NotNull
-    @Modified
-    @Mark("get")
+    @Mark(value = "get", type = AnnotationType.CONTRACT)
     public T get() {
         T localT = t;
         if (localT != null) return localT;

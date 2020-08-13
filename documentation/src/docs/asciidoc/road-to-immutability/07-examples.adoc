@@ -23,7 +23,7 @@ public class Lazy<T> {
         this.supplier = supplier;
     }
 
-    @Modified
+    @NotModified(after = "get")
     @Mark("get") // <1>
     public T get() {
         T localT = t;
@@ -38,9 +38,9 @@ public class Lazy<T> {
     }
 }
 ----
-<1> The `@Mark("xx")` annotation generally implies `@Only(before="xx")`.
-This cannot be the case here, as we intend to use the method afterwards as well.
-#TODO needs sorting out#
+<1> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
+This cannot be the case here, as users will call the `get` method repeatedly.
+For now, the {mark} annotation will have to be added by hand.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore.
 Because it is of an unbound type, the field `t` then becomes `@NotModified`.

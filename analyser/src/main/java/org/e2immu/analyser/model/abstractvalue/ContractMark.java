@@ -24,19 +24,16 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
-public class UnknownValue implements Value {
+/**
+ * Specifically used to transfer @Mark(" ...") at CONTRACT level.
+ *
+ */
+public class ContractMark implements Value {
 
-    // used if we don't know yet which value a variable will have
-    public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
+    public final String mark;
 
-    public static final UnknownValue RETURN_VALUE = new UnknownValue("<return value>");
-    public static final UnknownValue NO_RETURN_VALUE = new UnknownValue("<no return value>");
-    public static final UnknownValue NO_VALUE_PRECONDITION = new UnknownValue("<no precondition>");
-
-    private final String msg;
-
-    private UnknownValue(String msg) {
-        this.msg = msg;
+    public ContractMark(String mark) {
+        this.mark = mark;
     }
 
     @Override
@@ -56,7 +53,7 @@ public class UnknownValue implements Value {
 
     @Override
     public String toString() {
-        return msg;
+        return mark;
     }
 
     @Override

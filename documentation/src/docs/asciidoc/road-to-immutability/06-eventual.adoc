@@ -259,4 +259,9 @@ The following arrangement uses the intermediary annotation {supportData} to indi
 
 Eventual finality simply adds a  `@Final(after="mark")` annotation to each of these situations.
 
+
+==== Marking by hand
+
+{mark} can only be set in a modifying method.
+
 // ensure a newline at the end

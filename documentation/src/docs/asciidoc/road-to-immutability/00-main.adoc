@@ -10,6 +10,7 @@
 :e2immu: pass:normal[ _e2immu_ ]
 :intellij: pass:normal[ IntelliJ IDEA ]
 
+:mark: pass:normal[ `@Mark` ]
 :beforeMark: pass:normal[ `@BeforeMark` ]
 :container:  pass:normal[ `@Container` ]
 :dependent:  pass:normal[ `@Dependent` ]

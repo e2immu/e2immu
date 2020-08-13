@@ -184,9 +184,9 @@ public class TypeAnalyser {
             }
 
             if (typeInfo.hasBeenDefined()) {
-                if (analyseOnlyAndMark(typeInfo)) changes = true;
-                if (analyseE1Immutable(typeInfo)) changes = true;
-                if (analyseE2Immutable(typeInfo)) changes = true;
+                if (analyseOnlyMarkEventuallyE1Immutable(typeInfo)) changes = true;
+                if (analyseEffectivelyE1Immutable(typeInfo)) changes = true;
+                if (analyseEffectivelyEventuallyE2Immutable(typeInfo)) changes = true;
                 if (analyseContainer(typeInfo)) changes = true;
                 if (analyseUtilityClass(typeInfo)) changes = true;
                 if (analyseExtensionClass(typeInfo)) changes = true;
@@ -257,7 +257,12 @@ public class TypeAnalyser {
                 typeInfo.fullyQualifiedName);
     }
 
-    private boolean analyseOnlyAndMark(TypeInfo typeInfo) {
+    /*
+      writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
+
+      when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
+     */
+    private boolean analyseOnlyMarkEventuallyE1Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
@@ -346,7 +351,7 @@ public class TypeAnalyser {
         return true;
     }
 
-    private boolean analyseE1Immutable(TypeInfo typeInfo) {
+    private boolean analyseEffectivelyE1Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return false; // we have a decision already
@@ -361,15 +366,15 @@ public class TypeAnalyser {
                 return true;
             }
         }
-        log(E1IMMUTABLE, "Improve @Immutable of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
+        log(E1IMMUTABLE, "Improve IMMUTABLE property of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
         return true;
     }
 
     /**
-     * Rules as of 30 July 2020:
+     * Rules as of 30 July 2020: Definition on top of @E1Immutable
      * <p>
-     * RULE 1: All fields must be @NotModified. This implies that the type must be @E1Immutable, which we check first.
+     * RULE 1: All fields must be @NotModified.
      * <p>
      * RULE 2: All @SupportData fields must be private, or their types must be level 2 immutable
      * <p>
@@ -378,7 +383,7 @@ public class TypeAnalyser {
      * @param typeInfo The type to be analysed
      * @return true if a change was made to typeAnalysis
      */
-    private boolean analyseE2Immutable(TypeInfo typeInfo) {
+    private boolean analyseEffectivelyEventuallyE2Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
 
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);

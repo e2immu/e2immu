@@ -21,6 +21,8 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.ContractMark;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -167,7 +169,7 @@ public class MethodAnalysis extends Analysis {
                 e2ImmuAnnotationExpressions.modified.get();
         annotations.put(ae, true);
 
-        if(returnType.isVoid()) return;
+        if (returnType.isVoid()) return;
 
         // @Identity
         if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
@@ -238,19 +240,6 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
 
-    /*
-    // used in the computation of effectively final fields
-    public final SetOnceMap<FieldInfo, Boolean> fieldAssignments = new SetOnceMap<>(); // -> ASSIGNED in transfer value
-    public final SetOnceMap<FieldInfo, Value> fieldAssignmentValues = new SetOnceMap<>(); // -> Value in transfer value
-
-    // used in the computation of content modification of fields
-    public final SetOnceMap<Variable, Boolean> contentModifications = new SetOnceMap<>(); // -> VP.NOT_MODIFIED
-    // ignoring field assignments for @NotNull computation because of breaking symmetry field <-> parameter
-    public final SetOnceMap<FieldInfo, Boolean> ignoreFieldAssignmentForNotNull = new SetOnceMap<>(); // should disappear
-
-    public final SetOnceMap<FieldInfo, Boolean> fieldRead = new SetOnceMap<>(); // -> READ in transfer value
-*/
-
     // ************** LINKING
 
     // this one is the marker that says that links have been established
@@ -263,9 +252,23 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> precondition = new SetOnce<>();
 
     @Override
-    protected void writePrecondition(String value) {
-        throw new UnsupportedOperationException(); //TODO not yet implemented--we'd have to parse our "value" language
+    protected void writeMark(String mark) {
+        preconditionForOnlyData.set(new ContractMark(mark));
+
     }
+
+    @Override
+    protected void writeOnly(String before, String after, boolean framework) {
+        boolean isAfter = before.isEmpty();
+        // because this is coded by hand, there is no value available
+        String mark = isAfter ? after : before;
+        Value value = new ContractMark(mark);
+        OnlyData onlyData = new OnlyData(value, mark, false, isAfter);
+        preconditionForOnlyData.set(onlyData.precondition);
+        this.onlyData.set(onlyData);
+    }
+
+    // the name refers to the @Only (and @Mark) annotation. It is the data for this annotation.
 
     public static class OnlyData {
         public final Value precondition;
@@ -290,6 +293,8 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> preconditionForOnlyData = new SetOnce<>();
     public final SetOnce<OnlyData> onlyData = new SetOnce<>();
 
+    // ************* object flow
+
     public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
     public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
@@ -297,5 +302,4 @@ public class MethodAnalysis extends Analysis {
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
-
 }

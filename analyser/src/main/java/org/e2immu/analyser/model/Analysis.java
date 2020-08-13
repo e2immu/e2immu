@@ -262,9 +262,13 @@ public abstract class Analysis {
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
                     method.accept(VariableProperty.INDEPENDENT, Level.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
-                    method.accept(VariableProperty.MARK, Level.TRUE);
+                    String value = annotationExpression.extract("value", "");
+                    writeMark(value);
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
-                    method.accept(VariableProperty.ONLY, Level.TRUE);
+                    String before = annotationExpression.extract("before", "");
+                    String after = annotationExpression.extract("after", "");
+                    boolean framework = annotationExpression.extract("framework", false);
+                    writeOnly(before, after, framework);
                 } else if (e2ImmuAnnotationExpressions.output.get().typeInfo == t) {
                     method.accept(VariableProperty.OUTPUT, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
@@ -305,8 +309,16 @@ public abstract class Analysis {
         return messages;
     }
 
+    protected void writeOnly(String before, String after, boolean framework) {
+        throw new UnsupportedOperationException(); // override in MethodAnalysis
+    }
+
     protected void writePrecondition(String value) {
         throw new UnsupportedOperationException(); // only for methods, please override
+    }
+
+    protected void writeMark(String value) {
+        throw new UnsupportedOperationException();// only for methods, please override
     }
 
     /**
