@@ -33,9 +33,11 @@ public class SimpleNotModifiedChecks {
     static class Example1 {
 
         @NotModified(type = VERIFY_ABSENT)
+        @Modified
         public Set<String> set1 = new HashSet<>();
 
         @NotModified(type = VERIFY_ABSENT)
+        @Modified
         public void add(@NotNull String v) {
             set1.add(v);
         }
@@ -59,7 +61,7 @@ public class SimpleNotModifiedChecks {
     @E1Container
     static class Example3 {
         @NotNull
-        @NotModified(type = VERIFY_ABSENT)
+        @Modified
         public Set<String> set3 = new HashSet<>();
 
         @NotModified(type = VERIFY_ABSENT)
@@ -76,7 +78,7 @@ public class SimpleNotModifiedChecks {
     @E1Immutable
     @Container(type = VERIFY_ABSENT)
     static class Example4 {
-        @NotModified(type = VERIFY_ABSENT)
+        @Modified
         @NotNull
         public Set<String> set4;
 
@@ -84,7 +86,7 @@ public class SimpleNotModifiedChecks {
             this.set4 = in4;
         }
 
-        @NotModified(type = VERIFY_ABSENT)
+        @Modified
         public void add4(@NotNull String v) {
             Set<String> local4 = set4;
             local4.add(v); // this statement induces a @NotNull on in4
@@ -96,7 +98,7 @@ public class SimpleNotModifiedChecks {
 
     @E1Container
     static class Example5 {
-        @NotModified(type = VERIFY_ABSENT)
+        @Modified
         public Set<String> set5;
 
         public Example5(@NotModified Set<String> in5) {
@@ -115,7 +117,7 @@ public class SimpleNotModifiedChecks {
     @E1Immutable
     @Container(type = VERIFY_ABSENT)
     static class Example6 {
-        @NotModified(type = VERIFY_ABSENT)
+        @Modified
         @NotNull
         public Set<String> set6;
 

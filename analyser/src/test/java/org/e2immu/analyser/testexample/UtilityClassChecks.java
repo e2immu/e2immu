@@ -30,8 +30,8 @@ import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 public class UtilityClassChecks {
 
     @NotModified
-    static void print(String s) {
-        System.out.println(s);
+    static void print(@NotModified(type=VERIFY_ABSENT) String toPrint) {
+        System.out.println(toPrint);
     }
 
     @UtilityClass

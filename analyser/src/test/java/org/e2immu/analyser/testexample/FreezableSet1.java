@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 @E2Container(after = "freeze")
 public class FreezableSet1 {
 
-    @SupportData
+    @SupportData(type = AnnotationType.VERIFY_ABSENT) // not present, because @E2Container
     private final Set<String> set = new HashSet<>();
     @SupportData(type = AnnotationType.VERIFY_ABSENT)
     private boolean frozen;

@@ -47,7 +47,7 @@ public class SetOnce<T> {
     //@Only(after = "set")
     @NotNull
     @NotModified
-    @Independent // note: independent of the support data, which is not present!
+    @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
     public T get() {
         T localT = t;
         if (localT == null) {

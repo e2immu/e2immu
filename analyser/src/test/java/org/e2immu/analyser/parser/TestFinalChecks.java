@@ -52,7 +52,7 @@ public class TestFinalChecks extends CommonTestRunner {
         TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
 
-        if ("setS4".equals(methodInfo.name) && iteration >= 0) {
+        if ("setS4".equals(methodInfo.name) && iteration >= 1) {
             // @NotModified decided straight away, @Identity as well
             ParameterInfo s4 = methodInfo.methodInspection.get().parameters.get(0);
             Assert.assertEquals(Level.FALSE, s4.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));

@@ -695,19 +695,30 @@ public class ParameterizedType {
         return this; // TODO implement!!
     }
 
-    public boolean isEventual() {
-        TypeInfo typeInfo = bestTypeInfo();
-        if (typeInfo == null) return false;
-        return typeInfo.typeAnalysis.get().isEventual();
-    }
-
-    public boolean isEventuallyE2Immutable() {
+    public boolean isAtLeastEventuallyE2Immutable() {
         if (isUnboundParameterType()) return true;
         TypeInfo bestType = bestTypeInfo();
-        return bestType != null && bestType.isEventuallyE2Immutable();
+        return bestType != null && MultiLevel.isAtLeastEventuallyE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     }
 
     public boolean cannotBeModified() {
-        return isPrimitive() || isEventuallyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
+        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType() || isFunctionalInterface();
+    }
+
+    // Two methods part of the supportData computation
+
+    public int complexity() {
+        if (isPrimitive()) return 0;
+        if (isUnboundParameterType()) return 1;
+        TypeInfo typeInfo = bestTypeInfo();
+        if (Primitives.PRIMITIVES.boxed.contains(typeInfo)) return 2;
+        if (typeInfo == Primitives.PRIMITIVES.objectTypeInfo || typeInfo == Primitives.PRIMITIVES.stringTypeInfo)
+            return 3;
+
+        return 10;
+    }
+
+    public boolean isElementaryComparedTo(Set<ParameterizedType> typesOfFields) {
+        return complexity() < 10;
     }
 }

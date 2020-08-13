@@ -257,7 +257,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SimpleNotModifiedChecks", 1, new DebugConfiguration.Builder()
+        testClass("SimpleNotModifiedChecks", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

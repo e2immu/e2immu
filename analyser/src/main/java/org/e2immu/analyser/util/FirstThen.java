@@ -123,7 +123,7 @@ public class FirstThen<S, T> {
      * or <code>T</code> respectively.
      */
     @Override
-    @NotModified(type = AnnotationType.VERIFY_ABSENT) // @NotModified inherited from Object
+    @NotModified
     public boolean equals(@NotNull(type = AnnotationType.VERIFY_ABSENT) Object o) { // o is @NotModified because of Object
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -138,7 +138,7 @@ public class FirstThen<S, T> {
      * @return a hash code based on the hash code of the initial or final value.
      */
     @Override
-    @NotModified(type = AnnotationType.VERIFY_ABSENT) // automatically so because of Object
+    @NotModified
     public int hashCode() {
         return Objects.hash(first, then);
     }

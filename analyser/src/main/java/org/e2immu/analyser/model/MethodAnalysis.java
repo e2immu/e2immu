@@ -153,7 +153,7 @@ public class MethodAnalysis extends Analysis {
 
         // @Dependent @Independent
         boolean haveSupportData = typeInfo.typeAnalysis.get().haveSupportData();
-        if (haveSupportData && (methodInfo.isConstructor || modified == Level.FALSE)) {
+        if (haveSupportData && (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod())) {
             int independent = getProperty(VariableProperty.INDEPENDENT);
             AnnotationExpression ae = independent == Level.FALSE ? e2ImmuAnnotationExpressions.dependent.get() :
                     e2ImmuAnnotationExpressions.independent.get();
@@ -194,6 +194,10 @@ public class MethodAnalysis extends Analysis {
         if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
             doImmutableContainer(e2ImmuAnnotationExpressions, false, dynamicallyImmutable, true);
         }
+    }
+
+    private boolean allowIndependentOnMethod() {
+        return !returnType.isPrimitive() && !returnType.isVoid() && !returnType.isAtLeastEventuallyE2Immutable();
     }
 
     // ************** LOCAL STORAGE
