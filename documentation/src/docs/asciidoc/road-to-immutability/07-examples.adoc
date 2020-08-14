@@ -14,17 +14,16 @@ import org.e2immu.annotation.*;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-@E2Immutable(after = "get")
+@E2Container(after = "get")
 public class Lazy<T> {
 
     @NotNull1
-    @NotModified(after = "get")
     private final Supplier<T> supplier;
 
     @Final(after = "get")
     private volatile T t;
 
-    public Lazy(@NotNull1 @Modified Supplier<T> supplier) { // <1>
+    public Lazy(@NotNull1 Supplier<T> supplier) { // <1>
         this.supplier = supplier;
     }
 
@@ -48,20 +47,17 @@ public class Lazy<T> {
     }
 }
 ----
-<1> Note that we do not demand that `supplier` is {nm1}. To the contrary, the analyser computes that the code will modify it.
+<1> Note that we do not demand that `supplier` is {nm1}: suppliers do not take parameters, so they cannot modify them.
 <2> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
 This cannot be the case here, as users will call the `get` method repeatedly.
 For now, the {mark} annotation will have to be added by hand.
 <3> Here `t` links to `supplier`, as explained in <<linking-formally>>.
 The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
-Calling the `get` method causes a modification.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore, and it becomes {final}.
 Because it is of an unbound generic type, it is {nm}.
-After the mark, there is no access to `supplier`, which satisfies the {nm1} requirement for the first rule.
+The functional type `Supplier` is ;
 Level 2 immutability rules 2 and 3 do not apply for either fields.
-
-The type is not a container, because eventuality rules do not apply to containers, and the `supplier` parameter to the constructor is modified.
 
 [#firstthen]
 === FirstThen

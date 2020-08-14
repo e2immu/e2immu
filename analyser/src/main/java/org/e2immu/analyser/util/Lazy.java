@@ -32,11 +32,10 @@ import java.util.function.Supplier;
  * @param <T> the container's content type
  */
 
-@E2Immutable(after = "get")
+@E2Container(after = "get")
 public class Lazy<T> {
     @NotNull1
     @Linked(to = "supplierParam")
-    @NotModified(after = "get")
     private final Supplier<T> supplier;
 
     @Final(after = "get")

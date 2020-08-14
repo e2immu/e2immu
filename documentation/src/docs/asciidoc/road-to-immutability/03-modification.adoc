@@ -14,62 +14,62 @@ They are exclusive, and the analyser will compute one or the other for every met
 All non-trivial constructors are modifying, so we avoid clutter by not annotating them.
 
 For clarity, we repeat that directly assigning to the fields also constitutes a modification.
-As a consequence, setters are `@Modified`, while getters are `@NotModified`:
+As a consequence, setters are {modified}, while getters are {nm}.
+Consider:
 
 [source,java]
 ----
-class Message {
+class Counter {
     @Variable
-    private String message;
+    private int counter;
 
     @NotModified
-    public String getMessage() {
-        return message;
+    public int getCounter() {
+        return counter;
     }
 
     @Modified
-    public void setMessage(String message) {
-        this.message = message;
+    public int increment() {
+        counter += 1;
+        return counter;
     }
 }
 
-class Example2 {
+class CountedInfo {
     @Final
     @Modified
-    private final Message message = new Message();
-
-    public Example2() {
-        message.setMessage("No message yet");
-    }
+    private final Counter counter = new Counter();
 
     @Modified
-    public void inform(String info) {
-        this.message.setMessage(info);
+    public void printInfo(String info) {
+        System.out.println("Message " + counter.increment() + ": "+info);
     }
 }
 ----
 
-We also see in the example that the `inform` method is `@Modified`.
-This is because it calls a modifying method on one of the fields: `setMessage`.
+We also see in the example that the `printInfo` method is {modified}.
+This is because it calls a modifying method on one of the fields: `increment`.
 
-The code analyser annotates a parameter with `@NotModified` when the parameter's method does not apply assignments or modifying methods on the object that enters the method via the parameter.
+The code analyser annotates a parameter with {nm} when the parameter's method does not apply assignments or modifying methods on the object that enters the method via the parameter.
 This restriction holds in the strongest possible way, a topic which we will elaborate on later.
-If a parameter is not `@NotModified`, it is `@Modified`.
+If a parameter is not {nm}, it is {modified}.
 
 We will apply exactly the same reasoning to a field.
-A field will be annotated `@NotModified` when none of the type's methods, transitively reachable from a non-private non-constructor method, applies assignments or modifying methods on this field.
+A field will be annotated {nm} when none of the type's methods, transitively reachable from a non-private non-constructor method, applies assignments or modifying methods on this field.
 This restriction again holds in the strongest possible way.
-If a field is not `@NotModified`, it is `@Modified`.
+If a field is not {nm}, it is {modified}.
 
-Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all `@NotModified`.
+Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all {nm}.
 This is pretty obvious in the case of `toString`, `hashCode`, `getClass`.
 It is less obvious for the `wait` and other synchronization-related methods, but remember that as a general rule, we exclude synchronization support from this discussion.
 
 Note also that we cannot add modifying methods to the type `DeeplyImmutable1` in Example 3.
 
-For clarity, let's also look at (a part of) the `Collection` interface, where we've restricted the annotations to `@NotModified` and `@Modified`:
+Proceeding, let us also look at (a part of) the `Collection` interface, where we've restricted the annotations to {nm} and {modified}.
+While in normal classes the analyser computes the annotations, in interfaces the user stipulates or _contracts_ behaviour by annotating:
 
-.Showing the modification status of methods in the `Collection` interface
+[#collection-interface]
+.Modification aspects of the Collection interface
 [source,java]
 ----
 public interface Collection<E> extends Iterable<E> {
@@ -111,17 +111,18 @@ public interface Collection<E> extends Iterable<E> {
 Adding an object to a collection (set, list) will cause some assignment somewhere inside the data structure.
 Returning the size of the collection should not.
 
-Adding all elements of a collection to the object (in `addAll`) should not modify the input collection, whence the `@NotModified`.
-Other types in the parameters do not have a `@NotModified` annotation:
+Adding all elements of a collection to the object (in `addAll`) should not modify the input collection, whence the {nm}.
+Other types in the parameters have not been annotated with {nm}:
 
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
-* `Consumer` because it is a functional type (an interface with only one abstract method), which is always `@NotModified`, as explained in the next section.
+* `Consumer` because it is a functional type (an interface with only one abstract method), which is always {nm}.
+The next section will delve deeper into this.
 
-The rules for not having to write `@NotModified` will be detailed later, but this example covers most of the bases.
+The rules for not having to write {nm} will be detailed later, but this example covers most of the bases.
 
 [#functional-types]
-=== Functional types
+=== Functional types, part 1
 
 The type `Consumer<? super E>` in the `forEach` method of `Collection<E>` is defined as:
 
@@ -143,39 +144,31 @@ void forEach(Consumer<T> consumer) {
 }
 ----
 
-This method is clearly non-modifying: it simply iterates over the elements of the collection, without modifying this collection.
-The `consumer` parameter of the method is {nm} when the method does not modify the object by calling modifying methods.
-The question now is: is `accept` a modifying method?
+This method is clearly non-modifying: it simply iterates over the elements of the collection, _without modifying the fields of the collection object_.
+The `consumer` parameter of the method is always {nm}: the single abstract method, `accept`, does not modify the object graph of the consumer.
+It could, or could not, modify its incoming parameter, _but this incoming parameter is not part of the object graph_.
 
-If there is a modification, we have to consider _where_ this modification takes place.
-Does it take place in the type of `forEach`, `Collection`, or does it take place in a type making use of `Collection` and its
-`forEach` method?
-It seems prudent while analysing to stick to what one knows in the type: there is no way to predict what will go on in types making use of `forEach`.
-
-Therefore, by stipulating that `accept` is {nm}, we enforce that types implementing `Collection` and its `forEach` method cannot make use of `forEach` and its `Consumer` argument in a modifying way.
-#TODO how#
-
-Outside of `Collection` and its implementations, it could be used, for example, like:
+So whilst functional types may be non-modifying, applying them can cause modifications.
+We clarify with more example usage of `forEach`, making use of the `Counter` class defined a bit higher:
 
 [source,java]
 ----
-void addAbc(Collection<Set<String>> sets) {
-    sets.forEach(set -> { set.add("abc"); });
+void incrementAll(Collection<Counter> counters) {
+    counters.forEach(Counter::increment);
 }
 ----
 
-The (hidden) `accept` method takes a set of strings, and modifies this set.
-Without the syntactic sugar, this reads:
+The (hidden) `accept` of `increment` takes a counter, and modifies this counter by incrementing:
 
 [source,java]
 ----
-void addOne(Collection<Set<String>> setse) {
-    Consumer<Set<String>> consumer = new Consumer<>() {
-        void accept(Set<String> set) {
-            set.add("abc");
+void incrementAll(Collection<Counter> counters) {
+    Consumer<Counter> consumer = new Consumer<>() {
+        void accept(Counter counter) {
+            counter.increment();
         }
     }
-    sets.forEach(consumer);
+    counters.forEach(consumer);
 }
 ----
 
@@ -184,24 +177,29 @@ The following example shows four different types of usage of the consumer:
 [source,java]
 ----
 class ConsumerUse {
-    private static Consumer<Set<String>> abcAdder = set -> { set.add("abc"); }
+    private static Consumer<Counter> incrementer = counter -> { counter.increment(); }
 
-    static void addAbc(@Modified Collection<Set<String>> sets) {
-        sets.forEach(consumer);
+    @NotModified1
+    private static Consumer<Counter> printer = counter -> {
+        System.out.println("Counts to " + counter.getCounter());
+    };
+
+    static void incrementAll(@Modified Collection<Counter> counters) {
+        counters.forEach(incrementer);
     }
 
-    static void println(@NotModified Collection<Set<String>> sets) {
-        sets.forEach(System.out::println);
+    static void println(@NotModified Collection<Counter> counters) {
+        counters.forEach(printer);
     }
 
-    static void doSomethingModifying(@Modified Collection<Set<String>> sets,
-            Consumer<Set<String>> consumer) {
-        sets.forEach(consumer);
+    static void doSomethingModifying(@Modified Collection<Counter> counters,
+            Consumer<Counter> consumer) {
+        counters.forEach(consumer); // .forEach(c -> consumer.accept(c))
     }
 
-    static void doSomethingNonModifying(@NotModified Collection<Set<String>> sets,
-            @NotModified1(type = CONTRACT) Consumer<Set<String>> consumer) {
-        sets.forEach(consumer);
+    static void doSomethingNonModifying(@NotModified Collection<Counter> counters,
+            @NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
+        counters.forEach(consumer);
     }
 
     static void forEach(@NotModified Collection<String> strings, Consumer<String> consumer) {
@@ -211,29 +209,27 @@ class ConsumerUse {
 ----
 
 In the first two methods, the analyser knows which `Consumer` object will be handed to `forEach`.
-It correspondingly computes that in the first method, `sets` will be modified, and in the second method, `sets` will remain unchanged.
+It finds that in the first method the collection's object graph containing the counters will be modified.
+In the second method, the same object graph will remain unchanged.
+
+How does it do that?
+By definition, for the parameter `counters` to be {modified} a modifying method needs to be applied to it.
+This does not happen: `forEach` as a method is not modifying.
+However, `forEach` feeds the elements of the collection into a modifying `accept` method.
+As such, the object graph of the collection, containing the individual elements, changes.
+
+The analyser reasons as follows: the `incrementer` functional type has a modifying single abstract method.
+#TODO#.
 
 In the third and fourth method, however, the implementation of the consumer comes from outside the type.
+We cannot know whether the consumer will modify the collection's object graph.
+In the fourth method, by annotating with {nm1}, the user shows intent, and asks the analyser to make sure the consumer's `accept` method is non-modifying.
+As a consequence, the analyser computes that `counters` is {nm}.
+In the third method this intent is absent, and the analyser must conclude that `doSomethingModifying` modifies `counters`.
 
 The fifth case is very similar to the original `forEach` method.
-Because strings are deeply immutable, we know that
+Because strings are deeply immutable, we know that no consumer can change the individual strings, and we know that `forEach` as a method is not modifying.
 
-In the `addAbc` case,
-
-We cannot realistically compute this using a static analyser.
-This is the point where the programmer needs to _show intent_ by manually adding a contract annotation on the `consumer` parameter to indicate that its method is non-modifying:
-
-This annotation and the use of `...1` at the end is in line with `@NotNull1`, detailed in <<nullable-section>>, which guarantees that the parameter values of the `apply` method are never null.
-
-Once the contract annotation is in place, the analyser computes that `sets` is {nm}, that `addOne` is not a modifying method, and that, because the method does not access any fields nor overrides another method, it should be made static.
-
-We conclude this section with the locality principle for modifications:
-
-****
-*Locality principle*: the modifications that a parameter of functional type can effect are outside the analysable scope:
-in the `void forEach(Consumer<? super E> action)` method of `Collection<E>`, it is _possible_ to use the method to modify `E`.
-But this must happen outside the scope of the interface or its implementations, and will be annotated if it happens.
-This will form the basis of the definition of a {container} in the next chapter.
-****
+Note that the use of `...1` at the end of {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of the `apply` method, are never null.
 
 // ensure a newline at the end

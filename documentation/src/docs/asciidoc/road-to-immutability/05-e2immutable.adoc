@@ -349,7 +349,7 @@ Modifications to `v` may imply modifications to either `a`, `b`, or `c`; convers
 may have an impact on `v`.
 The connected sub-graph `v`, `a`, `b`, `c` therefore forms one 'equivalence class' with respect to modification.
 
-=== Functional types, part 2
+=== Functional types, part 3
 
 We have detailed in <<functional-types>> why functional types are compatible with the container concept.
 Now we must verify when they are compatible with the rules of level 2 immutability.

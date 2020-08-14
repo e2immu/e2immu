@@ -1,5 +1,7 @@
 == Containers
 
+=== Definition
+
 Loosely speaking, a container is a type to which you can safely pass on your objects, it will not modify them.
 This is the formal rule:
 
@@ -41,22 +43,40 @@ While it is clearly level 1 immutable, it will remain to be seen if it satisfies
 However, it is easily recognized as a container: a type you use and trust to hold objects.
 
 Containers occur frequently as static sub-types to build immutable objects.
-Examples will follow later, after the definition of level 2 immutability.
+Examples of these will follow later, after the definition of level 2 immutability.
 
-Let us conclude this section with an example two types, one which is a container according to the contract, and one which is not:
+Let us conclude this section with an example consisting of three types: the first a class computed to be a container, the second a container according to the contract, and the third a class which cannot be a container:
 
 [source,java]
 ----
+@Container
+class ErrorMessage {
+    private String message;
+
+    public ErrorMessage(String message) {
+        this.message = message;
+    }
+
+    @NotModified
+    public String getMessage() {
+        return message;
+    }
+
+    @Modified
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
+
 @Container
 interface ErrorRegistry {
     @NotModified
     List<ErrorMessage> getErrors();
 
     @Modified
-    void addError(@NotModified ErrorMessage errorMessage);
+    void addError(@NotModified ErrorMessage errorMessage); // <1>
 }
 
-@ModifiesArguments
 class BinaryExpression extends Expression {
     public final Expression lhs;
     public final Expression rhs;
@@ -72,9 +92,22 @@ class BinaryExpression extends Expression {
     }
 }
 ----
+<1> Implementations of `ErrorRegistry` will not be allowed to use the `setMessage` setter in `addError`.
 
-The `BinaryExpression` is not a container, because it uses one of the parameters of its methods as a writable container.
-We use the annotation `MutableModifiesArguments` to explicitly indicate that a type is not a container.
+The `BinaryExpression` is not a container, because it uses one of the parameters of its methods, `errorRegistry`, as a writable container.
+
+=== Functional types, part 2
+
+The `Collection` interface as depicted in <<collection-interface>> left the `Consumer` parameter of `forEach` unannotated.
+We would very much like `Collection` to be a container, it is almost the archetypal example of this concept.
+
+The main rule for containers stipulates that the parameter has to be {nm}, which is the case.
+So it seems easy to conclude that functional parameters can safely be passed as an argument to containers.
+
+The main argument for going along with this is predictability and control: the container will not modify your objects.
+If the implementation of the consumer modifies your objects, well, you were the one providing the container with the means of modification.
+You remain in control, and do not need to study the container's code to predict if there will be modifications to the data you sent to the container, or not.
+
 
 == Linking and independence
 
