@@ -351,7 +351,7 @@ The connected sub-graph `v`, `a`, `b`, `c` therefore forms one 'equivalence clas
 
 === Functional types, part 3
 
-We have detailed in <<functional-types>> why functional types are compatible with the container concept.
+We have detailed in <<functional-types>> and <<functional-types-2>> why functional types are compatible with the container concept.
 Now we must verify when they are compatible with the rules of level 2 immutability.
 
 The first rule states that fields must be {nm}.

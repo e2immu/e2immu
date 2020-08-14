@@ -7,6 +7,7 @@
 ****
 
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
+In the case of functional types, this includes their closure.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
 The code analyser uses the annotations {nm} and {modified}.
@@ -116,8 +117,8 @@ Other types in the parameters have not been annotated with {nm}:
 
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
-* `Consumer` because it is a functional type (an interface with only one abstract method), which is always {nm}.
-The next section will delve deeper into this.
+* `Consumer` because it is a functional type (an interface with only one abstract method).
+The next section will delve deeper into parameters of such types.
 
 The rules for not having to write {nm} will be detailed later, but this example covers most of the bases.
 
@@ -145,11 +146,13 @@ void forEach(Consumer<T> consumer) {
 ----
 
 This method is clearly non-modifying: it simply iterates over the elements of the collection, _without modifying the fields of the collection object_.
-The `consumer` parameter of the method is always {nm}: the single abstract method, `accept`, does not modify the object graph of the consumer.
-It could, or could not, modify its incoming parameter, _but this incoming parameter is not part of the object graph_.
 
-So whilst functional types may be non-modifying, applying them can cause modifications.
-We clarify with more example usage of `forEach`, making use of the `Counter` class defined a bit higher:
+The `consumer` parameter of the method can be modifying or not.
+This does not depend on whether applying the single abstract method, `accept`, modifies its parameter: this incoming parameter is not part of the object graph.
+However, the method can make modifications to its closure.
+
+So functional types can be modifying or non-modifying; at the same time, applying them may cause modifications to the input sent to the parameters.
+We clarify with the following examples, making use of the `Counter` class defined a bit higher:
 
 [source,java]
 ----
@@ -172,7 +175,7 @@ void incrementAll(Collection<Counter> counters) {
 }
 ----
 
-The following example shows four different types of usage of the consumer:
+The following type shows four different methods, each using the consumer differently:
 
 [source,java]
 ----

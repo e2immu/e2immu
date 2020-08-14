@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 public class Lazy<T> {
 
     @NotNull1
+    @NotModified(after = "get")
     private final Supplier<T> supplier;
 
     @Final(after = "get")
@@ -48,15 +49,17 @@ public class Lazy<T> {
 }
 ----
 <1> Note that we do not demand that `supplier` is {nm1}: suppliers do not take parameters, so they cannot modify them.
+Even {nm} is not needed, because after the mark, the `get` method is not accessible anymore.
 <2> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
 This cannot be the case here, as users will call the `get` method repeatedly.
 For now, the {mark} annotation will have to be added by hand.
 <3> Here `t` links to `supplier`, as explained in <<linking-formally>>.
 The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
+Calling `get` may cause a modification in `supplier`.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore, and it becomes {final}.
 Because it is of an unbound generic type, it is {nm}.
-The functional type `Supplier` is ;
+The `Supplier` parameter and field can be modifiable or not; after the mark, the `get` method is not accessible anymore.
 Level 2 immutability rules 2 and 3 do not apply for either fields.
 
 [#firstthen]

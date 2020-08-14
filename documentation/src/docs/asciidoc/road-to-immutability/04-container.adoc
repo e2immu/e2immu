@@ -96,18 +96,23 @@ class BinaryExpression extends Expression {
 
 The `BinaryExpression` is not a container, because it uses one of the parameters of its methods, `errorRegistry`, as a writable container.
 
+[#functional-types-2]
 === Functional types, part 2
 
 The `Collection` interface as depicted in <<collection-interface>> left the `Consumer` parameter of `forEach` unannotated.
 We would very much like `Collection` to be a container, it is almost the archetypal example of this concept.
 
-The main rule for containers stipulates that the parameter has to be {nm}, which is the case.
-So it seems easy to conclude that functional parameters can safely be passed as an argument to containers.
+The main rule for containers stipulates that the parameter has to be {nm}, which we cannot know to be the case:
+the user can provide us with a single abstract method that modifies its closure, or not.
+We propose to change the definition of container slightly:
+
+****
+*Definition (updated)*: a type is a *container* when none of the parameters of the non-private methods and constructors of the type, except parameters of a functional type, are modifying,
+****
 
 The main argument for going along with this is predictability and control: the container will not modify your objects.
-If the implementation of the consumer modifies your objects, well, you were the one providing the container with the means of modification.
+If the implementation of the functional type modifies your objects, well, you were the one providing the container with the means of modification.
 You remain in control, and do not need to study the container's code to predict if there will be modifications to the data you sent to the container, or not.
-
 
 == Linking and independence
 
