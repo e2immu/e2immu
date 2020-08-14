@@ -1,4 +1,3 @@
-
 == Modification
 
 === Definition
@@ -10,7 +9,7 @@
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
-The code analyser uses the annotations `@NotModified` and `@Modified`.
+The code analyser uses the annotations {nm} and {modified}.
 They are exclusive, and the analyser will compute one or the other for every method of the type.
 All non-trivial constructors are modifying, so we avoid clutter by not annotating them.
 
@@ -19,7 +18,6 @@ As a consequence, setters are `@Modified`, while getters are `@NotModified`:
 
 [source,java]
 ----
-@Mutable
 class Message {
     @Variable
     private String message;
@@ -118,10 +116,9 @@ Other types in the parameters do not have a `@NotModified` annotation:
 
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
-* `Consumer` because it is a functional type (an interface with only one abstract method), which is always `@NotModified`, as detailed further on.
-#TODO not correct anymore#
+* `Consumer` because it is a functional type (an interface with only one abstract method), which is always `@NotModified`, as explained in the next section.
 
-The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
+The rules for not having to write `@NotModified` will be detailed later, but this example covers most of the bases.
 
 [#functional-types]
 === Functional types
@@ -136,14 +133,34 @@ interface Consumer<T> {
 }
 ----
 
-It could be used, for example, like:
+The type `Collection` could implement `forEach` as:
+
+.Possible implementation of forEach
+[source,java]
+----
+void forEach(Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+This method is clearly non-modifying: it simply iterates over the elements of the collection, without modifying this collection.
+The `consumer` parameter of the method is {nm} when the method does not modify the object by calling modifying methods.
+The question now is: is `accept` a modifying method?
+
+If there is a modification, we have to consider _where_ this modification takes place.
+Does it take place in the type of `forEach`, `Collection`, or does it take place in a type making use of `Collection` and its
+`forEach` method?
+It seems prudent while analysing to stick to what one knows in the type: there is no way to predict what will go on in types making use of `forEach`.
+
+Therefore, by stipulating that `accept` is {nm}, we enforce that types implementing `Collection` and its `forEach` method cannot make use of `forEach` and its `Consumer` argument in a modifying way.
+#TODO how#
+
+Outside of `Collection` and its implementations, it could be used, for example, like:
 
 [source,java]
 ----
-void addOne(Collection<Set<String>> sets, List<String> stringSource) {
-    sets.forEach(set -> {
-        if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
-    });
+void addAbc(Collection<Set<String>> sets) {
+    sets.forEach(set -> { set.add("abc"); });
 }
 ----
 
@@ -152,49 +169,59 @@ Without the syntactic sugar, this reads:
 
 [source,java]
 ----
-void addOne(Collection<Set<String>> sets, List<String> stringSource) {
+void addOne(Collection<Set<String>> setse) {
     Consumer<Set<String>> consumer = new Consumer<>() {
         void accept(Set<String> set) {
-            if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
+            set.add("abc");
         }
     }
     sets.forEach(consumer);
 }
 ----
 
-The `forEach` method is modifying the individual sets, but it does not change the collection `sets` itself, which is why we marked the method {nm}.
-Neither does `forEach` change the functional type itself, which is why we (implicitly) annotated the `Consumer` parameter with `@NotModified`.
-However, this particular implementation of `accept` is modifying its input, causing the `sets` parameter to be modified.
-
-Reshuffling yields:
+The following example shows four different types of usage of the consumer:
 
 [source,java]
 ----
-List<String> stringSource = ...
-Consumer<Set<String>> consumer = new Consumer<>() {
-    void accept(Set<String> set) {
-        if(!stringSource.isEmpty()) set.add(stringSource.remove(0));
-    }
-};
-...
+class ConsumerUse {
+    private static Consumer<Set<String>> abcAdder = set -> { set.add("abc"); }
 
-void addOne(Collection<Set<String>> sets, Consumer<Set<String>> consumer) {
-    sets.forEach(consumer);
+    static void addAbc(@Modified Collection<Set<String>> sets) {
+        sets.forEach(consumer);
+    }
+
+    static void println(@NotModified Collection<Set<String>> sets) {
+        sets.forEach(System.out::println);
+    }
+
+    static void doSomethingModifying(@Modified Collection<Set<String>> sets,
+            Consumer<Set<String>> consumer) {
+        sets.forEach(consumer);
+    }
+
+    static void doSomethingNonModifying(@NotModified Collection<Set<String>> sets,
+            @NotModified1(type = CONTRACT) Consumer<Set<String>> consumer) {
+        sets.forEach(consumer);
+    }
+
+    static void forEach(@NotModified Collection<String> strings, Consumer<String> consumer) {
+        strings.forEach(consumer);
+    }
 }
 ----
 
-If the `apply` method of the `consumer` is modifying, then `sets` will be modified.
-If it is not modifying, for example, in the case of the consumer `String.out::println`, then `sets` will not be modified.
+In the first two methods, the analyser knows which `Consumer` object will be handed to `forEach`.
+It correspondingly computes that in the first method, `sets` will be modified, and in the second method, `sets` will remain unchanged.
+
+In the third and fourth method, however, the implementation of the consumer comes from outside the type.
+
+The fifth case is very similar to the original `forEach` method.
+Because strings are deeply immutable, we know that
+
+In the `addAbc` case,
+
 We cannot realistically compute this using a static analyser.
 This is the point where the programmer needs to _show intent_ by manually adding a contract annotation on the `consumer` parameter to indicate that its method is non-modifying:
-
-[source,java]
-----
-void addOne(Collection<Set<String>> sets,
-            @NotModified1(type = CONTRACT) Consumer<Set<String>> consumer) {
-    sets.forEach(consumer);
-}
-----
 
 This annotation and the use of `...1` at the end is in line with `@NotNull1`, detailed in <<nullable-section>>, which guarantees that the parameter values of the `apply` method are never null.
 
