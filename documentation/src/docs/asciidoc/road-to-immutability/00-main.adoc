@@ -35,11 +35,9 @@
 // all introductory sections
 include::{includedir}/road-to-immutability/01-intro.adoc[]
 
-
-// e1immutable includes modification
 include::{includedir}/road-to-immutability/02-e1immutable.adoc[]
 
-include::{includedir}/road-to-immutability/03-contract.adoc[]
+include::{includedir}/road-to-immutability/03-modification.adoc[]
 
 // container includes linking
 include::{includedir}/road-to-immutability/04-container.adoc[]

@@ -215,7 +215,7 @@ static int method3() {
 <1> The code analyser marks these statements as errors!
 
 The analyser chains together the different flows; in this way, it is mostly able to detect whether an object is a mutable or immutable state.
-Once the analyser confirms the object's state change has happened, it can add the `@E2Immutable` annotation to the field or method, as detailed in <<propagation-dynamic>>.
+Once the analyser confirms the object's state change has happened, it can add the `@E2Immutable` annotation to the field or method, as detailed in <<dynamic-type-annotations>>.
 
 === Propagation
 

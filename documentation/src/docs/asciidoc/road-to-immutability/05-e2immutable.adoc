@@ -1,5 +1,7 @@
 == Level 2 immutability
 
+=== Definition
+
 First, what do we want intuitively?
 A useful form of immutability, less strong than deeply immutable, but better than level 1 immutability for quite some situations.
 We propose the following:
@@ -10,10 +12,11 @@ The type is not responsible for what others do to the content of the objects it 
 ****
 
 Technically, level 2 immutability is much harder to define than level 1 immutability.
-We identify three rules, one of which must be observed at all times:
+We identify three rules, on top of the obvious level 1 immutability requirement.
+One of these must be observed at all times:
 
 ****
-*Definition*: the *first rule of level 2 immutability*, on top of level 1 immutability, is that all fields must be {nm}.
+*Definition*: the *first rule of level 2 immutability* is that all fields must be {nm}.
 ****
 
 Our friend the `Pair` satisfies this first rule:
@@ -303,7 +306,48 @@ Linking rules:
 . an assignment of a parameter or field to that parameter links the field to that other field or parameter
 . an assignment to th
 
-[#propagation-dynamic]
-=== Propagation
+=== Functional types, part 2
+
+We have detailed in <<functional-types>> why functional types are compatible with the container concept.
+Now we must verify if they are compatible with the first rule of level 2 immutability: all fields must be {nm}.
+
+Are they support data types?
+In the case of `Lazy<T>`, the field of type `Supplier<T>` obviously is.
+So the functional interface should also obey rules 2 and 3.
+
+As for rule 2: being either private, or {e2immutable} itself.
+Can functional types be {e2immutable}?
+We simply need to follow the rules, looking at the functional type as a sub-type (static, or inner class).
+
+As for rule 3, independence.
+A consumer parameter can serve to smuggle out objects!
+Consider two visitor-methods added to the safe set-based container of version 3 above:
+
+.Modification of v3 as defined above
+[source,java]
+----
+class SetBasedContainer3<T> {
+    private final Set<T> data;
+    public SetBasedContainer3(Set<T> ts) {
+        this.data = new HashSet<>(ts);
+    }
+    public Stream<T> stream() {
+        return data.stream();
+    }
+    public void unsafeVisit(Consumer<Set<T>> consumer) {
+        consumer.apply(data); // <1>
+    }
+    public void safeVisit(Consumer<T> consumer) {
+        data.forEach(consumer); // <2>
+    }
+}
+----
+<1> The consumer exposes `data` to the outside world.
+<2> The consumer exposes `T` elements to the outside world.
+
+[#dynamic-type-annotations]
+=== Dynamic type annotations
 
 When it is clear a method returns an immutable set, but the formal type is `java.util.Set`, the {e2immutable} annotation can 'travel':
+
+The computations that the analyser needs to track dynamic type annotations, are similar to those it needs to compute eventual immutability, as introduced in the next chapter.

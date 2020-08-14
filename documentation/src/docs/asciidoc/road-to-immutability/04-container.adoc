@@ -161,16 +161,17 @@ The definition for independence on a constructor is very similar:
 *Definition*: A constructor is *independent* when the fields of the resulting instance do not link to the parameters of the constructor.
 ****
 
-Finally, we provide a definition for cases where programmers choose to systematically return method results via parameters rather than the return type, as is often the case when using, for example, the vertx.io framework:
+Finally, we provide a definition to deal with parameters of functional type.
+Note that in frameworks like link:vertx.io, such parameters are the default means of 'returning' or propagating values.
 
 ****
-*Definition*: if a method does not return a real value (it is `void`, or it returns `this`), and it has consumer parameters, then it is *independent* when the objects linking to the consumers do not link to the fields of the class or other parameters of the method.
+*Definition*: if a method has parameters of functional type, then it is *independent* when the objects linking to the arguments of the single abstract method do not link to the fields of the class or other parameters of the method.
 ****
 
 It follows immediately that:
 
-- empty constructors of top-level types and static sub-types (but not necessarily sub types-that are not static!) are always independent; no need to annotate
-- methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
+* empty constructors of top-level types and static sub-types (but not necessarily inner classes, sub types-that are not static) are always independent
+* methods that return primitives or deeply immutable objects are independent, since these objects cannot be modified
 
 Examples follow soon, once immutability has been defined in more detail.
 
