@@ -6,6 +6,7 @@ We discuss them briefly, and refer to the user manual for an in-depth analysis.
 [#nullable-section]
 === Nullable, not null
 
+[#identity-and-fluent]
 === Identity and fluent methods
 
 The analyser marks methods which returns their first parameter with `@Identity`, and methods which return `this` with `@Fluent`.

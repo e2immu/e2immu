@@ -1,5 +1,9 @@
 === List of annotations
 
+==== @Identity
+
+Note that {identity} has an effect on linking of variables: a method marked {identity} only links to the first parameter.
+
 ==== @NotModified
 
 ==== @NotModified1

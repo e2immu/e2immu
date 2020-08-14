@@ -137,6 +137,7 @@ public class TestContainerChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        // warning to expect: the potential null pointer exception of strings2
         testClass("ContainerChecks", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

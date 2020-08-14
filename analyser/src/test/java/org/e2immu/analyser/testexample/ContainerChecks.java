@@ -72,7 +72,7 @@ public class ContainerChecks {
         @Modified
         public void add2(@NotNull String string2) {
             strings2.add(string2);
-        } // ERROR potential null pointer exception
+        } // WARNING potential null pointer exception
     }
 
     // variant of the second example: the add method breaks the contract;
@@ -190,7 +190,6 @@ public class ContainerChecks {
         }
 
         @NotModified
-        @Independent
         // note: a t m we do not want @NotModified on consumer, because it is @NotModified by default (functional interface)
         public void visit(@NotNull1 Consumer<String> consumer) {
             list.forEach(consumer);

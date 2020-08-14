@@ -30,6 +30,7 @@
 :nullable: pass:normal[ `@Nullable` ]
 :supportData: pass:normal[ `@SupportData` ]
 :variable:  pass:normal[ `@Variable` ]
+:identity:  pass:normal[ `@Identity` ]
 
 
 // all introductory sections

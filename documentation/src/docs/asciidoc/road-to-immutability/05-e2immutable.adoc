@@ -297,21 +297,64 @@ class Example2 {
 }
 ----
 
+[#linking-formally]
 === Linking, formally
 
-To compute linking, the analyser tracks actual objects rather than
+To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
+It computes a dependency graph of variables depending on other variables, with the following rules:
 
-Linking rules:
+. in an assignment `v = w`, variable `v` links to variable `w`
+. in an assignment `v = a.method(b, c)`, the default rule is that variable `v` links to `a`, `b` and `c`.
++
+--
+We discern a number of special cases:
 
-. an assignment of a parameter or field to that parameter links the field to that other field or parameter
-. an assignment to th
+.. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
+.. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
+.. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
+.. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
+`v` links to `b` only.
+--
++
+Note that:
++
+--
+.. When `a == this`, as in `v = method(b, c)`, `v` could link to any field in the type.
+Therefore, unless any of the rules above apply, we will link `v` to `this`.
+.. If a parameter, say `b`, is a functional type, then passing `b` to `method` amounts to applying the single abstract method of the functional type.
+The linking to `b` will now depend on the properties of the single abstract method:
+
+... if the single abstract method returns a primitive or object of {e2immutable} type, then `v` will be independent of `b`.
+... if the single abstract method can be marked {independent}, `v` will be independent of `b`
+... in all other cases, `v` will link to `b`
+
+--
+
+. in an assignment `v = new A(b, c)`, the rules are very similar to that of a normal method call.
+By default, `v` links to `b` and `c`.
+
+.. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
+.. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
+
+Most of the other rules follow from the basic rules above.
+For example,
+
+. in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.
+. type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
+. Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`
+
+_A note on directionality._ The definitions posited above appear directed: `v` links to `a`, `b` and `c`.
+This means the object held by `v` may contain (parts of) the object represented by `a`, `b` or `c`.
+Modifications to `v` may imply modifications to either `a`, `b`, or `c`; conversely, any modification to `a`, `b` or `c`
+may have an impact on `v`.
+The connected sub-graph `v`, `a`, `b`, `c` therefore forms one 'equivalence class' with respect to modification.
 
 === Functional types, part 2
 
 We have detailed in <<functional-types>> why functional types are compatible with the container concept.
 Now we must verify if they are compatible with the first rule of level 2 immutability: all fields must be {nm}.
 
-Are they support data types?
+#TODO TODO are we certain that functional types of `T` are support data?# Are they support data types?
 In the case of `Lazy<T>`, the field of type `Supplier<T>` obviously is.
 So the functional interface should also obey rules 2 and 3.
 
@@ -335,7 +378,7 @@ class SetBasedContainer3<T> {
         return data.stream();
     }
     public void unsafeVisit(Consumer<Set<T>> consumer) {
-        consumer.apply(data); // <1>
+        consumer.accept(data); // <1>
     }
     public void safeVisit(Consumer<T> consumer) {
         data.forEach(consumer); // <2>

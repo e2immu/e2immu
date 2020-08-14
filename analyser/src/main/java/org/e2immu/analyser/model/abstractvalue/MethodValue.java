@@ -196,9 +196,10 @@ public class MethodValue implements Value {
      * to. There is no need to consider linking between `b`, `c` and `d` here because that linking takes place in the method's
      * definition itself. We consider 4 cases:
      *
-     * 1. a is primitive, unbound type parameter, or e2immutable: independent
+     * 1. a is primitive, or e2immutable: independent
      * 2. method is @Independent: independent (the very definition)
-     * 3. b is @E2Immutable: only dependent on c, d
+     * 3. method is @Identity: only the first parameter
+     * 4. b is @E2Immutable: only dependent on c, d
      *
      * Note that a dependence on a parameter is only possible when it is not primitive or @E2Immutable (see VariableValue).
      * On top of that comes the situation where the analyser has more detailed information than is in the annotations.
@@ -227,12 +228,16 @@ public class MethodValue implements Value {
             return INDEPENDENT;
         }
 
+        // RULE 3
+        boolean identity = methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY) == Level.TRUE;
+        if (identity) return parameters.get(0).linkedVariables(bestCase, evaluationContext);
+
         // some prep.
 
         Set<Variable> result = new HashSet<>();
         parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
 
-        // RULE 3, in a = b.method(c,d), return c and d when b is E2Immutable
+        // RULE 4, in a = b.method(c,d), return c and d when b is E2Immutable
         boolean objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER;
         if ((bestCase || methodInfoDifferentType) && objectE2Immutable) // RULE 3
             return result;

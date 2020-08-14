@@ -5,7 +5,7 @@
 `Lazy` implements a lazily-initialized immutable field, of unbound generic type `T`.
 As such, it is eventually an `@E2Container`.
 
-.Code fragment: The code analyser's Lazy type.
+.Code fragment: The code analyser's Lazy type
 [source,java]
 ----
 package org.e2immu.analyser.util;
@@ -16,38 +16,48 @@ import java.util.function.Supplier;
 
 @E2Container(after = "get")
 public class Lazy<T> {
+
+    @NotNull1
     private final Supplier<T> supplier;
+
+    @Final(after = "get")
     private volatile T t;
 
     public Lazy(@NotNull1 Supplier<T> supplier) {
         this.supplier = supplier;
     }
 
-    @NotModified(after = "get")
-    @Mark("get") // <1>
+    @NotNull
+    @Mark("get", type = CONTRACT) // <1>
     public T get() {
         T localT = t;
         if (localT != null) return localT;
 
         synchronized (this) {
             if (t == null) {
-                t = Objects.requireNonNull(supplier.get());
+                t = Objects.requireNonNull(supplier.get()); // <2>
             }
             return t;
         }
+    }
+
+    @NotModified
+    public boolean hasBeenEvaluated() {
+        return t != null;
     }
 }
 ----
 <1> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
 This cannot be the case here, as users will call the `get` method repeatedly.
 For now, the {mark} annotation will have to be added by hand.
+<2> Here `t` links to `supplier`, as explained in <<linking-formally>>.
+The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore.
-Because it is of an unbound type, the field `t` then becomes `@NotModified`.
+Because it is of an unbound generic type, the field `t` then becomes `@NotModified`.
 Because it is a functional type, `supplier` is `@NotModified`.
 The type is also clearly a container.
-Rules 2 and 3 are not required for type `T`.
-They are for the `supplier`: it is private, and independent because it is immutable itself as a functional type.
+Level 2 immutability rules 2 and 3 do not apply for either fields.
 
 [#firstthen]
 === FirstThen
