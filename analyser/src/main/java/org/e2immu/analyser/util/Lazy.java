@@ -27,18 +27,17 @@ import java.util.function.Supplier;
  * Implementation of a lazy value, where <code>null</code> is used to indicate that the value has not been
  * evaluated yet.
  * <p>
+ * Currently there is no means of detecting the @Mark annotation, which is why we have added it as a contract.
  *
  * @param <T> the container's content type
  */
 
 @E2Container(after = "get")
 public class Lazy<T> {
-    @NotModified1(after = "get")
     @NotNull1
     @Linked(to = "supplierParam")
     private final Supplier<T> supplier;
 
-    @NotModified(after = "get")
     @Final(after = "get")
     private volatile T t;
 

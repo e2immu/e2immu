@@ -79,9 +79,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int modifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.FALSE : Level.TRUE;
         int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
 
+        // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
+        int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
+        boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
+
         // scope
         Value objectValue = computedScope.evaluate(evaluationContext, visitor, new ForwardEvaluationInfo(Map.of(
-                VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL,
+                VariableProperty.NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.MODIFIED, modifiedValue), true));
@@ -132,7 +136,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         Value result;
         if (!methodInfo.isVoid()) {
-            checkForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext);
+            complianceWithForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext, contentNotNullRequired);
 
             result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
         } else {
@@ -144,6 +148,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(evaluationContext, objectValue);
 
         return result;
+    }
+
+    private int notNullRequirementOnScope(int notNullRequirement) {
+        if (methodInfo.typeInfo.isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
+            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL; // @NotNull1
+        }
+        return MultiLevel.EFFECTIVELY_NOT_NULL;
     }
 
     private void checkOnly(ObjectFlow objectFlow, EvaluationContext evaluationContext) {
@@ -238,16 +249,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return null;
     }
 
-    private void checkForwardRequirements(MethodAnalysis methodAnalysis, ForwardEvaluationInfo forwardEvaluationInfo, EvaluationContext evaluationContext) {
-        // compliance with current requirements
-        int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
-            boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodAnalysis.getProperty(VariableProperty.NOT_NULL));
-            if (!isNotNull) {
-                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method call " + methodInfo.distinguishingName());
+    private void complianceWithForwardRequirements(MethodAnalysis methodAnalysis,
+                                                   ForwardEvaluationInfo forwardEvaluationInfo,
+                                                   EvaluationContext evaluationContext,
+                                                   boolean contentNotNullRequired) {
+        if (!contentNotNullRequired) {
+            int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
+            if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
+                boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodAnalysis.getProperty(VariableProperty.NOT_NULL));
+                if (!isNotNull) {
+                    evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                            "Result of method call " + methodInfo.distinguishingName());
+                }
             }
-        }
-        // TODO not modified requirements on result of method call? may be tricky
+        } // else: we've already requested this from the scope (functional interface)
+
+        // TODO @NotModified1
+
         int requiredSize = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
         if (requiredSize > Level.FALSE) {
             int currentSize = methodAnalysis.getProperty(VariableProperty.SIZE);

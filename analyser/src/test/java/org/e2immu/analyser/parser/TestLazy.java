@@ -103,11 +103,9 @@ public class TestLazy extends CommonTestRunner {
         }
     };
 
-    // TODO for later: @NotNull1 inference on Objects.requireNotNull(supplier.get())
-
     @Test
     public void test() throws IOException {
-        testUtilClass("Lazy", 0, 1, new DebugConfiguration.Builder()
+        testUtilClass("Lazy", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
