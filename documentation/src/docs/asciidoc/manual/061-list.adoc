@@ -1,7 +1,18 @@
-
 === List of annotations
 
 ==== @NotModified
+
+==== @NotModified1
+
+The {nm1} annotation exists for functional types only (types which implement `java.lang.@FunctionalInterface`).
+It indicates that a particular concrete instantiation of the single abstract method of the interface does not modify its arguments or any other variable in its closure.
+We understand modification here as either applying a modifying method, or doing an assignment to some field.
+
+This annotation is a dynamic type annotation on functional types in fields, methods and parameters.
+The analyser can compute it in certain circumstances; in other cases, the user can show intent by requesting this property.
+
+Note that because suppliers have no parameters, only modifications to the closure apply.
+Functional interfaces are always normally {nm}: there are no modifying methods on them apart from the abstract method.
 
 ==== @SupportData
 

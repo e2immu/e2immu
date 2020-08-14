@@ -24,6 +24,7 @@
 :modified:  pass:normal[ `@Modified` ]
 :mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
 :nm: pass:normal[ `@NotModified`]
+:nm1: pass:normal[ `@NotModified`]
 :nn1: pass:normal[ `@NotNull1` ]
 :nn2: pass:normal[ `@NotNull2` ]
 :nn: pass:normal[ `@NotNull` ]

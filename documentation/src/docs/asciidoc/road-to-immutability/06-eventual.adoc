@@ -225,7 +225,7 @@ This means that the object flow analyser has to be able to verify that at some p
 === Before the mark
 
 A method can return an eventually immutable object, guaranteed to be in its initial state.
-This can be annotated with {{beforeMark}}.
+This can be annotated with {beforeMark}.
 Employing `SimpleImmutableSet1` from the example above,
 
 [source,java]
@@ -236,8 +236,8 @@ public SimpleImmutableSet1 create() {
 }
 ----
 
-Similarly, the analyser can compute a parameter to be {{beforeMark}}, when in the method, at least one before-mark methods is called on the parameter.
-Finally, a field can even be {{beforeMark}}, when it is created or arrives in the type as {{beforeMark}}, and stays in this state.
+Similarly, the analyser can compute a parameter to be {beforeMark}, when in the method, at least one before-mark methods is called on the parameter.
+Finally, a field can even be {beforeMark}, when it is created or arrives in the type as {beforeMark}, and stays in this state.
 
 === Annotations
 

@@ -307,11 +307,11 @@ Other types in the parameters do not have a `@NotModified` annotation:
 
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
-* `Consumer` because it is a functional type, with only one method, which is always `@NotModified`, as detailed further on.
+* `Consumer` because it is a functional type (an interface with only one abstract method), which is always `@NotModified`, as detailed further on.
 
 The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
 
-=== The case of functional types
+=== Functional types
 
 The type `Consumer<? super E>` in the `forEach` method of `Collection<E>` is defined as:
 
@@ -351,7 +351,7 @@ void addOne(Collection<Set<String>> sets, List<String> stringSource) {
 
 The `forEach` method is modifying the individual sets, but it does not change the collection `sets` itself, which is why we marked the method {nm}.
 Neither does `forEach` change the functional type itself, which is why we (implicitly) annotated the `Consumer` parameter with `@NotModified`.
-However, this particular `accept` method is modifying its input, causing the `sets` parameter to be modified.
+However, this particular implementation of `accept` is modifying its input, causing the `sets` parameter to be modified.
 
 Reshuffling yields:
 
@@ -386,5 +386,14 @@ void addOne(Collection<Set<String>> sets,
 This annotation and the use of `...1` at the end is in line with `@NotNull1`, detailed in <<nullable-section>>, which guarantees that the parameter values of the `apply` method are never null.
 
 Once the contract annotation is in place, the analyser computes that `sets` is {nm}, that `addOne` is not a modifying method, and that, because the method does not access any fields nor overrides another method, it should be made static.
+
+We conclude this section with the locality principle for modifications:
+
+****
+*Locality principle*: the modifications that a parameter of functional type can effect are outside the analysable scope:
+in the `void forEach(Consumer<? super E> action)` method of `Collection<E>`, it is _possible_ to use the method to modify `E`.
+But this must happen outside the scope of the interface or its implementations, and will be annotated if it happens.
+This will form the basis of the definition of a {container} in one of the next chapters.
+****
 
 // ensure a newline at the end

@@ -27,25 +27,25 @@ import java.util.function.Supplier;
  * Implementation of a lazy value, where <code>null</code> is used to indicate that the value has not been
  * evaluated yet.
  * <p>
- * Typical {@link Container}, eventually a {@link E1Immutable}.
  *
- * @param <T> the container's content
+ * @param <T> the container's content type
  */
 
 @E2Container(after = "get")
 public class Lazy<T> {
-    @NotModified
-    @NotNull
-    @Linked(to = "supplierParam") // the parameter
+    @NotModified1(after = "get")
+    @NotNull1
+    @Linked(to = "supplierParam")
     private final Supplier<T> supplier;
 
     @NotModified(after = "get")
+    @Final(after = "get")
     private volatile T t;
 
     /**
      * Construct the lazy object by storing a supplier.
      *
-     * @param supplierParam the supplier that will compute the value
+     * @param supplierParam the supplier that will compute the value; it should not produce a null value
      * @throws NullPointerException when the argument is <code>null</code>
      */
     public Lazy(@NotNull1 Supplier<T> supplierParam) {
@@ -67,7 +67,7 @@ public class Lazy<T> {
 
         synchronized (this) {
             if (t == null) {
-                t = Objects.requireNonNull(supplier.get());
+                t = Objects.requireNonNull(supplier.get()); // this statement causes @NotNull1 on supplier
             }
             return t;
         }
