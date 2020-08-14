@@ -3,7 +3,7 @@
 === Lazy
 
 `Lazy` implements a lazily-initialized immutable field, of unbound generic type `T`.
-As such, it is eventually an `@E2Container`.
+As such, it is eventually a level 2 immutable type.
 
 .Code fragment: The code analyser's Lazy type
 [source,java]
@@ -14,28 +14,29 @@ import org.e2immu.annotation.*;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-@E2Container(after = "get")
+@E2Immutable(after = "get")
 public class Lazy<T> {
 
     @NotNull1
+    @NotModified(after = "get")
     private final Supplier<T> supplier;
 
     @Final(after = "get")
     private volatile T t;
 
-    public Lazy(@NotNull1 Supplier<T> supplier) {
+    public Lazy(@NotNull1 @Modified Supplier<T> supplier) { // <1>
         this.supplier = supplier;
     }
 
     @NotNull
-    @Mark("get", type = CONTRACT) // <1>
+    @Mark("get", type = CONTRACT) // <2>
     public T get() {
         T localT = t;
         if (localT != null) return localT;
 
         synchronized (this) {
             if (t == null) {
-                t = Objects.requireNonNull(supplier.get()); // <2>
+                t = Objects.requireNonNull(supplier.get()); // <3>
             }
             return t;
         }
@@ -47,17 +48,20 @@ public class Lazy<T> {
     }
 }
 ----
-<1> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
+<1> Note that we do not demand that `supplier` is {nm1}. To the contrary, the analyser computes that the code will modify it.
+<2> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
 This cannot be the case here, as users will call the `get` method repeatedly.
 For now, the {mark} annotation will have to be added by hand.
-<2> Here `t` links to `supplier`, as explained in <<linking-formally>>.
+<3> Here `t` links to `supplier`, as explained in <<linking-formally>>.
 The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
+Calling the `get` method causes a modification.
 
-After calling the marker method `get()`, `t` cannot be assigned anymore.
-Because it is of an unbound generic type, the field `t` then becomes `@NotModified`.
-Because it is a functional type, `supplier` is `@NotModified`.
-The type is also clearly a container.
+After calling the marker method `get()`, `t` cannot be assigned anymore, and it becomes {final}.
+Because it is of an unbound generic type, it is {nm}.
+After the mark, there is no access to `supplier`, which satisfies the {nm1} requirement for the first rule.
 Level 2 immutability rules 2 and 3 do not apply for either fields.
+
+The type is not a container, because eventuality rules do not apply to containers, and the `supplier` parameter to the constructor is modified.
 
 [#firstthen]
 === FirstThen

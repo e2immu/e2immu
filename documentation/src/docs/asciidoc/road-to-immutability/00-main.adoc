@@ -7,31 +7,8 @@
 :icons: font
 :toc: left
 
-:e2immu: pass:normal[ _e2immu_ ]
-:intellij: pass:normal[ IntelliJ IDEA ]
 
-:mark: pass:normal[ `@Mark` ]
-:beforeMark: pass:normal[ `@BeforeMark` ]
-:container:  pass:normal[ `@Container` ]
-:dependent:  pass:normal[ `@Dependent` ]
-:e1container: pass:normal[ `@E1Container` ]
-:e1immutable: pass:normal[ `@E1Immutable` ]
-:e1immutable: pass:normal[ `@E1Immutable` ]
-:e2container: pass:normal[ `@E2Container` ]
-:e2immutable: pass:normal[ `@E2Immutable` ]
-:final:  pass:normal[ `@Final` ]
-:independent:  pass:normal[ `@Independent` ]
-:modified:  pass:normal[ `@Modified` ]
-:mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
-:nm: pass:normal[ `@NotModified`]
-:nn1: pass:normal[ `@NotNull1` ]
-:nn2: pass:normal[ `@NotNull2` ]
-:nn: pass:normal[ `@NotNull` ]
-:nullable: pass:normal[ `@Nullable` ]
-:supportData: pass:normal[ `@SupportData` ]
-:variable:  pass:normal[ `@Variable` ]
-:identity:  pass:normal[ `@Identity` ]
-
+include::{includedir}/util/definitions.adoc[]
 
 // all introductory sections
 include::{includedir}/road-to-immutability/01-intro.adoc[]

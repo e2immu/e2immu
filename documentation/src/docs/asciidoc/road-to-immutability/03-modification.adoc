@@ -119,6 +119,7 @@ Other types in the parameters do not have a `@NotModified` annotation:
 * `Object` because it is deeply immutable,
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`,
 * `Consumer` because it is a functional type (an interface with only one abstract method), which is always `@NotModified`, as detailed further on.
+#TODO not correct anymore#
 
 The rules for not having to write `@NotModified` will be detailed later, but this example pretty much covers all the bases.
 
@@ -182,7 +183,7 @@ void addOne(Collection<Set<String>> sets, Consumer<Set<String>> consumer) {
 }
 ----
 
-If the `consumer`'s `apply` is modifying, then `sets` will be modified.
+If the `apply` method of the `consumer` is modifying, then `sets` will be modified.
 If it is not modifying, for example, in the case of the consumer `String.out::println`, then `sets` will not be modified.
 We cannot realistically compute this using a static analyser.
 This is the point where the programmer needs to _show intent_ by manually adding a contract annotation on the `consumer` parameter to indicate that its method is non-modifying:

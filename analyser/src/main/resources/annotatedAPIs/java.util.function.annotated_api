@@ -25,7 +25,7 @@
  */
 package java.util.function;
 
-import org.e2immu.annotation.NotModified;
+//import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Comparator;
@@ -35,7 +35,7 @@ import java.util.Comparator;
 
 @FunctionalInterface
 public interface Supplier<T> {
-    @NotModified
+   // @NotModified
     T get();
 }
 
@@ -44,7 +44,7 @@ public interface Supplier<T> {
 
 @FunctionalInterface
 public interface Consumer<T> {
-    @NotModified
+   // @NotModified
     void accept(T t);
 
     Consumer<T> andThen(@NotNull Consumer<? super T> after);
@@ -52,13 +52,13 @@ public interface Consumer<T> {
 
 @FunctionalInterface
 public interface Predicate<T> {
-    @NotModified
+  //  @NotModified
     boolean test(T t);
 }
 
 @FunctionalInterface
 public interface Function<T, R> {
-    @NotModified
+  //  @NotModified
     R apply(T t);
 
     @NotNull
@@ -74,7 +74,7 @@ public interface Function<T, R> {
 @FunctionalInterface
 public interface BiFunction<T, U, R> {
 
-    @NotModified
+ //   @NotModified
     R apply(T t, U u);
 
     <V> BiFunction<T, U, V> andThen(@NotNull Function<? super R, ? extends V> after);
@@ -89,7 +89,7 @@ public interface BinaryOperator<T> extends BiFunction<T, T, T> {
 
 @FunctionalInterface
 public interface BiConsumer<T, U> {
-    @NotModified
+ //   @NotModified
     void accept(T t, U u);
 
     @NotNull
@@ -98,12 +98,12 @@ public interface BiConsumer<T, U> {
 
 @FunctionalInterface
 public interface ToIntFunction<R> {
-    @NotModified
+ //   @NotModified
     int applyAsInt(R value);
 }
 
 @FunctionalInterface
 public interface IntFunction<R> {
-    @NotModified
+  //  @NotModified
     R apply(int value);
 }
