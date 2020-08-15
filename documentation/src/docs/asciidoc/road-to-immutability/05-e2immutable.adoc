@@ -336,12 +336,39 @@ By default, `v` links to `b` and `c`.
 .. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
 .. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
 
-Most of the other rules follow from the basic rules above.
+Most of the other rules are consequences of the basic rules above.
 For example,
 
 . in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.
 . type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
 . Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`
+. In the loop statement `for(T t: ts)`, does the loop variable `t` links to the source `ts`?
+This becomes visible when one considers a model implementation for this statement:
++
+[source,java]
+----
+Iterator<T> iterator = ts.iterator();
+while(iterator.hasNext()) {
+    T t = iterator.next();
+    { ... }
+}
+----
++
+When `ts` is of level 2 immutable type, the `Iterator` implementation returned will be independent.
+This prevents linking `iterator` to `ts`, and therefore `t` to `ts`.
+Independence of the iterator is important for the semantics of the loop: it ensures that the act of looping over the elements does not change the type.
+It therefore seems prudent to enforce independence in the interface:
++
+[source,java]
+----
+interface Iterable<T> {
+    @Independent
+    Iterator<T> iterator();
+}
+----
++
+Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of of the type either.
+Concluding the discussion: we could imagine situations where `t` links to `ts`, but we will actively prevent them from happening, and program in a world where the loop variable does not link to its collection.
 
 _A note on directionality._ The definitions posited above appear directed: `v` links to `a`, `b` and `c`.
 This means the object held by `v` may contain (parts of) the object represented by `a`, `b` or `c`.
@@ -395,18 +422,30 @@ class SetBasedContainer3<T> {
     public void unsafeVisit(Consumer<Set<T>> consumer) {
         consumer.accept(data); // <1>
     }
-    public void safeVisit(Consumer<T> consumer) {
-        data.forEach(consumer); // <2>
+    public void safeVisit1(@NotModified1 Consumer<Set<T>> consumer) {
+        consumer.accept(data); // <2>
+    }
+    public void safeVisit2(Consumer<T> consumer) {
+        data.forEach(consumer); // <3>
     }
 }
 ----
 <1> The consumer exposes `data` to the outside world.
-<2> The consumer exposes `T` elements to the outside world.
+<2> The consumer exposes `data` safely.
+<3> The consumer exposes `T` elements to the outside world.
 
 The difference between the safe and unsafe visitor is that the safe visitor exposes normal fields, whereas the unsafe visitor exposes a support data type.
 
-In the first case the `consumer` parameter links to the `data` field. #TODO#
+In the first case the `consumer` parameter links to the `data` field.
+The consumer is not {nm1}, so `accept` has a parameter which is {modified}.
+Sending `data` as an argument to such a parameter causes modifications, which makes `data` {modified}, which in turn violates the rules for level 2 immutability.
 
+The method `safeVisit1` exposes the support data to the outside world, with a guarantee from the analyser that no code can modify it.
+#Here we rely on the rules for independence#
+
+In the third case, we first observe that `forEach` does not modify `data` because it is not a modifying method.
+Secondly, with respect to exposure to the outside world, we know that `forEach` exposes elements of type `T`, but that is compatible with level 2 immutability rules.
+#How do we know forEach exposes elements?#
 
 [#dynamic-type-annotations]
 === Dynamic type annotations

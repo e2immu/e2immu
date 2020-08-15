@@ -114,6 +114,7 @@ The main argument for going along with this is predictability and control: the c
 If the implementation of the functional type modifies your objects, well, you were the one providing the container with the means of modification.
 You remain in control, and do not need to study the container's code to predict if there will be modifications to the data you sent to the container, or not.
 
+[#linking-and-independence]
 == Linking and independence
 
 Let us now elaborate on how we will compute modifications, in a path towards level 2 immutability.
