@@ -1,14 +1,14 @@
+[#modification]
 == Modification
 
-=== Definition
-
 ****
-*Definition*: a method is *modifying* if it causes a computable assignment in the object graph of the fields of the object it is applied to.
+*Definition*: a *method is modifying* if it causes a computable assignment in the object graph of the fields of the object it is applied to.
 ****
 
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
-The adjective _computable_ is there to indicate that the modification must be made with code statically visible when analysing the type.
-We elaborate more on this aspect in the next section on functional types.
+
+NOTE: The adjective _computable_ is there to indicate that the modification must be made with code reachable from the method.
+We elaborate more on this aspect in the section on <<reachable-code>>.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
 The code analyser uses the annotations {nm} and {modified}.
@@ -22,6 +22,7 @@ Consider:
 [source,java]
 ----
 class Counter {
+    @Variable
     private int counter;
 
     @NotModified
@@ -51,24 +52,22 @@ class CountedInfo {
 We also see in the example that the `printInfo` method is {modified}.
 This is because it calls a modifying method on one of the fields: `increment`.
 
-Moving from methods to parameters and fields,
+Moving from methods to parameters and fields, keeping the same two annotations,
 
 ****
-*Definition of modification to a parameter*:
-The code analyser annotates a parameter with {nm} when the parameter's method does not apply assignments or modifying methods on the object that enters the method via the parameter.
-This restriction holds with respect to the parameter's entire object graph.
-If a parameter is not {nm}, it is {modified}.
+*Definition*:
+The analyser marks a *parameter* as *modified* when the parameter's method applies an assignment or modifying methods on the object that enters the method via the parameter.
+This definition holds with respect to the parameter's entire object graph.
 ****
 
 We will apply a similar reasoning to a field:
 
 ****
-*Definition of modification to a field*:
-A field will be annotated {nm} when none of the type's methods, transitively reachable from a non-private non-constructor method, applies assignments or modifying methods on this field.
-If a field is not {nm}, it is {modified}.
+*Definition*:
+The analyser marks a *field* as *modified* when at least one of the type's methods, transitively reachable from a non-private non-constructor method, applies at least one assignment to or modifying method on this field.
 ****
 
-Before delving deeper into definitions, let us agree that the methods of `Object` and `String` are all {nm}.
+Let us start by agreeing that the methods of `Object` and `String` are all {nm}.
 This is pretty obvious in the case of `toString`, `hashCode`, `getClass`.
 It is less obvious for the `wait` and other synchronization-related methods, but remember that as a general rule, we exclude synchronization support from this discussion.
 
@@ -126,137 +125,9 @@ Other types in the parameters have not been annotated with {nm}:
 * `Object` because it is deeply immutable;
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`.
 No code statically visible to implementations of `Collection` can make modifications to `E`;
-* `Consumer` because it is a functional type (an interface with only one abstract method).
-Arbitrary code, as opposed to statically visible code, can be executed from within the type via parameters of functional type.
+* `Consumer` because it is a functional interface (an interface with a single abstract method).
 
-The next section will delve deeper into parameters of functional types.
-
-[#functional-types]
-=== Functional types, part 1
-
-The type `Consumer<? super E>` in the `forEach` method of `Collection<E>` is defined as:
-
-.Relevant part of definition of Consumer
-[source,java]
-----
-interface Consumer<T> {
-    void accept(T t);
-}
-----
-
-The type `Collection` could implement `forEach` as:
-
-.Possible implementation of forEach
-[source,java]
-----
-void forEach(Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
-}
-----
-
-This method should clearly be non-modifying: it should simply iterate over the elements of the collection, _without modifying the fields of the collection object_.
-Note that this means that implementations of `Collection` cannot have code statically present in the `forEach` method to make changes to the collection's object graph.
-Given that to that code, `T` has no modifying methods, this works out fine: it cannot make changes to the elements it holds, and it should not make changes to the collection structure.
-
-The `consumer` parameter of the `forEach` method can have a modifying single abstract method, or not.
-This does not depend on whether `accept` modifies its parameter `t`, because this incoming parameter is not part of the object graph of the functional type.
-It depends on whether `accept` makes modifications to its closure.
-
-So applying functional types can be modifying or non-modifying to the closure, and modifying or non-modifying to the method's input.
-For the purpose of `Collection`, modifications to the closure of the functional type are not that relevant.
-Modifications to the parameter are, because the collection holds the values fed into the parameter.
-
-Let us look at the latter case:
-
-.With annotation on the parameter
-[source,java]
-----
-@NotModified
-void forEach(@NotModified1 Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
-}
-----
-
-By annotating the parameter with {nm1}, we instruct the analyser to ensure that `forEach` cannot be called with functional types that modify their parameters.
-
-Without the annotation, we allow for some implementations of the consumer to make modifications to the parameters:
-
-.Without annotation on the parameter
-[source,java]
-----
-@NotModified
-void forEach(@Exposed Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
-}
-----
-
-In this case, the modifications take place in code not visible to the analyser when it studies the implementation of `Collection`.
-The analyser uses the {exposed} annotation to mark that the method exposes part of the object graph of the fields to functional parameters.
-
-The mechanics of exposure will be explained in <<linking-and-independence>>.
-
-We clarify with the following examples, making use of the `Counter` class defined a bit higher:
-
-.Different ways of applying forEach
-[source,java]
-----
-class ConsumerUse {
-    private static final Consumer<Counter> incrementer = Counter::increment;
-
-    @NotModified1
-    private static final Consumer<Counter> printer = counter -> {
-        System.out.println("Counts to " + counter.getCounter());
-    };
-
-    static void incrementAll(@Modified Collection<Counter> counters) {
-        counters.forEach(incrementer);
-    }
-
-    static void println(@NotModified Collection<Counter> counters) {
-        counters.forEach(printer);
-    }
-
-    static void doSomethingModifying(@Modified Collection<Counter> counters,
-            Consumer<Counter> consumer) {
-        counters.forEach(consumer); // .forEach(c -> consumer.accept(c))
-    }
-
-    static void doSomethingNonModifying(@NotModified Collection<Counter> counters,
-            @NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
-        counters.forEach(consumer);
-    }
-
-    static void forEach(@NotModified Collection<String> strings, Consumer<String> consumer) {
-        strings.forEach(consumer);
-    }
-}
-----
-
-In the first two methods, the analyser knows which `Consumer` object will be handed to `forEach`.
-It finds that in the first method the collection's object graph containing the counters will be modified.
-In the second method, the same object graph will remain unchanged.
-
-How does it do this?
-By definition, for the parameter `counters` to be {modified} a modifying method needs to be applied to it.
-This does not happen: `forEach` as a method is not modifying.
-However, `forEach` feeds the elements of the collection into a modifying `accept` method.
-As such, the object graph of the collection, containing the individual elements, changes.
-
-How does the analyser know that `forEach` has the possibility to modify the content of its collection?
-The {exposed} annotation on `forEach` links the consumer to the scope object of `forEach`: `counters`.
-Because the argument to `forEach`, `incrementer`, is not explicitly {nm1}, it has to assume that modifications propagate into `counters`.
-In the second case, the argument, `printer`, is explicitly {nm1}, which prevents modifications to take place because of the `forEach` method call.
-
-In the third and fourth method, however, the implementation of the consumer comes from outside the type.
-We cannot know whether the consumer will modify the collection's object graph.
-In the fourth method, by annotating with {nm1}, the user shows intent, and asks the analyser to make sure the consumer's `accept` method is non-modifying.
-As a consequence, the analyser computes that `counters` is {nm}.
-In the third method this intent is absent, and the analyser must conclude that `doSomethingModifying` modifies `counters`.
-
-The fifth case is very similar to the original `forEach` method.
-Because strings are deeply immutable, we know that no consumer can change the individual strings, and we know that `forEach` as a method is not modifying.
-
-Note that the use of the suffix 1 in {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of the `apply` method, are never null.
-
+To avoid interrupting the narrative, we delay a discussion of functional interfaces to a further section <<functional-interfaces>>.
+We continue with the first use case of modification: containers.
 
 // ensure a newline at the end

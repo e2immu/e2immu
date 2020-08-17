@@ -3,7 +3,7 @@
 === Definition
 
 First, what do we want intuitively?
-A useful form of immutability, less strong than deeply immutable, but better than level 1 immutability for quite some situations.
+A useful form of immutability, less strong than deeply immutable, but better than level 1 immutability for many situations.
 We propose the following:
 
 ****
@@ -34,8 +34,7 @@ public class Pair<K,V> {
 }
 ----
 
-Note that since `K` and `V` are unbound types, it is not possible to modify their content, since there are no modifying methods one can call on unbound types.
-This example doesn't even have non-constructor methods.
+Note that since `K` and `V` are unbound generic types, it is not possible to modify their content from inside `Pair`, since there are no modifying methods one can call on unbound types.
 
 How does it fit the intuitive rule for immutability?
 The type `Pair` holds two objects.
@@ -47,22 +46,30 @@ Here is an example which shows the necessity of the first rule more explicitly:
 
 [source,java]
 ----
-@Mutable
+@Container
 class Point {
     @Variable
     private double x;
+
     @Variable
     private double y;
 
+    @NotModified
     public double getX() {
         return x;
     }
+
+    @Modified
     public void setX(double x) {
         this.x = x;
     }
+
+    @NotModified
     public double getY() {
         return y;
     }
+
+    @Modified
     public void setY(double y) {
         this.y = y;
     }
@@ -71,6 +78,7 @@ class Point {
 class Line {
     @Final
     private Point point1;
+
     @Final
     private Point point2;
 
@@ -87,11 +95,12 @@ class Line {
 
     @Modified
     public void translateHorizontally(double x) {
-        point1.setX(point1.getX() + x);
+        point1.setX(point1.getX() + x); // <1>
         point2.setX(point2.getX() + x);
     }
 }
 ----
+<1> Modifying operation on `point1`.
 
 The fields `point1` and `point2` are effectively final.
 Without the translation method, the fields would be {nm} as well.
@@ -112,10 +121,10 @@ The fields we target with those additional rules are the fields containing the s
 For now, we try to catch the support data with the following, most likely imperfect rule:
 
 ****
-If a type _A_ is the type of a field, and type _B_, which is held by _A_, appears as type of parameter or as return type in non-private methods (directly, or held by a different type _C_), then we need the level 2 immutability rules 2 and 3 for that particular field.
+If _A_ is the type of a field, and type _B_, which is held by _A_, appears as type of parameter or as return type in non-private methods (directly, or held by a different type _C_), then we need the level 2 immutability rules 2 and 3 for that particular field.
 Otherwise, we skip rules 2 and 3 for the field.
 
-A type _B_ is held by the type _A_ if _B_ is the type of a field in _A_, directly or via generics, and potentially transitively.
+A type _B_ is held by the type _A_ if _B_ is the type of a field in _A_, directly or via generics or arrays, and potentially transitively.
 ****
 
 Many examples will follow, but it should be clear from the description that types that appear both in fields and in non-private methods, do not need to satisfy rules 2 and 3. This is the case for `Pair`.
@@ -280,7 +289,7 @@ We could as well have made the field `public final`.
 
 Note that by decomposing all definitions, we observe that requiring all fields to be {final} and {nm} is equivalent to requiring that all non-private fields have the `final` modifier, and that methods that are not part of the construction phase, are {nm}.
 
-The following type is {container}, the field is {final}, but the it is not {nm}:
+The following type is {container}, the field is {final}, but it is not {nm}:
 
 [source,java]
 ----
@@ -296,157 +305,6 @@ class Example2 {
     public Stream<T> stream() { return set.stream(); }
 }
 ----
-
-[#linking-formally]
-=== Linking, formally
-
-To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
-It computes a dependency graph of variables depending on other variables, with the following rules:
-
-. in an assignment `v = w`, variable `v` links to variable `w`
-. in an assignment `v = a.method(b, c)`, the default rule is that variable `v` links to `a`, `b` and `c`.
-+
---
-We discern a number of special cases:
-
-.. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
-.. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
-.. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
-.. #TODO# is there something we can do if `b` is {nm}? The guarantee of not modifying may be sufficient?
-.. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
-`v` links to `b` only.
---
-+
-Note that:
-+
---
-.. When `a == this`, as in `v = method(b, c)`, `v` could link to any field in the type.
-Therefore, unless any of the rules above apply, we will link `v` to `this`.
-.. If a parameter, say `b`, is a functional type, then passing `b` to `method` amounts to applying the single abstract method of the functional type.
-The linking to `b` will now depend on the properties of the single abstract method: #TODO#
-
-... if the single abstract method returns a primitive or object of {e2immutable} type, then `v` will be independent of `b`.
-... if the single abstract method can be marked {independent}, `v` will be independent of `b`
-... in all other cases, `v` will link to `b`
-
---
-
-. in an assignment `v = new A(b, c)`, the rules are very similar to that of a normal method call.
-By default, `v` links to `b` and `c`.
-
-.. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
-.. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
-
-Most of the other rules are consequences of the basic rules above.
-For example,
-
-. in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.
-. type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
-. Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`
-. In the loop statement `for(T t: ts)`, does the loop variable `t` links to the source `ts`?
-This becomes visible when one considers a model implementation for this statement:
-+
-[source,java]
-----
-Iterator<T> iterator = ts.iterator();
-while(iterator.hasNext()) {
-    T t = iterator.next();
-    { ... }
-}
-----
-+
-When `ts` is of level 2 immutable type, the `Iterator` implementation returned will be independent.
-This prevents linking `iterator` to `ts`, and therefore `t` to `ts`.
-Independence of the iterator is important for the semantics of the loop: it ensures that the act of looping over the elements does not change the type.
-It therefore seems prudent to enforce independence in the interface:
-+
-[source,java]
-----
-interface Iterable<T> {
-    @Independent
-    Iterator<T> iterator();
-}
-----
-+
-Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of of the type either.
-Concluding the discussion: we could imagine situations where `t` links to `ts`, but we will actively prevent them from happening, and program in a world where the loop variable does not link to its collection.
-
-_A note on directionality._ The definitions posited above appear directed: `v` links to `a`, `b` and `c`.
-This means the object held by `v` may contain (parts of) the object represented by `a`, `b` or `c`.
-Modifications to `v` may imply modifications to either `a`, `b`, or `c`; conversely, any modification to `a`, `b` or `c`
-may have an impact on `v`.
-The connected sub-graph `v`, `a`, `b`, `c` therefore forms one 'equivalence class' with respect to modification.
-
-=== Functional types, part 3
-
-We have detailed in <<functional-types>> and <<functional-types-2>> why functional types are compatible with the container concept.
-Now we must verify when they are compatible with the rules of level 2 immutability.
-
-The first rule states that fields must be {nm}.
-This is also relevant in the case for functional types; however, it makes more sense to demand the {nm1} property:
-
-.Example with functional type, modifying at the single abstract method level
-[source,java]
-----
-class SetBasedContainer6<T> {
-    private final Set<T> data;
-    private final Consumer<T> consumer = t -> data.add(t);
-    public SetBasedContainer3(Set<T> ts) {
-        this.data = new HashSet<>(ts);
-    }
-    public void add(T t) {
-        consumer.accept(t);
-    }
-}
-----
-
-In this example, the consumer modifies `data`, hence `add` is a modifying method.
-The type cannot be level 2 immutable.
-
-We argue (for now, without being able to motivate too rigorously) that most functional types should not be support data:
-they do not provide 'support space' for the simpler types that the class is dealing with.
-
-Parameters of functional type are important to the independence rules of support data fields, however.
-Consider the following two methods added to an example from above:
-
-.Modification of v3 as defined above
-[source,java]
-----
-class SetBasedContainer3<T> {
-    private final Set<T> data;
-    public SetBasedContainer3(Set<T> ts) {
-        this.data = new HashSet<>(ts);
-    }
-    public Stream<T> stream() {
-        return data.stream();
-    }
-    public void unsafeVisit(Consumer<Set<T>> consumer) {
-        consumer.accept(data); // <1>
-    }
-    public void safeVisit1(@NotModified1 Consumer<Set<T>> consumer) {
-        consumer.accept(data); // <2>
-    }
-    public void safeVisit2(Consumer<T> consumer) {
-        data.forEach(consumer); // <3>
-    }
-}
-----
-<1> The consumer exposes `data` to the outside world.
-<2> The consumer exposes `data` safely.
-<3> The consumer exposes `T` elements to the outside world.
-
-The difference between the safe and unsafe visitor is that the safe visitor exposes normal fields, whereas the unsafe visitor exposes a support data type.
-
-In the first case the `consumer` parameter links to the `data` field.
-The consumer is not {nm1}, so `accept` has a parameter which is {modified}.
-Sending `data` as an argument to such a parameter causes modifications, which makes `data` {modified}, which in turn violates the rules for level 2 immutability.
-
-The method `safeVisit1` exposes the support data to the outside world, with a guarantee from the analyser that no code can modify it.
-#Here we rely on the rules for independence#
-
-In the third case, we first observe that `forEach` does not modify `data` because it is not a modifying method.
-Secondly, with respect to exposure to the outside world, we know that `forEach` exposes elements of type `T`, but that is compatible with level 2 immutability rules.
-#How do we know forEach exposes elements?#
 
 [#dynamic-type-annotations]
 === Dynamic type annotations

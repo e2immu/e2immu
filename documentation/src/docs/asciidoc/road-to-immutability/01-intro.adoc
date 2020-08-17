@@ -56,7 +56,9 @@ Explicitly adding the annotations to classes can be helpful during software deve
 Say you intend for a class to be immutable, then you can add the corresponding annotation to the type.
 Each time the code analyser runs, and the computation finds the type is not immutable, it will raise an error.
 
-The other situation where explicit annotations in the code are important, is for the development of the analyser.
+Explicit annotations also act as a safe-guard against the changing of semantics by overriding methods.
+
+The final situation where explicit annotations in the code are important, is for the development of the analyser.
 We add them to the code as a means of verification: the analyser will check if it generates the same annotation at that location.
 A number of annotations serve no other purpose than debugging: `@Linked`, `@Independent`, `@Constant`, ...
 

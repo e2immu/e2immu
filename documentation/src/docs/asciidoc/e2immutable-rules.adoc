@@ -46,8 +46,8 @@ A @Container is a 'safe place' to store objects, allowing you complete freedom t
 @E2Immutable on type:: a type is effectively or eventually (level 2 or content) immutable when
 . all its fields are @Final
 . all its fields are <<notmodified-annotation>>
-. all its fields are either private, or <<e2immutable-annotation>> themselves
-. all its constructors and non-private methods are <<independent-annotation>>.
+. all its fields are either private, or {e2immutable} themselves
+. all its constructors and non-private methods are {independent}
 
 Because all fields are @NotModified, the methods must be @NotModified as well in an @E2Immutable type.
 
@@ -55,7 +55,7 @@ Because all fields are @NotModified, the methods must be @NotModified as well in
 
 @E2Container:: a type is an effectively or eventually immutable container when, on top of the definitions of @E2Immutable, all methods and constructor parameters are @NotModified.
 As far as we can see now, many @E2Immutable types will have this additional property.
-Borderline situations would be like
+Borderline situations would be like:
 
 [source]
 ----
