@@ -7,15 +7,15 @@
 ****
 
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
-In the case of functional types, this includes their closure.
 The adjective _computable_ is there to indicate that the modification must be made with code statically visible when analysing the type.
+We elaborate more on this aspect in the next section on functional types.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
 The code analyser uses the annotations {nm} and {modified}.
 They are exclusive, and the analyser will compute one or the other for every method of the type.
 All non-trivial constructors are modifying, so we avoid clutter by not annotating them.
 
-For clarity, we repeat that directly assigning to the fields also constitutes a modification.
+For clarity, we repeat that directly assigning to the fields also causes the {modified} mark for methods.
 As a consequence, setters are {modified}, while getters are {nm}.
 Consider:
 
@@ -50,6 +50,8 @@ class CountedInfo {
 
 We also see in the example that the `printInfo` method is {modified}.
 This is because it calls a modifying method on one of the fields: `increment`.
+
+Moving from methods to parameters and fields,
 
 ****
 *Definition of modification to a parameter*:
@@ -153,30 +155,29 @@ void forEach(Consumer<T> consumer) {
 ----
 
 This method should clearly be non-modifying: it should simply iterate over the elements of the collection, _without modifying the fields of the collection object_.
-Note that this means that implementations of `Collection` cannot have code statically present to make changes to the collection's object graph, which contains the `T` elements.
+Note that this means that implementations of `Collection` cannot have code statically present in the `forEach` method to make changes to the collection's object graph.
 Given that to that code, `T` has no modifying methods, this works out fine: it cannot make changes to the elements it holds, and it should not make changes to the collection structure.
 
 The `consumer` parameter of the `forEach` method can have a modifying single abstract method, or not.
 This does not depend on whether `accept` modifies its parameter `t`, because this incoming parameter is not part of the object graph of the functional type.
 It depends on whether `accept` makes modifications to its closure.
 
-So applying functional types can be modifying or non-modifying; at the same time, applying them may cause modifications to the input sent to the parameters.
-We must make a distinction between these two types of modifications.
+So applying functional types can be modifying or non-modifying to the closure, and modifying or non-modifying to the method's input.
 For the purpose of `Collection`, modifications to the closure of the functional type are not that relevant.
 Modifications to the parameter are, because the collection holds the values fed into the parameter.
+
+Let us look at the latter case:
 
 .With annotation on the parameter
 [source,java]
 ----
 @NotModified
-@Independent
 void forEach(@NotModified1 Consumer<T> consumer) {
     for(T t: this) consumer.accept(t);
 }
 ----
 
 By annotating the parameter with {nm1}, we instruct the analyser to ensure that `forEach` cannot be called with functional types that modify their parameters.
-The analyser uses the {independent} annotation to mark that the fields of the type remain independent of the consequences of applying the parameter.
 
 Without the annotation, we allow for some implementations of the consumer to make modifications to the parameters:
 
@@ -184,15 +185,15 @@ Without the annotation, we allow for some implementations of the consumer to mak
 [source,java]
 ----
 @NotModified
-@Dependent
-void forEach(Consumer<T> consumer) {
+void forEach(@Exposed Consumer<T> consumer) {
     for(T t: this) consumer.accept(t);
 }
 ----
 
 In this case, the modifications take place in code not visible to the analyser when it studies the implementation of `Collection`.
-The analyser uses the {dependent} annotation to mark that the fields of the type link to the parameters of the method.
-#TODO needs additional linking rule# The mechanics of linking and (in)dependence will be explained in <<linking-and-independence>>.
+The analyser uses the {exposed} annotation to mark that the method exposes part of the object graph of the fields to functional parameters.
+
+The mechanics of exposure will be explained in <<linking-and-independence>>.
 
 We clarify with the following examples, making use of the `Counter` class defined a bit higher:
 
@@ -242,7 +243,7 @@ However, `forEach` feeds the elements of the collection into a modifying `accept
 As such, the object graph of the collection, containing the individual elements, changes.
 
 How does the analyser know that `forEach` has the possibility to modify the content of its collection?
-The {dependent} annotation on `forEach` links the consumer to the scope object of `forEach`: `counters`.
+The {exposed} annotation on `forEach` links the consumer to the scope object of `forEach`: `counters`.
 Because the argument to `forEach`, `incrementer`, is not explicitly {nm1}, it has to assume that modifications propagate into `counters`.
 In the second case, the argument, `printer`, is explicitly {nm1}, which prevents modifications to take place because of the `forEach` method call.
 
@@ -255,7 +256,7 @@ In the third method this intent is absent, and the analyser must conclude that `
 The fifth case is very similar to the original `forEach` method.
 Because strings are deeply immutable, we know that no consumer can change the individual strings, and we know that `forEach` as a method is not modifying.
 
-Note that the use of `...1` at the end of {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of the `apply` method, are never null.
+Note that the use of the suffix 1 in {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of the `apply` method, are never null.
 
 
 // ensure a newline at the end

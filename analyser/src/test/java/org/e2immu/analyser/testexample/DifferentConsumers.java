@@ -46,7 +46,7 @@ public class DifferentConsumers {
         private static final Consumer<Counter> incrementer = Counter::increment;
 
         @NotModified1
-        private static final Consumer<Counter> printer = counter -> {
+        private static final Consumer<Counter> printer = (@NotModified Counter counter) -> {
             System.out.println("Counts to " + counter.getCounter());
         };
 

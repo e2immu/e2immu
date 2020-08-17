@@ -312,6 +312,7 @@ We discern a number of special cases:
 .. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
 .. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
 .. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
+.. #TODO# is there something we can do if `b` is {nm}? The guarantee of not modifying may be sufficient?
 .. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
 `v` links to `b` only.
 --
@@ -382,7 +383,7 @@ We have detailed in <<functional-types>> and <<functional-types-2>> why function
 Now we must verify when they are compatible with the rules of level 2 immutability.
 
 The first rule states that fields must be {nm}.
-This is automatically the case for functional types; however, it makes more sense to demand the {nm1} property:
+This is also relevant in the case for functional types; however, it makes more sense to demand the {nm1} property:
 
 .Example with functional type, modifying at the single abstract method level
 [source,java]

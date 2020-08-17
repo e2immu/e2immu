@@ -104,18 +104,21 @@ We would very much like `Collection` to be a container, it is almost the archety
 
 The main rule for containers stipulates that the parameter has to be {nm}, which we cannot know to be the case:
 the user can provide us with a single abstract method that modifies its closure, or not.
-We propose to change the definition of container slightly:
+
+We consider the object that the container must not change to be the return value of functional type, if it has one.
 
 ****
-*Definition (updated)*: a type is a *container* when none of the parameters of the non-private methods and constructors of the type, except parameters of a functional type, are modifying,
+*Definition*: a parameter of functional type is {nm} when the method of the parameter does not modify the result of applying the function.
 ****
 
-The main argument for going along with this is predictability and control: the container will not modify your objects.
-If the implementation of the functional type modifies your objects, well, you were the one providing the container with the means of modification.
-You remain in control, and do not need to study the container's code to predict if there will be modifications to the data you sent to the container, or not.
+In the case of `forEach`, the functional type is a `Consumer`, which has no result.
+It therefore automatically satisfies the condition.
+
+A more meaningful situation is when the functional type is a `Supplier`, which does return a value.
+We present an example of this situation in <<example-lazy>>.
 
 [#linking-and-independence]
-== Linking and independence
+== Linking, dependence and exposure
 
 Let us now elaborate on how we will compute modifications, in a path towards level 2 immutability.
 Consider the following example:

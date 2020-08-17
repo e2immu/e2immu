@@ -13,6 +13,7 @@
 :e1immutable: pass:normal[ `@E1Immutable` ]
 :e2container: pass:normal[ `@E2Container` ]
 :e2immutable: pass:normal[ `@E2Immutable` ]
+:exposed: pass:normal[ `@Exposed` ]
 :final:  pass:normal[ `@Final` ]
 :identity:  pass:normal[ `@Identity` ]
 :independent:  pass:normal[ `@Independent` ]
