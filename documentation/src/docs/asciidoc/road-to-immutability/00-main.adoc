@@ -27,6 +27,8 @@ include::{includedir}/road-to-immutability/06-eventual.adoc[]
 
 include::{includedir}/road-to-immutability/065-functional-interfaces.adoc[]
 
+include::{includedir}/road-to-immutability/066-linking-formally.adoc[]
+
 include::{includedir}/road-to-immutability/07-examples.adoc[]
 
 include::{includedir}/road-to-immutability/08-other-annotations.adoc[]

@@ -8,7 +8,7 @@
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
 
 NOTE: The adjective _computable_ is there to indicate that the modification must be made with code reachable from the method.
-We elaborate more on this aspect in the section on <<reachable-code>>.
+We elaborate more on this aspect in the section on <<functional-interfaces>>.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
 The code analyser uses the annotations {nm} and {modified}.

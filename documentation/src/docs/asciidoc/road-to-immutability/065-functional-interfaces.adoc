@@ -20,31 +20,6 @@ for example, while the examples above all employ generics, generics are not a re
 The Java language offers syntactic sugar for functional programming, but the types remain Java types.
 As such we have to ensure that definitions for functional interfaces which we will present in this section, are compatible with the definitions for general types.
 
-We first digress a little to discuss reachable code, to complete our definition of modifying methods.
-
-[#reachable-code]
-=== Reachable code
-
-Overriding a method in a subtype can give a completely different meaning to this method.
-In the case of interfaces, the analyser relies on the user to specify intent, by annotating all aspects of the methods and types extensively.
-In the case of classes, in the first instance we expect the user to rely on the analyser to compute the annotations.
-If they want to 'ensure' that overriding cannot change the meaning, specifying intent as if it were an interface's method is the best approach.
-Making the method `final`, or the type `final`, merely _prohibits_ overriding, which is typically too strong a mechanism.
-
-The point of _reachable code_ relates to the fact that methods can execute code that cannot be known at the time of analysing the method call.
-In <<modification>> we declared a method modifying if it causes a computable assignment in the object graph of the fields of the object the method is applied to.
-The _computable_ adjective refers to the point that the analyser must encounter:
-
-* either an explicit assignment to an object that links into the object graph of the parameter,
-* or a method call on an object that links to the parameter, which
-
-** it has computed and marked earlier to be modifying,
-** or the user has explicitly marked as modifying.
-
-The analyser cannot reason with code that it has not seen, and will use the semantics of the visible implementation.
-When the analyser has access to all the code, it is able to spot inconsistent semantics.
-Let us now apply this clarification of the rules of modification to functional interfaces.
-
 === Modification
 
 We go back to the annotations of `Collection` in <<collection-interface>>.
@@ -58,34 +33,54 @@ default void forEach(Consumer<T> consumer) {
 }
 ----
 
-The `forEach` method should clearly be non-modifying: it should simply iterate over the elements of the collection, _without modifying the fields of the collection object in the process_.
-Rephrasing, implementations of `Collection` cannot have code present in the `forEach` method to make changes to the collection's object graph.
-Given that to that code, `T` has no modifying methods, this works out fine: it cannot make changes to the elements it holds, and it should not make changes to the collection structure.
+We will now argue that both `forEach` and should `consumer` should be annotated {nm}.
 
-The `consumer` parameter of the `forEach` method can have a modifying single abstract method, or not.
-This depends on whether `accept` makes modifications to its closure (the object graph of all fields of the implementation of the interface, including the variables of the enclosing type if there is one).
-The parameter `t` of `accept` does not necessarily link to this closure.
+==== Annotating _forEach_
 
-So applying functional types can be modifying or non-modifying to the closure, and modifying or non-modifying to the method's input.
-For the purpose of `Collection`, modifications to the closure of the functional type are not that relevant.
-Modifications to the parameter are, because the collection holds the values fed into the parameter.
+Intuitively, `forEach` should be non-modifying: it should simply iterate over the elements of the collection, _without modifying the fields of the collection object in the process_.
+Because the type `T` has no modifying methods visible to `forEach`, it cannot make explicit changes to the elements it holds, and it should not make changes to the collection structure.
+This is all great.
 
-Let us look at the latter case first:
+At the same time, users of `forEach` will very likely want to make changes to the `T` elements.
+Therefore, it will not be productive to enforce the parameter of the consumer's `accept` method to be {nm}.
+Because the `T` elements are part of the object graph of the collection's fields, changes to them technically change this object graph as well.
+We need to find some mechanism to indicate that these changes are not relevant to `forEach` being not modifying.
 
-.With annotation on the parameter
+Let us look at the same situation, but then without unbound generic types, and consider:
+
 [source,java]
 ----
-@NotModified
-void forEach(@NotModified1 Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
+class Polygon {
+    private final List<Point> points;
+    ...
+    public void visit(Consumer<Point> visitor) {
+        for(Point point: points) visitor.accept(point);
+    }
 }
 ----
 
-By annotating the parameter with {nm1}, we instruct the analyser to ensure that `forEach` cannot be called with functional types that modify their parameters.
+For the `visit` method to be non-modifying, no visitor should modify the points.
+Unlike `Collection`, `Polygon` has modification access to `Point`, via the `setX` and `setY` methods.
+Here it makes sense to explicitly demand that `visitor` does not modify its parameters:
+
+[source,java]
+----
+@NotModified
+public void visit(@NotModified1 Consumer<Point> visitor) {
+    for(Point point: points) visitor.accept(point);
+}
+----
+
+By annotating a parameter with {nm1}, we instruct the analyser to ensure that parameter's method cannot be called with an implementation of the functional interface that modifies this parameter.
 
 NOTE: The use of the suffix 1 in {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of its `accept` method, are never null.
 
-Without the annotation, we allow for some implementations of the consumer to make modifications to the parameters:
+****
+Modifications need to be made not to the whole object graph, but to those parts of the object graph that the method _can_ change.
+If we, in the process, allow others to change the elements, we use the {exposed} annotation.
+****
+
+Going back to `forEach`, we end up writing:
 
 .Without annotation on the parameter
 [source,java]
@@ -96,16 +91,23 @@ void forEach(@Exposed Consumer<T> consumer) {
 }
 ----
 
-In this case, the modifications take place in code not visible to the analyser when it studies the implementation of `Collection`.
-The analyser uses the {exposed} annotation to mark that the method exposes part of the object graph of the fields to functional parameters.
-The mechanics of exposure will be explained in <<linking-formally>>.
+rather than the more restrictive
 
-We clarify with the following examples, making use of the `Counter` class defined a bit higher:
+.With annotation on the parameter
+[source,java]
+----
+@NotModified
+void forEach(@NotModified1 Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+We provide another example to clarify, making use of the `Counter` class defined a bit higher:
 
 .Different ways of applying forEach
 [source,java]
 ----
-class ConsumerUse {
+class ApplyingForEach {
     private static final Consumer<Counter> incrementer = Counter::increment;
 
     @NotModified1
@@ -137,6 +139,9 @@ class ConsumerUse {
 }
 ----
 
+Observe that we now use {nm1} on fields, with the predictable meaning: the parameters of the field's single abstract method will not be modified.
+The {e2immu} analyser can also attach this dynamic type annotation to methods which return a functional interface.
+
 In the first two methods, the analyser knows which `Consumer` object will be handed to `forEach`.
 It finds that in the first method the collection's object graph containing the counters will be modified.
 In the second method, the same object graph will remain unchanged.
@@ -144,13 +149,9 @@ In the second method, the same object graph will remain unchanged.
 How does it do this?
 By definition, for the parameter `counters` to be {modified} a modifying method needs to be applied to it.
 This does not happen: `forEach` as a method is not modifying.
-However, `forEach` feeds the elements of the collection into a modifying `accept` method.
+However, `forEach` feeds the elements of the collection into a modifying `accept` method, as indicated by the {exposed} annotation.
 As such, the object graph of the collection, containing the individual elements, changes.
 
-Observe that we now use {nm1} on fields with the predictable meaning: the parameters of the field's single abstract method will not be modified.
-The {e2immu} analyser can attach this dynamic type annotation can also to methods which return a functional interface.
-
-How does the analyser know that `forEach` has the possibility to modify the content of its collection?
 The {exposed} annotation on `forEach` links the consumer to the scope object of `forEach`: `counters`.
 Because the argument to `forEach`, `incrementer`, is not explicitly {nm1}, it has to assume that modifications propagate into `counters`.
 In the second case, the argument, `printer`, is explicitly {nm1}, which prevents modifications to take place because of the `forEach` method call.
@@ -164,24 +165,68 @@ In the third method this intent is absent, and the analyser must conclude that `
 The fifth case shows the strength of immutability.
 Because strings are level 2 immutable, we know that no consumer can change the individual strings, and we know that `forEach` as a method is not modifying.
 
+==== Annotating _consumer_
+
+The `consumer` parameter of the `forEach` method can have a modifying single abstract method, or not.
+This depends on whether `accept` makes modifications to its closure (the object graph of all fields of the implementation of the interface, including the variables of the enclosing type if there is one).
+
+From the point of view of `Collection`, this closure will always be 'outside', i.e., not inside its own definition.
+Only when that is the case, can we justify annotating with {modified}.
+
+Consider the following simpler example, again employing `Counter`:
+
+[source,java]
+----
+class OneOrOther {
+    private final Counter = new Counter();
+
+    @Modified // <1>
+    private final Supplier<Integer> addOne = () -> counter.increment();
+
+    @Modified // <2>
+    public int increment() {
+        return addOne.get();
+    }
+}
+----
+<1> `addOne` is {modified} because there is a method that calls one of its modifying methods.
+<2> `next` is {modified} because `addOne.get()` modifies.
+
+In this modifying situation, `addOne` is simply a modifying method in disguise.
+The modification status of the single abstract method can only be seen in the following representation:
+
+[source,java]
+----
+@Modified
+private final Supplier<Integer> addOne = new Supplier() {
+
+    @Modified // <1>
+    public Integer get() {
+        return counter.increment();
+    }
+}
+----
+<1> This annotation is not visible using the lambda syntax.
+
 === Containers
 
 The `Collection` interface as depicted in <<collection-interface>> left the `Consumer` parameter of `forEach` unannotated.
 We would very much like `Collection` to be a container, it is almost the archetypal example of this concept.
 
 The main rule for containers stipulates that the parameter has to be {nm}, implying that the single abstract method of `Consumer` must not be modifying.
+We have just discussed that, unless the functional interface has an implementation inside `Collection`, this will not be the case.
+Even worse, in an interface, where one cannot declare fields, all (functional) interface parameters are {nm}.
 
-Looking at this from the point of view of statically available code, all interface parameters are {nm}.
-
-We consider the object that the container must not change to be the return value of functional type, if it has one.
+We extend the definition by requiring that a container must not change the return values of functional interfaces, if it has them.
+This is more in line with the intuitive promise that 'a container does not change the elements it has been given'.
+Formally,
 
 ****
-*Definition*: a parameter of functional type is {nm} when the method of the parameter does not modify the result of applying the function.
+*Definition*: a parameter of functional interface type is {nm} when the method of the parameter does not modify the result of applying the function.
 ****
 
 In the case of `forEach`, the functional type is a `Consumer`, which has no result.
 It therefore automatically satisfies the condition.
-
 A more meaningful situation is when the functional type is a `Supplier`, which does return a value.
 We present an example of this situation in <<example-lazy>>.
 
