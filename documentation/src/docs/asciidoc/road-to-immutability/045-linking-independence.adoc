@@ -68,7 +68,7 @@ Intuitively, linking means that modifying the source object implies that the lin
 Linking does not work on objects that cannot be modified, like primitives or deeply immutable objects such as `java.lang.String`.
 ****
 
-We will discuss linking formally in <<linking-formally>>.
+We will discuss linking formally in <<linking-exposed>>.
 For now, assume that a field links to another field, or to a parameter, if there is a possibility that both represent the same object.
 
 The opposite of linking is independence.

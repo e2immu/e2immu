@@ -1,54 +1,53 @@
+[#linking-exposed]
+== Linking and Exposed
 
-[#linking-formally]
-== Linking, formally
+=== Linking
 
 To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
-It computes a dependency graph of variables depending on other variables, with the following rules:
+It computes a dependency graph of variables depending on other variables, with the following three basic rules:
 
-. in an assignment `v = w`, variable `v` links to variable `w`
-. in an assignment `v = a.method(b, c)`, the default rule is that variable `v` links to `a`, `b` and `c`.
-+
---
+****
+Rule 1: in an assignment `v = w`, variable `v` links to variable `w`.
+****
+
+****
+Rule 2: in an assignment `v = a.method(b, c)`, the default rule is that variable `v` links to `a`, `b` and `c`.
+****
+
 We discern a number of special cases:
 
-.. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
-.. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
-.. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
-.. #TODO# is there something we can do if `b` is {nm}?
-The guarantee of not modifying may be sufficient?
-.. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
-`v` links to `b` only.
---
-+
-Note that:
-+
---
-.. When `a == this`, as in `v = method(b, c)`, `v` could link to any field in the type.
+. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
+. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
+. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
+. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
+`v` links to the first parameter `b` only.
+
+Note that when `a == this`, as in `v = method(b, c)`, `v` could link to any field in the type.
 Therefore, unless any of the rules above apply, we will link `v` to `this`.
-.. If a parameter, say `b`, is a functional type, then passing `b` to `method` amounts to applying the single abstract method of the functional type.
-The linking to `b` will now depend on the properties of the single abstract method: #TODO#
+This is the main reason that {e2immu} analyser insists on marking a method `static` when it does not touch any fields.
 
-... if the single abstract method returns a primitive or object of {e2immutable} type, then `v` will be independent of `b`.
-... if the single abstract method can be marked {independent}, `v` will be independent of `b`
-... in all other cases, `v` will link to `b`
-
---
-
-. in an assignment `v = new A(b, c)`, the rules are very similar to that of a normal method call.
+****
+Rule 3: in an assignment `v = new A(b, c)`, the rules are very similar to that of a normal method call.
 By default, `v` links to `b` and `c`.
+****
 
-.. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
-.. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
+We observe that:
+
+. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
+. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
 
 Most of the other rules are consequences of the basic rules above.
 For example,
 
 . in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.
 . type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
-. Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`
-. In the loop statement `for(T t: ts)`, does the loop variable `t` links to the source `ts`?
+. Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`.
+
+=== Loop statement
+
+In the loop statement `for(T t: ts)`, does the loop variable `t` link to the source `ts`?
 This becomes visible when one considers a model implementation for this statement:
-+
+
 [source,java]
 ----
 Iterator<T> iterator = ts.iterator();
@@ -57,12 +56,12 @@ while(iterator.hasNext()) {
     { ... }
 }
 ----
-+
+
 When `ts` is of level 2 immutable type, the `Iterator` implementation returned will be independent.
 This prevents linking `iterator` to `ts`, and therefore `t` to `ts`.
 Independence of the iterator is important for the semantics of the loop: it ensures that the act of looping over the elements does not change the type.
 It therefore seems prudent to enforce independence in the interface:
-+
+
 [source,java]
 ----
 interface Iterable<T> {
@@ -70,12 +69,36 @@ interface Iterable<T> {
     Iterator<T> iterator();
 }
 ----
-+
+
 Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of of the type either.
 Concluding the discussion: we could imagine situations where `t` links to `ts`, but we will actively prevent them from happening, and program in a world where the loop variable does not link to its collection.
 
-_A note on directionality._ The definitions posited above appear directed: `v` links to `a`, `b` and `c`.
+=== Directionality
+
+A short note on directionality.
+The definitions posited above appear directed: `v` links to `a`, `b` and `c`.
 This means the object held by `v` may contain (parts of) the object represented by `a`, `b` or `c`.
 Modifications to `v` may imply modifications to either `a`, `b`, or `c`; conversely, any modification to `a`, `b` or `c`
 may have an impact on `v`.
 The connected sub-graph `v`, `a`, `b`, `c` therefore forms one 'equivalence class' with respect to modification.
+
+This equivalence is in line with fields linking to parameters, and vice versa, with identical effect: modifications in one can also take place in the other.
+
+[source,java]
+----
+public SetBasedContainer(Set<T> ts) {
+    this.data = ts; // <1>
+}
+
+public void unsafeVisit(Consumer<Set<T>> consumer) {
+    consumer.accept(data); // <2>
+}
+----
+<1> from the parameter to the field,
+<2> from the field to the parameter.
+
+=== Exposed
+
+Finally, we detail how the analyser computes the {exposed} annotation.
+The analysis of the loop statement shows that the definitions of linking do not apply: in `for(T t: ts) { ... }`, the analyser needs to know that `t` is part of the object graph of `ts` in case `ts` is a field.
+

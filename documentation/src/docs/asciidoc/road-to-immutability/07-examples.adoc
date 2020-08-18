@@ -54,7 +54,7 @@ The annotation {nm} comes naturally, because `T` is of unbound generic type and 
 <2> The `@Mark("xx")` annotation as detected by the analyser currently implies `@Only(before="xx")`.
 This cannot be the case here, as users will call the `get` method repeatedly.
 For now, the {mark} annotation will have to be added by hand.
-<3> Here `t` links to `supplier`, as explained in <<linking-formally>>.
+<3> Here `t` links to `supplier`, as explained in <<linking-exposed>>.
 The statement also causes the {nn1} annotation, as defined in <<nullable-section>>.
 
 After calling the marker method `get()`, `t` cannot be assigned anymore, and it becomes {final}.
