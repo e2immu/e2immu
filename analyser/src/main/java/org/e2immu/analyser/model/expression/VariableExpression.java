@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -41,6 +42,15 @@ public class VariableExpression implements Expression {
         processVariable(variable, value, evaluationContext, forwardEvaluationInfo);
         visitor.visit(this, evaluationContext, value);
         return value;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        Variable inMap = translationMap.get(variable);
+        if (inMap != null) {
+            return new VariableExpression(inMap);
+        }
+        return this;
     }
 
     static void processVariable(Variable variable,

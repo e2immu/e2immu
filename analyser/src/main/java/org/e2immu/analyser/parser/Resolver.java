@@ -23,7 +23,9 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LambdaBlock;
+import org.e2immu.analyser.model.expression.LambdaExpression;
+import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.StringUtil;
@@ -81,7 +83,7 @@ public class Resolver {
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);
 
-        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false);
+        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "resolver");
         fillInternalMethodCalls(methodGraph);
 
         toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
@@ -156,8 +158,21 @@ public class Resolver {
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
 
                     MethodInfo sam;
-                    if (fieldInfo.type.isFunctionalInterface() && !parsedExpression.find(LambdaBlock.class).isEmpty()) {
-                        sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(fieldInfo.type);
+                    if (fieldInfo.type.isFunctionalInterface()) {
+                        List<NewObject> newObjects = parsedExpression.find(NewObject.class);
+                        boolean actualImplementation = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() == 1L;
+
+                        if (actualImplementation) {
+                            NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).findFirst().orElseThrow();
+                            TypeInfo anonymousType = newObject.anonymousClass;
+                            sam = anonymousType.findOverriddenSingleAbstractMethod();
+                        } else {
+                            // implicit anonymous type
+                            sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(fieldInfo.type, expressionContext.topLevel.newIndex(typeInfo), parsedExpression);
+                            if (sam != null) {
+                                Resolver.sortTypes(Map.of(sam.typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+                            }
+                        }
                     } else {
                         sam = null;
                     }
@@ -260,7 +275,7 @@ public class Resolver {
         });
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo) {
-                MethodInfo methodInfo = ((MethodInfo) from);
+                MethodInfo methodInfo = (MethodInfo) from;
                 methodInfo.methodAnalysis.get().partOfConstruction.set(methodInfo.isConstructor ||
                         methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
             }

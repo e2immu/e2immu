@@ -68,6 +68,8 @@ public enum VariableProperty {
     ONLY("@Only"),
     OUTPUT("@Output"),
     SINGLETON("@Singleton"),
+    NOT_MODIFIED_1("@NotModified1"),
+    EXPOSED("@EXPOSED"),
     SIZE("@Size", true, Level.NOT_A_SIZE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE), // the int value is for "min"+"equals", not for "max"
     SIZE_COPY("@Size copy"), // the int value is associated with the @Size(copy, copyMin)
     UTILITY_CLASS("@UtilityClass");

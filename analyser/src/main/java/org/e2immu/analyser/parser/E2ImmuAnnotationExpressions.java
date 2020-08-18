@@ -37,6 +37,7 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> e1Immutable = new Lazy<>(() -> create(E1Immutable.class));
     public final Lazy<AnnotationExpression> e2Immutable = new Lazy<>(() -> create(E2Immutable.class));
     public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
+    public final Lazy<AnnotationExpression> exposed = new Lazy<>(() -> create(Exposed.class));
     public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
     public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
     public final Lazy<AnnotationExpression> ignoreModifications = new Lazy<>(() -> create(IgnoreModifications.class));
@@ -46,6 +47,7 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> modified = new Lazy<>(() -> create(Modified.class));
     public final Lazy<AnnotationExpression> mutableModifiesArguments = new Lazy<>(() -> create(MutableModifiesArguments.class));
     public final Lazy<AnnotationExpression> notModified = new Lazy<>(() -> create(NotModified.class));
+    public final Lazy<AnnotationExpression> notModified1 = new Lazy<>(() -> create(NotModified1.class));
     public final Lazy<AnnotationExpression> notNull = new Lazy<>(() -> create(NotNull.class));
     public final Lazy<AnnotationExpression> notNull1 = new Lazy<>(() -> create(NotNull1.class));
     public final Lazy<AnnotationExpression> notNull2 = new Lazy<>(() -> create(NotNull2.class));

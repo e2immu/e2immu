@@ -18,17 +18,14 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.TypeAnalyser;
-import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.upload.AnnotationUploader;
-import org.e2immu.analyser.util.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +158,7 @@ public class Parser {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !typeInfo.typeAnalysis.isSet()) {
-                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false);
+                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "parser");
                 }
             }
         });

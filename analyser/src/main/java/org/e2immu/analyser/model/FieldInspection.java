@@ -128,6 +128,9 @@ public class FieldInspection extends Inspection {
 
     public static class FieldInitialiser {
         public final Expression initialiser;
+
+        // TODO at some point we need to expand this from SAM to arbitrary overriding implementation
+        // for now, SAM will do
         public final MethodInfo implementationOfSingleAbstractMethod;
 
         public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod) {

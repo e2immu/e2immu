@@ -485,8 +485,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             return differentType(inMap, inSubType, translationMap);
         }
         if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
-        if (inSuperType.typeParameter == null || inSubType.typeParameter == null ||
-                inSuperType.typeParameter.index != inSubType.typeParameter.index) return true;
+        if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;
+        // they CAN have different indices, example in BiFunction TestTestExamplesWithAnnotatedAPIs, AnnotationsOnLambdas
         ParameterizedType translated =
                 translationMap.get(inSuperType.typeParameter);
         if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
@@ -555,10 +555,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, boolean hasBeenDefined) {
-        if (methodAnalysis.isSet()) {
-            if (!overwrite)
-                throw new UnsupportedOperationException("Method analysis already set for " + distinguishingName());
-        } else {
+        if (!methodAnalysis.isSet()) {
             MethodAnalysis methodAnalysis = new MethodAnalysis(this);
             this.methodAnalysis.set(methodAnalysis);
         }
@@ -566,10 +563,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInspection.get().annotations,
                 typeContext, overwrite));
         methodInspection.get().parameters.forEach(parameterInfo -> {
-            if (parameterInfo.parameterAnalysis.isSet()) {
-                if (!overwrite)
-                    throw new UnsupportedOperationException("Parameter analysis already set in " + distinguishingName());
-            } else {
+            if (!parameterInfo.parameterAnalysis.isSet()) {
                 ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo);
                 parameterInfo.parameterAnalysis.set(parameterAnalysis);
             }

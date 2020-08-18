@@ -282,6 +282,10 @@ public abstract class Analysis {
                     method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo == t) {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
+                } else if (e2ImmuAnnotationExpressions.exposed.get().typeInfo == t) {
+                    method.accept(VariableProperty.EXPOSED, Level.TRUE);
+                } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
+                    method.accept(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
                     method.accept(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));

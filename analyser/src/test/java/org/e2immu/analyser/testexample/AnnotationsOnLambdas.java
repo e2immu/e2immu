@@ -1,6 +1,7 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -23,7 +24,7 @@ public class AnnotationsOnLambdas {
 
     @FunctionalInterface
     interface RemoveOne {
-        @Fluent
+        @Identity
         Set<String> go(@NotNull @NotModified(type = VERIFY_ABSENT) Set<String> in);
     }
 

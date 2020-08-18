@@ -36,6 +36,8 @@ import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -51,6 +53,7 @@ import static org.e2immu.analyser.util.Logger.log;
 // used in MethodAnalyser
 
 class VariableProperties implements EvaluationContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VariableProperties.class);
 
     // the following two variables can be assigned to as we progress through the statements
 
@@ -326,11 +329,19 @@ class VariableProperties implements EvaluationContext {
     }
 
     private AboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
-        int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
-        if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
-        boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
-        boolean inConstructionPhase = currentMethod != null && currentMethod.methodAnalysis.get().partOfConstruction.get();
-        return isEffectivelyFinal || inSyncBlock || inConstructionPhase ? SINGLE_COPY : MULTI_COPY;
+        try {
+            int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
+            boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
+            boolean inConstructionPhase = currentMethod != null &&
+                    currentMethod.methodAnalysis.get()
+                            .partOfConstruction.get();
+            return isEffectivelyFinal || inSyncBlock || inConstructionPhase ? SINGLE_COPY : MULTI_COPY;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception while creating a single copy for field reference: {}, current method {}, current field {}",
+                    fieldReference.detailedString(), currentMethod, currentField);
+            throw rte;
+        }
     }
 
     @NotNull
@@ -378,7 +389,7 @@ class VariableProperties implements EvaluationContext {
             objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.PARAMETER);
             if (!internalObjectFlows.add(objectFlow))
-                throw new UnsupportedOperationException("? should not yet be there: "+objectFlow+" vs "+internalObjectFlows);
+                throw new UnsupportedOperationException("? should not yet be there: " + objectFlow + " vs " + internalObjectFlows);
         } else if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
             ObjectFlow fieldObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),

@@ -24,10 +24,10 @@ import java.lang.annotation.Target;
 
 /**
  * Used for functional types, as a dynamic type annotation, to indicate that the single abstract method
- * does not modify either parameter or variables in the closure.
+ * exposes part of the fields' object graph to the outside world.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
-public @interface NotModified1 {
+public @interface Exposed {
     AnnotationType type() default AnnotationType.VERIFY;
 }

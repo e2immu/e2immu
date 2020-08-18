@@ -48,6 +48,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression object;
     public final Expression computedScope;
     public final List<Expression> parameterExpressions;
+    public final MethodTypeParameterMap methodTypeParameterMap;
 
     public MethodCall(@NotNull Expression object,
                       @NotNull Expression computedScope,
@@ -57,6 +58,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         this.object = object;
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.computedScope = Objects.requireNonNull(computedScope);
+        this.methodTypeParameterMap = methodTypeParameterMap;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new MethodCall(object == null ? null : object.translate(translationMap),
+                computedScope.translate(translationMap),
+                methodTypeParameterMap, // TODO prob not correct
+                parameterExpressions.stream().map(pe -> pe.translate(translationMap)).collect(Collectors.toList()));
     }
 
     @Override

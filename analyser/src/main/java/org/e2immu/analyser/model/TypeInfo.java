@@ -26,7 +26,10 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.*;
@@ -42,6 +45,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
@@ -966,9 +970,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
      */
 
-    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(ParameterizedType type) {
+    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(ParameterizedType type, int index, Expression returnExpression) {
+        // no point in creating something that we cannot (yet) deal with...
+        if (returnExpression instanceof NullConstant || returnExpression == EmptyExpression.EMPTY_EXPRESSION) {
+            return null;
+        }
+
         MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface();
-        TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anonymous");
+        TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anon" + index);
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
@@ -980,13 +989,69 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         builder.addMethod(methodInfo);
 
         // compose the content of the method...
-
-        methodInfo.methodInspection.get().methodBody.set(Block.EMPTY_BLOCK);
+        Block block;
+        if (returnExpression instanceof LambdaExpression) {
+            LambdaExpression lambdaExpression = (LambdaExpression) returnExpression;
+            Map<Variable, Variable> translationMap = new HashMap<>();
+            int i = 0;
+            for (ParameterInfo lambdaParameter : lambdaExpression.parameters) {
+                ParameterInfo interfaceMethodParameter = methodInfo.methodInspection.get().parameters.get(i);
+                translationMap.put(lambdaParameter, interfaceMethodParameter);
+                i++;
+            }
+            ReturnStatement returnStatement = new ReturnStatement(lambdaExpression.expression.translate(translationMap));
+            block = new Block.BlockBuilder().addStatement(returnStatement).build();
+        } else if (returnExpression instanceof MethodReference) {
+            MethodReference methodReference = (MethodReference) returnExpression;
+            Expression newReturnExpression;
+            if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
+                newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReference.methodInfo, methodInfo);
+            } else {
+                if (methodInfo.methodInspection.get().parameters.size() != 1)
+                    throw new UnsupportedOperationException("Referenced method has multiple parameters");
+                newReturnExpression = methodCallNoParameters(methodInfo);
+            }
+            Statement statement;
+            if (methodInfo.isVoid()) {
+                statement = new ExpressionAsStatement(newReturnExpression);
+            } else {
+                statement = new ReturnStatement(newReturnExpression);
+            }
+            block = new Block.BlockBuilder().addStatement(statement).build();
+        } else {
+            throw new UnsupportedOperationException("Cannot (yet) deal with " + returnExpression.getClass());
+        }
+        methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
+
+        methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
+        methodInfo.methodAnalysis.get().partOfConstruction.set(false);
 
         // and done.
 
         return methodInfo;
+    }
+
+    private Expression methodCallNoParameters(MethodInfo interfaceMethod) {
+        Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().parameters.get(0));
+        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(interfaceMethod, Map.of());
+        return new MethodCall(newScope, newScope, methodTypeParameterMap, List.of());
+    }
+
+    private Expression methodCallCopyAllParameters(Expression scope, MethodInfo concreteMethod, MethodInfo interfaceMethod) {
+        List<Expression> parameterExpressions = interfaceMethod.methodInspection.get()
+                .parameters.stream().map(VariableExpression::new).collect(Collectors.toList());
+        Map<NamedType, ParameterizedType> concreteTypes = new HashMap<>();
+        int i = 0;
+        for (ParameterInfo parameterInfo : concreteMethod.methodInspection.get().parameters) {
+            ParameterInfo interfaceParameter = interfaceMethod.methodInspection.get().parameters.get(i);
+            if (interfaceParameter.parameterizedType.isTypeParameter()) {
+                concreteTypes.put(interfaceParameter.parameterizedType.typeParameter, parameterInfo.parameterizedType);
+            }
+            i++;
+        }
+        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(interfaceMethod, concreteTypes);
+        return new MethodCall(scope, scope, methodTypeParameterMap, parameterExpressions);
     }
 
     public boolean isNestedType() {
@@ -1019,8 +1084,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isNestedType() && isPrivate();
     }
 
-    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
+    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, String where) {
         boolean hasBeenDefined = hasBeenDefined();
+        log(RESOLVE, "{}: copy annotations into properties: {}", where, fullyQualifiedName);
         Messages messages = new Messages();
         if (this.typeAnalysis.isSet()) {
             if (!overwrite)
@@ -1156,5 +1222,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInspection.get().packageNameOrEnclosingType.isLeft())
             return typeInspection.get().packageNameOrEnclosingType.getLeft();
         return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();
+    }
+
+    // this type implements a functional interface, and we need to find the single abstract method
+    public MethodInfo findOverriddenSingleAbstractMethod() {
+        ParameterizedType functionalInterface = typeInspection.get().interfacesImplemented.stream()
+                .filter(ParameterizedType::isFunctionalInterface).findFirst().orElseThrow();
+        MethodTypeParameterMap formalSam = functionalInterface.findSingleAbstractMethodOfInterface();
+        return typeInspection.get().methods.stream().filter(mi ->
+                formalSam.methodInfo.sameMethod(mi, formalSam.concreteTypes)).findFirst().orElseThrow();
     }
 }

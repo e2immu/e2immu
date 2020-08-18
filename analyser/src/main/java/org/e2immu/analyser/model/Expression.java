@@ -47,7 +47,9 @@ public interface Expression {
         return Set.of();
     }
 
-    default Set<TypeInfo> typesReferenced() { return Set.of(); }
+    default Set<TypeInfo> typesReferenced() {
+        return Set.of();
+    }
 
     @NotModified
     // TODO later?
@@ -111,10 +113,14 @@ public interface Expression {
     @NotModified
     default <E extends Expression> List<E> find(Class<E> clazz) {
         List<E> result = new ArrayList<>();
-        collect(e -> {
-            if (clazz.isAssignableFrom(e.getClass())) return List.of((E) e);
-            return List.of();
-        }, result::addAll);
+        if (clazz.isAssignableFrom(getClass())) result.add((E) this);
+        for (Expression sub : subExpressions()) {
+            result.addAll(sub.find(clazz));
+        }
         return ImmutableList.copyOf(result);
+    }
+
+    default Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return this;
     }
 }

@@ -682,7 +682,9 @@ public class StatementAnalyser {
             return;
         }
         MethodInfo currentMethod = variableProperties.getCurrentMethod();
-        if (currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
+
+        // TODO: we can call from in a field, see TestFunctionalInterfaceModifiedChecks
+        if (currentMethod == null || currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.isSet(methodCalled)) {
             return;
         }
         int modified = methodCalled.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);

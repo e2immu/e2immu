@@ -26,10 +26,7 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @E2Immutable
 public class FieldAccess implements Expression {
@@ -39,6 +36,12 @@ public class FieldAccess implements Expression {
     public FieldAccess(Expression expression, Variable variable) {
         this.variable = Objects.requireNonNull(variable);
         this.expression = Objects.requireNonNull(expression);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        Variable inMap = translationMap.get(variable);
+        return new FieldAccess(expression.translate(translationMap), inMap == null ? variable : inMap);
     }
 
     @Override

@@ -667,6 +667,8 @@ public class FieldAnalyser {
         check(fieldInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
         check(fieldInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
         check(fieldInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
+        check(fieldInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
+        check(fieldInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
 
         // opposites
         check(fieldInfo, org.e2immu.annotation.Variable.class, e2ImmuAnnotationExpressions.variableField.get());

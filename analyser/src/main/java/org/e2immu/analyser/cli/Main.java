@@ -117,7 +117,7 @@ public class Main {
             builder.setAnnotatedAPIConfiguration(apiBuilder.build());
 
             Configuration configuration = builder.build();
-            initializeLoggers(configuration);
+            configuration.initializeLoggers();
             new Parser(configuration).run();
 
         } catch (ParseException parseException) {
@@ -129,18 +129,6 @@ public class Main {
             System.exit(1);
         }
     }
-
-    private static void initializeLoggers(Configuration configuration) {
-        // the following works with LogBack but not in the Gradle plugin
-        // which is why the code is here, and not in Parser.run()
-        if (configuration.quiet) {
-            org.e2immu.analyser.util.Logger.configure(Level.ERROR);
-        } else {
-            org.e2immu.analyser.util.Logger.configure(Level.INFO);
-            org.e2immu.analyser.util.Logger.activate(configuration.logTargets);
-        }
-    }
-
 
     private static void splitAndAdd(String[] strings, String separator, Consumer<String> adder) {
         if (strings != null) {

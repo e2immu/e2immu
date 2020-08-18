@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.config;
 
+import ch.qos.logback.classic.Level;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.annotation.Container;
@@ -165,6 +166,15 @@ public class Configuration {
         String value = properties.get(key);
         if (value != null) {
             consumer.accept("true".equalsIgnoreCase(value.trim()));
+        }
+    }
+
+    public void initializeLoggers() {
+        if (quiet) {
+            org.e2immu.analyser.util.Logger.configure(Level.ERROR);
+        } else {
+            org.e2immu.analyser.util.Logger.configure(Level.INFO);
+            org.e2immu.analyser.util.Logger.activate(logTargets);
         }
     }
 

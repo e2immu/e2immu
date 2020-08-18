@@ -18,16 +18,12 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.annotation.IgnoreModifications;
-import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -194,10 +190,12 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         Messages messages = new Messages();
         messages.addAll(fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInspection.get().annotations,
                 typeContext, overwrite));
-        if (fieldInspection.get().initialiser.isSet() &&
+        /*if (fieldInspection.get().initialiser.isSet() &&
                 fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null) {
-            messages.addAll(fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod.typeInfo.copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite));
-        }
+            messages.addAll(fieldInspection.get().initialiser.get()
+                    .implementationOfSingleAbstractMethod.typeInfo
+                    .copyAnnotationsIntoTypeAnalysisProperties(typeContext, overwrite, "field"));
+        } has already been set at creation time */
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
         int effectivelyFinal = fieldAnalysis.get().getProperty(VariableProperty.FINAL);
