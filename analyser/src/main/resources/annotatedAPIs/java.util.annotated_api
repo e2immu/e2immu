@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Iterator<T> {
-    default void forEachRemaining(Consumer<? super T> action);
+    default void forEachRemaining(Consumer<? super T> action) { }
 
     boolean hasNext();
 
