@@ -231,17 +231,25 @@ Use it to contract in the red mode.
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {n} | Param {y}
 |===
 
+Summary::
+Mode::
+
 ==== @Precondition
 
 |===
 | Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
+Summary:: The analyser emits this annotation to describe any preconditions to a method, i.e., boolean expressions of the parameters or fields which cause an exception.
+Mode:: This annotation cannot be used for contracting.
+
 ==== @Singleton
 
 |===
 | Basic {y} | Immu {n}| Contract {n} | Type {y} | Field {n} | Method {n} | Param {n}
 |===
+
+Mode:: There is no opposite for this annotation.
 
 ==== @Size
 
