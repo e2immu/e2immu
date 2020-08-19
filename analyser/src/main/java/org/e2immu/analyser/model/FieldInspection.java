@@ -121,7 +121,7 @@ public class FieldInspection extends Inspection {
         @NotNull
         public FieldInspection build() {
             FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> firstThen = new FirstThen<>(initializer != null ? initializer : EMPTY);
-            if (alreadyKnown != null) firstThen.set(new FieldInitialiser(alreadyKnown, null));
+            if (alreadyKnown != null) firstThen.set(new FieldInitialiser(alreadyKnown, null, false));
             return new FieldInspection(modifiers.build(), firstThen, annotations.build());
         }
     }
@@ -133,9 +133,13 @@ public class FieldInspection extends Inspection {
         // for now, SAM will do
         public final MethodInfo implementationOfSingleAbstractMethod;
 
-        public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod) {
+        // artificial means: created by the inspection system; in the code, this method is not explicitly present
+        public final boolean artificial;
+
+        public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod, boolean artificial) {
             this.implementationOfSingleAbstractMethod = implementationOfSingleAbstractMethod;
             this.initialiser = initialiser;
+            this.artificial = artificial;
         }
     }
 }

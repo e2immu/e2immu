@@ -15,7 +15,7 @@ import java.io.IOException;
 public class TestFunctionalInterfaceModifiedChecks extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name)) {
+        if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
             Block block = sam.methodInspection.get().methodBody.get();
             Assert.assertEquals(1, block.statements.size());

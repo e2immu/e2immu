@@ -36,7 +36,7 @@ import static org.e2immu.analyser.util.Logger.log;
 /**
  * Inside a compilation unit, there is a context in which names are known.
  * This context is inherently recursive, dependent on the container.
- *
+ * <p>
  * TODO Should become eventual @E2Container
  */
 public class TypeContext {
@@ -274,7 +274,7 @@ public class TypeContext {
         if (!typeInfo.typeInspection.isSet()) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected yet");
         }
-        typeInfo.typeInspection.get().methods.stream()
+        typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)

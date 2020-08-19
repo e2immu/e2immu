@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Mark;
 
@@ -44,7 +45,7 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
                                 .map(Map.Entry::getKey)
                                 .collect(Collectors.toList()) : List.of());
         if (haveTypeInspection) {
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
                 MethodItem methodItem = new MethodItem(methodInfo);
                 methodItems.put(methodItem.name, methodItem);
             }

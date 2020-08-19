@@ -547,6 +547,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 return true;
             }
         }
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod != null &&
+                        fieldInitialiser.implementationOfSingleAbstractMethod.methodAnalysis.get().methodsOfOwnClassReached.get().contains(this)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 

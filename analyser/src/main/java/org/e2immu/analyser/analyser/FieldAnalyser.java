@@ -310,7 +310,8 @@ public class FieldAnalyser {
     }
 
     private static List<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
-        return fieldInfo.owner.typeInspection.get().constructorAndMethodStream().filter(mi -> mi.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+        return fieldInfo.owner.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+                .filter(mi -> mi.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .filter(mi -> mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED) >= Level.TRUE)
                 .collect(Collectors.toList());
     }
@@ -322,7 +323,7 @@ public class FieldAnalyser {
             if (!fieldInfo.isStatic()) {
                 if (fieldSummariesNotYetSet) return false;
                 List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
-                int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream())
+                int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL))
                         .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
                         .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo)) // field seen
                         .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.FALSE))
@@ -390,7 +391,7 @@ public class FieldAnalyser {
     }
 
     private static boolean someAssignmentValuesUndefined(VariableProperty property, FieldInfo fieldInfo, TypeInspection typeInspection) {
-        boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+        boolean allAssignmentValuesDefined = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(m ->
                 // field is not present in the method
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                         // field is not assigned to in the method
@@ -407,13 +408,13 @@ public class FieldAnalyser {
     }
 
     private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
-        return typeInspection.constructorAndMethodStream().filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
+        return typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.METHOD_DELAY_RESOLVED)
                         == Level.TRUE);// TRUE indicates that there are delays
     }
 
     private int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {
-        IntStream contextRestrictions = typeInspection.constructorAndMethodStream()
+        IntStream contextRestrictions = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(property));
         int result = contextRestrictions.max().orElse(Level.DELAY);
@@ -423,7 +424,7 @@ public class FieldAnalyser {
 
     private int computeValueFromAssignment(TypeInspection typeInspection, FieldInfo fieldInfo, boolean haveInitialiser, Value value,
                                            VariableProperty property, boolean allDelaysResolved) {
-        IntStream assignments = typeInspection.constructorAndMethodStream()
+        IntStream assignments = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.isSet())
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
@@ -547,7 +548,7 @@ public class FieldAnalyser {
                                   TypeInspection typeInspection) {
         if (fieldAnalysis.variablesLinkedToMe.isSet()) return false;
 
-        boolean allDefined = typeInspection.constructorAndMethodStream()
+        boolean allDefined = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .allMatch(m ->
                         m.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet() && (
                                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
@@ -555,7 +556,7 @@ public class FieldAnalyser {
         if (!allDefined) return false;
 
         Set<Variable> links = new HashSet<>();
-        typeInspection.constructorAndMethodStream()
+        typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet())
                 .forEach(m -> links.addAll(m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.get()));
@@ -583,7 +584,7 @@ public class FieldAnalyser {
             return true;
         }
         if (fieldSummariesNotYetPresent) return false;
-        int isAssignedOutsideConstructors = typeInspection.methods.stream()
+        int isAssignedOutsideConstructors = typeInspection.methodStream(TypeInspection.Methods.ALL)
                 .filter(m -> !m.isPrivate() || m.isCalledFromNonPrivateMethod())
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED))
@@ -628,14 +629,14 @@ public class FieldAnalyser {
         }
         if (fieldSummariesNotYetSet) return false;
         // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
-        boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream().allMatch(m ->
+        boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(m ->
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
 
         if (allContentModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
-                    typeInspection.constructorAndMethodStream()
+                    typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                             .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                             .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) >= Level.TRUE)
                             .anyMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.TRUE);

@@ -28,16 +28,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.e2immu.analyser.config.UploadConfiguration;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,7 +142,7 @@ public class AnnotationUploader {
                 break;
             }
         }
-        type.typeInspection.get().constructorAndMethodStream().forEach(methodInfo -> {
+        type.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {

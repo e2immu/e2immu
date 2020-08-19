@@ -435,7 +435,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
-        if (typeInspection.get().methods.stream().anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
+        if (typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
         for (ParameterizedType superInterface : typeInspection.get().interfacesImplemented) {
             if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
                 return true;
@@ -940,7 +941,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo getMethodOrConstructorByDistinguishingName(String distinguishingName) {
-        return typeInspection.get().constructorAndMethodStream().filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName)).findFirst().orElse(null);
+        return typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName))
+                .findFirst().orElse(null);
     }
 
     public FieldInfo getFieldByName(String name) {
@@ -1145,7 +1148,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo sizeMethod() {
-        MethodInfo methodInfo = typeInspection.get().methods.stream()
+        MethodInfo methodInfo = typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
                 .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
@@ -1208,7 +1211,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
-        return typeInspection.get().methods.stream().
+        return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).
                 filter(m -> m.name.equals(methodName) && m.methodInspection.get().parameters.size() == parameters)
                 .findAny().orElseThrow();
     }
@@ -1242,7 +1245,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         ParameterizedType functionalInterface = typeInspection.get().interfacesImplemented.stream()
                 .filter(ParameterizedType::isFunctionalInterface).findFirst().orElseThrow();
         MethodTypeParameterMap formalSam = functionalInterface.findSingleAbstractMethodOfInterface();
-        return typeInspection.get().methods.stream().filter(mi ->
-                formalSam.methodInfo.sameMethod(mi, formalSam.concreteTypes)).findFirst().orElseThrow();
+        return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .filter(mi -> formalSam.methodInfo.sameMethod(mi, formalSam.concreteTypes))
+                .findFirst().orElseThrow();
     }
 }

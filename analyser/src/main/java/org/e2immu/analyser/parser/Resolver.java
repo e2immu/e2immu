@@ -146,6 +146,7 @@ public class Resolver {
                 Expression expression = fieldInspection.initialiser.getFirst();
                 FieldInspection.FieldInitialiser fieldInitialiser;
                 List<WithInspectionAndAnalysis> dependencies;
+
                 if (expression != FieldInspection.EMPTY) {
                     ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
                     Objects.requireNonNull(subContext.dependenciesOnOtherMethodsAndFields); // to keep IntelliJ happy
@@ -158,11 +159,12 @@ public class Resolver {
                     org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
 
                     MethodInfo sam;
+                    boolean artificial;
                     if (fieldInfo.type.isFunctionalInterface()) {
                         List<NewObject> newObjects = parsedExpression.find(NewObject.class);
-                        boolean actualImplementation = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() == 1L;
+                        artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
 
-                        if (actualImplementation) {
+                        if (!artificial) {
                             NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).findFirst().orElseThrow();
                             TypeInfo anonymousType = newObject.anonymousClass;
                             sam = anonymousType.findOverriddenSingleAbstractMethod();
@@ -175,11 +177,12 @@ public class Resolver {
                         }
                     } else {
                         sam = null;
+                        artificial = false;
                     }
-                    fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam);
+                    fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
                     dependencies = ImmutableList.copyOf(subContext.dependenciesOnOtherMethodsAndFields);
                 } else {
-                    fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null);
+                    fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null, false);
                     dependencies = List.of();
                 }
                 methodGraph.addNode(fieldInfo, dependencies);
@@ -187,9 +190,9 @@ public class Resolver {
             }
         });
 
-        // METHOD AND CONSTRUCTOR
+        // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
 
-        typeInspection.constructorAndMethodStream().forEach(methodInfo -> {
+        typeInspection.constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
                 MethodInspection methodInspection = methodInfo.methodInspection.get();
 

@@ -73,4 +73,9 @@ public class FunctionalInterfaceModifiedChecks {
 
     @Modified
     public final Function<Integer, Integer> getAndAdd2 = t -> myCounter.add(t);
+
+    @Modified
+    public final Function<Integer, Integer> getAndAdd3 = t -> {
+        return myCounter.add(t);
+    };
 }

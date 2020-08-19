@@ -30,6 +30,7 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -267,27 +268,31 @@ public class TypeAnalyser {
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
         }
-        boolean someModifiedNotSet = typeInfo.typeInspection.get().methods.stream()
+        final TypeInspection.Methods methodsMode = TypeInspection.Methods.EXCLUDE_FIELD_SAM;
+        boolean someModifiedNotSet = typeInfo.typeInspection.get()
+                .methodStream(methodsMode)
                 .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
         if (someModifiedNotSet) return false;
 
-        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get().methods.stream()
+        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get()
+                .methodStream(methodsMode)
                 .filter(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
                 .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForOnlyData.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get().methods.stream().anyMatch(methodInfo ->
-                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
-                        methodInfo.methodAnalysis.get().preconditionForOnlyData.get() == UnknownValue.NO_VALUE);
+        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get()
+                .methodStream(methodsMode).anyMatch(methodInfo ->
+                        methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
+                                methodInfo.methodAnalysis.get().preconditionForOnlyData.get() == UnknownValue.NO_VALUE);
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             return false;
         }
         int count = 0;
         Map<Value, String> tempApproved = new HashMap<>();
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(methodsMode)) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
                 Value precondition = methodInfo.methodAnalysis.get().preconditionForOnlyData.get();
@@ -322,7 +327,7 @@ public class TypeAnalyser {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return false;
         }
-        boolean allReady = typeInfo.typeInspection.get().constructorAndMethodStream().allMatch(
+        boolean allReady = typeInfo.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(
                 m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
                         !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
                                 parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));
@@ -528,7 +533,7 @@ public class TypeAnalyser {
 
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
                 ParameterizedType typeOfFirstParameter;
@@ -574,7 +579,7 @@ public class TypeAnalyser {
             return true;
         }
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.isStatic) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
@@ -600,7 +605,7 @@ public class TypeAnalyser {
         }
 
         // and there should be no means of generating an object
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.methodAnalysis.get().createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
                         typeInfo.fullyQualifiedName, methodInfo.name);

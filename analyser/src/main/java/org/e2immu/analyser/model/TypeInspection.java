@@ -26,10 +26,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -102,7 +99,7 @@ public class TypeInspection extends Inspection {
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
 
-        if(hasBeenDefined) {
+        if (hasBeenDefined) {
             annotationMode = annotationMode(annotations);
         } else {
             annotationMode = AnnotationMode.DEFENSIVE; // does not matter what we put here
@@ -117,9 +114,9 @@ public class TypeInspection extends Inspection {
             org.e2immu.annotation.Variable.class.getCanonicalName());
 
     private static AnnotationMode annotationMode(List<AnnotationExpression> annotations) {
-        for(AnnotationExpression ae: annotations) {
+        for (AnnotationExpression ae : annotations) {
             String fqn = ae.typeInfo.fullyQualifiedName;
-            if(OFFENSIVE_ANNOTATIONS.contains(fqn)) return AnnotationMode.OFFENSIVE;
+            if (OFFENSIVE_ANNOTATIONS.contains(fqn)) return AnnotationMode.OFFENSIVE;
         }
         return AnnotationMode.DEFENSIVE;
     }
@@ -128,12 +125,33 @@ public class TypeInspection extends Inspection {
         return typeNature == TypeNature.CLASS;
     }
 
-    public Stream<MethodInfo> constructorAndMethodStream() {
-        return Stream.concat(constructors.stream(), methods.stream());
+    public enum Methods {
+        ALL, EXCLUDE_FIELD_SAM, EXCLUDE_FIELD_ARTIFICIAL_SAM,
+    }
+
+    public Stream<MethodInfo> constructorAndMethodStream(Methods methodsMode) {
+        return Stream.concat(constructors.stream(), methodStream(methodsMode));
+    }
+
+    public Stream<MethodInfo> methodStream(Methods methodsMode) {
+        if (methodsMode == Methods.EXCLUDE_FIELD_SAM) return methods.stream();
+        return Stream.concat(methods.stream(), methodsInFieldInitializers(methodsMode == Methods.ALL));
     }
 
     public Iterable<MethodInfo> methodsAndConstructors() {
         return Iterables.concat(methods, constructors);
+    }
+
+    public Iterable<MethodInfo> methods(Methods methodsMode) {
+        return () -> methodStream(methodsMode).iterator();
+    }
+
+    public Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
+        return fields.stream()
+                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiser.isSet())
+                .map(fieldInfo -> fieldInfo.fieldInspection.get().initialiser.get())
+                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod != null && (alsoArtificial || !initialiser.artificial))
+                .map(initialiser -> initialiser.implementationOfSingleAbstractMethod);
     }
 
     public TypeInspection copy(List<AnnotationExpression> alternativeAnnotations,
