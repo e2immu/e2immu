@@ -25,7 +25,6 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,11 +52,6 @@ public class TypeAnalysis extends Analysis {
     public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
 
     public final SetOnce<Boolean> doNotAllowDelaysOnNotModified = new SetOnce<>();
-
-    protected Set<ElementType> extractWhere(AnnotationExpression annotationExpression) {
-        ElementType[] elements = annotationExpression.extract("where", NOT_NULL_WHERE_ALL);
-        return Arrays.stream(elements).collect(Collectors.toSet());
-    }
 
     private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
 

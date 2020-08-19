@@ -99,6 +99,9 @@ public class FieldAnalysis extends Analysis {
                 break;
 
             case IMMUTABLE:
+                // dynamic type annotation not relevant here
+                if(bestType != null && bestType.isFunctionalInterface()) return MultiLevel.FALSE;
+
                 int fieldImmutable = super.getProperty(variableProperty);
                 if (fieldImmutable == Level.DELAY) return Level.DELAY;
                 int typeImmutable = typeImmutable();

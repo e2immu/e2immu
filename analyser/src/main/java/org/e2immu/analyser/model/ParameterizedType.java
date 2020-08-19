@@ -702,9 +702,7 @@ public class ParameterizedType {
     }
 
     public boolean cannotBeModified() {
-        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType()
-                // TODO is this correct??
-                || isFunctionalInterface();
+        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType();
     }
 
     public boolean cannotBeSupportData() {

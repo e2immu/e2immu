@@ -90,6 +90,7 @@ public class FieldAnalyser {
             haveInitialiser = true;
         }
         boolean fieldSummariesNotYetSet = fieldProperties.iteration == 0;
+        boolean isFunctionalInterface = fieldInfo.type.isFunctionalInterface();
 
         if (makeInternalObjectFlowsPermanent(fieldInfo, fieldAnalysis, fieldProperties)) changes = true;
 
@@ -101,9 +102,10 @@ public class FieldAnalyser {
         if (analyseFinalValue(fieldInfo, fieldAnalysis, fieldReference, fieldProperties, value, haveInitialiser, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
-        // STEP 4: MULTIPLE ANNOTATIONS ON ASSIGNMENT: IMMUTABLE (min over assignments)
-        if (analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE, fieldInfo, fieldAnalysis, value, haveInitialiser,
-                fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+        // STEP 4: IMMUTABLE (min over assignments)
+        if (!isFunctionalInterface &&
+                analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                        fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
             changes = true;
 
         // STEP 5: NOT NULL
@@ -115,14 +117,16 @@ public class FieldAnalyser {
             changes = true;
 
         // STEP 7: @Size
-        if (analyseSize(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
-            changes = true;
+        if (!isFunctionalInterface) {
+            if (analyseSize(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+                changes = true;
 
-        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.FALSE &&
-                analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
-                        fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
-            changes = true;
+            int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+            if (modified == Level.FALSE &&
+                    analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                            fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+                changes = true;
+        }
 
         // STEP 8: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
@@ -618,7 +622,7 @@ public class FieldAnalyser {
         }
         if (isFinal == Level.FALSE) {
             log(NOT_MODIFIED, "Field {} cannot be @NotModified, as it is not @Final", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, true);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
@@ -626,6 +630,13 @@ public class FieldAnalyser {
         if (e2immutable == MultiLevel.DELAY) {
             log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
             return false;
+        }
+
+        // NOTE: we do not need code to check if e2immutable is at least eventually level 2, since the getProperty(MODIFIED) in the first line
+        // intercepts this!
+
+        if (fieldInfo.type.isFunctionalInterface()) {
+            return analyseNotModifiedFunctionalInterface(fieldInfo, fieldAnalysis);
         }
         if (fieldSummariesNotYetSet) return false;
         // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
@@ -646,6 +657,24 @@ public class FieldAnalyser {
         }
         log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
                 fieldInfo.fullyQualifiedName());
+        return false;
+    }
+
+    /*
+    TODO at some point this should go beyond functional interfaces.
+
+    TODO at some point this should go beyond the initializer; it should look at all assignments
+     */
+    private boolean analyseNotModifiedFunctionalInterface(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
+        if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
+            MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod;
+            int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            log(NOT_MODIFIED, "Field {} of functional interface type: copying MODIFIED {} from SAM", fieldInfo.fullyQualifiedName(), modified);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
+            return true;
+        }
+        log(NOT_MODIFIED, "Field {} of functional interface type has no known method, delaying", fieldInfo.fullyQualifiedName());
         return false;
     }
 
