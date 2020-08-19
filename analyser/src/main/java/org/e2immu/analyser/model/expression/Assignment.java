@@ -61,7 +61,7 @@ public class Assignment implements Expression {
 
     @Override
     public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        throw new UnsupportedOperationException("? should not be needed at the moment, only used to transform lambda expressions into SAMs");
+        return new Assignment(target, value.translate(translationMap), primitiveOperator, prefixPrimitiveOperator);
     }
 
     @NotNull

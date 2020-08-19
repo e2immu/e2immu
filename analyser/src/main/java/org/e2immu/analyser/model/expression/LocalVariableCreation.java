@@ -25,10 +25,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class LocalVariableCreation implements Expression {
@@ -42,6 +39,11 @@ public class LocalVariableCreation implements Expression {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
         localVariableReference = new LocalVariableReference(localVariable, subExpressions());
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new LocalVariableCreation(localVariable, expression.translate(translationMap));
     }
 
     @Override

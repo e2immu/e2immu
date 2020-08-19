@@ -28,6 +28,8 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,6 +59,8 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 
 public class TypeAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyser.class);
+
     public static final int POST_ANALYSIS = 100;
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
@@ -157,8 +161,16 @@ public class TypeAnalyser {
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
                                 methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
                             }
-                            if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
-                                changes = true;
+                            try {
+                                if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
+                                    changes = true;
+                                }
+                            } catch (RuntimeException rte) {
+                                LOGGER.warn("Caught exception in method analysis of SAM of field " + fieldInfo.fullyQualifiedName());
+                                if(fieldInitialiser.artificial) {
+                                    LOGGER.warn("Method's code is artificial:\n{}", fieldInitialiser.implementationOfSingleAbstractMethod.stream(0));
+                                }
+                                throw rte;
                             }
                             for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
                                 methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
