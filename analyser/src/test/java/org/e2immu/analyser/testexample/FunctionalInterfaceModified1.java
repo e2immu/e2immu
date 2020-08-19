@@ -22,7 +22,7 @@ import org.e2immu.annotation.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FunctionalInterfaceModifiedFieldChecks {
+public class FunctionalInterfaceModified1 {
 
     @Container
     static class Counter {
