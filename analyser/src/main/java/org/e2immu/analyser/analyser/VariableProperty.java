@@ -66,7 +66,6 @@ public enum VariableProperty {
     LINKED("@Linked"),
     MARK("@Mark"),
     ONLY("@Only"),
-    OUTPUT("@Output"),
     SINGLETON("@Singleton"),
     NOT_MODIFIED_1("@NotModified1"),
     EXPOSED("@EXPOSED"),

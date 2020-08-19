@@ -140,8 +140,6 @@ public class ParameterAnalysis extends Analysis {
         // @NotModified1, @Exposed
         doNotModified1Exposed(e2ImmuAnnotationExpressions);
 
-        // @Output (to be analysed later)
-
         // @NotNull, @Size
         doNotNull(e2ImmuAnnotationExpressions);
         doSize(e2ImmuAnnotationExpressions);

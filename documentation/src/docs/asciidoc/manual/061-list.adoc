@@ -225,15 +225,6 @@ Use it to contract in the red mode.
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
-==== @Output
-
-|===
-| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {n} | Param {y}
-|===
-
-Summary::
-Mode::
-
 ==== @Precondition
 
 |===

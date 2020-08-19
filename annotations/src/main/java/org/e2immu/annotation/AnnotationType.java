@@ -44,7 +44,7 @@ public enum AnnotationType {
 
     /**
      * The default value for annotated_api files and interfaces: not computed
-     * but set by hand. Also the default for @Once, @Mark, and @Output
+     * but set by hand.
      */
     CONTRACT,
 }

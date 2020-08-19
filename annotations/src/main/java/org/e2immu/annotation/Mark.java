@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.METHOD)
 public @interface Mark {
-    AnnotationType type() default AnnotationType.CONTRACT;
+    AnnotationType type() default AnnotationType.VERIFY;
 
     String value();
 }

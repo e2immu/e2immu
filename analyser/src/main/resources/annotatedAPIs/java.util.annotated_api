@@ -89,7 +89,7 @@ public interface Collection<E> extends Iterable<E> {
     @NotNull1
     @Independent
     @NotModified
-    <T> T[] toArray(@Output @NotNull1 T[] a);
+    <T> T[] toArray(@Exposed @NotNull1 T[] a);
 
     @NotNull1
     @Independent
@@ -171,7 +171,7 @@ public interface List<E> extends Collection<E> {
     @Independent
     @NotModified
     @Size(copy = true)
-    <T> T[] toArray(@NotNull1 @Output T[] a);
+    <T> T[] toArray(@NotNull1 @Exposed T[] a);
 }
 
 @Container

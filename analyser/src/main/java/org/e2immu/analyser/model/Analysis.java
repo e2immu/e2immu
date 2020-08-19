@@ -269,8 +269,6 @@ public abstract class Analysis {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
                     only = annotationExpression;
-                } else if (e2ImmuAnnotationExpressions.output.get().typeInfo == t) {
-                    method.accept(VariableProperty.OUTPUT, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
                     method.accept(VariableProperty.SINGLETON, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo == t) {
