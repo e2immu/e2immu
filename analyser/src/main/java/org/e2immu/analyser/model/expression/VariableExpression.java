@@ -67,6 +67,11 @@ public class VariableExpression implements Expression {
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
         StatementAnalyser.markContentModified(evaluationContext, variable, modified);
 
+        int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
+        if (notModified1 == Level.TRUE) {
+            StatementAnalyser.variableOccursInNotModified1Context(variable, currentValue, evaluationContext);
+        }
+
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
         StatementAnalyser.markSizeRestriction(evaluationContext, variable, size);
 

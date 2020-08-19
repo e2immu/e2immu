@@ -85,6 +85,10 @@ public class MethodAnalyser {
                 check(methodInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
                 check(methodInfo, BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
                 CheckConstant.checkConstantForMethods(messages, methodInfo);
+
+                // checks for dynamic properties of functional interface types
+                check(methodInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+                check(methodInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
             }
             check(methodInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
 

@@ -128,10 +128,15 @@ public class FieldAnalyser {
                 changes = true;
         }
 
-        // STEP 8: @Linked, variablesLinkedToMe
+        // STEP 8: @NotModified1 for functional interfaces
+        if (isFunctionalInterface && analyseNotModified1(fieldInfo, fieldAnalysis)) {
+            changes = true;
+        }
+
+        // STEP 9: @Linked, variablesLinkedToMe
         if (analyseLinked(fieldInfo, fieldAnalysis, typeInspection)) changes = true;
 
-        // STEP 9: some ERRORS
+        // STEP 10: some ERRORS
         if (fieldErrors(fieldInfo, fieldAnalysis, fieldSummariesNotYetSet)) changes = true;
         return changes;
     }
@@ -159,6 +164,22 @@ public class FieldAnalyser {
         return false;
     }
 
+    private boolean analyseNotModified1(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1) != Level.UNDEFINED) return false;
+        FieldInspection.FieldInitialiser initialiser = fieldInfo.fieldInspection.get().initialiser.get();
+        if (initialiser.implementationOfSingleAbstractMethod == null) return false;
+        MethodInfo sam = initialiser.implementationOfSingleAbstractMethod;
+        boolean someParameterModificationUnknown = sam.methodInspection.get().parameters.stream().anyMatch(p ->
+                p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+        if (someParameterModificationUnknown) {
+            log(NOT_MODIFIED, "Delaying @NotModified1 on {}, some parameters have no @Modified status", fieldInfo.fullyQualifiedName());
+        }
+        boolean allParametersNotModified = sam.methodInspection.get().parameters.stream().allMatch(p ->
+                p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE);
+        log(NOT_MODIFIED, "Set @NotModified1 on {} to {}", fieldInfo.fullyQualifiedName(), allParametersNotModified);
+        fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, allParametersNotModified);
+        return true;
+    }
 
     // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
 
@@ -697,8 +718,10 @@ public class FieldAnalyser {
         check(fieldInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
         check(fieldInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
         check(fieldInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
-        check(fieldInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
+
+        // checks for dynamic properties of functional interface types
         check(fieldInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+        check(fieldInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
 
         // opposites
         check(fieldInfo, org.e2immu.annotation.Variable.class, e2ImmuAnnotationExpressions.variableField.get());

@@ -109,7 +109,7 @@ public enum VariableProperty {
 
     // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
     // NOT_MODIFIED == TRUE
-    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE);
+    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE, NOT_MODIFIED_1);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
 
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);

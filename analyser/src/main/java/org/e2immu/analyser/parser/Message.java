@@ -43,6 +43,7 @@ public class Message {
     public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";
+    public static final String MODIFICATION_NOT_ALLOWED = "Illegal modification suspected";
     public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
     public static final String UNNECESSARY_METHOD_CALL = "Unnecessary method call";
 
@@ -82,7 +83,8 @@ public class Message {
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
 
-    @NotNull1 @E2Container
+    @NotNull1
+    @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;
 
     static {
@@ -98,6 +100,8 @@ public class Message {
         map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
         map.put(PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO, Severity.ERROR);
         map.put(UNREACHABLE_STATEMENT, Severity.ERROR);
+
+        map.put(MODIFICATION_NOT_ALLOWED, Severity.ERROR);
 
         map.put(ANNOTATION_ABSENT, Severity.ERROR);
         map.put(ANNOTATION_UNEXPECTEDLY_PRESENT, Severity.ERROR);

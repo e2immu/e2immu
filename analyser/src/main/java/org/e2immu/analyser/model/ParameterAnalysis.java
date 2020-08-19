@@ -137,6 +137,9 @@ public class ParameterAnalysis extends Analysis {
             annotations.put(ae, true);
         }
 
+        // @NotModified1, @Exposed
+        doNotModified1Exposed(e2ImmuAnnotationExpressions);
+
         // @Output (to be analysed later)
 
         // @NotNull, @Size

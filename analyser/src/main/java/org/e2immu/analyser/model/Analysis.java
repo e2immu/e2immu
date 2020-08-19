@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -27,7 +26,6 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.IncrementalMap;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.AnnotationType;
@@ -55,7 +53,7 @@ public abstract class Analysis {
     // part of the streaming process, purely based on the annotations map
     public void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
         AnnotationType annotationType = e2immuAnnotation(annotation);
-        if (annotationType != null) {
+        if (annotationType != null && annotationType != AnnotationType.CONTRACT) {
             // so we have one of our own annotations, and we know its type
             Boolean verified = annotations.getOtherwiseNull(annotation);
             if (verified != null) {
@@ -75,6 +73,7 @@ public abstract class Analysis {
                 }
             }
         }
+        if (annotationType == AnnotationType.CONTRACT) annotationsSeen.add(annotation.typeInfo);
     }
 
     private static AnnotationType e2immuAnnotation(AnnotationExpression annotation) {
@@ -110,16 +109,6 @@ public abstract class Analysis {
         properties.improve(variableProperty, i);
     }
 
-    // to be overridden in FieldAnalysis
-    protected String afterFinal() {
-        return null;
-    }
-
-    // to be overridden in FieldAnalysis
-    protected String afterNotModified() {
-        return null;
-    }
-
     public abstract void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
 
     protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -150,6 +139,13 @@ public abstract class Analysis {
                 annotations.put(e2ImmuAnnotationExpressions.nullable.get(), nullablePresent);
             }
         }
+    }
+
+    protected void doNotModified1Exposed(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        // @NotModified1
+        annotations.put(e2ImmuAnnotationExpressions.notModified1.get(), getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
+        // @Exposed
+        annotations.put(e2ImmuAnnotationExpressions.exposed.get(), getProperty(VariableProperty.EXPOSED) == Level.TRUE);
     }
 
     protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -209,7 +205,6 @@ public abstract class Analysis {
                                                   List<AnnotationExpression> annotations,
                                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                                   boolean overwrite) {
-        Map<ElementType, Integer> notNullMap = new HashMap<>();
         int immutable = -1;
         int notNull = -1;
         boolean container = false;
@@ -379,14 +374,6 @@ public abstract class Analysis {
         if (copyMin) return Level.SIZE_COPY_MIN_TRUE;
         return Level.FALSE;
     }
-
-    static void increaseTo(Map<ElementType, Integer> map, ElementType elementType, int value) {
-        Integer current = map.get(elementType);
-        map.put(elementType, Math.max(current == null ? 0 : current, value));
-    }
-
-    protected static final ElementType[] NOT_NULL_WHERE_ALL = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD};
-    protected static final ElementType[] NOT_NULL_WHERE_TYPE = {ElementType.TYPE};
 
     public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {
         Map<VariableProperty, Integer> res = new HashMap<>();

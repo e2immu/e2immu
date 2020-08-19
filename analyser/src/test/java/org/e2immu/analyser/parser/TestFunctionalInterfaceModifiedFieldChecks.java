@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestFunctionalInterfaceModifiedChecks extends CommonTestRunner {
+public class TestFunctionalInterfaceModifiedFieldChecks extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
         if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
@@ -57,7 +57,7 @@ public class TestFunctionalInterfaceModifiedChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("FunctionalInterfaceModifiedChecks", 0, 0, new DebugConfiguration.Builder()
+        testClass("FunctionalInterfaceModifiedFieldChecks", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

@@ -100,7 +100,7 @@ public class FieldAnalysis extends Analysis {
 
             case IMMUTABLE:
                 // dynamic type annotation not relevant here
-                if(bestType != null && bestType.isFunctionalInterface()) return MultiLevel.FALSE;
+                if (bestType != null && bestType.isFunctionalInterface()) return MultiLevel.FALSE;
 
                 int fieldImmutable = super.getProperty(variableProperty);
                 if (fieldImmutable == Level.DELAY) return Level.DELAY;
@@ -155,6 +155,8 @@ public class FieldAnalysis extends Analysis {
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);
         }
+
+        doNotModified1Exposed(e2ImmuAnnotationExpressions);
 
         // @SupportData
         if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)

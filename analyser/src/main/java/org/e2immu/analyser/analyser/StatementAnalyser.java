@@ -791,4 +791,26 @@ public class StatementAnalyser {
         variableProperties.addProperty(variable, VariableProperty.METHOD_DELAY, methodDelay);
     }
 
+    // very much like @NotNull
+
+    public static void variableOccursInNotModified1Context(Variable variable, Value currentValue, EvaluationContext evaluationContext) {
+        if (currentValue == NO_VALUE) return; // not yet
+
+        // the variable has already been created, if relevant
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
+        if (!variableProperties.isKnown(variable)) {
+            if (!(variable instanceof FieldReference)) throw new UnsupportedOperationException("?? should be known");
+            variableProperties.ensureFieldReference((FieldReference) variable);
+        }
+
+        // if we already know that the variable is NOT @NotNull, then we'll raise an error
+        int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
+        if (notModified1 == Level.FALSE) {
+            evaluationContext.raiseError(Message.MODIFICATION_NOT_ALLOWED, variable.name());
+        } else if (notModified1 == Level.DELAY) {
+            // we only need to mark this in case of doubt (if we already know, we should not mark)
+            variableProperties.addPropertyRestriction(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE);
+        }
+    }
+
 }

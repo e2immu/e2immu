@@ -64,7 +64,7 @@ public class NotModified1Checks {
     private static final Consumer<Counter> explicitPrinter = new Consumer<Counter>() {
         @Override
         @NotModified
-        public void accept(@Modified Counter counter) {
+        public void accept(@NotModified Counter counter) {
             System.out.println("Have " + counter.getCounter());
         }
     };
