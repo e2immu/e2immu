@@ -39,7 +39,6 @@ public class FunctionalInterfaceModified3<T> {
         consumer.accept(t1);
     }
 
-    // exposure, but in a way that is guaranteed to be safe
     @NotModified
     public void acceptT2(@NotModified1(type = CONTRACT) Consumer<T> consumer) {
         consumer.accept(t2);

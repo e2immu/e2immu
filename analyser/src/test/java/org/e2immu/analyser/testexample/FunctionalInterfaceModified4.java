@@ -37,6 +37,7 @@ public class FunctionalInterfaceModified4<T> {
         this.ts = new HashSet<>(ts);
     }
 
+    @NotModified
     public void visit(@Exposed Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);

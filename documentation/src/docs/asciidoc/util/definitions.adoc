@@ -1,5 +1,9 @@
 
 
+:y: icon:check[role="green"]
+:n: icon:times[role="red"]
+:c: icon:file-text-o[role="blue"]
+
 :e2immu: pass:normal[ _e2immu_ ]
 :intellij: pass:normal[ IntelliJ IDEA ]
 

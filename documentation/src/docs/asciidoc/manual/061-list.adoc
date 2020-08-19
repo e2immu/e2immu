@@ -1,22 +1,253 @@
 === List of annotations
 
+For each of the annotations, we answer a couple of standard questions:
+
+Basic:: is this an annotation you definitely should understand?
+Immu:: is this annotation part of the immutability concept of the analyzer?
+Contract:: will you manually insert this annotation often in interfaces?
+Type:: does the annotation occur on types?
+Field:: does the annotation occur on (static) fields?
+Method:: does the annotation occur on methods and constructors?
+Parameter:: does the annotation occur on parameters?
+
+This classification helps to see the wood for the trees in the long list.
+We explain the green and red mode in #TODO#.
+
+==== @BeforeMark
+
+|===
+| Basic {n} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @Constant
+
+|===
+| Basic {n} | Immu {n}| Contract {n}| Type {n} | Field {y} | Method {y} | Param {n}
+|===
+
+Summary:: The analyser emits this annotation when a field has a constant final value, or a method returns a constant value.
+Its primary purpose is to help debug the analyser.
+Mode:: This annotation has no opposite.
+
+==== @Container
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {n} | Method {n} | Param {n}
+|===
+
+==== @Dependent
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+Summary:: Annotation used to indicate that the type's fields link to the method's parameter or return value, or the constructor's parameters.
+This annotation is only present when there are support data fields.
+Additionally, on methods, the analyser only computes the annotation when the method is {nm}.
+
+Mode:: Use this annotation in the red mode.
+Its opposite is {independent}.
+
+==== @E1Container
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @E1Immutable
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @E2Container
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @E2Immutable
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @Exposed
+
+|===
+| Basic {n} | Immu {y} | Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @ExtensionClass
+
+|===
+| Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
+|===
+
+==== @Final
+
+|===
+| Basic {y} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {n} | Param {n}
+|===
+
+==== @Fluent
+
+|===
+| Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
 ==== @Identity
+
+|===
+| Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
 
 Note that {identity} has an effect on linking of variables: a method marked {identity} only links to the first parameter.
 
+==== @IgnoreModifications
+
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {n} | Param {n}
+|===
+
+==== @Independent
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+Summary:: Annotation used to indicate that a method or constructor avoids linking the fields of the type to the return value and parameters.
+This annotation is only present when there are support data fields.
+Additionally, on methods, the analyser only computes the annotation when the method is {nm}.
+
+Mode:: Use this annotation in the green mode.
+Its opposite is {dependent}.
+
+==== @Linked
+
+|===
+| Basic {n} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {n} | Param {n}
+|===
+
+Summary:: Annotation to help debug the dependence system.
+Mode:: There is no opposite.
+
+==== @Mark
+
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+==== @Modified
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+Summary:: Core annotation which indicates that content modifications take place.
+Mode:: It is the default in the green mode, when {nm} is not present.
+
+==== @MutableModifiesArguments
+
+|===
+| Basic {y} | Immu {y}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
+|===
+
+Summary::
+This annotation appears on types which are not a container and not level 1 immutable: at least one method will modify its parameters, and at least one field will be variable.
+
+Mode:: It is the default in the green mode when none of {container}, {e1immutable}, {e1container}, {e2immutable}, {e2container} is present.
+Use it for contracting in the red mode.
+
 ==== @NotModified
+
+|===
+| Basic {y} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+Summary:: Core annotation which indicates that no content modifications take place.
+
+Mode:: It is the default in the red mode, when {modified} is not present.
 
 ==== @NotModified1
 
-The {nm1} annotation exists for functional types only (types which implement `java.lang.@FunctionalInterface`).
-It indicates that a particular concrete instantiation of the single abstract method of the interface does not modify its arguments or any other variable in its closure.
-We understand modification here as either applying a modifying method, or doing an assignment to some field.
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+Summary:: The {nm1} annotation is a dynamic type annotation which exists for functional interface types only.
+It indicates that the single abstract method of the interface does not modify its arguments.
+
+Mode:: It exists only in the green mode; there is no opposite.
 
 This annotation is a dynamic type annotation on functional types in fields, methods and parameters.
 The analyser can compute it in certain circumstances; in other cases, the user can show intent by requesting this property.
 
 Note that because suppliers have no parameters, only modifications to the closure apply.
 Functional interfaces are always normally {nm}: there are no modifying methods on them apart from the abstract method.
+
+==== @NotNull
+
+|===
+| Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+Summary:: Core annotation to indicate that a field, parameter, or result of a method can never be `null`.
+Mode:: Use this annotation for contracting in the green mode.
+It is the opposite of {nullable}.
+
+==== @NotNull1
+
+|===
+| Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @NotNull2
+
+|===
+| Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+==== @Nullable
+
+|===
+| Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
+
+Summary:: This annotation indicates that the field, parameter, or result of a method can be `null`.
+
+Mode:: This is the default in the green mode, when {nn} is not present.
+Use it to contract in the red mode.
+
+==== @Only
+
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+==== @Output
+
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {n} | Method {n} | Param {y}
+|===
+
+==== @Precondition
+
+|===
+| Basic {n} | Immu {n} | Contract {n}| Type {n} | Field {n} | Method {y} | Param {n}
+|===
+
+==== @Singleton
+
+|===
+| Basic {y} | Immu {n}| Contract {n} | Type {y} | Field {n} | Method {n} | Param {n}
+|===
+
+==== @Size
+
+|===
+| Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
+|===
 
 ==== @SupportData
 
@@ -28,4 +259,16 @@ The analyser marks a field as {supportData} only when
 . at least one of {e2immutable}'s rule 2 and rule 3 is not satisfied in relation to this field.
 
 The annotation is present to highlight the fields burdened with extra restrictions to for the type to reach {e2immutable} status.
+
+==== @UtilityClass
+
+|===
+| Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
+|===
+
+==== @Variable
+
+|===
+| Basic {y} | Immu {y}| Contract {n} | Type {n} | Field {y} | Method {n} | Param {n}
+|===
 
