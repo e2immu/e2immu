@@ -19,6 +19,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class FunctionalInterfaceModifiedChecks {
@@ -27,12 +28,15 @@ public class FunctionalInterfaceModifiedChecks {
     static class Counter {
         private int counter;
 
-        public int getCounter() {
-            return counter;
-        }
-
+        @Modified
         public int increment() {
             return ++counter;
+        }
+
+        @Modified
+        public int add(int step) {
+            counter += step;
+            return counter;
         }
     }
 
@@ -60,4 +64,13 @@ public class FunctionalInterfaceModifiedChecks {
     public int myExplicitIncrementer() {
         return explicitGetAndIncrement.get();
     }
+
+    // the following two functions are here to test that the translation from method reference to anonymous
+    // type + method works properly
+
+    @Modified
+    public final Function<Integer, Integer> getAndAdd = myCounter::add;
+
+    @Modified
+    public final Function<Integer, Integer> getAndAdd2 = t -> myCounter.add(t);
 }

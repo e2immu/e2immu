@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,11 @@ public class ExplicitConstructorInvocation implements Statement {
 
     public ExplicitConstructorInvocation(List<Expression> parameterExpressions) {
         this.parameterExpressions = parameterExpressions;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ExplicitConstructorInvocation(parameterExpressions.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()));
     }
 
     @Override

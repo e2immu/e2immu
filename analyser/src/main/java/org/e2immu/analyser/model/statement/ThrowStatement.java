@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
+
+import java.util.Map;
 
 // @ContextClass
 // @NotNull
@@ -31,6 +31,11 @@ public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
         super(expression, ForwardEvaluationInfo.NOT_NULL);
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ThrowStatement(expression.translate(translationMap));
     }
 
     @Override

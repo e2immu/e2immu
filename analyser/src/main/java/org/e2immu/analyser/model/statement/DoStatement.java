@@ -18,10 +18,10 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
+
+import java.util.Map;
 
 // @ContextClass
 // @NotNull
@@ -32,6 +32,11 @@ public class DoStatement extends LoopStatement {
                        Expression expression,
                        Block block) {
         super(label, expression, block);
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new DoStatement(label, expression.translate(translationMap), (Block) block.translate(translationMap));
     }
 
     @Override

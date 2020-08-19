@@ -18,13 +18,11 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Map;
 import java.util.Objects;
 
 // @ContextClass
@@ -39,6 +37,11 @@ public class SynchronizedStatement extends StatementWithExpression {
         Objects.requireNonNull(block);
         // elseBlock may be absent
         this.block = block;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new SynchronizedStatement(expression.translate(translationMap), (Block)block.translate(translationMap));
     }
 
     @Override

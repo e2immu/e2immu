@@ -30,6 +30,7 @@ import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -47,6 +48,11 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new InlineConditionalOperator(conditional.translate(translationMap), ifTrue.translate(translationMap), ifFalse.translate(translationMap));
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value c = conditional.evaluate(evaluationContext, evaluationVisitor, ForwardEvaluationInfo.NOT_NULL);
 
@@ -58,7 +64,7 @@ public class InlineConditionalOperator implements Expression {
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
 
         // TODO ObjectFlow
-        Value res =  ConditionalValue.conditionalValue(evaluationContext, c, t, f, ObjectFlow.NO_FLOW);
+        Value res = ConditionalValue.conditionalValue(evaluationContext, c, t, f, ObjectFlow.NO_FLOW);
         evaluationVisitor.visit(this, evaluationContext, res);
         return res;
     }

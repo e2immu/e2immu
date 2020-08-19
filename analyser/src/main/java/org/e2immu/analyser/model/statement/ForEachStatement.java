@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Map;
 import java.util.Set;
 
 public class ForEachStatement extends LoopStatement {
@@ -37,9 +38,14 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ForEachStatement(label, localVariable, expression.translate(translationMap), (Block) block.translate(translationMap));
+    }
+
+    @Override
     public CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE)>= Level.SIZE_NOT_EMPTY)
+                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)

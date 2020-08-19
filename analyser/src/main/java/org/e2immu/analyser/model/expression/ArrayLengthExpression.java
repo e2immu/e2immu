@@ -27,6 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ArrayLengthExpression implements Expression {
@@ -35,6 +36,11 @@ public class ArrayLengthExpression implements Expression {
 
     public ArrayLengthExpression(@NotNull Expression scope) {
         this.scope = Objects.requireNonNull(scope);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ArrayLengthExpression(scope.translate(translationMap));
     }
 
     @Override

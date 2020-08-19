@@ -70,7 +70,7 @@ public abstract class CommonTestRunner {
                 .setDebugConfiguration(debugConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER, INSPECT, RESOLVE,
 
-                        //LAMBDA,
+                        LAMBDA,
                         //METHOD_CALL,
 
                         //VARIABLE_PROPERTIES,

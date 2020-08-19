@@ -21,8 +21,10 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.SideEffectContext;
 
+import java.util.Map;
 import java.util.Set;
 
 public class LocalClassDeclaration implements Statement {
@@ -30,6 +32,11 @@ public class LocalClassDeclaration implements Statement {
 
     public LocalClassDeclaration(TypeInfo typeInfo) {
         this.typeInfo = typeInfo;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return this; // TODO we will need something more complicated here.
     }
 
     @Override

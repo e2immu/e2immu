@@ -29,6 +29,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -50,6 +51,11 @@ public class UnaryOperator implements Expression {
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new UnaryOperator(operator, expression.translate(translationMap), precedence);
     }
 
     public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {

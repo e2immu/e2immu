@@ -32,6 +32,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class InstanceOf implements Expression {
@@ -41,6 +42,11 @@ public class InstanceOf implements Expression {
     public InstanceOf(Expression expression, ParameterizedType parameterizedType) {
         this.parameterizedType = parameterizedType;
         this.expression = expression;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new InstanceOf(expression.translate(translationMap), parameterizedType);
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -42,6 +43,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public MethodReference(Expression scope, MethodInfo methodInfo, ParameterizedType concreteType) {
         super(methodInfo, concreteType);
         this.scope = scope;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new MethodReference(scope.translate(translationMap), methodInfo, concreteReturnType);
     }
 
     @Override

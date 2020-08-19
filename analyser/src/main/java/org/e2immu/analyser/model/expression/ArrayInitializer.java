@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,11 @@ public class ArrayInitializer implements Expression {
     public ArrayInitializer(@NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
         commonType = commonType(expressions);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ArrayInitializer(expressions.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()));
     }
 
     @Override

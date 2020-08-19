@@ -19,11 +19,13 @@
 package org.e2immu.analyser.model;
 
 
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -45,4 +47,6 @@ public interface Statement {
     }
 
     Set<TypeInfo> typesReferenced();
+
+     Statement translate(Map<? extends Variable,? extends Variable> translationMap);
 }

@@ -44,8 +44,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
@@ -990,7 +989,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // compose the content of the method...
         Block block;
-        if (returnExpression instanceof LambdaExpression) {
+        if (returnExpression instanceof LambdaBlock) {
+            LambdaBlock lambdaBlock = (LambdaBlock) returnExpression;
+            Map<Variable, Variable> translationMap = new HashMap<>();
+            int i = 0;
+            for (ParameterInfo lambdaParameter : lambdaBlock.parameters) {
+                ParameterInfo interfaceMethodParameter = methodInfo.methodInspection.get().parameters.get(i);
+                translationMap.put(lambdaParameter, interfaceMethodParameter);
+                i++;
+            }
+            LambdaBlock translated = (LambdaBlock) lambdaBlock.translate(translationMap);
+            Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+            translated.block.statements.forEach(blockBuilder::addStatement);
+            block = blockBuilder.build();
+        } else if (returnExpression instanceof LambdaExpression) {
             LambdaExpression lambdaExpression = (LambdaExpression) returnExpression;
             Map<Variable, Variable> translationMap = new HashMap<>();
             int i = 0;
@@ -1009,7 +1021,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             } else {
                 if (methodInfo.methodInspection.get().parameters.size() != 1)
                     throw new UnsupportedOperationException("Referenced method has multiple parameters");
-                newReturnExpression = methodCallNoParameters(methodInfo);
+                newReturnExpression = methodCallNoParameters(methodInfo, methodReference.methodInfo);
             }
             Statement statement;
             if (methodInfo.isVoid()) {
@@ -1021,6 +1033,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             throw new UnsupportedOperationException("Cannot (yet) deal with " + returnExpression.getClass());
         }
+        log(LAMBDA, "Result of translating block: {}", block.statementString(0));
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 
@@ -1032,9 +1045,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return methodInfo;
     }
 
-    private Expression methodCallNoParameters(MethodInfo interfaceMethod) {
+    private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInfo concreteMethod) {
         Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().parameters.get(0));
-        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(interfaceMethod, Map.of());
+        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, Map.of());
         return new MethodCall(newScope, newScope, methodTypeParameterMap, List.of());
     }
 
@@ -1050,7 +1063,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
             i++;
         }
-        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(interfaceMethod, concreteTypes);
+        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, concreteTypes);
         return new MethodCall(scope, scope, methodTypeParameterMap, parameterExpressions);
     }
 

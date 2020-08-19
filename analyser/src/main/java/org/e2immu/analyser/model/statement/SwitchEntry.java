@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,8 +35,8 @@ import java.util.stream.Collectors;
 public abstract class SwitchEntry implements Statement {
 
     public final List<Expression> labels;
-    private final Expression switchVariableAsExpression;
-    private final MethodInfo operator;
+    public final Expression switchVariableAsExpression;
+    public final MethodInfo operator;
 
     private SwitchEntry(Expression switchVariableAsExpression, List<Expression> labels) {
         this.labels = labels;
@@ -101,6 +102,14 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
+        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+            return new StatementsEntry(switchVariableAsExpression.translate(translationMap),
+                    java12Style,
+                    labels.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
+                    statements.stream().map(s -> s.translate(translationMap)).collect(Collectors.toList()));
+        }
+
+        @Override
         public CodeOrganization codeOrganization() {
             return new CodeOrganization.Builder()
                     .setExpression(generateConditionExpression())
@@ -157,6 +166,13 @@ public abstract class SwitchEntry implements Statement {
         public BlockEntry(Expression switchVariableAsExpression, List<Expression> labels, Block block) {
             super(switchVariableAsExpression, labels);
             this.block = block;
+        }
+
+        @Override
+        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+            return new BlockEntry(switchVariableAsExpression.translate(translationMap),
+                    labels.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
+                    (Block) block.translate(translationMap));
         }
 
         @Override

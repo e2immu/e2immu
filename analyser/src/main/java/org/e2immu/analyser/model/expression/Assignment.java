@@ -28,10 +28,7 @@ import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
@@ -60,6 +57,11 @@ public class Assignment implements Expression {
         this.value = Objects.requireNonNull(value);
         this.primitiveOperator = primitiveOperator; // as in i+=1;
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        throw new UnsupportedOperationException("? should not be needed at the moment, only used to transform lambda expressions into SAMs");
     }
 
     @NotNull

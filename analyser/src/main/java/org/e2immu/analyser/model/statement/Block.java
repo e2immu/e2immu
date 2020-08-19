@@ -30,6 +30,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Block implements Statement, HasStatements {
     public static final Block EMPTY_BLOCK = new Block(List.of(), null);
@@ -130,5 +131,11 @@ public class Block implements Statement, HasStatements {
     public ParameterizedType mostSpecificReturnType() {
         // TODO loop over return statements, distill type
         return Primitives.PRIMITIVES.voidParameterizedType;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        if (this == EMPTY_BLOCK) return this;
+        return new Block(statements.stream().map(st -> st.translate(translationMap)).collect(Collectors.toList()), label);
     }
 }

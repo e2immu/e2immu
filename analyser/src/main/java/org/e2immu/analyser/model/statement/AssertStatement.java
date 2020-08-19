@@ -5,6 +5,7 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Map;
 import java.util.Set;
 
 public class AssertStatement implements Statement {
@@ -18,11 +19,14 @@ public class AssertStatement implements Statement {
     }
 
     // we're currently NOT adding message!
-
-
     @Override
     public CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder().setExpression(check).build();
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new AssertStatement(check.translate(translationMap), message.translate(translationMap));
     }
 
     @Override

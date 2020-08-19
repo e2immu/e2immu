@@ -28,10 +28,7 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @E2Immutable
@@ -46,6 +43,11 @@ public class LambdaExpression implements Expression {
         this.parameters = Objects.requireNonNull(parameters);
         this.returnType = Objects.requireNonNull(returnType);
         this.functionalType = Objects.requireNonNull(functionalType);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        throw new UnsupportedOperationException("NYI");
     }
 
     // this is a functional interface

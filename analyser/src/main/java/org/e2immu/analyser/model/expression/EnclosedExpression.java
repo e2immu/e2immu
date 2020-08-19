@@ -21,12 +21,18 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 
 import java.util.List;
+import java.util.Map;
 
 public class EnclosedExpression implements Expression {
     public final Expression inner;
 
     public EnclosedExpression(Expression inner) {
         this.inner = inner;
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new EnclosedExpression(inner.translate(translationMap));
     }
 
     @Override

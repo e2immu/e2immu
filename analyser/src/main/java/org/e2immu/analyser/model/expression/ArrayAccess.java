@@ -45,6 +45,11 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ArrayAccess(expression.translate(translationMap), index.translate(translationMap));
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return expression.returnType().copyWithOneFewerArrays();
     }

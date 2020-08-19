@@ -18,13 +18,12 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
+
+import java.util.Map;
 
 // @ContextClass
 // @NullNotAllowed
@@ -39,6 +38,13 @@ public class IfElseStatement extends StatementWithExpression {
         super(expression, ForwardEvaluationInfo.NOT_NULL);
         this.ifBlock = ifBlock;
         this.elseBlock = elseBlock;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new IfElseStatement(expression.translate(translationMap),
+                (Block)ifBlock.translate(translationMap),
+                (Block)elseBlock.translate(translationMap));
     }
 
     @Override

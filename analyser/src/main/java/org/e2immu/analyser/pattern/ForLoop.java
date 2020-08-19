@@ -597,6 +597,11 @@ public class ForLoop {
     static abstract class GenericRestrictionStatement implements Statement {
 
         @Override
+        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Set<String> imports() {
             return null;
         }

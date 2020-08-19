@@ -54,6 +54,13 @@ public class LambdaBlock implements Expression {
         this.functionalType = Objects.requireNonNull(functionalType);
     }
 
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new LambdaBlock(parameters.stream().map(v -> (ParameterInfo) translationMap.get(v)).collect(Collectors.toList()),
+                (Block)block.translate(translationMap),
+                returnType, functionalType);
+    }
+
     // this is a functional interface
     @Override
     public ParameterizedType returnType() {

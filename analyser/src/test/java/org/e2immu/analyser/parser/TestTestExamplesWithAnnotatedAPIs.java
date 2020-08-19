@@ -39,31 +39,6 @@ public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
         super(true);
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestTestExamplesWithAnnotatedAPIs.class);
-
-    @BeforeClass
-    public static void beforeClass() {
-        org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE,
-
-                //LAMBDA,
-                //METHOD_CALL,
-
-                //VARIABLE_PROPERTIES,
-                FINAL,
-                LINKED_VARIABLES,
-                INDEPENDENT,
-                E2IMMUTABLE,
-                ANNOTATION_EXPRESSION,
-                CONSTANT,
-                CONTAINER,
-                E1IMMUTABLE,
-                SIDE_EFFECT,
-                UTILITY_CLASS,
-                NOT_NULL,
-                NOT_MODIFIED);
-    }
-
     @Test
     public void testAnnotationsOnLambdas() throws IOException {
         testClass("AnnotationsOnLambdas", 0);

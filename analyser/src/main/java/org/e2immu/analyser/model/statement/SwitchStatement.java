@@ -1,14 +1,13 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SwitchStatement extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;
@@ -16,6 +15,12 @@ public class SwitchStatement extends StatementWithExpression {
     public SwitchStatement(Expression selector, List<SwitchEntry> switchEntries) {
         super(selector, ForwardEvaluationInfo.NOT_NULL);
         this.switchEntries = ImmutableList.copyOf(switchEntries);
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new SwitchStatement(expression.translate(translationMap),
+                switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 
     @Override

@@ -9,6 +9,7 @@ import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,14 @@ public class TryStatement implements Statement {
         this.tryBlock = tryBlock;
         this.catchClauses = ImmutableList.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new TryStatement(resources.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
+                (Block) tryBlock.translate(translationMap),
+                catchClauses.stream().map(p -> new Pair<>(p.k, (Block) p.v.translate(translationMap))).collect(Collectors.toList()),
+                (Block) finallyBlock.translate(translationMap));
     }
 
     public static class CatchParameter implements Expression {

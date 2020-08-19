@@ -27,6 +27,8 @@ import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.Map;
+
 // @ContextClass
 // @NullNotAllowed
 // @NotNull
@@ -47,6 +49,11 @@ public class ReturnStatement extends StatementWithExpression {
         }
         sb.append(";\n");
         return sb.toString();
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ReturnStatement(expression.translate(translationMap));
     }
 
     @Override

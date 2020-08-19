@@ -18,24 +18,24 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
 
-// @ContextClass
-// @NullNotAllowed
-// @NotNull
 public class ExpressionAsStatement extends StatementWithExpression {
 
     public ExpressionAsStatement(Expression expression) {
         super(expression, ForwardEvaluationInfo.DEFAULT);
+    }
+
+    @Override
+    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new ExpressionAsStatement(expression.translate(translationMap));
     }
 
     @Override

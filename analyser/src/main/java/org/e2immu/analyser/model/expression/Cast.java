@@ -23,10 +23,7 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class Cast implements Expression {
     public final Expression expression;
@@ -35,6 +32,11 @@ public class Cast implements Expression {
     public Cast(@NotNull Expression expression, @NotNull ParameterizedType parameterizedType) {
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
+    }
+
+    @Override
+    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        return new Cast(expression.translate(translationMap), parameterizedType);
     }
 
     @Override
