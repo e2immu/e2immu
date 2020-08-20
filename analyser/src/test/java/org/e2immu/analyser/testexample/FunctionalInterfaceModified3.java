@@ -30,15 +30,50 @@ public class FunctionalInterfaceModified3<T> {
 
     private final T t2;
 
-    @Exposed(type = VERIFY_ABSENT)
-    private Consumer<T> consumer;
+    private Consumer<T> nonExposingConsumer;
 
-    @Exposed // what does this mean????
+    @Exposed(type = VERIFY_ABSENT)
     private Runnable runnable;
 
-    public FunctionalInterfaceModified3(T t1, T t2) {
+    @Exposed
+    private final Consumer<T> exposingConsumer1;
+
+    @Exposed
+    private final Consumer<T> exposingConsumer2;
+
+    public FunctionalInterfaceModified3(T t1, T t2,
+                                        @Exposed Consumer<T> exposingConsumerParam1,
+                                        @Exposed Consumer<T> exposingConsumerParam2) {
         this.t1 = t1;
         this.t2 = t2;
+        this.exposingConsumer1 = exposingConsumerParam1;
+        this.exposingConsumer2 = exposingConsumerParam2;
+    }
+
+    /*
+    causes the @Exposed property on exposingConsumer, which then continues to travel to to exposingConsumerParam.
+    It is imperative that in every exposing situation, a parameter takes the @Exposed annotation.
+    The annotations on the field are there simply for transfer purposes.
+     */
+    public void expose1() {
+        exposingConsumer1.accept(t1);
+    }
+
+    /*
+    somehow we must be able to compute that exposingConsumer2 will accept t2...
+     */
+    public void expose2() {
+        staticallyExposing(t2, exposingConsumer2);
+    }
+
+    /*
+    trivial method, which connects the first parameter to the second in an important way.
+    Param 1 exposes param 0.
+
+    The numeric notation is used when it is a parameter rather than a field that is exposed.
+     */
+    private static <T> void staticallyExposing(T t, @Exposed(0) Consumer<T> consumer) {
+        consumer.accept(t);
     }
 
     /*
@@ -69,25 +104,38 @@ public class FunctionalInterfaceModified3<T> {
     }
 
 
-    public void acceptT1version2(@Exposed Consumer<T> consumer) {
-        consumer.accept(t1);
-        this.consumer = consumer;
+    public void setNonExposingConsumer(Consumer<T> consumer) {
+        this.nonExposingConsumer = consumer;
     }
 
     /*
-    This method does NOT expose anything!
+    This method does NOT expose anything! t is not part of the object graph of the fields
      */
-    public void applyConsumer(T t) {
-        this.consumer.accept(t);
+    public void applyNonExposingConsumer(T t) {
+        this.nonExposingConsumer.accept(t);
     }
 
-    /* even in a delayed way, there will be exposure of one of the fields through this consumer */
-    public void acceptT1Version3(@Exposed Consumer<T> consumer) {
-        this.runnable = () -> consumer.accept(t1);
+    /*
+    even in a delayed way, there will be exposure of one of the fields through this consumer.
+    The method is obviously @Modified because runnable is set.
+
+    This method is a good test for computing that consumer3 is @Exposed
+     */
+    @Modified
+    public void acceptDelayedT1(@Exposed Consumer<T> consumer3) {
+        this.runnable = () -> consumer3.accept(t1);
     }
 
-    /* this method does the actual exposure */
-    public void applyRunnable() {
+    /* this method does the actual exposure, but that is not relevant (?)
+
+    Method is @NotModified:
+
+    1. first note that we are able to compute the property exactly because the single assignment occurs inside our type,
+       even though there can be re-assignments.
+    2. executing accept on consumer3 is an exposing action, which is not a modifying one to our structures (it may modify t1).
+     */
+    @NotModified
+    public void actuallyAcceptT1() {
         runnable.run();
     }
 }

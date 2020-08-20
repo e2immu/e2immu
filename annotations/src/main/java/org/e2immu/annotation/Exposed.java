@@ -27,7 +27,9 @@ import java.lang.annotation.Target;
  * exposes part of the fields' object graph to the outside world.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
+@Target({ElementType.FIELD, ElementType.PARAMETER})
 public @interface Exposed {
     AnnotationType type() default AnnotationType.VERIFY;
+
+    int[] value() default {};
 }

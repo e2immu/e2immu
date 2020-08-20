@@ -62,4 +62,17 @@ public class FunctionalInterfaceModified4<T> {
     public void visit2(@Exposed Consumer<T> consumer) {
         ts.forEach(consumer);
     }
+
+    /*
+     Here the exposed comes via indirect forwarding (the formal parameter of `forEach` is marked @Exposed)
+     */
+    @NotModified
+    public void visit3(@Exposed Consumer<T> consumer) {
+        doTheVisiting(consumer, ts);
+    }
+
+    @NotModified
+    private static <T> void doTheVisiting(@Exposed(1) Consumer<T> consumer, Set<T> set) {
+        set.forEach(consumer);
+    }
 }

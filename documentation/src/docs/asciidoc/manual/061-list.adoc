@@ -78,6 +78,16 @@ Its opposite is {independent}.
 | Basic {n} | Immu {y} | Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
+Summary:: On a parameter of functional interface type, this annotation indicates that the function exposes part of the object graph of the fields.
+It can take a parameter index when it exposes other parameters rather than fields.
+The annotation has a helper role on fields.
+
+Mode:: The annotation has no opposite.
+
+Parameters:: The annotation takes a default `value` parameter, if integer array type, holding parameter indices that it exposes.
+Index values start counting from `0`.
+The index value of `-1` represents fields rather than parameters.
+
 ==== @ExtensionClass
 
 |===
