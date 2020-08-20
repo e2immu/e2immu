@@ -47,4 +47,10 @@ public enum AnnotationType {
      * but set by hand.
      */
     CONTRACT,
+
+    /**
+     * Used to indicate by hand that an annotation should not be present,
+     * when an opposite annotation does not
+     */
+    CONTRACT_ABSENT,
 }

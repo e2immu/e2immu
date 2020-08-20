@@ -63,7 +63,7 @@ public class ParameterAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
-                if (parameterInfo.parameterizedType.cannotBeModified()) return Level.FALSE;
+                if (parameterInfo.parameterizedType.cannotBeModifiedByDefinition()) return Level.FALSE;
                 if (!parameterInfo.owner.isPrivate() &&
                         parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
@@ -131,7 +131,7 @@ public class ParameterAnalysis extends Analysis {
 
         int modified = getProperty(VariableProperty.MODIFIED);
         // @NotModified, @Modified
-        if (!parameterInfo.parameterizedType.cannotBeModified()) {
+        if (!parameterInfo.parameterizedType.cannotBeModifiedByDefinition()) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);

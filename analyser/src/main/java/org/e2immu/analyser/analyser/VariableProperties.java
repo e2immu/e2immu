@@ -426,7 +426,14 @@ class VariableProperties implements EvaluationContext {
         } else if (variable instanceof ParameterInfo) {
             ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
             int immutable = parameterAnalysis.getProperty(IMMUTABLE);
-            aboutVariable.setProperty(IMMUTABLE, immutable);
+            aboutVariable.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
+
+            int exposed = parameterAnalysis.getProperty(EXPOSED);
+            aboutVariable.setProperty(EXPOSED, exposed);
+
+            int notModified1 = parameterAnalysis.getProperty(NOT_MODIFIED_1);
+            aboutVariable.setProperty(NOT_MODIFIED_1, notModified1 == Level.DELAY ? NOT_MODIFIED_1.falseValue : notModified1);
+
         } else if (variable instanceof This) {
             aboutVariable.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         } else if (variable instanceof LocalVariableReference) {

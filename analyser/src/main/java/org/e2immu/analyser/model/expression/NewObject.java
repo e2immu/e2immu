@@ -34,6 +34,9 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class NewObject implements HasParameterExpressions {
     public final ParameterizedType parameterizedType;
     public final List<Expression> parameterExpressions;
@@ -131,8 +134,7 @@ public class NewObject implements HasParameterExpressions {
                     .collect(Collectors.toList());
             value = new ArrayValue(evaluationContext.createLiteralObjectFlow(arrayInitializer.commonType), values);
         } else {
-            List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor);
-            Location location = evaluationContext.getLocation();
+            List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor, Level.FALSE);
             value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext);
         }
         visitor.visit(this, evaluationContext, value);
@@ -142,7 +144,8 @@ public class NewObject implements HasParameterExpressions {
     static List<Value> transform(List<Expression> parameterExpressions,
                                  EvaluationContext evaluationContext,
                                  EvaluationVisitor visitor,
-                                 MethodInfo methodInfo) {
+                                 MethodInfo methodInfo,
+                                 int notModified1Scope) {
         List<Value> parameterValues = new ArrayList<>();
         int i = 0;
         for (Expression parameterExpression : parameterExpressions) {
@@ -167,6 +170,10 @@ public class NewObject implements HasParameterExpressions {
                 }
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
+
+                if(methodInfo.isSingleAbstractMethod()) {
+                    handleSAM(methodInfo, parameterInfo.parameterizedType, parameterValue, notModified1Scope);
+                }
 
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
@@ -202,6 +209,23 @@ public class NewObject implements HasParameterExpressions {
             }
         }
         return parameterValues;
+    }
+
+    private static void handleSAM(MethodInfo methodInfo, ParameterizedType formalParameterType, Value parameterValue, int notModified1) {
+        if(notModified1 == Level.TRUE) {
+            // we're in the non-modifying situation
+            log(NOT_MODIFIED, "In the @NM1 situation with "+methodInfo.name+" and "+parameterValue);
+        } else {
+            Boolean cannotBeModified = formalParameterType.cannotBeModified();
+            if (cannotBeModified == null) return; // DELAY
+            if (cannotBeModified) {
+                // we're in the @Exposed situation
+                log(NOT_MODIFIED, "In the @Exposed situation with "+methodInfo.name+" and "+parameterValue);
+
+            } else {
+                log(NOT_MODIFIED, "In the @Modified situation with "+methodInfo.name+" and "+parameterValue);
+            }
+        }
     }
 
     public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {

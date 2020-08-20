@@ -254,7 +254,6 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Value> precondition = new SetOnce<>();
 
-    @Override
     protected void writeOnlyData(OnlyData onlyData) {
         ContractMark contractMark = new ContractMark(onlyData.markLabel);
         preconditionForOnlyData.set(contractMark);

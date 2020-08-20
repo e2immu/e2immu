@@ -127,6 +127,7 @@ public class TypeInspection extends Inspection {
 
     public enum Methods {
         ALL, EXCLUDE_FIELD_SAM, EXCLUDE_FIELD_ARTIFICIAL_SAM,
+        ALL_RECURSIVE
     }
 
     public Stream<MethodInfo> constructorAndMethodStream(Methods methodsMode) {

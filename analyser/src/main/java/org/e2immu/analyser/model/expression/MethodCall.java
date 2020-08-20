@@ -107,7 +107,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo);
+        int notModified1Scope = objectValue.getProperty(evaluationContext, VariableProperty.NOT_MODIFIED_1);
+        List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
 
         // access
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);

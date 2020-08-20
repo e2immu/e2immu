@@ -701,8 +701,21 @@ public class ParameterizedType {
         return bestType != null && MultiLevel.isAtLeastEventuallyE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     }
 
-    public boolean cannotBeModified() {
+    public boolean cannotBeModifiedByDefinition() {
         return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType();
+    }
+
+    public Boolean cannotBeModified() {
+        if (cannotBeModifiedByDefinition()) return true;
+        TypeInfo bestType = bestTypeInfo();
+        boolean canAccessPrivateMethods = false; // TODO implement
+        return bestType.typeInspection.get().methodStream(TypeInspection.Methods.ALL_RECURSIVE)
+                .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
+                .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+    }
+
+    private static boolean methodIsAccessible(MethodInfo methodInfo, TypeInfo fromType) {
+        return true;// TODO !!
     }
 
     public boolean cannotBeSupportData() {
@@ -713,6 +726,7 @@ public class ParameterizedType {
                 || typeInfo == Primitives.PRIMITIVES.stringTypeInfo
         );
     }
+
 
     // I am the bigger type, the argument is the component
     public boolean containsComponent(ParameterizedType component) {

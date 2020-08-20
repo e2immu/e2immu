@@ -240,6 +240,7 @@ Mode:: This annotation cannot be used for contracting.
 | Basic {y} | Immu {n}| Contract {n} | Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
+Summary:: This annotation indicates that the class is a singleton: only one instance can exist.
 Mode:: There is no opposite for this annotation.
 
 ==== @Size
@@ -248,16 +249,27 @@ Mode:: There is no opposite for this annotation.
 | Basic {n} | Immu {n}| Contract {y}| Type {n} | Field {y} | Method {y} | Param {y}
 |===
 
+Summary:: The annotation indicates that the type, typically a container, has a `size` method which gives an indication of the amount of elements it holds.
+It can be used to request minimal size, and to indicate that resulting objects have the same size as incoming objects.
+Mode:: There is no opposite for this annotation.
+
 ==== @SupportData
 
-The analyser marks a field as {supportData} only when
+|===
+| Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {n} | Param {n}
+|===
+
+Summary:: This annotation is present to highlight fields which need to satisfy rules 2 and 3 of level 2 immutability.
+Mode:: There is no opposite for this annotation.
+The analyser generally computes it, but the user can override these decisions in contract mode, using `AnnotationType.CONTRACT` to enforce presence and `AnnotationType.CONTRACT_ABSENT`
+to enforce absence.
+
+Details:: The analyser marks a field as {supportData} only when
 
 . the type declaring the field is {e1immutable}, and
 . the field classifies as support data, and
 . it is {nm}, and
 . at least one of {e2immutable}'s rule 2 and rule 3 is not satisfied in relation to this field.
-
-The annotation is present to highlight the fields burdened with extra restrictions to for the type to reach {e2immutable} status.
 
 ==== @UtilityClass
 
@@ -265,9 +277,22 @@ The annotation is present to highlight the fields burdened with extra restrictio
 | Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
+Summary:: This annotation indicates that the type is a utility class: it is eventually level 2 immutable, it cannot be instantiated, and only has static methods.
+Mode:: There is no opposite for this annotation.
+Details::
+The level 2 immutability ensures that the (static) fields are sufficiently immutable.
+The fact that it cannot be instantiated is verified by
+
+. the fact that all constructors should be private;
+. there should be at least one private constructor;
+. no method or field can use the constructors instantiate objects of this type.
+
 ==== @Variable
 
 |===
 | Basic {y} | Immu {y}| Contract {n} | Type {n} | Field {y} | Method {n} | Param {n}
 |===
 
+Summary:: This annotation indicates that a field is not effectively or eventually final, i.e., it is assigned to in methods accessible from non-private non-constructor methods in the type.
+Mode:: Use this annotation when contracting in the red mode.
+It is the opposite of {final}.

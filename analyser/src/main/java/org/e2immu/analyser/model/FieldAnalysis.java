@@ -150,7 +150,7 @@ public class FieldAnalysis extends Analysis {
         if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
             String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
             annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
-        } else if (!type.cannotBeModified()) {
+        } else if (!type.cannotBeModifiedByDefinition()) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);

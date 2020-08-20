@@ -32,7 +32,6 @@ import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -217,6 +216,8 @@ public abstract class Analysis {
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
+                    // CONTRACT_ABSENT for now only for @SupportData
+                    annotationType == AnnotationType.CONTRACT_ABSENT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
                 TypeInfo t = annotationExpression.typeInfo;
@@ -283,8 +284,12 @@ public abstract class Analysis {
                     method.accept(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
                     method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
-                    String value = annotationExpression.extract("value", "");
-                    writePrecondition(value);
+                    //String value = annotationExpression.extract("value", "");
+                    throw new UnsupportedOperationException("Not yet implemented");
+                } else if (e2ImmuAnnotationExpressions.supportData.get().typeInfo == t) {
+                    method.accept(VariableProperty.SUPPORT_DATA,
+                            annotationType == AnnotationType.CONTRACT ? Level.TRUE :
+                                    annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.DELAY);
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }
@@ -310,7 +315,7 @@ public abstract class Analysis {
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
-            writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(markValue), markValue, true, null));
+            ((MethodAnalysis) this).writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(markValue), markValue, true, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -321,17 +326,9 @@ public abstract class Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
+            ((MethodAnalysis) this).writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
         }
         return messages;
-    }
-
-    protected void writeOnlyData(MethodAnalysis.OnlyData onlyData) {
-        throw new UnsupportedOperationException(); // override in MethodAnalysis
-    }
-
-    protected void writePrecondition(String value) {
-        throw new UnsupportedOperationException(); // only for methods, please override
     }
 
     /**

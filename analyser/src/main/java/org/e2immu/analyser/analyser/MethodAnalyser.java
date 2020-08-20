@@ -625,7 +625,8 @@ public class MethodAnalyser {
             methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
-        // second step, check that fields modifications
+
+        // second step, check that linking has been computed
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
             log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
                     methodInfo.distinguishingName());

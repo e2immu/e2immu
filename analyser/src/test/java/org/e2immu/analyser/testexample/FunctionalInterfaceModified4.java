@@ -37,6 +37,17 @@ public class FunctionalInterfaceModified4<T> {
         this.ts = new HashSet<>(ts);
     }
 
+    /*
+     The reasoning behind visit being @NotModified, with an @Exposed consumer:
+
+     1. Unless specified with @NotModified1 on consumer, accept modifies its parameter.
+     2. The enclosing type has no means to modify T, as it is an unbound generic type.
+     3. Via ObjectFlows the analyser knows that t is part of the method's fields' object graph
+
+     4. Combining the above leads us to the the path of exposure: the method is @NotModified, and the consumer
+        is marked @Exposed
+     */
+
     @NotModified
     public void visit(@Exposed Consumer<T> consumer) {
         for (T t : ts) {
@@ -44,4 +55,11 @@ public class FunctionalInterfaceModified4<T> {
         }
     }
 
+    /*
+     Here the exposed comes via forwarding (the formal parameter of `forEach` is marked @Exposed)
+     */
+    @NotModified
+    public void visit2(@Exposed Consumer<T> consumer) {
+        ts.forEach(consumer);
+    }
 }

@@ -47,11 +47,27 @@ public class FunctionalInterfaceModified2 {
     @Modified
     private final Counter myCounter1 = new Counter();
 
+    /*
+    The reasoning behind acceptMyCounter1 being @Modified:
+
+    1. Unless specified with @NotModified1 on consumer, accept modifies its parameter.
+    2. The enclosing type has means to modify the field myCounter1: it has modifying methods that can be called.
+
+    3. Combining 1 and 2 leads us to the the path of actual modification.
+    4. The direct consequence of consumer modifying myCounter1 is that the field becomes @Modified as well
+     */
     @Modified
     private void acceptMyCounter1(Consumer<Counter> consumer) {
         consumer.accept(myCounter1);
     }
 
+    /*
+    The reasoning behind acceptMyCount2 being @NotModified:
+
+    1. The consumer is @NotModified1, implying that the accept method does not modify myCounter2
+    2. As a consequence, acceptMyCounter2 does not modify any fields
+    3. As a consequence, myCounter2 is @NotModified
+     */
     @NotModified
     private final Counter myCounter2 = new Counter();
 

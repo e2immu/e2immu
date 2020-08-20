@@ -586,4 +586,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public String detailedName() {
         return fullyQualifiedName();
     }
+
+    public boolean isSingleAbstractMethod() {
+        return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
+    }
 }

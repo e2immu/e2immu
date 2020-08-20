@@ -599,9 +599,9 @@ public class TypeAnalyser {
                 return true;
             }
         }
-        // this is technically enough, but we'll verify the constructors (should be static)
+        // this is technically enough, but we'll verify the constructors (should be private)
         for (MethodInfo constructor : typeInfo.typeInspection.get().constructors) {
-            if (!constructor.methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)) {
+            if (!constructor.isPrivate()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
                 typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);

@@ -774,6 +774,12 @@ public class StatementAnalyser {
         }
     }
 
+    public static void markExposed(EvaluationContext evaluationContext, Variable variable, int value) {
+        VariableProperties variableProperties = (VariableProperties) evaluationContext;
+        if (variable instanceof FieldReference) variableProperties.ensureFieldReference((FieldReference) variable);
+        variableProperties.addPropertyRestriction(variable, VariableProperty.EXPOSED, value);
+    }
+
     public static void markMethodCalled(EvaluationContext evaluationContext, Variable variable, int methodCalled) {
         if (methodCalled == Level.TRUE) {
             VariableProperties variableProperties = (VariableProperties) evaluationContext;
