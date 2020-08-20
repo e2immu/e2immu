@@ -190,8 +190,8 @@ public class MethodAnalysis extends Analysis {
         // @Size
         doSize(e2ImmuAnnotationExpressions);
 
-        // dynamic type annotations for functional interface types: @NotModified1, @Exposed
-        doNotModified1Exposed(e2ImmuAnnotationExpressions);
+        // dynamic type annotations for functional interface types: @NotModified1
+        doNotModified1(e2ImmuAnnotationExpressions);
 
         // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
         int formallyImmutable = formalImmutableProperty();

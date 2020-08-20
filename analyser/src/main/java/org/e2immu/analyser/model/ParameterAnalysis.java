@@ -22,10 +22,15 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ParameterAnalysis extends Analysis {
@@ -38,6 +43,11 @@ public class ParameterAnalysis extends Analysis {
     // initial flow object, used to collect call-outs
     // at the end of the method analysis replaced by a "final" flow object
     public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
+
+    // associated with the parameter is a list of other parameter indices it exposes
+    // this list is only filled in when the EXPOSED property is Level.TRUE.
+    public static final int FIELDS_EXPOSED = -1;
+    public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
     public ParameterAnalysis(ParameterInfo parameterInfo) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
@@ -137,8 +147,11 @@ public class ParameterAnalysis extends Analysis {
             annotations.put(ae, true);
         }
 
-        // @NotModified1, @Exposed
-        doNotModified1Exposed(e2ImmuAnnotationExpressions);
+        // @NotModified1
+        doNotModified1(e2ImmuAnnotationExpressions);
+
+        // @Exposed
+        doExposed(e2ImmuAnnotationExpressions, exposed.stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).sorted().collect(Collectors.toList()));
 
         // @NotNull, @Size
         doNotNull(e2ImmuAnnotationExpressions);
@@ -147,5 +160,19 @@ public class ParameterAnalysis extends Analysis {
 
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
+    }
+
+    public void writeExposedParams(Messages messages, int[] exposedParams) {
+        int numParameters = parameterInfo.owner.methodInspection.get().parameters.size();
+        for (int index : exposedParams) {
+            if (index < -1 || index >= numParameters) {
+                messages.add(Message.newMessage(new Location(parameterInfo), Message.ILLEGAL_PARAMETER_INDEX_IN_EXPOSED, "Index: " + index));
+            }
+            if (exposed.isSet(index)) {
+                messages.add(Message.newMessage(new Location(parameterInfo), Message.ILLEGAL_PARAMETER_INDEX_IN_EXPOSED, "Duplicate index: " + index));
+            } else {
+                this.exposed.put(index, true);
+            }
+        }
     }
 }

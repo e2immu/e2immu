@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.List;
 import java.util.Set;
 
 public class FieldAnalysis extends Analysis {
@@ -156,7 +157,8 @@ public class FieldAnalysis extends Analysis {
             annotations.put(ae, true);
         }
 
-        doNotModified1Exposed(e2ImmuAnnotationExpressions);
+        doNotModified1(e2ImmuAnnotationExpressions);
+        doExposed(e2ImmuAnnotationExpressions, List.of());
 
         // @SupportData
         if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)

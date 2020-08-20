@@ -31,5 +31,12 @@ import java.lang.annotation.Target;
 public @interface Exposed {
     AnnotationType type() default AnnotationType.VERIFY;
 
+    /*
+    Other parameters that are exposed by this parameter.
+    The value -1 indicates that fields are being exposed.
+    Exposure of fields is the default, so {-1} and {} is equivalent.
+
+    On a field, only {-1} or {} is allowed.
+     */
     int[] value() default {};
 }

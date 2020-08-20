@@ -20,6 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -140,11 +142,29 @@ public abstract class Analysis {
         }
     }
 
-    protected void doNotModified1Exposed(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    protected void doNotModified1(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         // @NotModified1
         annotations.put(e2ImmuAnnotationExpressions.notModified1.get(), getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
-        // @Exposed
-        annotations.put(e2ImmuAnnotationExpressions.exposed.get(), getProperty(VariableProperty.EXPOSED) == Level.TRUE);
+    }
+
+    protected void doExposed(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, List<Integer> sortedParameterValues) {
+        if (getProperty(VariableProperty.EXPOSED) == Level.TRUE) {
+            if (sortedParameterValues.isEmpty()) throw new UnsupportedOperationException();
+            if (sortedParameterValues.size() == 1 && -1 == sortedParameterValues.get(0)) {
+                annotations.put(e2ImmuAnnotationExpressions.exposed.get(), true);
+            } else {
+                Expression expression;
+                if (sortedParameterValues.size() == 1) {
+                    expression = new IntConstant(sortedParameterValues.get(0));
+                } else {
+                    expression = new ArrayInitializer(sortedParameterValues.stream().map(IntConstant::new).collect(Collectors.toList()));
+                }
+                AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.exposed.get().typeInfo,
+                        List.of(new MemberValuePair("value", expression)));
+            }
+        } else {
+            annotations.put(e2ImmuAnnotationExpressions.exposed.get(), false);
+        }
     }
 
     protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -278,6 +298,10 @@ public abstract class Analysis {
                     method.accept(VariableProperty.LINKED, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.exposed.get().typeInfo == t) {
                     method.accept(VariableProperty.EXPOSED, Level.TRUE);
+                    int[] exposedParams = extractExposedParams(annotationExpression);
+                    if (exposedParams.length > 0) {
+                        ((ParameterAnalysis) this).writeExposedParams(messages, exposedParams);
+                    }
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
                     method.accept(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
@@ -377,5 +401,11 @@ public abstract class Analysis {
             res.put(property, value);
         }
         return res;
+    }
+
+    private static int[] extractExposedParams(AnnotationExpression annotationExpression) {
+        int[] values = annotationExpression.extract("value", new int[0]);
+        if (values.length == 1 && values[0] == -1) return new int[0];
+        return values;
     }
 }

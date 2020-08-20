@@ -83,6 +83,8 @@ public class Message {
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
 
+    public static final String ILLEGAL_PARAMETER_INDEX_IN_EXPOSED = "Illegal parameter index in @Exposed";
+
     @NotNull1
     @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;
