@@ -54,11 +54,17 @@ Its opposite is {independent}.
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
 
+Summary:: This annotation is a short-hand for the combination of {e1immutable} and {container}.
+Mode:: This annotation sits in between {mutableModifiesArguments}, {container} and {e2container}.
+
 ==== @E1Immutable
 
 |===
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
+
+Summary:: This annotation indicates that a type is level 1 immutable, effectively or eventually, meaning all fields are effectively or eventually final.
+Mode:: This annotation sits in between {mutableModifiesArguments} and {e2immutable}.
 
 ==== @E2Container
 
@@ -66,11 +72,27 @@ Its opposite is {independent}.
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
 
+Summary:: This annotation is a short-hand for the combination of {e2immutable} and {container}.
+Mode:: This annotation is the default in the red mode.
+
 ==== @E2Immutable
 
 |===
 | Basic {y} | Immu {y}| Contract {y}| Type {y} | Field {y} | Method {y} | Param {y}
 |===
+
+Summary:: This annotation indicates that a type is level 2 immutable, effectively or eventually.
+
+Mode:: This annotation is the default in the red mode.
+Details:: Level 2 immutability adds extra restrictions on top of level 1 immutability:
+
+. all fields must be not modified;
+. all fields of support data types must be either private, or level 2 immutable themselves;
+. all non-private methods and constructors must be marked {independent}, i.e.,
+
+.. in the case of constructors, the parameters must not link to the fields of support data types;
+.. in the case of methods, neither the return value nor the parameters must link to the fields of support data types.
+A consequence of requirement of not modified fields, is that non-private methods cannot be modifying.
 
 ==== @Exposed
 
@@ -94,11 +116,71 @@ The index value of `-1` represents fields rather than parameters.
 | Basic {y} | Immu {n}| Contract {n}| Type {y} | Field {n} | Method {n} | Param {n}
 |===
 
+[#final-annotation]
 ==== @Final
 
 |===
 | Basic {y} | Immu {y}| Contract {n}| Type {n} | Field {y} | Method {n} | Param {n}
 |===
+
+Summary:: This annotation indicates that a field is effectively or eventually final.
+Fields that have the Java modifier `final` possess the annotation, but the analyser does not write it out to avoid clutter.
+
+Mode:: Use this annotation to contract in the green mode, with the opposite, {variable}, being the default.
+In the red mode, {final} is the default.
+
+Parameters::
+The `after="mark"` parameter indicates that the field is eventually final, after the marking method.
+
+Details:: A field is effectively final when no method, transitively reachable from a non-private non-constructor method, assigns to the field.
+A field is eventually final if the above definition holds when one excludes all the methods that are pre-marking, i.e., that hold an annotation `@Only(before="mark")` or `@Mark("mark")`.
+
+Example::
+Please find an example of an eventually final field <<here>>.
+#TODO#
+
+.Example for @Variable, @Final
+[source,java]
+----
+@Container
+class ExampleManualVariableFinal {
+
+    @Final
+    private int i;
+
+    @Variable
+    private int j;
+
+    public final int k; // <1>
+
+    public ExampleManualVariableFinal(int p, int q) {
+        setI(p);
+        this.k = q;
+    }
+
+    @NotModified
+    public int getI() {
+        return i;
+    }
+
+    @Modified // <2>
+    private void setI(int i) {
+        this.i = i;
+    }
+
+    @NotModified
+    public int getJ() {
+        return j;
+    }
+
+    @Modified
+    public void setJ(int j) {
+        this.j = j;
+    }
+}
+----
+<.> This field is effectively final, but there is no annotation because of the `final` modifier.
+<.> Note that only the constructor accesses this method.
 
 ==== @Fluent
 
@@ -106,19 +188,32 @@ The index value of `-1` represents fields rather than parameters.
 | Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
+Summary:: This annotation indicates that a method returns `this`.
+Mode:: There is no opposite for this annotation.
+Details:: Fluent methods do not return a real value.
+This is of consequence in the definition of independence for methods, as dependence on `this` is ignored.
+
 ==== @Identity
 
 |===
 | Basic {y} | Immu {n}| Contract {y}| Type {n} | Field {n} | Method {y} | Param {n}
 |===
 
-Note that {identity} has an effect on linking of variables: a method marked {identity} only links to the first parameter.
+Summary:: This annotation indicates that a method returns its first parameter.
+Mode:: There is no opposite for this annotation.
+Details:: Apart for all the obvious consequences, this annotation has an explicit effect on the linking of variables: a method marked {identity} only links to the first parameter.
 
 ==== @IgnoreModifications
 
 |===
 | Basic {n} | Immu {y}| Contract {y}| Type {n} | Field {y} | Method {n} | Param {n}
 |===
+
+Summary:: Helper annotation to mark that modifications on a field are to be ignored, because they fall outside the scope of the application.
+Mode:: There is no opposite for this annotation.
+It can only be used for contracting, the analyser cannot generate it.
+Example:: The only current use is on `System.out` and `System.err`.
+The `print` method family is obviously modifying to these fields, however, we judge it to be outside the scope of the application.
 
 ==== @Independent
 
@@ -132,6 +227,9 @@ Additionally, on methods, the analyser only computes the annotation when the met
 
 Mode:: Use this annotation in the green mode.
 Its opposite is {dependent}.
+
+* #TODO# check definition for methods, parameters dependent as well?
+* #TODO# why do we ignore dependence on this?
 
 ==== @Linked
 
@@ -189,6 +287,7 @@ Summary:: The {nm1} annotation is a dynamic type annotation which exists for fun
 It indicates that the single abstract method of the interface does not modify its arguments.
 
 Mode:: It exists only in the green mode; there is no opposite.
+It can only be used for contracting, the analyser cannot generate it.
 
 This annotation is a dynamic type annotation on functional types in fields, methods and parameters.
 The analyser can compute it in certain circumstances; in other cases, the user can show intent by requesting this property.
@@ -306,3 +405,4 @@ The fact that it cannot be instantiated is verified by
 Summary:: This annotation indicates that a field is not effectively or eventually final, i.e., it is assigned to in methods accessible from non-private non-constructor methods in the type.
 Mode:: Use this annotation when contracting in the red mode.
 It is the opposite of {final}.
+Example:: Please refer to the example of <<final-annotation>>.

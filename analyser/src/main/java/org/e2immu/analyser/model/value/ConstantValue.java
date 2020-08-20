@@ -31,12 +31,20 @@ public abstract class ConstantValue implements Value {
     // executed without context, default for all constant types
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.CONTAINER == variableProperty) return Level.TRUE;
-        if (VariableProperty.IMMUTABLE == variableProperty) return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (VariableProperty.NOT_NULL == variableProperty) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        if (VariableProperty.SIZE == variableProperty) return Level.DELAY;
-        if (VariableProperty.SIZE_COPY == variableProperty) return Level.DELAY;
-        if (VariableProperty.MODIFIED == variableProperty) return Level.FALSE;
+        switch(variableProperty) {
+            case CONTAINER:
+                return Level.TRUE;
+            case IMMUTABLE:
+                return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case NOT_NULL:
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            case SIZE:
+            case SIZE_COPY:
+                return Level.DELAY;
+            case MODIFIED:
+            case NOT_MODIFIED_1:
+                return Level.FALSE;
+        }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 

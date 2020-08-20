@@ -156,6 +156,10 @@ public class Instance implements Value {
                     Math.max(variableProperty.falseValue, bestType.typeAnalysis.get().getProperty(variableProperty));
         }
 
+        if (VariableProperty.NOT_MODIFIED_1 == variableProperty) {
+            return Level.FALSE;
+        }
+
         // @NotModified should not be asked here
         throw new UnsupportedOperationException("Asking for " + variableProperty);
     }
