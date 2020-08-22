@@ -40,7 +40,10 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     private final Map<VariableProperty, Integer> properties;
 
     public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
-        super(original.variable, evaluationContext);
+
+        // IMPORTANT: the null here indicates that FieldReferences of MULTI_COPY type will be seen as normal rather than MULTI_COPY
+        super(original.variable, null);
+
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();

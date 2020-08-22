@@ -18,5 +18,7 @@ The `MethodAnalyser` computes the information in `computeOnlyMarkPrepWork` and `
 
 Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<Value, String> approvedPreconditions` in `TypeAnalysis`.
 The keys are the different preconditions that have been approved for eventuality computation, the values are the associated mark strings.
+Note: the current implementation relies on the precondition to be lifted using an assignment rather than a content change; the code resides in the level 1 immutability check.
+As a consequence, it is currently not possible to use the size of a collection, for example, as a precondition.
 
 The eventual annotation will receive a comma-separated list with all the marks in `approvedPreconditions`.

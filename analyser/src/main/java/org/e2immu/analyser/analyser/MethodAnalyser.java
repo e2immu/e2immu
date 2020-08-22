@@ -149,6 +149,10 @@ public class MethodAnalyser {
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, messages, methodInfo, methodProperties))
                 changes = true;
 
+            if (obtainMostCompletePrecondition(numberedStatements, methodAnalysis)) {
+                changes = true;
+            }
+
             if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
                 changes = true;
 
@@ -184,6 +188,21 @@ public class MethodAnalyser {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
         }
+    }
+
+    private boolean obtainMostCompletePrecondition(List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+        if (methodAnalysis.precondition.isSet()) return false; // already done
+        // take the last one of the top level statements
+        Value[] preconditions = numberedStatements.stream()
+                .filter(numberedStatement -> numberedStatement.indices.length == 1 &&
+                        numberedStatement.precondition.isSet())
+                .map(numberedStatement -> numberedStatement.precondition.get())
+                .collect(Collectors.toList())
+                .toArray(Value[]::new);
+        if (preconditions.length == 0) return false;
+        Value precondition = new AndValue().append(preconditions);
+        methodAnalysis.precondition.set(precondition);
+        return true;
     }
 
     private boolean makeInternalObjectFlowsPermanent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {

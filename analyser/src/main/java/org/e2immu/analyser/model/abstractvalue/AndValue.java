@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.annotation.Size;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -448,5 +449,15 @@ public class AndValue extends PrimitiveValue {
     public void visit(Consumer<Value> consumer) {
         values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
+    }
+
+    @Size(equals = 0)
+    public boolean isEmpty() {
+        return values.isEmpty();
+    }
+
+    @Size(min = 0)
+    public int size() {
+        return values.size();
     }
 }

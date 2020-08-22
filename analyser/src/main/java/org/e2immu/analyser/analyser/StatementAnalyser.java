@@ -130,9 +130,13 @@ public class StatementAnalyser {
                     startStatement.escapes.set(escapesViaException);
 
                     if (escapesViaException) {
-                        notNullEscapes(variableProperties, startStatement);
-                        sizeEscapes(variableProperties, startStatement);
-                        precondition(variableProperties, startStatement);
+                        if (startStatement.parent == null) {
+                            throw new UnsupportedOperationException("TO IMPLEMENT: unconditional escape");
+                        } else {
+                            notNullEscapes(variableProperties, startStatement);
+                            sizeEscapes(variableProperties, startStatement);
+                            precondition(variableProperties, startStatement);
+                        }
                     }
                 }
             }
@@ -165,9 +169,10 @@ public class StatementAnalyser {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
             if (atLeastFieldOrParameterInvolved) {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
-                MethodAnalysis methodAnalysis = variableProperties.getCurrentMethod().methodAnalysis.get();
-                if (!methodAnalysis.precondition.isSet()) {
-                    methodAnalysis.precondition.set(precondition);
+
+                // set the precondition on the top level statement
+                if (!startStatement.parent.precondition.isSet()) {
+                    startStatement.parent.precondition.set(precondition);
                 }
                 if (variableProperties.uponUsingConditional != null) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");

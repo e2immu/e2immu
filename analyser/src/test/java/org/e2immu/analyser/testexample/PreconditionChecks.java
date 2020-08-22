@@ -29,7 +29,7 @@ public class PreconditionChecks {
     // very much like we propagate the single not-null
     // TODO this has not been implemented yet.
     // an implementation may go via the PropertyWrapper, which can hold the precondition.
-    
+
     @Precondition("not((null == f1) && (null == f2))")
     public static String useEither3(String f1, String f2) {
         return either(f1, f2);
@@ -44,25 +44,63 @@ public class PreconditionChecks {
 
     @Precondition("i >= 0")
     public void setPositive1(int j1) {
-        if (i < 0) throw new NullPointerException();
+        if (i < 0) throw new UnsupportedOperationException();
+        this.i = j1;
+    }
+
+    @Precondition("j1 >= 0")
+    public void setPositive2(int j1) {
+        if (j1 < 0) throw new UnsupportedOperationException();
         this.i = j1;
     }
 
     @Precondition("(i >= 0 and j2 >= 0)")
-    public void setPositive2(int j2) {
-        if (i < 0) throw new NullPointerException();
-        if (j2 < 0) throw new NullPointerException();
+    public void setPositive3(int j2) {
+        if (i < 0) throw new UnsupportedOperationException();
+        if (j2 < 0) throw new IllegalArgumentException();
         this.i = j2;
     }
 
     @Precondition("(i >= 0 and j3 >= 0)")
-    public void setPositive3(int j3) {
-        if (i < 0 || j3 < 0) throw new NullPointerException();
+    public void setPositive4(int j3) {
+        if (i < 0 || j3 < 0) throw new UnsupportedOperationException();
         this.i = j3;
+    }
+
+    @Precondition("(i >= 0 and j2 >= 0)")
+    public void setPositive5(int j2) {
+        if (i < 0) throw new UnsupportedOperationException();
+        // the analyser should note that i>=0 is redundant
+        if (i >= 0 && j2 < 0) throw new IllegalArgumentException();
+        this.i = j2;
     }
 
     // this avoid a field not used exception.
     public int getI() {
         return i;
+    }
+
+    // some examples of combined preconditions...
+    // this one shows that you cannot simply say in the 2nd case: there was one already!
+
+    @Precondition("(((-2) + p1) >= 0 and p2 > 0)")
+    public void combinedPrecondition1(int p1, int p2) {
+        if (p1 < 2 || p2 <= 0) throw new UnsupportedOperationException();
+        this.i = p1 > p2 ? p1 + 3 : p2;
+    }
+
+    @Precondition("(((-2) + p1) >= 0 and p2 > 0)")
+    public void combinedPrecondition2(int p1, int p2) {
+        if (p1 <= 0) throw new UnsupportedOperationException(); // IRRELEVANT given the next one
+        if (p1 < 2 || p2 <= 0) throw new UnsupportedOperationException();
+        this.i = p1 > p2 ? p1 + 3 : p2;
+    }
+
+    // on the other hand,  p1 == 2 && p2 == -1 is allowed here!
+    @Precondition("(p1 > 0 and (not (1 == p1) or p2 > 0))")
+    public void combinedPrecondition3(int p1, int p2) {
+        if (p1 <= 0) throw new UnsupportedOperationException(); // IRRELEVANT given the next one
+        if (p1 < 2 && p2 <= 0) throw new UnsupportedOperationException();
+        this.i = p1 > p2 ? p1 + 3 : p2;
     }
 }
