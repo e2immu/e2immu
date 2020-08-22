@@ -32,28 +32,11 @@ public class VariableValue extends ValueWithVariable {
     @NotNull
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
 
-    // provided so that we can compute a proper equals(), which is executed...
-    @NotNull
-    public final EvaluationContext evaluationContext;
-
     public VariableValue(EvaluationContext evaluationContext,
                          @NotNull Variable variable,
                          @NotNull String name) {
-        super(variable);
-        this.evaluationContext = evaluationContext;
+        super(variable, evaluationContext);
         this.name = name;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VariableValue that = (VariableValue) o;
-        // special for MULTI_COPY fields
-        if (evaluationContext != null) {
-            return evaluationContext.equals(variable, that.variable);
-        }
-        return variable.equals(that.variable);
     }
 
     @Override

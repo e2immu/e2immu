@@ -31,7 +31,7 @@ public class FinalFieldValue extends ValueWithVariable {
     private final ObjectFlow objectFlow;
 
     public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
-        super(variable);
+        super(variable, null);
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
     }
@@ -39,14 +39,6 @@ public class FinalFieldValue extends ValueWithVariable {
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FinalFieldValue that = (FinalFieldValue) o;
-        return variable.equals(that.variable);
     }
 
     @Override

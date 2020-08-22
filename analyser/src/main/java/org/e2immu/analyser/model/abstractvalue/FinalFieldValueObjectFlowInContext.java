@@ -31,25 +31,15 @@ import java.util.Objects;
 public class FinalFieldValueObjectFlowInContext extends ValueWithVariable {
 
     private final FieldAnalysis fieldAnalysis;
-    private final EvaluationContext evaluationContext;
 
     public FinalFieldValueObjectFlowInContext(Variable variable, EvaluationContext evaluationContext) {
-        super(variable);
+        super(variable, evaluationContext);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
-        this.evaluationContext = evaluationContext;
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
         return evaluationContext.getObjectFlow(variable);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FinalFieldValueObjectFlowInContext that = (FinalFieldValueObjectFlowInContext) o;
-        return variable.equals(that.variable);
     }
 
     @Override

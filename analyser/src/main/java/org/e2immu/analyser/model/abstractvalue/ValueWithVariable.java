@@ -14,9 +14,12 @@ public abstract class ValueWithVariable implements Value {
     @NotNull
     public final Variable variable;
 
-    protected ValueWithVariable(@NotNull Variable variable) {
+    protected ValueWithVariable(@NotNull Variable variable, EvaluationContext evaluationContext) {
         this.variable = Objects.requireNonNull(variable);
+        this.evaluationContext = evaluationContext;
     }
+
+    protected final EvaluationContext evaluationContext;
 
     @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
@@ -36,6 +39,19 @@ public abstract class ValueWithVariable implements Value {
     @Override
     public Set<Variable> variables() {
         return Set.of(variable);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ValueWithVariable)) return false;
+        ValueWithVariable that = (ValueWithVariable) o;
+        // special for MULTI_COPY fields
+        if (evaluationContext != null) {
+            return evaluationContext.equals(variable, that.variable);
+        }
+        return variable.equals(that.variable);
     }
 
     @Override

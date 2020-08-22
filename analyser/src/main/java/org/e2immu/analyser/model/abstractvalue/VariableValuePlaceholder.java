@@ -40,7 +40,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     private final Map<VariableProperty, Integer> properties;
 
     public VariableValuePlaceholder(VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
-        super(original.variable);
+        super(original.variable, evaluationContext);
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
@@ -53,19 +53,6 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VariableValuePlaceholder that = (VariableValuePlaceholder) o;
-        return name.equals(that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), name);
     }
 
     @Override
