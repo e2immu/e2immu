@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class EqualsValue extends PrimitiveValue {
     public final Value lhs;
@@ -96,15 +98,6 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
-        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
-            ValueWithVariable v = (ValueWithVariable) rhs;
-            return Map.of(v.variable, true);
-        }
-        return Map.of();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -130,8 +123,7 @@ public class EqualsValue extends PrimitiveValue {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
 
-    @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+    private FilterResult isIndividualSizeRestriction(boolean parametersOnly) {
         // constants always left, methods always right;
         // methods for size should be wrapped with a ConstrainedNumericValue
         if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) rhs).value instanceof MethodValue) {
@@ -140,20 +132,54 @@ public class EqualsValue extends PrimitiveValue {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {
                     VariableValue variableValue = (VariableValue) methodValue.object;
-                    return Map.of(variableValue.variable, this);
+                    if(!parametersOnly || variableValue.variable instanceof ParameterInfo) {
+                        return new FilterResult(Map.of(variableValue.variable, this), UnknownValue.NO_VALUE);
+                    }
                 }
             }
         }
-        return Map.of();
+        return new FilterResult(Map.of(), this);
+    }
+    @Override
+    public FilterResult isIndividualSizeRestrictionOnParameter() {
+        return isIndividualSizeRestriction(true);
     }
 
     @Override
-    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
-        if (individualSizeRestrictions(preconditionSide).entrySet().stream()
-                .anyMatch(e -> !parametersOnly || e.getKey() instanceof ParameterInfo)) return null;
-        if (individualNullClauses(preconditionSide).entrySet().stream()
-                .anyMatch(e -> !parametersOnly || e.getKey() instanceof ParameterInfo)) return null;
-        return this;
+    public FilterResult isIndividualNotNullClauseOnParameter() {
+        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
+            ValueWithVariable v = (ValueWithVariable) rhs;
+            if (v.variable instanceof ParameterInfo) {
+                return new FilterResult(Map.of(v.variable, lhs), UnknownValue.NO_VALUE);
+            }
+        }
+        return new FilterResult(Map.of(), this);
+    }
+
+    @Override
+    public FilterResult isIndividualNotNullClause() {
+        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
+            ValueWithVariable v = (ValueWithVariable) rhs;
+            return new FilterResult(Map.of(v.variable, lhs), UnknownValue.NO_VALUE);
+        }
+        return new FilterResult(Map.of(), this);
+    }
+
+    @Override
+    public FilterResult isIndividualFieldCondition() {
+        boolean acceptR = rhs instanceof ValueWithVariable && ((ValueWithVariable) rhs).variable instanceof FieldReference;
+        boolean acceptL = lhs instanceof ValueWithVariable && ((ValueWithVariable) lhs).variable instanceof FieldReference;
+        if (acceptL && !acceptR)
+            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, rhs), UnknownValue.NO_VALUE);
+        if (acceptR && !acceptL)
+            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, lhs), UnknownValue.NO_VALUE);
+        return new FilterResult(Map.of(), this);
+    }
+
+
+    @Override
+    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+        return filterMethod.apply(this);
     }
 
     @Override

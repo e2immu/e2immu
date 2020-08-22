@@ -32,6 +32,8 @@ import org.e2immu.annotation.Size;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
@@ -434,27 +436,21 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
-        if (!preconditionSide) return Map.of();
-        return values.stream().flatMap(v -> v.individualNullClauses(true).entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
+    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+        if (!preconditionSide) return new FilterResult(Map.of(), this);
 
-    @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
-        if (!preconditionSide) return Map.of();
-        return values.stream().flatMap(v -> v.individualSizeRestrictions(true).entrySet().stream())
+        List<FilterResult> results = values.stream().map(v -> v.filter(true, filterMethod)).collect(Collectors.toList());
+        
+        List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.NO_VALUE).collect(Collectors.toList());
+        Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
 
-    @Override
-    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
-        if (!preconditionSide) return this;
-        List<Value> nonIndividuals = values.stream().map(v -> v.nonIndividualCondition(true, parametersOnly))
-                .filter(Objects::nonNull).collect(Collectors.toList());
-        if (nonIndividuals.size() == 0) return null;
-        if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
-        return new AndValue(objectFlow, nonIndividuals);
+        Value rest;
+        if (restList.isEmpty()) rest = UnknownValue.NO_VALUE;
+        else if (restList.size() == 1) rest = restList.get(0);
+        else rest = new AndValue().append(restList.toArray(Value[]::new));
+
+        return new FilterResult(acceptedCombined, rest);
     }
 
     @Override

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -29,6 +30,9 @@ import org.e2immu.annotation.NotNull1;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)
@@ -126,23 +130,44 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    /**
-     * @param preconditionSide true = values that are accepted; false = values that are rejected
-     * @return true means "value == null", false means "value != null", independent of <code>preconditionSide</code>
-     */
-    @NotNull1
-    default Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
-        return Map.of();
+    default FilterResult isIndividualNotNullClauseOnParameter() {
+        return new FilterResult(Map.of(), this);
     }
 
+    default FilterResult isIndividualNotNullClause() {
+        return new FilterResult(Map.of(), this);
+    }
+
+    default FilterResult isIndividualFieldCondition() {
+        return new FilterResult(Map.of(), this);
+    }
+
+    default FilterResult isIndividualSizeRestrictionOnParameter() {
+        return new FilterResult(Map.of(), this);
+    }
+
+    default FilterResult isIndividualSizeRestriction() {
+        return new FilterResult(Map.of(), this);
+    }
+
+    class FilterResult {
+        public final Map<Variable, Value> accepted;
+        public final Value rest;
+
+        public FilterResult(Map<Variable, Value> accepted, Value rest) {
+            this.accepted = accepted;
+            this.rest = rest;
+        }
+    }
+
+    FilterResult NO_RESULT = new FilterResult(Map.of(), UnknownValue.NO_VALUE);
+
     /**
-     * filters out all individual conditions (null, size)
-     *
      * @param preconditionSide true = values that are accepted; false = values that are rejected
-     * @return a new precondition; null if there are only individual conditions
+     * @return a FilterResult object, always, if only NO_RESULT
      */
-    default Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
-        return this;
+    default FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+        return filterMethod.apply(this);
     }
 
     /**
@@ -156,15 +181,6 @@ public interface Value extends Comparable<Value> {
 
     default Set<Variable> variables() {
         return Set.of();
-    }
-
-    /**
-     * @param preconditionSide true = values that are accepted; false = values that are rejected
-     * @return a value representing the restriction
-     */
-    @NotNull1
-    default Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
-        return Map.of();
     }
 
     default int encodedSizeRestriction() {

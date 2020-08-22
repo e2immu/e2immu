@@ -20,9 +20,8 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.ArrayList;
@@ -93,15 +92,15 @@ public class EvaluateParameters {
             // from the result we either may infer another condition, or values to be set...
 
             // NOT_NULL
-            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(true);
-            for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!nullClauseEntry.getValue() && nullClauseEntry.getKey() instanceof ParameterInfo) {
+            Map<Variable, Value> individualNullClauses = reEvaluated.filter(true, Value::isIndividualNotNullClause).accepted;
+            for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
+                if (!(nullClauseEntry.getValue() instanceof NullValue) && nullClauseEntry.getKey() instanceof ParameterInfo) {
                     evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
             }
 
             // SIZE
-            Map<Variable, Value> sizeRestrictions = reEvaluated.individualSizeRestrictions(true);
+            Map<Variable, Value> sizeRestrictions = reEvaluated.filter(true, Value::isIndividualSizeRestriction).accepted;
             for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
                 // now back to precondition world
                 if (sizeRestriction.getKey() instanceof ParameterInfo) {
@@ -113,7 +112,7 @@ public class EvaluateParameters {
             }
 
             // all the rest: preconditions
-            Value nonIndividual = reEvaluated.nonIndividualCondition(true, true);
+            Value nonIndividual = reEvaluated.filter(true, Value::isNonIndividualSizeOrNotNullCondition);
             if (nonIndividual != null) {
                 evaluationContext.addPrecondition(nonIndividual);
             }

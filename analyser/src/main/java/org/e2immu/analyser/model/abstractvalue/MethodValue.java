@@ -258,26 +258,26 @@ public class MethodValue implements Value {
         return methodInfo.returnType();
     }
 
-    @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+    private FilterResult isIndividualSizeRestriction(boolean parametersOnly) {
         MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
         if (sizeMethod != null) {
             int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (size >= Level.TRUE && modified == Level.FALSE && object instanceof VariableValue) {
                 VariableValue variableValue = (VariableValue) object;
-
-                Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
-                Value comparison;
-                if (Level.haveEquals(size)) {
-                    comparison = EqualsValue.equals(new IntValue(Level.decodeSizeEquals(size)), cnv, null);
-                } else {
-                    comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Level.decodeSizeMin(size)), true, null);
+                if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
+                    Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
+                    Value comparison;
+                    if (Level.haveEquals(size)) {
+                        comparison = EqualsValue.equals(new IntValue(Level.decodeSizeEquals(size)), cnv, null);
+                    } else {
+                        comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Level.decodeSizeMin(size)), true, null);
+                    }
+                    return new FilterResult(Map.of(variableValue.variable, comparison), UnknownValue.NO_VALUE);
                 }
-                return Map.of(variableValue.variable, comparison);
             }
         }
-        return Map.of();
+        return new FilterResult(Map.of(), this);
     }
 
     private MethodValue sizeMethod(MethodInfo sizeMethod) {

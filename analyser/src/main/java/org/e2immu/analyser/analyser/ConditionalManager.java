@@ -62,16 +62,18 @@ public class ConditionalManager {
         if (conditional == null || delayedConditional()) {
             return Set.of();
         }
-        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses(preconditionSide);
+        Map<Variable, Value> individualNullClauses = conditional.filter(preconditionSide,
+                parametersOnly ? Value::isIndividualNotNullClauseOnParameter : Value::isIndividualNotNullClause).accepted;
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> (!parametersOnly || (e.getKey() instanceof ParameterInfo)) && e.getValue() == equalToNull)
+                .filter(e -> equalToNull == (e.getValue() instanceof NullValue))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
     public Map<Variable, Value> getSizeRestrictions(boolean preconditionSide, boolean parametersOnly) {
         if (conditional == null || delayedConditional()) return Map.of();
-        Map<Variable, Value> map = conditional.individualSizeRestrictions(preconditionSide);
+        Map<Variable, Value> map = conditional.filter(preconditionSide,
+                parametersOnly ? Value::isIndividualSizeRestrictionOnParameter : Value::isIndividualSizeRestriction).accepted;
         if (parametersOnly) {
             return map.entrySet().stream()
                     .filter(e -> e.getKey() instanceof ParameterInfo)
@@ -146,6 +148,8 @@ public class ConditionalManager {
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
     public Value escapeCondition(EvaluationContext evaluationContext) {
         if (conditional == null || delayedConditional()) return null;
+
+        // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
         Value pre = conditional.nonIndividualCondition(false, true); // those parts that have nothing to do with individual clauses
         if (pre == null) return null;
         Map<Value, Value> translation = new HashMap<>();

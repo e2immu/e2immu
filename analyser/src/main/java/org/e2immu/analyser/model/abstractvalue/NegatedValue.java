@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class NegatedValue extends PrimitiveValue implements ValueWrapper {
@@ -122,20 +124,6 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         throw new UnsupportedOperationException();
     }
 
-    // this one assumes that a not(and()) is transformed into an or()
-    @Override
-    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
-        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses(preconditionSide);
-        return individualNullClauses.entrySet()
-                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
-    }
-
-    @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
-        return value.individualSizeRestrictions(preconditionSide).entrySet()
-                .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue())));
-    }
-
     @Override
     public int encodedSizeRestriction() {
         int sub = value.encodedSizeRestriction();
@@ -144,11 +132,14 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
     }
 
+    // no need to implement any of the filter methods; they all do the same
+
     @Override
-    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
-        Value inside = value.nonIndividualCondition(preconditionSide, parametersOnly);
-        if (inside == null) return null;
-        return this;
+    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+        FilterResult filterResult = value.filter(preconditionSide, filterMethod);
+        return new FilterResult(filterResult.accepted.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue()))),
+                NegatedValue.negate(filterResult.rest));
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
@@ -302,7 +303,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+    public FilterResult isIndividualSizeRestrictionOnParameter() {
         XB xb = extract();
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
             ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
@@ -312,14 +313,13 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                     // I am the size method!
                     if (methodValue.object instanceof ValueWithVariable) {
                         ValueWithVariable v = (ValueWithVariable) methodValue.object;
-                        return Map.of(v.variable, this);
+                        return new FilterResult(Map.of(v.variable, this), UnknownValue.NO_VALUE);
                     }
                 }
             }
         }
-        return Map.of();
+        return new FilterResult(Map.of(), this);
     }
-
 
     @Override
     public void visit(Consumer<Value> consumer) {
