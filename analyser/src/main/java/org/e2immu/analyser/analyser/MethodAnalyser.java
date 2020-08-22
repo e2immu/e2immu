@@ -150,7 +150,7 @@ public class MethodAnalyser {
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, messages, methodInfo, methodProperties))
                 changes = true;
 
-            if (obtainMostCompletePrecondition(numberedStatements, methodAnalysis, methodProperties)) {
+            if (obtainMostCompletePrecondition(numberedStatements, methodInfo, methodAnalysis, methodProperties)) {
                 changes = true;
             }
 
@@ -192,10 +192,14 @@ public class MethodAnalyser {
     }
 
     private boolean obtainMostCompletePrecondition(List<NumberedStatement> numberedStatements,
+                                                   MethodInfo methodInfo,
                                                    MethodAnalysis methodAnalysis,
                                                    VariableProperties methodProperties) {
         if (methodAnalysis.precondition.isSet()) return false; // already done
-
+        if (methodProperties.conditionalManager.delayedConditional()) {
+            log(DELAYED, "Delaying preconditions, not all escapes set", methodInfo.distinguishingName());
+            return false;
+        }
         // take the last one of the top level statements
         Stream<Value> preconditionsFromStatements = numberedStatements.stream()
                 .filter(numberedStatement -> numberedStatement.indices.length == 1 &&
@@ -204,8 +208,12 @@ public class MethodAnalyser {
         Stream<Value> preconditionsFromMethods = methodProperties.streamPreconditions();
         Value[] preconditions = Stream.concat(preconditionsFromStatements, preconditionsFromMethods).toArray(Value[]::new);
 
-        if (preconditions.length == 0) return false;
-        Value precondition = new AndValue().append(preconditions);
+        Value precondition;
+        if (preconditions.length == 0) {
+            precondition = UnknownValue.NO_VALUE_PRECONDITION;
+        } else {
+            precondition = new AndValue().append(preconditions);
+        }
         methodAnalysis.precondition.set(precondition);
         return true;
     }
@@ -308,7 +316,7 @@ public class MethodAnalyser {
     }
 
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.preconditionForOnlyData.isSet()) return false;
+        if (methodAnalysis.preconditionForOnlyData.isSet()) return false; // already done
         boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
                 field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalValueKnown) {
@@ -322,10 +330,20 @@ public class MethodAnalyser {
             return false;
         }
         if (!methodAnalysis.precondition.isSet()) {
+            log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
+            return false;
+        }
+        Value precondition = methodAnalysis.precondition.get();
+        if (precondition == UnknownValue.NO_VALUE_PRECONDITION) {
+            log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
             return true;
         }
-        Value precondition = methodAnalysis.precondition.get();
+        // at this point, the null and size checks on parameters have been removed.
+        // we still need to remove other parameter components; what remains can be used for marking/only
+
+        // TODO
+
         Set<Variable> variables = precondition.variables();
         boolean allVariablesAreFieldsOfMyOwnType = variables.stream().allMatch(v -> v instanceof FieldReference && ((FieldReference) v).scope instanceof This
                 && ((This) ((FieldReference) v).scope).typeInfo == methodInfo.typeInfo);

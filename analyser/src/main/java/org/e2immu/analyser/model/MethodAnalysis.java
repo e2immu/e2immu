@@ -148,9 +148,12 @@ public class MethodAnalysis extends Analysis {
 
         // @Precondition
         if (precondition.isSet()) {
-            AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
-                    .copyWith("value", precondition.get().toString());
-            annotations.put(ae, true);
+            Value value = precondition.get();
+            if (value != UnknownValue.NO_VALUE_PRECONDITION) {
+                AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
+                        .copyWith("value", value.toString());
+                annotations.put(ae, true);
+            }
         }
 
         // @Dependent @Independent
