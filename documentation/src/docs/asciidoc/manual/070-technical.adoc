@@ -1,9 +1,22 @@
-
 == The analyser
 
 === Inspection
 
-
 === Analysis
 
+==== Computation of @Mark, @Only
 
+The presence of eventual properties (level 1 immutable, level 2 immutable, content not null, ...) follows from the computation of the {only} and {mark} annotations.
+Here, we document how the analyser computes them.
+
+The analyser associates eventuality with a precondition on a field (or technically, on one or more fields); it labels the precondition with a mark string.
+Methods that guard against the precondition are _before_ the mark, methods that guard against the boolean complement are _after_ the mark.
+We define a guard here as the throwing of a run-time exception when the field's value does not satisfy the condition.
+
+Each method holds information about such a precondition in `SetOnce<OnlyData> onlyData`.
+The `MethodAnalyser` computes the information in `computeOnlyMarkPrepWork` and `computeOnlyMarkAnnotate`.
+
+Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<Value, String> approvedPreconditions` in `TypeAnalysis`.
+The keys are the different preconditions that have been approved for eventuality computation, the values are the associated mark strings.
+
+The eventual annotation will receive a comma-separated list with all the marks in `approvedPreconditions`.

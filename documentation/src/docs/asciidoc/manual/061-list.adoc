@@ -48,6 +48,7 @@ Additionally, on methods, the analyser only computes the annotation when the met
 Mode:: Use this annotation in the red mode.
 Its opposite is {independent}.
 
+[#e1container-annotation]
 ==== @E1Container
 
 |===
@@ -56,6 +57,53 @@ Its opposite is {independent}.
 
 Summary:: This annotation is a short-hand for the combination of {e1immutable} and {container}.
 Mode:: This annotation sits in between {mutableModifiesArguments}, {container} and {e2container}.
+
+Example:: In the following example, the field `j` remains variable until the user of the class calls `setPositiveJ`.
+
+.Example of eventual @E1Container
+[source,java]
+----
+@E1Container(after = "mark")
+class ExampleManualEventuallyE1Container {
+
+    @Final
+    private int i;
+
+    @Final(after = "mark")
+    private int j;
+
+    public ExampleManualEventuallyE1Container(int i) {
+        this.i = i;
+    }
+
+    @NotModified
+    public int getI() {
+        return i;
+    }
+
+    @NotModified
+    public int getJ() {
+        return j;
+    }
+
+    @Modified
+    @Mark("mark")
+    public void setPositiveJ(int j) {
+        if (j <= 0) throw new UnsupportedOperationException();
+        if (this.j > 0) throw new UnsupportedOperationException("Already set");
+
+        this.j = j;
+    }
+
+    @Modified
+    @Only(before = "mark")
+    public void setNegativeJ(int j) {
+        if (j > 0) throw new UnsupportedOperationException();
+        if (this.j > 0) throw new UnsupportedOperationException("Already set");
+        this.j = j;
+    }
+}
+----
 
 ==== @E1Immutable
 
@@ -136,8 +184,7 @@ Details:: A field is effectively final when no method, transitively reachable fr
 A field is eventually final if the above definition holds when one excludes all the methods that are pre-marking, i.e., that hold an annotation `@Only(before="mark")` or `@Mark("mark")`.
 
 Example::
-Please find an example of an eventually final field <<here>>.
-#TODO#
+Please find an example of an eventually final field in the example of <<e1container-annotation>>.
 
 .Example for @Variable, @Final
 [source,java]

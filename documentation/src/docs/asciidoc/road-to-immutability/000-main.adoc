@@ -11,27 +11,27 @@
 include::{includedir}/util/definitions.adoc[]
 
 // all introductory sections
-include::{includedir}/road-to-immutability/01-intro.adoc[]
+include::{includedir}/road-to-immutability/010-intro.adoc[]
 
-include::{includedir}/road-to-immutability/02-e1immutable.adoc[]
+include::{includedir}/road-to-immutability/020-e1immutable.adoc[]
 
-include::{includedir}/road-to-immutability/03-modification.adoc[]
+include::{includedir}/road-to-immutability/030-modification.adoc[]
 
-include::{includedir}/road-to-immutability/04-container.adoc[]
+include::{includedir}/road-to-immutability/040-container.adoc[]
 
 include::{includedir}/road-to-immutability/045-linking-independence.adoc[]
 
-include::{includedir}/road-to-immutability/05-e2immutable.adoc[]
+include::{includedir}/road-to-immutability/050-e2immutable.adoc[]
 
-include::{includedir}/road-to-immutability/06-eventual.adoc[]
+include::{includedir}/road-to-immutability/060-eventual.adoc[]
 
 include::{includedir}/road-to-immutability/065-functional-interfaces.adoc[]
 
 include::{includedir}/road-to-immutability/066-linking-formally.adoc[]
 
-include::{includedir}/road-to-immutability/07-examples.adoc[]
+include::{includedir}/road-to-immutability/070-examples.adoc[]
 
-include::{includedir}/road-to-immutability/08-other-annotations.adoc[]
+include::{includedir}/road-to-immutability/080-other-annotations.adoc[]
 
 == Copyright and License
 

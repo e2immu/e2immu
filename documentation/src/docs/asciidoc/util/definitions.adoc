@@ -21,6 +21,7 @@
 :final:  pass:normal[ `@Final` ]
 :identity:  pass:normal[ `@Identity` ]
 :independent:  pass:normal[ `@Independent` ]
+:only:  pass:normal[ `@Only` ]
 :mark: pass:normal[ `@Mark` ]
 :modified:  pass:normal[ `@Modified` ]
 :mutableModifiesArguments: pass:normal[ `@MutableModifiesArguments` ]
