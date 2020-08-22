@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -108,7 +109,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // process parameters
         int notModified1Scope = objectValue.getProperty(evaluationContext, VariableProperty.NOT_MODIFIED_1);
-        List<Value> parameters = NewObject.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
+        EvaluateParameters.Result parameterResult = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
 
         // access
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
@@ -118,7 +119,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Logger.log(DELAYED, "Delaying flow access registration");
                 objectFlow.delay();
             } else {
-                List<ObjectFlow> flowsOfArguments = parameters.stream().map(Value::getObjectFlow).collect(Collectors.toList());
+                List<ObjectFlow> flowsOfArguments = parameterResult.parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
                 MethodAccess methodAccess = new MethodAccess(methodInfo, flowsOfArguments);
                 evaluationContext.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
@@ -149,7 +150,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (!methodInfo.isVoid()) {
             complianceWithForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext, contentNotNullRequired);
 
-            result = methodValue(evaluationContext, methodInfo, objectValue, parameters, objectFlowOfResult);
+            result = parameterResult.wrap(methodValue(evaluationContext, methodInfo, objectValue, parameterResult.parameterValues, objectFlowOfResult));
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
@@ -238,7 +239,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
             if (srv instanceof InlineValue) {
-                return srv.reEvaluate(evaluationContext, NewObject.translationMap(evaluationContext, methodInfo, parameters));
+                return srv.reEvaluate(evaluationContext, EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters));
             }
             if (srv.isConstant()) {
                 return srv;
@@ -304,7 +305,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
+        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult, null);
     }
 
     private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {

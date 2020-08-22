@@ -38,11 +38,13 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public final Value value;
     public final Map<VariableProperty, Integer> properties;
     public final ObjectFlow overwriteObjectFlow;
+    public final Value precondition;
 
-    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow, Value precondition) {
         this.value = value;
         this.properties = properties;
         overwriteObjectFlow = objectFlow;
+        this.precondition = precondition;
     }
 
     @Override
@@ -58,10 +60,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
     @Override
     public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         Value reValue = value.reEvaluate(evaluationContext, translation);
-        return PropertyWrapper.propertyWrapper(reValue, properties, getObjectFlow());
+        return PropertyWrapper.propertyWrapper(reValue, properties, getObjectFlow(), precondition);
     }
 
-    public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow, Value precondition) {
         // TODO this for-loop is a really good candidate to rewrite using streaming
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
@@ -82,7 +84,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
             if (Level.haveEquals(size) || size < Level.TRUE) throw new UnsupportedOperationException();
             return ConstrainedNumericValue.lowerBound(value, Level.decodeSizeMin(size));
         }
-        return new PropertyWrapper(value, properties, objectFlow);
+        return new PropertyWrapper(value, properties, objectFlow, precondition);
     }
 
     @Override

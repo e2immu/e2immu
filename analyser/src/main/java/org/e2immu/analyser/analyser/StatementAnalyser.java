@@ -131,7 +131,7 @@ public class StatementAnalyser {
 
                     if (escapesViaException) {
                         if (startStatement.parent == null) {
-                            throw new UnsupportedOperationException("TO IMPLEMENT: unconditional escape");
+                            log(VARIABLE_PROPERTIES, "Observing unconditional escape");
                         } else {
                             notNullEscapes(variableProperties, startStatement);
                             sizeEscapes(variableProperties, startStatement);

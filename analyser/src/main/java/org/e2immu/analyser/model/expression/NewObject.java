@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.SideEffectContext;
@@ -134,111 +135,13 @@ public class NewObject implements HasParameterExpressions {
                     .collect(Collectors.toList());
             value = new ArrayValue(evaluationContext.createLiteralObjectFlow(arrayInitializer.commonType), values);
         } else {
-            List<Value> parameterValues = transform(parameterExpressions, evaluationContext, visitor, constructor, Level.FALSE);
-            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext);
+            EvaluateParameters.Result result = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, constructor, Level.FALSE);
+            value = result.wrap(new Instance(parameterizedType, constructor, result.parameterValues, evaluationContext));
         }
         visitor.visit(this, evaluationContext, value);
         return value;
     }
 
-    static List<Value> transform(List<Expression> parameterExpressions,
-                                 EvaluationContext evaluationContext,
-                                 EvaluationVisitor visitor,
-                                 MethodInfo methodInfo,
-                                 int notModified1Scope) {
-        List<Value> parameterValues = new ArrayList<>();
-        int i = 0;
-        for (Expression parameterExpression : parameterExpressions) {
-            Value parameterValue;
-            if (methodInfo != null) {
-                List<ParameterInfo> params = methodInfo.methodInspection.get().parameters;
-                ParameterInfo parameterInfo;
-                if (i >= params.size()) {
-                    ParameterInfo lastParameter = params.get(params.size() - 1);
-                    if (lastParameter.parameterInspection.get().varArgs) {
-                        parameterInfo = lastParameter;
-                    } else {
-                        throw new UnsupportedOperationException("?");
-                    }
-                } else {
-                    parameterInfo = params.get(i);
-                }
-                // NOT_NULL, NOT_MODIFIED, SIZE
-                Map<VariableProperty, Integer> map = parameterInfo.parameterAnalysis.get().getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
-                if (map.containsValue(Level.DELAY)) {
-                    map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
-                }
-                ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
-                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
-
-                if(methodInfo.isSingleAbstractMethod()) {
-                    handleSAM(methodInfo, parameterInfo.parameterizedType, parameterValue, notModified1Scope);
-                }
-
-                ObjectFlow source = parameterValue.getObjectFlow();
-                int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
-                if (modified == Level.DELAY) {
-                    source.delay();
-                } else {
-                    ObjectFlow destination = parameterInfo.parameterAnalysis.get().getObjectFlow();
-                    evaluationContext.addCallOut(modified == Level.TRUE, destination, parameterValue);
-                }
-            } else {
-                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT);
-            }
-
-            parameterValues.add(parameterValue);
-            i++;
-        }
-        if (methodInfo != null && methodInfo.methodAnalysis.isSet() && methodInfo.methodAnalysis.get().precondition.isSet()) {
-            // there is a precondition, and we have a list of values... let's see what we can learn
-            // the precondition is using parameter info's as variables so we'll have to substitute
-            Value precondition = methodInfo.methodAnalysis.get().precondition.get();
-            Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
-            Value reEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
-            // from the result we either may infer another condition, or values to be set...
-            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(false);
-            for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!nullClauseEntry.getValue()) {
-                    evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                }
-            }
-            Value nonIndividual = precondition.nonIndividualCondition();
-            if (nonIndividual != null) {
-                // TODO we'll need to wrap the method call object in some precondition value
-            }
-        }
-        return parameterValues;
-    }
-
-    private static void handleSAM(MethodInfo methodInfo, ParameterizedType formalParameterType, Value parameterValue, int notModified1) {
-        if(notModified1 == Level.TRUE) {
-            // we're in the non-modifying situation
-            log(NOT_MODIFIED, "In the @NM1 situation with "+methodInfo.name+" and "+parameterValue);
-        } else {
-            Boolean cannotBeModified = formalParameterType.cannotBeModified();
-            if (cannotBeModified == null) return; // DELAY
-            if (cannotBeModified) {
-                // we're in the @Exposed situation
-                log(NOT_MODIFIED, "In the @Exposed situation with "+methodInfo.name+" and "+parameterValue);
-
-            } else {
-                log(NOT_MODIFIED, "In the @Modified situation with "+methodInfo.name+" and "+parameterValue);
-            }
-        }
-    }
-
-    public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
-        ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
-        int i = 0;
-        for (Value parameterValue : parameters) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
-            builder.put(vv, parameterValue);
-            i++;
-        }
-        return builder.build();
-    }
 
     @Override
     public SideEffect sideEffect(SideEffectContext sideEffectContext) {
