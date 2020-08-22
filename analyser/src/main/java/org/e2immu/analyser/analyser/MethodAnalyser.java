@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
@@ -149,7 +150,7 @@ public class MethodAnalyser {
             if (computeLinking.computeVariablePropertiesOfMethod(numberedStatements, messages, methodInfo, methodProperties))
                 changes = true;
 
-            if (obtainMostCompletePrecondition(numberedStatements, methodAnalysis)) {
+            if (obtainMostCompletePrecondition(numberedStatements, methodAnalysis, methodProperties)) {
                 changes = true;
             }
 
@@ -190,15 +191,19 @@ public class MethodAnalyser {
         }
     }
 
-    private boolean obtainMostCompletePrecondition(List<NumberedStatement> numberedStatements, MethodAnalysis methodAnalysis) {
+    private boolean obtainMostCompletePrecondition(List<NumberedStatement> numberedStatements,
+                                                   MethodAnalysis methodAnalysis,
+                                                   VariableProperties methodProperties) {
         if (methodAnalysis.precondition.isSet()) return false; // already done
+
         // take the last one of the top level statements
-        Value[] preconditions = numberedStatements.stream()
+        Stream<Value> preconditionsFromStatements = numberedStatements.stream()
                 .filter(numberedStatement -> numberedStatement.indices.length == 1 &&
                         numberedStatement.precondition.isSet())
-                .map(numberedStatement -> numberedStatement.precondition.get())
-                .collect(Collectors.toList())
-                .toArray(Value[]::new);
+                .map(numberedStatement -> numberedStatement.precondition.get());
+        Stream<Value> preconditionsFromMethods = methodProperties.streamPreconditions();
+        Value[] preconditions = Stream.concat(preconditionsFromStatements, preconditionsFromMethods).toArray(Value[]::new);
+
         if (preconditions.length == 0) return false;
         Value precondition = new AndValue().append(preconditions);
         methodAnalysis.precondition.set(precondition);

@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.NotNull1;
 
 import java.util.Map;
 import java.util.Set;
@@ -102,7 +104,8 @@ public interface Value extends Comparable<Value> {
     // executed without context, default for all constant types
     default int getPropertyOutsideContext(VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
-        if (VariableProperty.NOT_NULL == variableProperty) return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
+        if (VariableProperty.NOT_NULL == variableProperty)
+            return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
         if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
 
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
@@ -123,8 +126,23 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
+    /**
+     * @param preconditionSide true = values that are accepted; false = values that are rejected
+     * @return true means "value == null", false means "value != null", independent of <code>preconditionSide</code>
+     */
+    @NotNull1
+    default Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
         return Map.of();
+    }
+
+    /**
+     * filters out all individual conditions (null, size)
+     *
+     * @param preconditionSide true = values that are accepted; false = values that are rejected
+     * @return a new precondition; null if there are only individual conditions
+     */
+    default Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
+        return this;
     }
 
     /**
@@ -140,7 +158,12 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
+    /**
+     * @param preconditionSide true = values that are accepted; false = values that are rejected
+     * @return a value representing the restriction
+     */
+    @NotNull1
+    default Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
         return Map.of();
     }
 
@@ -155,15 +178,6 @@ public interface Value extends Comparable<Value> {
 
     default boolean isExpressionOfParameters() {
         return false;
-    }
-
-    /* exactly the complement of the combination of individualSizeRestrictions() and individualNullClauses()
-       with parametersOnly == true
-       used for @Mark, @Only
-
-     */
-    default Value nonIndividualCondition() {
-        return this;
     }
 
     ObjectFlow getObjectFlow();

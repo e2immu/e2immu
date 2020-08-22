@@ -122,16 +122,17 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         throw new UnsupportedOperationException();
     }
 
+    // this one assumes that a not(and()) is transformed into an or()
     @Override
-    public Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
-        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses(parametersOnly);
+    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
+        Map<Variable, Boolean> individualNullClauses = value.individualNullClauses(preconditionSide);
         return individualNullClauses.entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> !e.getValue()));
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
-        return value.individualSizeRestrictions(parametersOnly).entrySet()
+    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+        return value.individualSizeRestrictions(preconditionSide).entrySet()
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue())));
     }
 
@@ -144,8 +145,8 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     }
 
     @Override
-    public Value nonIndividualCondition() {
-        Value inside = value.nonIndividualCondition();
+    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
+        Value inside = value.nonIndividualCondition(preconditionSide, parametersOnly);
         if (inside == null) return null;
         return this;
     }

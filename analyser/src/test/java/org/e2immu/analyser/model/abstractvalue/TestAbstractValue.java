@@ -103,13 +103,13 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testIsNull() {
         Value v = new EqualsValue(a, NullValue.NULL_VALUE);
         Assert.assertEquals("null == a", v.toString());
-        Map<Variable, Boolean> nullClauses = v.individualNullClauses(false);
+        Map<Variable, Boolean> nullClauses = v.individualNullClauses(true);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
         Value v2 = new EqualsValue(b, NullValue.NULL_VALUE);
         Assert.assertEquals("null == b", v2.toString());
-        Map<Variable, Boolean> nullClauses2 = v2.individualNullClauses(false);
+        Map<Variable, Boolean> nullClauses2 = v2.individualNullClauses(true);
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 

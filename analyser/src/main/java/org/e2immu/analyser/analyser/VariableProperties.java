@@ -88,6 +88,7 @@ class VariableProperties implements EvaluationContext {
 
     private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
     private final Set<ObjectFlow> internalObjectFlows;
+    private final List<Value> preconditions = new ArrayList<>();
 
     // TEST ONLY, in type analyser, for fields
     public VariableProperties(TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
@@ -159,6 +160,15 @@ class VariableProperties implements EvaluationContext {
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
         this.internalObjectFlows = parent.internalObjectFlows; // TODO this is wrong; we should be making a child object flow
         this.messages = parent.messages;
+    }
+
+    @Override
+    public void addPrecondition(Value precondition) {
+        this.preconditions.add(precondition);
+    }
+
+    public Stream<Value> streamPreconditions() {
+        return preconditions.stream();
     }
 
     @Override
@@ -648,6 +658,9 @@ class VariableProperties implements EvaluationContext {
                         .forEach(e -> SMapList.addWithArrayList(contextsPerVariable, e.getKey(), vp)));
         log(VARIABLE_PROPERTIES, "Copying back assignment and properties of {}", contextsPerVariable.keySet());
 
+        // move preconditions upward
+        evaluationContextsGathered.forEach(vp -> preconditions.addAll(vp.preconditions));
+
         // first, assignments and @NotNull
         Set<String> movedUp = new HashSet<>();
 
@@ -842,7 +855,7 @@ class VariableProperties implements EvaluationContext {
             return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
         }
         if (VariableProperty.SIZE.equals(variableProperty)) {
-            Value sizeRestriction = conditionalManager.getSizeRestrictions(false).get(variable);
+            Value sizeRestriction = conditionalManager.getSizeRestrictions(true, false).get(variable);
             if (sizeRestriction != null) {
                 return sizeRestriction.encodedSizeRestriction();
             }

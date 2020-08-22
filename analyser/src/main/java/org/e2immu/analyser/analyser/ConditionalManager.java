@@ -58,19 +58,26 @@ public class ConditionalManager {
         return new AndValue(value.getObjectFlow()).append(conditional, value);
     }
 
-    public Set<Variable> getNullConditionals(boolean equalToNull, boolean parametersOnly) {
+    public Set<Variable> getNullConditionals(boolean preconditionSide, boolean equalToNull, boolean parametersOnly) {
         if (conditional == null || delayedConditional()) {
             return Set.of();
         }
-        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses(parametersOnly);
+        Map<Variable, Boolean> individualNullClauses = conditional.individualNullClauses(preconditionSide);
         return individualNullClauses.entrySet()
-                .stream().filter(e -> e.getValue() == equalToNull)
+                .stream()
+                .filter(e -> (!parametersOnly || (e.getKey() instanceof ParameterInfo)) && e.getValue() == equalToNull)
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    public Map<Variable, Value> getSizeRestrictions(boolean parametersOnly) {
+    public Map<Variable, Value> getSizeRestrictions(boolean preconditionSide, boolean parametersOnly) {
         if (conditional == null || delayedConditional()) return Map.of();
-        return conditional.individualSizeRestrictions(parametersOnly);
+        Map<Variable, Value> map = conditional.individualSizeRestrictions(preconditionSide);
+        if (parametersOnly) {
+            return map.entrySet().stream()
+                    .filter(e -> e.getKey() instanceof ParameterInfo)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+        return map;
     }
 
     public int notNull(Value value) {
@@ -139,7 +146,7 @@ public class ConditionalManager {
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
     public Value escapeCondition(EvaluationContext evaluationContext) {
         if (conditional == null || delayedConditional()) return null;
-        Value pre = conditional.nonIndividualCondition(); // those parts that have nothing to do with individual clauses
+        Value pre = conditional.nonIndividualCondition(false, true); // those parts that have nothing to do with individual clauses
         if (pre == null) return null;
         Map<Value, Value> translation = new HashMap<>();
         pre.visit(v -> {

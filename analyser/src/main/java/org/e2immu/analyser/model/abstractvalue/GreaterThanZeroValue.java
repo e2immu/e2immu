@@ -302,7 +302,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
+    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
         XB xb = extract();
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
             ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
@@ -312,9 +312,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                     // I am the size method!
                     if (methodValue.object instanceof ValueWithVariable) {
                         ValueWithVariable v = (ValueWithVariable) methodValue.object;
-                        if (!parametersOnly || v.variable instanceof ParameterInfo) {
-                            return Map.of(v.variable, this);
-                        }
+                        return Map.of(v.variable, this);
                     }
                 }
             }

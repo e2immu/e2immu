@@ -204,20 +204,24 @@ public class OrValue extends PrimitiveValue {
     }
 
     @Override
-    public Map<Variable, Boolean> individualNullClauses(boolean parametersOnly) {
-        return values.stream().flatMap(v -> v.individualNullClauses(parametersOnly).entrySet().stream())
+    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
+        if (preconditionSide) return Map.of();
+        return values.stream().flatMap(v -> v.individualNullClauses(false).entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
-    public Map<Variable, Value> individualSizeRestrictions(boolean parametersOnly) {
-        return values.stream().flatMap(v -> v.individualSizeRestrictions(parametersOnly).entrySet().stream())
+    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+        if (preconditionSide) return Map.of();
+        return values.stream().flatMap(v -> v.individualSizeRestrictions(false).entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
-    public Value nonIndividualCondition() {
-        List<Value> nonIndividuals = values.stream().map(Value::nonIndividualCondition).filter(Objects::nonNull).collect(Collectors.toList());
+    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
+        if (preconditionSide) return this;
+        List<Value> nonIndividuals = values.stream().map(v -> v.nonIndividualCondition(false, parametersOnly))
+                .filter(Objects::nonNull).collect(Collectors.toList());
         if (nonIndividuals.size() == 0) return null;
         if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
         return new OrValue(objectFlow, nonIndividuals);

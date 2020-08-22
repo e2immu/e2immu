@@ -125,8 +125,8 @@ public class TestWithSkeleton {
         LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
         variableProperties.createLocalVariableOrParameter(localS);
 
-        Assert.assertTrue(variableProperties.conditionalManager.getNullConditionals(true, false).isEmpty());
-        Assert.assertTrue(variableProperties.conditionalManager.getNullConditionals(false, false).isEmpty());
+        Assert.assertTrue(variableProperties.conditionalManager.getNullConditionals(false, true, false).isEmpty());
+        Assert.assertTrue(variableProperties.conditionalManager.getNullConditionals(false, false, false).isEmpty());
         Assert.assertEquals(DELAY, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
 
         // add s != null
@@ -134,7 +134,7 @@ public class TestWithSkeleton {
         variableProperties.conditionalManager.addToConditional(sIsNotNull);
         Assert.assertEquals("not (null == s)", variableProperties.conditionalManager.getConditional().toString());
 
-        Set<Variable> nullConditionals2 = variableProperties.conditionalManager.getNullConditionals(false, false);
+        Set<Variable> nullConditionals2 = variableProperties.conditionalManager.getNullConditionals(false, false, false);
         Assert.assertTrue(nullConditionals2.contains(localS));
         Assert.assertEquals(1, nullConditionals2.size());
 

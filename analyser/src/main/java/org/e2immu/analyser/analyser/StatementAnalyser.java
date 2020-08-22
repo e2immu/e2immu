@@ -190,7 +190,7 @@ public class StatementAnalyser {
     }
 
     private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(true, true);
+        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(false, true, true);
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
             ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -212,7 +212,7 @@ public class StatementAnalyser {
     }
 
     private static void sizeEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions(true);
+        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions(false, true);
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
             Value negated = NegatedValue.negate(entry.getValue());

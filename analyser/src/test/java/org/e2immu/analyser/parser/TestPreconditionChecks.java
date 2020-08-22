@@ -20,12 +20,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+
 /*
 https://github.com/bnaudts/e2immu/issues/10
  */
@@ -35,22 +35,16 @@ public class TestPreconditionChecks extends CommonTestRunner {
         super(false);
     }
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("either".equals(methodInfo.name)) {
-                MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-     //           Assert.assertEquals("(not (null == e1) or not (null == e2))", methodAnalysis.precondition.get().toString());
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("either".equals(methodInfo.name)) {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+            Assert.assertEquals("(not (null == e1) or not (null == e2))", methodAnalysis.precondition.get().toString());
         }
     };
 
-    // TODO we leave one error for now, to be implemented later
-    // suggestion: add a precondition field to PropertyWrapper?
-
     @Test
     public void test() throws IOException {
-        testClass("PreconditionChecks", 1, new DebugConfiguration.Builder()
+        testClass("PreconditionChecks", 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

@@ -1,6 +1,7 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
 import org.e2immu.annotation.Precondition;
 import org.e2immu.annotation.Variable;
 
@@ -27,14 +28,11 @@ public class PreconditionChecks {
 
     // here we want to propagate the precondition from MethodValue down to the method,
     // very much like we propagate the single not-null
-    // TODO this has not been implemented yet.
-    // an implementation may go via the PropertyWrapper, which can hold the precondition.
 
-    @Precondition("not((null == f1) && (null == f2))")
-    public static String useEither3(String f1, String f2) {
+    @Precondition("(not (null == f1) or not (null == f2))")
+    public static String useEither3(@Nullable String f1, @Nullable String f2) {
         return either(f1, f2);
     }
-
 
     // check a precondition on a variable field
     // and the combination of a variable field and a parameter
@@ -99,7 +97,7 @@ public class PreconditionChecks {
     // on the other hand,  p1 == 2 && p2 == -1 is allowed here!
     @Precondition("(p1 > 0 and (not (1 == p1) or p2 > 0))")
     public void combinedPrecondition3(int p1, int p2) {
-        if (p1 <= 0) throw new UnsupportedOperationException(); // IRRELEVANT given the next one
+        if (p1 <= 0) throw new UnsupportedOperationException();
         if (p1 < 2 && p2 <= 0) throw new UnsupportedOperationException();
         this.i = p1 > p2 ? p1 + 3 : p2;
     }

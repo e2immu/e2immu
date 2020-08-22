@@ -434,10 +434,27 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public Value nonIndividualCondition() {
-        // double checking we're not dealing with an And-clause of size 1
-        if (values.size() == 1) return values.get(0).nonIndividualCondition();
-        return this;
+    public Map<Variable, Boolean> individualNullClauses(boolean preconditionSide) {
+        if (!preconditionSide) return Map.of();
+        return values.stream().flatMap(v -> v.individualNullClauses(true).entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    @Override
+    public Map<Variable, Value> individualSizeRestrictions(boolean preconditionSide) {
+        if (!preconditionSide) return Map.of();
+        return values.stream().flatMap(v -> v.individualSizeRestrictions(true).entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    @Override
+    public Value nonIndividualCondition(boolean preconditionSide, boolean parametersOnly) {
+        if (!preconditionSide) return this;
+        List<Value> nonIndividuals = values.stream().map(v -> v.nonIndividualCondition(true, parametersOnly))
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        if (nonIndividuals.size() == 0) return null;
+        if (nonIndividuals.size() == 1) return nonIndividuals.get(0);
+        return new AndValue(objectFlow, nonIndividuals);
     }
 
     @Override

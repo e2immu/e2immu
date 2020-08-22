@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -90,14 +91,30 @@ public class EvaluateParameters {
             Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
             Value reEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
             // from the result we either may infer another condition, or values to be set...
-            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(false);
+
+            // NOT_NULL
+            Map<Variable, Boolean> individualNullClauses = reEvaluated.individualNullClauses(true);
             for (Map.Entry<Variable, Boolean> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!nullClauseEntry.getValue()) {
+                if (!nullClauseEntry.getValue() && nullClauseEntry.getKey() instanceof ParameterInfo) {
                     evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
             }
-           Value nonIndividual = precondition.nonIndividualCondition();
-            if(nonIndividual != null) {
+
+            // SIZE
+            Map<Variable, Value> sizeRestrictions = reEvaluated.individualSizeRestrictions(true);
+            for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
+                // now back to precondition world
+                if (sizeRestriction.getKey() instanceof ParameterInfo) {
+                    int v = sizeRestriction.getValue().encodedSizeRestriction();
+                    if (v > Level.NOT_A_SIZE) {
+                        evaluationContext.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
+                    }
+                }
+            }
+
+            // all the rest: preconditions
+            Value nonIndividual = reEvaluated.nonIndividualCondition(true, true);
+            if (nonIndividual != null) {
                 evaluationContext.addPrecondition(nonIndividual);
             }
         }
