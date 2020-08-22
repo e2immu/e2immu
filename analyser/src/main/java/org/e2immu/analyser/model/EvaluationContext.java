@@ -38,7 +38,9 @@ import java.util.stream.Stream;
 
 public interface EvaluationContext {
 
-    default Messages getMessages() { throw new UnsupportedOperationException(); }
+    default Messages getMessages() {
+        throw new UnsupportedOperationException();
+    }
 
     default int getIteration() {
         return 0;
@@ -201,5 +203,9 @@ public interface EvaluationContext {
     default void modifyingMethodAccess(Variable variable) {
     }
 
-    default void copyMessages(Stream<Message> messageStream) {}
+    default void copyMessages(Stream<Message> messageStream) {
+    }
+
+    default void addPrecondition(Value precondition) {
+    }
 }

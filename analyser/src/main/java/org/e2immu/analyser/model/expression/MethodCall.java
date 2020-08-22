@@ -109,7 +109,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // process parameters
         int notModified1Scope = objectValue.getProperty(evaluationContext, VariableProperty.NOT_MODIFIED_1);
-        EvaluateParameters.Result parameterResult = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
+        List<Value> parameterValues = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
 
         // access
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
@@ -119,7 +119,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 Logger.log(DELAYED, "Delaying flow access registration");
                 objectFlow.delay();
             } else {
-                List<ObjectFlow> flowsOfArguments = parameterResult.parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
+                List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
                 MethodAccess methodAccess = new MethodAccess(methodInfo, flowsOfArguments);
                 evaluationContext.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
@@ -150,7 +150,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (!methodInfo.isVoid()) {
             complianceWithForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext, contentNotNullRequired);
 
-            result = parameterResult.wrap(methodValue(evaluationContext, methodInfo, objectValue, parameterResult.parameterValues, objectFlowOfResult));
+            result = methodValue(evaluationContext, methodInfo, objectValue, parameterValues, objectFlowOfResult);
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
@@ -305,7 +305,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult, null);
+        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
     }
 
     private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {

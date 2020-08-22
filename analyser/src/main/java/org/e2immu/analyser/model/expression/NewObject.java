@@ -135,8 +135,8 @@ public class NewObject implements HasParameterExpressions {
                     .collect(Collectors.toList());
             value = new ArrayValue(evaluationContext.createLiteralObjectFlow(arrayInitializer.commonType), values);
         } else {
-            EvaluateParameters.Result result = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, constructor, Level.FALSE);
-            value = result.wrap(new Instance(parameterizedType, constructor, result.parameterValues, evaluationContext));
+            List<Value> parameterValues = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, constructor, Level.FALSE);
+            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext);
         }
         visitor.visit(this, evaluationContext, value);
         return value;
