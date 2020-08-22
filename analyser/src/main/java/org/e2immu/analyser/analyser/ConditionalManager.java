@@ -150,15 +150,18 @@ public class ConditionalManager {
         if (conditional == null || delayedConditional()) return null;
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Value pre = conditional.nonIndividualCondition(false, true); // those parts that have nothing to do with individual clauses
-        if (pre == null) return null;
+        Value.FilterResult filterResult = conditional.filter(false, Value::isIndividualNotNullClauseOnParameter,
+                Value::isIndividualSizeRestrictionOnParameter); // those parts that have nothing to do with individual clauses
+        if (filterResult.rest == UnknownValue.NO_VALUE) return null;
+
+        // replace all VariableValues in the rest by VVPlaceHolders
         Map<Value, Value> translation = new HashMap<>();
-        pre.visit(v -> {
+        filterResult.rest.visit(v -> {
             if (v instanceof VariableValue) {
                 translation.put(v, new VariableValuePlaceholder((VariableValue) v, evaluationContext, v.getObjectFlow()));
             }
         });
-        return NegatedValue.negate(pre.reEvaluate(evaluationContext, translation));
+        return NegatedValue.negate(filterResult.rest.reEvaluate(evaluationContext, translation));
     }
 
 }

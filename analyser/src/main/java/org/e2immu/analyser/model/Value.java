@@ -162,12 +162,17 @@ public interface Value extends Comparable<Value> {
 
     FilterResult NO_RESULT = new FilterResult(Map.of(), UnknownValue.NO_VALUE);
 
+    @FunctionalInterface
+    interface FilterMethod {
+        FilterResult apply(Value value);
+    }
+
     /**
      * @param preconditionSide true = values that are accepted; false = values that are rejected
      * @return a FilterResult object, always, if only NO_RESULT
      */
-    default FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
-        return filterMethod.apply(this);
+    default FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
+        return filterMethods[0].apply(this);
     }
 
     /**

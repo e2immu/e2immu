@@ -132,7 +132,7 @@ public class EqualsValue extends PrimitiveValue {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {
                     VariableValue variableValue = (VariableValue) methodValue.object;
-                    if(!parametersOnly || variableValue.variable instanceof ParameterInfo) {
+                    if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
                         return new FilterResult(Map.of(variableValue.variable, this), UnknownValue.NO_VALUE);
                     }
                 }
@@ -140,16 +140,21 @@ public class EqualsValue extends PrimitiveValue {
         }
         return new FilterResult(Map.of(), this);
     }
+
     @Override
     public FilterResult isIndividualSizeRestrictionOnParameter() {
         return isIndividualSizeRestriction(true);
     }
 
     @Override
-    public FilterResult isIndividualNotNullClauseOnParameter() {
+    public FilterResult isIndividualSizeRestriction() {
+        return isIndividualSizeRestriction(false);
+    }
+
+    private FilterResult isIndividualNotNullClause(boolean parametersOnly) {
         if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
             ValueWithVariable v = (ValueWithVariable) rhs;
-            if (v.variable instanceof ParameterInfo) {
+            if (!parametersOnly || v.variable instanceof ParameterInfo) {
                 return new FilterResult(Map.of(v.variable, lhs), UnknownValue.NO_VALUE);
             }
         }
@@ -157,12 +162,13 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
+    public FilterResult isIndividualNotNullClauseOnParameter() {
+        return isIndividualNotNullClause(true);
+    }
+
+    @Override
     public FilterResult isIndividualNotNullClause() {
-        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
-            ValueWithVariable v = (ValueWithVariable) rhs;
-            return new FilterResult(Map.of(v.variable, lhs), UnknownValue.NO_VALUE);
-        }
-        return new FilterResult(Map.of(), this);
+        return isIndividualNotNullClause(false);
     }
 
     @Override
@@ -176,10 +182,13 @@ public class EqualsValue extends PrimitiveValue {
         return new FilterResult(Map.of(), this);
     }
 
-
     @Override
-    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
-        return filterMethod.apply(this);
+    public FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
+        for (FilterMethod filterMethod : filterMethods) {
+            FilterResult filterResult = filterMethod.apply(this);
+            if (!filterResult.accepted.isEmpty()) return filterResult;
+        }
+        return new FilterResult(Map.of(), this);
     }
 
     @Override

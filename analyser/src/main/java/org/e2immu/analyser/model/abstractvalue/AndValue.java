@@ -436,11 +436,11 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+    public FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
         if (!preconditionSide) return new FilterResult(Map.of(), this);
 
-        List<FilterResult> results = values.stream().map(v -> v.filter(true, filterMethod)).collect(Collectors.toList());
-        
+        List<FilterResult> results = values.stream().map(v -> v.filter(true, filterMethods)).collect(Collectors.toList());
+
         List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.NO_VALUE).collect(Collectors.toList());
         Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

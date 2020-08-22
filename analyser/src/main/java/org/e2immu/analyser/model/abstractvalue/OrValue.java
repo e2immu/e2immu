@@ -208,10 +208,10 @@ public class OrValue extends PrimitiveValue {
     // no implementation of any of the filters
 
     @Override
-    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
+    public FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
         if (preconditionSide) return new FilterResult(Map.of(), this);
 
-        List<FilterResult> results = values.stream().map(v -> v.filter(false, filterMethod)).collect(Collectors.toList());
+        List<FilterResult> results = values.stream().map(v -> v.filter(false, filterMethods)).collect(Collectors.toList());
         List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.NO_VALUE).collect(Collectors.toList());
 
         Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())

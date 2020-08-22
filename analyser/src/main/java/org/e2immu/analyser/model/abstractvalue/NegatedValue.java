@@ -135,8 +135,8 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     // no need to implement any of the filter methods; they all do the same
 
     @Override
-    public FilterResult filter(boolean preconditionSide, Function<Value, FilterResult> filterMethod) {
-        FilterResult filterResult = value.filter(preconditionSide, filterMethod);
+    public FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
+        FilterResult filterResult = value.filter(preconditionSide, filterMethods);
         return new FilterResult(filterResult.accepted.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue()))),
                 NegatedValue.negate(filterResult.rest));
