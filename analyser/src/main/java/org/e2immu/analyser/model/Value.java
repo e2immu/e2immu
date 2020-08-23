@@ -134,6 +134,8 @@ public interface Value extends Comparable<Value> {
         return new FilterResult(Map.of(), this);
     }
 
+    // NOTE: contrary to the SizeRestriction and the FieldCondition, this one stores not the whole equality, but
+    // only the NullValue in the Map.
     default FilterResult isIndividualNotNullClause() {
         return new FilterResult(Map.of(), this);
     }
@@ -173,6 +175,7 @@ public interface Value extends Comparable<Value> {
 
     /**
      * @param preconditionSide true = values that are accepted; false = values that are rejected
+     * @param filterMethods    if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
      * @return a FilterResult object, always, if only NO_RESULT
      */
     default FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {

@@ -306,8 +306,11 @@ public class FieldAnalyser {
                 // check that all methods have a precondition, and that the variable is linked to at least one of the parameters occurring in the precondition
                 boolean linkedToVarsInPrecondition = methodsWhereFieldIsAssigned.stream().allMatch(mi ->
                         mi.methodAnalysis.isSet() && mi.methodAnalysis.get().precondition.isSet() &&
-                                !Collections.disjoint(mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.get(),
-                                        mi.methodAnalysis.get().precondition.get().variables()));
+                                !Collections.disjoint(mi.methodAnalysis.get().
+                                                fieldSummaries.get(fieldInfo).
+                                                linkedVariables.get(),
+                                        mi.methodAnalysis.get()
+                                                .precondition.get().variables()));
                 if (linkedToVarsInPrecondition) {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
@@ -434,8 +437,9 @@ public class FieldAnalyser {
 
     private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
         return typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .noneMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.METHOD_DELAY_RESOLVED)
-                        == Level.TRUE);// TRUE indicates that there are delays
+                .map(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo))
+                .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);// || // FALSE indicates that there are delays, TRUE that they have been resolved, DELAY that we're not aware
+                     //   !fs.linkedVariables.isSet()); // ensure that the linking has been set
     }
 
     private int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {

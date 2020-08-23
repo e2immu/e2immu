@@ -42,10 +42,13 @@ public class TestSizeChecks extends CommonTestRunner {
             if ("requireNotEmpty".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
                 Assert.assertEquals("0 == ts.size(),?>=0", conditional.toString());
             }
-
+            if ("method1".equals(methodInfo.name) && "0".equals(numberedStatement.streamIndices())) {
+                // the first clause, ((-1) + input1.size(),?>=0) >= 0, has gone because the 2nd is stronger
+                Assert.assertEquals("((-1) + input1.size(),?>=0) >= 0", conditional.toString());
+            }
             if ("method1".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
                 // the first clause, ((-1) + input1.size(),?>=0) >= 0, has gone because the 2nd is stronger
-                Assert.assertEquals("((-3) + input1.size(),?>=1) >= 0", conditional.toString());
+                Assert.assertEquals("((-3) + input1.size(),?>=0) >= 0", conditional.toString());
             }
             if ("method1".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
                 Assert.assertTrue(numberedStatement.errorValue.isSet());

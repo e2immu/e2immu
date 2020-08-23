@@ -388,13 +388,13 @@ public class ComputeLinking {
                 }
 
                 int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
-                if (currentDelayResolved == Level.TRUE && !haveDelay) {
-                    log(DELAYED, "Delays on {} have been resolved", aboutVariable.name);
-                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, 3);
+                if (currentDelayResolved == Level.FALSE && !haveDelay) {
+                    log(DELAYED, "Delays on {} have now been resolved", aboutVariable.name);
+                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
                 if (currentDelayResolved == Level.DELAY && haveDelay) {
                     log(DELAYED, "Marking that delays need resolving on {}", aboutVariable.name);
-                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
+                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
             }
         }

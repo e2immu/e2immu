@@ -72,11 +72,6 @@ public class TestTestExamples extends CommonTestRunner {
     }
 
     @Test
-    public void testInnerClass() throws IOException {
-        testClass("InnerClass", 5);
-    }
-
-    @Test
     public void testModifyParameterChecks() throws IOException {
         testClass("ModifyParameterChecks", 2);
     }
