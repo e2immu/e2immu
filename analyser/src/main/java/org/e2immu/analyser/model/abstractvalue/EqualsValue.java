@@ -176,9 +176,9 @@ public class EqualsValue extends PrimitiveValue {
         boolean acceptR = rhs instanceof ValueWithVariable && ((ValueWithVariable) rhs).variable instanceof FieldReference;
         boolean acceptL = lhs instanceof ValueWithVariable && ((ValueWithVariable) lhs).variable instanceof FieldReference;
         if (acceptL && !acceptR)
-            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, rhs), UnknownValue.NO_VALUE);
+            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, this), UnknownValue.NO_VALUE);
         if (acceptR && !acceptL)
-            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, lhs), UnknownValue.NO_VALUE);
+            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, this), UnknownValue.NO_VALUE);
         return new FilterResult(Map.of(), this);
     }
 

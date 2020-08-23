@@ -139,6 +139,10 @@ public interface Value extends Comparable<Value> {
     }
 
     default FilterResult isIndividualFieldCondition() {
+        Set<Variable> variables = variables();
+        if (variables.size() == 1 && variables.stream().allMatch(v -> v instanceof FieldReference)) {
+            return new FilterResult(Map.of(variables.stream().findAny().orElseThrow(), this), UnknownValue.NO_VALUE);
+        }
         return new FilterResult(Map.of(), this);
     }
 

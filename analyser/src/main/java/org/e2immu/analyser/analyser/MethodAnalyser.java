@@ -342,18 +342,16 @@ public class MethodAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        // TODO
-
-        Set<Variable> variables = precondition.variables();
-        boolean allVariablesAreFieldsOfMyOwnType = variables.stream().allMatch(v -> v instanceof FieldReference && ((FieldReference) v).scope instanceof This
-                && ((This) ((FieldReference) v).scope).typeInfo == methodInfo.typeInfo);
-        if (!allVariablesAreFieldsOfMyOwnType || variables.isEmpty()) {
+        Value.FilterResult filterResult = precondition.filter(true, Value::isIndividualFieldCondition);
+        if (filterResult.accepted.size() != 1) {
             log(MARK, "No @Mark annotation in {}: not all variables are fields of my type, or there are no variables in the precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
             return true;
         }
-        log(MARK, "Did prep work for @Only, @Mark, found precondition {} on variables {} in {}", precondition, variables, methodInfo.distinguishingName());
-        methodAnalysis.preconditionForOnlyData.set(precondition);
+        Map.Entry<Variable, Value> entry = filterResult.accepted.entrySet().stream().findAny().orElseThrow();
+        Value preconditionPart = entry.getValue();
+        log(MARK, "Did prep work for @Only, @Mark, found precondition on variable {} in {}", precondition, entry.getKey(), methodInfo.distinguishingName());
+        methodAnalysis.preconditionForOnlyData.set(preconditionPart);
         return true;
     }
 

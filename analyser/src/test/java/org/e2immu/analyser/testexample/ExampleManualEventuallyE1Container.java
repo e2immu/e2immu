@@ -21,7 +21,7 @@ import org.e2immu.annotation.*;
 
 /* direct COPY-PASTE into the manual, @E1Container annotation */
 
-@E1Container(after = "mark")
+@E2Container(after = "mark")
 class ExampleManualEventuallyE1Container {
 
     @Final

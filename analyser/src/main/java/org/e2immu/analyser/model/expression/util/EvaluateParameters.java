@@ -112,9 +112,9 @@ public class EvaluateParameters {
             }
 
             // all the rest: preconditions
-            Value nonIndividual = reEvaluated.filter(true, Value::isNonIndividualSizeOrNotNullCondition);
-            if (nonIndividual != null) {
-                evaluationContext.addPrecondition(nonIndividual);
+            Value rest = reEvaluated.filter(true, Value::isIndividualNotNullClause, Value::isIndividualSizeRestriction).rest;
+            if (rest != null) {
+                evaluationContext.addPrecondition(rest);
             }
         }
         return parameterValues;
