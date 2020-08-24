@@ -17,8 +17,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("setNegativeJ".equals(methodInfo.name)) {
             if (iteration > 0) {
-                Assert.assertEquals("(-j >= 0 and -this.j >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
-                Assert.assertEquals("-this.j >= 0", methodInfo.methodAnalysis.get().preconditionForOnlyData.get().toString());
+                Assert.assertEquals("((-j) >= 0 and (-this.j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
+                Assert.assertEquals("(-this.j) >= 0", methodInfo.methodAnalysis.get().preconditionForOnlyData.get().toString());
             }
         }
     };
@@ -34,11 +34,10 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
             if ("setNegativeJ".equals(methodInfo.name)) {
                 if ("0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertEquals("-j >= 0", conditional.toString());
+                    Assert.assertEquals("(-j) >= 0", conditional.toString());
                 }
                 if ("1".equals(numberedStatement.streamIndices()) && iteration > 0) {
-                    // TODO!
-                    Assert.assertEquals("..", conditional.toString());
+                    Assert.assertEquals("((-j) >= 0 and (-this.j) >= 0)", conditional.toString());
                 }
             }
         }
