@@ -53,8 +53,9 @@ public abstract class ValueWithVariable implements Value {
         if (this == o) return true;
         if (!(o instanceof ValueWithVariable)) return false;
         ValueWithVariable that = (ValueWithVariable) o;
-        // special for MULTI_COPY fields
-        if (evaluationContext != null) {
+        // special for MULTI_COPY fields!!
+        // VariableValePlaceHolders are excluded here
+        if (evaluationContext != null && this instanceof VariableValue && that instanceof VariableValue) {
             return evaluationContext.equals(variable, that.variable);
         }
         return variable.equals(that.variable);

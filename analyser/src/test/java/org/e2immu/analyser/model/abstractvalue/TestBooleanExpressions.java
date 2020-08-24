@@ -40,4 +40,20 @@ public class TestBooleanExpressions extends CommonAbstractValue {
         Value n1AndN2AndN3 = new AndValue().append(n1AndN2, bOrNotA);
         Assert.assertEquals("(a and not (b))", n1AndN2AndN3.toString());
     }
+
+    @Test
+    public void testEither() {
+        Value aAndB = new AndValue().append(a, b);
+        Value notAandNotB = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b));
+        Value aAndB_or_notAandNotB = new OrValue().append(aAndB, notAandNotB);
+        Assert.assertEquals("((a or not (b)) and (not (a) or b))", aAndB_or_notAandNotB.toString());
+
+        Value not__aAndB_or_notAandNotB = NegatedValue.negate(aAndB_or_notAandNotB);
+        Assert.assertEquals("((a or b) and (not (a) or not (b)))", not__aAndB_or_notAandNotB.toString());
+
+        Value combined = new AndValue().append(not__aAndB_or_notAandNotB, aAndB_or_notAandNotB);
+        Assert.assertEquals("false", combined.toString());
+        Value combined2 = new AndValue().append(aAndB_or_notAandNotB, not__aAndB_or_notAandNotB);
+        Assert.assertEquals("false", combined2.toString());
+    }
 }

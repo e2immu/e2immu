@@ -62,7 +62,6 @@ public class TestConditionalChecks extends CommonTestRunner {
             if (d.iteration == 0) {
                 if ("0".equals(d.statementId)) {
                     Assert.assertSame(UnknownValue.EMPTY, d.condition);
-                    Assert.assertEquals(1, d.numberedStatement.removeVariablesFromCondition.size());
                 }
                 if ("1".equals(d.statementId)) {
                     Assert.assertSame(UnknownValue.EMPTY, d.condition);
@@ -71,8 +70,6 @@ public class TestConditionalChecks extends CommonTestRunner {
         }
         if ("method5".equals(d.methodInfo.name)) {
             // the escape mechanism does NOT kick in!
-            Assert.assertTrue(d.numberedStatement.removeVariablesFromCondition.isEmpty());
-
             if ("0".equals(d.statementId)) {
                 Assert.assertEquals("not (o == this)", d.state.toString());
             }

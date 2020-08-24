@@ -182,13 +182,6 @@ public class StatementAnalyser {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                     variableProperties.uponUsingConditional.run();
                 }
-                Set<Variable> variables = precondition.variables();
-                for (Variable variable : variables) {
-                    // we're guarding because we can have these escapes for sizes as well
-                    if (!startStatement.parent.removeVariablesFromCondition.isSet(variable)) {
-                        startStatement.parent.removeVariablesFromCondition.put(variable, true);
-                    }
-                }
             }
         }
     }
@@ -204,13 +197,6 @@ public class StatementAnalyser {
             if (variableProperties.uponUsingConditional != null) {
                 log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                 variableProperties.uponUsingConditional.run();
-            }
-            // now we need to make sure that there will not be an additional condition added after the if statement
-            // the not-null is already in the properties. we need to communicate this one level up.
-
-            // we're guarding because we can have these escapes for sizes as well
-            if (!startStatement.parent.removeVariablesFromCondition.isSet(nullVariable)) {
-                startStatement.parent.removeVariablesFromCondition.put(nullVariable, true);
             }
         }
     }
@@ -229,14 +215,6 @@ public class StatementAnalyser {
                 if (variableProperties.uponUsingConditional != null) {
                     log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
                     variableProperties.uponUsingConditional.run();
-                }
-
-                // now we need to make sure that there will not be an additional condition added after the if statement
-                // the not-null is already in the properties. we need to communicate this one level up.
-
-                // we're guarding because we can have these escapes for not-nulls as well
-                if (!startStatement.parent.removeVariablesFromCondition.isSet(parameterInfo)) {
-                    startStatement.parent.removeVariablesFromCondition.put(parameterInfo, true);
                 }
             }
         }
@@ -520,8 +498,8 @@ public class StatementAnalyser {
 
             // in a synchronized block, some fields can behave like variables
             boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
-            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childPotentiallyInSyncBlock(value, uponUsingConditional,
-                    inSyncBlock, statementsExecutedAtLeastOnce);
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childPotentiallyInSyncBlock
+                    (value, uponUsingConditional, inSyncBlock, statementsExecutedAtLeastOnce);
 
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
             evaluationContextsGathered.add(variablePropertiesWithValue);
@@ -607,8 +585,6 @@ public class StatementAnalyser {
 
         if (allButLastSubStatementsEscape && haveADefaultCondition && !defaultCondition.isConstant()) {
             variableProperties.conditionManager.addToState(defaultCondition);
-            statement.removeVariablesFromCondition.visit((toRemove, b) ->
-                    variableProperties.conditionManager.variableReassigned(toRemove));
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
         }
 

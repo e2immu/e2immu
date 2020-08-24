@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
@@ -33,6 +34,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TestEither extends CommonTestRunner {
 
@@ -48,6 +50,16 @@ public class TestEither extends CommonTestRunner {
         }
     };
 
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("Either".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId)) {
+            if (0 == d.iteration) {
+                Assert.assertEquals("((null == a or not (null == b)) and (not (null == a) or null == b))", d.condition.toString());
+            } else if (1 == d.iteration) {
+                Assert.assertEquals("false", d.state.toString());
+                Assert.assertEquals("(not (null == a) and not (null == b))", d.condition.toString());
+            }
+        }
+    };
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override
@@ -59,6 +71,10 @@ public class TestEither extends CommonTestRunner {
                 Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
+            if ("Either".equals(methodInfo.name)) {
+                Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
+                        methodInfo.methodAnalysis.get().precondition.get().toString());
+            }
         }
     };
 
@@ -68,6 +84,7 @@ public class TestEither extends CommonTestRunner {
     public void test() throws IOException {
         testUtilClass("Either", 0, 2, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

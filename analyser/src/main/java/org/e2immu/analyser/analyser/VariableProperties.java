@@ -239,10 +239,12 @@ class VariableProperties implements EvaluationContext {
                                                          Runnable uponUsingConditional,
                                                          boolean inSyncBlock,
                                                          boolean guaranteedToBeReachedByParentStatement) {
+        Value safeCondition = condition == null ? UnknownValue.EMPTY: condition;
+
         // if we're in a sync block, than the condition must be ignored (it is not a condition, but the variable to be synced on)
         // otherwise, we take a new initial state and condition,
-        Value newCondition = inSyncBlock ? conditionManager.getCondition() : conditionManager.combineWithCondition(condition);
-        Value newState = inSyncBlock ? conditionManager.getState() : conditionManager.combineWithState(condition);
+        Value newCondition = inSyncBlock ? conditionManager.getCondition() : conditionManager.combineWithCondition(safeCondition);
+        Value newState = inSyncBlock ? conditionManager.getState() : conditionManager.combineWithState(safeCondition);
 
         return new VariableProperties(this,
                 depth + 1,
@@ -260,14 +262,14 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext child(Value condition,
                                    Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
-
+        Value safeCondition = condition == null ? UnknownValue.EMPTY: condition;
         return new VariableProperties(this,
                 depth + 1,
                 currentMethod,
                 currentField,
                 currentStatement,
-                conditionManager.combineWithCondition(condition),
-                conditionManager.combineWithState(condition),
+                conditionManager.combineWithCondition(safeCondition),
+                conditionManager.combineWithState(safeCondition),
                 uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);

@@ -94,8 +94,8 @@ public class PreconditionChecks {
         this.i = p1 > p2 ? p1 + 3 : p2;
     }
 
-    // on the other hand,  p1 == 2 && p2 == -1 is allowed here!
-    @Precondition("(p1 > 0 and (not (1 == p1) or p2 > 0))")
+    // here, the first condition does not disappear, because of the AND rather than the OR
+    @Precondition("(p1 > 0 and (((-2) + p1) >= 0 or p2 > 0))")
     public void combinedPrecondition3(int p1, int p2) {
         if (p1 <= 0) throw new UnsupportedOperationException();
         if (p1 < 2 && p2 <= 0) throw new UnsupportedOperationException();
