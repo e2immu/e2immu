@@ -29,6 +29,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be null, in which case this is a reference to a static field
     public final Variable scope;
 
+    @Override
+    public int variableOrder() {
+        return 1;
+    }
+
     /**
      *
      * @param o the other one

@@ -40,6 +40,11 @@ public class This implements Variable {
     }
 
     @Override
+    public int variableOrder() {
+        return 0;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

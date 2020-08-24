@@ -48,4 +48,5 @@ public interface Variable {
 
     SideEffect sideEffect(SideEffectContext sideEffectContext);
 
+    int variableOrder();
 }

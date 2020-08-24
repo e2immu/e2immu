@@ -81,7 +81,10 @@ public abstract class ValueWithVariable implements Value {
 
     @Override
     public int internalCompareTo(Value v) {
-        return variable.name().compareTo(((ValueWithVariable) v).variable.name());
+        ValueWithVariable vwv = (ValueWithVariable) v;
+        int variableOrderDiff = variable.variableOrder() - vwv.variable.variableOrder();
+        if (variableOrderDiff != 0) return variableOrderDiff;
+        return variable.name().compareTo(vwv.variable.name());
     }
 
     @Override

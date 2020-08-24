@@ -71,10 +71,10 @@ public class TestConditionalChecks extends CommonTestRunner {
         if ("method5".equals(d.methodInfo.name)) {
             // the escape mechanism does NOT kick in!
             if ("0".equals(d.statementId)) {
-                Assert.assertEquals("not (o == this)", d.state.toString());
+                Assert.assertEquals("not (this == o)", d.state.toString());
             }
             if ("1".equals(d.statementId)) {
-                Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", d.state.toString());
+                Assert.assertEquals("(not (null == o) and this.getClass() == o.getClass() and not (this == o))", d.state.toString());
             }
             ParameterInfo o = d.methodInfo.methodInspection.get().parameters.get(0);
             Assert.assertEquals("Numbered statement: " + d.statementId + " iteration " + d.iteration,

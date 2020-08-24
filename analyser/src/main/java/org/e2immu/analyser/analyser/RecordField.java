@@ -15,6 +15,12 @@ public class RecordField implements Variable {
         this.name = name;
         this.fieldReference = fieldReference;
     }
+
+    @Override
+    public int variableOrder() {
+        return 3;
+    }
+
     @Override
     public ParameterizedType concreteReturnType() {
         return parameterizedType();

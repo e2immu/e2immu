@@ -60,6 +60,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
+    public int variableOrder() {
+        return 4;
+    }
+
+    @Override
     public String toString() {
         return index + ":" + name;
     }

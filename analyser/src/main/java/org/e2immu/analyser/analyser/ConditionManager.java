@@ -30,17 +30,21 @@ public class ConditionManager {
         return state;
     }
 
+    private void setState(Value state) {
+        this.state = state;
+    }
+
     // adding a condition always adds to the state as well (testing only)
     public void addCondition(Value value) {
         if (value != BoolValue.TRUE) {
             condition = combineWithCondition(value);
-            state = combineWithState(value);
+            setState(combineWithState(value));
         }
     }
 
     public void addToState(Value value) {
         if (value instanceof BoolValue) throw new UnsupportedOperationException();
-        state = combineWithState(value);
+        setState(combineWithState(value));
     }
 
     /**
@@ -86,10 +90,6 @@ public class ConditionManager {
         Objects.requireNonNull(value);
         if (condition == UnknownValue.EMPTY) return value;
         if (isDelayed(condition) || isDelayed(value)) return UnknownValue.NO_VALUE;
-
-        if (condition instanceof AndValue) {
-            return ((AndValue) condition).append(value);
-        }
         return new AndValue(value.getObjectFlow()).append(condition, value);
     }
 
@@ -182,12 +182,12 @@ public class ConditionManager {
 
     // used in assignments (it gets a new value, so whatever was known, must go)
     public void variableReassigned(Variable variable) {
-        state = removeClausesInvolving(state, variable, true);
+        setState(removeClausesInvolving(state, variable, true));
     }
 
     // after a modifying method call, we lose whatever we know about this variable; except assignment!
     public void modifyingMethodAccess(Variable variable) {
-        state = removeClausesInvolving(state, variable, false);
+        setState(removeClausesInvolving(state, variable, false));
     }
 
     /**

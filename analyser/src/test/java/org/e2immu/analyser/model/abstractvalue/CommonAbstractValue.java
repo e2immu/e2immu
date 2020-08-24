@@ -86,6 +86,11 @@ public abstract class CommonAbstractValue {
             public String toString() {
                 return name;
             }
+
+            @Override
+            public int variableOrder() {
+                return 5;
+            }
         };
     }
 
@@ -139,6 +144,7 @@ public abstract class CommonAbstractValue {
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
     static final VariableValue i = new VariableValue(minimalEvaluationContext, vi, "i");
+    static final VariableValuePlaceholder iph = new VariableValuePlaceholder(i, minimalEvaluationContext, ObjectFlow.NO_FLOW);
     static final VariableValue j = new VariableValue(minimalEvaluationContext, vj, "j");
     static final VariableValue k = new VariableValue(minimalEvaluationContext, vk, "k");
 

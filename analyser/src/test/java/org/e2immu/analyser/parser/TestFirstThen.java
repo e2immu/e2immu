@@ -33,7 +33,7 @@ public class TestFirstThen extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("equals".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", d.state.toString());
+            Assert.assertEquals("(not (null == o) and this.getClass() == o.getClass() and not (this == o))", d.state.toString());
         }
     };
 

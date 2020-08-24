@@ -25,6 +25,11 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
+    public int variableOrder() {
+        return 2;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
