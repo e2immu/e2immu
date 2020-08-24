@@ -33,29 +33,26 @@ public class TestEvaluationErrors extends CommonTestRunner {
         return 3;
     }
      */
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("testDivisionByZero".equals(methodInfo.name)) {
-                if ("1".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
-                if ("1.0.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
-                if ("2".equals(numberedStatement.streamIndices())) {
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
-                }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("testDivisionByZero".equals(d.methodInfo.name)) {
+            if ("1".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get());
             }
-            if ("testDeadCode".equals(methodInfo.name)) {
-                if ("1".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
-                // this one does not render a dead-code error, because its parent already has an error raised
-                if ("1.0.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.inErrorState());
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
-                }
+            if ("1.0.0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get());
+            }
+            if ("2".equals(d.statementId)) {
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+            }
+        }
+        if ("testDeadCode".equals(d.methodInfo.name)) {
+            if ("1".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get());
+            }
+            // this one does not render a dead-code error, because its parent already has an error raised
+            if ("1.0.0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.inErrorState());
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
         }
     };

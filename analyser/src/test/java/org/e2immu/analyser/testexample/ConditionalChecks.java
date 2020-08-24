@@ -21,14 +21,20 @@ public class ConditionalChecks {
 
     // this is the one that most people will use, which is technically identical because of the short-circuit in method2's condition
     public static String method3(@NotNull String a, @NotNull String b) {
-        if (a == null) throw new NullPointerException();
-        if (b == null) throw new NullPointerException();
+        if (a == null) {
+            throw new NullPointerException();
+        }
+        if (b == null) {
+            throw new NullPointerException();
+        }
         return a + b;
     }
 
     // this is something different indeed
     public static String method4(@Nullable String a, @Nullable String b) {
-        if (a == null && b == null) throw new NullPointerException();
+        if (a == null && b == null) {
+            throw new NullPointerException();
+        }
         return a + b;
     }
 

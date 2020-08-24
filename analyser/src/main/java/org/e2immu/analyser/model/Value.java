@@ -170,19 +170,23 @@ public interface Value extends Comparable<Value> {
         }
     }
 
-    FilterResult NO_RESULT = new FilterResult(Map.of(), UnknownValue.NO_VALUE);
-
     @FunctionalInterface
     interface FilterMethod {
         FilterResult apply(Value value);
     }
 
+    enum FilterMode {
+        ALL,
+        ACCEPT, // normal state of the variable AFTER the escape; independent = AND; does not recurse into OrValues
+        REJECT, // condition for escaping; independent = OR; does not recurse into AndValues
+    }
+
     /**
-     * @param preconditionSide true = values that are accepted; false = values that are rejected
-     * @param filterMethods    if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
+     * @param filterMode    mode for filtering
+     * @param filterMethods if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
      * @return a FilterResult object, always, if only NO_RESULT
      */
-    default FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
+    default FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
         return filterMethods[0].apply(this);
     }
 

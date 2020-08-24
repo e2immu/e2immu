@@ -19,22 +19,19 @@ public class TestEvaluateConstants extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("print".equals(methodInfo.name)) {
-                if ("0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get()); // if conditional
-                }
-                if ("0.0.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.inErrorState());
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
-                }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("print".equals(d.methodInfo.name)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get()); // if conditional
             }
-            if ("print2".equals(methodInfo.name)) {
-                if ("0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get()); // inline conditional
-                }
+            if ("0.0.0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.inErrorState());
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+            }
+        }
+        if ("print2".equals(d.methodInfo.name)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get()); // inline conditional
             }
         }
     };

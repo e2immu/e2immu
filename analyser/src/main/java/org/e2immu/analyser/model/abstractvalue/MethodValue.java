@@ -258,6 +258,8 @@ public class MethodValue implements Value {
         return methodInfo.returnType();
     }
 
+    // TODO ??
+
     private FilterResult isIndividualSizeRestriction(boolean parametersOnly) {
         MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
         if (sizeMethod != null) {
@@ -273,7 +275,7 @@ public class MethodValue implements Value {
                     } else {
                         comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Level.decodeSizeMin(size)), true, null);
                     }
-                    return new FilterResult(Map.of(variableValue.variable, comparison), UnknownValue.NO_VALUE);
+                    return new FilterResult(Map.of(variableValue.variable, comparison), UnknownValue.EMPTY);
                 }
             }
         }

@@ -4,6 +4,78 @@
 
 === Analysis
 
+==== Condition and state
+
+A method can have restrictions on the parameter and field values called _preconditions_.
+In general, these restrictions end up as a boolean expression in `MethodAnalysis.precondition`.
+The exception to this rule are the not-null and size restrictions, which become properties during evaluation, and are written out as separate annotations.
+
+Preconditions that participate in {mark} and {only} are stored in `MethodAnalysis.preconditionForOnlyData`.
+They are computed from normal preconditions, so size and null checks cannot serve as marker boolean expressions.
+
+As the analyser progresses through the blocks and statements, it keeps track of
+
+* the current _condition_, which is the boolean conjunction of all conditions in ever deeper `if` statements, (negated in the `else` block).
+* the current _variableState_, which is the boolean conjunction of all not-null not-size restrictions on variables.
+
+In the condition, top-level disjunctions indicate independent statements, while in the state, top-level conjunctions indicate independent statements:
+
+[source,java]
+----
+void method1(String a, String b) {
+    if(a == null || b == null) {
+        // condition and state are: a == null || b == null;
+        throw new NullPointerException();
+    }
+    // state is: a != null && b != null; empty condition
+    ...
+}
+----
+
+In Java, because of short-circuiting, this is functionally identical to the 'independent' form:
+
+[source,java]
+----
+void method2(String a, String b) {
+    if(a == null) {
+        // condition and state are: a == null
+        throw new NullPointerException();
+    }
+    // state is: a != null; empty condition
+    if(b == null) {
+        // condition is: b == null; state is: a != null && b == null
+        throw new NullPointerException();
+    }
+    // state is: a != null && b != null; empty condition
+    ...
+}
+----
+
+Condition and state travel deeper inside the blocks:
+
+[source,java]
+----
+void method3(String a, String b) {
+    if(a == null) {
+        // condition and state are: a == null
+        if(b == null) {
+            // condition and state are: a == null && b == null
+            throw new UnsupportedOperationException();
+        }
+        // condition is: a == null; state is: a == null && b != null
+        return;
+    }
+    // state is: a != null; empty condition
+    ...
+}
+----
+
+Both in `method1` and `method2`, the escape via a runtime exception introduces {nn} annotations on the parameters.
+The analyser employs dedicated logic to ensure that in a second pass, it does not flag the condition in the `if` statement as a constant value.
+In `method3`, the conjunction in the condition after two successive `if` statements does not allow for individual not-null restrictions.
+The result is a precondition, annotated as `@Precondition("(not (null == a) or not (null == b))")`.
+Note that, perhaps counter-intuitively, if we were to replace the `return` statement with a `throws` statement, it would have `a == null` as condition, and not `a == null && b != null`.
+
 ==== Computation of @Mark, @Only
 
 The presence of eventual properties (level 1 immutable, level 2 immutable, content not null, ...) follows from the computation of the {only} and {mark} annotations.

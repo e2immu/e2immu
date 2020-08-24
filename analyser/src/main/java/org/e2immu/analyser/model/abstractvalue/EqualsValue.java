@@ -133,7 +133,7 @@ public class EqualsValue extends PrimitiveValue {
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue) {
                     VariableValue variableValue = (VariableValue) methodValue.object;
                     if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
-                        return new FilterResult(Map.of(variableValue.variable, this), UnknownValue.NO_VALUE);
+                        return new FilterResult(Map.of(variableValue.variable, this), UnknownValue.EMPTY);
                     }
                 }
             }
@@ -155,7 +155,7 @@ public class EqualsValue extends PrimitiveValue {
         if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
             ValueWithVariable v = (ValueWithVariable) rhs;
             if (!parametersOnly || v.variable instanceof ParameterInfo) {
-                return new FilterResult(Map.of(v.variable, lhs), UnknownValue.NO_VALUE);
+                return new FilterResult(Map.of(v.variable, lhs), UnknownValue.EMPTY);
             }
         }
         return new FilterResult(Map.of(), this);
@@ -176,14 +176,14 @@ public class EqualsValue extends PrimitiveValue {
         boolean acceptR = rhs instanceof ValueWithVariable && ((ValueWithVariable) rhs).variable instanceof FieldReference;
         boolean acceptL = lhs instanceof ValueWithVariable && ((ValueWithVariable) lhs).variable instanceof FieldReference;
         if (acceptL && !acceptR)
-            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, this), UnknownValue.NO_VALUE);
+            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, this), UnknownValue.EMPTY);
         if (acceptR && !acceptL)
-            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, this), UnknownValue.NO_VALUE);
+            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, this), UnknownValue.EMPTY);
         return new FilterResult(Map.of(), this);
     }
 
     @Override
-    public FilterResult filter(boolean preconditionSide, FilterMethod... filterMethods) {
+    public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
         for (FilterMethod filterMethod : filterMethods) {
             FilterResult filterResult = filterMethod.apply(this);
             if (!filterResult.accepted.isEmpty()) return filterResult;

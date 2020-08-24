@@ -44,7 +44,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<List<BreakOrContinueStatement>> breakAndContinueStatements = new SetOnce<>();
     public SetOnce<Set<Variable>> existingVariablesAssignedInLoop = new SetOnce<>();
 
-    public SetOnceMap<Variable, Boolean> removeVariablesFromConditional = new SetOnceMap<>();
+    public SetOnceMap<Variable, Boolean> removeVariablesFromCondition = new SetOnceMap<>();
 
     // used for patterns
     public SetOnce<Value> valueOfExpression = new SetOnce<>();

@@ -37,20 +37,17 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("add2b".equals(methodInfo.name) && "0.0.0".equals(numberedStatement.streamIndices())) {
-                if (iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, conditional);
-                } else {
-                    Assert.assertEquals("not (null == this.strings2b)", conditional.toString());
-                }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("add2b".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId)) {
+            if (d.iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.condition);
+            } else {
+                Assert.assertEquals("not (null == this.strings2b)", d.condition.toString());
             }
-            // POTENTIAL NULL POINTER EXCEPTION
-            if ("add2".equals(methodInfo.name) && "0".equals(numberedStatement.streamIndices())) {
-                if (iteration > 0) Assert.assertTrue(numberedStatement.errorValue.isSet());
-            }
+        }
+        // POTENTIAL NULL POINTER EXCEPTION
+        if ("add2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+            if (d.iteration > 0) Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
     };
 

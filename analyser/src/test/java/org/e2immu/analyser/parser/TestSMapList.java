@@ -40,12 +40,9 @@ public class TestSMapList extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("3".equals(numberedStatement.streamIndices()) && "list".equals(methodInfo.name)) {
-                Assert.assertEquals("not (null == map.get(a))", conditional.toString());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("3".equals(d.statementId) && "list".equals(d.methodInfo.name)) {
+            Assert.assertEquals("not (null == map.get(a))", d.condition.toString());
         }
     };
 
@@ -63,7 +60,7 @@ public class TestSMapList extends CommonTestRunner {
 
                 Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
-            if("copy".equals(methodInfo.name)) {
+            if ("copy".equals(methodInfo.name)) {
                 TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
                 Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
             }

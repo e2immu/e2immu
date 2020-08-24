@@ -79,12 +79,9 @@ public class TestNullParameterChecks extends CommonTestRunner {
     };
 
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("method9".equals(methodInfo.name) && iteration > 0) {
-                Assert.assertTrue(numberedStatement.errorValue.isSet());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method9".equals(d.methodInfo.name) && d.iteration > 0) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
     };
 

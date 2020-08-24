@@ -72,7 +72,7 @@ public class StatementAnalyser {
                 String statementId = statement.streamIndices();
                 variableProperties.setCurrentStatement(statement);
 
-                if (variableProperties.conditionalManager.getConditional() == BoolValue.FALSE) {
+                if (variableProperties.conditionManager.getCondition() == BoolValue.FALSE) {
                     variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
                 }
 
@@ -89,7 +89,11 @@ public class StatementAnalyser {
                     });
                 }
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
-                    statementAnalyserVisitor.visit(((VariableProperties) evaluationContext).iteration, methodInfo, statement, variableProperties.conditionalManager.getConditional());
+                    statementAnalyserVisitor.visit(
+                            new StatementAnalyserVisitor.Data(
+                                    ((VariableProperties) evaluationContext).iteration, methodInfo, statement, statement.streamIndices(),
+                                    variableProperties.conditionManager.getCondition(),
+                                    variableProperties.conditionManager.getState()));
                 }
 
                 if (statement.statement instanceof ReturnStatement || statement.statement instanceof ThrowStatement) {
@@ -123,7 +127,7 @@ public class StatementAnalyser {
                 startStatement.neverContinues.set(neverContinues);
             }
             if (!startStatement.escapes.isSet()) {
-                if (variableProperties.conditionalManager.delayedConditional()) {
+                if (variableProperties.conditionManager.delayedCondition()) {
                     log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.streamIndices());
                 } else {
                     log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
@@ -164,8 +168,8 @@ public class StatementAnalyser {
 
     // whatever that has not been picked up by the notNull and the size escapes
     private static void precondition(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Value precondition = variableProperties.conditionalManager.escapeCondition(variableProperties);
-        if (precondition != null) {
+        Value precondition = variableProperties.conditionManager.escapeCondition(variableProperties);
+        if (precondition != UnknownValue.EMPTY) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
             if (atLeastFieldOrParameterInvolved) {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
@@ -181,8 +185,8 @@ public class StatementAnalyser {
                 Set<Variable> variables = precondition.variables();
                 for (Variable variable : variables) {
                     // we're guarding because we can have these escapes for sizes as well
-                    if (!startStatement.parent.removeVariablesFromConditional.isSet(variable)) {
-                        startStatement.parent.removeVariablesFromConditional.put(variable, true);
+                    if (!startStatement.parent.removeVariablesFromCondition.isSet(variable)) {
+                        startStatement.parent.removeVariablesFromCondition.put(variable, true);
                     }
                 }
             }
@@ -190,7 +194,7 @@ public class StatementAnalyser {
     }
 
     private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Set<Variable> nullVariables = variableProperties.conditionalManager.getNullConditionals(false, true, true);
+        Set<Variable> nullVariables = variableProperties.conditionManager.findIndividualNullConditions();
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
             ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -205,14 +209,14 @@ public class StatementAnalyser {
             // the not-null is already in the properties. we need to communicate this one level up.
 
             // we're guarding because we can have these escapes for sizes as well
-            if (!startStatement.parent.removeVariablesFromConditional.isSet(nullVariable)) {
-                startStatement.parent.removeVariablesFromConditional.put(nullVariable, true);
+            if (!startStatement.parent.removeVariablesFromCondition.isSet(nullVariable)) {
+                startStatement.parent.removeVariablesFromCondition.put(nullVariable, true);
             }
         }
     }
 
     private static void sizeEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
-        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionalManager.getSizeRestrictions(false, true);
+        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionManager.findIndividualSizeRestrictionsInCondition();
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
             Value negated = NegatedValue.negate(entry.getValue());
@@ -231,8 +235,8 @@ public class StatementAnalyser {
                 // the not-null is already in the properties. we need to communicate this one level up.
 
                 // we're guarding because we can have these escapes for not-nulls as well
-                if (!startStatement.parent.removeVariablesFromConditional.isSet(parameterInfo)) {
-                    startStatement.parent.removeVariablesFromConditional.put(parameterInfo, true);
+                if (!startStatement.parent.removeVariablesFromCondition.isSet(parameterInfo)) {
+                    startStatement.parent.removeVariablesFromCondition.put(parameterInfo, true);
                 }
             }
         }
@@ -464,8 +468,8 @@ public class StatementAnalyser {
         if (statement.statement instanceof IfElseStatement || statement.statement instanceof SwitchStatement) {
             Objects.requireNonNull(value);
 
-            Value previousConditional = variableProperties.conditionalManager.getConditional();
-            Value combinedWithConditional = variableProperties.conditionalManager.evaluateWithConditional(value);
+            Value previousConditional = variableProperties.conditionManager.getCondition();
+            Value combinedWithConditional = variableProperties.conditionManager.evaluateWithCondition(value);
             haveADefaultCondition = true;
 
             // we have no idea which of the 2 remains
@@ -598,9 +602,9 @@ public class StatementAnalyser {
         }
 
         if (allButLastSubStatementsEscape && haveADefaultCondition) {
-            variableProperties.conditionalManager.addToConditional(defaultCondition);
-            statement.removeVariablesFromConditional.visit((toRemove, b) ->
-                    variableProperties.conditionalManager.variableReassigned(toRemove));
+            variableProperties.conditionManager.addCondition(defaultCondition);
+            statement.removeVariablesFromCondition.visit((toRemove, b) ->
+                    variableProperties.conditionManager.variableReassigned(toRemove));
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
         }
 

@@ -200,12 +200,25 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Some properties change when a modifying method has been called on the variable; for example,
+     * adding an element to a @Size container may change the size.
+     * Other properties do not change, like nullity.
+     *
+     * @param variable a modifying method has been called on this variable.
+     */
     default void modifyingMethodAccess(Variable variable) {
     }
 
     default void copyMessages(Stream<Message> messageStream) {
     }
 
+    /**
+     * Calling methods with a precondition transfers this precondition from the method onto the current evaluation
+     * context.
+     *
+     * @param precondition the precondition to add to the current preconditions
+     */
     default void addPrecondition(Value precondition) {
     }
 }

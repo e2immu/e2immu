@@ -31,6 +31,7 @@
 :nn2: pass:normal[ `@NotNull2` ]
 :nn: pass:normal[ `@NotNull` ]
 :nullable: pass:normal[ `@Nullable` ]
+:size: pass:normal[ `@Size` ]
 :supportData: pass:normal[ `@SupportData` ]
 :variable:  pass:normal[ `@Variable` ]
 

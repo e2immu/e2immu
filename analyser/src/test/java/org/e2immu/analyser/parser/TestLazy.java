@@ -62,12 +62,9 @@ public class TestLazy extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if (iteration > 0 && "get".equals(methodInfo.name) && "2.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("null == localT", conditional.toString());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if (d.iteration > 0 && "get".equals(d.methodInfo.name) && "2.0.0".equals(d.statementId)) {
+            Assert.assertEquals("null == localT", d.condition.toString());
         }
     };
 

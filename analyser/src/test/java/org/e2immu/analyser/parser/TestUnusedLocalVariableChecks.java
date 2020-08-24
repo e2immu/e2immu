@@ -19,29 +19,29 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUnusedLocalVariableChecks.class);
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement, conditional) -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         // ERROR: t.trim() result is not used
-        if ("method1".equals(methodInfo.name) && "2".equals(statement.streamIndices())) {
-            Assert.assertTrue(statement.errorValue.get());
+        if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.get());
         }
 
-        if ("method2".equals(methodInfo.name)) {
-            if ("1".equals(statement.streamIndices())) {
-                Assert.assertTrue(statement.errorValue.get()); // if switches
+        if ("method2".equals(d.methodInfo.name)) {
+            if ("1".equals(d.numberedStatement.streamIndices())) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }
-            if ("1.0.0".equals(statement.streamIndices())) {
-                Assert.assertTrue(statement.inErrorState());
-                Assert.assertFalse(statement.errorValue.isSet());
+            if ("1.0.0".equals(d.numberedStatement.streamIndices())) {
+                Assert.assertTrue(d.numberedStatement.inErrorState());
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
         }
 
-        if ("method3".equals(methodInfo.name)) {
-            if ("1.0.1".equals(statement.streamIndices())) {
-                Assert.assertTrue(statement.errorValue.get()); // if switches
+        if ("method3".equals(d.methodInfo.name)) {
+            if ("1.0.1".equals(d.numberedStatement.streamIndices())) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }
-            if ("1.0.1.0.0".equals(statement.streamIndices())) {
-                Assert.assertTrue(statement.inErrorState());
-                Assert.assertFalse(statement.errorValue.isSet());
+            if ("1.0.1.0.0".equals(d.numberedStatement.streamIndices())) {
+                Assert.assertTrue(d.numberedStatement.inErrorState());
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
         }
     };

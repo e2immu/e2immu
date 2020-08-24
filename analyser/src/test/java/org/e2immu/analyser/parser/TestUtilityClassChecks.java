@@ -18,10 +18,10 @@ public class TestUtilityClassChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
-        if ("print".equals(methodInfo.name)) {
-            if ("0".equals(numberedStatement.streamIndices())) {
-                Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception, because we know 'out'
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("print".equals(d.methodInfo.name)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet()); // no potential null pointer exception, because we know 'out'
             }
         }
     };

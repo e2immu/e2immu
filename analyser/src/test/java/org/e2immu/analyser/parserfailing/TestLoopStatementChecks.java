@@ -23,9 +23,8 @@ import java.util.Map;
  * following the @NotNull from `res` (1) into the return statement summary (2) into the method's return value (3)
  * <p>
  * Method 1:
- *
+ * <p>
  * https://github.com/bnaudts/e2immu/issues/12
- *
  */
 public class TestLoopStatementChecks extends CommonTestRunner {
     public TestLoopStatementChecks() {
@@ -54,12 +53,9 @@ public class TestLoopStatementChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("method3bis".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.isSet());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method3bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
     };
 

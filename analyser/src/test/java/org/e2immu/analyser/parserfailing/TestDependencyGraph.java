@@ -40,21 +40,18 @@ https://github.com/bnaudts/e2immu/issues/16
  */
 public class TestDependencyGraph extends CommonTestRunner {
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("sorted".equals(methodInfo.name) && "3.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", conditional.toString());
-                Map<Variable, Value> isr = conditional.filter(true, Value::isIndividualSizeRestriction).accepted;
-                Assert.assertEquals(1, isr.size());
-                Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
-                Assert.assertEquals("toDo", entry.getKey().name());
-                Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", entry.getValue().toString());
-            }
-            // we have to make sure that there is no "Empty loop" error raised
-            if ("sorted".equals(methodInfo.name) && "3.0.1".equals(numberedStatement.streamIndices())) {
-                Assert.assertFalse(numberedStatement.errorValue.isSet());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("sorted".equals(d.methodInfo.name) && "3.0.0".equals(d.statementId)) {
+            Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", d.condition.toString());
+            Map<Variable, Value> isr = d.condition.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
+            Assert.assertEquals(1, isr.size());
+            Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
+            Assert.assertEquals("toDo", entry.getKey().name());
+            Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", entry.getValue().toString());
+        }
+        // we have to make sure that there is no "Empty loop" error raised
+        if ("sorted".equals(d.methodInfo.name) && "3.0.1".equals(d.statementId)) {
+            Assert.assertFalse(d.numberedStatement.errorValue.isSet());
         }
     };
 

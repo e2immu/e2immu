@@ -19,11 +19,11 @@ public class TestNotModified1Checks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
 
         // checks the 2 errors
-        if ("useApply".equals(methodInfo.name) && Set.of("2", "3").contains(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        if ("useApply".equals(d.methodInfo.name) && Set.of("2", "3").contains(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
     };
 

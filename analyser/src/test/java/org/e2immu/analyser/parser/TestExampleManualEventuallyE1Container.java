@@ -29,16 +29,13 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("setNegativeJ".equals(methodInfo.name)) {
-                if ("0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertEquals("(-j) >= 0", conditional.toString());
-                }
-                if ("1".equals(numberedStatement.streamIndices()) && iteration > 0) {
-                    Assert.assertEquals("((-j) >= 0 and (-this.j) >= 0)", conditional.toString());
-                }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("setNegativeJ".equals(d.methodInfo.name)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertEquals("(-j) >= 0", d.condition.toString());
+            }
+            if ("1".equals(d.statementId) && d.iteration > 0) {
+                Assert.assertEquals("((-j) >= 0 and (-this.j) >= 0)", d.condition.toString());
             }
         }
     };

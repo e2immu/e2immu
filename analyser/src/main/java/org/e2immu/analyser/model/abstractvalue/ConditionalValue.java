@@ -145,7 +145,7 @@ public class ConditionalValue implements Value {
                     checkSizeRestriction(evaluationContext, NegatedValue.negate(condition), ifFalse, ifTrue));
         }
         if (variableProperty == VariableProperty.NOT_NULL) {
-            Map<Variable, Value> individualNullClauses = condition.filter(false, Value::isIndividualNotNullClause).accepted;
+            Map<Variable, Value> individualNullClauses = condition.filter(FilterMode.REJECT, Value::isIndividualNotNullClause).accepted;
 
             // a == null ? a : x => x == DELAY -> delay, worst case is a, which is 0 => 0
             if (ifTrue instanceof ValueWithVariable) {
@@ -169,7 +169,7 @@ public class ConditionalValue implements Value {
     }
 
     private static int checkSizeRestriction(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
-        Map<Variable, Value> sizeRestrictions = condition.filter(false, Value::isIndividualSizeRestriction).accepted;
+        Map<Variable, Value> sizeRestrictions = condition.filter(FilterMode.REJECT, Value::isIndividualSizeRestriction).accepted;
         if (ifTrue instanceof ValueWithVariable) {
             Value sizeRestriction = sizeRestrictions.get(((ValueWithVariable) ifTrue).variable);
             if (sizeRestriction != null) {

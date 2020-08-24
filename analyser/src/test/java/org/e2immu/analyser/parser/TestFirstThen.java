@@ -33,22 +33,19 @@ import java.util.Objects;
 
 public class TestFirstThen extends CommonTestRunner {
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("equals".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", conditional.toString());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("equals".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", d.condition.toString());
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
         if ("getFirst".equals(d.methodInfo.name) && "FirstThen.this.first".equals(d.variableName)) {
-            if("0".equals(d.statementId)) {
+            if ("0".equals(d.statementId)) {
                 Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
             }
-            if("1".equals(d.statementId)) {
+            if ("1".equals(d.statementId)) {
                 Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, (int) d.properties.get(VariableProperty.READ));
             }
         }

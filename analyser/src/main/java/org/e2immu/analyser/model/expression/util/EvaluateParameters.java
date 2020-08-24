@@ -92,7 +92,7 @@ public class EvaluateParameters {
             // from the result we either may infer another condition, or values to be set...
 
             // NOT_NULL
-            Map<Variable, Value> individualNullClauses = reEvaluated.filter(true, Value::isIndividualNotNullClause).accepted;
+            Map<Variable, Value> individualNullClauses = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause).accepted;
             for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
                 if (!(nullClauseEntry.getValue() instanceof NullValue) && nullClauseEntry.getKey() instanceof ParameterInfo) {
                     evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -100,7 +100,7 @@ public class EvaluateParameters {
             }
 
             // SIZE
-            Map<Variable, Value> sizeRestrictions = reEvaluated.filter(true, Value::isIndividualSizeRestriction).accepted;
+            Map<Variable, Value> sizeRestrictions = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
             for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
                 // now back to precondition world
                 if (sizeRestriction.getKey() instanceof ParameterInfo) {
@@ -112,7 +112,7 @@ public class EvaluateParameters {
             }
 
             // all the rest: preconditions
-            Value rest = reEvaluated.filter(true, Value::isIndividualNotNullClause, Value::isIndividualSizeRestriction).rest;
+            Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause, Value::isIndividualSizeRestriction).rest;
             if (rest != null) {
                 evaluationContext.addPrecondition(rest);
             }

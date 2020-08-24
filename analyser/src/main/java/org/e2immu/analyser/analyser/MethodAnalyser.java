@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
@@ -196,7 +195,7 @@ public class MethodAnalyser {
                                                    MethodAnalysis methodAnalysis,
                                                    VariableProperties methodProperties) {
         if (methodAnalysis.precondition.isSet()) return false; // already done
-        if (methodProperties.conditionalManager.delayedConditional()) {
+        if (methodProperties.conditionManager.delayedCondition()) {
             log(DELAYED, "Delaying preconditions, not all escapes set", methodInfo.distinguishingName());
             return false;
         }
@@ -344,7 +343,7 @@ public class MethodAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        Value.FilterResult filterResult = precondition.filter(true, Value::isIndividualFieldCondition);
+        Value.FilterResult filterResult = precondition.filter(Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
         if (filterResult.accepted.size() != 1) {
             log(MARK, "No @Mark annotation in {}: not all variables are fields of my type, or there are no variables in the precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);

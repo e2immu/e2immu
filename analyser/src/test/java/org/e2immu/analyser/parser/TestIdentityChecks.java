@@ -40,9 +40,9 @@ public class TestIdentityChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
-        if("idem3".equals(methodInfo.name) && "1.0.0".equals(numberedStatement.streamIndices())) {
-            Value value = numberedStatement.valueOfExpression.get();
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+            Value value = d.numberedStatement.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
             Value valueInside = ((PropertyWrapper) value).value;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);

@@ -27,27 +27,25 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("method7".equals(methodInfo.name)) {
-                if ("2".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.errorValue.get());
-                }
-                if ("2.2.0".equals(numberedStatement.streamIndices())) {
-                    Assert.assertTrue(numberedStatement.inErrorState());
-                    Assert.assertFalse(numberedStatement.errorValue.isSet());
-                }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method7".equals(d.methodInfo.name)) {
+            if ("2".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.get());
             }
-            if ("method3".equals(methodInfo.name) && "0.2.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.get()); // method evaluates to constant
-            }
-            if ("method3".equals(methodInfo.name) && "0.2.0.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.inErrorState());
-                Assert.assertFalse(numberedStatement.errorValue.isSet());
+            if ("2.2.0".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.inErrorState());
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
         }
+        if ("method3".equals(d.methodInfo.name) && "0.2.0".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.get()); // method evaluates to constant
+        }
+        if ("method3".equals(d.methodInfo.name) && "0.2.0.0.0".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.inErrorState());
+            Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+        }
     };
+
 
     MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
         @Override

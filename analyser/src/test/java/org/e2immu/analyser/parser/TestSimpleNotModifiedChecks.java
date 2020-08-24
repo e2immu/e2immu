@@ -109,12 +109,9 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("add4".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-                Assert.assertFalse(numberedStatement.errorValue.isSet()); // no potential null pointer exception
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("add4".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            Assert.assertFalse(d.numberedStatement.errorValue.isSet()); // no potential null pointer exception
         }
     };
 

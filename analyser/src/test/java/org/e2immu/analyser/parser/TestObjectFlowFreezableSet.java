@@ -127,20 +127,20 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
-        if ("method2".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
-        if ("method3".equals(methodInfo.name) && "3".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        if ("method3".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
         // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
-        if ("method9".equals(methodInfo.name)) {
-            if ("0".equals(numberedStatement.streamIndices())) {
-                Assert.assertFalse(numberedStatement.errorValue.isSet());
+        if ("method9".equals(d.methodInfo.name)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
-            if ("1".equals(numberedStatement.streamIndices())) {
-                Assert.assertTrue(numberedStatement.errorValue.isSet());
+            if ("1".equals(d.statementId)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
             }
         }
     };

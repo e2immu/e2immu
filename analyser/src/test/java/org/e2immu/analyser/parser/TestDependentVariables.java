@@ -16,19 +16,6 @@ public class TestDependentVariables extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, statement, conditional) -> {
-
-    };
-
-    /*
-     private static void checkArray2() {
-        int[] integers = {1, 2, 3};
-        int i = 0;
-        integers[i] = 3;
-        // ERROR: assignment is not used
-    }
-     */
-
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
         @Override
         public void visit(Data d) {
@@ -60,7 +47,6 @@ public class TestDependentVariables extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("DependentVariables", 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

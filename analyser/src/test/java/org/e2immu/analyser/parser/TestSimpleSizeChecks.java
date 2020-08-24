@@ -43,15 +43,15 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = (iteration, methodInfo, numberedStatement, conditional) -> {
-        if ("method1".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
-        if ("method1bis".equals(methodInfo.name) && "1".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        if ("method1bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
-        if ("method1bis".equals(methodInfo.name) && "2".equals(numberedStatement.streamIndices())) {
-            Assert.assertTrue(numberedStatement.errorValue.isSet());
+        if ("method1bis".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
     };
 

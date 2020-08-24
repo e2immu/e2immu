@@ -29,6 +29,9 @@ public class UnknownValue implements Value {
     // used if we don't know yet which value a variable will have
     public static final UnknownValue NO_VALUE = new UnknownValue("<no value>");
 
+    // used as default value for condition and state in ConditionManager
+    public static final UnknownValue EMPTY = new UnknownValue("<empty>");
+
     public static final UnknownValue RETURN_VALUE = new UnknownValue("<return value>");
     public static final UnknownValue NO_RETURN_VALUE = new UnknownValue("<no return value>");
     public static final UnknownValue NO_VALUE_PRECONDITION = new UnknownValue("<no precondition>");

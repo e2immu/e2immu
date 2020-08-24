@@ -32,7 +32,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.NotNull;
@@ -57,7 +56,7 @@ class VariableProperties implements EvaluationContext {
 
     // the following two variables can be assigned to as we progress through the statements
 
-    public final ConditionalManager conditionalManager;
+    public final ConditionManager conditionManager;
     private boolean guaranteedToBeReachedInCurrentBlock = true;
     private NumberedStatement currentStatement;
 
@@ -115,7 +114,7 @@ class VariableProperties implements EvaluationContext {
         this.depth = 0;
         this.debugConfiguration = debugConfiguration;
         this.parent = null;
-        conditionalManager = new ConditionalManager(null);
+        conditionManager = new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY);
         uponUsingConditional = null;
         this.currentMethod = currentMethod;
         this.currentField = currentField;
@@ -130,7 +129,7 @@ class VariableProperties implements EvaluationContext {
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
         return new VariableProperties(this, depth, methodInfo, null,
-                null, conditionalManager.getConditional(), uponUsingConditional,
+                null, conditionManager.getCondition(), conditionManager.getState(), uponUsingConditional,
                 methodInfo.isSynchronized(),
                 guaranteedToBeReachedByParentStatement);
     }
@@ -140,7 +139,8 @@ class VariableProperties implements EvaluationContext {
                                MethodInfo currentMethod,
                                FieldInfo currentField,
                                NumberedStatement currentStatement,
-                               Value conditional,
+                               Value condition,
+                               Value state,
                                Runnable uponUsingConditional,
                                boolean inSyncBlock,
                                boolean guaranteedToBeReachedByParentStatement) {
@@ -149,7 +149,7 @@ class VariableProperties implements EvaluationContext {
         this.debugConfiguration = parent.debugConfiguration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
-        this.conditionalManager = new ConditionalManager(conditional);
+        this.conditionManager = new ConditionManager(condition, state);
         this.currentMethod = currentMethod;
         this.currentStatement = currentStatement;
         this.currentType = parent.currentType;
@@ -238,7 +238,8 @@ class VariableProperties implements EvaluationContext {
                 currentMethod,
                 currentField,
                 currentStatement,
-                inSyncBlock || conditional == null ? conditionalManager.getConditional() : conditionalManager.combineWithConditional(conditional),
+                inSyncBlock || conditional == null ? conditionManager.getCondition() : conditionManager.combineWithCondition(conditional),
+                UnknownValue.EMPTY, // TODO !!!
                 uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
@@ -253,7 +254,8 @@ class VariableProperties implements EvaluationContext {
                 currentMethod,
                 currentField,
                 currentStatement,
-                conditional == null ? conditionalManager.getConditional() : conditionalManager.combineWithConditional(conditional),
+                conditional == null ? conditionManager.getCondition() : conditionManager.combineWithCondition(conditional),
+                UnknownValue.EMPTY, // TODO !!!
                 uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
@@ -851,11 +853,11 @@ class VariableProperties implements EvaluationContext {
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
         AboutVariable aboutVariable = findComplain(variable);
-        if (VariableProperty.NOT_NULL == variableProperty && conditionalManager.isNotNull(variable)) {
+        if (VariableProperty.NOT_NULL == variableProperty && conditionManager.isNotNull(variable)) {
             return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
         }
         if (VariableProperty.SIZE.equals(variableProperty)) {
-            Value sizeRestriction = conditionalManager.getSizeRestrictions(true, false).get(variable);
+            Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
             if (sizeRestriction != null) {
                 return sizeRestriction.encodedSizeRestriction();
             }
@@ -868,9 +870,9 @@ class VariableProperties implements EvaluationContext {
             return getProperty(((VariableValue) value).variable, variableProperty);
         }
         // we need to call the getProperty on value, but check the local condition...
-        if (!(value instanceof Constant) && conditionalManager.haveConditional() && !conditionalManager.conditionalInErrorState()) {
+        if (!(value instanceof Constant) && conditionManager.haveNonEmptyCondition() && !conditionManager.conditionInErrorState()) {
             if (VariableProperty.NOT_NULL == variableProperty) {
-                int notNull = conditionalManager.notNull(value);
+                int notNull = conditionManager.notNull(value);
                 if (notNull != Level.DELAY) return notNull;
             } // TODO Size?
         }
@@ -882,7 +884,7 @@ class VariableProperties implements EvaluationContext {
 
     @Override
     public void modifyingMethodAccess(Variable variable) {
-        conditionalManager.modifyingMethodAccess(variable);
+        conditionManager.modifyingMethodAccess(variable);
     }
 
     // there is special consideration for parameters of inline values, which are NOT KNOWN to the variable properties map.
@@ -944,7 +946,7 @@ class VariableProperties implements EvaluationContext {
             aboutVariable.setProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT, Level.TRUE);
             aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
                     Level.fromBool(guaranteedToBeReached(aboutVariable)));
-            conditionalManager.variableReassigned(at);
+            conditionManager.variableReassigned(at);
         }
     }
 

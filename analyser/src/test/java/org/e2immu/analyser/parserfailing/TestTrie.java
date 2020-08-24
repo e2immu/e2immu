@@ -57,18 +57,15 @@ public class TestTrie extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
 
-            if("get".equals(d.methodInfo.name) && "0".equals(d.statementId) && "node".equals(d.variableName)) {
+            if ("get".equals(d.methodInfo.name) && "0".equals(d.statementId) && "node".equals(d.variableName)) {
                 Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = new StatementAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo, NumberedStatement numberedStatement, Value conditional) {
-            if ("goTo".equals(methodInfo.name) && "1.0.0".equals(numberedStatement.streamIndices())) {
-                Assert.assertEquals("(not (null == node.map) and (not (i) + upToPosition) > 0)", conditional.toString());
-            }
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("goTo".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+            Assert.assertEquals("(not (null == node.map) and (not (i) + upToPosition) > 0)", d.condition.toString());
         }
     };
 
