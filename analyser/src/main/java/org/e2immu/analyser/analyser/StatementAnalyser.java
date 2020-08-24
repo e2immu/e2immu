@@ -72,7 +72,7 @@ public class StatementAnalyser {
                 String statementId = statement.streamIndices();
                 variableProperties.setCurrentStatement(statement);
 
-                if (variableProperties.conditionManager.getCondition() == BoolValue.FALSE) {
+                if (variableProperties.conditionManager.inErrorState()) {
                     variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
                 }
 
@@ -382,7 +382,7 @@ public class StatementAnalyser {
 
         // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
 
-        Value value;
+        final Value value;
         if (codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
             value = null;
         } else {
@@ -469,18 +469,21 @@ public class StatementAnalyser {
             Objects.requireNonNull(value);
 
             Value previousConditional = variableProperties.conditionManager.getCondition();
-            Value combinedWithConditional = variableProperties.conditionManager.evaluateWithCondition(value);
+            Value combinedWithCondition = variableProperties.conditionManager.evaluateWithCondition(value);
+            Value combinedWithState = variableProperties.conditionManager.evaluateWithState(value);
+
             haveADefaultCondition = true;
 
             // we have no idea which of the 2 remains
-            boolean noEffect = combinedWithConditional.equals(previousConditional) && combinedWithConditional != NO_VALUE;
+            boolean noEffect = combinedWithCondition != NO_VALUE && combinedWithState != NO_VALUE &&
+                    (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
+                    || combinedWithCondition.isConstant();
 
-            if (combinedWithConditional.isConstant() || noEffect) {
-                if (!statement.inErrorState()) {
-                    messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
-                    statement.errorValue.set(true);
-                }
+            if (noEffect && !statement.inErrorState()) {
+                messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
+                statement.errorValue.set(true);
             }
+
             uponUsingConditional = () -> {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statement.streamIndices());
                 if (!statement.errorValue.isSet()) statement.errorValue.set(true);
@@ -517,7 +520,7 @@ public class StatementAnalyser {
 
             // in a synchronized block, some fields can behave like variables
             boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
-            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childInSyncBlock(value, uponUsingConditional,
+            VariableProperties variablePropertiesWithValue = (VariableProperties) variableProperties.childPotentiallyInSyncBlock(value, uponUsingConditional,
                     inSyncBlock, statementsExecutedAtLeastOnce);
 
             computeVariablePropertiesOfBlock(startOfFirstBlock, variablePropertiesWithValue);
@@ -570,7 +573,8 @@ public class StatementAnalyser {
             // PART 10: create subContext, add parameters of sub statements, execute
 
             boolean statementsExecutedAtLeastOnce = subStatements.statementsExecutedAtLeastOnce.test(value);
-            VariableProperties subContext = (VariableProperties) variableProperties.child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
+            VariableProperties subContext = (VariableProperties) variableProperties
+                    .child(valueForSubStatement, uponUsingConditional, statementsExecutedAtLeastOnce);
 
             if (subStatements.localVariableCreation != null) {
                 LocalVariableReference lvr = new LocalVariableReference(subStatements.localVariableCreation, List.of());
@@ -601,8 +605,8 @@ public class StatementAnalyser {
             statement.breakAndContinueStatements.set(breakOrContinueStatementsInChildren);
         }
 
-        if (allButLastSubStatementsEscape && haveADefaultCondition) {
-            variableProperties.conditionManager.addCondition(defaultCondition);
+        if (allButLastSubStatementsEscape && haveADefaultCondition && !defaultCondition.isConstant()) {
+            variableProperties.conditionManager.addToState(defaultCondition);
             statement.removeVariablesFromCondition.visit((toRemove, b) ->
                     variableProperties.conditionManager.variableReassigned(toRemove));
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);

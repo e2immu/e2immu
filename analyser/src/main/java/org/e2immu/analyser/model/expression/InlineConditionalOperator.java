@@ -22,9 +22,7 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -35,26 +33,26 @@ import java.util.Objects;
 import java.util.Set;
 
 public class InlineConditionalOperator implements Expression {
-    public final Expression conditional;
+    public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
 
-    public InlineConditionalOperator(@NotNull Expression conditional,
+    public InlineConditionalOperator(@NotNull Expression condition,
                                      @NotNull Expression ifTrue,
                                      @NotNull Expression ifFalse) {
-        this.conditional = Objects.requireNonNull(conditional);
+        this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
     }
 
     @Override
     public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new InlineConditionalOperator(conditional.translate(translationMap), ifTrue.translate(translationMap), ifFalse.translate(translationMap));
+        return new InlineConditionalOperator(condition.translate(translationMap), ifTrue.translate(translationMap), ifFalse.translate(translationMap));
     }
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value c = conditional.evaluate(evaluationContext, evaluationVisitor, ForwardEvaluationInfo.NOT_NULL);
+        Value c = condition.evaluate(evaluationContext, evaluationVisitor, ForwardEvaluationInfo.NOT_NULL);
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         EvaluationContext copyForThen = evaluationContext.child(c, null, false);
@@ -77,7 +75,7 @@ public class InlineConditionalOperator implements Expression {
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return bracketedExpressionString(indent, conditional) + " ? " + bracketedExpressionString(indent, ifTrue)
+        return bracketedExpressionString(indent, condition) + " ? " + bracketedExpressionString(indent, ifTrue)
                 + " : " + bracketedExpressionString(indent, ifFalse);
     }
 
@@ -90,18 +88,18 @@ public class InlineConditionalOperator implements Expression {
     @NotNull
     @Independent
     public Set<String> imports() {
-        return Sets.union(Sets.union(conditional.imports(), ifFalse.imports()), ifTrue.imports());
+        return Sets.union(Sets.union(condition.imports(), ifFalse.imports()), ifTrue.imports());
     }
 
     @Override
     public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(conditional.typesReferenced(), ifFalse.typesReferenced(), ifTrue.typesReferenced());
+        return SetUtil.immutableUnion(condition.typesReferenced(), ifFalse.typesReferenced(), ifTrue.typesReferenced());
     }
 
     @Override
     @NotNull
     @Independent
     public List<Expression> subExpressions() {
-        return List.of(conditional, ifTrue, ifFalse);
+        return List.of(condition, ifTrue, ifFalse);
     }
 }

@@ -67,10 +67,10 @@ public interface EvaluationContext {
     // METHODS FOR THE MANAGEMENT OF HIERARCHY (NEW CONTEXT IN EACH BLOCK)
 
     @NotNull
-    default EvaluationContext childInSyncBlock(@NotNull Value conditional,
-                                               Runnable uponUsingConditional,
-                                               boolean inSyncBlock,
-                                               boolean guaranteedToBeReachedByParentStatement) {
+    default EvaluationContext childPotentiallyInSyncBlock(@NotNull Value conditional,
+                                                          Runnable uponUsingConditional,
+                                                          boolean inSyncBlock,
+                                                          boolean guaranteedToBeReachedByParentStatement) {
         throw new UnsupportedOperationException();
     }
 

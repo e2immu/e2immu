@@ -202,8 +202,8 @@ public class BinaryOperator implements Expression {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return constant;
         }
-        Value conditional = and ? l : NegatedValue.negate(l);
-        EvaluationContext child = evaluationContext.child(conditional, null, false);
+        Value condition = and ? l : NegatedValue.negate(l);
+        EvaluationContext child = evaluationContext.child(condition, null, false);
         Value r = rhs.evaluate(child, visitor, forward);
         if (r == constant) {
             evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);

@@ -76,6 +76,13 @@ In `method3`, the conjunction in the condition after two successive `if` stateme
 The result is a precondition, annotated as `@Precondition("(not (null == a) or not (null == b))")`.
 Note that, perhaps counter-intuitively, if we were to replace the `return` statement with a `throws` statement, it would have `a == null` as condition, and not `a == null && b != null`.
 
+The rules for adding and removing to condition and state are:
+
+* start the method with the state equal to the preconditions, if applicable;
+* when entering a conditional block, positive side (`if`), start a new `ConditionManager` with the statement's expression added to the current condition and state;
+* when a conditional block does not return, add the boolean complement to the state;
+* in case of assignments or modifying methods, clear the state (partially).
+
 ==== Computation of @Mark, @Only
 
 The presence of eventual properties (level 1 immutable, level 2 immutable, content not null, ...) follows from the computation of the {only} and {mark} annotations.

@@ -30,8 +30,7 @@ public class ConditionManager {
         return state;
     }
 
-    // adding a condition always adds to the state as well.
-
+    // adding a condition always adds to the state as well (testing only)
     public void addCondition(Value value) {
         if (value != BoolValue.TRUE) {
             condition = combineWithCondition(value);
@@ -51,9 +50,17 @@ public class ConditionManager {
      * @return the computed, real restriction
      */
     public Value evaluateWithCondition(Value value) {
+        return evaluateWith(condition, value);
+    }
+
+    public Value evaluateWithState(Value value) {
+        return evaluateWith(state, value);
+    }
+
+    private static Value evaluateWith(Value condition, Value value) {
         if (condition == UnknownValue.EMPTY) return value; // allow to go delayed
         // one delayed, all delayed
-        if (delayedCondition() || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
+        if (isDelayed(condition) || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
 
         // we take the condition as a given, and see if the value agrees
 
@@ -165,8 +172,9 @@ public class ConditionManager {
         return value == UnknownValue.NO_VALUE;
     }
 
-    public boolean conditionInErrorState() {
-        return BoolValue.TRUE == condition || BoolValue.FALSE == condition;
+    // TODO check: should TRUE also be part here?
+    public boolean inErrorState() {
+        return BoolValue.FALSE == state;
     }
 
     // used in assignments (it gets a new value, so whatever was known, must go)

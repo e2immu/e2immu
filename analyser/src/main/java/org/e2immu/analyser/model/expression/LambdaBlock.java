@@ -57,7 +57,7 @@ public class LambdaBlock implements Expression {
     @Override
     public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
         return new LambdaBlock(parameters.stream().map(v -> (ParameterInfo) translationMap.get(v)).collect(Collectors.toList()),
-                (Block)block.translate(translationMap),
+                (Block) block.translate(translationMap),
                 returnType, functionalType);
     }
 
@@ -110,7 +110,7 @@ public class LambdaBlock implements Expression {
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
-            EvaluationContext child = evaluationContext.child(null, null, false);
+            EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
             parameters.forEach(child::createLocalVariableOrParameter);
 
             boolean changes = false;

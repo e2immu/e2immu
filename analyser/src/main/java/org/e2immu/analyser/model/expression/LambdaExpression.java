@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
@@ -92,7 +93,7 @@ public class LambdaExpression implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationContext childContext = evaluationContext.child(null, null, false);
+        EvaluationContext childContext = evaluationContext.child(UnknownValue.EMPTY, null, false);
         parameters.forEach(pi -> childContext.createLocalVariableOrParameter(pi));
         Value v = expression.evaluate(childContext, visitor, forwardEvaluationInfo);
         evaluationContext.merge(childContext);

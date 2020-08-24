@@ -114,9 +114,15 @@ class VariableProperties implements EvaluationContext {
         this.depth = 0;
         this.debugConfiguration = debugConfiguration;
         this.parent = null;
-        conditionManager = new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY);
         uponUsingConditional = null;
         this.currentMethod = currentMethod;
+        Value initialState;
+        if (currentMethod != null && currentMethod.methodAnalysis.get().precondition.isSet()) {
+            initialState = currentMethod.methodAnalysis.get().precondition.get();
+        } else {
+            initialState = UnknownValue.EMPTY;
+        }
+        conditionManager = new ConditionManager(UnknownValue.EMPTY, initialState);
         this.currentField = currentField;
         this.currentType = currentType;
         this.dependencyGraphBestCase = new DependencyGraph<>();
@@ -229,24 +235,30 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public EvaluationContext childInSyncBlock(Value conditional,
-                                              Runnable uponUsingConditional,
-                                              boolean inSyncBlock,
-                                              boolean guaranteedToBeReachedByParentStatement) {
+    public EvaluationContext childPotentiallyInSyncBlock(Value condition,
+                                                         Runnable uponUsingConditional,
+                                                         boolean inSyncBlock,
+                                                         boolean guaranteedToBeReachedByParentStatement) {
+        // if we're in a sync block, than the condition must be ignored (it is not a condition, but the variable to be synced on)
+        // otherwise, we take a new initial state and condition,
+        Value newCondition = inSyncBlock ? conditionManager.getCondition() : conditionManager.combineWithCondition(condition);
+        Value newState = inSyncBlock ? conditionManager.getState() : conditionManager.combineWithState(condition);
+
         return new VariableProperties(this,
                 depth + 1,
                 currentMethod,
                 currentField,
                 currentStatement,
-                inSyncBlock || conditional == null ? conditionManager.getCondition() : conditionManager.combineWithCondition(conditional),
-                UnknownValue.EMPTY, // TODO !!!
+                newCondition,
+                newState,
                 uponUsingConditional,
                 inSyncBlock || this.inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
     }
 
     @Override
-    public EvaluationContext child(Value conditional, Runnable uponUsingConditional,
+    public EvaluationContext child(Value condition,
+                                   Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
 
         return new VariableProperties(this,
@@ -254,8 +266,8 @@ class VariableProperties implements EvaluationContext {
                 currentMethod,
                 currentField,
                 currentStatement,
-                conditional == null ? conditionManager.getCondition() : conditionManager.combineWithCondition(conditional),
-                UnknownValue.EMPTY, // TODO !!!
+                conditionManager.combineWithCondition(condition),
+                conditionManager.combineWithState(condition),
                 uponUsingConditional,
                 inSyncBlock,
                 guaranteedToBeReachedByParentStatement);
@@ -870,7 +882,8 @@ class VariableProperties implements EvaluationContext {
             return getProperty(((VariableValue) value).variable, variableProperty);
         }
         // we need to call the getProperty on value, but check the local condition...
-        if (!(value instanceof Constant) && conditionManager.haveNonEmptyCondition() && !conditionManager.conditionInErrorState()) {
+        // TODO more documentation; why is this if statement needed?
+        if (!(value instanceof Constant) && conditionManager.haveNonEmptyCondition() && !conditionManager.inErrorState()) {
             if (VariableProperty.NOT_NULL == variableProperty) {
                 int notNull = conditionManager.notNull(value);
                 if (notNull != Level.DELAY) return notNull;
