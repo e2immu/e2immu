@@ -54,23 +54,23 @@ public class TestFreezableSet1 extends CommonTestRunner {
             if (iteration > 0) {
                 if ("stream".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertEquals("this.frozen", methodAnalysis.preconditionForOnlyData.get().toString());
+                    Assert.assertEquals("this.frozen", methodAnalysis.preconditionForMarkAndOnly.get().toString());
                 }
                 if ("streamEarly".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
+                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForMarkAndOnly.get().toString());
                 }
                 if ("add".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.TRUE, modified);
-                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
+                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForMarkAndOnly.get().toString());
                 }
                 if ("freeze".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.TRUE, modified);
-                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForOnlyData.get().toString());
+                    Assert.assertEquals("not (this.frozen)", methodAnalysis.preconditionForMarkAndOnly.get().toString());
                 }
                 if ("isFrozen".equals(methodInfo.name)) {
                     Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertSame(UnknownValue.NO_VALUE, methodAnalysis.preconditionForOnlyData.get());
+                    Assert.assertSame(UnknownValue.NO_VALUE, methodAnalysis.preconditionForMarkAndOnly.get());
                 }
             }
         }

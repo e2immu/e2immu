@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -28,14 +27,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 
 public class TestFirstThen extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("equals".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", d.condition.toString());
+            Assert.assertEquals("(not (null == o) and o.getClass() == this.getClass() and not (o == this))", d.state.toString());
         }
     };
 

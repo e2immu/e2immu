@@ -248,9 +248,9 @@ public class MethodAnalyser {
     }
 
     private boolean computeOnlyMarkAnnotate(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.onlyData.isSet()) return false; // done
-        if (!methodAnalysis.preconditionForOnlyData.isSet()) return false;
-        Value precondition = methodAnalysis.preconditionForOnlyData.get();
+        if (methodAnalysis.markAndOnly.isSet()) return false; // done
+        if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) return false;
+        Value precondition = methodAnalysis.preconditionForMarkAndOnly.get();
         if (precondition == UnknownValue.NO_VALUE) return false;
         SetOnceMap<Value, String> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
         if (approvedPreconditions.isEmpty()) {
@@ -299,9 +299,9 @@ public class MethodAnalyser {
                 return assigned;
             });
         }
-        MethodAnalysis.OnlyData onlyData = new MethodAnalysis.OnlyData(precondition, markLabel, mark, after);
-        methodAnalysis.onlyData.set(onlyData);
-        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), onlyData);
+        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(precondition, markLabel, mark, after);
+        methodAnalysis.markAndOnly.set(markAndOnly);
+        log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         if (mark) {
             AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.mark.get().typeInfo,
                     List.of(new MemberValuePair("value", new StringConstant(markLabel))));
@@ -317,7 +317,7 @@ public class MethodAnalyser {
     }
 
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        if (methodAnalysis.preconditionForOnlyData.isSet()) return false; // already done
+        if (methodAnalysis.preconditionForMarkAndOnly.isSet()) return false; // already done
         boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
                 field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalValueKnown) {
@@ -337,7 +337,7 @@ public class MethodAnalyser {
         Value precondition = methodAnalysis.precondition.get();
         if (precondition == UnknownValue.EMPTY) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
+            methodAnalysis.preconditionForMarkAndOnly.set(UnknownValue.NO_VALUE);
             return true;
         }
         // at this point, the null and size checks on parameters have been removed.
@@ -346,13 +346,13 @@ public class MethodAnalyser {
         Value.FilterResult filterResult = precondition.filter(Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
         if (filterResult.accepted.size() != 1) {
             log(MARK, "No @Mark annotation in {}: not all variables are fields of my type, or there are no variables in the precondition", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
+            methodAnalysis.preconditionForMarkAndOnly.set(UnknownValue.NO_VALUE);
             return true;
         }
         Map.Entry<Variable, Value> entry = filterResult.accepted.entrySet().stream().findAny().orElseThrow();
         Value preconditionPart = entry.getValue();
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variable {} in {}", precondition, entry.getKey(), methodInfo.distinguishingName());
-        methodAnalysis.preconditionForOnlyData.set(preconditionPart);
+        methodAnalysis.preconditionForMarkAndOnly.set(preconditionPart);
         return true;
     }
 

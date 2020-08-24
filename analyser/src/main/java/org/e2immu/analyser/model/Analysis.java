@@ -339,7 +339,7 @@ public abstract class Analysis {
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
-            ((MethodAnalysis) this).writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(markValue), markValue, true, null));
+            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(new ContractMark(markValue), markValue, true, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -350,7 +350,7 @@ public abstract class Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            ((MethodAnalysis) this).writeOnlyData(new MethodAnalysis.OnlyData(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
+            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
         }
         return messages;
     }

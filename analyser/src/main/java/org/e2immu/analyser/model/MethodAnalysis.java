@@ -257,21 +257,21 @@ public class MethodAnalysis extends Analysis {
 
     public final SetOnce<Value> precondition = new SetOnce<>();
 
-    protected void writeOnlyData(OnlyData onlyData) {
-        ContractMark contractMark = new ContractMark(onlyData.markLabel);
-        preconditionForOnlyData.set(contractMark);
-        this.onlyData.set(onlyData);
+    protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
+        ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
+        preconditionForMarkAndOnly.set(contractMark);
+        this.markAndOnly.set(markAndOnly);
     }
 
-    // the name refers to the @Only (and @Mark) annotation. It is the data for this annotation.
+    // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
-    public static class OnlyData {
+    public static class MarkAndOnly {
         public final Value precondition;
         public final String markLabel;
         public final boolean mark;
         public final Boolean after; // null for a @Mark without @Only
 
-        public OnlyData(Value precondition, String markLabel, boolean mark, Boolean after) {
+        public MarkAndOnly(Value precondition, String markLabel, boolean mark, Boolean after) {
             this.precondition = precondition;
             this.mark = mark;
             this.markLabel = markLabel;
@@ -285,8 +285,8 @@ public class MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    public final SetOnce<Value> preconditionForOnlyData = new SetOnce<>();
-    public final SetOnce<OnlyData> onlyData = new SetOnce<>();
+    public final SetOnce<Value> preconditionForMarkAndOnly = new SetOnce<>();
+    public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
 
     // ************* object flow
 

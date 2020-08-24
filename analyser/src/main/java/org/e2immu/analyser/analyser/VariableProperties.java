@@ -239,7 +239,7 @@ class VariableProperties implements EvaluationContext {
                                                          Runnable uponUsingConditional,
                                                          boolean inSyncBlock,
                                                          boolean guaranteedToBeReachedByParentStatement) {
-        Value safeCondition = condition == null ? UnknownValue.EMPTY: condition;
+        Value safeCondition = condition == null ? UnknownValue.EMPTY : condition;
 
         // if we're in a sync block, than the condition must be ignored (it is not a condition, but the variable to be synced on)
         // otherwise, we take a new initial state and condition,
@@ -262,7 +262,7 @@ class VariableProperties implements EvaluationContext {
     public EvaluationContext child(Value condition,
                                    Runnable uponUsingConditional,
                                    boolean guaranteedToBeReachedByParentStatement) {
-        Value safeCondition = condition == null ? UnknownValue.EMPTY: condition;
+        Value safeCondition = condition == null ? UnknownValue.EMPTY : condition;
         return new VariableProperties(this,
                 depth + 1,
                 currentMethod,
@@ -883,13 +883,15 @@ class VariableProperties implements EvaluationContext {
         if (value instanceof VariableValue) {
             return getProperty(((VariableValue) value).variable, variableProperty);
         }
-        // we need to call the getProperty on value, but check the local condition...
-        // TODO more documentation; why is this if statement needed?
-        if (!(value instanceof Constant) && conditionManager.haveNonEmptyCondition() && !conditionManager.inErrorState()) {
+        // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
+        // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
+        // See TestSMapList
+        if (!(value instanceof Constant) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
             if (VariableProperty.NOT_NULL == variableProperty) {
                 int notNull = conditionManager.notNull(value);
                 if (notNull != Level.DELAY) return notNull;
-            } // TODO Size?
+            }
+            // TODO add SIZE support?
         }
         // redirect to Value.getProperty()
         // this is the only usage of this method; all other evaluation of a Value in an evaluation context

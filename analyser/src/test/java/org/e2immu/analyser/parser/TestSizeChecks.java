@@ -42,28 +42,28 @@ public class TestSizeChecks extends CommonTestRunner {
         }
         if ("method1".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
             // the first clause, ((-1) + input1.size(),?>=0) >= 0, has gone because the 2nd is stronger
-            Assert.assertEquals("((-1) + input1.size(),?>=0) >= 0", d.condition.toString());
+            Assert.assertEquals("((-1) + input1.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
             // the first clause, ((-1) + input1.size(),?>=0) >= 0, has gone because the 2nd is stronger
-            Assert.assertEquals("((-3) + input1.size(),?>=0) >= 0", d.condition.toString());
+            Assert.assertEquals("((-3) + input1.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
 
         if ("method2".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertEquals("Statement " + d.statementId, "((-1) + input2.size(),?>=0) >= 0", d.condition.toString());
+            Assert.assertEquals("Statement " + d.statementId, "((-1) + input2.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals("Statement " + d.statementId, "((-3) + input2.size(),?>=0) >= 0", d.condition.toString());
+            Assert.assertEquals("Statement " + d.statementId, "((-3) + input2.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
             Assert.assertTrue(d.numberedStatement.errorValue.isSet());
         }
 
         if ("method3".equals(d.methodInfo.name) && Set.of("1", "2.0.0").contains(d.statementId)) {
-            Assert.assertEquals("Statement " + d.statementId, "((-1) + input3.size(),?>=0) >= 0", d.condition.toString());
+            Assert.assertEquals("Statement " + d.statementId, "((-1) + input3.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method3".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             Assert.assertTrue(d.numberedStatement.errorValue.isSet());

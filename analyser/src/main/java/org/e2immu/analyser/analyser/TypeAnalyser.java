@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -289,7 +288,7 @@ public class TypeAnalyser {
         boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get()
                 .methodStream(methodsMode)
                 .filter(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
-                .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForOnlyData.isSet());
+                .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return false;
@@ -297,7 +296,7 @@ public class TypeAnalyser {
         boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get()
                 .methodStream(methodsMode).anyMatch(methodInfo ->
                         methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
-                                methodInfo.methodAnalysis.get().preconditionForOnlyData.get() == UnknownValue.NO_VALUE);
+                                methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get() == UnknownValue.NO_VALUE);
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             return false;
@@ -307,7 +306,7 @@ public class TypeAnalyser {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(methodsMode)) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
-                Value precondition = methodInfo.methodAnalysis.get().preconditionForOnlyData.get();
+                Value precondition = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
                 if (!tempApproved.containsKey(precondition)) {
                     String markLabel = "mark" + (count > 0 ? ("" + count) : "");
                     tempApproved.put(precondition, markLabel);

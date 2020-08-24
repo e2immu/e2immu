@@ -1,12 +1,9 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Value;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,7 +15,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         if ("setNegativeJ".equals(methodInfo.name)) {
             if (iteration > 0) {
                 Assert.assertEquals("((-j) >= 0 and (-this.j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
-                Assert.assertEquals("(-this.j) >= 0", methodInfo.methodAnalysis.get().preconditionForOnlyData.get().toString());
+                Assert.assertEquals("(-this.j) >= 0", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
             }
         }
     };

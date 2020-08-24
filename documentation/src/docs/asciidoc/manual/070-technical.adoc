@@ -93,7 +93,7 @@ The analyser associates eventuality with a precondition on a field (or technical
 Methods that guard against the precondition are _before_ the mark, methods that guard against the boolean complement are _after_ the mark.
 We define a guard here as the throwing of a run-time exception when the field's value does not satisfy the condition.
 
-Each method holds information about such a precondition in `SetOnce<OnlyData> onlyData`.
+Each method holds information about such a precondition in `SetOnce<OnlyData> markAndOnly`.
 The `MethodAnalyser` computes the information in `computeOnlyMarkPrepWork` and `computeOnlyMarkAnnotate`.
 
 Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<Value, String> approvedPreconditions` in `TypeAnalysis`.

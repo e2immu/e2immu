@@ -159,8 +159,8 @@ public class ConditionManager {
     }
 
 
-    public boolean haveNonEmptyCondition() {
-        return condition != UnknownValue.EMPTY;
+    public boolean haveNonEmptyState() {
+        return state != UnknownValue.EMPTY;
     }
 
     // we need a system to be able to delay conditionals, when they are based on the value of fields
@@ -176,7 +176,6 @@ public class ConditionManager {
         return value == UnknownValue.NO_VALUE;
     }
 
-    // TODO check: should TRUE also be part here?
     public boolean inErrorState() {
         return BoolValue.FALSE == state;
     }

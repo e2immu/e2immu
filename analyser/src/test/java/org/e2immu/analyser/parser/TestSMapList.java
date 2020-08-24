@@ -36,13 +36,19 @@ public class TestSMapList extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("list".equals(d.methodInfo.name) && "list".equals(d.variableName) && "3".equals(d.statementId)) {
             Assert.assertEquals("map.get(a)", d.currentValue.toString());
+
+            // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
             Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("3".equals(d.statementId) && "list".equals(d.methodInfo.name)) {
-            Assert.assertEquals("not (null == map.get(a))", d.condition.toString());
+            if (d.iteration == 0) {
+                Assert.assertEquals("(not (null == map.get(a)) and not (null == a))", d.state.toString());
+            } else {
+                Assert.assertEquals("not (null == map.get(a))", d.state.toString());
+            }
         }
     };
 
@@ -51,14 +57,14 @@ public class TestSMapList extends CommonTestRunner {
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("list".equals(methodInfo.name)) {
                 TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.0");
-                // TODO check this should be 3?
-                Assert.assertEquals(MultiLevel.EFFECTIVE, returnValue1.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
-                // this is the one that needs to combine with the null conditional
+                // this is the one that needs to combine with the state, which says that the value is NOT null
                 TransferValue returnValue2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("3");
-                Assert.assertEquals(MultiLevel.EFFECTIVE, returnValue2.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue2.properties.get(VariableProperty.NOT_NULL));
 
-                Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                // the end result
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
             if ("copy".equals(methodInfo.name)) {
                 TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
