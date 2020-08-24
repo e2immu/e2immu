@@ -207,12 +207,24 @@ public class TestComparisons extends CommonAbstractValue {
         Value and = new AndValue().append(iEq0, iGt0);
         Assert.assertEquals(BoolValue.FALSE, and);
 
-        Value wrappedI =  ConstrainedNumericValue.lowerBound(i, 0);
+        Value wrappedI = ConstrainedNumericValue.lowerBound(i, 0);
         Value iEq0Wrapped = EqualsValue.equals(wrappedI, IntValue.ZERO_VALUE);
         Assert.assertEquals("0 == i,?>=0", iEq0Wrapped.toString());
         Value iGt0Wrapped = GreaterThanZeroValue.greater(wrappedI, IntValue.ZERO_VALUE, false);
         Assert.assertEquals("((-1) + i,?>=0) >= 0", iGt0Wrapped.toString());
         Value andWrapped = new AndValue().append(iEq0Wrapped, iGt0Wrapped);
         Assert.assertEquals(BoolValue.FALSE, andWrapped);
+    }
+
+    @Test
+    public void testGEZeroLZero() {
+        // (((-1) + (-this.i)) >= 0 and this.i >= 0): if this fails, the problem is that this.i != this.i
+        Value iLt0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, false);
+        Assert.assertEquals("((-1) + (-i)) >= 0", iLt0.toString());
+        Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, true);
+        Assert.assertEquals("i >= 0", iGe0.toString());
+
+        Assert.assertEquals("false", new AndValue().append(iLt0, iGe0).toString());
+        Assert.assertEquals("false", new AndValue().append(iGe0, iLt0).toString());
     }
 }

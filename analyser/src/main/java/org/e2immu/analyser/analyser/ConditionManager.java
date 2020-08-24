@@ -168,6 +168,10 @@ public class ConditionManager {
         return isDelayed(condition);
     }
 
+    public boolean delayedState() {
+        return isDelayed(state);
+    }
+
     private static boolean isDelayed(Value value) {
         return value == UnknownValue.NO_VALUE;
     }

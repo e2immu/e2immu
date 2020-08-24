@@ -195,13 +195,13 @@ public class MethodAnalyser {
                                                    MethodAnalysis methodAnalysis,
                                                    VariableProperties methodProperties) {
         if (methodAnalysis.precondition.isSet()) return false; // already done
-        if (methodProperties.conditionManager.delayedCondition()) {
+        if (methodProperties.conditionManager.delayedState()) {
             log(DELAYED, "Delaying preconditions, not all escapes set", methodInfo.distinguishingName());
             return false;
         }
         // take the last one of the top level statements
         Stream<Value> preconditionsFromStatements = numberedStatements.stream()
-                .filter(numberedStatement -> numberedStatement.indices.length == 1 &&
+                .filter(numberedStatement -> //numberedStatement.indices.length == 1 &&
                         numberedStatement.precondition.isSet())
                 .map(numberedStatement -> numberedStatement.precondition.get());
         Stream<Value> preconditionsFromMethods = methodProperties.streamPreconditions();
@@ -209,7 +209,7 @@ public class MethodAnalyser {
 
         Value precondition;
         if (preconditions.length == 0) {
-            precondition = UnknownValue.NO_VALUE_PRECONDITION;
+            precondition = UnknownValue.EMPTY;
         } else {
             precondition = new AndValue().append(preconditions);
         }
@@ -335,7 +335,7 @@ public class MethodAnalyser {
             return false;
         }
         Value precondition = methodAnalysis.precondition.get();
-        if (precondition == UnknownValue.NO_VALUE_PRECONDITION) {
+        if (precondition == UnknownValue.EMPTY) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForOnlyData.set(UnknownValue.NO_VALUE);
             return true;

@@ -34,7 +34,6 @@ public class UnknownValue implements Value {
 
     public static final UnknownValue RETURN_VALUE = new UnknownValue("<return value>");
     public static final UnknownValue NO_RETURN_VALUE = new UnknownValue("<no return value>");
-    public static final UnknownValue NO_VALUE_PRECONDITION = new UnknownValue("<no precondition>");
 
     private final String msg;
 

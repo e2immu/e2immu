@@ -149,7 +149,7 @@ public class MethodAnalysis extends Analysis {
         // @Precondition
         if (precondition.isSet()) {
             Value value = precondition.get();
-            if (value != UnknownValue.NO_VALUE_PRECONDITION) {
+            if (value != UnknownValue.EMPTY) {
                 AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
                         .copyWith("value", value.toString());
                 annotations.put(ae, true);

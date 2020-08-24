@@ -78,10 +78,11 @@ Note that, perhaps counter-intuitively, if we were to replace the `return` state
 
 The rules for adding and removing to condition and state are:
 
-* start the method with the state equal to the preconditions, if applicable;
-* when entering a conditional block, positive side (`if`), start a new `ConditionManager` with the statement's expression added to the current condition and state;
-* when a conditional block does not return, add the boolean complement to the state;
-* in case of assignments or modifying methods, clear the state (partially).
+. start the method with the state equal to the preconditions, if applicable;
+. when entering a conditional block, start a new `ConditionManager` with the statement's expression added to the current condition and state;
+. when a conditional block does not return, add the boolean complement to the state;
+. in case of assignments or modifying methods, clear the state (partially);
+. #TODO# the state of parameters and effectively final fields travels up from deeper; as a result, we can define the precondition of the method as the remaining state;
 
 ==== Computation of @Mark, @Only
 

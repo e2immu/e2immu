@@ -29,7 +29,6 @@ public class TestConditionalChecks extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if(d.iteration > 0) return; // TODO
         if ("method1".equals(d.methodInfo.name)) {
             if ("0.0.0".equals(d.statementId)) {
                 Assert.assertEquals("(a and b)", d.condition.toString());
@@ -86,15 +85,17 @@ public class TestConditionalChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if (iteration == 0 && "method3".equals(methodInfo.name)) {
-                ParameterInfo a = methodInfo.methodInspection.get().parameters.get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, a.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                ParameterInfo b = methodInfo.methodInspection.get().parameters.get(1);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, b.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if (iteration == 0 && "method3".equals(methodInfo.name)) {
+            ParameterInfo a = methodInfo.methodInspection.get().parameters.get(0);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, a.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            ParameterInfo b = methodInfo.methodInspection.get().parameters.get(1);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, b.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+
+        if ("method1".equals(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().precondition.isSet());
+            Assert.assertSame(UnknownValue.EMPTY, methodInfo.methodAnalysis.get().precondition.get());
         }
     };
 
