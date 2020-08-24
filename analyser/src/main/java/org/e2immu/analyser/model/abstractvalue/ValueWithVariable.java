@@ -22,6 +22,12 @@ public abstract class ValueWithVariable implements Value {
     protected final EvaluationContext evaluationContext;
 
     @Override
+    public boolean isNumeric() {
+        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        return typeInfo.isNumericPrimitive() || typeInfo.isNumericPrimitiveBoxed();
+    }
+
+    @Override
     public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
         int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
@@ -61,6 +67,9 @@ public abstract class ValueWithVariable implements Value {
 
     @Override
     public String toString() {
+        if (variable instanceof FieldReference) {
+            return "this." + variable.name();
+        }
         return variable.name();
     }
 

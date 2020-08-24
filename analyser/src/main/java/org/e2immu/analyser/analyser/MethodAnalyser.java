@@ -295,6 +295,8 @@ public class MethodAnalyser {
                 TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
                 boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+
+                // TODO now check the assignment value; is it in line with the precondition?
                 return assigned;
             });
         }

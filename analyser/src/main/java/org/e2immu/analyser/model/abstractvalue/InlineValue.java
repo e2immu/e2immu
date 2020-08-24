@@ -25,6 +25,11 @@ public class InlineValue implements Value {
     }
 
     @Override
+    public boolean isNumeric() {
+        return value.isNumeric();
+    }
+
+    @Override
     public int order() {
         return ORDER_INLINE_METHOD;
     }

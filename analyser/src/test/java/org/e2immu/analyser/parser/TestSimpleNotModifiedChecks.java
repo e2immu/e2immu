@@ -32,7 +32,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                     FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set3", d.currentValue.toString());
+                    Assert.assertEquals("this.set3", d.currentValue.toString());
                 }
             }
         }
@@ -44,7 +44,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                     Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                     FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("set4", d.currentValue.toString());
+                    Assert.assertEquals("this.set4", d.currentValue.toString());
                 }
             }
             if ("1".equals(d.statementId) && d.iteration > 1) {

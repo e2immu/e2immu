@@ -79,6 +79,10 @@ public interface Value extends Comparable<Value> {
 
     int order();
 
+    default boolean isNumeric() {
+        return false;
+    }
+
     @Override
     default int compareTo(Value v) {
         return ValueComparator.SINGLETON.compare(this, v);

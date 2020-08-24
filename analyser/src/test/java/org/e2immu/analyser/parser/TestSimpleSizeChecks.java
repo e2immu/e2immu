@@ -33,7 +33,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         }
         if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
             if (d.iteration > 0) {
-                Assert.assertEquals("intSet", d.currentValue.toString());
+                Assert.assertEquals("this.intSet", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
 
                 if (d.iteration > 1) {

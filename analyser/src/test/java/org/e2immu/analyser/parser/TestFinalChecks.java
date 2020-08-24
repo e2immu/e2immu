@@ -36,7 +36,7 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
-                Assert.assertEquals("s1", d.currentValue.toString());
+                Assert.assertEquals("this.s1", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
                 if (d.iteration == 2) {
                     Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));

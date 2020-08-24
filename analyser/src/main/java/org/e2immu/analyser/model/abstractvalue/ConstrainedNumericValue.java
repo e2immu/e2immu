@@ -18,6 +18,11 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     public final boolean integer;
 
     @Override
+    public boolean isNumeric() {
+        return true;
+    }
+
+    @Override
     public Value getValue() {
         return value;
     }

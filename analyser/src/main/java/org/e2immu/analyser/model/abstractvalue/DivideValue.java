@@ -59,6 +59,10 @@ public class DivideValue extends PrimitiveValue {
         return new DivideValue(l, r, objectFlow);
     }
 
+    @Override
+    public boolean isNumeric() {
+        return true;
+    }
 
     @Override
     public boolean equals(Object o) {

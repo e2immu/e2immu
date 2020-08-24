@@ -44,7 +44,7 @@ public class TestContainerChecks extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, conditional);
                 } else {
-                    Assert.assertEquals("not (null == strings2b)", conditional.toString());
+                    Assert.assertEquals("not (null == this.strings2b)", conditional.toString());
                 }
             }
             // POTENTIAL NULL POINTER EXCEPTION

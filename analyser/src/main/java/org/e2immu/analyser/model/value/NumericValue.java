@@ -44,4 +44,9 @@ public interface NumericValue extends Value {
     default int encodedSizeRestriction() {
         return Level.encodeSizeEquals(getNumber().intValue());
     }
+
+    @Override
+    default boolean isNumeric() {
+        return true;
+    }
 }

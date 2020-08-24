@@ -21,6 +21,12 @@ public class TransferValue {
     public final SetOnce<Value> value = new SetOnce<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
+    // two fields related to the computation of @Mark, @Only: we like to know if there is a current
+    // conditional on the value; e.g. for field j, j > 0 when assigning this.j = j; so that we can compare with the eventuality precondition.
+    // we also need to know if this value is guaranteed to be executed (and does not sit inside an if statement, for example).
+
+    public final SetOnce<Value> conditionalOnValue = new SetOnce<>();
+    public final SetOnce<Boolean> guaranteedToBeExecuted = new SetOnce<>();
 
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.

@@ -14,7 +14,7 @@ public class TestComparisons extends CommonAbstractValue {
         GreaterThanZeroValue gt3 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(i, new IntValue(3), false);
         Assert.assertEquals("((-4) + i) >= 0", gt3.toString()); // i >= 4
         GreaterThanZeroValue notGt3 = (GreaterThanZeroValue) gt3.negate();
-        Assert.assertEquals("(3 + not (i)) >= 0", notGt3.toString()); // i <= 3
+        Assert.assertEquals("(3 + (-i)) >= 0", notGt3.toString()); // i <= 3
     }
 
     @Test
@@ -32,7 +32,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testXb2() {
         GreaterThanZeroValue lt3 = (GreaterThanZeroValue) GreaterThanZeroValue.less(i, new IntValue(3), false);
-        Assert.assertEquals("(2 + not (i)) >= 0", lt3.toString());
+        Assert.assertEquals("(2 + (-i)) >= 0", lt3.toString());
         GreaterThanZeroValue.XB xb = lt3.extract();
         Assert.assertNotNull(xb);
         Assert.assertTrue(lt3.allowEquals);
@@ -127,9 +127,9 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test2() {
         Value iLe0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, true);
-        Assert.assertEquals("not (i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-i) >= 0", iLe0.toString());
         Value iLe3 = GreaterThanZeroValue.less(i, new IntValue(3), true);
-        Assert.assertEquals("(3 + not (i)) >= 0", iLe3.toString());
+        Assert.assertEquals("(3 + (-i)) >= 0", iLe3.toString());
         Value and = new AndValue().append(iLe0, iLe3);
         Assert.assertEquals(iLe0, and);
     }
@@ -137,7 +137,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test3() {
         Value iLe0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, true);
-        Assert.assertEquals("not (i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-i) >= 0", iLe0.toString());
         Value iGe3 = GreaterThanZeroValue.greater(i, new IntValue(3), true);
         Assert.assertEquals("((-3) + i) >= 0", iGe3.toString());
         Value and = new AndValue().append(iLe0, iGe3);
@@ -151,7 +151,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, true);
         Assert.assertEquals("i >= 0", iGe0.toString());
         Value iLe3 = GreaterThanZeroValue.less(i, new IntValue(3), true);
-        Assert.assertEquals("(3 + not (i)) >= 0", iLe3.toString());
+        Assert.assertEquals("(3 + (-i)) >= 0", iLe3.toString());
         Value and = new AndValue().append(iGe0, iLe3);
         Assert.assertTrue(and instanceof AndValue);
         Value and2 = new AndValue().append(iLe3, iGe0);
@@ -173,7 +173,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, true);
         Assert.assertEquals("i >= 0", iGe0.toString());
         Value iLe0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, true);
-        Assert.assertEquals("not (i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-i) >= 0", iLe0.toString());
         Value and = new AndValue().append(iGe0, iLe0);
         Assert.assertEquals("0 == i", and.toString());
     }
@@ -183,7 +183,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, false);
         Assert.assertEquals("((-1) + i) >= 0", iGe0.toString());
         Value iLe0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, false);
-        Assert.assertEquals("((-1) + not (i)) >= 0", iLe0.toString());
+        Assert.assertEquals("((-1) + (-i)) >= 0", iLe0.toString());
         Value and = new AndValue().append(iGe0, iLe0);
         Assert.assertEquals(BoolValue.FALSE, and);
         Value and2 = new AndValue().append(iLe0, iGe0);

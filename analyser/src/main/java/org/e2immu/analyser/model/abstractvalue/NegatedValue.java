@@ -111,6 +111,9 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
     @Override
     public String toString() {
+        if (value.isNumeric()) {
+            return "(-" + value + ")";
+        }
         return "not (" + value + ")";
     }
 

@@ -351,6 +351,10 @@ public class ComputeLinking {
                     changes = true;
                     tv.value.set(value);
                     // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
+                    Value conditional = methodProperties.conditionalManager.getConditional();
+                    if (conditional != null && conditional != UnknownValue.NO_VALUE) {
+                        tv.conditionalOnValue.set(conditional);
+                    }
                 }
             }
         }

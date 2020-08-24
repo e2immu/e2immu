@@ -40,7 +40,7 @@ public class PreconditionChecks {
     @Variable
     private int i;
 
-    @Precondition("i >= 0")
+    @Precondition("this.i >= 0")
     public void setPositive1(int j1) {
         if (i < 0) throw new UnsupportedOperationException();
         this.i = j1;
@@ -52,20 +52,20 @@ public class PreconditionChecks {
         this.i = j1;
     }
 
-    @Precondition("(i >= 0 and j2 >= 0)")
+    @Precondition("(this.i >= 0 and j2 >= 0)")
     public void setPositive3(int j2) {
         if (i < 0) throw new UnsupportedOperationException();
         if (j2 < 0) throw new IllegalArgumentException();
         this.i = j2;
     }
 
-    @Precondition("(i >= 0 and j3 >= 0)")
+    @Precondition("(this.i >= 0 and j3 >= 0)")
     public void setPositive4(int j3) {
         if (i < 0 || j3 < 0) throw new UnsupportedOperationException();
         this.i = j3;
     }
 
-    @Precondition("(i >= 0 and j2 >= 0)")
+    @Precondition("(this.i >= 0 and j2 >= 0)")
     public void setPositive5(int j2) {
         if (i < 0) throw new UnsupportedOperationException();
         // the analyser should note that i>=0 is redundant
