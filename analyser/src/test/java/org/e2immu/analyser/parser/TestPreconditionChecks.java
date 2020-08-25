@@ -67,6 +67,7 @@ public class TestPreconditionChecks extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.state);
             } else {
                 Assert.assertEquals("ii >= 0", d.state.toString());
+                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
             }
         }
     };
@@ -83,7 +84,7 @@ public class TestPreconditionChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("PreconditionChecks", 0, new DebugConfiguration.Builder()
+        testClass("PreconditionChecks", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

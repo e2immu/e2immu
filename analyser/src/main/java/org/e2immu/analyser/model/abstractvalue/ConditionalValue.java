@@ -53,12 +53,14 @@ public class ConditionalValue implements Value {
         return objectFlow;
     }
 
-    public static Value conditionalValue(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+    public static Value conditionalValue(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+        Value condition = checkState(evaluationContext.getCurrentState(), conditionBeforeState);
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;
             evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
             return first ? ifTrue : ifFalse;
         }
+
         Value edgeCase = edgeCases(condition, ifTrue, ifFalse);
         if (edgeCase != null) return edgeCase;
 
@@ -69,6 +71,15 @@ public class ConditionalValue implements Value {
         }
         return new ConditionalValue(condition, ifTrue, ifFalse, objectFlow);
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
+    }
+
+    private static Value checkState(Value state, Value condition) {
+        Value and = new AndValue().append(state, condition);
+        if (and.equals(condition)) {
+            return BoolValue.TRUE;
+        }
+        if (and instanceof BoolValue) return and;
+        return condition;
     }
 
     private static Value edgeCases(Value condition, Value ifTrue, Value ifFalse) {

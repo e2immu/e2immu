@@ -108,6 +108,6 @@ public class PreconditionChecks {
             if (integer != null) throw new UnsupportedOperationException();
             integer = ii;
         }
-        return ii >= 0 ? ii : null;
+        return ii >= 0 ? ii : null; // Causes ERROR: evaluates to constant
     }
 }

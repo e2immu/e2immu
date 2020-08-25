@@ -221,4 +221,12 @@ public interface EvaluationContext {
      */
     default void addPrecondition(Value precondition) {
     }
+
+    /**
+     * Obtain the state from the condition manager
+     * @return
+     */
+    default Value getCurrentState() {
+        return UnknownValue.EMPTY;
+    }
 }

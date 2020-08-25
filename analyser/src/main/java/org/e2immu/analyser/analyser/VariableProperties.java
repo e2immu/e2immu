@@ -1196,4 +1196,9 @@ class VariableProperties implements EvaluationContext {
         }
         return objectFlow;
     }
+
+    @Override
+    public Value getCurrentState() {
+        return conditionManager.getState();
+    }
 }
