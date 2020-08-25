@@ -39,6 +39,7 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Boolean> escapes = new SetOnce<>(); // escapes, on the beginning of a block
     public SetOnce<Boolean> errorValue = new SetOnce<>(); // if we detected an error value on this statement
     public SetOnce<Value> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
+    public SetOnce<Value> state = new SetOnce<>(); // the state as it is after evaluating the statement
 
     // a set of break and continue statements in sub-blocks of this statement
     public SetOnce<List<BreakOrContinueStatement>> breakAndContinueStatements = new SetOnce<>();

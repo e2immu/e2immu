@@ -74,6 +74,7 @@ public class ConditionalValue implements Value {
     }
 
     private static Value checkState(Value state, Value condition) {
+        if (state == UnknownValue.EMPTY) return condition;
         Value and = new AndValue().append(state, condition);
         if (and.equals(condition)) {
             return BoolValue.TRUE;
