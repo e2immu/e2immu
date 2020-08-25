@@ -82,6 +82,7 @@ public class Message {
     public static final String ONLY_BEFORE = "Calling method annotated @Only(before=\"x\") when \"x\" has already been @Mark'ed";
     public static final String ONLY_AFTER = "Calling method annotated @Only(after=\"x\") when \"x\" has not yet been @Mark'ed";
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
+    public static final String DUPLICATE_MARK_LABEL = "Duplicate mark label";
 
     public static final String ILLEGAL_PARAMETER_INDEX_IN_EXPOSED = "Illegal parameter index in @Exposed";
 
@@ -91,48 +92,11 @@ public class Message {
 
     static {
         ImmutableMap.Builder<String, Severity> map = new ImmutableMap.Builder<>();
-        map.put(DIVISION_BY_ZERO, Severity.ERROR);
-        map.put(NULL_POINTER_EXCEPTION, Severity.ERROR);
-        map.put(INLINE_CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
-        map.put(EMPTY_LOOP, Severity.ERROR);
-        map.put(CONDITION_EVALUATES_TO_CONSTANT, Severity.ERROR);
-        map.put(METHOD_EVALUATES_TO_CONSTANT, Severity.ERROR);
-        map.put(CANNOT_FIND_METHOD_IN_SUPER_TYPE, Severity.ERROR);
-        map.put(METHOD_SHOULD_BE_MARKED_STATIC, Severity.ERROR);
-        map.put(ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE, Severity.ERROR);
-        map.put(PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO, Severity.ERROR);
-        map.put(UNREACHABLE_STATEMENT, Severity.ERROR);
-
-        map.put(MODIFICATION_NOT_ALLOWED, Severity.ERROR);
-
-        map.put(ANNOTATION_ABSENT, Severity.ERROR);
-        map.put(ANNOTATION_UNEXPECTEDLY_PRESENT, Severity.ERROR);
-        map.put(SIZE_EQUALS_MISSING, Severity.ERROR);
-        map.put(SIZE_MIN_MISSING, Severity.ERROR);
-        map.put(SIZE_WRONG_EQUALS_VALUE, Severity.ERROR);
-        map.put(SIZE_WRONG_MIN_VALUE, Severity.ERROR);
-        map.put(SIZE_COPY_MIN_MISSING, Severity.ERROR);
-        map.put(SIZE_COPY_MISSING, Severity.ERROR);
-        map.put(SIZE_NEED_PARAMETER, Severity.ERROR);
-        map.put(WRONG_CONSTANT, Severity.ERROR);
-        map.put(PRIVATE_FIELD_NOT_READ, Severity.ERROR);
-        map.put(NON_PRIVATE_FIELD_NOT_FINAL, Severity.ERROR);
-        map.put(EFFECTIVELY_FINAL_FIELD_NOT_RECORD, Severity.ERROR);
-        map.put(USELESS_ASSIGNMENT, Severity.ERROR);
-        map.put(UNUSED_LOCAL_VARIABLE, Severity.ERROR);
-        map.put(METHOD_NOT_ALLOWED_TO_CALL_MODIFYING_METHOD, Severity.ERROR);
-        map.put(METHOD_NOT_ALLOWED_TO_ASSIGN_TO_FIELD, Severity.ERROR);
-        map.put(PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT, Severity.ERROR);
-        map.put(WRONG_PRECONDITION, Severity.ERROR);
 
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
-
-        map.put(ONLY_AFTER, Severity.ERROR);
-        map.put(ONLY_BEFORE, Severity.ERROR);
-        map.put(ONLY_WRONG_MARK_LABEL, Severity.ERROR);
 
         SEVERITY_MAP = map.build();
     }
@@ -142,14 +106,12 @@ public class Message {
     public final Location location;
 
     public static Message newMessage(Location location, String message) {
-        Severity severity = SEVERITY_MAP.get(message);
-        if (severity == null) throw new UnsupportedOperationException();
+        Severity severity = SEVERITY_MAP.getOrDefault(message, Severity.ERROR);
         return new Message(severity, location, message);
     }
 
     public static Message newMessage(Location location, String message, String extra) {
-        Severity severity = SEVERITY_MAP.get(message);
-        if (severity == null) throw new UnsupportedOperationException("Need severity for " + message);
+        Severity severity = SEVERITY_MAP.getOrDefault(message, Severity.ERROR);
         return new Message(severity, location, message + ": " + extra);
     }
 

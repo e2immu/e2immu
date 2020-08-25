@@ -193,7 +193,7 @@ public abstract class Analysis {
         String mark;
         boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
         if (eventual) {
-            mark = ((TypeAnalysis) this).approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.joining(", "));
+            mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
         } else mark = "";
         Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, mark, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, String>> entry : map.entrySet()) {

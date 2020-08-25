@@ -133,8 +133,8 @@ public class FieldAnalysis extends Analysis {
 
         // @Final(after=), @Final, @Variable
         if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
-            String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
-            annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", marks), true);
+            String labels = owner.typeAnalysis.get().allLabelsRequiredForImmutable();
+            annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", labels), true);
         } else {
             if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
                 annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get(), true);

@@ -19,24 +19,33 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /* direct COPY-PASTE into the manual, @E1Container annotation */
 
-@E2Container(after = "mark")
+@E1Container(after = "j")
 class ExampleManualEventuallyE1Container {
 
-    @Final
-    private int i;
+    private final Set<Integer> integers = new HashSet<>();
 
-    @Final(after = "mark")
+    @Final(after = "j")
     private int j;
 
-    public ExampleManualEventuallyE1Container(int i) {
-        this.i = i;
+    @Modified
+    @Only(after = "j")
+    public boolean addIfGreater(int i) {
+        if (this.j <= 0) throw new UnsupportedOperationException("Not yet set");
+        if (i >= this.j) {
+            integers.add(i);
+            return true;
+        }
+        return false;
     }
 
     @NotModified
-    public int getI() {
-        return i;
+    public Set<Integer> getIntegers() {
+        return integers;
     }
 
     @NotModified
@@ -45,7 +54,7 @@ class ExampleManualEventuallyE1Container {
     }
 
     @Modified
-    @Mark("mark")
+    @Mark("j")
     public void setPositiveJ(int j) {
         if (j <= 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");
@@ -54,7 +63,7 @@ class ExampleManualEventuallyE1Container {
     }
 
     @Modified
-    @Only(before = "mark")
+    @Only(before = "j")
     public void setNegativeJ(int j) {
         if (j > 0) throw new UnsupportedOperationException();
         if (this.j > 0) throw new UnsupportedOperationException("Already set");

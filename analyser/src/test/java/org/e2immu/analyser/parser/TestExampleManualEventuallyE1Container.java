@@ -1,20 +1,27 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.TransferValue;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("addIfGreater".equals(methodInfo.name)) {
+            if (iteration > 0) {
+                Value precondition = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
+                Assert.assertEquals("this.j > 0", precondition.toString());
+                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(precondition).toString());
+            }
+        }
         if ("setNegativeJ".equals(methodInfo.name)) {
             if (iteration > 0) {
                 Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
@@ -55,12 +62,26 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if (iteration > 1) {
+            Assert.assertEquals(1, typeInfo.typeAnalysis.get().approvedPreconditions.size());
+            Assert.assertEquals("j=(-this.j) >= 0", typeInfo.typeAnalysis.get().approvedPreconditions.stream()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(";")));
+        }
+        Set<ParameterizedType> supportData = typeInfo.typeAnalysis.get().supportDataTypes.get();
+        Assert.assertEquals(1, supportData.size());
+        ParameterizedType supportDataType = supportData.stream().findAny().orElseThrow();
+        Assert.assertEquals("java.util.Set<java.lang.Integer>", supportDataType.detailedString());
+    };
+
     @Test
     public void test() throws IOException {
         testClass("ExampleManualEventuallyE1Container", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBeforeTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

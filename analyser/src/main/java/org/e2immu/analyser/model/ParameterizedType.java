@@ -571,14 +571,8 @@ public class ParameterizedType {
     }
 
     private boolean checkBoxing(TypeInfo primitiveType) {
-        return primitiveType == Primitives.PRIMITIVES.longTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedLongTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.intTypeInfo && typeInfo == Primitives.PRIMITIVES.integerTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.shortTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedShortTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.byteTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedByteTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.charTypeInfo && typeInfo == Primitives.PRIMITIVES.characterTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.booleanTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedBooleanTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.floatTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedFloatTypeInfo ||
-                primitiveType == Primitives.PRIMITIVES.doubleTypeInfo && typeInfo == Primitives.PRIMITIVES.boxedDoubleTypeInfo;
+        TypeInfo boxed = primitiveType.asParameterizedType().boxed();
+        return boxed == typeInfo;
     }
 
     public boolean isFunctionalInterface() {
@@ -727,24 +721,43 @@ public class ParameterizedType {
         );
     }
 
+    public TypeInfo boxed() {
+        if (typeInfo == Primitives.PRIMITIVES.longTypeInfo)
+            return Primitives.PRIMITIVES.boxedLongTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.intTypeInfo)
+            return Primitives.PRIMITIVES.integerTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.shortTypeInfo)
+            return Primitives.PRIMITIVES.boxedShortTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.byteTypeInfo)
+            return Primitives.PRIMITIVES.boxedByteTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.charTypeInfo)
+            return Primitives.PRIMITIVES.characterTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo)
+            return Primitives.PRIMITIVES.boxedBooleanTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.floatTypeInfo)
+            return Primitives.PRIMITIVES.boxedFloatTypeInfo;
+        if (typeInfo == Primitives.PRIMITIVES.doubleTypeInfo)
+            return Primitives.PRIMITIVES.boxedDoubleTypeInfo;
+        throw new UnsupportedOperationException();
+    }
+
 
     // I am the bigger type, the argument is the component
+    // TODO this needs much more work
     public boolean containsComponent(ParameterizedType component) {
 
         // String[], String
         if (arrays > component.arrays && numericIsAssignableFrom(component, true) != NOT_ASSIGNABLE) return true;
         // Set<X>, X; this is a bit of a hack, but one that's clear to understand
-        if (parameters.contains(component)) return true;
+        ParameterizedType boxedComponent = component.isPrimitive() ? component.boxed().asParameterizedType() : component;
+        if (parameters.contains(boxedComponent)) return true;
 
         TypeInfo bestType = bestTypeInfo();
         if (bestType != null) {
-
             // one of my fields is "component"
             for (FieldInfo fieldInfo : bestType.typeInspection.get().fields) {
-                if (fieldInfo.type.equals(component)) return true;
+                if (fieldInfo.type.equals(component) || fieldInfo.type.equals(boxedComponent)) return true;
             }
-
-
         }
         return false;
     }

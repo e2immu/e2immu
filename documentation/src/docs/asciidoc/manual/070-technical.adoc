@@ -4,19 +4,24 @@
 
 === Analysis
 
+==== Support data
+
+Whether a field is {supportData} or not is determined by its type.
+The analyser computes the support data types in `TypeAnalyser.analyseSupportDataTypes`.
+
 ==== Condition and state
 
 A method can have restrictions on the parameter and field values called _preconditions_.
 In general, these restrictions end up as a boolean expression in `MethodAnalysis.precondition`.
-The exception to this rule are the not-null and size restrictions, which become properties during evaluation, and are written out as separate annotations.
+The exception to this rule are the not-null and size restrictions on parameters, which become properties during evaluation, and are written out as separate annotations.
 
-Preconditions that participate in {mark} and {only} are stored in `MethodAnalysis.preconditionForOnlyData`.
-They are computed from normal preconditions, so size and null checks cannot serve as marker boolean expressions.
+Preconditions that participate in {mark} and {only} are stored in `MethodAnalysis.preconditionForMarkAndOnly`.
+They are computed from normal preconditions.
 
-As the analyser progresses through the blocks and statements, it keeps track of
+As the analyser progresses through the blocks and statements, it keeps track of:
 
-* the current _condition_, which is the boolean conjunction of all conditions in ever deeper `if` statements, (negated in the `else` block).
-* the current _variableState_, which is the boolean conjunction of all not-null not-size restrictions on variables.
+* the current _condition_, which is the boolean conjunction of all conditions in ever deeper `if` statements, (negated in the `else` block);
+* the current _state_, which is the boolean conjunction of all restrictions on variables.
 
 In the condition, top-level disjunctions indicate independent statements, while in the state, top-level conjunctions indicate independent statements:
 
@@ -82,7 +87,8 @@ The rules for adding and removing to condition and state are:
 . when entering a conditional block, start a new `ConditionManager` with the statement's expression added to the current condition and state;
 . when a conditional block does not return, add the boolean complement to the state;
 . in case of assignments or modifying methods, clear the state (partially);
-. #TODO# the state of parameters and effectively final fields travels up from deeper; as a result, we can define the precondition of the method as the remaining state;
+. the state of parameters and effectively final fields travels up from inside blocks, but only if these blocks are unconditional.
+This is most notably the case for a `synchronized` block.
 
 ==== Computation of @Mark, @Only
 
@@ -93,11 +99,11 @@ The analyser associates eventuality with a precondition on a field (or technical
 Methods that guard against the precondition are _before_ the mark, methods that guard against the boolean complement are _after_ the mark.
 We define a guard here as the throwing of a run-time exception when the field's value does not satisfy the condition.
 
-Each method holds information about such a precondition in `SetOnce<OnlyData> markAndOnly`.
+Each method holds information about such a precondition in `SetOnce<MarkAndOnly> markAndOnly`.
 The `MethodAnalyser` computes the information in `computeOnlyMarkPrepWork` and `computeOnlyMarkAnnotate`.
 
-Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<Value, String> approvedPreconditions` in `TypeAnalysis`.
-The keys are the different preconditions that have been approved for eventuality computation, the values are the associated mark strings.
+Then, the `TypeAnalyser` combines the information of the methods in `analyseOnlyMarkEventuallyE1Immutable`; the end result of the whole computation resides in `SetOnceMap<String, Value> approvedPreconditions` in `TypeAnalysis`.
+The keys are the different preconditions that have been approved for eventuality computation, the values are the associated mark strings consisting of the variable names of the fields in the precondition.
 Note: the current implementation relies on the precondition to be lifted using an assignment rather than a content change; the code resides in the level 1 immutability check.
 As a consequence, it is currently not possible to use the size of a collection, for example, as a precondition.
 

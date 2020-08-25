@@ -252,21 +252,20 @@ public class MethodAnalyser {
         if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) return false;
         Value precondition = methodAnalysis.preconditionForMarkAndOnly.get();
         if (precondition == UnknownValue.NO_VALUE) return false;
-        SetOnceMap<Value, String> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
+        SetOnceMap<String, Value> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
         if (approvedPreconditions.isEmpty()) {
             log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
             return false;
         }
+        String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
+        Value before = approvedPreconditions.get(markLabel);
         boolean after;
-        String markLabel;
-        if (approvedPreconditions.isSet(precondition)) {
+        if (before.equals(precondition)) {
             after = false;
-            markLabel = approvedPreconditions.get(precondition);
         } else {
             Value negated = NegatedValue.negate(precondition);
-            if (approvedPreconditions.isSet(negated)) {
+            if (before.equals(negated)) {
                 after = true;
-                markLabel = approvedPreconditions.get(negated);
             } else {
                 log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
                 if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.mark.get())) {
@@ -288,23 +287,8 @@ public class MethodAnalyser {
             log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             mark = false;
         } else {
-            // modifying method. we need to find a statement that reverses the precondition, or, at least, modifies one of the fields
-            Set<Variable> variables = precondition.variables();
-            mark = variables.stream().anyMatch(variable -> {
-                TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
-                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
-
-                if (assigned && tv.stateOnAssignment.isSet()) {
-                    Value state = tv.stateOnAssignment.get();
-                    if (isCompatible(state, precondition)) {
-                        log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
-                        return false;
-                    }
-                }
-
-                return assigned;
-            });
+            // for the before methods, we need to check again if we were mark or only
+            mark = !after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo);
         }
         MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(precondition, markLabel, mark, after);
         methodAnalysis.markAndOnly.set(markAndOnly);
@@ -321,11 +305,6 @@ public class MethodAnalyser {
             methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
         }
         return true;
-    }
-
-    private static boolean isCompatible(Value v1, Value v2) {
-        Value and = new AndValue().append(v1, v2);
-        return v1.equals(and) || v2.equals(and);
     }
 
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {

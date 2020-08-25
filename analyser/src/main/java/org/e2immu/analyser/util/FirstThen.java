@@ -33,7 +33,7 @@ import java.util.Objects;
  * @param <T> type of the final stage
  */
 
-@E2Container(after = "mark")
+@E2Container(after = "first")
 public class FirstThen<S, T> {
     @Linked(to = {"first"})
     private volatile S first;
@@ -68,7 +68,7 @@ public class FirstThen<S, T> {
      * @throws NullPointerException          when the final value is <code>null</code>
      * @throws UnsupportedOperationException when the object had already reached its final stage
      */
-    @Mark("mark")
+    @Mark("first")
     public void set(@NotNull T then) {
         Objects.requireNonNull(then);
         synchronized (this) {
@@ -86,7 +86,7 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    @Only(before = "mark")
+    @Only(before = "first")
     public S getFirst() {
         // TODO this is a bit convoluted, but in on the 3rd statement it does not (yet) recognize @Only
         if (first == null) throw new UnsupportedOperationException("Then has already been set");
@@ -105,7 +105,7 @@ public class FirstThen<S, T> {
      */
     @NotNull
     @NotModified
-    @Only(after = "mark")
+    @Only(after = "first")
     public T get() {
         // TODO we could have had a check on then directly, but then @Only would not be recognized
         if (first != null) throw new UnsupportedOperationException("Not yet set");

@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@E2Container(after = "freeze")
+@E2Container(after = "frozen")
 public class FreezableSet1 {
 
     @SupportData(type = AnnotationType.VERIFY_ABSENT) // not present, because @E2Container
@@ -16,10 +16,10 @@ public class FreezableSet1 {
 
     // here to see how preconditions work properly with parameters
     private static void check(int n) {
-        if(n < 0) throw new UnsupportedOperationException();
+        if (n < 0) throw new UnsupportedOperationException();
     }
 
-    @Only(after = "mark")
+    @Only(after = "frozen")
     @NotModified
     @NotNull1
     public Stream<String> stream() {
@@ -27,7 +27,7 @@ public class FreezableSet1 {
         return set.stream();
     }
 
-    @Only(before = "mark")
+    @Only(before = "frozen")
     @NotModified
     @NotNull1
     public Stream<String> streamEarly() {
@@ -35,14 +35,14 @@ public class FreezableSet1 {
         return set.stream();
     }
 
-    @Only(before = "mark")
+    @Only(before = "frozen")
     @Modified
     public void add(String s) {
         if (frozen) throw new UnsupportedOperationException();
         set.add(s);
     }
 
-    @Mark("mark")
+    @Mark("frozen")
     @Modified
     public void freeze() {
         if (frozen) throw new UnsupportedOperationException();

@@ -18,7 +18,9 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.SetOnce;
@@ -66,14 +68,19 @@ public class TypeAnalysis extends Analysis {
         return constantObjectFlows.values().stream();
     }
 
-    public final SetOnceMap<Value, String> approvedPreconditions = new SetOnceMap<>();
+    // from label to condition BEFORE (used by @Mark and @Only(before="label"))
+    public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
 
     public boolean isEventual() {
         return !approvedPreconditions.isEmpty();
     }
 
     public Set<String> marksRequiredForImmutable() {
-        return approvedPreconditions.stream().map(Map.Entry::getValue).collect(Collectors.toSet());
+        return approvedPreconditions.stream().map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+    }
+
+    public String allLabelsRequiredForImmutable() {
+        return String.join(",", marksRequiredForImmutable());
     }
 
     public final SetOnce<Set<ParameterizedType>> supportDataTypes = new SetOnce<>();

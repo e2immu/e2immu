@@ -24,6 +24,9 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.StringUtil;
@@ -166,7 +169,7 @@ public class TypeAnalyser {
                                 }
                             } catch (RuntimeException rte) {
                                 LOGGER.warn("Caught exception in method analysis of SAM of field " + fieldInfo.fullyQualifiedName());
-                                if(fieldInitialiser.artificial) {
+                                if (fieldInitialiser.artificial) {
                                     LOGGER.warn("Method's code is artificial:\n{}", fieldInitialiser.implementationOfSingleAbstractMethod.stream(0));
                                 }
                                 throw rte;
@@ -245,9 +248,13 @@ public class TypeAnalyser {
 
     private void onlyKeepSupportData(Set<ParameterizedType> typesOfMethodsAndConstructors, Set<ParameterizedType> supportData) {
         supportData.removeIf(ParameterizedType::cannotBeSupportData);
-        for (ParameterizedType parameterizedType : typesOfMethodsAndConstructors) {
-            supportData.removeIf(t -> t.containsComponent(parameterizedType));
-        }
+        supportData.removeIf(type -> {
+            boolean keep = typesOfMethodsAndConstructors.stream().anyMatch(type::containsComponent);
+            if (!keep) {
+                log(E2IMMUTABLE, "Removing {} because none of {} are components", type.detailedString(), typesOfMethodsAndConstructors);
+            }
+            return !keep;
+        });
     }
 
     /**
@@ -301,16 +308,30 @@ public class TypeAnalyser {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             return false;
         }
-        int count = 0;
-        Map<Value, String> tempApproved = new HashMap<>();
+
+        Map<String, Value> tempApproved = new HashMap<>();
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(methodsMode)) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
                 Value precondition = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
-                if (!tempApproved.containsKey(precondition)) {
-                    String markLabel = "mark" + (count > 0 ? ("" + count) : "");
-                    tempApproved.put(precondition, markLabel);
-                    count++;
+                Value negated = NegatedValue.negate(precondition);
+                String label = labelOfPreconditionForMarkAndOnly(precondition);
+                Value inMap = tempApproved.get(label);
+
+                boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+                if (isMark) {
+                    if (inMap == null) {
+                        tempApproved.put(label, precondition);
+                    } else if (inMap.equals(precondition)) {
+                        log(MARK, "OK, precondition for {} turns out to be 'before' already", label);
+                    } else if (inMap.equals(negated)) {
+                        log(MARK, "Precondition for {} turns out to be 'after', we switch");
+                        tempApproved.put(label, precondition);
+                    }
+                } else if (inMap == null) {
+                    tempApproved.put(label, precondition); // no idea yet if before or after
+                } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
+                    messages.add(Message.newMessage(new Location(methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
                 }
             }
         }
@@ -324,6 +345,35 @@ public class TypeAnalyser {
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return true;
+    }
+
+    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
+        Set<Variable> variables = precondition.variables();
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        return variables.stream().anyMatch(variable -> {
+            TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
+            boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
+            log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+
+            if (assigned && tv.stateOnAssignment.isSet()) {
+                Value state = tv.stateOnAssignment.get();
+                if (isCompatible(state, precondition)) {
+                    log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
+                    return false;
+                }
+            }
+
+            return assigned;
+        });
+    }
+
+    private static boolean isCompatible(Value v1, Value v2) {
+        Value and = new AndValue().append(v1, v2);
+        return v1.equals(and) || v2.equals(and);
+    }
+
+    public static String labelOfPreconditionForMarkAndOnly(Value value) {
+        return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
     }
 
     private boolean analyseContainer(TypeInfo typeInfo) {
