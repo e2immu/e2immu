@@ -2,7 +2,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
@@ -23,6 +22,8 @@ class AboutVariable {
 
     @NotNull
     private Value currentValue;
+    @NotNull
+    private Value stateOnAssignment; // NO_VALUE on delay, EMPTY when no info
 
     private ObjectFlow objectFlow;
 
@@ -62,6 +63,10 @@ class AboutVariable {
         return currentValue;
     }
 
+    public Value getStateOnAssignment() {
+        return stateOnAssignment;
+    }
+
     AboutVariable localCopy() {
         AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
         av.properties.putAll(properties);
@@ -80,8 +85,9 @@ class AboutVariable {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
-    void setCurrentValue(Value value, ObjectFlow objectFlow) {
+    void setCurrentValue(Value value, Value stateOnAssignment, ObjectFlow objectFlow) {
         this.currentValue = value;
+        this.stateOnAssignment = stateOnAssignment;
         this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 

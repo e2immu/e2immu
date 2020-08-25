@@ -559,9 +559,11 @@ class VariableProperties implements EvaluationContext {
     private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
         // this breaks an infinite NO_VALUE cycle
         if (aboutVariable.resetValue != UnknownValue.NO_VALUE) {
-            aboutVariable.setCurrentValue(aboutVariable.resetValue, instance.getObjectFlow());
+            aboutVariable.setCurrentValue(aboutVariable.resetValue,
+                    conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
+                    instance.getObjectFlow());
         } else {
-            aboutVariable.setCurrentValue(instance, instance.getObjectFlow());
+            aboutVariable.setCurrentValue(instance, UnknownValue.EMPTY, instance.getObjectFlow());
         }
         // we can only copy the INSTANCE_PROPERTIES like NOT_NULL for VariableValues
         // for other values, NOT_NULL in the properties means a restriction
@@ -583,7 +585,9 @@ class VariableProperties implements EvaluationContext {
         if (aboutVariable.initialValue instanceof Instance) {
             resetToNewInstance(aboutVariable, (Instance) aboutVariable.initialValue);
         } else {
-            aboutVariable.setCurrentValue(aboutVariable.initialValue, aboutVariable.initialValue.getObjectFlow());
+            aboutVariable.setCurrentValue(aboutVariable.initialValue,
+                    conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.initialValue),
+                    aboutVariable.initialValue.getObjectFlow());
             if (isRecordType(aboutVariable.variable)) {
                 List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
                 for (String name : recordNames) {
@@ -595,7 +599,9 @@ class VariableProperties implements EvaluationContext {
     }
 
     private void resetToUnknownValue(AboutVariable aboutVariable) {
-        aboutVariable.setCurrentValue(aboutVariable.resetValue, ObjectFlow.NO_FLOW);
+        aboutVariable.setCurrentValue(aboutVariable.resetValue,
+                conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
+                ObjectFlow.NO_FLOW);
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
             for (String name : recordNames) {
@@ -719,13 +725,14 @@ class VariableProperties implements EvaluationContext {
                 if (worstValue > Level.DELAY) {
                     localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
                 }
-                localAv.setCurrentValue(new VariableValue(this, localAv.variable, localAv.name), ObjectFlow.NO_FLOW);
+                Value variableValue = new VariableValue(this, localAv.variable, localAv.name);
+                localAv.setCurrentValue(variableValue, conditionManager.stateOfValue(localAv.variable, variableValue), ObjectFlow.NO_FLOW);
             } else {
                 // single context, guaranteed to be reached; include this has become irrelevant
                 AboutVariable av = assignmentContexts.get(0).variableProperties.get(name);
                 Value singleValue = av.getCurrentValue();
                 log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
-                localAv.setCurrentValue(singleValue, av.getObjectFlow());
+                localAv.setCurrentValue(singleValue, conditionManager.stateOfValue(localAv.variable, singleValue), av.getObjectFlow());
                 if (singleValue instanceof VariableValue) {
                     int notNull = assignmentContexts.get(0).getProperty(singleValue, VariableProperty.NOT_NULL);
                     localAv.setProperty(VariableProperty.NOT_NULL, notNull);
@@ -948,14 +955,14 @@ class VariableProperties implements EvaluationContext {
             } else if (value instanceof VariableValue) {
                 AboutVariable other = findComplain(((VariableValue) value).variable);
                 if (other.fieldReferenceState == SINGLE_COPY) {
-                    aboutVariable.setCurrentValue(value, value.getObjectFlow());
+                    aboutVariable.setCurrentValue(value, conditionManager.stateOfValue(at, value), value.getObjectFlow());
                 } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
-                    aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, ObjectFlow.NO_FLOW);
+                    aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, UnknownValue.EMPTY, ObjectFlow.NO_FLOW);
                 } else {
                     resetToUnknownValue(aboutVariable);
                 }
             } else {
-                aboutVariable.setCurrentValue(value, value.getObjectFlow());
+                aboutVariable.setCurrentValue(value, conditionManager.stateOfValue(at, value), value.getObjectFlow());
             }
             int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
             aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.incrementReadAssigned(assigned));

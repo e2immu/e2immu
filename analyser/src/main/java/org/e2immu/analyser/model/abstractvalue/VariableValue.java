@@ -70,6 +70,7 @@ public class VariableValue extends ValueWithVariable {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return evaluationContext.getObjectFlow(variable);
+        // null check because we misuse VV for temporary purposes
+        return evaluationContext == null ? ObjectFlow.NO_FLOW : evaluationContext.getObjectFlow(variable);
     }
 }

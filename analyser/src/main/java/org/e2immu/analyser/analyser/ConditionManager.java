@@ -190,6 +190,25 @@ public class ConditionManager {
         setState(removeClausesInvolving(state, variable, false));
     }
 
+    private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
+        if (value instanceof ValueWithVariable && variable.equals(((ValueWithVariable) value).variable)) {
+            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+        }
+        if (removeEqualityOnVariable && value instanceof EqualsValue) {
+            EqualsValue equalsValue = (EqualsValue) value;
+            if (equalsValue.lhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.lhs).variable)) {
+                return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.lhs).variable, value), UnknownValue.EMPTY);
+            }
+            if (equalsValue.rhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.rhs).variable)) {
+                return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.rhs).variable, value), UnknownValue.EMPTY);
+            }
+        }
+        if (value instanceof MethodValue && value.variables().contains(variable)) {
+            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+        }
+        return new Value.FilterResult(Map.of(), value);
+    }
+
     /**
      * null-clauses like if(a==null) a = ... (then the null-clause on a should go)
      * same applies to size()... if(a.isEmpty()) a = ...
@@ -199,24 +218,8 @@ public class ConditionManager {
      * @param removeEqualityOnVariable in the case of modifying method access, clauses with equality should STAY rather than be removed
      */
     private static Value removeClausesInvolving(Value conditional, Variable variable, boolean removeEqualityOnVariable) {
-        Value.FilterResult filterResult = conditional.filter(Value.FilterMode.ALL, value -> {
-            if (value instanceof ValueWithVariable && variable.equals(((ValueWithVariable) value).variable)) {
-                return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
-            }
-            if (removeEqualityOnVariable && value instanceof EqualsValue) {
-                EqualsValue equalsValue = (EqualsValue) value;
-                if (equalsValue.lhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.lhs).variable)) {
-                    return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.lhs).variable, value), UnknownValue.EMPTY);
-                }
-                if (equalsValue.rhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.rhs).variable)) {
-                    return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.rhs).variable, value), UnknownValue.EMPTY);
-                }
-            }
-            if (value instanceof MethodValue && value.variables().contains(variable)) {
-                return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
-            }
-            return new Value.FilterResult(Map.of(), value);
-        });
+        Value.FilterResult filterResult = conditional.filter(Value.FilterMode.ALL,
+                value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
         return filterResult.rest;
     }
 
@@ -241,4 +244,36 @@ public class ConditionManager {
         return NegatedValue.negate(filterResult.rest.reEvaluate(evaluationContext, translation));
     }
 
+    private static Value.FilterResult obtainVariableFilter(Variable variable, Value value) {
+        Set<Variable> variables = value.variables();
+        if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
+            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+        }
+        return new Value.FilterResult(Map.of(), value);
+    }
+
+    // note: very similar to remove, except that here we're interested in the actual value
+    private Value individualStateInfo(Variable variable) {
+        Value.FilterResult filterResult = state.filter(Value.FilterMode.ACCEPT,
+                value -> obtainVariableFilter(variable, value));
+        return filterResult.accepted.getOrDefault(variable, UnknownValue.EMPTY);
+    }
+
+    /**
+     * Example: this.j = j; j has a state j<0;
+     *
+     * @param assignmentTarget this.j
+     * @param value            variable value j
+     * @return state, translated to assignment target: this.j < 0
+     */
+    public Value stateOfValue(Variable assignmentTarget, Value value) {
+        if (value instanceof ValueWithVariable && haveNonEmptyState() && !delayedState()) {
+            Variable variable = ((ValueWithVariable) value).variable;
+            Value state = individualStateInfo(variable);
+            // now translate the state (j < 0) into state of the assignment target (this.j < 0)
+            return state.reEvaluate(null,
+                    Map.of(value, new VariableValue(null, assignmentTarget, assignmentTarget.name())));
+        }
+        return UnknownValue.EMPTY;
+    }
 }

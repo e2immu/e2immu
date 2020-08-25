@@ -17,16 +17,19 @@ public interface StatementAnalyserVariableVisitor {
         public final String variableName;
         public final Variable variable;
         public final Value currentValue;
+        public final Value stateOnAssignment;
         public final ObjectFlow objectFlow;
         public final Map<VariableProperty, Integer> properties;
 
         public Data(int iteration, MethodInfo methodInfo, String statementId,
-                    String variableName, Variable variable, Value currentValue, ObjectFlow objectFlow, Map<VariableProperty, Integer> properties) {
+                    String variableName, Variable variable, Value currentValue, Value stateOnAssignment,
+                    ObjectFlow objectFlow, Map<VariableProperty, Integer> properties) {
             this.iteration = iteration;
             this.methodInfo = methodInfo;
             this.variable = variable;
             this.variableName = variableName;
             this.currentValue = currentValue;
+            this.stateOnAssignment = stateOnAssignment;
             this.objectFlow = objectFlow;
             this.properties = properties;
             this.statementId = statementId;

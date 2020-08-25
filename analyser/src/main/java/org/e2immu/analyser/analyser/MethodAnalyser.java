@@ -295,7 +295,14 @@ public class MethodAnalyser {
                 boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
 
-                // TODO now check the assignment value; is it in line with the precondition?
+                if (assigned && tv.stateOnAssignment.isSet()) {
+                    Value state = tv.stateOnAssignment.get();
+                    if (isCompatible(state, precondition)) {
+                        log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
+                        return false;
+                    }
+                }
+
                 return assigned;
             });
         }
@@ -314,6 +321,11 @@ public class MethodAnalyser {
             methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
         }
         return true;
+    }
+
+    private static boolean isCompatible(Value v1, Value v2) {
+        Value and = new AndValue().append(v1, v2);
+        return v1.equals(and) || v2.equals(and);
     }
 
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
@@ -456,6 +468,7 @@ public class MethodAnalyser {
                 .map(Map.Entry::getValue).collect(Collectors.toList());
         TransferValue transferValue = new TransferValue();
         transferValue.value.set(result.value);
+        // TODO: state of result.value ??
         return ListUtil.immutableConcat(old, List.of(transferValue));
     }
 

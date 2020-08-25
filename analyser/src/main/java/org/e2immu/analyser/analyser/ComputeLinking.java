@@ -350,11 +350,11 @@ public class ComputeLinking {
                 if (value != UnknownValue.NO_VALUE && !tv.value.isSet()) {
                     changes = true;
                     tv.value.set(value);
-                    // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
-                    Value conditional = methodProperties.conditionManager.getCondition();
-                    if (conditional != null && conditional != UnknownValue.NO_VALUE) {
-                        tv.conditionalOnValue.set(conditional);
-                    }
+                }
+                // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
+                Value stateOnAssignment = aboutVariable.getStateOnAssignment();
+                if (stateOnAssignment != UnknownValue.NO_VALUE && stateOnAssignment != UnknownValue.EMPTY && !tv.stateOnAssignment.isSet()) {
+                    tv.stateOnAssignment.set(stateOnAssignment);
                 }
             }
         }

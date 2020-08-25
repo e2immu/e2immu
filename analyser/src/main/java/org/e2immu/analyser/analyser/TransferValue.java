@@ -25,7 +25,7 @@ public class TransferValue {
     // conditional on the value; e.g. for field j, j > 0 when assigning this.j = j; so that we can compare with the eventuality precondition.
     // we also need to know if this value is guaranteed to be executed (and does not sit inside an if statement, for example).
 
-    public final SetOnce<Value> conditionalOnValue = new SetOnce<>();
+    public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
     public final SetOnce<Boolean> guaranteedToBeExecuted = new SetOnce<>();
 
     // end product of the dependency analysis of linkage between the variables in a method
