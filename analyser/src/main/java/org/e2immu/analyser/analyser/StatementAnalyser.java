@@ -574,6 +574,10 @@ public class StatementAnalyser {
             if (count < startOfBlocks.size() - 1 && !subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
             }
+            // the last one escapes as well... then we should not add to the state
+            if(count == startOfBlocks.size() -1 && subStatementStart.neverContinues.get()) {
+                allButLastSubStatementsEscape = false;
+            }
         }
 
         if (!evaluationContextsGathered.isEmpty()) {
