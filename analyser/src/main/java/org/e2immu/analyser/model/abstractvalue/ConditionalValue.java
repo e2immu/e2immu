@@ -53,8 +53,17 @@ public class ConditionalValue implements Value {
         return objectFlow;
     }
 
-    public static Value conditionalValue(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+    public static Value conditionalValueCurrentState(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         Value condition = checkState(evaluationContext.getCurrentState(), conditionBeforeState);
+        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
+    }
+
+    public static Value conditionalValueWithState(EvaluationContext evaluationContext, Value conditionBeforeState, Value state, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+        Value condition = checkState(state, conditionBeforeState);
+        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
+    }
+
+    private static Value conditionalValueConditionResolved(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;
             evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);

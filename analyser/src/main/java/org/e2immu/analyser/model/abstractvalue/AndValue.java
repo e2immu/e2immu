@@ -73,6 +73,10 @@ public class AndValue extends PrimitiveValue {
         concat.addAll(this.values);
         recursivelyAdd(concat, Arrays.stream(values).collect(Collectors.toList()));
 
+        // some protection against EMPTY, coming in from state and preconditions
+        concat.removeIf(v -> v == UnknownValue.EMPTY);
+        if (concat.isEmpty()) return UnknownValue.EMPTY;
+
         // STEP 3: one-off observations
 
         if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {

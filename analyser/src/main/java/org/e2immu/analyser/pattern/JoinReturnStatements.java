@@ -4,7 +4,6 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -13,10 +12,8 @@ import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 /*
 
@@ -66,7 +63,7 @@ public class JoinReturnStatements {
         if (!last.valueOfExpression.isSet()) return DELAY;
         Value condition = last.valueOfExpression.get();
         // TODO check that statements in between do not modify the condition
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), elseTv.value.get(), ObjectFlow.NO_FLOW); // TODO ObjectFlow
+        Value res = ConditionalValue.conditionalValueCurrentState(evaluationContext, condition, thenTv.value.get(), elseTv.value.get(), ObjectFlow.NO_FLOW); // TODO ObjectFlow
         return new JoinResult(res, Set.of(idOfThenReturn, idOfElseReturn));
     }
 
@@ -87,6 +84,7 @@ public class JoinReturnStatements {
         NumberedStatement last = statements.get(n - 1);
         if (!(last.statement instanceof ReturnStatement)) return null;
         NumberedStatement ifStatement = null;
+        NumberedStatement beforeIfStatement = null;
         IfElseStatement ifElseStatement = null;
         for (int i = statements.size() - 1; i >= 0; i--) {
             NumberedStatement ns = statements.get(i);
@@ -94,6 +92,7 @@ public class JoinReturnStatements {
                 ifElseStatement = (IfElseStatement) ns.statement;
                 if (ifElseStatement.elseBlock == Block.EMPTY_BLOCK) {
                     ifStatement = ns;
+                    if (i >= 1) beforeIfStatement = statements.get(i - 1);
                     break;
                 }
             }
@@ -113,7 +112,13 @@ public class JoinReturnStatements {
 
         Value condition = ifStatement.valueOfExpression.get();
         //TODO ObjectFlow
-        Value res = ConditionalValue.conditionalValue(evaluationContext, condition, thenTv.value.get(), last.valueOfExpression.get(), ObjectFlow.NO_FLOW);
+
+        // after the if-statement containing a return, the current state has been changed. We revert to the state BEFORE the if statement.
+        Value stateBeforeIf = beforeIfStatement != null ? beforeIfStatement.state.get() :
+                methodInfo.methodAnalysis.get().precondition.isSet() ? methodInfo.methodAnalysis.get().precondition.get() : UnknownValue.EMPTY;
+
+        Value res = ConditionalValue.conditionalValueWithState(evaluationContext, condition, stateBeforeIf,
+                thenTv.value.get(), last.valueOfExpression.get(), ObjectFlow.NO_FLOW);
         return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));
     }
 

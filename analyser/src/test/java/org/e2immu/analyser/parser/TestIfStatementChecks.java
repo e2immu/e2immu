@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.Value;
@@ -33,7 +34,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
     }
      */
 
-    StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (d.methodInfo.name.equals("method4") && "res".equals(d.variableName)) {
             if ("0".equals(d.statementId)) {
                 Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
@@ -47,6 +48,14 @@ public class TestIfStatementChecks extends CommonTestRunner {
             } else if ("2".equals(d.statementId)) {
                 Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ));
             } else Assert.fail("Statement " + d.statementId);
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("method1".equals(d.methodInfo.name)) {
+            if("0".equals(d.statementId)) {
+                Assert.assertEquals("not (null == a)", d.numberedStatement.state.get().toString());
+            }
         }
     };
 
@@ -78,7 +87,8 @@ public class TestIfStatementChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("IfStatementChecks", 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

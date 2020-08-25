@@ -590,6 +590,12 @@ public class StatementAnalyser {
             log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
         }
 
+        // FINALLY, set the state
+
+        if (!variableProperties.conditionManager.delayedState() && !statement.state.isSet()) {
+            statement.state.set(variableProperties.conditionManager.getState());
+        }
+
         return changes;
     }
 
