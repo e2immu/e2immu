@@ -62,6 +62,13 @@ public class TestPreconditionChecks extends CommonTestRunner {
                 }
             }
         }
+        if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            if (d.iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.state);
+            } else {
+                Assert.assertEquals("ii >= 0", d.state.toString());
+            }
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {

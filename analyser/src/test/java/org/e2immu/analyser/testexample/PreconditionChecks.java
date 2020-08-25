@@ -1,9 +1,6 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.Precondition;
-import org.e2immu.annotation.Variable;
+import org.e2immu.annotation.*;
 
 public class PreconditionChecks {
 
@@ -100,5 +97,17 @@ public class PreconditionChecks {
         if (p1 <= 0) throw new UnsupportedOperationException();
         if (p1 < 2 && p2 <= 0) throw new UnsupportedOperationException();
         this.i = p1 > p2 ? p1 + 3 : p2;
+    }
+
+    private Integer integer;
+
+    @NotNull
+    public Integer setInteger(int ii) {
+        synchronized (this) {
+            if (ii < 0) throw new UnsupportedOperationException();
+            if (integer != null) throw new UnsupportedOperationException();
+            integer = ii;
+        }
+        return ii >= 0 ? ii : null;
     }
 }

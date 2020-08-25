@@ -665,6 +665,17 @@ class VariableProperties implements EvaluationContext {
             MultiLevel.value(aboutVariable.getProperty(ASSIGNED), 0) == Level.TRUE &&
                     (!aboutVariable.isLocalVariable() || aboutVariable.isLocalCopy());
 
+    private static Value.FilterResult localVariableFilter(Value value) {
+        Set<Variable> variables = value.variables();
+        if (variables.size() == 1) {
+            Variable variable = variables.stream().findAny().orElseThrow();
+            if (variable instanceof LocalVariableReference) {
+                return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+            }
+        }
+        return new Value.FilterResult(Map.of(), value);
+    }
+
     /**
      * So we have a number of sub-contexts all at the same level, some guaranteed to be executed,
      * some not. Assignments to variables of the higher level in the sub-level, have caused a local copy to be created.
@@ -696,7 +707,9 @@ class VariableProperties implements EvaluationContext {
             if (haveDelay) {
                 conditionManager.addToState(UnknownValue.NO_VALUE);
             } else {
-                // TODO we need to copy back, everything except state of local variables
+                Value allTogether = new AndValue().append(states.toArray(Value[]::new));
+                Value.FilterResult filterResult = allTogether.filter(Value.FilterMode.ACCEPT, VariableProperties::localVariableFilter);
+                conditionManager.addToState(filterResult.rest);
             }
         }
 

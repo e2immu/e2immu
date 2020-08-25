@@ -18,12 +18,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -49,53 +47,49 @@ public class TestLazy extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("t".equals(fieldInfo.name) && iteration > 0) {
-                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-            }
-            if ("supplier".equals(fieldInfo.name) && iteration > 0) {
-                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
-            }
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("t".equals(fieldInfo.name) && iteration > 0) {
+            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+        }
+        if ("supplier".equals(fieldInfo.name) && iteration > 0) {
+            Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (d.iteration > 0 && "get".equals(d.methodInfo.name) && "2.0.0".equals(d.statementId)) {
-            Assert.assertEquals("null == localT", d.condition.toString());
+        if (d.iteration > 0 && "get".equals(d.methodInfo.name)) {
+            if ("2.0.0".equals(d.statementId)) {
+                Assert.assertEquals("null == localT", d.state.toString());
+            }
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            FieldInfo supplier = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
-            FieldInfo t = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        FieldInfo supplier = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
+        FieldInfo t = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
 
-            if ("Lazy".equals(methodInfo.name)) {
-                TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
-                Assert.assertTrue(tv.value.isSet());
-            }
-            if ("get".equals(methodInfo.name)) {
-                TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
-                Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
+        if ("Lazy".equals(methodInfo.name)) {
+            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
+            Assert.assertTrue(tv.value.isSet());
+        }
+        if ("get".equals(methodInfo.name)) {
+            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
+            Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
 
-                TransferValue ret1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1.0.0");
-                TransferValue ret2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.1");
-                if (iteration >= 1) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
+            TransferValue ret1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1.0.0");
+            TransferValue ret2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.1");
+            if (iteration >= 1) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
 
-                    Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
-                    Set<Variable> linkedToT = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
-                            .entrySet().stream()
-                            .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
-                            .map(Map.Entry::getValue).findFirst().orElseThrow();
-                    // for now (and I believe it's correct, t will not be linked to supplier)
-                    Assert.assertFalse(linkedToT.isEmpty());
-                }
+                Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
+                Set<Variable> linkedToT = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
+                        .entrySet().stream()
+                        .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
+                        .map(Map.Entry::getValue).findFirst().orElseThrow();
+                // for now (and I believe it's correct, t will not be linked to supplier)
+                Assert.assertFalse(linkedToT.isEmpty());
             }
         }
     };

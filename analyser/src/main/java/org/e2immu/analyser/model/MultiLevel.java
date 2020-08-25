@@ -90,16 +90,16 @@ public class MultiLevel {
     }
 
     /**
-     * return the value (DELAY, TRUE, FALSE) at a given level
+     * return the value (DELAY, FALSE, EVENTUAL... EFFECTIVE) at a given level
      *
      * @param i     current value
      * @param level the level
      * @return the value restricted to that level
      */
     public static int value(int i, int level) {
-        assert i >= Level.DELAY;
         assert level >= 0;
-        if (i == Level.DELAY) return MultiLevel.DELAY;
+        // it is possible that Level.DELAY (-1) is sent in here
+        if (i <= MultiLevel.DELAY) return MultiLevel.DELAY;
 
         // IMPORTANT:
         //  if the lower levels are DELAY, return DELAY

@@ -43,8 +43,9 @@ public class ConditionManager {
     }
 
     public void addToState(Value value) {
-        if (value instanceof BoolValue) throw new UnsupportedOperationException();
-        setState(combineWithState(value));
+        if (!(value instanceof BoolValue)) {
+            setState(combineWithState(value));
+        }
     }
 
     /**
@@ -89,6 +90,7 @@ public class ConditionManager {
     private static Value combineWith(Value condition, Value value) {
         Objects.requireNonNull(value);
         if (condition == UnknownValue.EMPTY) return value;
+        if (value == UnknownValue.EMPTY) return condition;
         if (isDelayed(condition) || isDelayed(value)) return UnknownValue.NO_VALUE;
         return new AndValue(value.getObjectFlow()).append(condition, value);
     }
