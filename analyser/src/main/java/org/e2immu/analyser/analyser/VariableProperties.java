@@ -671,6 +671,7 @@ class VariableProperties implements EvaluationContext {
      * Assignments to fields which have not been seen yet at the higher level, cause originals at the lower levels.
      *
      * @param evaluationContextsGathered the list of contexts gathered
+     * @param noBlockMayBeExecuted       true is the default value for many loops, if without else, switch without default, ...
      */
     void copyBackLocalCopies(List<VariableProperties> evaluationContextsGathered, boolean noBlockMayBeExecuted) {
         Map<String, List<VariableProperties>> contextsPerVariable = SMapList.create();
@@ -682,6 +683,22 @@ class VariableProperties implements EvaluationContext {
 
         // move preconditions upward
         evaluationContextsGathered.forEach(vp -> preconditions.addAll(vp.preconditions));
+
+        // copy the state (but not the condition back up); for now, only if guaranteed to be executed
+        if (!noBlockMayBeExecuted) {
+            List<Value> states = evaluationContextsGathered.stream()
+                    .filter(ec -> ec.guaranteedToBeReachedByParentStatement) // only if the block will be executed!
+                    .map(ec -> ec.conditionManager.getState())
+                    .filter(v -> v != UnknownValue.EMPTY)
+                    .collect(Collectors.toList());
+            log(VARIABLE_PROPERTIES, "Have states: {}", states);
+            boolean haveDelay = states.stream().anyMatch(v -> v == UnknownValue.NO_VALUE);
+            if (haveDelay) {
+                conditionManager.addToState(UnknownValue.NO_VALUE);
+            } else {
+                // TODO we need to copy back, everything except state of local variables
+            }
+        }
 
         // first, assignments and @NotNull
         Set<String> movedUp = new HashSet<>();
