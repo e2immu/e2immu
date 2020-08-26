@@ -184,6 +184,11 @@ public class ContainerChecks {
             addAll(coll5);
         }
 
+        @Modified
+        public void add(String string) {
+            this.list.add(string);
+        }
+
         @NotModified(type = VERIFY_ABSENT)
         public void addAll(@NotNull Collection<String> collection) {
             list.addAll(collection);

@@ -34,7 +34,7 @@ public class SimpleNotModifiedChecks {
 
         @NotModified(type = VERIFY_ABSENT)
         @Modified
-        public Set<String> set1 = new HashSet<>();
+        public final Set<String> set1 = new HashSet<>();
 
         @NotModified(type = VERIFY_ABSENT)
         @Modified
@@ -47,12 +47,36 @@ public class SimpleNotModifiedChecks {
 
     @E1Container
     static class Example2 {
-        @NotModified
-        public Set<String> set2 = new HashSet<>();
+        @Modified
+        public final Set<String> set2 = new HashSet<>();
 
         @NotModified
         int size() {
             return set2.size();
+        }
+    }
+
+    // quick check: the set2 field is not final now, public!
+
+    @Container
+    static class Example2bis {
+        @Variable
+        public Set<String> set2bis = new HashSet<>();
+
+        @NotModified
+        int size2() {
+            return set2bis.size();
+        }
+    }
+
+    @E1Container
+    static class Example2ter {
+        @NotModified
+        private final Set<String> set2ter = new HashSet<>();
+
+        @NotModified
+        int size() {
+            return set2ter.size();
         }
     }
 
@@ -62,7 +86,8 @@ public class SimpleNotModifiedChecks {
     static class Example3 {
         @NotNull
         @Modified
-        public Set<String> set3 = new HashSet<>();
+        @Final
+        private Set<String> set3 = new HashSet<>();
 
         @NotModified(type = VERIFY_ABSENT)
         public void add3(@NotNull String v) {
@@ -80,7 +105,7 @@ public class SimpleNotModifiedChecks {
     static class Example4 {
         @Modified
         @NotNull
-        public Set<String> set4;
+        private final Set<String> set4;
 
         public Example4(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> in4) {
             this.set4 = in4;
@@ -99,7 +124,7 @@ public class SimpleNotModifiedChecks {
     @E1Container
     static class Example5 {
         @Modified
-        public Set<String> set5;
+        private final Set<String> set5;
 
         public Example5(@NotModified Set<String> in5) {
             this.set5 = new HashSet<>(in5);
@@ -119,7 +144,7 @@ public class SimpleNotModifiedChecks {
     static class Example6 {
         @Modified
         @NotNull
-        public Set<String> set6;
+        private final Set<String> set6;
 
         public Example6(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> in6) {
             this.set6 = in6;

@@ -24,7 +24,7 @@ public class SubTypes {
 
     private static String staticField;
 
-    String field;
+    private String field;
 
     static Iterator<Integer> newIt() {
         return new Iterator<>() {

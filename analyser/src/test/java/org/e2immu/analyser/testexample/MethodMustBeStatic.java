@@ -4,7 +4,7 @@ import java.util.stream.Stream;
 
 public class MethodMustBeStatic {
 
-    static class ParentClass {
+    private static class ParentClass {
         String s;
 
         public ParentClass(String s) {

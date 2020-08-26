@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -18,7 +17,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = (d) -> {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
         if ("size".equals(d.methodInfo.name) && "Example2".equals(d.methodInfo.typeInfo.simpleName)) {
             Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
@@ -115,140 +114,142 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if (fieldInfo.name.equals("set2")) {
-                if (iteration == 0 || iteration == 1) {
-                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                } else {
-                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        if (fieldInfo.name.equals("set2ter")) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, modified);
+            } else {
+                Assert.assertEquals(Level.FALSE, modified);
             }
-            if (fieldInfo.name.equals("set3")) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                }
-                if (iteration == 1) {
-                    Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                    Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
-                }
+        }
+        if (fieldInfo.name.equals("set2bis")) {
+            if (iteration == 0 ) {
+                Assert.assertEquals(Level.DELAY, modified);
+            } else {
+                Assert.assertEquals(Level.TRUE, modified);
             }
-            if (fieldInfo.name.equals("set4")) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                }
-                if (iteration == 1) {
-                    Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                    Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
-                    Assert.assertFalse(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
-                }
-                if (iteration >= 2) {
-                    Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().size());
-                    Assert.assertEquals("in4", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
-                    Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                }
+        }
+        if (fieldInfo.name.equals("set2")) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, modified);
+            } else {
+                Assert.assertEquals(Level.TRUE, modified);
             }
-            if (fieldInfo.name.equals("set6")) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                }
-                if (iteration == 1) {
-                    Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-                    Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
-                    Assert.assertFalse(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
-                }
-                if (iteration >= 2) {
-                    Assert.assertEquals("in6", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+        }
+        if (fieldInfo.name.equals("set3")) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            }
+            if (iteration == 1) {
+                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+                Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+            }
+        }
+        if (fieldInfo.name.equals("set4")) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            }
+            if (iteration == 1) {
+                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+                Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+                Assert.assertFalse(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+            }
+            if (iteration >= 2) {
+                Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().size());
+                Assert.assertEquals("in4", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
+                Assert.assertEquals(Level.TRUE, modified);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
+        }
+        if (fieldInfo.name.equals("set6")) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            }
+            if (iteration == 1) {
+                Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+                Assert.assertFalse(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+            }
+            if (iteration >= 2) {
+                Assert.assertEquals("in6", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, modified);
             }
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("size".equals(methodInfo.name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
-                if (iteration > 0) {
-                    FieldInfo set2 = methodInfo.typeInfo.typeInspection.get().fields.get(0);
-                    Assert.assertEquals("set2", set2.name);
-                    TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(set2);
-                    Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
-                }
-                if (iteration > 1) {
-                    Assert.assertEquals(0, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("size".equals(methodInfo.name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
+            if (iteration > 0) {
+                FieldInfo set2 = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                Assert.assertEquals("set2", set2.name);
+                TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(set2);
+                Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
             }
-            if ("Example4".equals(methodInfo.name)) {
-                ParameterInfo in4 = methodInfo.methodInspection.get().parameters.get(0);
-                if (iteration >= 2) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in4.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, in4.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+            if (iteration > 1) {
+                Assert.assertEquals(0, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
-            if ("add4".equals(methodInfo.name)) {
-                if (iteration >= 1) {
-                    FieldInfo set4 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("set4")).findAny().orElseThrow();
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set4).properties.get(VariableProperty.NOT_NULL));
-                }
-                if (iteration >= 2) {
-                    Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+        }
+        if ("Example4".equals(methodInfo.name)) {
+            ParameterInfo in4 = methodInfo.methodInspection.get().parameters.get(0);
+            if (iteration >= 2) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in4.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, in4.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
-            if ("Example6".equals(methodInfo.name)) {
-                ParameterInfo in6 = methodInfo.methodInspection.get().parameters.get(0);
-                if (iteration == 0 || iteration == 1) {
-                    Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                } else {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+        }
+        if ("add4".equals(methodInfo.name)) {
+            if (iteration >= 1) {
+                FieldInfo set4 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("set4")).findAny().orElseThrow();
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set4).properties.get(VariableProperty.NOT_NULL));
             }
-            if ("add6".equals(methodInfo.name)) {
-                FieldInfo set6 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("set6")).findAny().orElseThrow();
+            if (iteration >= 2) {
+                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
+        }
+        if ("Example6".equals(methodInfo.name)) {
+            ParameterInfo in6 = methodInfo.methodInspection.get().parameters.get(0);
+            if (iteration == 0 || iteration == 1) {
+                Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            } else {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
+        }
+        if ("add6".equals(methodInfo.name)) {
+            FieldInfo set6 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("set6")).findAny().orElseThrow();
 
-                if (iteration >= 2) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set6).properties.get(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+            if (iteration >= 2) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set6).properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo set = typeContext.getFullyQualified(Set.class);
-            Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode);
-            MethodInfo add = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
-            Assert.assertFalse(add.methodAnalysis.get().hasBeenDefined);
-            Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo set = typeContext.getFullyQualified(Set.class);
+        Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode);
+        MethodInfo add = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
+        Assert.assertFalse(add.methodAnalysis.get().hasBeenDefined);
+        Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-            MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
-            Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-            ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
-            Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
+        Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-            MethodInfo size = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("size")).findFirst().orElseThrow();
-            Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        MethodInfo size = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("size")).findFirst().orElseThrow();
+        Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-            TypeInfo hashSet = typeContext.getFullyQualified(Set.class);
-            Assert.assertEquals(Level.TRUE, hashSet.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
-        }
+        TypeInfo hashSet = typeContext.getFullyQualified(Set.class);
+        Assert.assertEquals(Level.TRUE, hashSet.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, TypeInfo typeInfo) {
-            if (iteration == 1 && "Example4".equals(typeInfo.simpleName)) {
-                int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(immutable, MultiLevel.E1IMMUTABLE));
-                Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE));
-            }
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if (iteration == 1 && "Example4".equals(typeInfo.simpleName)) {
+            int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(immutable, MultiLevel.E1IMMUTABLE));
+            Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE));
         }
     };
 

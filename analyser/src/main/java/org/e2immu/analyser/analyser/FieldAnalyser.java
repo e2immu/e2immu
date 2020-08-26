@@ -59,7 +59,7 @@ public class FieldAnalyser {
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord();
+        boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate();
 
         // STEP 0: support data: does this field have to satisfy rules 2 and 3 of level 2 immutability?
 

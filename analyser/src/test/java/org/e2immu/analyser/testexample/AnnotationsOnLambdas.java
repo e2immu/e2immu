@@ -16,7 +16,7 @@ public class AnnotationsOnLambdas {
     // here we come in the
 
     // somehow we should add the @NotModified(absent=true)
-    static Function<Set<String>, Set<String>> removeElement = set -> {
+    private static Function<Set<String>, Set<String>> removeElement = set -> {
         Iterator<String> it1 = set.iterator();
         if (it1.hasNext()) it1.remove();
         return set;
@@ -28,20 +28,20 @@ public class AnnotationsOnLambdas {
         Set<String> go(@NotNull @NotModified(type = VERIFY_ABSENT) Set<String> in);
     }
 
-    static RemoveOne removeOne = set -> {
+    final static RemoveOne removeOne = set -> {
         Iterator<String> it2 = set.iterator();
         if (it2.hasNext()) it2.remove();
         return set;
     };
 
     static class Example7<T> {
-        BiFunction<Integer, T, String> method = (i, t) -> {
+        final BiFunction<Integer, T, String> method = (i, t) -> {
             return i + t.toString();
         };
     }
 
     static class Example8<T> {
-        BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
+        final BiFunction<Integer, T, String> method2 = new BiFunction<Integer, T, String>() {
             @Override
             public String apply(Integer i, T t) {
                 return i + t.toString();
