@@ -34,6 +34,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +75,7 @@ public class TestTrie extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("Trie", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Freezable", "Trie"), 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

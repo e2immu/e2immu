@@ -23,14 +23,14 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class TestPair extends CommonTestRunner {
 
 
     @Test
     public void test() throws IOException {
-        testUtilClass("Pair", 0, 0, new DebugConfiguration.Builder()
-
+        testUtilClass(List.of("Pair"), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

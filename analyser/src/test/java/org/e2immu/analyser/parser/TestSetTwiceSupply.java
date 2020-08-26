@@ -25,12 +25,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-public class TestStringUtil extends CommonTestRunner {
-
-
+public class TestSetTwiceSupply extends CommonTestRunner {
     @Test
     public void test() throws IOException {
-        testUtilClass(List.of("StringUtil"), 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SetTwice", "SetTwiceSupply"), 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

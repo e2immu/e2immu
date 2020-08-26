@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /*
@@ -68,7 +69,7 @@ public class TestDependencyGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("DependencyGraph", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Freezable", "DependencyGraph"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

@@ -29,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 public class TestSetOnce extends CommonTestRunner {
@@ -62,7 +63,7 @@ public class TestSetOnce extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("SetOnce", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

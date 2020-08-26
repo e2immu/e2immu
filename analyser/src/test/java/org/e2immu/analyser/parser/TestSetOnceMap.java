@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class TestSetOnceMap extends CommonTestRunner {
 
@@ -78,7 +79,7 @@ public class TestSetOnceMap extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("SetOnceMap", 1, 1, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Freezable", "SetOnceMap"), 1, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

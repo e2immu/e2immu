@@ -104,25 +104,29 @@ public abstract class CommonTestRunner {
         return execute(configuration, errorsToExpect, warningsToExpect);
     }
 
-    protected TypeContext testUtilClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+    protected TypeContext testUtilClass(List<String> classNames,
+                                        int errorsToExpect,
+                                        int warningsToExpect,
+                                        DebugConfiguration debugConfiguration) throws IOException {
+        InputConfiguration.Builder builder = new InputConfiguration.Builder()
+                .addSources("src/main/java")
+                .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
+                .addClassPath("jmods/java.xml.jmod");
+        classNames.forEach(className -> builder.addRestrictSourceToPackages("org.e2immu.analyser.util." + className));
+
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
-                .setInputConfiguration(new InputConfiguration.Builder()
-                        .addSources("src/main/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.util." + className)
-                        .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/io")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/gson")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/http")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/cli")
-                        .addClassPath("jmods/java.xml.jmod")
-                        .build())
+                .setInputConfiguration(builder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }

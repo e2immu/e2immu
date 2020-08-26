@@ -28,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 public class TestFirstThen extends CommonTestRunner {
@@ -103,7 +104,7 @@ public class TestFirstThen extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("FirstThen", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("FirstThen"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

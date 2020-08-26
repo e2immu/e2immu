@@ -32,12 +32,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class TestFreezable extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testUtilClass("Freezable", 0, 0, new DebugConfiguration.Builder()
+        testUtilClass(List.of("Freezable"), 0, 0, new DebugConfiguration.Builder()
                 .build());
 
     }
