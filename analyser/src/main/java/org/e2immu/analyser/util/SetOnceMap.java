@@ -26,14 +26,18 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-//@E2Container(after = "freeze")
-@E1Container
-@E2Immutable(type = AnnotationType.VERIFY_ABSENT)
+/**
+ * On top of being freezable, this type prevents removing and overwriting key-value pairs.
+ *
+ * @param <K>
+ * @param <V>
+ */
+@E2Container(after = "frozen")
 public class SetOnceMap<K, V> extends Freezable {
 
     private final Map<K, V> map = new HashMap<>();
 
-    //@Only(before = "freeze")
+    @Only(before = "frozen")
     @Size(min = 1)
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);

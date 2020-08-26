@@ -56,7 +56,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public final String fullyQualifiedName;
 
     //@Immutable(after="this.inspect()")
-    public final SetOnceSupply<TypeInspection> typeInspection = new SetOnceSupply<>();
+    public final SetTwiceSupply<TypeInspection> typeInspection = new SetTwiceSupply<>();
     public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
 
     // immutable after inspection

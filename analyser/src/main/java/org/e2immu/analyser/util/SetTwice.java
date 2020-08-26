@@ -20,17 +20,55 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
-@E2Container(after = "t")
-public class SetOnce<T> {
+/**
+ * Semantics: set once with `set`, then either overwrite with `overwrite`, or freeze with `freeze`.
+ * Setting with <code>set</code> changes <code>t</code> from null to not-null;
+ * overwriting or freezing changes <code>overwritten</code> to true.
+ *
+ * From the point of view of eventual immutability, there are two allowed preconditions.
+ * In before state, they are:
+ *
+ * First: null == this.t
+ * Second: not (null == this.t) and not overwritten
+ *
+ * @param <T>
+ */
+@E2Container(after = "overwritten+t, t")
+public class SetTwice<T> {
+
+    @Final(after = "overwritten+t")
+    private volatile boolean overwritten;
 
     @Final(after = "t")
     @Nullable // eventually not-null, not implemented yet
-    @Linked(to={"t"})
+    @Linked(to = {"t"})
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
+    @Mark("overwritten+t")
+    @Modified
+    public void overwrite(@NotNull T t) {
+        if (t == null) throw new NullPointerException("Null not allowed");
+        synchronized (this) {
+            if (this.t == null || overwritten) {
+                throw new UnsupportedOperationException("Not yet set");
+            }
+            this.t = t;
+        }
+    }
+
+    @Mark("overwritten+t")
+    @Modified
+    public void freeze() {
+        if(this.t == null || overwritten) {
+            throw new UnsupportedOperationException("Not yet set");
+        }
+        overwritten = true;
+    }
+
     @Mark("t")
-    public void set(@NotNull T t) { // @NotModified implied
+    @Modified
+    public void set(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t != null) {
@@ -43,7 +81,6 @@ public class SetOnce<T> {
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
     public T get() {
         T localT = t;
         if (localT == null) {
@@ -51,7 +88,7 @@ public class SetOnce<T> {
         }
         return localT;
     }
-    
+
     @NotModified
     public boolean isSet() {
         return t != null;

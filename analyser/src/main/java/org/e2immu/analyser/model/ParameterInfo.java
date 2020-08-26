@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
@@ -44,7 +45,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final int index;
 
     public final SetOnce<ParameterAnalysis> parameterAnalysis = new SetOnce<>();
-    public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
+    public final SetTwice<ParameterInspection> parameterInspection = new SetTwice<>();
     public final MethodInfo owner;
 
     public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {

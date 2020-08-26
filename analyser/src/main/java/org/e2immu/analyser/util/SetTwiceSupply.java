@@ -20,29 +20,37 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
-@E1Container(after = "set", type = AnnotationType.CONTRACT)
-public class SetOnceSupply<T> {
-    // volatile guarantees that once the value is set, other threads see the effect immediately
-    private volatile T t;
+/**
+ * Variant on SetTwice, where after creation, a <code>Runnable</code>
+ * can be provided that is triggered by the <code>get</code> method,
+ * and will call the <code>set</code> method in the same thread during its execution.
+ * <p>
+ * The runnable is cleared in <code>set</code>, to encourage garbage collection.
+ * This has no bearing on the immutability.
+ *
+ * @param <T>
+ */
+@E2Container(after = "overwritten+t")
+public class SetTwiceSupply<T> extends SetTwice<T> {
+
+    @Final(after = "overwritten+t")
     private Runnable runnable;
 
+    @Modified
+    @Only(before = "t")
     public void setRunnable(Runnable runnable) {
+        if (super.isSet()) throw new UnsupportedOperationException("Already set");
         this.runnable = runnable;
     }
 
-    @Mark("set")
-    @Only(before = "set")
-    public void set(@NotNull T t) { // @NotModified implied
-        if (t == null) throw new NullPointerException("Null not allowed");
-        synchronized (this) {
-            if (this.t != null) {
-                throw new UnsupportedOperationException("Already set");
-            }
-            this.t = t;
-            runnable = null;
-        }
+    @Mark("t")
+    @Modified
+    public void set(@NotNull T t) {
+        super.set(t);
+        runnable = null;
     }
 
+    @Override
     @Only(after = "set")
     public T get() {
         return get("?");
@@ -50,7 +58,7 @@ public class SetOnceSupply<T> {
 
     @Only(after = "set")
     public T get(@NotNull String errorContext) {
-        if (t == null) {
+        if (!super.isSet()) {
             if (runnable == null) {
                 throw new UnsupportedOperationException("Not yet set, and no runnable provided: " + errorContext);
             }
@@ -58,36 +66,26 @@ public class SetOnceSupply<T> {
             Runnable localRunnable = runnable;
             runnable = null;
             localRunnable.run();
-            if (t == null)
+            if (!super.isSet())
                 throw new NullPointerException("Not yet set, the runnable did not set the value: " + errorContext);
         }
-        return t;
-    }
-
-    // TODO need special semantics for this one...
-    public void overwrite(@NotNull T t) {
-        if (t == null) throw new NullPointerException("Null not allowed");
-        synchronized (this) {
-            if (this.t == null) {
-                throw new UnsupportedOperationException("Not yet set; do not use overwrite lightly");
-            }
-            this.t = t;
-        }
+        return super.get();
     }
 
     @NotModified
     public boolean isSetDoNotTriggerRunnable() {
-        return t != null;
+        return super.isSet();
     }
 
+    @Override
     @NotModified
     public boolean isSet() {
-        if (t != null) return true;
+        if (super.isSet()) return true;
         if (runnable == null) return false;
         Runnable localRunnable = runnable;
         runnable = null;
         localRunnable.run();
-        return t != null;
+        return super.isSet();
     }
 
     public boolean hasRunnable() {

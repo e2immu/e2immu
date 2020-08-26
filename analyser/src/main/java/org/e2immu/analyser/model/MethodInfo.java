@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -56,7 +57,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final boolean isDefaultImplementation;
 
     //@Immutable(after="this.inspect(),this.inspect()")
-    public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
+    public final SetTwice<MethodInspection> methodInspection = new SetTwice<>();
     //@Immutable(after="MethodAnalyser.analyse()")
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
 

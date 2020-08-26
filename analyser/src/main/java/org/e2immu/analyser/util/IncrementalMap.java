@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
@@ -28,8 +30,10 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
+@E2Container(after = "freeze")
 public class IncrementalMap<K> extends Freezable {
 
+    @NotModified(after = "freeze")
     private final Map<K, Integer> map = new HashMap<>();
     public final BiPredicate<Integer, Integer> accept;
 

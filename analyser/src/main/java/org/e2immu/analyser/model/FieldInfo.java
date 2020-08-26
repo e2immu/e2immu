@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
@@ -35,7 +36,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public final String name;
 
     public final TypeInfo owner;
-    public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
+    public final SetTwice<FieldInspection> fieldInspection = new SetTwice<>();
     public final SetOnce<FieldAnalysis> fieldAnalysis = new SetOnce<>();
 
     public FieldInfo(TypeInfo type, String name, TypeInfo owner) {

@@ -39,7 +39,7 @@ public abstract class Freezable {
 
     private volatile boolean frozen;
 
-    @Mark("freeze")
+    @Mark("frozen")
     public void freeze() {
         ensureNotFrozen();
         frozen = true;
