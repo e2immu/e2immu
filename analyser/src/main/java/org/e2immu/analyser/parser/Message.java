@@ -30,6 +30,7 @@ import java.util.Objects;
 @E2Container
 public class Message {
 
+
     public enum Severity {
         WARN,
         ERROR
@@ -85,6 +86,8 @@ public class Message {
     public static final String DUPLICATE_MARK_LABEL = "Duplicate mark label";
 
     public static final String ILLEGAL_PARAMETER_INDEX_IN_EXPOSED = "Illegal parameter index in @Exposed";
+
+    public static final String CALLING_MODIFYING_METHOD_ON_E2IMMU = "Calling modifying method on level 2 immutable type";
 
     @NotNull1
     @E2Container

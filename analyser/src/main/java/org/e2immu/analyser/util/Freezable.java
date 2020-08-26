@@ -18,25 +18,26 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Mark;
+import org.e2immu.annotation.Precondition;
 
 /**
- * Super-class for eventually immutable containers and value classes.
+ * Super-class for eventually immutable types.
  * The life cycle of the class has two states: an initial one, and a final one.
  * The transition is irrevocable.
  * Freezable classes start in mutable form, and once frozen, become immutable.
  * <p>
  * Methods that make modifications to the content of fields, should call <code>ensureNotFrozen</code>
  * as their first statement.
- * They should be annotated with <code>@BinaryState(forbidden_when="immutable")</code>.
  * <p>
  * Methods that can only be called when the class is in its immutable state should call
- * <code>ensureFrozen</code> as their first statement. They should be annotated with
- * <code>@BinaryState(forbidden_when="mutable")</code>.
+ * <code>ensureFrozen</code> as their first statement.
  */
 
 public abstract class Freezable {
 
+    @Final(after = "frozen")
     private volatile boolean frozen;
 
     @Mark("frozen")
@@ -49,10 +50,12 @@ public abstract class Freezable {
         return frozen;
     }
 
+    @Precondition("not (this.frozen)")
     protected void ensureNotFrozen() {
         if (frozen) throw new UnsupportedOperationException("Already frozen!");
     }
 
+    @Precondition("this.frozen")
     protected void ensureFrozen() {
         if (!frozen) throw new UnsupportedOperationException("Not yet frozen!");
     }

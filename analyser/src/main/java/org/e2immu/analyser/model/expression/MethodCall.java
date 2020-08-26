@@ -199,6 +199,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
             }
         }
+
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int immutable = objectValue.getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+        if(modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+            evaluationContext.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
+                    "Method: "+methodInfo.distinguishingName());
+        }
     }
 
     public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters, ObjectFlow objectFlowOfResult) {
