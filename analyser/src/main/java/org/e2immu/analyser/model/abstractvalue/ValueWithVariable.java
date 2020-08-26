@@ -28,12 +28,14 @@ public abstract class ValueWithVariable implements Value {
     }
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
-        boolean selfReferencing = typeInfo == evaluationContext.getCurrentType();
-        if (MultiLevel.isE2Immutable(immutable) || (immutable == Level.DELAY && (bestCase || selfReferencing)))
-            return Set.of();
+        boolean notSelf = typeInfo != evaluationContext.getCurrentType();
+        if (notSelf) {
+            int immutable = getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+            if (immutable == MultiLevel.DELAY) return null;
+            if (MultiLevel.isE2Immutable(immutable)) return Set.of();
+        }
         return Set.of(variable);
     }
 

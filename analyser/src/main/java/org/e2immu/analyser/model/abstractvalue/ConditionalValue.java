@@ -213,7 +213,7 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         return combinedValue.variables();
     }
 

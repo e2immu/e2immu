@@ -59,13 +59,13 @@ class VariableProperties implements EvaluationContext {
     public final ConditionManager conditionManager;
     private boolean guaranteedToBeReachedInCurrentBlock = true;
     private NumberedStatement currentStatement;
+    private boolean delaysInDependencyGraph;
 
     // all the rest is final
 
     // these 2 will be modified by the statement analyser
 
-    final DependencyGraph<Variable> dependencyGraphBestCase;
-    final DependencyGraph<Variable> dependencyGraphWorstCase;
+    final DependencyGraph<Variable> dependencyGraph;
 
     // modified by adding errors
     final Messages messages;
@@ -125,8 +125,7 @@ class VariableProperties implements EvaluationContext {
         conditionManager = new ConditionManager(UnknownValue.EMPTY, initialState);
         this.currentField = currentField;
         this.currentType = currentType;
-        this.dependencyGraphBestCase = new DependencyGraph<>();
-        this.dependencyGraphWorstCase = new DependencyGraph<>();
+        this.dependencyGraph = new DependencyGraph<>();
         guaranteedToBeReachedByParentStatement = true;
         inSyncBlock = currentMethod != null && currentMethod.isSynchronized();
         this.internalObjectFlows = internalObjectFlows;
@@ -160,8 +159,7 @@ class VariableProperties implements EvaluationContext {
         this.currentStatement = currentStatement;
         this.currentType = parent.currentType;
         this.currentField = currentField;
-        dependencyGraphBestCase = parent.dependencyGraphBestCase;
-        dependencyGraphWorstCase = parent.dependencyGraphWorstCase;
+        dependencyGraph = parent.dependencyGraph;
         this.inSyncBlock = inSyncBlock;
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
         this.internalObjectFlows = parent.internalObjectFlows; // TODO this is wrong; we should be making a child object flow
@@ -219,9 +217,16 @@ class VariableProperties implements EvaluationContext {
     }
 
     @Override
-    public void linkVariables(Variable from, Set<Variable> toBestCase, Set<Variable> toWorstCase) {
-        dependencyGraphBestCase.addNode(from, ImmutableList.copyOf(toBestCase));
-        dependencyGraphWorstCase.addNode(from, ImmutableList.copyOf(toWorstCase));
+    public void linkVariables(Variable from, Set<Variable> to) {
+        if (to == null) {
+            delaysInDependencyGraph = true;
+        } else {
+            dependencyGraph.addNode(from, ImmutableList.copyOf(to));
+        }
+    }
+
+    public boolean isDelaysInDependencyGraph() {
+        return delaysInDependencyGraph;
     }
 
     @Override

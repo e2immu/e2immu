@@ -210,41 +210,54 @@ public class MethodValue implements Value {
     private static final Set<Variable> INDEPENDENT = Set.of();
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         // RULE 1
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType.isVoid()) return INDEPENDENT; // no assignment
 
-        boolean returnTypeDifferent = returnType.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || returnTypeDifferent) &&
-                MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER) {
-            return INDEPENDENT;
+        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
+        if (notSelf) {
+            int immutable = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+            if (immutable == MultiLevel.DELAY) return null;
+            if (MultiLevel.isE2Immutable(immutable)) {
+                return INDEPENDENT;
+            }
         }
 
         // RULE 2
         boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || methodInfoDifferentType) && methodInfo.methodAnalysis.get()
-                .getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
-            return INDEPENDENT;
+        if (methodInfoDifferentType) {
+            int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            if (independent == Level.DELAY) return null;
+            if (independent == Level.TRUE) return INDEPENDENT;
         }
 
         // RULE 3
-        boolean identity = methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY) == Level.TRUE;
-        if (identity) return parameters.get(0).linkedVariables(bestCase, evaluationContext);
+        int identity = methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
+        if (identity == Level.DELAY) return null;
+        if (identity == Level.TRUE) return parameters.get(0).linkedVariables(evaluationContext);
 
         // some prep.
 
         Set<Variable> result = new HashSet<>();
-        parameters.forEach(p -> result.addAll(p.linkedVariables(bestCase, evaluationContext)));
+        for (Value p : parameters) {
+            Set<Variable> cd = p.linkedVariables(evaluationContext);
+            if (cd == null) return null;
+            result.addAll(cd);
+        }
 
         // RULE 4, in a = b.method(c,d), return c and d when b is E2Immutable
-        boolean objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE) >= MultiLevel.EVENTUAL_AFTER;
-        if ((bestCase || methodInfoDifferentType) && objectE2Immutable) // RULE 3
+        int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (objectE2Immutable == Level.DELAY) return null;
+        if (methodInfoDifferentType && objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {// RULE 3
             return result;
+        }
 
         // default case, add b
-        result.addAll(object.linkedVariables(bestCase, evaluationContext));
+        Set<Variable> b = object.linkedVariables(evaluationContext);
+        if (b == null) return null;
 
+        result.addAll(b);
         return result;
     }
 

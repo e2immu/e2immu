@@ -146,8 +146,8 @@ public class ComputeLinking {
             log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links");
             return false;
         }
-        if (!methodProperties.dependencyGraphBestCase.equalTransitiveTerminals(methodProperties.dependencyGraphWorstCase)) {
-            log(DELAYED, "Best and worst case dependency graph transitive terminal sets differ -- delaying establishing links");
+        if (methodProperties.isDelaysInDependencyGraph()) {
+            log(DELAYED, "Dependency graph suffers delays -- delaying establishing links");
             return false;
         }
         boolean allFieldsFinalDetermined = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(fieldInfo ->
@@ -159,8 +159,8 @@ public class ComputeLinking {
         AtomicBoolean changes = new AtomicBoolean();
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
 
-        methodProperties.dependencyGraphBestCase.visit((variable, dependencies) -> {
-            Set<Variable> fieldAndParameterDependencies = new HashSet<>(methodProperties.dependencyGraphBestCase.dependencies(variable));
+        methodProperties.dependencyGraph.visit((variable, dependencies) -> {
+            Set<Variable> fieldAndParameterDependencies = new HashSet<>(methodProperties.dependencyGraph.dependencies(variable));
             fieldAndParameterDependencies.removeIf(v -> !(v instanceof FieldReference) && !(v instanceof ParameterInfo));
             if (dependencies != null) {
                 dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(fieldAndParameterDependencies::add);

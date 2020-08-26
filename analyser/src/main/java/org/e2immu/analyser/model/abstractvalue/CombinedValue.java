@@ -7,10 +7,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -69,8 +66,14 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        return values.stream().flatMap(value -> value.linkedVariables(bestCase, evaluationContext).stream()).collect(Collectors.toSet());
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        Set<Variable> result = new HashSet<>();
+        for (Value value : values) {
+            Set<Variable> sub = value.linkedVariables(evaluationContext);
+            if (sub == null) return null; // DELAY
+            result.addAll(sub);
+        }
+        return result;
     }
 
     @Override

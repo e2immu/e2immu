@@ -38,7 +38,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.JoinReturnStatements;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;

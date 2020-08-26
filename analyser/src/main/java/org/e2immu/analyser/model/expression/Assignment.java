@@ -209,11 +209,10 @@ public class Assignment implements Expression {
 
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
-            Set<Variable> linkToBestCase = resultOfExpression.linkedVariables(true, evaluationContext);
-            Set<Variable> linkToWorstCase = resultOfExpression.linkedVariables(false, evaluationContext);
-            log(LINKED_VARIABLES, "In assignment, link {} to [{}] best case, [{}] worst case", at.detailedString(),
-                    Variable.detailedString(linkToBestCase), Variable.detailedString(linkToWorstCase));
-            evaluationContext.linkVariables(at, linkToBestCase, linkToWorstCase);
+            Set<Variable> linked = resultOfExpression.linkedVariables(evaluationContext);
+            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
+                    Variable.detailedString(linked), Variable.detailedString(linked));
+            evaluationContext.linkVariables(at, linked);
         }
     }
 }

@@ -150,12 +150,9 @@ public class StatementAnalyser {
             if (unusedLocalVariablesCheck(variableProperties)) changes = true;
             if (uselessAssignments(variableProperties, escapesViaException, neverContinues)) changes = true;
 
-            if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraphWorstCase.isEmpty()) {
+            if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
                 log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
-                variableProperties.dependencyGraphBestCase.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
-                        list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
-                log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables worst case:");
-                variableProperties.dependencyGraphWorstCase.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+                variableProperties.dependencyGraph.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
                         list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
             }
 
@@ -405,8 +402,10 @@ public class StatementAnalyser {
                     transferValue.linkedVariables.set(Set.of());
                 if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
             } else if (value != NO_VALUE) {
-                Set<Variable> vars = value.linkedVariables(true, variableProperties);
-                if (!transferValue.linkedVariables.isSet()) {
+                Set<Variable> vars = value.linkedVariables(variableProperties);
+                if (vars == null) {
+                    log(DELAYED, "Linked variables is delayed on transfer");
+                } else if (!transferValue.linkedVariables.isSet()) {
                     transferValue.linkedVariables.set(vars);
                 }
                 if (!transferValue.value.isSet()) {
@@ -575,7 +574,7 @@ public class StatementAnalyser {
                 allButLastSubStatementsEscape = false;
             }
             // the last one escapes as well... then we should not add to the state
-            if(count == startOfBlocks.size() -1 && subStatementStart.neverContinues.get()) {
+            if (count == startOfBlocks.size() - 1 && subStatementStart.neverContinues.get()) {
                 allButLastSubStatementsEscape = false;
             }
         }

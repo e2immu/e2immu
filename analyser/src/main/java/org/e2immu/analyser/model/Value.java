@@ -26,6 +26,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
+import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
 import java.util.Set;
@@ -129,8 +130,13 @@ public interface Value extends Comparable<Value> {
         throw new UnsupportedOperationException(this.getClass().toString());
     }
 
+    /**
+     * @param evaluationContext to compute properties
+     * @return null in case of delay
+     */
+    @Nullable
     @NotModified
-    default Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    default Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         return Set.of();
     }
 

@@ -26,6 +26,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -94,7 +95,7 @@ public class Instance implements Value {
      * the default case is a dependence on c and d
      */
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         // RULE 1
         if (constructorParameterValues == null || constructor == null) return INDEPENDENT;
         if (constructorParameterValues.isEmpty() && constructor.typeInfo.isStatic()) {
@@ -102,19 +103,27 @@ public class Instance implements Value {
         }
 
         // RULE 2, 3
-        boolean differentType = constructor.typeInfo != evaluationContext.getCurrentType();
-        if ((bestCase || differentType)) {
-            if (constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
+        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
+        if (notSelf) {
+            int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            if (independent == Level.DELAY) return null;
+            if (independent == Level.TRUE) {
                 return INDEPENDENT; // RULE 2
             }
-            if (constructor.typeInfo.isEffectivelyE2Immutable()) { // RULE 3
+            int immutable = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            if (immutable == MultiLevel.DELAY) return null;
+            if (MultiLevel.isE2Immutable(immutable)) { // RULE 3
                 return INDEPENDENT;
             }
         }
         // default case
-        return constructorParameterValues.stream()
-                .flatMap(v -> v.linkedVariables(bestCase, evaluationContext).stream())
-                .collect(Collectors.toSet());
+        Set<Variable> result = new HashSet<>();
+        for (Value value : constructorParameterValues) {
+            Set<Variable> sub = value.linkedVariables(evaluationContext);
+            if (sub == null) return null; // DELAY
+            result.addAll(sub);
+        }
+        return result;
     }
 
     @Override

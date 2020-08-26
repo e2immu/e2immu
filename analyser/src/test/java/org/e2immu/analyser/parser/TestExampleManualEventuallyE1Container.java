@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
@@ -34,6 +35,18 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("j", value.toString());
                 Value state = tv.stateOnAssignment.get();
                 Assert.assertEquals("(-this.j) >= 0", state.toString());
+            }
+        }
+        if ("getIntegers".equals(methodInfo.name)) {
+            if (iteration > 0) {
+                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
+                Assert.assertEquals(1, tv.linkedVariables.get().size());
+            }
+            if(iteration> 1) {
+                Set<Variable> variables = methodInfo. methodAnalysis.get().variablesLinkedToMethodResult.get();
+                Assert.assertEquals(1, variables.size());
+                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+                Assert.assertEquals(Level.FALSE, independent);
             }
         }
     };

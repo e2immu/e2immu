@@ -74,7 +74,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
     }
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         throw new UnsupportedOperationException();
     }
 }

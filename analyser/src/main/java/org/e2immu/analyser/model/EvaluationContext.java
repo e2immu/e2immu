@@ -87,7 +87,7 @@ public interface EvaluationContext {
     }
 
     // mark that variables are linked (statement analyser, assignment)
-    default void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> toBestCase, @NotNull Set<Variable> toWorstCase) {
+    default void linkVariables(@NotNull Variable variableFromExpression, @NotNull Set<Variable> to) {
     }
 
     // called by VariableExpression, FieldAccess; will create a field if necessary

@@ -1206,10 +1206,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeAnalysis.get().isEventual();
     }
 
-    public boolean isEffectivelyE2Immutable() {
-        return MultiLevel.isEffectivelyE1Immutable(typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-    }
-
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
         return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).
                 filter(m -> m.name.equals(methodName) && m.methodInspection.get().parameters.size() == parameters)

@@ -39,7 +39,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public final Map<VariableProperty, Integer> properties;
     public final ObjectFlow overwriteObjectFlow;
 
-    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow ) {
+    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         this.value = value;
         this.properties = properties;
         overwriteObjectFlow = objectFlow;
@@ -118,8 +118,8 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public Set<Variable> linkedVariables(boolean bestCase, EvaluationContext evaluationContext) {
-        return value.linkedVariables(bestCase, evaluationContext);
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        return value.linkedVariables(evaluationContext);
     }
 
     @Override
