@@ -86,4 +86,10 @@ public interface Stream<T> {
     @NotNull
     @Size(copy = true)
     Stream<T> sorted();
+
+    @NotNull
+    Optional<T> findAny();
+
+    @NotNull
+    Optional<T> findFirst();
 }

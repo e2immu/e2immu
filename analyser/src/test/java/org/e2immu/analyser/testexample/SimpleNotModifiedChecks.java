@@ -44,15 +44,22 @@ public class SimpleNotModifiedChecks {
     }
 
     // second example shows no modification
-
     @E1Container
     static class Example2 {
-        @Modified
+
+        // IMPORTANT: the @NotModified shows that Example2 does not modify it. It can be modified from the outside.
+        // this is part of the Level 2 immutability rules.
+        @NotModified
         public final Set<String> set2 = new HashSet<>();
 
         @NotModified
         int size() {
             return set2.size();
+        }
+
+        @NotModified
+        public String getFirst(String s) {
+            return size() > 0 ? set2.stream().findAny().orElseThrow() : "";
         }
     }
 
@@ -61,22 +68,27 @@ public class SimpleNotModifiedChecks {
     @Container
     static class Example2bis {
         @Variable
-        public Set<String> set2bis = new HashSet<>();
+        public Set<String> set2bis = new HashSet<>(); // ERROR: non-private field not effectively final
 
         @NotModified
         int size2() {
-            return set2bis.size();
+            return set2bis.size(); // WARN: potential null pointer exception!
         }
     }
 
     @E1Container
     static class Example2ter {
-        @NotModified
+        @Modified
         private final Set<String> set2ter = new HashSet<>();
 
+        @Modified
+        public void add(String s) {
+            set2ter.add(s);
+        }
+
         @NotModified
-        int size() {
-            return set2ter.size();
+        public String getFirst(String s) {
+            return set2ter.isEmpty() ? "" : set2ter.stream().findAny().orElseThrow();
         }
     }
 
@@ -146,7 +158,7 @@ public class SimpleNotModifiedChecks {
         @NotNull
         private final Set<String> set6;
 
-        public Example6(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> in6) {
+        public Example6(@Modified @NotNull Set<String> in6) {
             this.set6 = in6;
         }
 

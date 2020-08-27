@@ -26,7 +26,7 @@ import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 @Container(type = VERIFY_ABSENT)
 @E1Container(type = VERIFY_ABSENT)
-@MutableModifiesArguments
+@E1Immutable
 public class NotModifiedChecks {
     @NotModified
     @Linked(to = {"list"})
@@ -65,7 +65,6 @@ public class NotModifiedChecks {
     @Linked(type = VERIFY_ABSENT)
     final int l2;
 
-    @Modified
     public NotModifiedChecks(@NotModified @NotNull List<String> list,
                              @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set2,
                              @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set3,
@@ -85,11 +84,10 @@ public class NotModifiedChecks {
     static class C1 {
         @Linked(to = {"C1.set1"})
         @NotNull
-        @NotModified
+        @Modified
         final Set<String> set; // linked to set1
 
-        @Modified
-        C1(@NotNull Set<String> set1) {
+        C1(@NotNull @Modified Set<String> set1) {
             this.set = Objects.requireNonNull(set1);
         }
 
@@ -99,6 +97,11 @@ public class NotModifiedChecks {
         @Independent(type = VERIFY_ABSENT)
         Set<String> getSet() {
             return set;
+        }
+
+        @Modified
+        void add(String string) {
+            set.add(string);
         }
     }
 
@@ -132,16 +135,14 @@ public class NotModifiedChecks {
 
     // this is an extension function on Set
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAll(@NotNull @Modified @NotModified(type = VERIFY_ABSENT) Set<String> c,
-                                  @NotNull @NotModified Set<String> d) {
+    private static boolean addAll(@NotNull @Modified Set<String> c, @NotNull1 @NotModified Set<String> d) {
         return c.addAll(d);
     }
 
     // this is an extension function on C1
     // not modified applies to sub-fields as well.
     @Linked(type = VERIFY_ABSENT) // primitive
-    private static boolean addAllOnC(@NotNull @Modified @NotModified(type = VERIFY_ABSENT) C1 c,
-                                     @NotNull @NotModified C1 d) {
-        return c.set.addAll(d.set);
+    private static boolean addAllOnC(@NotNull @Modified C1 c1, @NotNull @NotModified C1 d1) {
+        return c1.set.addAll(d1.set);
     }
 }

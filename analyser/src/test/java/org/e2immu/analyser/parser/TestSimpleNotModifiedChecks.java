@@ -120,11 +120,11 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (iteration == 0) {
                 Assert.assertEquals(Level.DELAY, modified);
             } else {
-                Assert.assertEquals(Level.FALSE, modified);
+                Assert.assertEquals(Level.TRUE, modified);
             }
         }
         if (fieldInfo.name.equals("set2bis")) {
-            if (iteration == 0 ) {
+            if (iteration == 0) {
                 Assert.assertEquals(Level.DELAY, modified);
             } else {
                 Assert.assertEquals(Level.TRUE, modified);
@@ -134,7 +134,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (iteration == 0) {
                 Assert.assertEquals(Level.DELAY, modified);
             } else {
-                Assert.assertEquals(Level.TRUE, modified);
+                Assert.assertEquals(Level.FALSE, modified);
             }
         }
         if (fieldInfo.name.equals("set3")) {
@@ -148,7 +148,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
         if (fieldInfo.name.equals("set4")) {
             if (iteration == 0) {
-                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
             }
             if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
@@ -210,7 +210,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             ParameterInfo in6 = methodInfo.methodInspection.get().parameters.get(0);
             if (iteration == 0 || iteration == 1) {
                 Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                // NOTE: an "improvement from FALSE to TRUE" will be made from iteration 1 to iteration 2
+                Assert.assertEquals(Level.FALSE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
             } else {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
@@ -255,7 +256,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SimpleNotModifiedChecks", 0, 0, new DebugConfiguration.Builder()
+        // Both ERROR and WARN in Example2bis
+        testClass("SimpleNotModifiedChecks", 1, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
