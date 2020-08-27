@@ -202,7 +202,7 @@ public class MethodAnalyser {
 
         // TODO: need a guarantee that the precondition will be executed
         // the two ways of collecting them do NOT ensure this at the moment
-        
+
         Stream<Value> preconditionsFromStatements = numberedStatements.stream()
                 .filter(numberedStatement -> numberedStatement.precondition.isSet())
                 .map(numberedStatement -> numberedStatement.precondition.get());
@@ -337,14 +337,13 @@ public class MethodAnalyser {
         // we still need to remove other parameter components; what remains can be used for marking/only
 
         Value.FilterResult filterResult = precondition.filter(Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
-        if (filterResult.accepted.size() != 1) {
-            log(MARK, "No @Mark annotation in {}: not all variables are fields of my type, or there are no variables in the precondition", methodInfo.distinguishingName());
+        if (filterResult.accepted.isEmpty()) {
+            log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(UnknownValue.NO_VALUE);
             return true;
         }
-        Map.Entry<Variable, Value> entry = filterResult.accepted.entrySet().stream().findAny().orElseThrow();
-        Value preconditionPart = entry.getValue();
-        log(MARK, "Did prep work for @Only, @Mark, found precondition on variable {} in {}", precondition, entry.getKey(), methodInfo.distinguishingName());
+        Value preconditionPart = new AndValue().append(filterResult.accepted.values().toArray(Value[]::new));
+        log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition, filterResult.accepted.keySet(), methodInfo.distinguishingName());
         methodAnalysis.preconditionForMarkAndOnly.set(preconditionPart);
         return true;
     }

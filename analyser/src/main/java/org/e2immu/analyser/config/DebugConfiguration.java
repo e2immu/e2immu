@@ -12,35 +12,22 @@ import java.util.List;
 public class DebugConfiguration {
 
     public final List<TypeContextVisitor> typeContextVisitors;
-
-    public final List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors;
     public final List<FieldAnalyserVisitor> afterFieldAnalyserVisitors;
-
-    public final List<MethodAnalyserVisitor> beforeMethodAnalyserVisitors;
     public final List<MethodAnalyserVisitor> afterMethodAnalyserVisitors;
-
-    public final List<TypeAnalyserVisitor> beforeTypePropertyComputations;
     public final List<TypeAnalyserVisitor> afterTypePropertyComputations;
-
     public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
     public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
 
     private DebugConfiguration(List<TypeContextVisitor> typeContextVisitors,
-                               List<TypeAnalyserVisitor> beforeTypePropertyComputations,
                                List<TypeAnalyserVisitor> afterTypePropertyComputations,
-                               List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors,
                                List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
-                               List<MethodAnalyserVisitor> beforeMethodAnalyserVisitors,
                                List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
                                List<StatementAnalyserVisitor> statementAnalyserVisitors,
                                List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors) {
-        this.beforeFieldAnalyserVisitors = beforeFieldAnalyserVisitors;
         this.afterFieldAnalyserVisitors = afterFieldAnalyserVisitors;
-        this.beforeMethodAnalyserVisitors = beforeMethodAnalyserVisitors;
         this.afterMethodAnalyserVisitors = afterMethodAnalyserVisitors;
         this.statementAnalyserVisitors = statementAnalyserVisitors;
         this.statementAnalyserVariableVisitors = statementAnalyserVariableVisitors;
-        this.beforeTypePropertyComputations = beforeTypePropertyComputations;
         this.afterTypePropertyComputations = afterTypePropertyComputations;
         this.typeContextVisitors = typeContextVisitors;
     }
@@ -48,34 +35,15 @@ public class DebugConfiguration {
     @Container(builds = DebugConfiguration.class)
     public static class Builder {
         private final List<TypeContextVisitor> typeContextVisitors = new ArrayList<>();
-
-        private final List<FieldAnalyserVisitor> beforeFieldAnalyserVisitors = new ArrayList<>();
         private final List<FieldAnalyserVisitor> afterFieldAnalyserVisitors = new ArrayList<>();
-
-        private final List<MethodAnalyserVisitor> beforeMethodAnalyserVisitors = new ArrayList<>();
         private final List<MethodAnalyserVisitor> afterMethodAnalyserVisitors = new ArrayList<>();
-
         private final List<StatementAnalyserVisitor> statementAnalyserVisitors = new ArrayList<>();
         private final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors = new ArrayList<>();
-
-        private final List<TypeAnalyserVisitor> beforeTypePropertyComputations = new ArrayList<>();
         private final List<TypeAnalyserVisitor> afterTypePropertyComputations = new ArrayList<>();
 
         @Fluent
         public Builder addAfterFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
             this.afterFieldAnalyserVisitors.add(fieldAnalyserVisitor);
-            return this;
-        }
-
-        @Fluent
-        public Builder addBeforeFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
-            this.beforeFieldAnalyserVisitors.add(fieldAnalyserVisitor);
-            return this;
-        }
-
-        @Fluent
-        public Builder addBeforeMethodAnalyserVisitor(MethodAnalyserVisitor methodAnalyserVisitor) {
-            this.beforeMethodAnalyserVisitors.add(methodAnalyserVisitor);
             return this;
         }
 
@@ -98,12 +66,6 @@ public class DebugConfiguration {
         }
 
         @Fluent
-        public Builder addBeforeTypePropertyComputationsVisitor(TypeAnalyserVisitor typeAnalyserVisitor) {
-            this.beforeTypePropertyComputations.add(typeAnalyserVisitor);
-            return this;
-        }
-
-        @Fluent
         public Builder addAfterTypePropertyComputationsVisitor(TypeAnalyserVisitor typeAnalyserVisitor) {
             this.afterTypePropertyComputations.add(typeAnalyserVisitor);
             return this;
@@ -118,11 +80,8 @@ public class DebugConfiguration {
         public DebugConfiguration build() {
             return new DebugConfiguration(
                     ImmutableList.copyOf(typeContextVisitors),
-                    ImmutableList.copyOf(beforeTypePropertyComputations),
                     ImmutableList.copyOf(afterTypePropertyComputations),
-                    ImmutableList.copyOf(beforeFieldAnalyserVisitors),
                     ImmutableList.copyOf(afterFieldAnalyserVisitors),
-                    ImmutableList.copyOf(beforeMethodAnalyserVisitors),
                     ImmutableList.copyOf(afterMethodAnalyserVisitors),
                     ImmutableList.copyOf(statementAnalyserVisitors),
                     ImmutableList.copyOf(statementAnalyserVariableVisitors));

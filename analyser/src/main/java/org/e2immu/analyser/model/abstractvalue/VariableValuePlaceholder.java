@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 
 // used in a return statement, to freeze the properties
-// also in @Mark @Only computation to hold the approved precondition values
+// also in @Mark @Only computation to hold the approved precondition values; in this case the properties are not computed
 
 public class VariableValuePlaceholder extends ValueWithVariable {
     @NotNull
@@ -47,8 +47,10 @@ public class VariableValuePlaceholder extends ValueWithVariable {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.name = original.name;
         ImmutableMap.Builder<VariableProperty, Integer> builder = new ImmutableMap.Builder<>();
-        for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
-            builder.put(property, evaluationContext.getProperty(original, property));
+        if (evaluationContext != null) {
+            for (VariableProperty property : VariableProperty.RETURN_VALUE_PROPERTIES) {
+                builder.put(property, evaluationContext.getProperty(original, property));
+            }
         }
         properties = builder.build();
     }

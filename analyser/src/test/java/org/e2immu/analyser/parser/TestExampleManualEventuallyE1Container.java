@@ -76,7 +76,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if (iteration > 1) {
+        if (iteration > 0) {
             Assert.assertEquals(1, typeInfo.typeAnalysis.get().approvedPreconditions.size());
             Assert.assertEquals("j=(-this.j) >= 0", typeInfo.typeAnalysis.get().approvedPreconditions.stream()
                     .map(Object::toString)
@@ -94,7 +94,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addBeforeTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

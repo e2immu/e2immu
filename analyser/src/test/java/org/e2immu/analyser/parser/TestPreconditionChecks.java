@@ -18,9 +18,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
@@ -62,17 +66,31 @@ public class TestPreconditionChecks extends CommonTestRunner {
                 }
             }
         }
-        if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+        if ("setInteger".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
             if (d.iteration == 0) {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.state);
+            } else if (d.iteration == 1) {
+                Assert.assertEquals("iteration " + d.iteration, "ii >= 0", d.state.toString());
             } else {
-                Assert.assertEquals("ii >= 0", d.state.toString());
-                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+                Assert.assertEquals("iteration " + d.iteration, "(null == this.integer and ii >= 0)", d.state.toString());
+
+                // set at the end of the synchronized block
+                Assert.assertEquals("ii >= 0", d.numberedStatement.state.get().toString());
+            }
+        }
+        if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            if (d.iteration > 0) {
+                Assert.assertTrue("Iteration: " + d.iteration, d.numberedStatement.errorValue.isSet());
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("setInteger".equals(methodInfo.name)) {
+            if (iteration > 0) {
+                Assert.assertEquals("(null == this.integer and ii >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
+            }
+        }
         if ("either".equals(methodInfo.name)) {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             Assert.assertEquals("(not (null == e1) or not (null == e2))", methodAnalysis.precondition.get().toString());
@@ -82,11 +100,18 @@ public class TestPreconditionChecks extends CommonTestRunner {
         }
     };
 
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if (iteration > 0 && "integer".equals(fieldInfo.name)) {
+            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("PreconditionChecks", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

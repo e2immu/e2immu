@@ -238,7 +238,9 @@ public class ConditionManager {
         Map<Value, Value> translation = new HashMap<>();
         filterResult.rest.visit(v -> {
             if (v instanceof VariableValue) {
-                translation.put(v, new VariableValuePlaceholder((VariableValue) v, evaluationContext, v.getObjectFlow()));
+                // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
+                // be copied in the property, which can reEvaluate later to constant true/false
+                translation.put(v, new VariableValuePlaceholder((VariableValue) v, null, v.getObjectFlow()));
             }
         });
 

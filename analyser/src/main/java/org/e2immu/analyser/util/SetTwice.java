@@ -47,6 +47,7 @@ public class SetTwice<T> {
 
     @Mark("overwritten+t")
     @Modified
+    @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void overwrite(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -59,6 +60,7 @@ public class SetTwice<T> {
 
     @Mark("overwritten+t")
     @Modified
+    @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void freeze() {
         if(this.t == null || overwritten) {
             throw new UnsupportedOperationException("Not yet set");
@@ -68,6 +70,7 @@ public class SetTwice<T> {
 
     @Mark("t")
     @Modified
+    @Precondition("null == this.t")
     public void set(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -81,12 +84,12 @@ public class SetTwice<T> {
     @Only(after = "t")
     @NotNull
     @NotModified
+    @Precondition("not (null == this.t)")
     public T get() {
-        T localT = t;
-        if (localT == null) {
+        if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
         }
-        return localT;
+        return t;
     }
 
     @NotModified

@@ -99,9 +99,11 @@ public class PreconditionChecks {
         this.i = p1 > p2 ? p1 + 3 : p2;
     }
 
+    @Variable
     private Integer integer;
 
     @NotNull
+    @Precondition("(null == this.integer and ii >= 0)")
     public Integer setInteger(int ii) {
         synchronized (this) {
             if (ii < 0) throw new UnsupportedOperationException();

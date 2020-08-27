@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,6 +45,7 @@ public class TestSetOnce extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+
         if ("get".equals(methodInfo.name)) {
             if (iteration == 0) {
                 Assert.assertFalse(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
@@ -51,13 +53,20 @@ public class TestSetOnce extends CommonTestRunner {
             } else {
                 Assert.assertTrue(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
 
-                TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
+                TransferValue tv = methodAnalysis.returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.linkedVariables.isSet());
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
-                Set<Variable> set = methodAnalysis.variablesLinkedToMethodResult.get();
-                Assert.assertEquals(1, set.size());
-                // we expect it to contain the field!
+                if (iteration > 1) {
+                    Set<Variable> set = methodAnalysis.variablesLinkedToMethodResult.get();
+                    Assert.assertEquals(2, set.size());
+                }
             }
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("set".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && d.iteration > 0) {
+            Assert.assertEquals("null == this.t", d.numberedStatement.precondition.get().toString());
         }
     };
 
@@ -65,6 +74,7 @@ public class TestSetOnce extends CommonTestRunner {
     public void test() throws IOException {
         testUtilClass(List.of("SetOnce"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

@@ -30,6 +30,7 @@ public class SetOnce<T> {
     private volatile T t;
 
     @Mark("t")
+    @Precondition("null == this.t")
     public void set(@NotNull T t) { // @NotModified implied
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -44,12 +45,12 @@ public class SetOnce<T> {
     @NotNull
     @NotModified
     @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
+    @Precondition("not (null == this.t)")
     public T get() {
-        T localT = t;
-        if (localT == null) {
+        if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
         }
-        return localT;
+        return t;
     }
     
     @NotModified

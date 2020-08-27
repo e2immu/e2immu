@@ -37,34 +37,6 @@ public class TestBasics extends CommonTestRunner {
         super(false);
     }
 
-    FieldAnalyserVisitor beforeFieldAnalyserVisitor = (iteration, fieldInfo) -> {
-
-        // check that the XML annotations have been read properly
-        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-
-        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-        if ("explicitlyFinal".equals(fieldInfo.name)) {
-            if (iteration == 0) {
-                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertFalse(fieldAnalysis.effectivelyFinalValue.isSet());
-
-                return;
-            }
-            if (iteration == 1) {
-                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
-                return;
-
-            } else if (iteration == 2) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                return;
-            }
-        }
-        Assert.fail();
-    };
-
     FieldAnalyserVisitor afterFieldAnalyserVisitor = (iteration, fieldInfo) -> {
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         if ("explicitlyFinal".equals(fieldInfo.name)) {
@@ -104,12 +76,19 @@ public class TestBasics extends CommonTestRunner {
         Assert.fail();
     };
 
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        // check that the XML annotations have been read properly
+        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+
+    };
+
     @Test
     public void test() throws IOException {
         testClass("Basics", 0, new DebugConfiguration.Builder()
-                .addBeforeFieldAnalyserVisitor(beforeFieldAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }
 

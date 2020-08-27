@@ -142,9 +142,6 @@ public class TypeAnalyser {
                 if (member instanceof MethodInfo) {
                     VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration, (MethodInfo) member);
 
-                    for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
-                        methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
-                    }
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
                     for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
@@ -160,9 +157,6 @@ public class TypeAnalyser {
                             VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
 
-                            for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.beforeMethodAnalyserVisitors) {
-                                methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
-                            }
                             try {
                                 if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
                                     changes = true;
@@ -181,9 +175,6 @@ public class TypeAnalyser {
                         }
                     }
 
-                    for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.beforeFieldAnalyserVisitors) {
-                        fieldAnalyserVisitor.visit(iteration, fieldInfo);
-                    }
                     VariableProperties fieldProperties = new VariableProperties(iteration, debugConfiguration, fieldInfo);
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
@@ -192,10 +183,6 @@ public class TypeAnalyser {
                     }
                     messages.addAll(fieldProperties.messages);
                 }
-            }
-
-            for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.beforeTypePropertyComputations) {
-                typeAnalyserVisitor.visit(iteration, typeInfo);
             }
 
             if (typeInfo.hasBeenDefined()) {
@@ -318,7 +305,11 @@ public class TypeAnalyser {
                 String label = labelOfPreconditionForMarkAndOnly(precondition);
                 Value inMap = tempApproved.get(label);
 
-                boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+                Boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+                if (isMark == null) {
+                    log(MARK, "Delaying, not all fieldSummaries known");
+                    return false;
+                }
                 if (isMark) {
                     if (inMap == null) {
                         tempApproved.put(label, precondition);
@@ -347,24 +338,29 @@ public class TypeAnalyser {
         return true;
     }
 
-    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
+    public static Boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
         Set<Variable> variables = precondition.variables();
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        return variables.stream().anyMatch(variable -> {
-            TransferValue tv = methodAnalysis.fieldSummaries.get(((FieldReference) variable).fieldInfo);
-            boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-            log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+        for (Variable variable : variables) {
+            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            // fieldSummaries are set after the first iteration
+            if (methodInfo.methodAnalysis.get().fieldSummaries.isSet(fieldInfo)) {
+                TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
+                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
 
-            if (assigned && tv.stateOnAssignment.isSet()) {
-                Value state = tv.stateOnAssignment.get();
-                if (isCompatible(state, precondition)) {
-                    log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
-                    return false;
+                if (assigned && tv.stateOnAssignment.isSet()) {
+                    Value state = tv.stateOnAssignment.get();
+                    if (isCompatible(state, precondition)) {
+                        log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
+                        return false;
+                    }
                 }
-            }
 
-            return assigned;
-        });
+                return assigned;
+            }
+        }
+        return false;
     }
 
     private static boolean isCompatible(Value v1, Value v2) {
