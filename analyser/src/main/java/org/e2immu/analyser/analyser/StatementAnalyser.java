@@ -368,6 +368,9 @@ public class StatementAnalyser {
                         variableProperties, statement, codeOrganization.forwardEvaluationInfo);
                 if (result.changes) changes = true;
                 value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
+                if(result.encounteredUnevaluatedVariables) {
+                    variableProperties.setDelayedEvaluation(true);
+                }
             } catch (RuntimeException rte) {
                 LOGGER.warn("Failed to evaluate expression in statement {}", statement);
                 throw rte;

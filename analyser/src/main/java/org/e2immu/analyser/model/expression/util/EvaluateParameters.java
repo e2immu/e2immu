@@ -112,6 +112,7 @@ public class EvaluateParameters {
             }
 
             // all the rest: preconditions
+            // TODO: also weed out conditions that are not on parameters, and not on `this`
             Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause, Value::isIndividualSizeRestriction).rest;
             if (rest != null) {
                 evaluationContext.addPrecondition(rest);

@@ -195,14 +195,16 @@ public class MethodAnalyser {
                                                    MethodAnalysis methodAnalysis,
                                                    VariableProperties methodProperties) {
         if (methodAnalysis.precondition.isSet()) return false; // already done
-        if (methodProperties.conditionManager.delayedState()) {
+        if (methodProperties.delayedState()) {
             log(DELAYED, "Delaying preconditions, not all escapes set", methodInfo.distinguishingName());
             return false;
         }
-        // take the last one of the top level statements
+
+        // TODO: need a guarantee that the precondition will be executed
+        // the two ways of collecting them do NOT ensure this at the moment
+        
         Stream<Value> preconditionsFromStatements = numberedStatements.stream()
-                .filter(numberedStatement -> //numberedStatement.indices.length == 1 &&
-                        numberedStatement.precondition.isSet())
+                .filter(numberedStatement -> numberedStatement.precondition.isSet())
                 .map(numberedStatement -> numberedStatement.precondition.get());
         Stream<Value> preconditionsFromMethods = methodProperties.streamPreconditions();
         Value[] preconditions = Stream.concat(preconditionsFromStatements, preconditionsFromMethods).toArray(Value[]::new);

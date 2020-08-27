@@ -51,13 +51,15 @@ public class TestEither extends CommonTestRunner {
         }
     };
 
+    private static final String EXPRESSION = "((null == a or not (null == b)) and (not (null == a) or null == b))";
+
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("Either".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId)) {
             if (0 == d.iteration) {
-                Assert.assertEquals("((null == a or not (null == b)) and (not (null == a) or null == b))", d.condition.toString());
+                Assert.assertEquals(EXPRESSION, d.condition.toString());
             } else if (1 == d.iteration) {
-                Assert.assertEquals("false", d.state.toString());
-                Assert.assertEquals("(not (null == a) and not (null == b))", d.condition.toString());
+                Assert.assertEquals(EXPRESSION, d.state.toString());
+                Assert.assertEquals(EXPRESSION, d.condition.toString());
             }
         }
     };
@@ -72,7 +74,7 @@ public class TestEither extends CommonTestRunner {
                 Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
-            if ("Either".equals(methodInfo.name)) {
+            if ("Either".equals(methodInfo.name) && iteration > 0) {
                 Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
                         methodInfo.methodAnalysis.get().precondition.get().toString());
             }

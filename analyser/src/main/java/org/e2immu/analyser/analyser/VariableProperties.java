@@ -60,6 +60,7 @@ class VariableProperties implements EvaluationContext {
     private boolean guaranteedToBeReachedInCurrentBlock = true;
     private NumberedStatement currentStatement;
     private boolean delaysInDependencyGraph;
+    private boolean delayedEvaluation;
 
     // all the rest is final
 
@@ -1205,5 +1206,13 @@ class VariableProperties implements EvaluationContext {
     @Override
     public Value getCurrentState() {
         return conditionManager.getState();
+    }
+
+    public void setDelayedEvaluation(boolean delayedEvaluation) {
+        this.delayedEvaluation = delayedEvaluation;
+    }
+
+    public boolean delayedState() {
+        return conditionManager.delayedState() || delayedEvaluation;
     }
 }
