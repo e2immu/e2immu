@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
@@ -101,12 +102,16 @@ public class FieldAccess implements Expression {
         VariableExpression.processVariable(variable, currentValue, evaluationContext, forwardEvaluationInfo);
 
         Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        if (scope instanceof NullValue) {
-            evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
-        } else {
-            boolean isNotNull = MultiLevel.isEffectivelyNotNull(evaluationContext.getProperty(scope, VariableProperty.NOT_NULL));
-            if (!isNotNull) {
-                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scope);
+        if (scope != UnknownValue.NO_VALUE) {
+            if (scope instanceof NullValue) {
+                evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+            } else {
+                int notNull = evaluationContext.getProperty(scope, VariableProperty.NOT_NULL);
+                if (notNull == MultiLevel.DELAY) {
+                    if (!MultiLevel.isEffectivelyNotNull(notNull)) {
+                        evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scope);
+                    }
+                }
             }
         }
         visitor.visit(this, evaluationContext, currentValue);

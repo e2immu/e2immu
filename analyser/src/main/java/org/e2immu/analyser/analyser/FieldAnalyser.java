@@ -59,7 +59,7 @@ public class FieldAnalyser {
         TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate();
+        boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
 
         // STEP 0: support data: does this field have to satisfy rules 2 and 3 of level 2 immutability?
 
@@ -202,9 +202,8 @@ public class FieldAnalyser {
             log(DELAYED, "Delaying @Size on {} until we know about @Final", fieldInfo.fullyQualifiedName());
             return false;
         }
-        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || fieldCanBeWrittenFromOutsideThisType)) {
-            log(SIZE, "Field @Size cannot be {}: it is not @Final, and either not private, "
-                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
+            log(SIZE, "Field {} cannot have @Size: it is not @Final, and it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
             return true;
         }
@@ -272,9 +271,9 @@ public class FieldAnalyser {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
             return false;
         }
-        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate() || !haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
-            log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, and either not private, or has no initialiser, "
-                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName());
+        if (isFinal == Level.FALSE && (!haveInitialiser || fieldCanBeWrittenFromOutsideThisType)) {
+            log(NOT_NULL, "Field {} cannot be @NotNull: it is not @Final, or has no initialiser, "
+                    + " or it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
             return true;
         }
@@ -303,14 +302,20 @@ public class FieldAnalyser {
         if (isFinal == Level.TRUE && MultiLevel.value(finalNotNullValue, MultiLevel.NOT_NULL) == MultiLevel.EFFECTIVE) {
             List<MethodInfo> methodsWhereFieldIsAssigned = methodsWhereFieldIsAssigned(fieldInfo);
             if (methodsWhereFieldIsAssigned.size() > 0 && !haveInitialiser) {
+
+                boolean linkingAndPreconditionsComputed = methodsWhereFieldIsAssigned.stream()
+                        .map(m -> m.methodAnalysis.get())
+                        .allMatch(m -> m.variablesLinkedToFieldsAndParameters.isSet() && m.precondition.isSet());
+                if (!linkingAndPreconditionsComputed) {
+                    log(DELAYED, "Delaying property @NotNull on {}, waiting for linking and preconditions", fieldInfo.fullyQualifiedName());
+                    return false;
+                }
+
                 // check that all methods have a precondition, and that the variable is linked to at least one of the parameters occurring in the precondition
                 boolean linkedToVarsInPrecondition = methodsWhereFieldIsAssigned.stream().allMatch(mi ->
                         mi.methodAnalysis.isSet() && mi.methodAnalysis.get().precondition.isSet() &&
-                                !Collections.disjoint(mi.methodAnalysis.get().
-                                                fieldSummaries.get(fieldInfo).
-                                                linkedVariables.get(),
-                                        mi.methodAnalysis.get()
-                                                .precondition.get().variables()));
+                                !Collections.disjoint(safeLinkedVariables(mi.methodAnalysis.get().fieldSummaries.get(fieldInfo)),
+                                        mi.methodAnalysis.get().precondition.get().variables()));
                 if (linkedToVarsInPrecondition) {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(methodInfo -> {
@@ -335,6 +340,10 @@ public class FieldAnalyser {
         }
         fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalNotNullValue);
         return true;
+    }
+
+    private static Set<Variable> safeLinkedVariables(TransferValue transferValue) {
+        return transferValue.linkedVariables.isSet() ? transferValue.linkedVariables.get() : Set.of();
     }
 
     private static List<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
@@ -395,10 +404,9 @@ public class FieldAnalyser {
             log(DELAYED, "Delaying {} on {} until we know about @Final", property, fieldInfo.fullyQualifiedName());
             return false;
         }
-        if (isFinal == Level.FALSE && (!fieldInfo.isPrivate()
-                || fieldCanBeWrittenFromOutsideThisType)) {
-            log(NOT_NULL, "Field {} cannot be {}: it is not @Final, and either not private, "
-                    + " or it can be accessed from outside this class", fieldInfo.fullyQualifiedName(), property);
+        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
+            log(NOT_NULL, "Field {} cannot be {}: it is not @Final, and it can be assigned to from outside this class",
+                    fieldInfo.fullyQualifiedName(), property);
             fieldAnalysis.setProperty(property, property.falseValue); // in the case of size, FALSE means >= 0
             return true;
         }
@@ -435,14 +443,14 @@ public class FieldAnalyser {
         return false;
     }
 
-    private boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
+    private static boolean delaysOnFieldSummariesResolved(TypeInspection typeInspection, FieldInfo fieldInfo) {
         return typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .map(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo))
-                .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);// || // FALSE indicates that there are delays, TRUE that they have been resolved, DELAY that we're not aware
-                     //   !fs.linkedVariables.isSet()); // ensure that the linking has been set
+                .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);
+        // FALSE indicates that there are delays, TRUE that they have been resolved, DELAY that we're not aware
     }
 
-    private int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {
+    private static int computeValueFromContext(TypeInspection typeInspection, FieldInfo fieldInfo, VariableProperty property, boolean allDelaysResolved) {
         IntStream contextRestrictions = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(property));
