@@ -129,7 +129,7 @@ public class StatementAnalyser {
                 startStatement.neverContinues.set(neverContinues);
             }
             if (!startStatement.escapes.isSet()) {
-                if (variableProperties.conditionManager.delayedCondition()) {
+                if (variableProperties.conditionManager.delayedCondition() || variableProperties.delayedState()) {
                     log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.streamIndices());
                 } else {
                     log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
