@@ -43,7 +43,7 @@ public class ConditionManager {
     }
 
     public void addToState(Value value) {
-        if (!(value instanceof BoolValue)) {
+        if (!(value.isInstanceOf(BoolValue.class))) {
             setState(combineWithState(value));
         }
     }
@@ -108,7 +108,7 @@ public class ConditionManager {
                 Value::isIndividualNotNullClauseOnParameter).accepted;
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> e.getValue() instanceof NullValue)
+                .filter(e -> e.getValue().isInstanceOf(NullValue.class))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
@@ -193,19 +193,22 @@ public class ConditionManager {
     }
 
     private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
-        if (value instanceof ValueWithVariable && variable.equals(((ValueWithVariable) value).variable)) {
+        ValueWithVariable valueWithVariable;
+        if ((valueWithVariable = value.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(valueWithVariable.variable)) {
             return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
         }
-        if (removeEqualityOnVariable && value instanceof EqualsValue) {
-            EqualsValue equalsValue = (EqualsValue) value;
-            if (equalsValue.lhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.lhs).variable)) {
-                return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.lhs).variable, value), UnknownValue.EMPTY);
+        EqualsValue equalsValue;
+        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
+            ValueWithVariable lhs;
+            if ((lhs = equalsValue.lhs.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(lhs.variable)) {
+                return new Value.FilterResult(Map.of(lhs.variable, value), UnknownValue.EMPTY);
             }
-            if (equalsValue.rhs instanceof ValueWithVariable && variable.equals(((ValueWithVariable) equalsValue.rhs).variable)) {
-                return new Value.FilterResult(Map.of(((ValueWithVariable) equalsValue.rhs).variable, value), UnknownValue.EMPTY);
+            ValueWithVariable rhs;
+            if ((rhs = equalsValue.rhs.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(rhs.variable)) {
+                return new Value.FilterResult(Map.of(rhs.variable, value), UnknownValue.EMPTY);
             }
         }
-        if (value instanceof MethodValue && value.variables().contains(variable)) {
+        if (value.isInstanceOf(MethodValue.class) && value.variables().contains(variable)) {
             return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
         }
         return new Value.FilterResult(Map.of(), value);
@@ -272,9 +275,9 @@ public class ConditionManager {
      * @return state, translated to assignment target: this.j < 0
      */
     public Value stateOfValue(Variable assignmentTarget, Value value) {
-        if (value instanceof ValueWithVariable && haveNonEmptyState() && !delayedState()) {
-            Variable variable = ((ValueWithVariable) value).variable;
-            Value state = individualStateInfo(variable);
+        ValueWithVariable valueWithVariable;
+        if ((valueWithVariable = value.asInstanceOf(ValueWithVariable.class)) != null && haveNonEmptyState() && !delayedState()) {
+            Value state = individualStateInfo(valueWithVariable.variable);
             // now translate the state (j < 0) into state of the assignment target (this.j < 0)
             return state.reEvaluate(null,
                     Map.of(value, new VariableValue(null, assignmentTarget, assignmentTarget.name())));
