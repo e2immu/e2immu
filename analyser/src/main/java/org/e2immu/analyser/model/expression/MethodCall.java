@@ -103,7 +103,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
 
         // null scope
-        if (objectValue instanceof NullValue) {
+        if (objectValue.isInstanceOf(NullValue.class)) {
             evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
 
@@ -124,9 +124,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 evaluationContext.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
-        if (modified == Level.TRUE && objectValue instanceof ValueWithVariable) {
-            Variable variable = ((ValueWithVariable) objectValue).variable;
-            evaluationContext.modifyingMethodAccess(variable);
+        ValueWithVariable valueWithVariable;
+        if (modified == Level.TRUE && (valueWithVariable = objectValue.asInstanceOf(ValueWithVariable.class)) != null) {
+            evaluationContext.modifyingMethodAccess(valueWithVariable.variable);
         }
 
         // @Only check
@@ -202,9 +202,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         int immutable = objectValue.getProperty(evaluationContext, VariableProperty.IMMUTABLE);
-        if(modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
+        if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             evaluationContext.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
-                    "Method: "+methodInfo.distinguishingName());
+                    "Method: " + methodInfo.distinguishingName());
         }
     }
 
@@ -245,7 +245,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodAnalysis.singleReturnValue.isSet()) {
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
-            if (srv instanceof InlineValue) {
+            if (srv.isInstanceOf(InlineValue.class)) {
                 return srv.reEvaluate(evaluationContext, EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters));
             }
             if (srv.isConstant()) {
@@ -262,8 +262,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue) {
         if (!objectValue.isConstant()) return null;
-        if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) && objectValue instanceof StringValue) {
-            return new IntValue(((StringValue) objectValue).value.length());
+        StringValue stringValue;
+        if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
+                (stringValue = objectValue.asInstanceOf(StringValue.class)) != null) {
+            return new IntValue(stringValue.value.length());
         }
         return null;
     }
@@ -397,8 +399,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // but if objectValue is a method itself, and that method preserves the size, then we remove that method
     // object.entrySet().size() == object.size(); the entrySet() method has a @Size(copy = true) annotation
     private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue, EvaluationContext evaluationContext) {
-        if (objectValue instanceof MethodValue) {
-            MethodValue methodValue = (MethodValue) objectValue;
+        MethodValue methodValue;
+        if ((methodValue = objectValue.asInstanceOf(MethodValue.class)) != null) {
             if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
                 // there must be a sizeMethod()
                 TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
@@ -441,10 +443,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         int newSize = numSizeInParameters == 1 ? sizeInParameters.get(0) : sizeOfMethod;
         int currentSize = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
-        if (newSize > currentSize && objectValue instanceof VariableValue) {
-            Variable variable = ((VariableValue) objectValue).variable;
-            evaluationContext.addProperty(variable, VariableProperty.SIZE, newSize);
-            log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variable.detailedString(), newSize,
+        VariableValue variableValue;
+        if (newSize > currentSize && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
+            evaluationContext.addProperty(variableValue.variable, VariableProperty.SIZE, newSize);
+            log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variableValue.variable.detailedString(), newSize,
                     methodInfo.distinguishingName());
         } else {
             log(SIZE, "No effect of @Size annotation on modifying method call {}", methodInfo.distinguishingName());

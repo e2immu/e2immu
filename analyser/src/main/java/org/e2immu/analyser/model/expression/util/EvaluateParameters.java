@@ -94,7 +94,7 @@ public class EvaluateParameters {
             // NOT_NULL
             Map<Variable, Value> individualNullClauses = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause).accepted;
             for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!(nullClauseEntry.getValue() instanceof NullValue) && nullClauseEntry.getKey() instanceof ParameterInfo) {
+                if (!(nullClauseEntry.getValue().isInstanceOf(NullValue.class)) && nullClauseEntry.getKey() instanceof ParameterInfo) {
                     evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
             }

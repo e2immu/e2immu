@@ -80,7 +80,7 @@ public class NotModifiedChecks {
         l2 = l0 + l1;
     }
 
-    @E1Container // final fields, all parameters @NotModified
+    @E1Immutable // final fields, not all parameters @NotModified
     static class C1 {
         @Linked(to = {"C1.set1"})
         @NotNull
