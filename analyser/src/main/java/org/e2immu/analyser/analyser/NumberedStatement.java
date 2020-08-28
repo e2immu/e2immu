@@ -51,6 +51,11 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public final int[] indices;
     public final SideEffect sideEffect;
 
+    // Transformations
+    // if the statement is not important anymore, set it to "ExpressionAsStatement" with "EmptyExpression"
+    // the replacement should have the same indices
+    public final SetOnce<NumberedStatement> replacement = new SetOnce<>();
+
     public NumberedStatement(@NotNull SideEffectContext sideEffectContext,
                              @NotNull Statement statement,
                              NumberedStatement parent,

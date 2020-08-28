@@ -27,6 +27,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -382,4 +383,8 @@ public class BinaryOperator implements Expression {
         return List.of(lhs, rhs);
     }
 
+    @Override
+    public List<Variable> variables() {
+        return ListUtil.immutableConcat(lhs.variables(), rhs.variables());
+    }
 }

@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.pattern.ConditionalAssignment;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +59,13 @@ public class StatementAnalyser {
         this.methodInfo = methodInfo;
     }
 
-    public boolean computeVariablePropertiesOfBlock(NumberedStatement startStatement, EvaluationContext evaluationContext) {
+    public boolean computeVariablePropertiesOfBlock(NumberedStatement startStatementIn, EvaluationContext evaluationContext) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
-
         boolean changes = false;
+
+        NumberedStatement startStatement = startStatementIn.replacement.isSet() ? startStatementIn.replacement.get() : startStatementIn;
         NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
+
         boolean neverContinues = false;
         boolean escapesViaException = false;
         List<BreakOrContinueStatement> breakAndContinueStatementsInBlocks = new ArrayList<>();
@@ -82,13 +85,13 @@ public class StatementAnalyser {
 
                 for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                         ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVariableVisitors) {
-                    variableProperties.variableProperties().forEach(aboutVariable -> {
-                        statementAnalyserVariableVisitor.visit(new StatementAnalyserVariableVisitor.Data(((VariableProperties) evaluationContext).iteration, methodInfo,
-                                statementId, aboutVariable.name, aboutVariable.variable,
-                                aboutVariable.getCurrentValue(),
-                                aboutVariable.getStateOnAssignment(),
-                                aboutVariable.getObjectFlow(), aboutVariable.properties()));
-                    });
+                    variableProperties.variableProperties().forEach(aboutVariable ->
+                            statementAnalyserVariableVisitor.visit(
+                                    new StatementAnalyserVariableVisitor.Data(((VariableProperties) evaluationContext).iteration, methodInfo,
+                                            statementId, aboutVariable.name, aboutVariable.variable,
+                                            aboutVariable.getCurrentValue(),
+                                            aboutVariable.getStateOnAssignment(),
+                                            aboutVariable.getObjectFlow(), aboutVariable.properties())));
                 }
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
                     statementAnalyserVisitor.visit(
@@ -117,6 +120,9 @@ public class StatementAnalyser {
                 }
                 if (statement.escapes.isSet() && statement.escapes.get()) escapesViaException = true;
                 statement = statement.next.get().orElse(null);
+                if (statement != null && statement.replacement.isSet()) {
+                    statement = statement.replacement.get();
+                }
             }
             // at the end, at the top level, there is a return, even if it is implicit
             boolean atTopLevel = variableProperties.depth == 0;
@@ -139,9 +145,9 @@ public class StatementAnalyser {
                         if (startStatement.parent == null) {
                             log(VARIABLE_PROPERTIES, "Observing unconditional escape");
                         } else {
-                            notNullEscapes(variableProperties, startStatement);
-                            sizeEscapes(variableProperties, startStatement);
-                            precondition(variableProperties, startStatement);
+                            notNullEscapes(variableProperties);
+                            sizeEscapes(variableProperties);
+                            precondition(variableProperties, startStatement.parent);
                         }
                     }
                 }
@@ -166,7 +172,7 @@ public class StatementAnalyser {
     }
 
     // whatever that has not been picked up by the notNull and the size escapes
-    private static void precondition(VariableProperties variableProperties, NumberedStatement startStatement) {
+    private static void precondition(VariableProperties variableProperties, NumberedStatement parentStatement) {
         Value precondition = variableProperties.conditionManager.escapeCondition(variableProperties);
         if (precondition != UnknownValue.EMPTY) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
@@ -174,8 +180,8 @@ public class StatementAnalyser {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
 
                 // set the precondition on the top level statement
-                if (!startStatement.parent.precondition.isSet()) {
-                    startStatement.parent.precondition.set(precondition);
+                if (!parentStatement.precondition.isSet()) {
+                    parentStatement.precondition.set(precondition);
                 }
                 if (variableProperties.uponUsingConditional != null) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
@@ -185,7 +191,7 @@ public class StatementAnalyser {
         }
     }
 
-    private static void notNullEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
+    private static void notNullEscapes(VariableProperties variableProperties) {
         Set<Variable> nullVariables = variableProperties.conditionManager.findIndividualNullConditions();
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
@@ -200,7 +206,7 @@ public class StatementAnalyser {
         }
     }
 
-    private static void sizeEscapes(VariableProperties variableProperties, NumberedStatement startStatement) {
+    private static void sizeEscapes(VariableProperties variableProperties) {
         Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionManager.findIndividualSizeRestrictionsInCondition();
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
@@ -331,6 +337,11 @@ public class StatementAnalyser {
             try {
                 EvaluationResult result = computeVariablePropertiesOfExpression(initialiser, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);
                 if (result.changes) changes = true;
+
+                Value value = result.value;
+                if (codeOrganization.initialisers.size() == 1 && value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
+                    statement.valueOfExpression.set(value);
+                }
             } catch (RuntimeException rte) {
                 LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statement);
                 throw rte;
@@ -476,6 +487,7 @@ public class StatementAnalyser {
                 log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statement.streamIndices());
                 if (!statement.errorValue.isSet()) statement.errorValue.set(true);
             };
+
         } else {
             uponUsingConditional = null;
 
@@ -603,6 +615,9 @@ public class StatementAnalyser {
         }
 
         // FINALLY, set the state
+
+        // first attempt at detecting a transformation
+        ConditionalAssignment.tryToDetectTransformation(statement, variableProperties);
 
         if (!variableProperties.conditionManager.delayedState() && !statement.state.isSet()) {
             statement.state.set(variableProperties.conditionManager.getState());
