@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -350,7 +351,8 @@ class VariableProperties implements EvaluationContext {
     }
 
     private Value safeFinalFieldValue(Value v) {
-        return v instanceof FinalFieldValue ? ((FinalFieldValue) v).copy(this) : v;
+        FinalFieldValue finalFieldValue;
+        return (finalFieldValue = v.asInstanceOf(FinalFieldValue.class)) != null ? finalFieldValue.copy(this) : v;
     }
 
     public void ensureThisVariable(This thisVariable) {
@@ -448,7 +450,7 @@ class VariableProperties implements EvaluationContext {
         // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            if (!fieldInfo.hasBeenDefined() || aboutVariable.resetValue instanceof VariableValue) {
+            if (!fieldInfo.hasBeenDefined() || aboutVariable.resetValue.isInstanceOf(VariableValue.class)) {
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                     int value = fieldInfo.fieldAnalysis.get().getProperty(variableProperty);
                     if (value == Level.DELAY) value = variableProperty.falseValue;
@@ -528,8 +530,9 @@ class VariableProperties implements EvaluationContext {
         }
 
         Value currentValue = aboutVariable.getCurrentValue();
-        if (!(currentValue instanceof ValueWithVariable)) return;
-        Variable other = ((ValueWithVariable) currentValue).variable;
+        ValueWithVariable valueWithVariable;
+        if ((valueWithVariable = currentValue.asInstanceOf(ValueWithVariable.class)) == null) return;
+        Variable other = valueWithVariable.variable;
         if (!variable.equals(other)) {
             addProperty(other, variableProperty, value);
         }
@@ -573,7 +576,7 @@ class VariableProperties implements EvaluationContext {
         }
         // we can only copy the INSTANCE_PROPERTIES like NOT_NULL for VariableValues
         // for other values, NOT_NULL in the properties means a restriction
-        if (aboutVariable.getCurrentValue() instanceof VariableValue) {
+        if (aboutVariable.getCurrentValue().isInstanceOf(VariableValue.class)) {
             for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
                 aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
             }
@@ -588,8 +591,9 @@ class VariableProperties implements EvaluationContext {
     }
 
     private void resetToInitialValues(AboutVariable aboutVariable) {
-        if (aboutVariable.initialValue instanceof Instance) {
-            resetToNewInstance(aboutVariable, (Instance) aboutVariable.initialValue);
+        Instance instance;
+        if ((instance = aboutVariable.initialValue.asInstanceOf(Instance.class)) != null) {
+            resetToNewInstance(aboutVariable, instance);
         } else {
             aboutVariable.setCurrentValue(aboutVariable.initialValue,
                     conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.initialValue),
@@ -769,7 +773,7 @@ class VariableProperties implements EvaluationContext {
                 Value singleValue = av.getCurrentValue();
                 log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
                 localAv.setCurrentValue(singleValue, conditionManager.stateOfValue(localAv.variable, singleValue), av.getObjectFlow());
-                if (singleValue instanceof VariableValue) {
+                if (singleValue.isInstanceOf(VariableValue.class)) {
                     int notNull = assignmentContexts.get(0).getProperty(singleValue, VariableProperty.NOT_NULL);
                     localAv.setProperty(VariableProperty.NOT_NULL, notNull);
                 }
@@ -923,13 +927,14 @@ class VariableProperties implements EvaluationContext {
     }
 
     public int getProperty(Value value, VariableProperty variableProperty) {
+        // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
         if (value instanceof VariableValue) {
             return getProperty(((VariableValue) value).variable, variableProperty);
         }
         // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
         // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
         // See TestSMapList
-        if (!(value instanceof Constant) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
+        if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
             if (VariableProperty.NOT_NULL == variableProperty) {
                 int notNull = conditionManager.notNull(value);
                 if (notNull != Level.DELAY) return notNull;
@@ -986,10 +991,12 @@ class VariableProperties implements EvaluationContext {
         if (assignmentToNonEmptyExpression) {
             aboutVariable.removeProperties(VariableProperty.REMOVE_AFTER_ASSIGNMENT);
 
-            if (value instanceof Instance) {
-                resetToNewInstance(aboutVariable, (Instance) value);
-            } else if (value instanceof VariableValue) {
-                AboutVariable other = findComplain(((VariableValue) value).variable);
+            Instance instance;
+            VariableValue variableValue;
+            if ((instance = value.asInstanceOf(Instance.class)) != null) {
+                resetToNewInstance(aboutVariable, instance);
+            } else if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
+                AboutVariable other = findComplain(variableValue.variable);
                 if (other.fieldReferenceState == SINGLE_COPY) {
                     aboutVariable.setCurrentValue(value, conditionManager.stateOfValue(at, value), value.getObjectFlow());
                 } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
@@ -1118,8 +1125,8 @@ class VariableProperties implements EvaluationContext {
             ((ParameterInfo) variable).parameterAnalysis.get().improveProperty(property, value);
         }
         Value current = currentValue(variable);
-        if (current instanceof VariableValue) {
-            VariableValue variableValue = (VariableValue) current;
+        VariableValue variableValue;
+        if ((variableValue = current.asInstanceOf(VariableValue.class)) != null) {
             addProperty(variableValue.variable, property, value);
             if (variableValue.variable instanceof ParameterInfo) {
                 ((ParameterInfo) variableValue.variable).parameterAnalysis.get().improveProperty(property, value);
@@ -1194,8 +1201,9 @@ class VariableProperties implements EvaluationContext {
             ObjectFlow split = createInternalObjectFlow(objectFlow.type, Origin.INTERNAL);
             objectFlow.addNext(split);
             split.addPrevious(objectFlow);
-            if (value instanceof VariableValue) {
-                updateObjectFlow(((VariableValue) value).variable, split);
+            VariableValue variableValue;
+            if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
+                updateObjectFlow(variableValue.variable, split);
             }
             log(OBJECT_FLOW, "Split {}", objectFlow);
             return split;
