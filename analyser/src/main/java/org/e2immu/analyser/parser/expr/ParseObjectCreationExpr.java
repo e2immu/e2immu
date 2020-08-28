@@ -26,10 +26,7 @@ import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Resolver;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
@@ -42,6 +39,7 @@ public class ParseObjectCreationExpr {
             anonymousType.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             Resolver.sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+            anonymousType.typeAnalysis.get().supportDataTypes.set(Set.of());
             // TODO at the moment there is no constructor, but we could create an anonymous one
             return new NewObject(parameterizedType, anonymousType);
         }

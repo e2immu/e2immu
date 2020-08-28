@@ -207,57 +207,48 @@ public class MethodValue implements Value {
      *
      */
 
-    private static final Set<Variable> INDEPENDENT = Set.of();
+    private static final Set<Variable> NOT_LINKED = Set.of();
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        // RULE 1
-        ParameterizedType returnType = methodInfo.returnType();
-        if (returnType.isVoid()) return INDEPENDENT; // no assignment
 
+        // RULE 0: void method cannot link
+        ParameterizedType returnType = methodInfo.returnType();
+        if (returnType.isVoid()) return NOT_LINKED; // no assignment
+
+        // RULE 1: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
             if (immutable >= MultiLevel.EVENTUAL) {
-                return INDEPENDENT;
+                return NOT_LINKED;
             }
         }
 
-        // RULE 2
-        boolean methodInfoDifferentType = methodInfo.typeInfo != evaluationContext.getCurrentType();
-        if (methodInfoDifferentType) {
-            int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            if (independent == Level.DELAY) return null;
-            if (independent == Level.TRUE) return INDEPENDENT;
-        }
-
-        // RULE 3
-        int identity = methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY) return null;
-        if (identity == Level.TRUE) return parameters.get(0).linkedVariables(evaluationContext);
-
-        // some prep.
+        // RULE 2: E2IMMU parameters cannot link: implemented recursively by rule 1 applied to the parameter!
 
         Set<Variable> result = new HashSet<>();
         for (Value p : parameters) {
+            // the parameter value is not E2IMMU
             Set<Variable> cd = p.linkedVariables(evaluationContext);
             if (cd == null) return null;
             result.addAll(cd);
         }
 
-        // RULE 4, in a = b.method(c,d), return c and d when b is E2Immutable
+        // RULE 3: E2IMMU object cannot link
+        // RULE 4: independent method: no link to object
+
+        int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
         int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-        if (objectE2Immutable == Level.DELAY) return null;
-        if (methodInfoDifferentType && objectE2Immutable >= MultiLevel.EVENTUAL_AFTER) {// RULE 3
-            return result;
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
+        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
+        if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == Level.FALSE)) {
+            Set<Variable> b = object.linkedVariables(evaluationContext);
+            if (b == null) return null;
+            result.addAll(b);
         }
 
-        // default case, add b
-        Set<Variable> b = object.linkedVariables(evaluationContext);
-        if (b == null) return null;
-
-        result.addAll(b);
         return result;
     }
 

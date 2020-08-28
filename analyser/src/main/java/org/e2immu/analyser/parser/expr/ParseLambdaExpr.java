@@ -133,6 +133,7 @@ public class ParseLambdaExpr {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
+        typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
         // TODO this is the absolute minimum to recognize the type + method as functional interface. More needs to be done
         return typeInfo.asParameterizedType();
     }

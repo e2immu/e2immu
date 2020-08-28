@@ -83,7 +83,7 @@ public class Instance implements Value {
                 .collect(Collectors.joining(", ")) + ")";
     }
 
-    private static final Set<Variable> INDEPENDENT = Set.of();
+    private static final Set<Variable> NO_LINKS = Set.of();
 
     /*
      * Rules, assuming the notation b = new B(c, d)
@@ -97,25 +97,24 @@ public class Instance implements Value {
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         // RULE 1
-        if (constructorParameterValues == null || constructor == null) return INDEPENDENT;
+        if (constructorParameterValues == null || constructor == null) return NO_LINKS;
         if (constructorParameterValues.isEmpty() && constructor.typeInfo.isStatic()) {
-            return INDEPENDENT;
+            return NO_LINKS;
         }
 
         // RULE 2, 3
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
-            int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            if (independent == Level.DELAY) return null;
-            if (independent == Level.TRUE) {
-                return INDEPENDENT; // RULE 2
-            }
             int immutable = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
-            if (MultiLevel.isE2Immutable(immutable)) { // RULE 3
-                return INDEPENDENT;
+            int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            if (independent == Level.DELAY) return null;
+
+            if (MultiLevel.isE2Immutable(immutable) || independent == Level.TRUE) { // RULE 3
+                return NO_LINKS;
             }
         }
+
         // default case
         Set<Variable> result = new HashSet<>();
         for (Value value : constructorParameterValues) {

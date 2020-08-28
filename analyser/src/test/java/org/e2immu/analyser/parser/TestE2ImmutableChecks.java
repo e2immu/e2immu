@@ -94,7 +94,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("get4".equals(methodInfo.name)) {
             if (iteration > 1) {
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.FALSE, independent);
+                Assert.assertEquals(Level.TRUE, independent);
             }
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
             if (iteration > 0) {

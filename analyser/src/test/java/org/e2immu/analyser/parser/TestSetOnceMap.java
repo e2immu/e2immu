@@ -52,7 +52,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             if (iteration > 0) {
                 // independent, because does not return a support data type
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.FALSE, independent);
+                Assert.assertEquals(Level.TRUE, independent);
             }
         }
         if ("getOtherwiseNull".equals(methodInfo.name)) {
@@ -61,7 +61,7 @@ public class TestSetOnceMap extends CommonTestRunner {
                 Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
                 // independent, because does not return a support data type
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.FALSE, independent);
+                Assert.assertEquals(Level.TRUE, independent);
             }
         }
         if ("isEmpty".equals(methodInfo.name)) {

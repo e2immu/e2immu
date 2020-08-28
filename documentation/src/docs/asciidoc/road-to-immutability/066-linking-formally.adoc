@@ -11,32 +11,32 @@ Rule 1: in an assignment `v = w`, variable `v` links to variable `w`.
 ****
 
 ****
-Rule 2: in an assignment `v = a.method(b, c)`, the default rule is that variable `v` links to `a`, `b` and `c`.
+Rule 2: in an assignment `v = a.method(b)`,`v` potentially links to `a` and `b`.
 ****
+
+Note that saying `v` links to `a` is the same as saying that the return value of `method` links to some field inside `A`, the type of `a`.
+This is especially clear when `a == this`.
 
 We discern a number of special cases:
 
-. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` is independent of `a`, `b` and `c`.
-. When `method` has the annotation {independent}, `v` is by definition of the annotation independent of `a`, `b` and `c`.
-. If `a` is of {e2immutable} type, `v` is independent of `a`: it only links to `b` and `c`.
-. In the case of `method` marked {identity} (defined in <<identity-and-fluent>> as a method which returns its first parameter),
-`v` links to the first parameter `b` only.
+. When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` does not link to `a` nor `b`.
+. If `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
+. When `method` has the annotation {independent}, `v` cannot link to `a`.
+. If `a` is of {e2immutable} type, all its methods are independent; therefore, `v` cannot link to `a`.
 
-Note that when `a == this`, as in `v = method(b, c)`, `v` could link to any field in the type.
-Therefore, unless any of the rules above apply, we will link `v` to `this`.
-This is the main reason that {e2immu} analyser insists on marking a method `static` when it does not touch any fields.
+It is important to note that the analyser only computes independence for non-modifying methods, and that all methods returning non-support-data types are automatically independent.
 
 ****
-Rule 3: in an assignment `v = new A(b, c)`, the rules are very similar to that of a normal method call.
-By default, `v` links to `b` and `c`.
+Rule 3: in an assignment `v = new A(b)`, `v` potentially links to `b`.
 ****
 
-We observe that:
+Noting that independence is automatic for non-support-data types, we observe:
 
-. If `A` is {e2immutable}, then `v` is independent of `b` and `c`.
-. The same holds when the constructor `A` is independent: `v` becomes independent of `b` and `c`.
+. When the constructor `A` is independent, `v` cannot link to `b`.
+. When `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
+. If `A` is {e2immutable}, then `v` cannot link to `b` nor `c`, because all constructors are independent.
 
-Most of the other rules are consequences of the basic rules above.
+Most of the other linking computations are consequences of the basic rules above.
 For example,
 
 . in an assignment `v = condition ? a : b`, `v` links to both `a` and `b`.

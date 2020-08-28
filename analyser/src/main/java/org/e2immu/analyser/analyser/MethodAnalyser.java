@@ -711,7 +711,11 @@ public class MethodAnalyser {
         if (!methodInfo.isConstructor) {
             // we only compute @Independent/@Dependent on methods when the method is @NotModified
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-            if (modified != Level.FALSE) return false;
+            if (modified == Level.DELAY) return false; // wait
+            if (modified == Level.TRUE) {
+                methodAnalysis.setProperty(VariableProperty.INDEPENDENT, Level.FALSE);
+                return true;
+            }
         } // else: for constructors, we assume @Modified so that rule is not that useful
 
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
@@ -721,8 +725,12 @@ public class MethodAnalyser {
 
         // PART 1: check the return object, if it is there
 
+        // support data types are not set for types that have not been defined; there, we rely on annotations
         boolean returnObjectIsIndependent;
-        if (!methodInfo.isConstructor && !methodInfo.returnType().isVoid()) {
+        if (!methodInfo.isConstructor && !methodInfo.isVoid() &&
+                methodInfo.typeInfo.typeAnalysis.get().supportDataTypes.isSet() &&
+                methodInfo.typeInfo.typeAnalysis.get().supportDataTypes.get().contains(methodInfo.returnType())) {
+            // method returns a support data type
             if (!methodAnalysis.variablesLinkedToMethodResult.isSet()) {
                 log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
                         methodInfo.fullyQualifiedName());
@@ -750,6 +758,7 @@ public class MethodAnalyser {
             }
             returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE;
         } else {
+            // method does not return a support data type.
             returnObjectIsIndependent = true;
         }
 
