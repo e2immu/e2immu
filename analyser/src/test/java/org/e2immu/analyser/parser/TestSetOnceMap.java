@@ -86,6 +86,8 @@ public class TestSetOnceMap extends CommonTestRunner {
         if ("put".equals(methodInfo.name)) {
             if (iteration > 0) {
                 Assert.assertEquals("not (this.frozen)", methodInfo.methodAnalysis.get().precondition.get().toString());
+            }
+            if (iteration > 1) {
                 Assert.assertEquals("not (this.frozen)", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
             }
         }

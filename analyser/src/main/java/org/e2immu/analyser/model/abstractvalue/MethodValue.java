@@ -219,7 +219,7 @@ public class MethodValue implements Value {
         if (notSelf) {
             int immutable = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
-            if (MultiLevel.isE2Immutable(immutable)) {
+            if (immutable >= MultiLevel.EVENTUAL) {
                 return INDEPENDENT;
             }
         }

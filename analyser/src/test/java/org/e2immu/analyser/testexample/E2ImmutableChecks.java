@@ -58,7 +58,8 @@ public class E2ImmutableChecks {
     static class E2Container2 {
         @Nullable
         public final E2Container2 parent2;
-        public int level2;
+        @Final
+        private int level2;
         @Nullable
         public final String value2;
 
@@ -72,6 +73,10 @@ public class E2ImmutableChecks {
             this.parent2 = parent2Param;
             level2 = parent2Param.level2 + 2;
             this.value2 = valueParam2;
+        }
+
+        public int getLevel2() {
+            return level2;
         }
     }
 
@@ -99,9 +104,9 @@ public class E2ImmutableChecks {
     }
 
     @E2Immutable
-    @MutableModifiesArguments //  not a @Container!
     static class E2Immutable4 {
         @E2Container
+        @NotNull1
         public final Set<String> strings4;
 
         public E2Immutable4(@NotNull @NotModified Set<String> input4) {
@@ -109,7 +114,7 @@ public class E2ImmutableChecks {
         }
 
         @E2Container
-        @NotNull
+        @NotNull1
         @Constant(type = AnnotationType.VERIFY_ABSENT)
         public Set<String> getStrings4() {
             return strings4;
@@ -118,6 +123,7 @@ public class E2ImmutableChecks {
         @Identity
         @Linked(type = AnnotationType.VERIFY_ABSENT)
         @Constant(type = AnnotationType.VERIFY_ABSENT)
+        // TODO we should be @NotNull1 for input4
         public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input4) {
             input4.addAll(strings4);
             return input4;
@@ -131,6 +137,10 @@ public class E2ImmutableChecks {
 
         public E2Container4(Map<String, String> map4Param) {
             map4 = new HashMap<>(map4Param); // not linked
+        }
+
+        public String get4(String input) {
+            return map4.get(input);
         }
 
         @E2Container

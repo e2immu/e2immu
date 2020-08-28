@@ -311,18 +311,21 @@ public class MethodAnalyser {
 
     private boolean computeOnlyMarkPrepWork(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.preconditionForMarkAndOnly.isSet()) return false; // already done
-        boolean allFieldsFinalValueKnown = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
-                field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
-        if (!allFieldsFinalValueKnown) {
-            log(DELAYED, "Delaying compute @Only and @Mark, not all field's final state known in {}", methodInfo.distinguishingName());
-            return false;
+        TypeInfo typeInfo = methodInfo.typeInfo;
+        while (true) {
+            boolean haveNonFinalFields = methodInfo.typeInfo.typeInspection.get().fields.stream().anyMatch(field ->
+                    field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE);
+            if (haveNonFinalFields) {
+                break;
+            }
+            ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
+            typeInfo = parentClass.bestTypeInfo();
+            if (typeInfo == null) {
+                log(DELAYED, "Delaying/Ignoring @Only and @Mark, cannot find a non-final field in {}", methodInfo.distinguishingName());
+                return false;
+            }
         }
-        boolean allFieldsFinal = methodInfo.typeInfo.typeInspection.get().fields.stream().allMatch(field ->
-                field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.TRUE);
-        if (allFieldsFinal) {
-            log(MARK, "No point in computing @Mark @Only prep in {}, since all fields are final", methodInfo.distinguishingName());
-            return false;
-        }
+
         if (!methodAnalysis.precondition.isSet()) {
             log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
             return false;
@@ -750,8 +753,9 @@ public class MethodAnalyser {
             returnObjectIsIndependent = true;
         }
 
-        // PART 2: check parameters
-        List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
+        // PART 2: check parameters, but remove those that are recursively of my own type
+        List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
+        parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
         boolean supportDataSet = methodAnalysis.fieldSummaries.stream()
                 .flatMap(e -> e.getValue().linkedVariables.get().stream())
