@@ -32,7 +32,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Iterator<T> {
-    default void forEachRemaining(Consumer<? super T> action) { }
+    default void forEachRemaining(Consumer<? super T> action) {
+    }
 
     boolean hasNext();
 
@@ -255,12 +256,12 @@ public interface Map<K, V> {
     V get(@NotNull Object key);
 
     @Size(min = 1)
-    V put(@NotNull K k, @NotNull  V v);
+    V put(@NotNull K k, @NotNull V v);
 
     V remove(@NotNull Object key);
 
     @Independent
-    void putAll(@Size(copyMin = true) @NotNull  Map<? extends K, ? extends V> m);
+    void putAll(@Size(copyMin = true) @NotNull Map<? extends K, ? extends V> m);
 
     @NotModified
     void forEach(@NotNull BiConsumer<? super K, ? super V> action);
@@ -341,7 +342,7 @@ public class LinkedList<E> implements List<E> {
     }
 
     @Independent
-    public LinkedList(@Size(copy = true) @NotNull  Collection<? extends E> c) {
+    public LinkedList(@Size(copy = true) @NotNull Collection<? extends E> c) {
     }
 
     @Size(min = 1)
@@ -449,6 +450,11 @@ public class Objects {
     @NotModified
     @Identity
     public static <T> T requireNonNull(@NotNull T t, String message) {
+    }
+
+    @NotNull
+    @NotModified
+    public static <T> T requireNonNullElse(T obj, T defaultObj) {
     }
 
     @NotModified
