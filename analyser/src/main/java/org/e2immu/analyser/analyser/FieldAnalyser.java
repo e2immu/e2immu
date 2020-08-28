@@ -509,16 +509,18 @@ public class FieldAnalyser {
 
         // field linked to parameter
 
-        if (values.size() == 1 && values.get(0) instanceof VariableValue) {
-            VariableValue variableValue = (VariableValue) values.get(0);
-            if (variableValue.variable instanceof ParameterInfo) {
-                ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
-                if (!parameterInfo.parameterAnalysis.get().assignedToField.isSet()) {
-                    parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
-                    log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+        if (values.size() == 1) {
+            VariableValue variableValue = values.get(0).asInstanceOf(VariableValue.class);
+            if (variableValue != null) {
+                if (variableValue.variable instanceof ParameterInfo) {
+                    ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
+                    if (!parameterInfo.parameterAnalysis.get().assignedToField.isSet()) {
+                        parameterInfo.parameterAnalysis.get().assignedToField.set(fieldInfo);
+                        log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+                    }
+                } else {
+                    log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
                 }
-            } else {
-                log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
             }
         }
 

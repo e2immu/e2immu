@@ -227,4 +227,15 @@ public interface Value extends Comparable<Value> {
     default void visit(Consumer<Value> consumer) {
         consumer.accept(this);
     }
+
+    default boolean isInstanceOf(Class<? extends Value> clazz) {
+        return getClass().isAssignableFrom(clazz);
+    }
+
+    default <T extends Value> T asInstanceOf(Class<T> clazz) {
+        if (getClass().isAssignableFrom(clazz)) {
+            return (T) this;
+        }
+        return null;
+    }
 }

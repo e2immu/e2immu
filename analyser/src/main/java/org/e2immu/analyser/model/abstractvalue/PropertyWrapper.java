@@ -143,4 +143,14 @@ public class PropertyWrapper implements Value, ValueWrapper {
         value.visit(consumer);
         consumer.accept(this);
     }
+
+    @Override
+    public <T extends Value> T asInstanceOf(Class<T> clazz) {
+        return value.asInstanceOf(clazz);
+    }
+
+    @Override
+    public boolean isInstanceOf(Class<? extends Value> clazz) {
+        return value.isInstanceOf(clazz);
+    }
 }

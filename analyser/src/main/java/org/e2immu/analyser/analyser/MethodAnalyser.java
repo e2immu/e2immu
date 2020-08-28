@@ -593,11 +593,11 @@ public class MethodAnalyser {
             return Level.DELAY;
         }
         Value value = tv.value.get();
-        if (methodInfo.returnType().isDiscrete() && value instanceof ConstrainedNumericValue) {
+        ConstrainedNumericValue cnv;
+        if (methodInfo.returnType().isDiscrete() && ((cnv = value.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
             // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
-            if (cnv.value instanceof MethodValue) {
-                MethodValue methodValue = (MethodValue) cnv.value;
+            MethodValue methodValue;
+            if ((methodValue = cnv.value.asInstanceOf(MethodValue.class)) != null) {
                 MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                 if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
                     return Level.encodeSizeMin((int) cnv.lowerBound);
@@ -606,28 +606,32 @@ public class MethodAnalyser {
         } else if (methodInfo.returnType().isBoolean()) {
             // very specific situation, we see if the return statement is a predicate on a @Size method; if so we propagate that info
             // size restrictions are ALWAYS int == size() or -int + size() >= 0
-            if (value instanceof EqualsValue) {
-                EqualsValue equalsValue = (EqualsValue) value;
-                if (equalsValue.lhs instanceof IntValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
-                    int i = ((IntValue) equalsValue.lhs).value;
-                    ConstrainedNumericValue cnv = (ConstrainedNumericValue) equalsValue.rhs;
-                    if (cnv.value instanceof MethodValue) {
-                        MethodValue methodValue = (MethodValue) cnv.value;
+            EqualsValue equalsValue;
+            if ((equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
+                IntValue intValue;
+                ConstrainedNumericValue cnvRhs;
+                if ((intValue = equalsValue.lhs.asInstanceOf(IntValue.class)) != null &&
+                        (cnvRhs = equalsValue.rhs.asInstanceOf(ConstrainedNumericValue.class)) != null) {
+                    MethodValue methodValue;
+                    if ((methodValue = cnvRhs.value.asInstanceOf(MethodValue.class)) != null) {
                         MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
                         if (methodValue.methodInfo == theSizeMethod) {
-                            return Level.encodeSizeEquals(i);
+                            return Level.encodeSizeEquals(intValue.value);
                         }
                     }
                 }
-            } else if (value instanceof GreaterThanZeroValue) {
-                GreaterThanZeroValue.XB xb = ((GreaterThanZeroValue) value).extract();
-                if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
-                    ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
-                    if (cnv.value instanceof MethodValue) {
-                        MethodValue methodValue = (MethodValue) cnv.value;
-                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
-                        if (methodValue.methodInfo == theSizeMethod) {
-                            return Level.encodeSizeMin((int) xb.b);
+            } else {
+                GreaterThanZeroValue gzv;
+                if ((gzv = value.asInstanceOf(GreaterThanZeroValue.class)) != null) {
+                    GreaterThanZeroValue.XB xb = gzv.extract();
+                    ConstrainedNumericValue cnvXb;
+                    if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
+                        MethodValue methodValue;
+                        if ((methodValue = cnvXb.value.asInstanceOf(MethodValue.class)) != null) {
+                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod();
+                            if (methodValue.methodInfo == theSizeMethod) {
+                                return Level.encodeSizeMin((int) xb.b);
+                            }
                         }
                     }
                 }

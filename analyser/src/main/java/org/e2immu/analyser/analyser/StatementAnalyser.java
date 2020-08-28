@@ -368,7 +368,7 @@ public class StatementAnalyser {
                         variableProperties, statement, codeOrganization.forwardEvaluationInfo);
                 if (result.changes) changes = true;
                 value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
-                if(result.encounteredUnevaluatedVariables) {
+                if (result.encounteredUnevaluatedVariables) {
                     variableProperties.setDelayedEvaluation(true);
                 }
             } catch (RuntimeException rte) {
@@ -382,9 +382,12 @@ public class StatementAnalyser {
             statement.valueOfExpression.set(value);
         }
 
-        if (statement.statement instanceof ForEachStatement && value instanceof ArrayValue &&
-                ((ArrayValue) value).values.stream().allMatch(variableProperties::isNotNull0)) {
-            variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        if (statement.statement instanceof ForEachStatement && value != null) {
+            ArrayValue arrayValue;
+            if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
+                    arrayValue.values.stream().allMatch(variableProperties::isNotNull0)) {
+                variableProperties.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            }
         }
 
         // PART 5: checks for ReturnStatement
@@ -412,8 +415,11 @@ public class StatementAnalyser {
                     transferValue.linkedVariables.set(vars);
                 }
                 if (!transferValue.value.isSet()) {
-                    if (value instanceof VariableValue) {
-                        transferValue.value.set(new VariableValuePlaceholder((VariableValue) value, variableProperties, value.getObjectFlow()));
+                    VariableValue variableValue;
+                    if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
+                        // we pass on both value and variableValue, as the latter may be wrapped in a
+                        // PropertyValue
+                        transferValue.value.set(new VariableValuePlaceholder(value, variableValue, variableProperties, value.getObjectFlow()));
                     } else {
                         transferValue.value.set(value);
                     }
