@@ -18,6 +18,7 @@
 package org.e2immu.analyser.pattern;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -27,7 +28,12 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.util.Logger;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
+import static org.e2immu.analyser.util.Logger.log;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -121,15 +127,56 @@ public class ConditionalAssignment {
         LocalVariableCreation lvc1 = new LocalVariableCreation(tmp, newValueExpression);
         Statement newS1 = new ExpressionAsStatement(lvc1);
         NumberedStatement newNs1 = new NumberedStatement(sideEffectContext, newS1, statement.parent, statement.indices);
+        log(TRANSFORM, "New statement 1: {}", newS1.statementString(0));
+        newNs1.blocks.set(List.of());
 
         if (created != null) {
             LocalVariableCreation lvc2 = new LocalVariableCreation(created, EmptyExpression.EMPTY_EXPRESSION);
             Statement newS2 = new ExpressionAsStatement(lvc2);
-            NumberedStatement newNs2 = new NumberedStatement(sideEffectContext, newS1, statement.parent, statement.indices);
+            NumberedStatement newNs2 = new NumberedStatement(sideEffectContext, newS2, statement.parent, statement.indices);
+            newNs2.blocks.set(List.of());
             newNs1.next.set(Optional.of(newNs2));
+            log(TRANSFORM, "New statement 2: {}", newS2.statementString(0));
         }
         statement.replacement.set(newNs1);
 
+        Expression ifExpression = ifElseStatement.expression.translate(Map.of(variable, lvc1.localVariableReference));
+        ExpressionAsStatement assignToSomeOther = new ExpressionAsStatement(
+                new Assignment(new VariableExpression(variable), assignmentInIf.value.translate(Map.of())));
+        ExpressionAsStatement assignToTmp = new ExpressionAsStatement(
+                new Assignment(new VariableExpression(variable), new VariableExpression(lvc1.localVariableReference)));
+        Block newIfBlock = new Block.BlockBuilder().addStatement(assignToSomeOther).build();
+        Block newElseBlock = new Block.BlockBuilder().addStatement(assignToTmp).build();
+        Statement newS3 = new IfElseStatement(ifExpression, newIfBlock, newElseBlock);
+        log(TRANSFORM, "New statement 3: {}", newS3.statementString(0));
+        NumberedStatement newNs3 = new NumberedStatement(sideEffectContext, newS3, next.parent, next.indices);
+
+        NumberedStatement newNs3_00 = new NumberedStatement(sideEffectContext, assignToSomeOther, newNs3, add(next.indices, new int[]{0, 0}));
+        newNs3_00.next.set(Optional.empty());
+        newNs3_00.neverContinues.set(false);
+        newNs3_00.blocks.set(List.of());
+
+        NumberedStatement newNs3_10 = new NumberedStatement(sideEffectContext, assignToTmp, newNs3, add(next.indices, new int[]{1, 0}));
+        newNs3_10.next.set(Optional.empty());
+        newNs3_10.neverContinues.set(false);
+        newNs3_10.blocks.set(List.of());
+
+        newNs3.blocks.set(List.of(newNs3_00, newNs3_10));
+        newNs3.neverContinues.set(false);
+
+        if (created == null) {
+            newNs1.next.set(Optional.of(newNs3));
+        } else {
+            newNs1.next.get().orElseThrow().next.set(Optional.of(newNs3));
+        }
+        newNs3.next.set(next.next.get());
+    }
+
+    private static int[] add(int[] a1, int[] a2) {
+        int[] a = new int[a1.length + a2.length];
+        System.arraycopy(a1, 0, a, 0, a1.length);
+        System.arraycopy(a2, 0, a, a1.length, a2.length);
+        return a;
     }
 
     public static <T> T conditionalValue(T initial, Predicate<T> condition, T alternative) {

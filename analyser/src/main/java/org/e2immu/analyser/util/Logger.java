@@ -92,6 +92,7 @@ public class Logger {
         MARK,
         OBJECT_FLOW,
 
+        TRANSFORM,
     }
 
     private Logger() {

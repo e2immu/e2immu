@@ -40,36 +40,6 @@ public class TestSimpleNotNullChecks extends CommonTestRunner {
         super(true);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name)) {
-            if ("a1".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
-            }
-            if ("s1".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertTrue(d.currentValue instanceof VariableValue);
-                Assert.assertEquals("a1", ((VariableValue) d.currentValue).name);
-            }
-            if ("s1".equals(d.variableName) && "1.0.0".equals(d.statementId)) {
-                Assert.assertTrue(d.currentValue instanceof StringValue);
-            }
-            if ("s1".equals(d.variableName) && "1".equals(d.statementId)) {
-                Assert.assertTrue(d.currentValue instanceof VariableValue);
-            }
-        }
-    };
-
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name)) {
-            if ("1.0.0".equals(d.statementId)) {
-                Assert.assertEquals("null == a1", d.condition.toString());
-                Assert.assertEquals("null == a1", d.state.toString());
-            }
-            if ("1".equals(d.statementId)) {
-                Assert.assertSame(UnknownValue.EMPTY, d.condition);
-            }
-        }
-    };
-
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("conditionalValue".equals(methodInfo.name) && iteration > 0) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
@@ -80,8 +50,6 @@ public class TestSimpleNotNullChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("SimpleNotNullChecks", 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
