@@ -18,10 +18,13 @@
 
 package org.e2immu.analyser.testexample;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class E2ImmutableChecks {
@@ -118,6 +121,21 @@ public class E2ImmutableChecks {
         public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input4) {
             input4.addAll(strings4);
             return input4;
+        }
+    }
+
+    @E2Container
+    static class E2Container4 {
+        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        private final Map<String, String> map4;
+
+        public E2Container4(Map<String, String> map4Param) {
+            map4 = new HashMap<>(map4Param); // not linked
+        }
+
+        @E2Container
+        public Map<String, String> getMap4() {
+            return ImmutableMap.copyOf(map4);
         }
     }
 }
