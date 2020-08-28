@@ -148,4 +148,24 @@ public class E2ImmutableChecks {
             return ImmutableMap.copyOf(map4);
         }
     }
+
+
+    @E2Container
+    static class E2Container5<T> {
+        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        private final Map<String, T> map5;
+
+        public E2Container5(Map<String, T> map5Param) {
+            map5 = new HashMap<>(map5Param); // not linked
+        }
+
+        public T get5(String input) {
+            return map5.get(input);
+        }
+
+        @E2Container
+        public Map<String, T> getMap5() {
+            return ImmutableMap.copyOf(map5);
+        }
+    }
 }

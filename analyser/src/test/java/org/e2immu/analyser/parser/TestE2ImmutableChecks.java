@@ -92,19 +92,23 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
 
         if ("get4".equals(methodInfo.name)) {
+            if (iteration > 1) {
+                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+                Assert.assertEquals(Level.FALSE, independent);
+            }
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
             if (iteration > 0) {
                 int immutable = tv.getProperty(VariableProperty.IMMUTABLE);
                 Assert.assertEquals(MultiLevel.FALSE, immutable);
                 // ImmutableSet.copyOf returns an L2 immutable type, so there cannot be any linking!
-                Assert.assertEquals("[]", tv.linkedVariables.get().toString());
+                Assert.assertEquals("[map4]", tv.linkedVariables.get().toString());
             }
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
         if ("value1".equals(fieldInfo.name) && iteration > 1) {
-               Assert.assertEquals(MultiLevel.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

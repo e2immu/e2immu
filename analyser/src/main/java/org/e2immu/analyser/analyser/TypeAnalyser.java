@@ -305,11 +305,7 @@ public class TypeAnalyser {
                 String label = labelOfPreconditionForMarkAndOnly(precondition);
                 Value inMap = tempApproved.get(label);
 
-                Boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
-                if (isMark == null) {
-                    log(MARK, "Delaying, not all fieldSummaries known");
-                    return false;
-                }
+                boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
                 if (isMark) {
                     if (inMap == null) {
                         tempApproved.put(label, precondition);
@@ -338,7 +334,7 @@ public class TypeAnalyser {
         return true;
     }
 
-    public static Boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
+    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
         Set<Variable> variables = precondition.variables();
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         for (Variable variable : variables) {
@@ -539,6 +535,7 @@ public class TypeAnalyser {
                 if (methodInfo.isVoid()) continue; // we're looking at return types
                 int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
                 // in the eventual case, we only need to look at the non-modifying methods
+                // calling a modifying method will result in an error
                 if (modified == Level.FALSE || !eventual) {
                     MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
                     int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);

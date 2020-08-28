@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TestSetOnceMap extends CommonTestRunner {
 
@@ -51,16 +52,16 @@ public class TestSetOnceMap extends CommonTestRunner {
             if (iteration > 0) {
                 // independent, because does not return a support data type
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                //Assert.assertEquals(Level.TRUE, independent);
+                Assert.assertEquals(Level.FALSE, independent);
             }
         }
         if ("getOtherwiseNull".equals(methodInfo.name)) {
             if (iteration > 0) {
                 Set<Variable> linkedVariables = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0").linkedVariables.get();
-                Assert.assertEquals("[0:k]", linkedVariables.toString());
+                Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
                 // independent, because does not return a support data type
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.TRUE, independent);
+                Assert.assertEquals(Level.FALSE, independent);
             }
         }
         if ("isEmpty".equals(methodInfo.name)) {

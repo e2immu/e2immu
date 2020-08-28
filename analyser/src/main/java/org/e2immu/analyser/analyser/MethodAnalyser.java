@@ -313,7 +313,7 @@ public class MethodAnalyser {
         if (methodAnalysis.preconditionForMarkAndOnly.isSet()) return false; // already done
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
-            boolean haveNonFinalFields = methodInfo.typeInfo.typeInspection.get().fields.stream().anyMatch(field ->
+            boolean haveNonFinalFields = typeInfo.typeInspection.get().fields.stream().anyMatch(field ->
                     field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
