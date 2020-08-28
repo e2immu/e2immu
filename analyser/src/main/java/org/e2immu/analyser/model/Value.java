@@ -229,11 +229,11 @@ public interface Value extends Comparable<Value> {
     }
 
     default boolean isInstanceOf(Class<? extends Value> clazz) {
-        return getClass().isAssignableFrom(clazz);
+        return clazz.isAssignableFrom(getClass());
     }
 
     default <T extends Value> T asInstanceOf(Class<T> clazz) {
-        if (getClass().isAssignableFrom(clazz)) {
+        if (clazz.isAssignableFrom(getClass())) {
             return (T) this;
         }
         return null;
