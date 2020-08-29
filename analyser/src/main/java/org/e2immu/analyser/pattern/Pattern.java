@@ -30,13 +30,23 @@ public class Pattern {
 
     public final String name;
     public final List<Statement> statements;
-    public final List<ParameterizedType> types = new ArrayList<>();
-    public final List<Variable> variables = new ArrayList<>();
-    public final List<Expression> expressions = new ArrayList<>();
+    public final List<ParameterizedType> types;
+    public final List<Variable> variables;
+    public final List<LocalVariable> localVariables;
+    public final List<Expression> expressions;
 
-    private Pattern(String name, List<Statement> statements) {
+    private Pattern(String name,
+                    List<Statement> statements,
+                    List<ParameterizedType> types,
+                    List<LocalVariable> localVariables,
+                    List<Variable> variables,
+                    List<Expression> expressions) {
         this.name = Objects.requireNonNull(name);
         this.statements = ImmutableList.copyOf(statements);
+        this.types = ImmutableList.copyOf(types);
+        this.variables = ImmutableList.copyOf(variables);
+        this.expressions = ImmutableList.copyOf(expressions);
+        this.localVariables = ImmutableList.copyOf(localVariables);
     }
 
     @Override
@@ -45,6 +55,29 @@ public class Pattern {
         if (o == null || getClass() != o.getClass()) return false;
         Pattern pattern = (Pattern) o;
         return name.equals(pattern.name);
+    }
+
+    public int indexOfType(ParameterizedType type) {
+        if (!type.isTypeParameter()) return -1;
+        if (name.startsWith(TYPE_PREFIX)) {
+            try {
+                return Integer.parseInt(name.substring(LOCAL_VAR_PREFIX.length()));
+            } catch (NumberFormatException nfe) {
+                // then not.
+            }
+        }
+        return -1;
+    }
+
+    public int indexOfLocalVariable(String name) {
+        if (name.startsWith(LOCAL_VAR_PREFIX)) {
+            try {
+                return Integer.parseInt(name.substring(LOCAL_VAR_PREFIX.length()));
+            } catch (NumberFormatException nfe) {
+                // then not.
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -60,6 +93,7 @@ public class Pattern {
         private final List<ParameterizedType> types = new ArrayList<>();
         private final List<LocalVariable> localVariables = new ArrayList<>();
         private final List<Expression> expressions = new ArrayList<>();
+        private final List<Variable> variables = new ArrayList<>();
 
         private final List<Statement> statements = new ArrayList<>();
 
@@ -68,15 +102,23 @@ public class Pattern {
         }
 
         public Pattern build() {
-            return new Pattern(name, statements);
+            return new Pattern(name, statements, types, localVariables, variables, expressions);
         }
 
         public ParameterizedType matchType() {
             int index = types.size();
             TypeParameter typeParameter = new TypeParameter(Primitives.PRIMITIVES.objectTypeInfo, TYPE_PREFIX + index, index);
+            typeParameter.typeParameterInspection.set(new TypeParameterInspection(List.of()));
             ParameterizedType type = new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
             types.add(type);
             return type;
+        }
+
+        public Variable matchVariable(ParameterizedType type) {
+            int index = variables.size();
+            Variable v = new PlaceHolderVariable(index, type);
+            variables.add(v);
+            return v;
         }
 
         public LocalVariable matchLocalVariable(ParameterizedType type) {
@@ -86,9 +128,9 @@ public class Pattern {
             return lv;
         }
 
-        public Expression matchSomeExpression(Variable... variables) {
+        public Expression matchSomeExpression(ParameterizedType returnType, Variable... variables) {
             int index = expressions.size();
-            PlaceHolderExpression placeHolderExpression = new PlaceHolderExpression(index, Arrays.stream(variables).collect(Collectors.toSet()));
+            PlaceHolderExpression placeHolderExpression = new PlaceHolderExpression(index, returnType, Arrays.stream(variables).collect(Collectors.toSet()));
             expressions.add(placeHolderExpression);
             return placeHolderExpression;
         }
@@ -96,20 +138,71 @@ public class Pattern {
         public void addStatement(Statement statement) {
             this.statements.add(statement);
         }
+
+        public void registerVariable(Variable v) {
+            variables.add(v);
+        }
+    }
+
+    public static class PlaceHolderVariable implements Variable {
+        public final ParameterizedType parameterizedType;
+        public final int index;
+
+        public PlaceHolderVariable(int index, ParameterizedType parameterizedType) {
+            this.index = index;
+            this.parameterizedType = parameterizedType;
+        }
+
+        @Override
+        public ParameterizedType concreteReturnType() {
+            return parameterizedType;
+        }
+
+        @Override
+        public ParameterizedType parameterizedType() {
+            return parameterizedType;
+        }
+
+        @Override
+        public String name() {
+            return "v" + index;
+        }
+
+        @Override
+        public String detailedString() {
+            return "[var:" + name() + "]";
+        }
+
+        @Override
+        public boolean isStatic() {
+            return false;
+        }
+
+        @Override
+        public SideEffect sideEffect(EvaluationContext evaluationContext) {
+            return null;
+        }
+
+        @Override
+        public int variableOrder() {
+            return 0;
+        }
     }
 
     public static class PlaceHolderExpression implements Expression {
         public final int index;
         public final Set<Variable> variablesToMatch;
+        public final ParameterizedType returnType;
 
-        public PlaceHolderExpression(int index, Set<Variable> variablesToMatch) {
+        public PlaceHolderExpression(int index, ParameterizedType returnType, Set<Variable> variablesToMatch) {
             this.index = index;
             this.variablesToMatch = ImmutableSet.copyOf(variablesToMatch);
+            this.returnType = Objects.requireNonNull(returnType);
         }
 
         @Override
         public ParameterizedType returnType() {
-            return null;
+            return returnType;
         }
 
         @Override

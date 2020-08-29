@@ -19,10 +19,13 @@ package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.Variable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MatchResult {
 
@@ -46,12 +49,33 @@ public class MatchResult {
         private final List<Statement> statements = new ArrayList<>();
         private final NumberedStatement start;
 
+        private final Map<String, Variable> actualVariableNameToTemplateVariable = new HashMap<>();
+
         public MatchResultBuilder(NumberedStatement start) {
             this.start = start;
         }
 
+        public void addStatement(Statement statement) {
+
+        }
+
         public MatchResult build() {
             return new MatchResult(ImmutableList.copyOf(statements), start);
+        }
+
+        public void matchLocalVariable(LocalVariable templateVar, LocalVariable actualVar) {
+            actualVariableNameToTemplateVariable.put(actualVar.name, new LocalVariableReference(templateVar, List.of()));
+        }
+
+        public void matchVariable(Variable varTemplate, Variable varActual) {
+            actualVariableNameToTemplateVariable.put(varActual.name(), varTemplate);
+        }
+
+        public boolean containsAllVariables(Set<Variable> templateVar, List<Variable> actualVariables) {
+            Set<Variable> translatedActual = actualVariables.stream()
+                    .map(v -> actualVariableNameToTemplateVariable.getOrDefault(v.name(), v))
+                    .collect(Collectors.toSet());
+            return translatedActual.containsAll(templateVar);
         }
     }
 

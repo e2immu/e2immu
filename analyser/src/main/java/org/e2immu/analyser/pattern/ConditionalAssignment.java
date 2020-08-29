@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
+import org.e2immu.analyser.parser.Primitives;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -93,13 +94,14 @@ public class ConditionalAssignment {
          */
         ParameterizedType pt0 = patternBuilder.matchType();
         LocalVariable localVariable = patternBuilder.matchLocalVariable(pt0);
-        Expression someExpression = patternBuilder.matchSomeExpression();
+        Expression someExpression = patternBuilder.matchSomeExpression(pt0);
         LocalVariableCreation lvc0 = new LocalVariableCreation(localVariable, someExpression);
         Variable lv = lvc0.localVariableReference;
+        patternBuilder.registerVariable(lv);
         patternBuilder.addStatement(new ExpressionAsStatement(lvc0));
 
-        Expression someCondition = patternBuilder.matchSomeExpression(lv);
-        Expression someOtherExpression = patternBuilder.matchSomeExpression();
+        Expression someCondition = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType, lv);
+        Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
         Assignment assignment1 = new Assignment(new VariableExpression(lv), someOtherExpression);
         Block ifBlock1 = new Block.BlockBuilder().addStatement(new ExpressionAsStatement(assignment1)).build();
         patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock1, Block.EMPTY_BLOCK));

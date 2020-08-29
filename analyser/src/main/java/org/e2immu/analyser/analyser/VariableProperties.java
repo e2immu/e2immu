@@ -379,7 +379,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     @NotNull
-    private String variableName(@NotNull Variable variable) {
+    public static String variableName(@NotNull Variable variable) {
         String name;
         if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
