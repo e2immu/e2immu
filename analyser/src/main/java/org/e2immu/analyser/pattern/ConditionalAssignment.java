@@ -18,22 +18,16 @@
 package org.e2immu.analyser.pattern;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
 import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.util.Logger;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,11 +58,124 @@ import java.util.function.Predicate;
    }
    // it is now easier to compute the value of lv
 
+ Replace with:
+   LV lv;
+   {
+     LV tmp = someExpression;
+     if(someCondition(tmp)) {
+       lv = someOtherExpression;
+     } else {
+       lv = tmp;
+     }
+   }
 
  Note that the method `conditionalValue` does the same; it should somehow be analysed in a similar way.
  That is possible if we inline, and substitute the predicate in a specific condition (which happens anyway).
  */
 public class ConditionalAssignment {
+
+
+    public static Pattern pattern1() {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder();
+
+        /*
+         PATTERN
+
+         LV lv = someExpression;
+         if(someCondition(lv)) {
+           lv = someOtherExpression;
+         }
+
+         in numbers:
+         T0 lv0 = expression0;
+         if(expression1(lv0)) {
+           lv0 = expression2;
+         }
+         */
+        ParameterizedType pt0 = patternBuilder.matchType();
+        LocalVariable localVariable = patternBuilder.matchLocalVariable(pt0);
+        Expression someExpression = patternBuilder.matchSomeExpression();
+        LocalVariableCreation lvc0 = new LocalVariableCreation(localVariable, someExpression);
+        Variable lv = lvc0.localVariableReference;
+        patternBuilder.addStatement(new ExpressionAsStatement(lvc0));
+
+        Expression someCondition = patternBuilder.matchSomeExpression(lv);
+        Expression someOtherExpression = patternBuilder.matchSomeExpression();
+        Assignment assignment1 = new Assignment(new VariableExpression(lv), someOtherExpression);
+        Block ifBlock1 = new Block.BlockBuilder().addStatement(new ExpressionAsStatement(assignment1)).build();
+        patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock1, Block.EMPTY_BLOCK));
+
+        return patternBuilder.build();
+    }
+
+    public static Replacement replacement1ToPattern1(Pattern pattern1) {
+        /*
+         REPLACEMENT 1
+
+         LV tmp = someExpression; // expression0
+         LV lv = someCondition(tmp) ?  someOtherExpression: tmp;
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder(pattern1);
+
+        LocalVariable lvTmp = new LocalVariable(List.of(), "tmp", pattern1.types.get(0), List.of());
+        Expression rSomeExpression = pattern1.expressions.get(0).translate(Map.of());
+        LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
+        Variable tmp = lvcTmp.localVariableReference;
+        replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
+
+        Variable lv = pattern1.variables.get(0);
+        Expression condition = pattern1.expressions.get(1).translate(Map.of(lv, tmp));
+        Expression ifTrue = pattern1.expressions.get(2);
+        Expression ifFalse = new VariableExpression(tmp);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        LocalVariable localVar = new LocalVariable(List.of(), lv.name(), lv.parameterizedType(), List.of());
+        LocalVariableCreation lvc = new LocalVariableCreation(localVar, inlineConditional);
+        replacementBuilder.addStatement(new ExpressionAsStatement(lvc));
+
+        return replacementBuilder.build();
+    }
+
+    public static Replacement replacement2ToPattern1(Pattern pattern1) {
+        /*
+         REPLACEMENT 2
+
+         LV lv; // Type0 lv0
+         {
+           LV tmp = someExpression; // expression0
+           if(someCondition(tmp)) {
+             lv = someOtherExpression;
+           } else {
+             lv = tmp;
+           }
+         }
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder(pattern1);
+        Variable lv = pattern1.variables.get(0);
+        LocalVariable localVar = new LocalVariable(List.of(), lv.name(), lv.parameterizedType(), List.of());
+        LocalVariableCreation lvc = new LocalVariableCreation(localVar, EmptyExpression.EMPTY_EXPRESSION);
+        replacementBuilder.addStatement(new ExpressionAsStatement(lvc));
+        Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
+
+        LocalVariable lvTmp = new LocalVariable(List.of(), "tmp", pattern1.types.get(0), List.of());
+        Expression rSomeExpression = pattern1.expressions.get(0).translate(Map.of());
+        LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
+        Variable tmp = lvcTmp.localVariableReference;
+        replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
+
+        Expression rSomeCondition = pattern1.expressions.get(1).translate(Map.of(lv, tmp));
+        ExpressionAsStatement assignSomeOtherExpression = new ExpressionAsStatement(
+                new Assignment(new VariableExpression(lv), pattern1.expressions.get(2).translate(Map.of())));
+        ExpressionAsStatement assignTmp = new ExpressionAsStatement(
+                new Assignment(new VariableExpression(lv), new VariableExpression(tmp)));
+        Block newIfBlock = new Block.BlockBuilder().addStatement(assignSomeOtherExpression).build();
+        Block newElseBlock = new Block.BlockBuilder().addStatement(assignTmp).build();
+        blockBuilder.addStatement(new IfElseStatement(rSomeCondition, newIfBlock, newElseBlock));
+
+        replacementBuilder.addStatement(blockBuilder.build());
+
+        return replacementBuilder.build();
+    }
 
     // first attempt
     public static void tryToDetectTransformation(NumberedStatement statement, EvaluationContext evaluationContext) {
@@ -121,6 +228,8 @@ public class ConditionalAssignment {
         if (!(assignmentInIf.target instanceof VariableExpression)) return;
         Variable variableInIf = ((VariableExpression) assignmentInIf.target).variable;
         if (!variableInIf.equals(variable)) return;
+
+        // REPLACEMENT
 
         Expression newValueExpression = valueExpression.translate(Map.of());
         LocalVariable tmp = new LocalVariable(List.of(), "tmp", variable.parameterizedType(), List.of());
