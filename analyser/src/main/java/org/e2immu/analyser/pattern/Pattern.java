@@ -23,25 +23,38 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Container;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Pattern {
 
+    public final String name;
     public final List<Statement> statements;
     public final List<ParameterizedType> types = new ArrayList<>();
     public final List<Variable> variables = new ArrayList<>();
     public final List<Expression> expressions = new ArrayList<>();
 
-    private Pattern(List<Statement> statements) {
+    private Pattern(String name, List<Statement> statements) {
+        this.name = Objects.requireNonNull(name);
         this.statements = ImmutableList.copyOf(statements);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Pattern pattern = (Pattern) o;
+        return name.equals(pattern.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Container(builds = Pattern.class)
     public static class PatternBuilder {
+        private final String name;
 
         // by index
         private final List<ParameterizedType> types = new ArrayList<>();
@@ -50,8 +63,12 @@ public class Pattern {
 
         private final List<Statement> statements = new ArrayList<>();
 
+        public PatternBuilder(String name) {
+            this.name = name;
+        }
+
         public Pattern build() {
-            return new Pattern(statements);
+            return new Pattern(name, statements);
         }
 
         public ParameterizedType matchType() {
@@ -71,9 +88,9 @@ public class Pattern {
 
         public Expression matchSomeExpression(Variable... variables) {
             int index = expressions.size();
-            PlaceHolder placeHolder = new PlaceHolder(index, Arrays.stream(variables).collect(Collectors.toSet()));
-            expressions.add(placeHolder);
-            return placeHolder;
+            PlaceHolderExpression placeHolderExpression = new PlaceHolderExpression(index, Arrays.stream(variables).collect(Collectors.toSet()));
+            expressions.add(placeHolderExpression);
+            return placeHolderExpression;
         }
 
         public void addStatement(Statement statement) {
@@ -81,11 +98,11 @@ public class Pattern {
         }
     }
 
-    public static class PlaceHolder implements Expression {
+    public static class PlaceHolderExpression implements Expression {
         public final int index;
         public final Set<Variable> variablesToMatch;
 
-        public PlaceHolder(int index, Set<Variable> variablesToMatch) {
+        public PlaceHolderExpression(int index, Set<Variable> variablesToMatch) {
             this.index = index;
             this.variablesToMatch = ImmutableSet.copyOf(variablesToMatch);
         }
@@ -109,6 +126,34 @@ public class Pattern {
         @Override
         public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class PlaceHolderStatement implements Statement {
+
+        @Override
+        public String statementString(int indent) {
+            return null;
+        }
+
+        @Override
+        public Set<String> imports() {
+            return null;
+        }
+
+        @Override
+        public SideEffect sideEffect(EvaluationContext evaluationContext) {
+            return null;
+        }
+
+        @Override
+        public Set<TypeInfo> typesReferenced() {
+            return null;
+        }
+
+        @Override
+        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+            return null;
         }
     }
 

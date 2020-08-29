@@ -75,7 +75,7 @@ public class ConditionalAssignment {
 
 
     public static Pattern pattern1() {
-        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder();
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("conditionalAssignment");
 
         /*
          PATTERN
