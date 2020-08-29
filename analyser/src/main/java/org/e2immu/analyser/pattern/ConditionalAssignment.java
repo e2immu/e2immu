@@ -20,10 +20,9 @@ package org.e2immu.analyser.pattern;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.model.statement.IfElseStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -177,6 +176,90 @@ public class ConditionalAssignment {
 
         return replacementBuilder.build();
     }
+
+    public static Pattern pattern2() {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIf");
+
+        /* PATTERN
+
+          if(someCondition) return someExpression;
+          return someOtherExpression;
+         */
+
+        ParameterizedType pt0 = patternBuilder.matchType();
+        Expression someCondition = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
+
+        Expression someExpression = patternBuilder.matchSomeExpression(pt0);
+        Block ifBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
+
+        patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock, Block.EMPTY_BLOCK));
+        Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
+        patternBuilder.addStatement(new ReturnStatement(someOtherExpression));
+
+        return patternBuilder.build();
+    }
+
+    public static Pattern pattern3() {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIfElse");
+
+        /* PATTERN
+
+          if(someCondition) {
+            return someExpression;
+          } else {
+            return someOtherExpression;
+          }
+         */
+
+        ParameterizedType pt0 = patternBuilder.matchType();
+        Expression someCondition = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
+        Expression someExpression = patternBuilder.matchSomeExpression(pt0);
+        Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
+
+        Block ifBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
+        Block elseBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
+
+        patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock, elseBlock));
+
+        return patternBuilder.build();
+    }
+    /*
+     TODO: it would be better if the matching of the condition on list happened at VALUE level (there's normalisation!)
+     */
+
+    public static Pattern pattern4(TypeContext typeContext) {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("ClassicForList");
+
+        /* PATTERN
+
+          for(int i=0; i<list.size(); i++) {
+            // non-modifying operations on list
+          }
+
+         */
+        LocalVariable indexVar = patternBuilder.matchLocalVariable(Primitives.PRIMITIVES.intParameterizedType);
+        LocalVariableCreation indexLvc = new LocalVariableCreation(indexVar, new IntConstant(0));
+        Variable i = indexLvc.localVariableReference;
+        patternBuilder.registerVariable(i);
+
+        ParameterizedType typeParameter = patternBuilder.matchType();
+        TypeInfo listType = typeContext.getFullyQualified(List.class);
+        ParameterizedType listPt = new ParameterizedType(listType, List.of(typeParameter));
+        Variable list = patternBuilder.matchVariable(listPt);
+        VariableExpression listScope = new VariableExpression(list);
+        MethodInfo sizeMethod = listType.findUniqueMethod("size", 0);
+        MethodTypeParameterMap sizeMethodTypeParameterMap = new MethodTypeParameterMap(sizeMethod, Map.of());
+        Expression sizeCall = new MethodCall(listScope, listScope, sizeMethodTypeParameterMap, List.of());
+        Expression condition = new BinaryOperator(new VariableExpression(i),
+                Primitives.PRIMITIVES.lessOperatorInt, sizeCall, BinaryOperator.COMPARISON_PRECEDENCE);
+        Expression updater = new Assignment(new VariableExpression(i), EmptyExpression.EMPTY_EXPRESSION,
+                Primitives.PRIMITIVES.assignPlusOperatorInt, false); // i++
+        Block block = new Block.BlockBuilder().addStatement(new Pattern.PlaceHolderStatement()).build();
+        patternBuilder.addStatement(new ForStatement(null, List.of(indexLvc), condition, List.of(updater), block));
+
+        return patternBuilder.build();
+    }
+
 
     // first attempt
     public static void tryToDetectTransformation(NumberedStatement statement, EvaluationContext evaluationContext) {

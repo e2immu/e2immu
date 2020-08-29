@@ -68,7 +68,12 @@ public class MatchResult {
         }
 
         public void matchVariable(Variable varTemplate, Variable varActual) {
-            actualVariableNameToTemplateVariable.put(varActual.name(), varTemplate);
+            Variable inMap = actualVariableNameToTemplateVariable.get(varActual.name());
+            if (inMap == null) {
+                actualVariableNameToTemplateVariable.put(varActual.name(), varTemplate);
+            } else if (!inMap.equals(varTemplate)) {
+                throw new UnsupportedOperationException();
+            }
         }
 
         public boolean containsAllVariables(Set<Variable> templateVar, List<Variable> actualVariables) {

@@ -40,11 +40,11 @@ public class CodeOrganization {
     // this is possible in if statements without else, switch statements without default, loops that are not while(true), etc. etc.
     public final boolean noBlockMayBeExecuted;
 
-    private CodeOrganization(List<Expression> initialisers,
+    private CodeOrganization(@NotNull List<Expression> initialisers,
                              LocalVariable localVariableCreation,
                              @NotNull Expression expression,
                              @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
-                             List<Expression> updaters,
+                             @NotNull List<Expression> updaters,
                              HasStatements statements,
                              @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
                              List<CodeOrganization> subStatements,

@@ -43,15 +43,67 @@ public class TestMatcherChecks extends CommonTestRunner {
                 .build());
         TypeInfo matcherChecks = typeContext.getFullyQualified(MatcherChecks.class);
         MethodInfo method1 = matcherChecks.findUniqueMethod("method1", 1);
+        MethodInfo method2 = matcherChecks.findUniqueMethod("method2", 1);
+        MethodInfo method3 = matcherChecks.findUniqueMethod("method3", 1);
+        MethodInfo method4 = matcherChecks.findUniqueMethod("method4", 1);
+        match1(method1, method2, method3, method4);
+        match2(method2, method1, method3, method4);
+        match3(method3, method1, method2, method4);
+        match4(typeContext, method4, method1, method2, method3);
+    }
 
+    private void match4(TypeContext typeContext, MethodInfo method4, MethodInfo... others) {
+        Pattern forLoop = ConditionalAssignment.pattern4(typeContext);
+        PatternMatcher patternMatcher = new PatternMatcher(List.of(forLoop));
+        log(TRANSFORM, "Start match4 on method4");
+        Optional<MatchResult> optMatchResult = patternMatcher.match(method4.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Assert.assertTrue(optMatchResult.isPresent());
+
+        for (MethodInfo other : others) {
+            log(TRANSFORM, "Start match4 on {}", other.name);
+            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
+        }
+    }
+
+    private void match1(MethodInfo method1, MethodInfo... others) {
         Pattern conditionalAssignment = ConditionalAssignment.pattern1();
         PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
-        Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
+        //Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
 
         Optional<MatchResult> optMatchResult = patternMatcher.match(method1.methodAnalysis.get().numberedStatements.get().get(0), false);
         Assert.assertTrue(optMatchResult.isPresent());
-        MatchResult matchResult = optMatchResult.get();
-        log(TRANSFORM, "MatchResult statements: ");
+
+        for (MethodInfo other : others) {
+            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
+        }
+    }
+
+    private void match2(MethodInfo method2, MethodInfo... others) {
+        Pattern pattern2 = ConditionalAssignment.pattern2();
+        PatternMatcher patternMatcher2 = new PatternMatcher(List.of(pattern2));
+
+        Optional<MatchResult> optMatchResult = patternMatcher2.match(method2.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Assert.assertTrue(optMatchResult.isPresent());
+
+        for (MethodInfo other : others) {
+            Optional<MatchResult> opt = patternMatcher2.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
+        }
+    }
+
+    private void match3(MethodInfo method2, MethodInfo... others) {
+        Pattern pattern3 = ConditionalAssignment.pattern3();
+        PatternMatcher patternMatcher3 = new PatternMatcher(List.of(pattern3));
+
+        Optional<MatchResult> optMatchResult = patternMatcher3.match(method2.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Assert.assertTrue(optMatchResult.isPresent());
+
+        for (MethodInfo other : others) {
+            Optional<MatchResult> opt = patternMatcher3.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
+        }
     }
 
 }

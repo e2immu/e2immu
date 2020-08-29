@@ -92,7 +92,7 @@ public class PatternMatcher {
 
             // slower method, first computing code organization
             CodeOrganization codeOrganization = template.codeOrganization();
-            SimpleMatchResult isMatch = match(builder, template, codeOrganization, currentNumberedStatement);
+            SimpleMatchResult isMatch = match(builder, codeOrganization, currentNumberedStatement);
             if (isMatch != SimpleMatchResult.YES) return isMatch;
 
             log(TRANSFORM, "Successfully matched {}", currentNumberedStatement.streamIndices());
@@ -116,42 +116,54 @@ public class PatternMatcher {
 
     @NotNull
     private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           Statement template,
                                            CodeOrganization templateCo,
                                            NumberedStatement actualNs) {
         Statement actual = actualNs.statement;
         CodeOrganization actualCo = actual.codeOrganization();
-
-        SimpleMatchResult sub = match(builder, templateCo.expression, actualCo.expression);
-        if (sub != SimpleMatchResult.YES) return sub;
-
+        {
+            SimpleMatchResult smr = match(builder, templateCo.expression, actualCo.expression);
+            if (smr != SimpleMatchResult.YES) return smr;
+        }
         if (templateCo.initialisers.size() != actualCo.initialisers.size()) return SimpleMatchResult.NO;
         for (int i = 0; i < templateCo.initialisers.size(); i++) {
-            SimpleMatchResult subInit = match(builder, templateCo.initialisers.get(i), actualCo.initialisers.get(i));
-            if (subInit != SimpleMatchResult.YES) return subInit;
+            SimpleMatchResult smr = match(builder, templateCo.initialisers.get(i), actualCo.initialisers.get(i));
+            if (smr != SimpleMatchResult.YES) return smr;
         }
-
-        // TODO all the other code organization parts
-
-
+        if (templateCo.updaters.size() != actualCo.updaters.size()) return SimpleMatchResult.NO;
+        for (int i = 0; i < templateCo.updaters.size(); i++) {
+            SimpleMatchResult smr = match(builder, templateCo.updaters.get(i), actualCo.updaters.get(i));
+            if (smr != SimpleMatchResult.YES) return smr;
+        }
+        if ((templateCo.localVariableCreation == null) != (actualCo.localVariableCreation == null)) {
+            return SimpleMatchResult.NO;
+        }
+        if (templateCo.localVariableCreation != null) {
+            builder.matchLocalVariable(templateCo.localVariableCreation, actualCo.localVariableCreation);
+        }
+        // primary block
+        int numActualBlocks = actualNs.blocks.get().size();
         if (templateCo.statements instanceof Block) {
             if (templateCo.statements == Block.EMPTY_BLOCK) {
-                // TODO this will probably fail for complicated switch statements; later...
-                if (!actualNs.blocks.get().isEmpty()) return SimpleMatchResult.NO;
+                if (numActualBlocks > 0) return SimpleMatchResult.NO;
             } else {
-                if (actualNs.blocks.get().isEmpty()) return SimpleMatchResult.NO;
+                if (numActualBlocks == 0) return SimpleMatchResult.NO;
                 NumberedStatement firstInBlock = actualNs.blocks.get().get(0);
-                SimpleMatchResult blockResult = match(builder, templateCo.statements.getStatements(),
+                SimpleMatchResult smr = match(builder, templateCo.statements.getStatements(),
                         firstInBlock);
-                if (blockResult != SimpleMatchResult.YES) return blockResult;
+                if (smr != SimpleMatchResult.YES) return smr;
             }
         } else if (!templateCo.statements.getStatements().isEmpty()) {
-            // statements in a switch, between two cases.
+            // TODO statements in a switch, between two cases.
         }
         // else block, blocks in switch, try
         int blockCount = 1;
         for (CodeOrganization subCo : templateCo.subStatements) {
+            if (numActualBlocks <= blockCount) return SimpleMatchResult.NO;
+            NumberedStatement firstInBlock = actualNs.blocks.get().get(blockCount);
+            SimpleMatchResult smr = match(builder, subCo.statements.getStatements(), firstInBlock);
+            if (smr != SimpleMatchResult.YES) return smr;
 
+            // TODO next to the statements, we also have to test the expressions for switch, catch
         }
 
         return SimpleMatchResult.YES;
@@ -171,6 +183,11 @@ public class PatternMatcher {
         if (!template.getClass().equals(actual.getClass())) return SimpleMatchResult.NO;
         if (!template.returnType().isAssignableFrom(actual.returnType())) return SimpleMatchResult.NO;
 
+        if (template instanceof VariableExpression) {
+            Variable varTemplate = ((VariableExpression) template).variable;
+            Variable varActual = ((VariableExpression) actual).variable;
+            builder.matchVariable(varTemplate, varActual);
+        }
         if (template instanceof Assignment) {
             Assignment aTemplate = (Assignment) template;
             Assignment aActual = (Assignment) actual;
