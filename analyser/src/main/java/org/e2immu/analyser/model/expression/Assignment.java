@@ -24,7 +24,9 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
@@ -134,7 +136,7 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         if (target instanceof FieldAccess) {
             return SideEffect.SIDE_EFFECT;
         }

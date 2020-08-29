@@ -21,8 +21,6 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.TypeValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.E2Immutable;

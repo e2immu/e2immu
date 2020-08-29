@@ -1,7 +1,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -54,7 +53,7 @@ public class AssertStatement implements Statement {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return check.sideEffect(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return check.sideEffect(evaluationContext);
     }
 }

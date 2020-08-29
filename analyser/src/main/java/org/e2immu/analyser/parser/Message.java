@@ -21,7 +21,6 @@ package org.e2immu.analyser.parser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
 import java.util.Map;

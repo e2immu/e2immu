@@ -19,8 +19,8 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.NotModified;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -94,9 +94,9 @@ public interface Expression {
     }
 
     @NotModified
-    default SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    default SideEffect sideEffect(EvaluationContext evaluationContext) {
         return subExpressions().stream()
-                .map(e -> e.sideEffect(sideEffectContext))
+                .map(e -> e.sideEffect(evaluationContext))
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
     }
 

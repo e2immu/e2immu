@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
-import java.util.Set;
 
 public abstract class ExpressionWithMethodReferenceResolution implements Expression {
 

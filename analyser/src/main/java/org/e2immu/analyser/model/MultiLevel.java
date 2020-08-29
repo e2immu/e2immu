@@ -1,6 +1,5 @@
 package org.e2immu.analyser.model;
 
-import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class MultiLevel {

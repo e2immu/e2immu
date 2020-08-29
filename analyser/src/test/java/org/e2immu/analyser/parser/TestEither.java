@@ -25,17 +25,14 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
-import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class TestEither extends CommonTestRunner {
 

@@ -23,11 +23,10 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
@@ -76,11 +75,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     // if we pass on one of our own methods to some other method, we need to take into account our exposure to the
     // outside world...
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        Objects.requireNonNull(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        Objects.requireNonNull(evaluationContext);
         // we know the method we're passing on...
-        if (sideEffectContext.enclosingType.inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
-            return sideEffectContext.exposureToOutsideWorld;
+        if (evaluationContext.getCurrentType().inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
+            return SideEffect.NONE_CONTEXT;
         }
         // no idea which method we're passing on... should not be a problem
         return SideEffect.LOCAL;

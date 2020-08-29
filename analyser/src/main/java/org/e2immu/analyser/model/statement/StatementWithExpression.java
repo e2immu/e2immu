@@ -19,8 +19,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
-import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 
 import java.util.Objects;
 import java.util.Set;

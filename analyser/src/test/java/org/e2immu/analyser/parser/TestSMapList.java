@@ -19,18 +19,19 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class TestSMapList extends CommonTestRunner {
 

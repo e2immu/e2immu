@@ -41,7 +41,6 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;
 import static org.e2immu.analyser.util.Logger.log;

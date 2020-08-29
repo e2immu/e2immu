@@ -26,8 +26,8 @@ import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
-import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -35,7 +35,9 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.pattern.JoinReturnStatements;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -124,8 +126,7 @@ public class MethodAnalyser {
             if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
                 List<NumberedStatement> numberedStatements = new LinkedList<>();
                 Stack<Integer> indices = new Stack<>();
-                CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements,
-                        new SideEffectContext(methodInfo));
+                CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements);
                 methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
                 changes = true;
             }

@@ -25,8 +25,6 @@ import org.e2immu.analyser.model.FieldReference;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
-import java.util.Objects;
-
 
 public class FinalFieldValueObjectFlowInContext extends ValueWithVariable {
 

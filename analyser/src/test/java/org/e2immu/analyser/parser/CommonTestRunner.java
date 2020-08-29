@@ -23,7 +23,6 @@ import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.annotation.NotModified;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;

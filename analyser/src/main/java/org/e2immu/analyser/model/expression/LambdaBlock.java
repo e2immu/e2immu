@@ -23,11 +23,8 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.TypeValue;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
@@ -97,7 +94,7 @@ public class LambdaBlock implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext sideEffectContext) {
         return block.sideEffect(sideEffectContext);
     }
 
@@ -120,8 +117,7 @@ public class LambdaBlock implements Expression {
                 recursivelyCreateNumberedStatements(null,
                         block.statements,
                         indices,
-                        numberedStatements,
-                        new SideEffectContext(child.getCurrentMethod()));
+                        numberedStatements);
                 this.numberedStatements.set(numberedStatements);
                 changes = true;
             }

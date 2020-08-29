@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;

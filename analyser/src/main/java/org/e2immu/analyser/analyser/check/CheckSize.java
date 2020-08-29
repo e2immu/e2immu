@@ -4,7 +4,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Size;
 

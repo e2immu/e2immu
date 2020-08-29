@@ -18,11 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.model.*;
 
 import java.util.Map;
 import java.util.Set;
@@ -55,7 +51,7 @@ public class LocalClassDeclaration implements Statement {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
     }
 }

@@ -18,7 +18,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.AnnotationType;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E1Immutable;
+import org.e2immu.annotation.Final;
 
 @E1Immutable(type = AnnotationType.VERIFY_ABSENT)
 @Container

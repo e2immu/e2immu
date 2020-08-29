@@ -5,7 +5,6 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.Set;
 

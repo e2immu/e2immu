@@ -19,13 +19,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.TypeExpression;
-import org.e2immu.analyser.util.Lazy;
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.Variable;
+import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;

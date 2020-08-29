@@ -23,15 +23,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 
-// @ContextClass
-// @NullNotAllowed
-// @NotNull
 public class ReturnStatement extends StatementWithExpression {
 
     public ReturnStatement(Expression expression) {
@@ -57,7 +52,7 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION || isThis() || isFirstParameter(expression)) {
             return SideEffect.STATIC_ONLY;
         }
@@ -65,7 +60,7 @@ public class ReturnStatement extends StatementWithExpression {
         int identity = identity(expression);
         if (identity == Level.DELAY) return SideEffect.DELAYED;
         SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
-        return base.combine(expression.sideEffect(sideEffectContext));
+        return base.combine(expression.sideEffect(evaluationContext));
     }
 
     public int fluent() {

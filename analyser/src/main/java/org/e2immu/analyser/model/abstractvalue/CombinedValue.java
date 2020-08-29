@@ -2,12 +2,17 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 

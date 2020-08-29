@@ -6,8 +6,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;

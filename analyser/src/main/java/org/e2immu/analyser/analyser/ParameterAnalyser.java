@@ -28,7 +28,8 @@ import org.e2immu.annotation.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {

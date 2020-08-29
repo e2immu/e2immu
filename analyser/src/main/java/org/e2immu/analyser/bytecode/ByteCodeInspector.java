@@ -22,7 +22,6 @@ import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Resources;
 import org.objectweb.asm.ClassReader;

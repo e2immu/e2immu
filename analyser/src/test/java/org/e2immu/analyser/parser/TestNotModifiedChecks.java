@@ -20,14 +20,10 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
 /*

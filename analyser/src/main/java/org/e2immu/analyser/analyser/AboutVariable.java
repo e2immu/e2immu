@@ -1,7 +1,10 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.LocalVariableReference;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 

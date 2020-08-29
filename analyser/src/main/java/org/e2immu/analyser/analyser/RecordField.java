@@ -1,10 +1,6 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.FieldReference;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.parser.SideEffectContext;
+import org.e2immu.analyser.model.*;
 
 public class RecordField implements Variable {
 
@@ -47,7 +43,7 @@ public class RecordField implements Variable {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext sideEffectContext) {
         return fieldReference.sideEffect(sideEffectContext);
     }
 }

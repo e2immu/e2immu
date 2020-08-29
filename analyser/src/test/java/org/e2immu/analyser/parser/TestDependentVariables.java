@@ -1,15 +1,16 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class TestDependentVariables extends CommonTestRunner {
     public TestDependentVariables() {

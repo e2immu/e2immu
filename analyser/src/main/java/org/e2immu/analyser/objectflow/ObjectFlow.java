@@ -5,7 +5,10 @@ import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Mark;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

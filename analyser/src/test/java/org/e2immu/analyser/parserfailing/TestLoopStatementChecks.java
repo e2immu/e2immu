@@ -1,14 +1,15 @@
 package org.e2immu.analyser.parserfailing;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -16,7 +17,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * Method 3:

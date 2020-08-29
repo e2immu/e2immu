@@ -1,14 +1,5 @@
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.parser.TypeContext;
-
-import java.lang.annotation.ElementType;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 public class AnnotationToProperties {
 /*
     Set<AnnotationExpression> dynamicTypeAnnotations(EvaluationContext evaluationContext) {

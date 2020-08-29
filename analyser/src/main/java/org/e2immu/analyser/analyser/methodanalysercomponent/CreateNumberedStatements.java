@@ -6,7 +6,6 @@ import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.HasStatements;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -20,13 +19,12 @@ public class CreateNumberedStatements {
     public static NumberedStatement recursivelyCreateNumberedStatements(NumberedStatement parent,
                                                                         @NotNull List<Statement> statements,
                                                                         @NotNull Stack<Integer> indices,
-                                                                        @NotNull List<NumberedStatement> numberedStatements,
-                                                                        SideEffectContext sideEffectContext) {
+                                                                        @NotNull List<NumberedStatement> numberedStatements) {
         int statementIndex = 0;
         NumberedStatement first = null;
         NumberedStatement previous = null;
         for (Statement statement : statements) {
-            NumberedStatement numberedStatement = new NumberedStatement(sideEffectContext, statement, parent, join(indices, statementIndex));
+            NumberedStatement numberedStatement = new NumberedStatement(statement, parent, join(indices, statementIndex));
             numberedStatements.add(numberedStatement);
             if (previous != null) previous.next.set(Optional.of(numberedStatement));
             previous = numberedStatement;
@@ -37,11 +35,11 @@ public class CreateNumberedStatements {
             List<NumberedStatement> blocks = new ArrayList<>();
             CodeOrganization codeOrganization = statement.codeOrganization();
             if (codeOrganization.statements != Block.EMPTY_BLOCK) {
-                blockIndex = createBlock(numberedStatement, indices, numberedStatements, sideEffectContext, blockIndex, blocks, codeOrganization.statements);
+                blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, codeOrganization.statements);
             }
             for (CodeOrganization subStatements : codeOrganization.subStatements) {
                 if (subStatements.statements != Block.EMPTY_BLOCK) {
-                    blockIndex = createBlock(numberedStatement, indices, numberedStatements, sideEffectContext, blockIndex, blocks, subStatements.statements);
+                    blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, subStatements.statements);
                 }
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
@@ -57,13 +55,12 @@ public class CreateNumberedStatements {
     private static int createBlock(NumberedStatement parent,
                                    @NotNull Stack<Integer> indices,
                                    List<NumberedStatement> numberedStatements,
-                                   SideEffectContext sideEffectContext,
                                    int blockIndex,
                                    @NotNull List<NumberedStatement> blocks,
                                    @NotNull HasStatements statements) {
         indices.push(blockIndex);
         NumberedStatement firstOfBlock =
-                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements, sideEffectContext);
+                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements);
         blocks.add(firstOfBlock);
         indices.pop();
         return blockIndex + 1;

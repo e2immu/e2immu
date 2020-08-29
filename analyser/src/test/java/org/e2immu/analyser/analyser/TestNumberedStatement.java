@@ -18,28 +18,22 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.List;
 
 public class TestNumberedStatement {
     @Test
     public void test() {
         Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
-        SideEffectContext sideEffectContext = new SideEffectContext(new MethodInfo(new TypeInfo("?"), List.of()));
         NumberedStatement parent = null;
 
-        NumberedStatement ns0 = new NumberedStatement(sideEffectContext, emptyStatement, parent, new int[]{0});
-        NumberedStatement ns1 = new NumberedStatement(sideEffectContext, emptyStatement, parent, new int[]{1});
-        NumberedStatement ns01 = new NumberedStatement(sideEffectContext, emptyStatement, parent, new int[]{0, 1});
-        NumberedStatement ns10 = new NumberedStatement(sideEffectContext, emptyStatement, parent, new int[]{1, 0});
+        NumberedStatement ns0 = new NumberedStatement( emptyStatement, parent, new int[]{0});
+        NumberedStatement ns1 = new NumberedStatement( emptyStatement, parent, new int[]{1});
+        NumberedStatement ns01 = new NumberedStatement( emptyStatement, parent, new int[]{0, 1});
+        NumberedStatement ns10 = new NumberedStatement( emptyStatement, parent, new int[]{1, 0});
 
         Assert.assertTrue(ns0.compareTo(ns0) == 0);
         Assert.assertTrue(ns0.compareTo(ns1) < 0);

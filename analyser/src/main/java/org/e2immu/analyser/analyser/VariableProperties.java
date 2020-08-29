@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -47,7 +46,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AboutVariable.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
+import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
 
 // used in MethodAnalyser

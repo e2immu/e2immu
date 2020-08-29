@@ -19,9 +19,11 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 

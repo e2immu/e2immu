@@ -20,7 +20,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.*;
-
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;

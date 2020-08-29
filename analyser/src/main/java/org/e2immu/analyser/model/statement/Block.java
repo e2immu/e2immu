@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
@@ -109,9 +108,9 @@ public class Block implements Statement, HasStatements {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return statements.stream()
-                .map(s -> s.sideEffect(sideEffectContext))
+                .map(s -> s.sideEffect(evaluationContext))
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
     }
 

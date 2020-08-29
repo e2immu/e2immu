@@ -17,7 +17,8 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Modified;
 
 import java.util.function.Function;
 import java.util.function.Supplier;

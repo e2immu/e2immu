@@ -1,6 +1,9 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.Nullable;
+import org.e2immu.annotation.Precondition;
+import org.e2immu.annotation.Variable;
 
 public class PreconditionChecks {
 

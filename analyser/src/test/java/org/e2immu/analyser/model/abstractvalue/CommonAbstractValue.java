@@ -18,26 +18,13 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ArrayAccess;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.CharValue;
-import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Logger;
-import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class CommonAbstractValue {
@@ -78,7 +65,7 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
-            public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+            public SideEffect sideEffect(EvaluationContext evaluationContext) {
                 return null;
             }
 

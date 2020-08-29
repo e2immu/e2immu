@@ -29,11 +29,11 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.objectflow.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
@@ -42,7 +42,8 @@ import org.e2immu.annotation.Only;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
@@ -84,11 +85,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 
-        // not modified on scope
-        SideEffect sideEffect = methodInfo.sideEffectNotTakingEventualIntoAccount();
-        boolean safeMethod = sideEffect.lessThan(SideEffect.SIDE_EFFECT);
-        int modifiedValue = sideEffect == SideEffect.DELAYED ? Level.DELAY : safeMethod ? Level.FALSE : Level.TRUE;
-        int methodDelay = Level.fromBool(sideEffect == SideEffect.DELAYED);
+        // is the method modifying, do we need to wait?
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int methodDelay = Level.fromBool(modified == Level.DELAY);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
@@ -99,7 +98,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
-                VariableProperty.MODIFIED, modifiedValue), true));
+                VariableProperty.MODIFIED, modified), true));
 
 
         // null scope
@@ -112,7 +111,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameterValues = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor, methodInfo, notModified1Scope);
 
         // access
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         ObjectFlow objectFlow = objectValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW) {
             if (modified == Level.DELAY) {
@@ -498,11 +496,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        Objects.requireNonNull(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        Objects.requireNonNull(evaluationContext);
 
         SideEffect params = parameterExpressions.stream()
-                .map(e -> e.sideEffect(sideEffectContext))
+                .map(e -> e.sideEffect(evaluationContext))
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
 
         // look at the object... if it is static, we're in the same boat
@@ -517,16 +515,33 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return SideEffect.STATIC_ONLY;
         }
         if (object != null) {
-            SideEffect sideEffect = object.sideEffect(sideEffectContext);
+            SideEffect sideEffect = object.sideEffect(evaluationContext);
             if (sideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
                 return SideEffect.STATIC_ONLY;
             }
         }
 
-        SideEffect methodsSideEffect = methodInfo.sideEffectNotTakingEventualIntoAccount();
+        SideEffect methodsSideEffect = sideEffectNotTakingEventualIntoAccount(methodInfo);
         if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
             return SideEffect.STATIC_ONLY;
         }
         return methodsSideEffect.combine(params);
+    }
+
+    private static SideEffect sideEffectNotTakingEventualIntoAccount(MethodInfo methodInfo) {
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int immutable = methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
+        if (effectivelyE2Immutable || modified == Level.FALSE) {
+            if (methodInfo.isStatic) {
+                if (methodInfo.isVoid()) {
+                    return SideEffect.STATIC_ONLY;
+                }
+                return SideEffect.NONE_PURE;
+            }
+            return SideEffect.NONE_CONTEXT;
+        }
+        return SideEffect.SIDE_EFFECT;
     }
 }

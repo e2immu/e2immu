@@ -18,7 +18,10 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
@@ -26,8 +29,6 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;

@@ -18,16 +18,16 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

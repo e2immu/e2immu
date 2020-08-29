@@ -19,8 +19,8 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;

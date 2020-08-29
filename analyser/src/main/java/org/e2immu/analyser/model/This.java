@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.SideEffectContext;
-
 import java.util.Objects;
-import java.util.StringJoiner;
 
 /**
  * Variable representing the "this" keyword
@@ -75,7 +72,7 @@ public class This implements Variable {
 
     @Override
     public String toString() {
-        return typeInfo.simpleName+".this";
+        return typeInfo.simpleName + ".this";
     }
 
     @Override
@@ -89,7 +86,7 @@ public class This implements Variable {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
     }
 }

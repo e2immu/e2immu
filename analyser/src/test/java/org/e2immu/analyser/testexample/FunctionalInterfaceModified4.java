@@ -20,13 +20,10 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Exposed;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotModified1;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import static org.e2immu.annotation.AnnotationType.CONTRACT;
 
 @E2Container
 public class FunctionalInterfaceModified4<T> {

@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 

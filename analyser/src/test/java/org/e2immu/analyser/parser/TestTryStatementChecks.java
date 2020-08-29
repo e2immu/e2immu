@@ -1,13 +1,13 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.Constant;
+import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 

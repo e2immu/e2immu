@@ -2,7 +2,6 @@ package org.e2immu.analyser.objectflow;
 
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
