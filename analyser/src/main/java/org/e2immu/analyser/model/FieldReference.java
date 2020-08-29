@@ -18,10 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.SideEffectContext;
-
-import java.util.StringJoiner;
-
 public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
@@ -91,7 +87,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return isStatic() ? SideEffect.STATIC_ONLY : SideEffect.NONE_CONTEXT;
     }
 }

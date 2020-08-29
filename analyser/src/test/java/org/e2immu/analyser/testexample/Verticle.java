@@ -20,7 +20,6 @@ package org.e2immu.analyser.testexample;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,9 +2,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.annotation.UtilityClass;
 
-import java.util.Arrays;
 import java.util.function.IntBinaryOperator;
-import java.util.stream.IntStream;
 
 /**
  * Properties have numeric values, according to a number of different encoding systems.

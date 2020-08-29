@@ -20,17 +20,16 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.Nullable;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Parameter info objects must be included in the context of a method info object... whence
@@ -191,7 +190,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.NONE_PURE;
     }
 

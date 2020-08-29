@@ -19,20 +19,9 @@
 
 package org.e2immu.analyser.parser;
 
-import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.InputConfiguration;
-import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
 
 public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
     public TestTestExamplesWithAnnotatedAPIs() {

@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;

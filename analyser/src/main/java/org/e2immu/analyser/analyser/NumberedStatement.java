@@ -18,12 +18,11 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -49,20 +48,17 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     public SetOnce<Value> valueOfExpression = new SetOnce<>();
 
     public final int[] indices;
-    public final SideEffect sideEffect;
 
     // Transformations
     // if the statement is not important anymore, set it to "ExpressionAsStatement" with "EmptyExpression"
     // the replacement should have the same indices
     public final SetOnce<NumberedStatement> replacement = new SetOnce<>();
 
-    public NumberedStatement(@NotNull SideEffectContext sideEffectContext,
-                             @NotNull Statement statement,
+    public NumberedStatement(@NotNull Statement statement,
                              NumberedStatement parent,
                              @NotNull @NotModified int[] indices) {
         this.indices = Objects.requireNonNull(indices);
         this.statement = Objects.requireNonNull(statement);
-        sideEffect = statement.sideEffect(sideEffectContext);
         this.parent = parent;
     }
 

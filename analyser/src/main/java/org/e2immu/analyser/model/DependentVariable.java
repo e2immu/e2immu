@@ -1,6 +1,5 @@
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
@@ -63,7 +62,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
     }
 }

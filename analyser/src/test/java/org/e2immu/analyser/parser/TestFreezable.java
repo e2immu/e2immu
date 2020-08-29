@@ -19,16 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;

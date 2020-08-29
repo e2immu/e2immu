@@ -24,16 +24,11 @@ import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.NotNull1;
 import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)

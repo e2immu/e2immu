@@ -18,25 +18,16 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.objectflow.Location;
-import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
-import static org.e2immu.analyser.util.Logger.log;
 
 public class NewObject implements HasParameterExpressions {
     public final ParameterizedType parameterizedType;
@@ -144,9 +135,9 @@ public class NewObject implements HasParameterExpressions {
 
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         SideEffect params = parameterExpressions.stream()
-                .map(e -> e.sideEffect(sideEffectContext))
+                .map(e -> e.sideEffect(evaluationContext))
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
 
         if (constructor != null) {

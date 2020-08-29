@@ -30,12 +30,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.e2immu.analyser.config.UploadConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.SortedType;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SMapList;
-import org.e2immu.annotation.*;
 import org.e2immu.annotation.Variable;
+import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

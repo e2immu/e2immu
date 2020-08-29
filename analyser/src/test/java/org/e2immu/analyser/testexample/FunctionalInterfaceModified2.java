@@ -17,14 +17,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import static org.e2immu.annotation.AnnotationType.*;
-
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotModified1;
 
 import java.util.function.Consumer;
+
+import static org.e2immu.annotation.AnnotationType.CONTRACT;
 
 public class FunctionalInterfaceModified2 {
 

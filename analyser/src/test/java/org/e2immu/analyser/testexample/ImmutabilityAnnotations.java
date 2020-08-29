@@ -20,7 +20,10 @@ package org.e2immu.analyser.testexample;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The purpose of this class is to show all immutability annotations colored in the highlighter,

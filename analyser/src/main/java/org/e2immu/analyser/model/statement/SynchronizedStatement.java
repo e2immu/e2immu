@@ -19,15 +19,11 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 import java.util.Objects;
 
-// @ContextClass
-// @NotNull
-// @NullNotAllowed
 public class SynchronizedStatement extends StatementWithExpression {
     public final Block block;
 
@@ -67,7 +63,7 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return block.sideEffect(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return block.sideEffect(evaluationContext);
     }
 }

@@ -23,10 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 public class VariableValue extends ValueWithVariable {
 
     @NotNull

@@ -6,11 +6,13 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.Constant;
 
 import java.util.List;

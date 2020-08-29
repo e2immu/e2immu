@@ -3,7 +3,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;

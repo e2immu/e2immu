@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
@@ -95,7 +94,7 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         // the creation itself is local; the assignment references in LocalVariableReference are what matters
         return SideEffect.LOCAL;
     }

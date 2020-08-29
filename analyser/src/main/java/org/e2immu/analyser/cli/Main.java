@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.cli;
 
-import ch.qos.logback.classic.Level;
 import org.apache.commons.cli.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.parser.Parser;

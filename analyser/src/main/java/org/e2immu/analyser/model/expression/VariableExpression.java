@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -111,8 +110,8 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return variable.sideEffect(Objects.requireNonNull(sideEffectContext));
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return variable.sideEffect(Objects.requireNonNull(evaluationContext));
     }
 
     @Override

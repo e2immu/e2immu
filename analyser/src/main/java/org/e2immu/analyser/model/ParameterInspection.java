@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.*;
 
 import java.util.ArrayList;

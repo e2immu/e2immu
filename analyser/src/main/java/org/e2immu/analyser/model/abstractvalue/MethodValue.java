@@ -58,7 +58,7 @@ public class MethodValue implements Value {
         return sameMethod &&
                 parameters.equals(that.parameters) &&
                 object.equals(that.object) &&
-                methodInfo.sideEffectNotTakingEventualIntoAccount().atMost(SideEffect.NONE_CONTEXT);
+                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
     }
 
     /*
@@ -68,10 +68,9 @@ public class MethodValue implements Value {
         Set<MethodInfo> overrides1 = m1.typeInfo.overrides(m1, true);
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
         Set<MethodInfo> overrides2 = m2.typeInfo.overrides(m2, true);
-        if (m1.typeInfo.isInterface() && overrides2.contains(m1)) return true;
+        return m1.typeInfo.isInterface() && overrides2.contains(m1);
 
         // any other?
-        return false;
     }
 
     @Override

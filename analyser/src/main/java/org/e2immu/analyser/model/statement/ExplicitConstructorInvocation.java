@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -68,9 +67,9 @@ public class ExplicitConstructorInvocation implements Statement {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return parameterExpressions.stream()
-                .map(e -> e.sideEffect(sideEffectContext))
+                .map(e -> e.sideEffect(evaluationContext))
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
     }
 }

@@ -18,12 +18,8 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.TypeContext;
-
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface WithInspectionAndAnalysis {
 

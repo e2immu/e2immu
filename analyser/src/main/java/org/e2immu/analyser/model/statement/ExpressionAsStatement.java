@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaBlock;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -48,8 +47,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return expression.sideEffect(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return expression.sideEffect(evaluationContext);
     }
 
     @Override

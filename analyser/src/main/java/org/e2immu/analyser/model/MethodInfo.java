@@ -384,23 +384,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public SideEffect sideEffectNotTakingEventualIntoAccount() {
-        int modified = methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-        boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-        if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
-        if (effectivelyE2Immutable || modified == Level.FALSE) {
-            if (isStatic) {
-                if (isVoid()) {
-                    return SideEffect.STATIC_ONLY;
-                }
-                return SideEffect.NONE_PURE;
-            }
-            return SideEffect.NONE_CONTEXT;
-        }
-        return SideEffect.SIDE_EFFECT;
-    }
-
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
     public List<ParameterizedType> typeParametersComputed(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
         if (typeInfo.typeInspection.get().typeParameters.isEmpty()) return List.of();

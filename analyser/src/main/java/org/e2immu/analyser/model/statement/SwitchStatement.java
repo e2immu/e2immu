@@ -2,7 +2,6 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -39,9 +38,9 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        SideEffect sideEffect = expression.sideEffect(sideEffectContext);
-        return switchEntries.stream().map(s -> s.sideEffect(sideEffectContext))
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        SideEffect sideEffect = expression.sideEffect(evaluationContext);
+        return switchEntries.stream().map(s -> s.sideEffect(evaluationContext))
                 .reduce(sideEffect, SideEffect::combine);
     }
 
@@ -51,7 +50,7 @@ public class SwitchStatement extends StatementWithExpression {
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
-        boolean haveNoDefault = switchEntries.stream().allMatch(switchEntry -> switchEntry.isNotDefault());
+        boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
         builder.setNoBlockMayBeExecuted(haveNoDefault);
         return builder.build();
     }

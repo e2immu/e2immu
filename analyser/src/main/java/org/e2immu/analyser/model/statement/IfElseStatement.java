@@ -20,14 +20,10 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
 
-// @ContextClass
-// @NullNotAllowed
-// @NotNull
 public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;
     public final Block ifBlock;
@@ -84,12 +80,12 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        SideEffect blocksSideEffect = ifBlock.sideEffect(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        SideEffect blocksSideEffect = ifBlock.sideEffect(evaluationContext);
         if (elseBlock != Block.EMPTY_BLOCK) {
-            blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(sideEffectContext));
+            blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
         }
-        SideEffect conditionSideEffect = expression.sideEffect(sideEffectContext);
+        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);

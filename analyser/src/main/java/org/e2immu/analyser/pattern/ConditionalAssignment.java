@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.IfElseStatement;
-import org.e2immu.analyser.parser.SideEffectContext;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -180,7 +179,6 @@ public class ConditionalAssignment {
     // first attempt
     public static void tryToDetectTransformation(NumberedStatement statement, EvaluationContext evaluationContext) {
         if (statement.replacement.isSet()) return;
-        SideEffectContext sideEffectContext = new SideEffectContext(evaluationContext.getCurrentMethod());
 
         // assignment or local variable creation
         if (!(statement.statement instanceof ExpressionAsStatement)) return;
@@ -235,14 +233,14 @@ public class ConditionalAssignment {
         LocalVariable tmp = new LocalVariable(List.of(), "tmp", variable.parameterizedType(), List.of());
         LocalVariableCreation lvc1 = new LocalVariableCreation(tmp, newValueExpression);
         Statement newS1 = new ExpressionAsStatement(lvc1);
-        NumberedStatement newNs1 = new NumberedStatement(sideEffectContext, newS1, statement.parent, statement.indices);
+        NumberedStatement newNs1 = new NumberedStatement(newS1, statement.parent, statement.indices);
         log(TRANSFORM, "New statement 1: {}", newS1.statementString(0));
         newNs1.blocks.set(List.of());
 
         if (created != null) {
             LocalVariableCreation lvc2 = new LocalVariableCreation(created, EmptyExpression.EMPTY_EXPRESSION);
             Statement newS2 = new ExpressionAsStatement(lvc2);
-            NumberedStatement newNs2 = new NumberedStatement(sideEffectContext, newS2, statement.parent, statement.indices);
+            NumberedStatement newNs2 = new NumberedStatement(newS2, statement.parent, statement.indices);
             newNs2.blocks.set(List.of());
             newNs1.next.set(Optional.of(newNs2));
             log(TRANSFORM, "New statement 2: {}", newS2.statementString(0));
@@ -258,14 +256,14 @@ public class ConditionalAssignment {
         Block newElseBlock = new Block.BlockBuilder().addStatement(assignToTmp).build();
         Statement newS3 = new IfElseStatement(ifExpression, newIfBlock, newElseBlock);
         log(TRANSFORM, "New statement 3: {}", newS3.statementString(0));
-        NumberedStatement newNs3 = new NumberedStatement(sideEffectContext, newS3, next.parent, next.indices);
+        NumberedStatement newNs3 = new NumberedStatement(newS3, next.parent, next.indices);
 
-        NumberedStatement newNs3_00 = new NumberedStatement(sideEffectContext, assignToSomeOther, newNs3, add(next.indices, new int[]{0, 0}));
+        NumberedStatement newNs3_00 = new NumberedStatement(assignToSomeOther, newNs3, add(next.indices, new int[]{0, 0}));
         newNs3_00.next.set(Optional.empty());
         newNs3_00.neverContinues.set(false);
         newNs3_00.blocks.set(List.of());
 
-        NumberedStatement newNs3_10 = new NumberedStatement(sideEffectContext, assignToTmp, newNs3, add(next.indices, new int[]{1, 0}));
+        NumberedStatement newNs3_10 = new NumberedStatement(assignToTmp, newNs3, add(next.indices, new int[]{1, 0}));
         newNs3_10.next.set(Optional.empty());
         newNs3_10.neverContinues.set(false);
         newNs3_10.blocks.set(List.of());

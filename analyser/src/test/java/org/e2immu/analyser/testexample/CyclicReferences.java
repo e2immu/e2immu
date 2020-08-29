@@ -18,7 +18,9 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.ExtensionClass;
+import org.e2immu.annotation.NotModified;
 
 import java.util.List;
 

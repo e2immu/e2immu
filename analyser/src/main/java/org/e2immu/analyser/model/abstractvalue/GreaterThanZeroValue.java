@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;

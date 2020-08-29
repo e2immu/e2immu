@@ -18,9 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.SideEffectContext;
-import org.e2immu.annotation.E2Container;
-
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,7 +43,7 @@ public interface Variable {
 
     boolean isStatic();
 
-    SideEffect sideEffect(SideEffectContext sideEffectContext);
+    SideEffect sideEffect(EvaluationContext evaluationContext);
 
     int variableOrder();
 }

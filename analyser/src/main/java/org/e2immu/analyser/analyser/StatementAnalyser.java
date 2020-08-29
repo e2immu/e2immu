@@ -23,7 +23,10 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -679,16 +682,11 @@ public class StatementAnalyser {
         int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
         if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
 
-        SideEffect sideEffect = methodCall.methodInfo.sideEffectNotTakingEventualIntoAccount();
-        switch (sideEffect) {
-            case DELAYED:
-            case STATIC_ONLY:
-            case SIDE_EFFECT:
-                return; // nothing to be done about these
-            default:
-                messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
-                        Message.IGNORING_RESULT_OF_METHOD_CALL));
-                statement.errorValue.set(true);
+        int modified = methodCall.methodInfo.getAnalysis().getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.FALSE) {
+            messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
+                    Message.IGNORING_RESULT_OF_METHOD_CALL));
+            statement.errorValue.set(true);
         }
     }
 

@@ -18,9 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-
-import org.e2immu.analyser.parser.SideEffectContext;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -76,8 +73,8 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return assignmentExpressions.stream().map(e -> e.sideEffect(sideEffectContext)).reduce(SideEffect.LOCAL, SideEffect::combine);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return assignmentExpressions.stream().map(e -> e.sideEffect(evaluationContext)).reduce(SideEffect.LOCAL, SideEffect::combine);
     }
 
     @Override

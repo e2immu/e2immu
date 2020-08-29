@@ -4,6 +4,10 @@
 
 === Analysis
 
+==== Side effects
+
+#TODO#
+
 ==== Support data
 
 Whether a field is {supportData} or not is determined by its type.

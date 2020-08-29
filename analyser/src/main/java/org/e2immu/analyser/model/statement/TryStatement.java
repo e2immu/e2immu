@@ -3,7 +3,6 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.SideEffectContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
@@ -141,8 +140,8 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public SideEffect sideEffect(SideEffectContext sideEffectContext) {
-        return tryBlock.sideEffect(sideEffectContext);
+    public SideEffect sideEffect(EvaluationContext evaluationContext) {
+        return tryBlock.sideEffect(evaluationContext);
     }
 
 }
