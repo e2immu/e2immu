@@ -18,13 +18,16 @@
 package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Container;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Pattern {
 
@@ -66,14 +69,11 @@ public class Pattern {
             return lv;
         }
 
-        public Expression matchSomeExpression() {
+        public Expression matchSomeExpression(Variable... variables) {
             int index = expressions.size();
-            PlaceHolder placeHolder = new PlaceHolder(index);
+            PlaceHolder placeHolder = new PlaceHolder(index, Arrays.stream(variables).collect(Collectors.toSet()));
             expressions.add(placeHolder);
             return placeHolder;
-        }
-
-        public Expression matchSomeExpression(Variable variable) {
         }
 
         public void addStatement(Statement statement) {
@@ -83,9 +83,11 @@ public class Pattern {
 
     public static class PlaceHolder implements Expression {
         public final int index;
+        public final Set<Variable> variablesToMatch;
 
-        public PlaceHolder(int index) {
+        public PlaceHolder(int index, Set<Variable> variablesToMatch) {
             this.index = index;
+            this.variablesToMatch = ImmutableSet.copyOf(variablesToMatch);
         }
 
         @Override
@@ -95,7 +97,8 @@ public class Pattern {
 
         @Override
         public String expressionString(int indent) {
-            return null;
+            return "[expression(" + variablesToMatch.stream().map(Variable::name)
+                    .collect(Collectors.joining(",")) + "):" + index;
         }
 
         @Override

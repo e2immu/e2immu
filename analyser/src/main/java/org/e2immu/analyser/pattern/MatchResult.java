@@ -18,37 +18,44 @@
 package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.annotation.Container;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Replacement {
+public class MatchResult {
 
     public final List<Statement> statements;
-    public final Pattern pattern;
+    public final NumberedStatement start;
 
-    private Replacement(Pattern pattern, List<Statement> statements) {
-        this.statements = ImmutableList.copyOf(statements);
-        this.pattern = pattern;
+    private MatchResult(List<Statement> statements, NumberedStatement start) {
+        this.statements = statements;
+        this.start = start;
     }
 
-    @Container(builds = Replacement.class)
-    public static class ReplacementBuilder {
-        private final Pattern pattern;
+    public String toString(int indent) {
+        StringBuilder sb = new StringBuilder();
+        for (Statement statement : statements) {
+            sb.append(statement.statementString(indent));
+        }
+        return sb.toString();
+    }
+
+    public static class MatchResultBuilder {
         private final List<Statement> statements = new ArrayList<>();
+        private final NumberedStatement start;
 
-        public ReplacementBuilder(Pattern pattern) {
-            this.pattern = pattern;
+        public MatchResultBuilder(NumberedStatement start) {
+            this.start = start;
         }
 
-        public Replacement build() {
-            return new Replacement(pattern, statements);
+        public MatchResult build() {
+            return new MatchResult(ImmutableList.copyOf(statements), start);
         }
+    }
 
-        public void addStatement(Statement statement) {
-            this.statements.add(statement);
-        }
+    public void apply() {
+
     }
 }
