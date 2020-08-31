@@ -118,13 +118,14 @@ public class ConditionalAssignment {
          */
         Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement11", pattern1);
         LocalVariable lvTmp = replacementBuilder.newLocalVariable("tmp", pattern1.types.get(0));
-        Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
+        Expression rSomeExpression = pattern1.expressions.get(0);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
         replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
 
         Variable lv = pattern1.variables.get(0);
-        Expression condition = pattern1.expressions.get(1).translate(TranslationMap.fromVariableMap(Map.of(lv, tmp)));
+        Expression condition = pattern1.expressions.get(1);
+        replacementBuilder.applyTranslation(condition, TranslationMap.fromVariableMap(Map.of(lv, tmp)));
         Expression ifTrue = pattern1.expressions.get(2);
         Expression ifFalse = new VariableExpression(tmp);
         InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
@@ -158,14 +159,15 @@ public class ConditionalAssignment {
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
 
         LocalVariable lvTmp = replacementBuilder.newLocalVariable("tmp", pattern1.types.get(0));
-        Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
+        Expression rSomeExpression = pattern1.expressions.get(0);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
         replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
 
-        Expression rSomeCondition = pattern1.expressions.get(1).translate(TranslationMap.fromVariableMap(Map.of(lv, tmp)));
+        Expression rSomeCondition = pattern1.expressions.get(1);
+        replacementBuilder.applyTranslation(rSomeCondition, TranslationMap.fromVariableMap(Map.of(lv, tmp)));
         ExpressionAsStatement assignSomeOtherExpression = new ExpressionAsStatement(
-                new Assignment(new VariableExpression(lv), pattern1.expressions.get(2).translate(TranslationMap.EMPTY_MAP)));
+                new Assignment(new VariableExpression(lv), pattern1.expressions.get(2)));
         ExpressionAsStatement assignTmp = new ExpressionAsStatement(
                 new Assignment(new VariableExpression(lv), new VariableExpression(tmp)));
         Block newIfBlock = new Block.BlockBuilder().addStatement(assignSomeOtherExpression).build();

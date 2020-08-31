@@ -56,6 +56,15 @@ public class TranslationMap {
                         e -> ((LocalVariableReference) e.getValue()).variable));
     }
 
+    @Override
+    public String toString() {
+        return "TM{" +
+                List.of(variables.isEmpty() ? "" : variables.toString(),
+                        types.isEmpty() ? "" : types.toString())
+                        .stream().filter(s -> !s.isEmpty()).collect(Collectors.joining("")) +
+                '}';
+    }
+
     public static TranslationMap fromVariableMap(Map<? extends Variable, ? extends Variable> map) {
         return new TranslationMap(Map.of(), Map.of(), map, Map.of());
     }
@@ -64,6 +73,12 @@ public class TranslationMap {
         Map<Variable, Variable> overwrittenMap = new HashMap<>(variables);
         overwrittenMap.putAll(map);
         return new TranslationMap(statements, expressions, overwrittenMap, types);
+    }
+
+    public TranslationMap overwriteExpressionMap(Map<Expression, Expression> update) {
+        Map<Expression, Expression> overwrittenExpressionMap = new HashMap<>(expressions);
+        overwrittenExpressionMap.putAll(update);
+        return new TranslationMap(statements, overwrittenExpressionMap, variables, types);
     }
 
     public Expression translateExpression(Expression expression) {
@@ -111,6 +126,15 @@ public class TranslationMap {
         Statement statement = statements.get(0);
         if (clazz.isAssignableFrom(statement.getClass())) return (T) statement;
         throw new UnsupportedOperationException();
+    }
+
+    public TranslationMap applyVariables(Map<? extends Variable, ? extends Variable> variables) {
+        Map<? extends Variable, ? extends Variable> updatedVariables =
+                this.variables.entrySet().stream().collect(Collectors.toMap(e -> {
+                    Variable inMap = variables.get(e.getKey());
+                    return inMap == null ? e.getKey() : inMap;
+                }, Map.Entry::getValue));
+        return new TranslationMap(statements, expressions, updatedVariables, types);
     }
 
     @Container(builds = TranslationMap.class)

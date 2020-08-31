@@ -19,6 +19,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.InlineConditionalOperator;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.testexample.MatcherChecks;
 import org.junit.Assert;
@@ -101,6 +104,7 @@ public class TestMatcherChecks extends CommonTestRunner {
         Assert.assertEquals("T0 lv$0 = expression():0;\n", first.statementString(0));
         Statement second = replacement.statements.get(1);
         Assert.assertEquals("T0 lv0 = (expression(lv0):1) ? (expression():2) : lv$0;\n", second.statementString(0));
+        Assert.assertEquals("{expression(lv0):1=TM{{lv0=lv$0}}}", replacement.translationsOnExpressions.toString());
 
         // MATCH RESULT
 

@@ -36,15 +36,32 @@ public class Replacer {
         log(TRANSFORM, "Start pasting replacement {} onto {} after matching pattern {}", replacement.name,
                 matchResult.start.index, replacement.pattern.name);
         if (replacement.statements.isEmpty()) return;
-        TranslationMap updatedTranslationMap = createNewLocalVariableNames(evaluationContext, matchResult.translationMap,
+        TranslationMap update1 = applyTranslationsToPlaceholders(matchResult.translationMap, replacement.translationsOnExpressions);
+        TranslationMap update2 = createNewLocalVariableNames(evaluationContext, update1,
                 replacement.namesCreatedInReplacement, replacement.newLocalVariables);
 
-        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(updatedTranslationMap,
+        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(update2,
                 matchResult.start.indices, matchResult.start.parent, replacement.statements);
         wireStart(replacementNsAtStartLevel.get(0), matchResult.start);
         if (matchResult.start.next.get().isPresent()) {
             wireEnd(replacementNsAtStartLevel.get(replacementNsAtStartLevel.size() - 1), matchResult.start.next.get().get());
         }
+    }
+
+    private static TranslationMap applyTranslationsToPlaceholders(TranslationMap translationMap,
+                                                                  Map<Expression, TranslationMap> translationsOnExpressions) {
+        Map<Expression, Expression> update = new HashMap<>();
+        for (Map.Entry<? extends Expression, ? extends Expression> e : translationMap.expressions.entrySet()) {
+            Expression template = e.getKey();
+            Expression actual = e.getValue();
+            TranslationMap inMap = translationsOnExpressions.get(template);
+            if (inMap != null) {
+                TranslationMap inMapUpdated = inMap.applyVariables(translationMap.variables);
+                Expression translated = actual.translate(inMapUpdated);
+                update.put(template, translated);
+            }
+        }
+        return translationMap.overwriteExpressionMap(update);
     }
 
     private static TranslationMap createNewLocalVariableNames(EvaluationContext evaluationContext,

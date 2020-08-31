@@ -239,6 +239,11 @@ public class Pattern {
         public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public String toString() {
+            return expressionString(0);
+        }
     }
 
     public static class PlaceHolderStatement implements Statement {

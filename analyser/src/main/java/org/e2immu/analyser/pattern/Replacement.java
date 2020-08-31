@@ -41,17 +41,20 @@ public class Replacement {
     public final Map<String, LocalVariable> newLocalVariables;
     public final Set<String> namesCreatedInReplacement;
     public final String name;
+    public final Map<Expression, TranslationMap> translationsOnExpressions;
 
     private Replacement(String name,
                         Pattern pattern,
                         List<Statement> statements,
                         Map<String, LocalVariable> newLocalVariables,
-                        Set<String> namesCreatedInReplacement) {
+                        Set<String> namesCreatedInReplacement,
+                        Map<Expression, TranslationMap> translationsOnExpressions) {
         this.name = name;
         this.statements = ImmutableList.copyOf(statements);
         this.pattern = pattern;
         this.newLocalVariables = ImmutableMap.copyOf(newLocalVariables);
         this.namesCreatedInReplacement = ImmutableSet.copyOf(namesCreatedInReplacement);
+        this.translationsOnExpressions = ImmutableMap.copyOf(translationsOnExpressions);
     }
 
     @Container(builds = Replacement.class)
@@ -62,6 +65,7 @@ public class Replacement {
         private final Map<String, LocalVariable> newLocalVariableNameToPrefix = new HashMap<>();
         private final String name;
         private final Set<String> namesCreatedInReplacement = new HashSet<>();
+        private final Map<Expression, TranslationMap> translationsOnExpressions = new HashMap<>();
 
         public ReplacementBuilder(String name, Pattern pattern) {
             this.name = name;
@@ -70,7 +74,7 @@ public class Replacement {
 
         public Replacement build() {
             return new Replacement(name, pattern, statements,
-                    newLocalVariableNameToPrefix, namesCreatedInReplacement);
+                    newLocalVariableNameToPrefix, namesCreatedInReplacement, translationsOnExpressions);
         }
 
         public void addStatement(Statement statement) {
@@ -105,6 +109,10 @@ public class Replacement {
             LocalVariable localVariableInMap = new LocalVariable(List.of(), prefix, parameterizedType, List.of());
             newLocalVariableNameToPrefix.put(key, localVariableInMap);
             return new LocalVariable(List.of(), key, parameterizedType, List.of());
+        }
+
+        public void applyTranslation(Expression expression, TranslationMap translationMap) {
+            translationsOnExpressions.put(expression, translationMap);
         }
     }
 
