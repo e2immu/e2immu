@@ -40,6 +40,10 @@ public class LocalVariable {
         this.annotations = annotations;
     }
 
+    public LocalVariable translate(TranslationMap translationMap) {
+        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

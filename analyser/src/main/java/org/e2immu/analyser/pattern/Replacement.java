@@ -20,9 +20,7 @@ package org.e2immu.analyser.pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.annotation.Container;
 
@@ -40,19 +38,19 @@ public class Replacement {
 
     public final List<Statement> statements;
     public final Pattern pattern;
-    public final Map<String, String> newLocalVariableNameToPrefix;
+    public final Map<String, LocalVariable> newLocalVariables;
     public final Set<String> namesCreatedInReplacement;
     public final String name;
 
     private Replacement(String name,
                         Pattern pattern,
                         List<Statement> statements,
-                        Map<String, String> newLocalVariableNameToPrefix,
+                        Map<String, LocalVariable> newLocalVariables,
                         Set<String> namesCreatedInReplacement) {
         this.name = name;
         this.statements = ImmutableList.copyOf(statements);
         this.pattern = pattern;
-        this.newLocalVariableNameToPrefix = ImmutableMap.copyOf(newLocalVariableNameToPrefix);
+        this.newLocalVariables = ImmutableMap.copyOf(newLocalVariables);
         this.namesCreatedInReplacement = ImmutableSet.copyOf(namesCreatedInReplacement);
     }
 
@@ -61,7 +59,7 @@ public class Replacement {
         private final Pattern pattern;
         private final List<Statement> statements = new ArrayList<>();
         private int localVariableCounter;
-        private final Map<String, String> newLocalVariableNameToPrefix = new HashMap<>();
+        private final Map<String, LocalVariable> newLocalVariableNameToPrefix = new HashMap<>();
         private final String name;
         private final Set<String> namesCreatedInReplacement = new HashSet<>();
 
@@ -102,10 +100,11 @@ public class Replacement {
             }
         }
 
-        public String newLocalVariableName(String prefix) {
+        public LocalVariable newLocalVariable(String prefix, ParameterizedType parameterizedType) {
             String key = LOCAL_VARIABLE_PREFIX + (localVariableCounter++);
-            newLocalVariableNameToPrefix.put(key, prefix);
-            return key;
+            LocalVariable localVariableInMap = new LocalVariable(List.of(), prefix, parameterizedType, List.of());
+            newLocalVariableNameToPrefix.put(key, localVariableInMap);
+            return new LocalVariable(List.of(), key, parameterizedType, List.of());
         }
     }
 

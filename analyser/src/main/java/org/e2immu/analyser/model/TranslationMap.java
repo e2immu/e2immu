@@ -98,7 +98,7 @@ public class TranslationMap {
     }
 
     public LocalVariable translateLocalVariable(LocalVariable localVariable) {
-        return localVariables.getOrDefault(localVariable, localVariable);
+        return localVariables.getOrDefault(localVariable, localVariable).translate(this);
     }
 
     public static <T extends Expression> T ensureExpressionType(Expression expression, Class<T> clazz) {

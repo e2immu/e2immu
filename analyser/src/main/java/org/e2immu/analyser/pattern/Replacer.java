@@ -20,10 +20,6 @@ package org.e2immu.analyser.pattern;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.UtilityClass;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
@@ -40,9 +36,10 @@ public class Replacer {
         log(TRANSFORM, "Start pasting replacement {} onto {} after matching pattern {}", replacement.name,
                 matchResult.start.index, replacement.pattern.name);
         if (replacement.statements.isEmpty()) return;
+        TranslationMap updatedTranslationMap = createNewLocalVariableNames(evaluationContext, matchResult.translationMap,
+                replacement.namesCreatedInReplacement, replacement.newLocalVariables);
 
-
-        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(matchResult.translationMap,
+        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(updatedTranslationMap,
                 matchResult.start.indices, matchResult.start.parent, replacement.statements);
         wireStart(replacementNsAtStartLevel.get(0), matchResult.start);
         if (matchResult.start.next.get().isPresent()) {
@@ -50,23 +47,34 @@ public class Replacer {
         }
     }
 
-    private static Map<String, String> createNewLocalVariableNames(EvaluationContext evaluationContext,
-                                                                   Set<String> namesCreatedInReplacement,
-                                                                   Map<String, String> newLocalVariableNameToPrefix) {
+    private static TranslationMap createNewLocalVariableNames(EvaluationContext evaluationContext,
+                                                              TranslationMap translationMap,
+                                                              Set<String> namesCreatedInReplacement,
+                                                              Map<String, LocalVariable> newLocalVariables) {
         Set<String> existing = new HashSet<>(evaluationContext.allUnqualifiedVariableNames());
         existing.addAll(namesCreatedInReplacement);
-        Map<String, String> newNames = new HashMap<>();
-        for (Map.Entry<String, String> e : newLocalVariableNameToPrefix.entrySet()) {
-            String prefix = e.getValue();
-            int counter = 0;
-            String combination;
-            while (existing.contains(combination = prefix + counter)) {
-                counter++;
+        Map<Variable, Variable> overwrite = new HashMap<>();
+        for (Map.Entry<String, LocalVariable> e : newLocalVariables.entrySet()) {
+            String dollarName = e.getKey();
+            LocalVariable lv = e.getValue();
+            String prefix = lv.name;
+            String combination = prefix;
+            if (existing.contains(combination)) {
+                int counter = 0;
+                while (existing.contains(combination = prefix + counter)) {
+                    counter++;
+                }
             }
             existing.add(combination);
-            newNames.put(e.getKey(), combination);
+            String newVariableName = combination;
+
+            LocalVariableReference oldLvr = new LocalVariableReference(new LocalVariable(lv.modifiers,
+                    dollarName, lv.parameterizedType, lv.annotations), List.of());
+            LocalVariableReference newLvr = new LocalVariableReference(new LocalVariable(lv.modifiers,
+                    newVariableName, lv.parameterizedType, lv.annotations), List.of());
+            overwrite.put(oldLvr, newLvr);
         }
-        return newNames;
+        return translationMap.overwriteVariableMap(overwrite);
     }
 
     private static void wireEnd(NumberedStatement lastReplacement, NumberedStatement nextOriginal) {

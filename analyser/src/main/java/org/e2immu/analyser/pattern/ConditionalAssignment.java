@@ -117,8 +117,7 @@ public class ConditionalAssignment {
          LV lv = someCondition(tmp) ?  someOtherExpression: tmp;
          */
         Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement11", pattern1);
-        String lvn = replacementBuilder.newLocalVariableName("tmp");
-        LocalVariable lvTmp = new LocalVariable(List.of(), lvn, pattern1.types.get(0), List.of());
+        LocalVariable lvTmp = replacementBuilder.newLocalVariable("tmp", pattern1.types.get(0));
         Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
@@ -158,8 +157,7 @@ public class ConditionalAssignment {
         replacementBuilder.addStatement(new ExpressionAsStatement(lvc));
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
 
-        String lvn = replacementBuilder.newLocalVariableName("tmp");
-        LocalVariable lvTmp = new LocalVariable(List.of(), lvn, pattern1.types.get(0), List.of());
+        LocalVariable lvTmp = replacementBuilder.newLocalVariable("tmp", pattern1.types.get(0));
         Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;

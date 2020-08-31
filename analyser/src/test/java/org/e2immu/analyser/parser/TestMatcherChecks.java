@@ -119,11 +119,12 @@ public class TestMatcherChecks extends CommonTestRunner {
 
         // RESULT OF REPLACER
 
+        // tmp0 because tmp already exists (see TEST_EC)
         Replacer.replace(TEST_EC, matchResult, replacement);
         Statement final1 = matchResult.start.replacement.get().statement;
-        Assert.assertEquals("String tmp = a1;\n", final1.statementString(0));
+        Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0));
         Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
-        Assert.assertEquals("String s1 = tmp == null?\"\":tmp;\n", final2.statementString(0));
+        Assert.assertEquals("String s1 = tmp0 == null?\"\":tmp0;\n", final2.statementString(0));
     }
 
     private void match2(MethodInfo method2, MethodInfo... others) {
