@@ -124,7 +124,7 @@ public class TestMatcherChecks extends CommonTestRunner {
         Statement final1 = matchResult.start.replacement.get().statement;
         Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0));
         Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
-        Assert.assertEquals("String s1 = tmp0 == null?\"\":tmp0;\n", final2.statementString(0));
+        Assert.assertEquals("String s1 = tmp0 == null ? \"\" : tmp0;\n", final2.statementString(0));
     }
 
     private void match2(MethodInfo method2, MethodInfo... others) {

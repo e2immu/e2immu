@@ -21,7 +21,13 @@ public class CreateNumberedStatements {
                                                                         @NotNull Stack<Integer> indices,
                                                                         @NotNull List<NumberedStatement> numberedStatements,
                                                                         boolean setNextAtEnd) {
-        int statementIndex = 0;
+        int statementIndex;
+        if (setNextAtEnd) {
+            statementIndex = 0;
+        } else {
+            // we're in the replacement mode; replace the existing index value
+            statementIndex = indices.pop();
+        }
         NumberedStatement first = null;
         NumberedStatement previous = null;
         for (Statement statement : statements) {

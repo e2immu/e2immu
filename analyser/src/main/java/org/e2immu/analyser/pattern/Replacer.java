@@ -92,10 +92,16 @@ public class Replacer {
         List<NumberedStatement> result = new LinkedList<>();
         List<Integer> currentIndices = indices;
         log(TRANSFORM, "Start replacing at {}", currentIndices);
+        NumberedStatement previous = null;
         for (Statement statement : statements) {
             List<NumberedStatement> resultingNumberedStatements = replace(translationMap, statement, parent, currentIndices);
             result.addAll(resultingNumberedStatements);
-            currentIndices = incrementLastInIndices(result.get(result.size() - 1).indices);
+            NumberedStatement lastOne = result.get(result.size() - 1);
+            currentIndices = incrementLastInIndices(lastOne.indices);
+            if (previous != null) {
+                previous.next.set(Optional.of(resultingNumberedStatements.get(0)));
+            }
+            previous = lastOne;
         }
         return result;
     }
