@@ -431,7 +431,7 @@ public class MethodAnalyser {
     private List<TransferValue> applyJoinReturnStatementPatterns(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
         JoinReturnStatements joinReturnStatements = new JoinReturnStatements(evaluationContext);
         List<NumberedStatement> topLevelStatements = methodAnalysis.numberedStatements.get().stream()
-                .filter(ns -> ns.indices.length == 1).collect(Collectors.toList());
+                .filter(ns -> ns.indices.size() == 1).collect(Collectors.toList());
         JoinReturnStatements.JoinResult result = joinReturnStatements.joinReturnStatementsInIfThenElse(topLevelStatements);
         if (result != null) {
             log(PATTERN, "Successfully applied JoinReturnStatementsInIfThenElse in {}", methodInfo.distinguishingName());

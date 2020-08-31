@@ -23,11 +23,11 @@ public class Location {
     }
 
     public Location(MethodInfo methodInfo, NumberedStatement currentStatement) {
-        this(Objects.requireNonNull(methodInfo), currentStatement.streamIndices(), 0);
+        this(Objects.requireNonNull(methodInfo), currentStatement.index, 0);
     }
 
     public Location(MethodInfo methodInfo, NumberedStatement currentStatement, int counter) {
-        this(Objects.requireNonNull(methodInfo), currentStatement.streamIndices(), counter);
+        this(Objects.requireNonNull(methodInfo), currentStatement.index, counter);
     }
 
     private Location(WithInspectionAndAnalysis info, String statementWithinMethod, int counter) {
