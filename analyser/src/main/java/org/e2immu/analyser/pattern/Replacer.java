@@ -18,6 +18,7 @@
 package org.e2immu.analyser.pattern;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
@@ -40,12 +41,8 @@ public class Replacer {
                 matchResult.start.index, replacement.pattern.name);
         if (replacement.statements.isEmpty()) return;
 
-        Map<String, String> newLocalVariableNames = createNewLocalVariableNames(evaluationContext,
-                replacement.namesCreatedInReplacement,
-                replacement.newLocalVariableNameToPrefix);
-        log(TRANSFORM, "New local variable map: {}", newLocalVariableNames);
 
-        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(newLocalVariableNames,
+        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(matchResult.translationMap,
                 matchResult.start.indices, matchResult.start.parent, replacement.statements);
         wireStart(replacementNsAtStartLevel.get(0), matchResult.start);
         if (matchResult.start.next.get().isPresent()) {
@@ -80,79 +77,37 @@ public class Replacer {
         start.replacement.set(firstReplacement);
     }
 
-    private static List<NumberedStatement> startReplacing(Map<String, String> newLocalVariableNames,
+    private static List<NumberedStatement> startReplacing(TranslationMap translationMap,
                                                           List<Integer> indices,
                                                           NumberedStatement parent,
                                                           List<Statement> statements) {
         List<NumberedStatement> result = new LinkedList<>();
-        log(TRANSFORM, "Start replacing at {}", indices);
-        int counter = indices.get(indices.size() - 1);
+        List<Integer> currentIndices = indices;
+        log(TRANSFORM, "Start replacing at {}", currentIndices);
         for (Statement statement : statements) {
-            List<Integer> newIndices = replaceLastInIndices(indices, counter);
-            result.add(replace(newLocalVariableNames, statement, parent, newIndices));
-            counter++;
+            List<NumberedStatement> resultingNumberedStatements = replace(translationMap, statement, parent, currentIndices);
+            result.addAll(resultingNumberedStatements);
+            currentIndices = incrementLastInIndices(result.get(result.size() - 1).indices);
         }
         return result;
     }
 
-    private static List<Integer> replaceLastInIndices(List<Integer> indices, int counter) {
+    private static List<Integer> incrementLastInIndices(List<Integer> indices) {
         ArrayList<Integer> res = new ArrayList<>(indices);
-        res.set(res.get(indices.size() - 1), counter);
+        res.set(indices.size() - 1, res.get(indices.size() - 1) + 1);
         return res;
     }
 
-    private static NumberedStatement replace(Map<String, String> newLocalVariableNames,
-                                             Statement statement,
-                                             NumberedStatement parent,
-                                             List<Integer> newIndices) {
-        if (statement instanceof Pattern.PlaceHolderStatement)
-            throw new UnsupportedOperationException("Should have been replaced");
-        Statement newStatement = potentiallyReplaceLocalVariableCreation(statement, newLocalVariableNames);
-        NumberedStatement numberedStatement = new NumberedStatement(newStatement, parent, newIndices);
-        CodeOrganization codeOrganization = newStatement.codeOrganization();
-
-        if (codeOrganization.expression instanceof Pattern.PlaceHolderExpression) {
-            throw new UnsupportedOperationException("Should have been replaced");
-        }
-        if (codeOrganization.statements instanceof Block && codeOrganization.statements != Block.EMPTY_BLOCK) {
-            // recurse into block(s)
-            List<Integer> subIndices = ListUtil.immutableConcat(newIndices, List.of(0, 0));
-            // TODO
-        } else if (!codeOrganization.statements.getStatements().isEmpty()) {
-            // TODO, inside switch block
-        } else {
-            numberedStatement.blocks.set(List.of());
-        }
-
-        int counter = 1;
-        for (CodeOrganization subCo : codeOrganization.subStatements) {
-            List<Integer> subIndices = ListUtil.immutableConcat(newIndices, List.of(counter, 0));
-            // TODO
-            ++counter;
-        }
-
-        return numberedStatement;
-    }
-
-    /*
-    we cannot use the code organisation here (easily), since we need to produce a new statement
-     */
-    private static Statement potentiallyReplaceLocalVariableCreation(Statement statement, Map<String, String> newLocalVariableNames) {
-        if (statement instanceof ExpressionAsStatement) {
-            Expression expression = ((ExpressionAsStatement) statement).expression;
-            if (expression instanceof LocalVariableCreation) {
-                LocalVariableCreation localVariableCreation = (LocalVariableCreation) expression;
-                String newName = newLocalVariableNames.get(localVariableCreation.localVariable.name);
-                if (newName != null) {
-                    LocalVariable lv = localVariableCreation.localVariable;
-                    LocalVariable newLv = new LocalVariable(lv.modifiers, newName, lv.parameterizedType, lv.annotations);
-                    log(TRANSFORM, "Replaced local variable creation {}", newName);
-                    return new ExpressionAsStatement(new LocalVariableCreation(newLv, localVariableCreation.expression));
-                }
-            }
-        }
-        // TODO implement all other statements with initialisers (for, switch, try)
-        return statement;
+    private static List<NumberedStatement> replace(TranslationMap translationMap,
+                                                   Statement statement,
+                                                   NumberedStatement parent,
+                                                   List<Integer> newIndices) {
+        List<Statement> replacements = translationMap.translateStatement(statement);
+        List<NumberedStatement> result = new LinkedList<>();
+        Stack<Integer> indicesInStack = new Stack<>();
+        indicesInStack.addAll(newIndices);
+        CreateNumberedStatements.recursivelyCreateNumberedStatements(parent, replacements, indicesInStack, result, false);
+        return result;
     }
 
 }

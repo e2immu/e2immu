@@ -18,9 +18,7 @@
 package org.e2immu.analyser.pattern;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.LocalVariableReference;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,10 +26,12 @@ import java.util.stream.Collectors;
 public class MatchResult {
     public final NumberedStatement start;
     public final Pattern pattern;
+    public final TranslationMap translationMap;
 
-    private MatchResult(Pattern pattern, NumberedStatement start) {
+    private MatchResult(Pattern pattern, NumberedStatement start, TranslationMap translationMap) {
         this.start = start;
         this.pattern = pattern;
+        this.translationMap = translationMap;
     }
 
     public String toString(int indent) {
@@ -42,6 +42,7 @@ public class MatchResult {
         private final NumberedStatement start;
         private final Pattern pattern;
         private final Map<String, Variable> actualVariableNameToTemplateVariable = new HashMap<>();
+        private final TranslationMap.TranslationMapBuilder translationMapBuilder = new TranslationMap.TranslationMapBuilder();
 
         public MatchResultBuilder(Pattern pattern, NumberedStatement start) {
             this.pattern = pattern;
@@ -49,11 +50,15 @@ public class MatchResult {
         }
 
         public MatchResult build() {
-            return new MatchResult(pattern, start);
+            return new MatchResult(pattern, start, translationMapBuilder.build());
         }
 
         public void matchLocalVariable(LocalVariable templateVar, LocalVariable actualVar) {
             actualVariableNameToTemplateVariable.put(actualVar.name, new LocalVariableReference(templateVar, List.of()));
+
+            if (pattern.indexOfType(templateVar.parameterizedType) >= 0) {
+                translationMapBuilder.put(templateVar.parameterizedType, actualVar.parameterizedType);
+            }
         }
 
         public void matchVariable(Variable varTemplate, Variable varActual) {
@@ -63,6 +68,7 @@ public class MatchResult {
             } else if (!inMap.equals(varTemplate)) {
                 throw new UnsupportedOperationException();
             }
+            translationMapBuilder.put(varTemplate, varActual);
         }
 
         public boolean containsAllVariables(Set<Variable> templateVar, List<Variable> actualVariables) {
@@ -70,6 +76,10 @@ public class MatchResult {
                     .map(v -> actualVariableNameToTemplateVariable.getOrDefault(v.name(), v))
                     .collect(Collectors.toSet());
             return translatedActual.containsAll(templateVar);
+        }
+
+        public void registerPlaceholderExpression(Pattern.PlaceHolderExpression template, Expression actual) {
+            translationMapBuilder.put(template, actual);
         }
     }
 }

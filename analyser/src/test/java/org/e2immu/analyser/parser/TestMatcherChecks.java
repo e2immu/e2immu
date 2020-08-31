@@ -18,10 +18,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.testexample.MatcherChecks;
 import org.junit.Assert;
@@ -77,11 +74,15 @@ public class TestMatcherChecks extends CommonTestRunner {
     };
 
     private void match1(MethodInfo method1, MethodInfo... others) {
+
+        // PATTERN
+
         Pattern conditionalAssignment = ConditionalAssignment.pattern1();
         Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0));
         Assert.assertEquals("if (expression(lv0):1) {\n" +
                 "    lv0 = expression():2;\n" +
                 "}\n", conditionalAssignment.statements.get(1).statementString(0));
+        Assert.assertEquals(1, conditionalAssignment.types.size());
 
         PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
 
@@ -93,14 +94,32 @@ public class TestMatcherChecks extends CommonTestRunner {
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
 
-        MatchResult matchResult = optMatchResult.get();
+        // REPLACEMENT
+
         Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
         Statement first = replacement.statements.get(0);
         Assert.assertEquals("T0 lv$0 = expression():0;\n", first.statementString(0));
         Statement second = replacement.statements.get(1);
         Assert.assertEquals("T0 lv0 = (expression(lv0):1) ? (expression():2) : lv$0;\n", second.statementString(0));
-        Replacer.replace(TEST_EC, matchResult, replacement);
 
+        // MATCH RESULT
+
+        MatchResult matchResult = optMatchResult.get();
+        Expression actual0 = matchResult.translationMap.expressions.get(new Pattern.PlaceHolderExpression(0));
+        Assert.assertEquals("a1", actual0.expressionString(0));
+        Expression actual1 = matchResult.translationMap.expressions.get(new Pattern.PlaceHolderExpression(1));
+        Assert.assertEquals("s1 == null", actual1.expressionString(0));
+        Expression actual2 = matchResult.translationMap.expressions.get(new Pattern.PlaceHolderExpression(2));
+        Assert.assertEquals("\"\"", actual2.expressionString(0));
+
+        Assert.assertEquals("{lv0=s1}", matchResult.translationMap.variables.toString());
+        Assert.assertEquals("{Type param T0=Type java.lang.String}", matchResult.translationMap.types.toString());
+        Assert.assertEquals("{LocalVariable lv0 of Type param T0=LocalVariable s1 of Type java.lang.String}",
+                matchResult.translationMap.localVariables.toString());
+
+        // RESULT OF REPLACER
+
+        Replacer.replace(TEST_EC, matchResult, replacement);
         Statement final1 = matchResult.start.replacement.get().statement;
         Assert.assertEquals("String tmp = a1;\n", final1.statementString(0));
         Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;

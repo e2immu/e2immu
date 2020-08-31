@@ -170,15 +170,20 @@ public class PatternMatcher {
     }
 
     private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           Expression template, Expression actual) {
+                                           Expression template,
+                                           Expression actual) {
         if (template == actual) return SimpleMatchResult.YES; // mainly for EmptyExpression
 
 
         if (template instanceof Pattern.PlaceHolderExpression) {
             Pattern.PlaceHolderExpression placeHolder = (Pattern.PlaceHolderExpression) template;
             if (!placeHolder.returnType.isAssignableFrom(actual.returnType())) return SimpleMatchResult.NO;
-            return builder.containsAllVariables(placeHolder.variablesToMatch, actual.variables()) ?
-                    SimpleMatchResult.YES : SimpleMatchResult.NO;
+            boolean varsOK = builder.containsAllVariables(placeHolder.variablesToMatch, actual.variables());
+            if (varsOK) {
+                builder.registerPlaceholderExpression((Pattern.PlaceHolderExpression) template, actual);
+                return SimpleMatchResult.YES;
+            }
+            return SimpleMatchResult.NO;
         }
         if (!template.getClass().equals(actual.getClass())) return SimpleMatchResult.NO;
         if (!template.returnType().isAssignableFrom(actual.returnType())) return SimpleMatchResult.NO;
@@ -204,7 +209,6 @@ public class PatternMatcher {
             LocalVariableCreation lvcTemplate = (LocalVariableCreation) template;
             LocalVariableCreation lvcActual = (LocalVariableCreation) actual;
             builder.matchLocalVariable(lvcTemplate.localVariable, lvcActual.localVariable);
-
             // delegate expression
             return match(builder, lvcTemplate.expression, lvcActual.expression);
         }

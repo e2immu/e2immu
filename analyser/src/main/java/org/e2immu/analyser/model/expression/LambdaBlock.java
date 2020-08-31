@@ -118,7 +118,7 @@ public class LambdaBlock implements Expression {
                 recursivelyCreateNumberedStatements(null,
                         block.statements,
                         indices,
-                        numberedStatements);
+                        numberedStatements, true);
                 this.numberedStatements.set(numberedStatements);
                 changes = true;
             }

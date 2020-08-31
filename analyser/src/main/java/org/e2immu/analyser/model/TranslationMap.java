@@ -17,24 +17,32 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.annotation.Container;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Translation takes place from statement, over expression, down to variable and type.
+ * <p>
+ * Blocks can only translate into blocks;
+ * statements can translate into lists of statements.
+ */
 public class TranslationMap {
 
     public static final TranslationMap EMPTY_MAP = new TranslationMap(Map.of(), Map.of(), Map.of(), Map.of());
 
     public final Map<? extends Variable, ? extends Variable> variables;
     public final Map<? extends Expression, ? extends Expression> expressions;
-    public final Map<? extends Statement, ? extends Statement> statements;
+    public final Map<? extends Statement, List<Statement>> statements;
     public final Map<ParameterizedType, ParameterizedType> types;
     public final Map<LocalVariable, LocalVariable> localVariables;
 
-    public TranslationMap(Map<? extends Statement, ? extends Statement> statements,
+    public TranslationMap(Map<? extends Statement, List<Statement>> statements,
                           Map<? extends Expression, ? extends Expression> expressions,
                           Map<? extends Variable, ? extends Variable> variables,
                           Map<ParameterizedType, ParameterizedType> types) {
@@ -52,6 +60,12 @@ public class TranslationMap {
         return new TranslationMap(Map.of(), Map.of(), map, Map.of());
     }
 
+    public TranslationMap overwriteVariableMap(Map<? extends Variable, ? extends Variable> map) {
+        Map<Variable, Variable> overwrittenMap = new HashMap<>(variables);
+        overwrittenMap.putAll(map);
+        return new TranslationMap(statements, expressions, overwrittenMap, types);
+    }
+
     public Expression translateExpression(Expression expression) {
         return Objects.requireNonNullElse(expressions.get(expression), expression).translate(this);
     }
@@ -60,12 +74,18 @@ public class TranslationMap {
         return Objects.requireNonNullElse(variables.get(variable), variable);
     }
 
-    public Statement translateStatement(Statement statement) {
-        return Objects.requireNonNullElse(statements.get(statement), statement).translate(this);
+    public List<Statement> translateStatement(Statement statement) {
+        List<Statement> list = statements.get(statement);
+        if (list == null) {
+            return List.of(statement.translate(this));
+        }
+        return list.stream().map(st -> st.translate(this)).collect(Collectors.toList());
     }
 
     public Block translateBlock(Block block) {
-        return ensureStatementType(translateStatement(block), Block.class);
+        List<Statement> list = translateStatement(block);
+        if (list.size() != 1) throw new UnsupportedOperationException();
+        return (Block) list.get(0);
     }
 
     public ParameterizedType translateType(ParameterizedType parameterizedType) {
@@ -86,8 +106,47 @@ public class TranslationMap {
         throw new UnsupportedOperationException();
     }
 
-    public static <T extends Statement> T ensureStatementType(Statement statement, Class<T> clazz) {
+    public static <T extends Statement> T ensureStatementType(List<Statement> statements, Class<T> clazz) {
+        if (statements.size() != 1) throw new UnsupportedOperationException();
+        Statement statement = statements.get(0);
         if (clazz.isAssignableFrom(statement.getClass())) return (T) statement;
         throw new UnsupportedOperationException();
+    }
+
+    @Container(builds = TranslationMap.class)
+    public static class TranslationMapBuilder {
+        private final Map<Variable, Variable> variables = new HashMap<>();
+        private final Map<Expression, Expression> expressions = new HashMap<>();
+        private final Map<Statement, List<Statement>> statements = new HashMap<>();
+        private final Map<ParameterizedType, ParameterizedType> types = new HashMap<>();
+
+        public TranslationMap build() {
+            return new TranslationMap(statements, expressions, variables, types);
+        }
+
+        public TranslationMapBuilder put(Statement template, Statement actual) {
+            statements.put(template, List.of(actual));
+            return this;
+        }
+
+        public TranslationMapBuilder put(Statement template, List<Statement> actuals) {
+            statements.put(template, actuals);
+            return this;
+        }
+
+        public TranslationMapBuilder put(Expression template, Expression actual) {
+            expressions.put(template, actual);
+            return this;
+        }
+
+        public TranslationMapBuilder put(ParameterizedType template, ParameterizedType actual) {
+            types.put(template, actual);
+            return this;
+        }
+
+        public TranslationMapBuilder put(Variable template, Variable actual) {
+            variables.put(template, actual);
+            return this;
+        }
     }
 }

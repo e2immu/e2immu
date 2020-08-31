@@ -58,6 +58,11 @@ public class LocalVariable {
         return Set.of();
     }
 
+    @Override
+    public String toString() {
+        return "LocalVariable " + name + " of " + parameterizedType;
+    }
+
     public static class LocalVariableBuilder {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<LocalVariableModifier> modifiers = new ArrayList<>();

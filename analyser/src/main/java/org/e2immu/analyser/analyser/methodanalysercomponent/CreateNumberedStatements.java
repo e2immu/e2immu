@@ -19,7 +19,8 @@ public class CreateNumberedStatements {
     public static NumberedStatement recursivelyCreateNumberedStatements(NumberedStatement parent,
                                                                         @NotNull List<Statement> statements,
                                                                         @NotNull Stack<Integer> indices,
-                                                                        @NotNull List<NumberedStatement> numberedStatements) {
+                                                                        @NotNull List<NumberedStatement> numberedStatements,
+                                                                        boolean setNextAtEnd) {
         int statementIndex = 0;
         NumberedStatement first = null;
         NumberedStatement previous = null;
@@ -47,7 +48,7 @@ public class CreateNumberedStatements {
 
             ++statementIndex;
         }
-        if (previous != null)
+        if (previous != null && setNextAtEnd)
             previous.next.set(Optional.empty());
         return first;
     }
@@ -60,7 +61,7 @@ public class CreateNumberedStatements {
                                    @NotNull HasStatements statements) {
         indices.push(blockIndex);
         NumberedStatement firstOfBlock =
-                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements);
+                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements, true);
         blocks.add(firstOfBlock);
         indices.pop();
         return blockIndex + 1;

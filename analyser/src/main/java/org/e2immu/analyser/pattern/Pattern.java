@@ -59,9 +59,10 @@ public class Pattern {
 
     public int indexOfType(ParameterizedType type) {
         if (!type.isTypeParameter()) return -1;
-        if (name.startsWith(TYPE_PREFIX)) {
+        String typeParameterName = type.typeParameter.name;
+        if (typeParameterName.startsWith(TYPE_PREFIX)) {
             try {
-                return Integer.parseInt(name.substring(LOCAL_VAR_PREFIX.length()));
+                return Integer.parseInt(typeParameterName.substring(TYPE_PREFIX.length()));
             } catch (NumberFormatException nfe) {
                 // then not.
             }
@@ -194,10 +195,28 @@ public class Pattern {
         public final Set<Variable> variablesToMatch;
         public final ParameterizedType returnType;
 
+        // for testing
+        public PlaceHolderExpression(int index) {
+            this(index, ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR, Set.of());
+        }
+
         public PlaceHolderExpression(int index, ParameterizedType returnType, Set<Variable> variablesToMatch) {
             this.index = index;
             this.variablesToMatch = ImmutableSet.copyOf(variablesToMatch);
             this.returnType = Objects.requireNonNull(returnType);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PlaceHolderExpression that = (PlaceHolderExpression) o;
+            return index == that.index;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(index);
         }
 
         @Override

@@ -104,7 +104,7 @@ public abstract class SwitchEntry implements Statement {
             return new StatementsEntry(translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    statements.stream().map(translationMap::translateStatement).collect(Collectors.toList()));
+                    statements.stream().flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
         }
 
         @Override
