@@ -39,6 +39,11 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new ClassExpression(translationMap.translateType(parameterizedType));
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new ClassValue(parameterizedType);
     }

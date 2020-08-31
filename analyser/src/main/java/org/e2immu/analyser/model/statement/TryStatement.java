@@ -29,11 +29,13 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new TryStatement(resources.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
-                (Block) tryBlock.translate(translationMap),
-                catchClauses.stream().map(p -> new Pair<>(p.k, (Block) p.v.translate(translationMap))).collect(Collectors.toList()),
-                (Block) finallyBlock.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new TryStatement(resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                translationMap.translateBlock(tryBlock),
+                catchClauses.stream().map(p -> new Pair<>(
+                        TranslationMap.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
+                        translationMap.translateBlock(p.v))).collect(Collectors.toList()),
+                translationMap.translateBlock(finallyBlock));
     }
 
     public static class CatchParameter implements Expression {

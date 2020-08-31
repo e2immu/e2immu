@@ -70,4 +70,9 @@ public class UnevaluatedLambdaExpression implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        throw new UnsupportedOperationException();
+    }
 }

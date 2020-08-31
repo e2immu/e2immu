@@ -38,8 +38,8 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ArrayLengthExpression(scope.translate(translationMap));
+    public Expression translate(TranslationMap translationMap) {
+        return new ArrayLengthExpression(translationMap.translateExpression(scope));
     }
 
     @Override

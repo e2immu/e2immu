@@ -39,8 +39,10 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ArrayInitializer(expressions.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()));
+    public Expression translate(TranslationMap translationMap) {
+
+        return new ArrayInitializer(expressions.stream().map(translationMap::translateExpression)
+                .collect(Collectors.toList()));
     }
 
     @Override

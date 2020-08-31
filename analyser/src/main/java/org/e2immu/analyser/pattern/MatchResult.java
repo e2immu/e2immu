@@ -17,11 +17,9 @@
 
 package org.e2immu.analyser.pattern;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.LocalVariableReference;
-import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Variable;
 
 import java.util.*;
@@ -37,7 +35,7 @@ public class MatchResult {
     }
 
     public String toString(int indent) {
-        return "Match result for " + pattern.name + " starting at " + start.streamIndices();
+        return "Match result for " + pattern.name + " starting at " + start.index;
     }
 
     public static class MatchResultBuilder {

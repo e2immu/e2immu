@@ -120,7 +120,7 @@ public interface Expression {
         return ImmutableList.copyOf(result);
     }
 
-    default Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
+    default Expression translate(TranslationMap translationMap) {
         return this;
     }
 }

@@ -17,8 +17,8 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new SwitchStatement(expression.translate(translationMap),
+    public Statement translate(TranslationMap translationMap) {
+        return new SwitchStatement(translationMap.translateExpression(expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 

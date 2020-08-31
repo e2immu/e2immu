@@ -33,8 +33,8 @@ public class WhileStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new WhileStatement(label, expression.translate(translationMap), (Block) block.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new WhileStatement(label, translationMap.translateExpression(expression), translationMap.translateBlock(block));
     }
 
     @Override

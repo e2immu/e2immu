@@ -53,8 +53,8 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new UnaryOperator(operator, expression.translate(translationMap), precedence);
+    public Expression translate(TranslationMap translationMap) {
+        return new UnaryOperator(operator, translationMap.translateExpression(expression), precedence);
     }
 
     public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {

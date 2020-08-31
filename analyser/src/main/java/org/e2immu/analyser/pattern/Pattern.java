@@ -207,7 +207,7 @@ public class Pattern {
 
         @Override
         public String expressionString(int indent) {
-            return "[expression(" + variablesToMatch.stream().map(Variable::name)
+            return "expression(" + variablesToMatch.stream().map(Variable::name)
                     .collect(Collectors.joining(",")) + "):" + index;
         }
 
@@ -245,7 +245,7 @@ public class Pattern {
         }
 
         @Override
-        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+        public Statement translate(TranslationMap translationMap) {
             return null;
         }
     }

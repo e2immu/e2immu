@@ -52,10 +52,11 @@ public class LambdaBlock implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new LambdaBlock(parameters.stream().map(v -> (ParameterInfo) translationMap.get(v)).collect(Collectors.toList()),
-                (Block) block.translate(translationMap),
-                returnType, functionalType);
+    public Expression translate(TranslationMap translationMap) {
+        return new LambdaBlock(parameters.stream().map(v -> (ParameterInfo) translationMap.translateVariable(v)).collect(Collectors.toList()),
+                translationMap.translateBlock(block),
+                translationMap.translateType(returnType),
+                translationMap.translateType(functionalType));
     }
 
     // this is a functional interface

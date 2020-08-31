@@ -41,8 +41,9 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new LocalVariableCreation(localVariable, expression.translate(translationMap));
+    public Expression translate(TranslationMap translationMap) {
+        return new LocalVariableCreation(translationMap.translateLocalVariable(localVariable),
+                translationMap.translateExpression(expression));
     }
 
     @Override

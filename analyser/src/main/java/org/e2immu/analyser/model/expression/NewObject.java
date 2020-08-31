@@ -56,10 +56,11 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new NewObject(constructor, parameterizedType,
-                parameterExpressions.stream().map(pe -> pe.translate(translationMap)).collect(Collectors.toList()),
-                arrayInitializer);
+    public Expression translate(TranslationMap translationMap) {
+        return new NewObject(constructor,
+                translationMap.translateType(parameterizedType),
+                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
     }
 
     @Override

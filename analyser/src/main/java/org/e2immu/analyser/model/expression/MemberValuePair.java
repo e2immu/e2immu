@@ -55,6 +55,11 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
+    public Expression translate(TranslationMap translationMap) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }

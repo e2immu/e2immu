@@ -39,10 +39,13 @@ public class FieldAccess implements Expression {
         this.expression = Objects.requireNonNull(expression);
     }
 
+    public static Expression orElse(Expression expression, Expression alternative) {
+        return expression == null ? alternative : expression;
+    }
+
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        Variable inMap = translationMap.get(variable);
-        return new FieldAccess(expression.translate(translationMap), inMap == null ? variable : inMap);
+    public Expression translate(TranslationMap translationMap) {
+        return new FieldAccess(translationMap.translateExpression(expression), translationMap.translateVariable(variable));
     }
 
     @Override

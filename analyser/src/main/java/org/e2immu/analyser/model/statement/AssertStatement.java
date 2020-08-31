@@ -5,6 +5,7 @@ import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class AssertStatement implements Statement {
@@ -24,8 +25,8 @@ public class AssertStatement implements Statement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new AssertStatement(check.translate(translationMap), message.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new AssertStatement(translationMap.translateExpression(check), translationMap.translateExpression(message));
     }
 
     @Override
@@ -49,7 +50,7 @@ public class AssertStatement implements Statement {
 
     @Override
     public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(check.typesReferenced(), message == null ? Set.of(): message.typesReferenced());
+        return SetUtil.immutableUnion(check.typesReferenced(), message == null ? Set.of() : message.typesReferenced());
     }
 
     @Override

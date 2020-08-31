@@ -222,9 +222,14 @@ public interface EvaluationContext {
 
     /**
      * Obtain the state from the condition manager
+     *
      * @return
      */
     default Value getCurrentState() {
         return UnknownValue.EMPTY;
+    }
+
+    default Set<String> allUnqualifiedVariableNames() {
+        return Set.of();
     }
 }

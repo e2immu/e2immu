@@ -31,7 +31,7 @@ public class LocalClassDeclaration implements Statement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+    public Statement translate(TranslationMap translationMap) {
         return this; // TODO we will need something more complicated here.
     }
 

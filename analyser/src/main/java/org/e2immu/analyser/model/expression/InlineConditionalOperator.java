@@ -46,8 +46,11 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new InlineConditionalOperator(condition.translate(translationMap), ifTrue.translate(translationMap), ifFalse.translate(translationMap));
+    public Expression translate(TranslationMap translationMap) {
+        return new InlineConditionalOperator(
+                translationMap.translateExpression(condition),
+                translationMap.translateExpression(ifTrue),
+                translationMap.translateExpression(ifFalse));
     }
 
     @Override

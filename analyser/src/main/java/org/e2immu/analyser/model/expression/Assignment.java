@@ -62,8 +62,9 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new Assignment(target, value.translate(translationMap), primitiveOperator, prefixPrimitiveOperator);
+    public Expression translate(TranslationMap translationMap) {
+        return new Assignment(translationMap.translateExpression(target),
+                translationMap.translateExpression(value), primitiveOperator, prefixPrimitiveOperator);
     }
 
     @NotNull

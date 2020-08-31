@@ -45,8 +45,12 @@ public class LambdaExpression implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        throw new UnsupportedOperationException("NYI");
+    public Expression translate(TranslationMap translationMap) {
+        return new LambdaExpression(
+                parameters.stream().map(p -> (ParameterInfo) translationMap.translateVariable(p)).collect(Collectors.toList()),
+                translationMap.translateExpression(expression),
+                translationMap.translateType(returnType),
+                translationMap.translateType(functionalType));
     }
 
     // this is a functional interface

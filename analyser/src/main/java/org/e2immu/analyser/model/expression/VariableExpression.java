@@ -44,8 +44,8 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        Variable inMap = translationMap.get(variable);
+    public Expression translate(TranslationMap translationMap) {
+        Variable inMap = translationMap.variables.get(variable);
         if (inMap != null) {
             return new VariableExpression(inMap);
         }

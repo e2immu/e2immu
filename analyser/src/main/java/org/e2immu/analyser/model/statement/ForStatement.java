@@ -15,7 +15,7 @@ public class ForStatement extends LoopStatement {
     public final List<Expression> updaters;
 
     /**
-     * @param label
+     * @param label     the label of the block
      * @param condition Cannot be null, but can be EmptyExpression
      * @param block     cannot be null, but can be EmptyBlock
      */
@@ -27,12 +27,12 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+    public Statement translate(TranslationMap translationMap) {
         return new ForStatement(label,
-                initialisers.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
-                expression.translate(translationMap),
-                updaters.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
-                (Block) block.translate(translationMap));
+                initialisers.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                translationMap.translateExpression(expression),
+                updaters.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                translationMap.translateBlock(block));
     }
 
     @Override

@@ -33,8 +33,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ExpressionAsStatement(expression.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new ExpressionAsStatement(translationMap.translateExpression(expression));
     }
 
     @Override
@@ -59,8 +59,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
         } else {
             builder.setExpression(expression);
         }
-        if(expression instanceof LambdaBlock) {
-            builder.setStatements(((LambdaBlock)expression).block);
+        if (expression instanceof LambdaBlock) {
+            builder.setStatements(((LambdaBlock) expression).block);
         }
         return builder.build();
     }

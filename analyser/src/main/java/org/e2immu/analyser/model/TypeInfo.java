@@ -1001,7 +1001,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 translationMap.put(lambdaParameter, interfaceMethodParameter);
                 i++;
             }
-            LambdaBlock translated = (LambdaBlock) lambdaBlock.translate(translationMap);
+            LambdaBlock translated = (LambdaBlock) lambdaBlock.translate(TranslationMap.fromVariableMap(translationMap));
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
             translated.block.statements.forEach(blockBuilder::addStatement);
             block = blockBuilder.build();
@@ -1014,7 +1014,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 translationMap.put(lambdaParameter, interfaceMethodParameter);
                 i++;
             }
-            ReturnStatement returnStatement = new ReturnStatement(lambdaExpression.expression.translate(translationMap));
+            ReturnStatement returnStatement = new ReturnStatement(
+                    lambdaExpression.expression.translate(TranslationMap.fromVariableMap(translationMap)));
             block = new Block.BlockBuilder().addStatement(returnStatement).build();
         } else if (returnExpression instanceof MethodReference) {
             MethodReference methodReference = (MethodReference) returnExpression;

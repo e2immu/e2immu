@@ -45,8 +45,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new MethodReference(scope.translate(translationMap), methodInfo, concreteReturnType);
+    public Expression translate(TranslationMap translationMap) {
+        return new MethodReference(translationMap.translateExpression(scope),
+                methodInfo,
+                translationMap.translateType(concreteReturnType));
     }
 
     @Override

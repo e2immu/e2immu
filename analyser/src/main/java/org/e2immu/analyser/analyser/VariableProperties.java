@@ -34,6 +34,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1222,5 +1223,19 @@ class VariableProperties implements EvaluationContext {
 
     public boolean delayedState() {
         return conditionManager.delayedState() || delayedEvaluation;
+    }
+
+    @Override
+    public Set<String> allUnqualifiedVariableNames() {
+        Set<String> fromParent;
+        if (parent == null) {
+            fromParent = currentType.accessibleFieldsStream().map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
+        } else {
+            fromParent = parent.allUnqualifiedVariableNames();
+        }
+        Set<String> local = variableProperties.values().stream()
+                .filter(AboutVariable::isNotLocalCopy)
+                .map(av -> av.name).collect(Collectors.toSet());
+        return SetUtil.immutableUnion(fromParent, local);
     }
 }

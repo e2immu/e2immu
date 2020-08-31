@@ -63,4 +63,9 @@ public class TypeExpression implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new TypeValue(parameterizedType, evaluationContext);
     }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        return new TypeExpression(translationMap.translateType(parameterizedType));
+    }
 }

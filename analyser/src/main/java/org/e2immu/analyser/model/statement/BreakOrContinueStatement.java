@@ -13,8 +13,4 @@ public abstract class BreakOrContinueStatement implements Statement {
         this.label = label;
     }
 
-    @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return this;
-    }
 }

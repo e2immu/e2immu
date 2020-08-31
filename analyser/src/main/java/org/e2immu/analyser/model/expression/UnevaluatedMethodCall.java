@@ -68,4 +68,9 @@ public class UnevaluatedMethodCall implements Expression {
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         return UnknownValue.NO_VALUE;
     }
+
+    @Override
+    public Expression translate(TranslationMap translationMap) {
+        throw new UnsupportedOperationException();
+    }
 }

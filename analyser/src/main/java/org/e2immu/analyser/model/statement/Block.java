@@ -133,8 +133,8 @@ public class Block implements Statement, HasStatements {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
+    public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
-        return new Block(statements.stream().map(st -> st.translate(translationMap)).collect(Collectors.toList()), label);
+        return new Block(statements.stream().map(translationMap::translateStatement).collect(Collectors.toList()), label);
     }
 }

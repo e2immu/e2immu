@@ -19,7 +19,11 @@ package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.CodeOrganization;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.annotation.Container;
 
 import java.util.*;
@@ -37,16 +41,19 @@ public class Replacement {
     public final List<Statement> statements;
     public final Pattern pattern;
     public final Map<String, String> newLocalVariableNameToPrefix;
+    public final Set<String> namesCreatedInReplacement;
     public final String name;
 
     private Replacement(String name,
                         Pattern pattern,
                         List<Statement> statements,
-                        Map<String, String> newLocalVariableNameToPrefix) {
+                        Map<String, String> newLocalVariableNameToPrefix,
+                        Set<String> namesCreatedInReplacement) {
         this.name = name;
         this.statements = ImmutableList.copyOf(statements);
         this.pattern = pattern;
         this.newLocalVariableNameToPrefix = ImmutableMap.copyOf(newLocalVariableNameToPrefix);
+        this.namesCreatedInReplacement = ImmutableSet.copyOf(namesCreatedInReplacement);
     }
 
     @Container(builds = Replacement.class)
@@ -56,6 +63,7 @@ public class Replacement {
         private int localVariableCounter;
         private final Map<String, String> newLocalVariableNameToPrefix = new HashMap<>();
         private final String name;
+        private final Set<String> namesCreatedInReplacement = new HashSet<>();
 
         public ReplacementBuilder(String name, Pattern pattern) {
             this.name = name;
@@ -63,17 +71,41 @@ public class Replacement {
         }
 
         public Replacement build() {
-            return new Replacement(name, pattern, statements, newLocalVariableNameToPrefix);
+            return new Replacement(name, pattern, statements,
+                    newLocalVariableNameToPrefix, namesCreatedInReplacement);
         }
 
         public void addStatement(Statement statement) {
             this.statements.add(statement);
+            recursivelyAddNamesCreated(statement);
+        }
+
+        private void recursivelyAddNamesCreated(Statement statement) {
+            CodeOrganization codeOrganization = statement.codeOrganization();
+            recursivelyAddNamesCreated(codeOrganization);
+            for (CodeOrganization subCo : codeOrganization.subStatements) {
+                recursivelyAddNamesCreated(subCo);
+            }
+        }
+
+        private void recursivelyAddNamesCreated(CodeOrganization codeOrganization) {
+            for (Expression initialiser : codeOrganization.initialisers) {
+                if (initialiser instanceof LocalVariableCreation) {
+                    String name = ((LocalVariableCreation) initialiser).localVariable.name;
+                    if (!name.startsWith(LOCAL_VARIABLE_PREFIX)) {
+                        namesCreatedInReplacement.add(name);
+                    }
+                }
+            }
+            for (Statement sub : codeOrganization.statements.getStatements()) {
+                recursivelyAddNamesCreated(sub);
+            }
         }
 
         public String newLocalVariableName(String prefix) {
             String key = LOCAL_VARIABLE_PREFIX + (localVariableCounter++);
             newLocalVariableNameToPrefix.put(key, prefix);
-            return prefix;
+            return key;
         }
     }
 

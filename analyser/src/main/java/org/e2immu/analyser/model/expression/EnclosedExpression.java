@@ -31,8 +31,8 @@ public class EnclosedExpression implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new EnclosedExpression(inner.translate(translationMap));
+    public Expression translate(TranslationMap translationMap) {
+        return new EnclosedExpression(translationMap.translateExpression(inner));
     }
 
     @Override

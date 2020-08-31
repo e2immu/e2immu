@@ -36,8 +36,10 @@ public class ExplicitConstructorInvocation implements Statement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ExplicitConstructorInvocation(parameterExpressions.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()));
+    public Statement translate(TranslationMap translationMap) {
+        return new ExplicitConstructorInvocation(parameterExpressions.stream()
+                .map(translationMap::translateExpression)
+                .collect(Collectors.toList()));
     }
 
     @Override

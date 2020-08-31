@@ -38,8 +38,11 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ForEachStatement(label, localVariable, expression.translate(translationMap), (Block) block.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new ForEachStatement(label,
+                translationMap.translateLocalVariable(localVariable),
+                translationMap.translateExpression(expression),
+                translationMap.translateBlock(block));
     }
 
     @Override

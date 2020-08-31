@@ -20,7 +20,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.annotation.E2Container;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -43,5 +42,7 @@ public interface Statement {
 
     Set<TypeInfo> typesReferenced();
 
-    Statement translate(Map<? extends Variable, ? extends Variable> translationMap);
+    default Statement translate(TranslationMap translationMap) {
+        return this;
+    }
 }

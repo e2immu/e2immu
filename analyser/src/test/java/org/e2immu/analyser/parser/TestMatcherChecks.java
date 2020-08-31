@@ -18,7 +18,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.testexample.MatcherChecks;
@@ -28,6 +30,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -49,7 +52,7 @@ public class TestMatcherChecks extends CommonTestRunner {
         match1(method1, method2, method3, method4);
         match2(method2, method1, method3, method4);
         match3(method3, method1, method2, method4);
-        match4(typeContext, method4, method1, method2, method3);
+        // TODO later match4(typeContext, method4, method1, method2, method3);
     }
 
     private void match4(TypeContext typeContext, MethodInfo method4, MethodInfo... others) {
@@ -66,10 +69,21 @@ public class TestMatcherChecks extends CommonTestRunner {
         }
     }
 
+    private static final EvaluationContext TEST_EC = new EvaluationContext() {
+        @Override
+        public Set<String> allUnqualifiedVariableNames() {
+            return Set.of("tmp");
+        }
+    };
+
     private void match1(MethodInfo method1, MethodInfo... others) {
         Pattern conditionalAssignment = ConditionalAssignment.pattern1();
+        Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0));
+        Assert.assertEquals("if (expression(lv0):1) {\n" +
+                "    lv0 = expression():2;\n" +
+                "}\n", conditionalAssignment.statements.get(1).statementString(0));
+
         PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
-        //Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
 
         Optional<MatchResult> optMatchResult = patternMatcher.match(method1.methodAnalysis.get().numberedStatements.get().get(0), false);
         Assert.assertTrue(optMatchResult.isPresent());
@@ -78,6 +92,19 @@ public class TestMatcherChecks extends CommonTestRunner {
             Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
+
+        MatchResult matchResult = optMatchResult.get();
+        Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
+        Statement first = replacement.statements.get(0);
+        Assert.assertEquals("T0 lv$0 = expression():0;\n", first.statementString(0));
+        Statement second = replacement.statements.get(1);
+        Assert.assertEquals("T0 lv0 = (expression(lv0):1) ? (expression():2) : lv$0;\n", second.statementString(0));
+        Replacer.replace(TEST_EC, matchResult, replacement);
+
+        Statement final1 = matchResult.start.replacement.get().statement;
+        Assert.assertEquals("String tmp = a1;\n", final1.statementString(0));
+        Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
+        Assert.assertEquals("String s1 = tmp == null?\"\":tmp;\n", final2.statementString(0));
     }
 
     private void match2(MethodInfo method2, MethodInfo... others) {

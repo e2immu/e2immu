@@ -163,4 +163,10 @@ public class MethodTypeParameterMap {
         copy.methodInspection.set(mib.build(copy));
         return copy;
     }
+
+    public MethodTypeParameterMap translate(TranslationMap translationMap) {
+        return new MethodTypeParameterMap(methodInfo, concreteTypes.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> translationMap.translateType(e.getValue()))));
+    }
 }

@@ -26,7 +26,6 @@ import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -101,11 +100,11 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-            return new StatementsEntry(switchVariableAsExpression.translate(translationMap),
+        public Statement translate(TranslationMap translationMap) {
+            return new StatementsEntry(translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
-                    labels.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
-                    statements.stream().map(s -> s.translate(translationMap)).collect(Collectors.toList()));
+                    labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                    statements.stream().map(translationMap::translateStatement).collect(Collectors.toList()));
         }
 
         @Override
@@ -168,10 +167,10 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-            return new BlockEntry(switchVariableAsExpression.translate(translationMap),
-                    labels.stream().map(e -> e.translate(translationMap)).collect(Collectors.toList()),
-                    (Block) block.translate(translationMap));
+        public Statement translate(TranslationMap translationMap) {
+            return new BlockEntry(translationMap.translateExpression(switchVariableAsExpression),
+                    labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                    translationMap.translateBlock(block));
         }
 
         @Override

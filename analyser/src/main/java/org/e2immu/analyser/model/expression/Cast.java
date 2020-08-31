@@ -35,8 +35,8 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new Cast(expression.translate(translationMap), parameterizedType);
+    public Expression translate(TranslationMap translationMap) {
+        return new Cast(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
     }
 
     @Override

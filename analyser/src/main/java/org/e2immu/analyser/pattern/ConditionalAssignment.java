@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.ListUtil;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -118,13 +119,13 @@ public class ConditionalAssignment {
         Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement11", pattern1);
         String lvn = replacementBuilder.newLocalVariableName("tmp");
         LocalVariable lvTmp = new LocalVariable(List.of(), lvn, pattern1.types.get(0), List.of());
-        Expression rSomeExpression = pattern1.expressions.get(0).translate(Map.of());
+        Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
         replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
 
         Variable lv = pattern1.variables.get(0);
-        Expression condition = pattern1.expressions.get(1).translate(Map.of(lv, tmp));
+        Expression condition = pattern1.expressions.get(1).translate(TranslationMap.fromVariableMap(Map.of(lv, tmp)));
         Expression ifTrue = pattern1.expressions.get(2);
         Expression ifFalse = new VariableExpression(tmp);
         InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
@@ -159,14 +160,14 @@ public class ConditionalAssignment {
 
         String lvn = replacementBuilder.newLocalVariableName("tmp");
         LocalVariable lvTmp = new LocalVariable(List.of(), lvn, pattern1.types.get(0), List.of());
-        Expression rSomeExpression = pattern1.expressions.get(0).translate(Map.of());
+        Expression rSomeExpression = pattern1.expressions.get(0).translate(TranslationMap.EMPTY_MAP);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
         replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
 
-        Expression rSomeCondition = pattern1.expressions.get(1).translate(Map.of(lv, tmp));
+        Expression rSomeCondition = pattern1.expressions.get(1).translate(TranslationMap.fromVariableMap(Map.of(lv, tmp)));
         ExpressionAsStatement assignSomeOtherExpression = new ExpressionAsStatement(
-                new Assignment(new VariableExpression(lv), pattern1.expressions.get(2).translate(Map.of())));
+                new Assignment(new VariableExpression(lv), pattern1.expressions.get(2).translate(TranslationMap.EMPTY_MAP)));
         ExpressionAsStatement assignTmp = new ExpressionAsStatement(
                 new Assignment(new VariableExpression(lv), new VariableExpression(tmp)));
         Block newIfBlock = new Block.BlockBuilder().addStatement(assignSomeOtherExpression).build();
@@ -315,7 +316,7 @@ public class ConditionalAssignment {
 
         // REPLACEMENT
 
-        Expression newValueExpression = valueExpression.translate(Map.of());
+        Expression newValueExpression = valueExpression.translate(TranslationMap.EMPTY_MAP);
         LocalVariable tmp = new LocalVariable(List.of(), "tmp", variable.parameterizedType(), List.of());
         LocalVariableCreation lvc1 = new LocalVariableCreation(tmp, newValueExpression);
         Statement newS1 = new ExpressionAsStatement(lvc1);
@@ -333,9 +334,10 @@ public class ConditionalAssignment {
         }
         statement.replacement.set(newNs1);
 
-        Expression ifExpression = ifElseStatement.expression.translate(Map.of(variable, lvc1.localVariableReference));
+        Expression ifExpression = ifElseStatement.expression.translate(
+                TranslationMap.fromVariableMap(Map.of(variable, lvc1.localVariableReference)));
         ExpressionAsStatement assignToSomeOther = new ExpressionAsStatement(
-                new Assignment(new VariableExpression(variable), assignmentInIf.value.translate(Map.of())));
+                new Assignment(new VariableExpression(variable), assignmentInIf.value.translate(TranslationMap.EMPTY_MAP)));
         ExpressionAsStatement assignToTmp = new ExpressionAsStatement(
                 new Assignment(new VariableExpression(variable), new VariableExpression(lvc1.localVariableReference)));
         Block newIfBlock = new Block.BlockBuilder().addStatement(assignToSomeOther).build();
@@ -344,12 +346,12 @@ public class ConditionalAssignment {
         log(TRANSFORM, "New statement 3: {}", newS3.statementString(0));
         NumberedStatement newNs3 = new NumberedStatement(newS3, next.parent, next.indices);
 
-        NumberedStatement newNs3_00 = new NumberedStatement(assignToSomeOther, newNs3, add(next.indices, new int[]{0, 0}));
+        NumberedStatement newNs3_00 = new NumberedStatement(assignToSomeOther, newNs3, ListUtil.immutableConcat(next.indices, List.of(0, 0)));
         newNs3_00.next.set(Optional.empty());
         newNs3_00.neverContinues.set(false);
         newNs3_00.blocks.set(List.of());
 
-        NumberedStatement newNs3_10 = new NumberedStatement(assignToTmp, newNs3, add(next.indices, new int[]{1, 0}));
+        NumberedStatement newNs3_10 = new NumberedStatement(assignToTmp, newNs3, ListUtil.immutableConcat(next.indices, List.of(1, 0)));
         newNs3_10.next.set(Optional.empty());
         newNs3_10.neverContinues.set(false);
         newNs3_10.blocks.set(List.of());
@@ -363,13 +365,6 @@ public class ConditionalAssignment {
             newNs1.next.get().orElseThrow().next.set(Optional.of(newNs3));
         }
         newNs3.next.set(next.next.get());
-    }
-
-    private static int[] add(int[] a1, int[] a2) {
-        int[] a = new int[a1.length + a2.length];
-        System.arraycopy(a1, 0, a, 0, a1.length);
-        System.arraycopy(a2, 0, a, a1.length, a2.length);
-        return a;
     }
 
     public static <T> T conditionalValue(T initial, Predicate<T> condition, T alternative) {

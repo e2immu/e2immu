@@ -37,10 +37,11 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new IfElseStatement(expression.translate(translationMap),
-                (Block)ifBlock.translate(translationMap),
-                (Block)elseBlock.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new IfElseStatement(
+                translationMap.translateExpression(expression),
+                translationMap.translateBlock(ifBlock),
+                translationMap.translateBlock(elseBlock));
     }
 
     @Override

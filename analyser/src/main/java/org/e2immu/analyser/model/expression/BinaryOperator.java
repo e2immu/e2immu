@@ -83,8 +83,9 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new BinaryOperator(lhs.translate(translationMap), operator, rhs.translate(translationMap), precedence);
+    public Expression translate(TranslationMap translationMap) {
+        return new BinaryOperator(translationMap.translateExpression(lhs),
+                operator, translationMap.translateExpression(rhs), precedence);
     }
 
     // NOTE: we're not visiting here!

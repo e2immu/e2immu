@@ -36,8 +36,9 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new SynchronizedStatement(expression.translate(translationMap), (Block)block.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new SynchronizedStatement(translationMap.translateExpression(expression),
+                translationMap.translateBlock(block));
     }
 
     @Override

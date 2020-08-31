@@ -34,10 +34,5 @@ public class EmptyStatement implements Statement {
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.STATIC_ONLY;
     }
-
-    @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return this;
-    }
 }
 

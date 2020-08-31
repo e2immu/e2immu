@@ -45,8 +45,8 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new InstanceOf(expression.translate(translationMap), parameterizedType);
+    public Expression translate(TranslationMap translationMap) {
+        return new InstanceOf(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
     }
 
     @Override

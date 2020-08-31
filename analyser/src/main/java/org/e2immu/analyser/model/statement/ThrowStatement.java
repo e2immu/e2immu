@@ -30,8 +30,8 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
-    public Statement translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new ThrowStatement(expression.translate(translationMap));
+    public Statement translate(TranslationMap translationMap) {
+        return new ThrowStatement(translationMap.translateExpression(expression));
     }
 
     @Override

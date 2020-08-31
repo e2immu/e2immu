@@ -95,7 +95,7 @@ public class PatternMatcher {
             SimpleMatchResult isMatch = match(builder, codeOrganization, currentNumberedStatement);
             if (isMatch != SimpleMatchResult.YES) return isMatch;
 
-            log(TRANSFORM, "Successfully matched {}", currentNumberedStatement.streamIndices());
+            log(TRANSFORM, "Successfully matched {}", currentNumberedStatement.index);
 
             currentNumberedStatement = currentNumberedStatement.next.get().orElse(null);
         }

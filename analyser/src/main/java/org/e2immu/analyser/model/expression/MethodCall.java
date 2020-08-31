@@ -64,11 +64,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Expression translate(Map<? extends Variable, ? extends Variable> translationMap) {
-        return new MethodCall(object == null ? null : object.translate(translationMap),
-                computedScope.translate(translationMap),
-                methodTypeParameterMap, // TODO prob not correct
-                parameterExpressions.stream().map(pe -> pe.translate(translationMap)).collect(Collectors.toList()));
+    public Expression translate(TranslationMap translationMap) {
+        return new MethodCall(object == null ? null : translationMap.translateExpression(object),
+                translationMap.translateExpression(computedScope),
+                methodTypeParameterMap.translate(translationMap),
+                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()));
     }
 
     @Override

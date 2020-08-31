@@ -620,7 +620,7 @@ public class StatementAnalyser {
         // FINALLY, set the state
 
         // first attempt at detecting a transformation
-        ConditionalAssignment.tryToDetectTransformation(statement, variableProperties);
+        //ConditionalAssignment.tryToDetectTransformation(statement, variableProperties);
 
         if (!variableProperties.conditionManager.delayedState() && !statement.state.isSet()) {
             statement.state.set(variableProperties.conditionManager.getState());
