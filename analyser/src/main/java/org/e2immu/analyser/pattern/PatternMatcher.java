@@ -62,7 +62,7 @@ public class PatternMatcher {
 
     private Optional<MatchResult> match(Pattern pattern, NumberedStatement startStatement, boolean onlyDelayed) {
         if (onlyDelayed && alreadyDone(pattern, startStatement)) return Optional.empty();
-        MatchResult.MatchResultBuilder builder = new MatchResult.MatchResultBuilder(startStatement);
+        MatchResult.MatchResultBuilder builder = new MatchResult.MatchResultBuilder(pattern, startStatement);
         SimpleMatchResult isMatch = match(builder, pattern.statements, startStatement);
         if (isMatch == SimpleMatchResult.DELAY) {
             registerDelay(pattern, startStatement);

@@ -28,39 +28,30 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MatchResult {
-
-    public final List<Statement> statements;
     public final NumberedStatement start;
+    public final Pattern pattern;
 
-    private MatchResult(List<Statement> statements, NumberedStatement start) {
-        this.statements = statements;
+    private MatchResult(Pattern pattern, NumberedStatement start) {
         this.start = start;
+        this.pattern = pattern;
     }
 
     public String toString(int indent) {
-        StringBuilder sb = new StringBuilder();
-        for (Statement statement : statements) {
-            sb.append(statement.statementString(indent));
-        }
-        return sb.toString();
+        return "Match result for " + pattern.name + " starting at " + start.streamIndices();
     }
 
     public static class MatchResultBuilder {
-        private final List<Statement> statements = new ArrayList<>();
         private final NumberedStatement start;
-
+        private final Pattern pattern;
         private final Map<String, Variable> actualVariableNameToTemplateVariable = new HashMap<>();
 
-        public MatchResultBuilder(NumberedStatement start) {
+        public MatchResultBuilder(Pattern pattern, NumberedStatement start) {
+            this.pattern = pattern;
             this.start = start;
         }
 
-        public void addStatement(Statement statement) {
-
-        }
-
         public MatchResult build() {
-            return new MatchResult(ImmutableList.copyOf(statements), start);
+            return new MatchResult(pattern, start);
         }
 
         public void matchLocalVariable(LocalVariable templateVar, LocalVariable actualVar) {
@@ -82,9 +73,5 @@ public class MatchResult {
                     .collect(Collectors.toSet());
             return translatedActual.containsAll(templateVar);
         }
-    }
-
-    public void apply() {
-
     }
 }

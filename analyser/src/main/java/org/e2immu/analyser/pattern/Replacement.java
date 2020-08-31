@@ -18,37 +18,63 @@
 package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.annotation.Container;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+/*
+The system with local variables is as follows: we name all newly created local variables
+lv$0, lv$1, etc. The actual replacement code will use the prefix that has been registered,
+potentially expanded with some mechanism to make the variable unique in its context.
+This local context is not known at the time of creating the replacement.
+
+ */
 public class Replacement {
+    public static final String LOCAL_VARIABLE_PREFIX = "lv$";
 
     public final List<Statement> statements;
     public final Pattern pattern;
+    public final Map<String, String> newLocalVariableNameToPrefix;
+    public final String name;
 
-    private Replacement(Pattern pattern, List<Statement> statements) {
+    private Replacement(String name,
+                        Pattern pattern,
+                        List<Statement> statements,
+                        Map<String, String> newLocalVariableNameToPrefix) {
+        this.name = name;
         this.statements = ImmutableList.copyOf(statements);
         this.pattern = pattern;
+        this.newLocalVariableNameToPrefix = ImmutableMap.copyOf(newLocalVariableNameToPrefix);
     }
 
     @Container(builds = Replacement.class)
     public static class ReplacementBuilder {
         private final Pattern pattern;
         private final List<Statement> statements = new ArrayList<>();
+        private int localVariableCounter;
+        private final Map<String, String> newLocalVariableNameToPrefix = new HashMap<>();
+        private final String name;
 
-        public ReplacementBuilder(Pattern pattern) {
+        public ReplacementBuilder(String name, Pattern pattern) {
+            this.name = name;
             this.pattern = pattern;
         }
 
         public Replacement build() {
-            return new Replacement(pattern, statements);
+            return new Replacement(name, pattern, statements, newLocalVariableNameToPrefix);
         }
 
         public void addStatement(Statement statement) {
             this.statements.add(statement);
         }
+
+        public String newLocalVariableName(String prefix) {
+            String key = LOCAL_VARIABLE_PREFIX + (localVariableCounter++);
+            newLocalVariableNameToPrefix.put(key, prefix);
+            return prefix;
+        }
     }
+
 }
