@@ -1095,7 +1095,7 @@ class VariableProperties implements EvaluationContext {
     }
 
     private Location location() {
-        if (currentStatement != null) return new Location(currentMethod, currentStatement.streamIndices());
+        if (currentStatement != null) return new Location(currentMethod, currentStatement.index);
         if (currentMethod != null) return new Location(currentMethod);
         return new Location(currentType);
     }

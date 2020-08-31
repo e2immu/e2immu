@@ -27,20 +27,20 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
 
         if ("method2".equals(d.methodInfo.name)) {
-            if ("1".equals(d.numberedStatement.streamIndices())) {
+            if ("1".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }
-            if ("1.0.0".equals(d.numberedStatement.streamIndices())) {
+            if ("1.0.0".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.inErrorState());
                 Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
         }
 
         if ("method3".equals(d.methodInfo.name)) {
-            if ("1.0.1".equals(d.numberedStatement.streamIndices())) {
+            if ("1.0.1".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }
-            if ("1.0.1.0.0".equals(d.numberedStatement.streamIndices())) {
+            if ("1.0.1.0.0".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.inErrorState());
                 Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }

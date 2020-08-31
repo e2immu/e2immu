@@ -68,12 +68,10 @@ public class CreateNumberedStatements {
 
     @NotModified
     @NotNull
-    private static int[] join(@NotNull @NotModified List<Integer> baseIndices, int index) {
-        int[] res = new int[baseIndices.size() + 1];
-        int i = 0;
-        for (Integer bi : baseIndices) res[i++] = bi;
-        res[i] = index;
-        return res;
+    private static List<Integer> join(@NotNull @NotModified List<Integer> baseIndices, int index) {
+        List<Integer> newList = new ArrayList<>(baseIndices);
+        newList.add(index);
+        return newList;
     }
 
 }

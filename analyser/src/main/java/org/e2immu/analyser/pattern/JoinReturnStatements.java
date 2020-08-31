@@ -51,7 +51,7 @@ public class JoinReturnStatements {
         NumberedStatement last = statements.get(statements.size() - 1);
         if (last.inErrorState()) return null;
         if (!(last.statement instanceof IfElseStatement)) return null;
-        String statementId = last.streamIndices();
+        String statementId = last.index;
         IfElseStatement ifElseStatement = (IfElseStatement) last.statement;
         String idOfThenReturn = statementId + ".0." + (ifElseStatement.ifBlock.statements.size() - 1);
         String idOfElseReturn = statementId + ".1." + (ifElseStatement.elseBlock.statements.size() - 1);
@@ -100,7 +100,7 @@ public class JoinReturnStatements {
         }
         if (ifStatement == null) return null;
 
-        String statementId = ifStatement.streamIndices();
+        String statementId = ifStatement.index;
         String idOfThenReturn = statementId + ".0." + (ifElseStatement.ifBlock.statements.size() - 1);
         MethodInfo methodInfo = evaluationContext.getCurrentMethod();
         TransferValue thenTv = methodInfo.methodAnalysis.get().returnStatementSummaries.getOtherwiseNull(idOfThenReturn);
@@ -119,7 +119,7 @@ public class JoinReturnStatements {
 
         Value res = ConditionalValue.conditionalValueWithState(evaluationContext, condition, stateBeforeIf,
                 thenTv.value.get(), last.valueOfExpression.get(), ObjectFlow.NO_FLOW);
-        return new JoinResult(res, Set.of(last.streamIndices(), idOfThenReturn));
+        return new JoinResult(res, Set.of(last.index, idOfThenReturn));
     }
 
 }

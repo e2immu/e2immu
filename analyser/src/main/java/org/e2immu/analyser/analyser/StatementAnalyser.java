@@ -72,7 +72,7 @@ public class StatementAnalyser {
 
         try {
             while (statement != null) {
-                String statementId = statement.streamIndices();
+                String statementId = statement.index;
                 variableProperties.setCurrentStatement(statement);
 
                 if (variableProperties.conditionManager.inErrorState()) {
@@ -96,7 +96,7 @@ public class StatementAnalyser {
                 for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
                     statementAnalyserVisitor.visit(
                             new StatementAnalyserVisitor.Data(
-                                    ((VariableProperties) evaluationContext).iteration, methodInfo, statement, statement.streamIndices(),
+                                    ((VariableProperties) evaluationContext).iteration, methodInfo, statement, statement.index,
                                     variableProperties.conditionManager.getCondition(),
                                     variableProperties.conditionManager.getState()));
                 }
@@ -128,14 +128,14 @@ public class StatementAnalyser {
             }
 
             if (!startStatement.neverContinues.isSet()) {
-                log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.streamIndices(), neverContinues);
+                log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.index, neverContinues);
                 startStatement.neverContinues.set(neverContinues);
             }
             if (!startStatement.escapes.isSet()) {
                 if (variableProperties.conditionManager.delayedCondition() || variableProperties.delayedState()) {
-                    log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.streamIndices());
+                    log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.index);
                 } else {
-                    log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.streamIndices(), escapesViaException);
+                    log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.index, escapesViaException);
                     startStatement.escapes.set(escapesViaException);
 
                     if (escapesViaException) {
@@ -343,7 +343,7 @@ public class StatementAnalyser {
         if (statement.statement instanceof LoopStatement) {
             if (!statement.existingVariablesAssignedInLoop.isSet()) {
                 Set<Variable> set = computeExistingVariablesAssignedInLoop(codeOrganization, variableProperties);
-                log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.streamIndices(),
+                log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.index,
                         Variable.detailedString(set));
                 statement.existingVariablesAssignedInLoop.set(set);
             }
@@ -379,7 +379,7 @@ public class StatementAnalyser {
                 throw rte;
             }
         }
-        log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.streamIndices(), variableProperties);
+        log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statement.index, variableProperties);
 
         if (value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
             statement.valueOfExpression.set(value);
@@ -396,7 +396,7 @@ public class StatementAnalyser {
         // PART 5: checks for ReturnStatement
 
         if (statement.statement instanceof ReturnStatement && !methodInfo.isVoid() && !methodInfo.isConstructor) {
-            String statementId = statement.streamIndices();
+            String statementId = statement.index;
             TransferValue transferValue;
             if (methodAnalysis.returnStatementSummaries.isSet(statementId)) {
                 transferValue = methodAnalysis.returnStatementSummaries.get(statementId);
@@ -447,7 +447,7 @@ public class StatementAnalyser {
 
             } else {
                 log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
-                        methodInfo.fullyQualifiedName(), statement.streamIndices());
+                        methodInfo.fullyQualifiedName(), statement.index);
             }
         }
 
@@ -471,12 +471,12 @@ public class StatementAnalyser {
                     || combinedWithCondition.isConstant();
 
             if (noEffect && !statement.inErrorState()) {
-                messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.CONDITION_EVALUATES_TO_CONSTANT));
+                messages.add(Message.newMessage(new Location(methodInfo, statement.index), Message.CONDITION_EVALUATES_TO_CONSTANT));
                 statement.errorValue.set(true);
             }
 
             uponUsingConditional = () -> {
-                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statement.streamIndices());
+                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statement.index);
                 if (!statement.errorValue.isSet()) statement.errorValue.set(true);
             };
         } else {
@@ -485,7 +485,7 @@ public class StatementAnalyser {
             if (value != null && statement.statement instanceof ForEachStatement) {
                 int size = variableProperties.getProperty(value, VariableProperty.SIZE);
                 if (size == Level.SIZE_EMPTY && !statement.inErrorState()) {
-                    messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()), Message.EMPTY_LOOP));
+                    messages.add(Message.newMessage(new Location(methodInfo, statement.index), Message.EMPTY_LOOP));
                     statement.errorValue.set(true);
                 }
             }
@@ -669,7 +669,7 @@ public class StatementAnalyser {
 
         int modified = methodCall.methodInfo.getAnalysis().getProperty(VariableProperty.MODIFIED);
         if (modified == Level.FALSE) {
-            messages.add(Message.newMessage(new Location(methodInfo, statement.streamIndices()),
+            messages.add(Message.newMessage(new Location(methodInfo, statement.index),
                     Message.IGNORING_RESULT_OF_METHOD_CALL));
             statement.errorValue.set(true);
         }

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -47,35 +48,25 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     // used for patterns
     public SetOnce<Value> valueOfExpression = new SetOnce<>();
 
-    public final int[] indices;
+    public final List<Integer> indices;
+    public final String index;
 
     public NumberedStatement(@NotNull Statement statement,
                              NumberedStatement parent,
-                             @NotNull @NotModified int[] indices) {
-        this.indices = Objects.requireNonNull(indices);
+                             @NotNull @NotModified List<Integer> indices) {
+        this.indices = ImmutableList.copyOf(indices);
+        index = this.indices.stream().map(i -> Integer.toString(i)).collect(Collectors.joining("."));
         this.statement = Objects.requireNonNull(statement);
         this.parent = parent;
     }
 
-    public String streamIndices() {
-        return Arrays.stream(indices).mapToObj(Integer::toString).collect(Collectors.joining("."));
-    }
-
     public String toString() {
-        return streamIndices() + ": " + statement.getClass().getSimpleName();
+        return index + ": " + statement.getClass().getSimpleName();
     }
 
     @Override
     public int compareTo(NumberedStatement o) {
-        for (int i = 0; i < indices.length; i++) {
-            if (i >= o.indices.length)
-                return 1;
-            int c = indices[i] - o.indices[i];
-            if (c != 0)
-                return c;
-        }
-        if (o.indices.length > indices.length) return -1;
-        return 0;
+        return index.compareTo(o.index);
     }
 
     public boolean inErrorState() {

@@ -24,16 +24,18 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+
 public class TestNumberedStatement {
     @Test
     public void test() {
         Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
         NumberedStatement parent = null;
 
-        NumberedStatement ns0 = new NumberedStatement( emptyStatement, parent, new int[]{0});
-        NumberedStatement ns1 = new NumberedStatement( emptyStatement, parent, new int[]{1});
-        NumberedStatement ns01 = new NumberedStatement( emptyStatement, parent, new int[]{0, 1});
-        NumberedStatement ns10 = new NumberedStatement( emptyStatement, parent, new int[]{1, 0});
+        NumberedStatement ns0 = new NumberedStatement(emptyStatement, parent, List.of());
+        NumberedStatement ns1 = new NumberedStatement(emptyStatement, parent, List.of(1));
+        NumberedStatement ns01 = new NumberedStatement(emptyStatement, parent, List.of(0, 1));
+        NumberedStatement ns10 = new NumberedStatement(emptyStatement, parent, List.of(1, 0));
 
         Assert.assertTrue(ns0.compareTo(ns0) == 0);
         Assert.assertTrue(ns0.compareTo(ns1) < 0);
