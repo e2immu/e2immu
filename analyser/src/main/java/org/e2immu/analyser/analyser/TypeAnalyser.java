@@ -82,7 +82,11 @@ public class TypeAnalyser {
 
         // TODO move to some other place
         Pattern pattern1 = ConditionalAssignment.pattern1();
-        patternMatcher = new PatternMatcher(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1)));
+        Pattern pattern2 = ConditionalAssignment.pattern2();
+        Pattern pattern3 = ConditionalAssignment.pattern3();
+        patternMatcher = new PatternMatcher(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1),
+                pattern2, ConditionalAssignment.replacement1ToPattern2(pattern2),
+                pattern3, ConditionalAssignment.replacement1ToPattern3(pattern3)));
 
         this.e2ImmuAnnotationExpressions = Objects.requireNonNull(e2ImmuAnnotationExpressions);
     }

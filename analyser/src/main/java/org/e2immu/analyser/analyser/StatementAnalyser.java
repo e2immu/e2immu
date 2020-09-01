@@ -626,9 +626,12 @@ public class StatementAnalyser {
         if (!variableProperties.configuration.analyserConfiguration.skipTransformations) {
             Optional<MatchResult> matchResult = variableProperties.patternMatcher.match(methodInfo, statement);
             if (matchResult.isPresent()) {
-                Optional<Replacement> replacement = variableProperties.patternMatcher.registeredReplacement(matchResult.get().pattern);
+                MatchResult mr = matchResult.get();
+                Optional<Replacement> replacement = variableProperties.patternMatcher.registeredReplacement(mr.pattern);
                 if (replacement.isPresent()) {
-                    Replacer.replace(variableProperties, matchResult.get(), replacement.get());
+                    Replacement r = replacement.get();
+                    log(TRANSFORM, "Replacing {} with {} in {} at {}", mr.pattern.name, r.name, methodInfo.distinguishingName(), statement.index);
+                    Replacer.replace(variableProperties, mr, r);
                     variableProperties.patternMatcher.reset(methodInfo);
                     changes = true;
                 }

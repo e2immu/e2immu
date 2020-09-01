@@ -41,6 +41,15 @@ public class SimpleNotNullChecks {
 
     @NotNull
     public static String method4(String a1) {
+        if ("x".equals(a1)) {
+            return "abc";
+        } else {
+            return a1;
+        }
+    }
+
+    @NotNull
+    public static String method5(String a1) {
         String s1;
         if (a1 == null) {
             s1 = MESSAGE;
@@ -51,12 +60,12 @@ public class SimpleNotNullChecks {
     }
 
     @NotNull
-    public static String method5(@Nullable String a1) {
+    public static String method6(@Nullable String a1) {
         return Objects.requireNonNullElse(a1, MESSAGE);
     }
 
     @NotNull
-    public static String method6(@Nullable String a1) {
+    public static String method7(@Nullable String a1) {
         return conditionalValue(a1, t -> t == null, MESSAGE);
     }
 

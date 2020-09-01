@@ -184,22 +184,41 @@ public class ConditionalAssignment {
 
         /* PATTERN
 
-          if(someCondition) return someExpression;
-          return someOtherExpression;
+          if(someCondition0) return someExpression1;
+          return someOtherExpression2;
          */
 
         ParameterizedType pt0 = patternBuilder.matchType();
-        Expression someCondition = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
+        Expression someCondition0 = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
 
-        Expression someExpression = patternBuilder.matchSomeExpression(pt0);
-        Block ifBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
+        Expression someExpression1 = patternBuilder.matchSomeExpression(pt0);
+        Block ifBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression1)).build();
 
-        patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock, Block.EMPTY_BLOCK));
-        Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
-        patternBuilder.addStatement(new ReturnStatement(someOtherExpression));
+        patternBuilder.addStatement(new IfElseStatement(someCondition0, ifBlock, Block.EMPTY_BLOCK));
+        Expression someOtherExpression2 = patternBuilder.matchSomeExpression(pt0);
+        patternBuilder.addStatement(new ReturnStatement(someOtherExpression2));
 
         return patternBuilder.build();
     }
+
+
+    public static Replacement replacement1ToPattern2(Pattern pattern2) {
+        /*
+         REPLACEMENT 1 of pattern 2
+
+         return someExpression ? someExpression : someOtherExpression;
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement21", pattern2);
+        Expression condition = pattern2.expressions.get(0);
+        Expression ifTrue = pattern2.expressions.get(1);
+        Expression ifFalse = pattern2.expressions.get(2);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        replacementBuilder.addStatement(new ReturnStatement(inlineConditional));
+
+        return replacementBuilder.build();
+    }
+
 
     public static Pattern pattern3() {
         Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIfElse");
@@ -219,12 +238,31 @@ public class ConditionalAssignment {
         Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
 
         Block ifBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
-        Block elseBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someExpression)).build();
+        Block elseBlock = new Block.BlockBuilder().addStatement(new ReturnStatement(someOtherExpression)).build();
 
         patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock, elseBlock));
 
         return patternBuilder.build();
     }
+
+
+    public static Replacement replacement1ToPattern3(Pattern pattern3) {
+        /*
+         REPLACEMENT 1 of pattern 2
+
+         return someExpression ? someExpression : someOtherExpression;
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement31", pattern3);
+        Expression condition = pattern3.expressions.get(0);
+        Expression ifTrue = pattern3.expressions.get(1);
+        Expression ifFalse = pattern3.expressions.get(2);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        replacementBuilder.addStatement(new ReturnStatement(inlineConditional));
+
+        return replacementBuilder.build();
+    }
+
     /*
      TODO: it would be better if the matching of the condition on list happened at VALUE level (there's normalisation!)
      */
