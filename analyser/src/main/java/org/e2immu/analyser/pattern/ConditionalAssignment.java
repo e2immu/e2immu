@@ -162,7 +162,7 @@ public class ConditionalAssignment {
         Expression rSomeExpression = pattern1.expressions.get(0);
         LocalVariableCreation lvcTmp = new LocalVariableCreation(lvTmp, rSomeExpression);
         Variable tmp = lvcTmp.localVariableReference;
-        replacementBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
+        blockBuilder.addStatement(new ExpressionAsStatement(lvcTmp));
 
         Expression rSomeCondition = pattern1.expressions.get(1);
         replacementBuilder.applyTranslation(rSomeCondition, TranslationMap.fromVariableMap(Map.of(lv, tmp)));

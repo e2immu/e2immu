@@ -138,6 +138,7 @@ public class Replacer {
         Stack<Integer> indicesInStack = new Stack<>();
         indicesInStack.addAll(newIndices);
         CreateNumberedStatements.recursivelyCreateNumberedStatements(parent, replacements, indicesInStack, result, false);
+        result.removeIf(ns -> ns.indices.size() > newIndices.size());
         return result;
     }
 

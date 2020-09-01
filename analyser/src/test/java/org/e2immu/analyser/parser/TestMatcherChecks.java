@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlineConditionalOperator;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.testexample.MatcherChecks;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -40,16 +42,36 @@ public class TestMatcherChecks extends CommonTestRunner {
         super(false);
     }
 
-    @Test
-    public void test() throws IOException {
+    private MethodInfo method1;
+    private MethodInfo method2;
+    private MethodInfo method3;
+    private MethodInfo method4;
+
+    @Before
+    public void before() throws IOException {
         TypeContext typeContext = testClass("MatcherChecks", 0, new DebugConfiguration.Builder()
                 .build());
         TypeInfo matcherChecks = typeContext.getFullyQualified(MatcherChecks.class);
-        MethodInfo method1 = matcherChecks.findUniqueMethod("method1", 1);
-        MethodInfo method2 = matcherChecks.findUniqueMethod("method2", 1);
-        MethodInfo method3 = matcherChecks.findUniqueMethod("method3", 1);
-        MethodInfo method4 = matcherChecks.findUniqueMethod("method4", 1);
-        match1(method1, method2, method3, method4);
+        method1 = matcherChecks.findUniqueMethod("method1", 1);
+        method2 = matcherChecks.findUniqueMethod("method2", 1);
+        method3 = matcherChecks.findUniqueMethod("method3", 1);
+        method4 = matcherChecks.findUniqueMethod("method4", 1);
+
+    }
+
+    // match11 is separate from match12, they make the same change
+    @Test
+    public void test() throws IOException {
+        match11(method1, method2, method3, method4);
+    }
+
+    @Test
+    public void test2() throws IOException {
+        match12(method1);
+    }
+
+    @Test
+    public void test3() {
         match2(method2, method1, method3, method4);
         match3(method3, method1, method2, method4);
         // TODO later match4(typeContext, method4, method1, method2, method3);
@@ -76,26 +98,11 @@ public class TestMatcherChecks extends CommonTestRunner {
         }
     };
 
-    private void match1(MethodInfo method1, MethodInfo... others) {
+    private void match11(MethodInfo method1, MethodInfo... others) {
 
         // PATTERN
 
         Pattern conditionalAssignment = ConditionalAssignment.pattern1();
-        Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0));
-        Assert.assertEquals("if (expression(lv0):1) {\n" +
-                "    lv0 = expression():2;\n" +
-                "}\n", conditionalAssignment.statements.get(1).statementString(0));
-        Assert.assertEquals(1, conditionalAssignment.types.size());
-
-        PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
-
-        Optional<MatchResult> optMatchResult = patternMatcher.match(method1.methodAnalysis.get().numberedStatements.get().get(0), false);
-        Assert.assertTrue(optMatchResult.isPresent());
-
-        for (MethodInfo other : others) {
-            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
-            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
-        }
 
         // REPLACEMENT
 
@@ -108,6 +115,76 @@ public class TestMatcherChecks extends CommonTestRunner {
 
         // MATCH RESULT
 
+        MatchResult matchResult = checkMatchResultPattern1(conditionalAssignment, method1, others);
+
+        // RESULT OF REPLACER
+
+        // tmp0 because tmp already exists (see TEST_EC)
+        Replacer.replace(TEST_EC, matchResult, replacement);
+        Statement final1 = matchResult.start.replacement.get().statement;
+        Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0));
+        Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
+        Assert.assertEquals("String s1 = tmp0 == null ? \"\" : tmp0;\n", final2.statementString(0));
+    }
+
+
+    private void match12(MethodInfo method1) {
+
+        // PATTERN
+
+        Pattern conditionalAssignment = ConditionalAssignment.pattern1();
+
+        // REPLACEMENT
+
+        Replacement replacement = ConditionalAssignment.replacement2ToPattern1(conditionalAssignment);
+        Statement first = replacement.statements.get(0);
+        Assert.assertEquals("T0 lv0;\n", first.statementString(0));
+        Statement second = replacement.statements.get(1);
+        Assert.assertEquals(" {\n" +
+                "    T0 lv$0 = expression():0;\n" +
+                "    if (expression(lv0):1) {\n" +
+                "        lv0 = expression():2;\n" +
+                "    } else {\n" +
+                "        lv0 = lv$0;\n" +
+                "    }\n" +
+                "}", second.statementString(0));
+        Assert.assertEquals("{expression(lv0):1=TM{{lv0=lv$0}}}", replacement.translationsOnExpressions.toString());
+
+        // MATCH RESULT
+        // is identical, as the pattern is the same and we run it on the same method
+
+        MatchResult matchResult = checkMatchResultPattern1(conditionalAssignment, method1);
+
+        // RESULT OF REPLACER
+
+        // tmp0 because tmp already exists (see TEST_EC)
+        Replacer.replace(TEST_EC, matchResult, replacement);
+        Statement final1 = matchResult.start.replacement.get().statement;
+        Assert.assertEquals("String s1;\n", final1.statementString(0));
+        NumberedStatement next = matchResult.start.replacement.get().next.get().orElseThrow();
+        Statement final2 = next.statement;
+        Assert.assertEquals("1", next.index);
+        Assert.assertEquals(" {\n" +
+                "    String tmp0 = a1;\n" +
+                "    if (tmp0 == null) {\n" +
+                "        s1 = \"\";\n" +
+                "    } else {\n" +
+                "        s1 = tmp0;\n" +
+                "    }\n" +
+                "}", final2.statementString(0));
+    }
+
+    private MatchResult checkMatchResultPattern1(Pattern conditionalAssignment, MethodInfo method1, MethodInfo... others) {
+        Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0));
+        Assert.assertEquals("if (expression(lv0):1) {\n" +
+                "    lv0 = expression():2;\n" +
+                "}\n", conditionalAssignment.statements.get(1).statementString(0));
+        Assert.assertEquals(1, conditionalAssignment.types.size());
+
+        PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
+
+        Optional<MatchResult> optMatchResult = patternMatcher.match(method1.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Assert.assertTrue(optMatchResult.isPresent());
         MatchResult matchResult = optMatchResult.get();
         Expression actual0 = matchResult.translationMap.expressions.get(new Pattern.PlaceHolderExpression(0));
         Assert.assertEquals("a1", actual0.expressionString(0));
@@ -121,14 +198,13 @@ public class TestMatcherChecks extends CommonTestRunner {
         Assert.assertEquals("{LocalVariable lv0 of Type param T0=LocalVariable s1 of Type java.lang.String}",
                 matchResult.translationMap.localVariables.toString());
 
-        // RESULT OF REPLACER
 
-        // tmp0 because tmp already exists (see TEST_EC)
-        Replacer.replace(TEST_EC, matchResult, replacement);
-        Statement final1 = matchResult.start.replacement.get().statement;
-        Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0));
-        Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
-        Assert.assertEquals("String s1 = tmp0 == null ? \"\" : tmp0;\n", final2.statementString(0));
+        for (MethodInfo other : others) {
+            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
+        }
+
+        return matchResult;
     }
 
     private void match2(MethodInfo method2, MethodInfo... others) {
