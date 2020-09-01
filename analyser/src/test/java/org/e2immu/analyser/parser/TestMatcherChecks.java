@@ -18,11 +18,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.InlineConditionalOperator;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.testexample.MatcherChecks;
 import org.junit.Assert;
@@ -30,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,8 +47,8 @@ public class TestMatcherChecks extends CommonTestRunner {
 
     @Before
     public void before() throws IOException {
-        TypeContext typeContext = testClass("MatcherChecks", 0, new DebugConfiguration.Builder()
-                .build());
+        TypeContext typeContext = testClass("MatcherChecks", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
         TypeInfo matcherChecks = typeContext.getFullyQualified(MatcherChecks.class);
         method1 = matcherChecks.findUniqueMethod("method1", 1);
         method2 = matcherChecks.findUniqueMethod("method2", 1);
@@ -61,12 +59,12 @@ public class TestMatcherChecks extends CommonTestRunner {
 
     // match11 is separate from match12, they make the same change
     @Test
-    public void test() throws IOException {
+    public void test() {
         match11(method1, method2, method3, method4);
     }
 
     @Test
-    public void test2() throws IOException {
+    public void test2() {
         match12(method1);
     }
 
@@ -79,14 +77,14 @@ public class TestMatcherChecks extends CommonTestRunner {
 
     private void match4(TypeContext typeContext, MethodInfo method4, MethodInfo... others) {
         Pattern forLoop = ConditionalAssignment.pattern4(typeContext);
-        PatternMatcher patternMatcher = new PatternMatcher(List.of(forLoop));
+        PatternMatcher patternMatcher = new PatternMatcher(Map.of(forLoop, Replacement.NO_REPLACEMENT));
         log(TRANSFORM, "Start match4 on method4");
-        Optional<MatchResult> optMatchResult = patternMatcher.match(method4.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Optional<MatchResult> optMatchResult = patternMatcher.match(method4, method4.methodAnalysis.get().numberedStatements.get().get(0));
         Assert.assertTrue(optMatchResult.isPresent());
 
         for (MethodInfo other : others) {
             log(TRANSFORM, "Start match4 on {}", other.name);
-            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Optional<MatchResult> opt = patternMatcher.match(other, other.methodAnalysis.get().numberedStatements.get().get(0));
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
     }
@@ -181,9 +179,9 @@ public class TestMatcherChecks extends CommonTestRunner {
                 "}\n", conditionalAssignment.statements.get(1).statementString(0));
         Assert.assertEquals(1, conditionalAssignment.types.size());
 
-        PatternMatcher patternMatcher = new PatternMatcher(List.of(conditionalAssignment));
+        PatternMatcher patternMatcher = new PatternMatcher(Map.of(conditionalAssignment, Replacement.NO_REPLACEMENT));
 
-        Optional<MatchResult> optMatchResult = patternMatcher.match(method1.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Optional<MatchResult> optMatchResult = patternMatcher.match(method1, method1.methodAnalysis.get().numberedStatements.get().get(0));
         Assert.assertTrue(optMatchResult.isPresent());
         MatchResult matchResult = optMatchResult.get();
         Expression actual0 = matchResult.translationMap.expressions.get(new Pattern.PlaceHolderExpression(0));
@@ -200,7 +198,7 @@ public class TestMatcherChecks extends CommonTestRunner {
 
 
         for (MethodInfo other : others) {
-            Optional<MatchResult> opt = patternMatcher.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Optional<MatchResult> opt = patternMatcher.match(other, other.methodAnalysis.get().numberedStatements.get().get(0));
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
 
@@ -209,26 +207,26 @@ public class TestMatcherChecks extends CommonTestRunner {
 
     private void match2(MethodInfo method2, MethodInfo... others) {
         Pattern pattern2 = ConditionalAssignment.pattern2();
-        PatternMatcher patternMatcher2 = new PatternMatcher(List.of(pattern2));
+        PatternMatcher patternMatcher2 = new PatternMatcher(Map.of(pattern2, Replacement.NO_REPLACEMENT));
 
-        Optional<MatchResult> optMatchResult = patternMatcher2.match(method2.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Optional<MatchResult> optMatchResult = patternMatcher2.match(method2, method2.methodAnalysis.get().numberedStatements.get().get(0));
         Assert.assertTrue(optMatchResult.isPresent());
 
         for (MethodInfo other : others) {
-            Optional<MatchResult> opt = patternMatcher2.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Optional<MatchResult> opt = patternMatcher2.match(other, other.methodAnalysis.get().numberedStatements.get().get(0));
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
     }
 
     private void match3(MethodInfo method2, MethodInfo... others) {
         Pattern pattern3 = ConditionalAssignment.pattern3();
-        PatternMatcher patternMatcher3 = new PatternMatcher(List.of(pattern3));
+        PatternMatcher patternMatcher3 = new PatternMatcher(Map.of(pattern3, Replacement.NO_REPLACEMENT));
 
-        Optional<MatchResult> optMatchResult = patternMatcher3.match(method2.methodAnalysis.get().numberedStatements.get().get(0), false);
+        Optional<MatchResult> optMatchResult = patternMatcher3.match(method2, method2.methodAnalysis.get().numberedStatements.get().get(0));
         Assert.assertTrue(optMatchResult.isPresent());
 
         for (MethodInfo other : others) {
-            Optional<MatchResult> opt = patternMatcher3.match(other.methodAnalysis.get().numberedStatements.get().get(0), false);
+            Optional<MatchResult> opt = patternMatcher3.match(other, other.methodAnalysis.get().numberedStatements.get().get(0));
             Assert.assertTrue("Failing on " + other.distinguishingName(), opt.isEmpty());
         }
     }

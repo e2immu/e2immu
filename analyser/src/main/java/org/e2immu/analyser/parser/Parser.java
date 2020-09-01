@@ -78,31 +78,29 @@ public class Parser {
         return types.stream().map(SortedType::new).collect(Collectors.toList());
     }
 
-    public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) throws IOException {
+    public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) {
         Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
-        urls.forEach((typeInfo, url) -> {
-            typeInfo.typeInspection.setRunnable(() -> {
-                if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
-                    try {
-                        LOGGER.info("Starting source code inspection of {}", url);
-                        InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
-                        String source = IOUtils.toString(isr);
-                        TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
-                        List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
-                        types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
-                    } catch (RuntimeException rte) {
-                        LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
-                        throw rte;
-                    } catch (IOException ioe) {
-                        LOGGER.warn("Stopping runnable because of an IOException parsing URL {}", url);
-                        throw new RuntimeException(ioe);
-                    }
-                } else {
-                    LOGGER.info("Source code inspection of {} already done", url);
+        urls.forEach((typeInfo, url) -> typeInfo.typeInspection.setRunnable(() -> {
+            if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
+                try {
+                    LOGGER.info("Starting source code inspection of {}", url);
+                    InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
+                    String source = IOUtils.toString(isr);
+                    TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
+                    List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
+                    types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
+                } catch (RuntimeException rte) {
+                    LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
+                    throw rte;
+                } catch (IOException ioe) {
+                    LOGGER.warn("Stopping runnable because of an IOException parsing URL {}", url);
+                    throw new RuntimeException(ioe);
                 }
-            });
-        });
+            } else {
+                LOGGER.info("Source code inspection of {} already done", url);
+            }
+        }));
         // TODO this can be a bit more efficient
         urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e -> e.getKey().typeInspection.get());
         return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
@@ -120,10 +118,10 @@ public class Parser {
             typeContextVisitor.visit(globalTypeContext);
         }
 
-        TypeAnalyser typeAnalyser = new TypeAnalyser(e2ImmuAnnotationExpressions);
+        TypeAnalyser typeAnalyser = new TypeAnalyser(configuration, e2ImmuAnnotationExpressions);
         for (SortedType sortedType : sortedTypes) {
             try {
-                typeAnalyser.analyse(sortedType, configuration.debugConfiguration, false);
+                typeAnalyser.analyse(sortedType, false);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.typeInfo.fullyQualifiedName);
                 throw rte;
@@ -146,7 +144,7 @@ public class Parser {
             try {
                 AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, globalTypeContext.typeStore);
             } catch (IOException ioe) {
-                LOGGER.error("Caught ioe exception writing annotation xmls");
+                LOGGER.error("Caught ioe exception writing annotation XMLs");
                 throw new RuntimeException(ioe);
             }
         }

@@ -18,18 +18,16 @@
 package org.e2immu.analyser.pattern;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.util.SMapSet;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
@@ -43,39 +41,66 @@ import static org.e2immu.analyser.util.Logger.log;
  * <p>
  * Implement a speed-up by making a distinction between failure because of a DELAY, or structural failure.
  * Only combinations of patterns + start statements that cause a DELAY have to be tried again.
- * Maybe have a "recordDelays" for the first iteration, vs "onlyDelays" for subsequent iterations.
  */
 public class PatternMatcher {
-    private final List<Pattern> patterns;
+    private final Map<Pattern, Replacement> patternToReplacements;
 
-    public PatternMatcher(List<Pattern> patterns) {
-        this.patterns = patterns;
+    private final Map<MethodInfo, Map<Pattern, Set<String>>> delayedInThisIteration = new HashMap<>();
+
+    public PatternMatcher(Map<Pattern, Replacement> patternToReplacements) {
+        this.patternToReplacements = patternToReplacements;
     }
 
-    public Optional<MatchResult> match(NumberedStatement startStatement, boolean onlyDelayed) {
-        return patterns.stream().flatMap(pattern -> match(pattern, startStatement, onlyDelayed).stream()).findFirst();
+    public Optional<MatchResult> match(MethodInfo methodInfo, NumberedStatement startStatement) {
+        Map<Pattern, Set<String>> map = mapForMethod(methodInfo);
+        Set<Pattern> newDelays = new HashSet<>();
+        for (Map.Entry<Pattern, Set<String>> entry : map.entrySet()) {
+            Pattern pattern = entry.getKey();
+            Set<String> delays = entry.getValue();
+            if (!skip(delays, startStatement)) {
+                MatchResult.MatchResultBuilder builder = new MatchResult.MatchResultBuilder(pattern, startStatement);
+                SimpleMatchResult isMatch = match(builder, pattern.statements, startStatement);
+                if (isMatch == SimpleMatchResult.YES) return Optional.of(builder.build());
+                if (isMatch == SimpleMatchResult.DELAY) newDelays.add(pattern);
+            }
+        }
+        newDelays.forEach(p -> SMapSet.add(map, p, startStatement.index));
+        return Optional.empty();
+    }
+
+    private Map<Pattern, Set<String>> mapForMethod(MethodInfo methodInfo) {
+        Map<Pattern, Set<String>> map = delayedInThisIteration.get(methodInfo);
+        if (map != null) {
+            return map;
+        }
+        Map<Pattern, Set<String>> newMap = new HashMap<>();
+        patternToReplacements.keySet().forEach(p -> newMap.put(p, new HashSet<>()));
+        delayedInThisIteration.put(methodInfo, newMap);
+        return newMap;
+    }
+
+    public void startNewIteration() {
+        delayedInThisIteration.forEach((method, map) -> map.entrySet().removeIf(e -> e.getValue().isEmpty()));
+    }
+
+    public void reset(MethodInfo methodInfo) {
+        delayedInThisIteration.get(methodInfo).clear();
+    }
+
+    public Optional<Replacement> registeredReplacement(Pattern pattern) {
+        Replacement replacement = patternToReplacements.get(pattern);
+        if (replacement == null) throw new UnsupportedOperationException();
+        return Replacement.NO_REPLACEMENT.equals(replacement) ? Optional.empty() : Optional.of(replacement);
     }
 
     enum SimpleMatchResult {
         YES, NO, DELAY, NOT_YET,
     }
 
-    private Optional<MatchResult> match(Pattern pattern, NumberedStatement startStatement, boolean onlyDelayed) {
-        if (onlyDelayed && alreadyDone(pattern, startStatement)) return Optional.empty();
-        MatchResult.MatchResultBuilder builder = new MatchResult.MatchResultBuilder(pattern, startStatement);
-        SimpleMatchResult isMatch = match(builder, pattern.statements, startStatement);
-        if (isMatch == SimpleMatchResult.DELAY) {
-            registerDelay(pattern, startStatement);
-        }
-        return isMatch == SimpleMatchResult.YES ? Optional.of(builder.build()) : Optional.empty();
-    }
-
-    private boolean alreadyDone(Pattern pattern, NumberedStatement startStatement) {
-        return false; // TODO
-    }
-
-    private void registerDelay(Pattern pattern, NumberedStatement startStatement) {
-        // TODO
+    private boolean skip(Set<String> indices, NumberedStatement startStatement) {
+        if (indices.isEmpty()) return false; // first round only
+        // after the first round, we skip when it was NOT delayed
+        return !indices.contains(startStatement.index);
     }
 
     // -- STATIC AREA; here we don't care about speed-ups, Optionals, etc.
@@ -175,7 +200,7 @@ public class PatternMatcher {
         if (template == actual) return SimpleMatchResult.YES; // mainly for EmptyExpression
 
 
-        if (template instanceof Pattern.PlaceHolderExpression) {
+        if (template instanceof Pattern.PlaceHolderExpression && actual != EmptyExpression.EMPTY_EXPRESSION) {
             Pattern.PlaceHolderExpression placeHolder = (Pattern.PlaceHolderExpression) template;
             if (!placeHolder.returnType.isAssignableFrom(actual.returnType())) return SimpleMatchResult.NO;
             boolean varsOK = builder.containsAllVariables(placeHolder.variablesToMatch, actual.variables());

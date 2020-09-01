@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.testexample.TestSkeleton;
 import org.junit.Assert;
 import org.junit.Before;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.Level.*;
@@ -154,11 +156,11 @@ public class TestWithSkeleton {
     }
 
     private VariableProperties newVariableProperties(MethodInfo method) {
-        return new VariableProperties(0, new DebugConfiguration.Builder().build(), method);
+        return new VariableProperties(0, new Configuration.Builder().build(), new PatternMatcher(Map.of()), method);
     }
 
     private VariableProperties newVariableProperties(TypeInfo typeInfo) {
-        return new VariableProperties(typeInfo, 0, new DebugConfiguration.Builder().build());
+        return new VariableProperties(typeInfo, 0, new Configuration.Builder().build(), new PatternMatcher(Map.of()));
     }
 
     @Test

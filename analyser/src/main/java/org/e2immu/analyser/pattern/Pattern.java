@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Pattern {
+    public final static Pattern NO_PATTERN = new PatternBuilder("NO_PATTERN").build();
 
     public final String name;
     public final List<Statement> statements;

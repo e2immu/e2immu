@@ -34,6 +34,8 @@ This local context is not known at the time of creating the replacement.
 
  */
 public class Replacement {
+    public static final Replacement NO_REPLACEMENT = new ReplacementBuilder("NO_REPLACEMENT", Pattern.NO_PATTERN ).build();
+
     public static final String LOCAL_VARIABLE_PREFIX = "lv$";
 
     public final List<Statement> statements;
@@ -55,6 +57,20 @@ public class Replacement {
         this.newLocalVariables = ImmutableMap.copyOf(newLocalVariables);
         this.namesCreatedInReplacement = ImmutableSet.copyOf(namesCreatedInReplacement);
         this.translationsOnExpressions = ImmutableMap.copyOf(translationsOnExpressions);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Replacement that = (Replacement) o;
+        return pattern.equals(that.pattern) &&
+                name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pattern, name);
     }
 
     @Container(builds = Replacement.class)

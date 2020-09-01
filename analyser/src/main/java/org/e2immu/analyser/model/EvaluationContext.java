@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
@@ -29,6 +30,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
@@ -231,5 +233,13 @@ public interface EvaluationContext {
 
     default Set<String> allUnqualifiedVariableNames() {
         return Set.of();
+    }
+
+    default Configuration getConfiguration() {
+        throw new UnsupportedOperationException();
+    }
+
+    default PatternMatcher getPatternMatcher() {
+        throw new UnsupportedOperationException();
     }
 }

@@ -55,6 +55,9 @@ public class Configuration {
     public final boolean ignoreErrors;
     public final boolean skipAnalysis;
 
+    // analyser
+    public final AnalyserConfiguration analyserConfiguration;
+
     // upload
     public final UploadConfiguration uploadConfiguration;
 
@@ -67,17 +70,18 @@ public class Configuration {
     // for debugging purposes
     public final DebugConfiguration debugConfiguration;
 
-    public Configuration(InputConfiguration inputConfiguration,
+    private Configuration(InputConfiguration inputConfiguration,
 
-                         Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
-                         boolean quiet,
-                         boolean ignoreErrors,
-                         boolean skipAnalysis,
+                          Set<org.e2immu.analyser.util.Logger.LogTarget> logTargets,
+                          boolean quiet,
+                          boolean ignoreErrors,
+                          boolean skipAnalysis,
 
-                         UploadConfiguration uploadConfiguration,
-                         AnnotatedAPIConfiguration annotatedAPIConfiguration,
-                         AnnotationXmlConfiguration annotationXmlConfiguration,
-                         DebugConfiguration debugConfiguration) {
+                          AnalyserConfiguration analyserConfiguration,
+                          UploadConfiguration uploadConfiguration,
+                          AnnotatedAPIConfiguration annotatedAPIConfiguration,
+                          AnnotationXmlConfiguration annotationXmlConfiguration,
+                          DebugConfiguration debugConfiguration) {
         this.inputConfiguration = inputConfiguration;
         this.logTargets = logTargets;
         this.quiet = quiet;
@@ -87,6 +91,7 @@ public class Configuration {
         this.annotatedAPIConfiguration = annotatedAPIConfiguration;
         this.annotationXmlConfiguration = annotationXmlConfiguration;
         this.debugConfiguration = debugConfiguration;
+        this.analyserConfiguration = analyserConfiguration;
     }
 
     @Override
@@ -191,6 +196,7 @@ public class Configuration {
         private AnnotatedAPIConfiguration annotatedAPIConfiguration;
         private AnnotationXmlConfiguration annotationXmlConfiguration;
         private DebugConfiguration debugConfiguration;
+        private AnalyserConfiguration analyserConfiguration;
 
         public Configuration build() {
             return new Configuration(inputConfiguration != null ? inputConfiguration : new InputConfiguration.Builder().build(),
@@ -198,6 +204,7 @@ public class Configuration {
                     quiet,
                     ignoreErrors,
                     skipAnalysis,
+                    analyserConfiguration != null ? analyserConfiguration : new AnalyserConfiguration.Builder().build(),
                     uploadConfiguration != null ? uploadConfiguration : new UploadConfiguration.Builder().build(),
                     annotatedAPIConfiguration != null ? annotatedAPIConfiguration : new AnnotatedAPIConfiguration.Builder().build(),
                     annotationXmlConfiguration != null ? annotationXmlConfiguration : new AnnotationXmlConfiguration.Builder().build(),
@@ -251,6 +258,12 @@ public class Configuration {
         @Fluent
         public Builder setDebugConfiguration(DebugConfiguration debugConfiguration) {
             this.debugConfiguration = debugConfiguration;
+            return this;
+        }
+
+        @Fluent
+        public Builder setAnalyserConfiguration(AnalyserConfiguration analyserConfiguration) {
+            this.analyserConfiguration = analyserConfiguration;
             return this;
         }
 

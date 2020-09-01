@@ -19,10 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
@@ -32,6 +29,10 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.SortedType;
+import org.e2immu.analyser.pattern.ConditionalAssignment;
+import org.e2immu.analyser.pattern.Pattern;
+import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
@@ -71,10 +72,18 @@ public class TypeAnalyser {
     private final FieldAnalyser fieldAnalyser;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Messages messages = new Messages();
+    private final PatternMatcher patternMatcher;
+    private final Configuration configuration;
 
-    public TypeAnalyser(@NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public TypeAnalyser(Configuration configuration, @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         fieldAnalyser = new FieldAnalyser(e2ImmuAnnotationExpressions);
         methodAnalyser = new MethodAnalyser(e2ImmuAnnotationExpressions);
+        this.configuration = configuration;
+
+        // TODO move to some other place
+        Pattern pattern1 = ConditionalAssignment.pattern1();
+        patternMatcher = new PatternMatcher(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1)));
+
         this.e2ImmuAnnotationExpressions = Objects.requireNonNull(e2ImmuAnnotationExpressions);
     }
 
@@ -125,7 +134,8 @@ public class TypeAnalyser {
         });
     }
 
-    public void analyse(SortedType sortedType, DebugConfiguration debugConfiguration, boolean postAnalysis) {
+    public void analyse(SortedType sortedType, boolean postAnalysis) {
+        DebugConfiguration debugConfiguration = configuration.debugConfiguration;
         TypeInfo typeInfo = sortedType.typeInfo;
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
@@ -140,10 +150,11 @@ public class TypeAnalyser {
             int iteration = postAnalysis ? POST_ANALYSIS + cnt : cnt;
             // TODO check that separate field properties work...
             //VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, iteration, debugConfiguration);
+            patternMatcher.startNewIteration();
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(iteration, configuration, patternMatcher, (MethodInfo) member);
 
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
@@ -157,7 +168,7 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(iteration, debugConfiguration,
+                            VariableProperties methodProperties = new VariableProperties(iteration, configuration, patternMatcher,
                                     fieldInitialiser.implementationOfSingleAbstractMethod);
 
                             try {
@@ -178,7 +189,7 @@ public class TypeAnalyser {
                         }
                     }
 
-                    VariableProperties fieldProperties = new VariableProperties(iteration, debugConfiguration, fieldInfo);
+                    VariableProperties fieldProperties = new VariableProperties(iteration, configuration, patternMatcher, fieldInfo);
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
@@ -214,7 +225,7 @@ public class TypeAnalyser {
         }
 
         if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
-            postAnalysisIntoNestedTypes(typeInfo, debugConfiguration);
+            postAnalysisIntoNestedTypes(typeInfo, configuration);
             typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
         }
     }
@@ -252,14 +263,14 @@ public class TypeAnalyser {
      *
      * @param typeInfo the enclosing type
      */
-    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo, DebugConfiguration debugConfiguration) {
+    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo, Configuration configuration) {
         log(ANALYSER, "\n--------\nStarting post-analysis into method calls from nested types to {}\n--------",
                 typeInfo.fullyQualifiedName);
         for (TypeInfo nestedType : typeInfo.typeInspection.get().subTypes) {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
 
-            analyse(sortedType, debugConfiguration, true);
+            analyse(sortedType, true);
             check(sortedType); // we're not checking at top level!
         }
         log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",

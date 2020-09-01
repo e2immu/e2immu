@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -32,6 +34,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.util.SetUtil;
@@ -77,7 +80,8 @@ class VariableProperties implements EvaluationContext {
 
     final int depth;
     final int iteration;
-    final DebugConfiguration debugConfiguration;
+    final Configuration configuration;
+    final PatternMatcher patternMatcher;
     final VariableProperties parent;
     final boolean guaranteedToBeReachedByParentStatement;
     final Runnable uponUsingConditional;
@@ -93,29 +97,30 @@ class VariableProperties implements EvaluationContext {
     private final List<Value> preconditions = new ArrayList<>();
 
     // TEST ONLY, in type analyser, for fields
-    public VariableProperties(TypeInfo currentType, int iteration, DebugConfiguration debugConfiguration) {
-        this(currentType, iteration, debugConfiguration, null, null, new HashSet<>());
+    public VariableProperties(TypeInfo currentType, int iteration, Configuration configuration, PatternMatcher patternMatcher) {
+        this(currentType, iteration, configuration, patternMatcher, null, null, new HashSet<>());
     }
 
     // in type analyser, for methods
-    public VariableProperties(int iteration, DebugConfiguration debugConfiguration, MethodInfo currentMethod) {
-        this(currentMethod.typeInfo, iteration, debugConfiguration, currentMethod, null, new HashSet<>());
+    public VariableProperties(int iteration, Configuration configuration, PatternMatcher patternMatcher, MethodInfo currentMethod) {
+        this(currentMethod.typeInfo, iteration, configuration, patternMatcher, currentMethod, null, new HashSet<>());
     }
 
     // in type analyser, for fields
-    public VariableProperties(int iteration, DebugConfiguration debugConfiguration, FieldInfo currentField) {
-        this(currentField.owner, iteration, debugConfiguration, null, currentField, new HashSet<>());
+    public VariableProperties(int iteration, Configuration configuration, PatternMatcher patternMatcher, FieldInfo currentField) {
+        this(currentField.owner, iteration, configuration, patternMatcher, null, currentField, new HashSet<>());
     }
 
     private VariableProperties(TypeInfo currentType,
                                int iteration,
-                               DebugConfiguration debugConfiguration,
+                               Configuration configuration,
+                               PatternMatcher patternMatcher,
                                MethodInfo currentMethod,
                                FieldInfo currentField,
                                Set<ObjectFlow> internalObjectFlows) {
         this.iteration = iteration;
         this.depth = 0;
-        this.debugConfiguration = debugConfiguration;
+        this.configuration = configuration;
         this.parent = null;
         uponUsingConditional = null;
         this.currentMethod = currentMethod;
@@ -133,6 +138,7 @@ class VariableProperties implements EvaluationContext {
         inSyncBlock = currentMethod != null && currentMethod.isSynchronized();
         this.internalObjectFlows = internalObjectFlows;
         this.messages = new Messages();
+        this.patternMatcher = patternMatcher;
     }
 
     public VariableProperties copyWithCurrentMethod(MethodInfo methodInfo) {
@@ -154,7 +160,7 @@ class VariableProperties implements EvaluationContext {
                                boolean guaranteedToBeReachedByParentStatement) {
         this.iteration = parent.iteration;
         this.depth = depth;
-        this.debugConfiguration = parent.debugConfiguration;
+        this.configuration = parent.configuration;
         this.parent = parent;
         this.uponUsingConditional = uponUsingConditional;
         this.conditionManager = new ConditionManager(condition, state);
@@ -167,6 +173,7 @@ class VariableProperties implements EvaluationContext {
         this.guaranteedToBeReachedByParentStatement = guaranteedToBeReachedByParentStatement;
         this.internalObjectFlows = parent.internalObjectFlows; // TODO this is wrong; we should be making a child object flow
         this.messages = parent.messages;
+        this.patternMatcher = parent.patternMatcher;
     }
 
     @Override
@@ -1237,5 +1244,10 @@ class VariableProperties implements EvaluationContext {
                 .filter(AboutVariable::isNotLocalCopy)
                 .map(av -> av.name).collect(Collectors.toSet());
         return SetUtil.immutableUnion(fromParent, local);
+    }
+
+    @Override
+    public PatternMatcher getPatternMatcher() {
+        return patternMatcher;
     }
 }

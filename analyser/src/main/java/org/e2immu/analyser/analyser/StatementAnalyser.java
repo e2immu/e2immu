@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -32,7 +33,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.ConditionalAssignment;
+import org.e2immu.analyser.pattern.*;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,7 @@ public class StatementAnalyser {
                 }
 
                 for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
-                        ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVariableVisitors) {
+                        ((VariableProperties) evaluationContext).configuration.debugConfiguration.statementAnalyserVariableVisitors) {
                     variableProperties.variableProperties().forEach(aboutVariable ->
                             statementAnalyserVariableVisitor.visit(
                                     new StatementAnalyserVariableVisitor.Data(((VariableProperties) evaluationContext).iteration, methodInfo,
@@ -96,7 +97,8 @@ public class StatementAnalyser {
                                             aboutVariable.getStateOnAssignment(),
                                             aboutVariable.getObjectFlow(), aboutVariable.properties())));
                 }
-                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext).debugConfiguration.statementAnalyserVisitors) {
+                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext)
+                        .configuration.debugConfiguration.statementAnalyserVisitors) {
                     statementAnalyserVisitor.visit(
                             new StatementAnalyserVisitor.Data(
                                     ((VariableProperties) evaluationContext).iteration, methodInfo, statement, statement.index,
@@ -621,6 +623,17 @@ public class StatementAnalyser {
 
         // first attempt at detecting a transformation
         //ConditionalAssignment.tryToDetectTransformation(statement, variableProperties);
+        if (!variableProperties.configuration.analyserConfiguration.skipTransformations) {
+            Optional<MatchResult> matchResult = variableProperties.patternMatcher.match(methodInfo, statement);
+            if (matchResult.isPresent()) {
+                Optional<Replacement> replacement = variableProperties.patternMatcher.registeredReplacement(matchResult.get().pattern);
+                if (replacement.isPresent()) {
+                    Replacer.replace(variableProperties, matchResult.get(), replacement.get());
+                    variableProperties.patternMatcher.reset(methodInfo);
+                    changes = true;
+                }
+            }
+        }
 
         if (!variableProperties.conditionManager.delayedState() && !statement.state.isSet()) {
             statement.state.set(variableProperties.conditionManager.getState());

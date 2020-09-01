@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
@@ -62,11 +63,17 @@ public abstract class CommonTestRunner {
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
+        return testClass(className, errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build());
+    }
+
+    protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
+                                    AnalyserConfiguration analyserConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
+                .setAnalyserConfiguration(analyserConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER, INSPECT, RESOLVE,
 
                         TRANSFORM,
