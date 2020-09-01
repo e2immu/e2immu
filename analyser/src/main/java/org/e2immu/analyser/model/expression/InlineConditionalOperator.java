@@ -60,10 +60,12 @@ public class InlineConditionalOperator implements Expression {
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         EvaluationContext copyForThen = evaluationContext.child(c, null, false);
         Value t = ifTrue.evaluate(copyForThen, evaluationVisitor, forwardEvaluationInfo);
+        evaluationContext.merge(copyForThen);
 
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
         Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
-
+        evaluationContext.merge(copyForElse);
+        
         // TODO ObjectFlow
         Value res = ConditionalValue.conditionalValueCurrentState(evaluationContext, c, t, f, ObjectFlow.NO_FLOW);
         evaluationVisitor.visit(this, evaluationContext, res);

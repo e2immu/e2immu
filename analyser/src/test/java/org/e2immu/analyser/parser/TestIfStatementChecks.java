@@ -52,6 +52,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
         }
     };
 
+    // inlining happens when the replacements are active
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
 
         if ("method1".equals(methodInfo.name)) {
@@ -82,8 +83,11 @@ public class TestIfStatementChecks extends CommonTestRunner {
         testClass("IfStatementChecks", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+
+        testClass("IfStatementChecks", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 
 }

@@ -67,7 +67,7 @@ public class StatementAnalyser {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         boolean changes = false;
 
-        NumberedStatement startStatement = startStatementIn.replacement.isSet() ? startStatementIn.replacement.get() : startStatementIn;
+        NumberedStatement startStatement = startStatementIn.followReplacements();
         NumberedStatement statement = Objects.requireNonNull(startStatement); // for IntelliJ
 
         boolean neverContinues = false;
