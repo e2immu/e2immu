@@ -240,6 +240,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return fluent;
         }
 
+        InlineValue inlineValue;
+        if (methodInfo.typeInfo.isFunctionalInterface() && (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null) {
+            Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
+            return inlineValue.reEvaluate(evaluationContext, translationMap);
+        }
+
         if (methodAnalysis.singleReturnValue.isSet()) {
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
