@@ -69,7 +69,8 @@ public class LambdaBlock implements Expression {
     public String expressionString(int indent) {
         String blockString;
         if (block.statements.isEmpty()) blockString = "{ }";
-        else blockString = block.statementString(indent);
+        // TODO we don't have a numbered statement here...
+        else blockString = block.statementString(indent, null);
         if (parameters.size() == 1) {
             return parameters.get(0).stream();
         }

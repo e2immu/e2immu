@@ -19,6 +19,7 @@ package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Container;
@@ -250,7 +251,7 @@ public class Pattern {
     public static class PlaceHolderStatement implements Statement {
 
         @Override
-        public String statementString(int indent) {
+        public String statementString(int indent, NumberedStatement numberedStatement) {
             return null;
         }
 

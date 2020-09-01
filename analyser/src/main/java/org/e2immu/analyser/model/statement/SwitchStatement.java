@@ -1,6 +1,7 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -23,14 +24,16 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent) {
+    public String statementString(int indent, NumberedStatement numberedStatement) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("switch(");
         sb.append(expression.expressionString(0));
         sb.append(") {\n");
+        int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            sb.append(switchEntry.statementString(indent + 4));
+            sb.append(switchEntry.statementString(indent + 4, NumberedStatement.startOfBlock(numberedStatement, i)));
+            i++;
         }
         StringUtil.indent(sb, indent);
         sb.append("}\n");

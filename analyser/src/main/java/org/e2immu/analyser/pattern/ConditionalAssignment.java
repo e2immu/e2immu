@@ -321,7 +321,7 @@ public class ConditionalAssignment {
         LocalVariableCreation lvc1 = new LocalVariableCreation(tmp, newValueExpression);
         Statement newS1 = new ExpressionAsStatement(lvc1);
         NumberedStatement newNs1 = new NumberedStatement(newS1, statement.parent, statement.indices);
-        log(TRANSFORM, "New statement 1: {}", newS1.statementString(0));
+        log(TRANSFORM, "New statement 1: {}", newS1.statementString(0, null));
         newNs1.blocks.set(List.of());
 
         if (created != null) {
@@ -330,7 +330,7 @@ public class ConditionalAssignment {
             NumberedStatement newNs2 = new NumberedStatement(newS2, statement.parent, statement.indices);
             newNs2.blocks.set(List.of());
             newNs1.next.set(Optional.of(newNs2));
-            log(TRANSFORM, "New statement 2: {}", newS2.statementString(0));
+            log(TRANSFORM, "New statement 2: {}", newS2.statementString(0, null));
         }
         statement.replacement.set(newNs1);
 
@@ -343,7 +343,7 @@ public class ConditionalAssignment {
         Block newIfBlock = new Block.BlockBuilder().addStatement(assignToSomeOther).build();
         Block newElseBlock = new Block.BlockBuilder().addStatement(assignToTmp).build();
         Statement newS3 = new IfElseStatement(ifExpression, newIfBlock, newElseBlock);
-        log(TRANSFORM, "New statement 3: {}", newS3.statementString(0));
+        log(TRANSFORM, "New statement 3: {}", newS3.statementString(0, null));
         NumberedStatement newNs3 = new NumberedStatement(newS3, next.parent, next.indices);
 
         NumberedStatement newNs3_00 = new NumberedStatement(assignToSomeOther, newNs3, ListUtil.immutableConcat(next.indices, List.of(0, 0)));

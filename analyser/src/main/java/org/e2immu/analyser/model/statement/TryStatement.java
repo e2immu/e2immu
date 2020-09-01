@@ -1,6 +1,7 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.Pair;
@@ -80,7 +81,7 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public String statementString(int indent) {
+    public String statementString(int indent, NumberedStatement ns) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("try");
@@ -89,16 +90,18 @@ public class TryStatement implements Statement {
             sb.append(resources.stream().map(r -> r.expressionString(0)).collect(Collectors.joining("; ")));
             sb.append(")");
         }
-        sb.append(tryBlock.statementString(indent));
+        sb.append(tryBlock.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
+        int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             sb.append(" catch(");
             sb.append(pair.k.expressionString(0));
             sb.append(")");
-            sb.append(pair.v.statementString(indent));
+            sb.append(pair.v.statementString(indent, NumberedStatement.startOfBlock(ns, i)));
+            i++;
         }
         if (finallyBlock != Block.EMPTY_BLOCK) {
             sb.append(" finally");
-            sb.append(finallyBlock.statementString(indent));
+            sb.append(finallyBlock.statementString(indent, NumberedStatement.startOfBlock(ns, i)));
         }
         sb.append("\n");
         return sb.toString();

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
@@ -14,7 +15,7 @@ public class ContinueStatement extends BreakOrContinueStatement {
     }
 
     @Override
-    public String statementString(int indent) {
+    public String statementString(int indent, NumberedStatement numberedStatement) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("continue");

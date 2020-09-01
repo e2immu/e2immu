@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
@@ -78,22 +79,51 @@ public class Block implements Statement, HasStatements {
     }
 
     @Override
-    public String statementString(int indent) {
+    public String statementString(int indent, NumberedStatement numberedStatement) {
         StringBuilder sb = new StringBuilder();
         if (label != null) {
             sb.append(label);
             sb.append(":");
         }
         sb.append(" {");
-        if (statements.isEmpty()) {
-            sb.append(" }\n");
+        if (numberedStatement == null) {
+            if (statements.isEmpty()) {
+                sb.append(" }\n");
+            } else {
+                sb.append("\n");
+                for (Statement statement : statements) {
+                    sb.append(statement.statementString(indent + 4, null));
+                }
+                StringUtil.indent(sb, indent);
+                sb.append("}");
+            }
         } else {
             sb.append("\n");
-            for (Statement statement : statements) {
-                sb.append(statement.statementString(indent + 4));
-            }
+            sb.append(statementsString(indent + 4, numberedStatement));
             StringUtil.indent(sb, indent);
             sb.append("}");
+        }
+        return sb.toString();
+    }
+
+    private String statementsString(int indent, NumberedStatement numberedStatement) {
+        NumberedStatement ns = numberedStatement;
+        StringBuilder sb = new StringBuilder();
+        while (ns != null) {
+            if (ns.replacement.isSet()) {
+                StringUtil.indent(sb, indent);
+                sb.append("/* code will be replaced\n");
+                sb.append(ns.statement.statementString(indent, ns));
+                NumberedStatement moreReplaced = ns.next.isSet() ? ns.next.get().orElse(null) : null;
+                if (moreReplaced != null) {
+                    sb.append(statementsString(indent, moreReplaced));
+                }
+                StringUtil.indent(sb, indent);
+                sb.append("*/\n");
+                ns = ns.replacement.get();
+            }
+            sb.append(ns.statement.statementString(indent, ns));
+            ns = ns.next.isSet() ? ns.next.get().orElse(null) : null;
         }
         return sb.toString();
     }

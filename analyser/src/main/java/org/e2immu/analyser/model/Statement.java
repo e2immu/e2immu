@@ -18,16 +18,14 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.annotation.E2Container;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 @E2Container
 public interface Statement {
-
-    String statementString(int indent);
 
     Set<String> imports();
 
@@ -46,4 +44,6 @@ public interface Statement {
     default Statement translate(TranslationMap translationMap) {
         return this;
     }
+
+    String statementString(int indent, NumberedStatement numberedStatement);
 }

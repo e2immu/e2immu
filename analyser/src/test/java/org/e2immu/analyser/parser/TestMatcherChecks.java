@@ -106,9 +106,9 @@ public class TestMatcherChecks extends CommonTestRunner {
 
         Replacement replacement = ConditionalAssignment.replacement1ToPattern1(conditionalAssignment);
         Statement first = replacement.statements.get(0);
-        Assert.assertEquals("T0 lv$0 = expression():0;\n", first.statementString(0));
+        Assert.assertEquals("T0 lv$0 = expression():0;\n", first.statementString(0, null));
         Statement second = replacement.statements.get(1);
-        Assert.assertEquals("T0 lv0 = (expression(lv0):1) ? (expression():2) : lv$0;\n", second.statementString(0));
+        Assert.assertEquals("T0 lv0 = (expression(lv0):1) ? (expression():2) : lv$0;\n", second.statementString(0, null));
         Assert.assertEquals("{expression(lv0):1=TM{{lv0=lv$0}}}", replacement.translationsOnExpressions.toString());
 
         // MATCH RESULT
@@ -120,9 +120,9 @@ public class TestMatcherChecks extends CommonTestRunner {
         // tmp0 because tmp already exists (see TEST_EC)
         Replacer.replace(TEST_EC, matchResult, replacement);
         Statement final1 = matchResult.start.replacement.get().statement;
-        Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0));
+        Assert.assertEquals("String tmp0 = a1;\n", final1.statementString(0, null));
         Statement final2 = matchResult.start.replacement.get().next.get().orElseThrow().statement;
-        Assert.assertEquals("String s1 = tmp0 == null ? \"\" : tmp0;\n", final2.statementString(0));
+        Assert.assertEquals("String s1 = tmp0 == null ? \"\" : tmp0;\n", final2.statementString(0, null));
     }
 
 
@@ -136,7 +136,7 @@ public class TestMatcherChecks extends CommonTestRunner {
 
         Replacement replacement = ConditionalAssignment.replacement2ToPattern1(conditionalAssignment);
         Statement first = replacement.statements.get(0);
-        Assert.assertEquals("T0 lv0;\n", first.statementString(0));
+        Assert.assertEquals("T0 lv0;\n", first.statementString(0, null));
         Statement second = replacement.statements.get(1);
         Assert.assertEquals(" {\n" +
                 "    T0 lv$0 = expression():0;\n" +
@@ -145,7 +145,7 @@ public class TestMatcherChecks extends CommonTestRunner {
                 "    } else {\n" +
                 "        lv0 = lv$0;\n" +
                 "    }\n" +
-                "}", second.statementString(0));
+                "}", second.statementString(0, null));
         Assert.assertEquals("{expression(lv0):1=TM{{lv0=lv$0}}}", replacement.translationsOnExpressions.toString());
 
         // MATCH RESULT
@@ -158,7 +158,7 @@ public class TestMatcherChecks extends CommonTestRunner {
         // tmp0 because tmp already exists (see TEST_EC)
         Replacer.replace(TEST_EC, matchResult, replacement);
         Statement final1 = matchResult.start.replacement.get().statement;
-        Assert.assertEquals("String s1;\n", final1.statementString(0));
+        Assert.assertEquals("String s1;\n", final1.statementString(0, null));
         NumberedStatement next = matchResult.start.replacement.get().next.get().orElseThrow();
         Statement final2 = next.statement;
         Assert.assertEquals("1", next.index);
@@ -169,14 +169,14 @@ public class TestMatcherChecks extends CommonTestRunner {
                 "    } else {\n" +
                 "        s1 = tmp0;\n" +
                 "    }\n" +
-                "}", final2.statementString(0));
+                "}", final2.statementString(0, null));
     }
 
     private MatchResult checkMatchResultPattern1(Pattern conditionalAssignment, MethodInfo method1, MethodInfo... others) {
-        Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0));
+        Assert.assertEquals("T0 lv0 = expression():0;\n", conditionalAssignment.statements.get(0).statementString(0, null));
         Assert.assertEquals("if (expression(lv0):1) {\n" +
                 "    lv0 = expression():2;\n" +
-                "}\n", conditionalAssignment.statements.get(1).statementString(0));
+                "}\n", conditionalAssignment.statements.get(1).statementString(0, null));
         Assert.assertEquals(1, conditionalAssignment.types.size());
 
         PatternMatcher patternMatcher = new PatternMatcher(Map.of(conditionalAssignment, Replacement.NO_REPLACEMENT));

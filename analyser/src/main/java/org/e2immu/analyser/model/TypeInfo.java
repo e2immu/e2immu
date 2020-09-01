@@ -1037,7 +1037,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             throw new UnsupportedOperationException("Cannot (yet) deal with " + returnExpression.getClass());
         }
-        log(LAMBDA, "Result of translating block: {}", block.statementString(0));
+        log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 

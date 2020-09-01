@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -116,15 +117,18 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public String statementString(int indent) {
+        public String statementString(int indent, NumberedStatement numberedStatement) {
             StringBuilder sb = new StringBuilder();
+
+            // TODO use the method from Block to catch replacements!
+
             appendLabels(sb, indent, java12Style, statements.size() > 1);
             if (statements.size() == 1) {
                 sb.append(" ");
-                sb.append(statements.get(0).statementString(0));
+                sb.append(statements.get(0).statementString(0, numberedStatement));
             } else {
                 for (Statement statement : statements) {
-                    sb.append(statement.statementString(indent + 4));
+                    sb.append(statement.statementString(indent + 4, numberedStatement));
                 }
             }
             return sb.toString();
@@ -174,10 +178,10 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public String statementString(int indent) {
+        public String statementString(int indent, NumberedStatement numberedStatement) {
             StringBuilder sb = new StringBuilder();
             appendLabels(sb, indent, true, false);
-            sb.append(block.statementString(indent));
+            sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
             return sb.toString();
         }
 

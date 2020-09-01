@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 
 import java.util.Map;
@@ -36,7 +37,7 @@ public class LocalClassDeclaration implements Statement {
     }
 
     @Override
-    public String statementString(int indent) {
+    public String statementString(int indent, NumberedStatement numberedStatement) {
         return typeInfo.stream(indent);
     }
 

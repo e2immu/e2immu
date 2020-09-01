@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotModified;
@@ -78,5 +79,15 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
         boolean parentInErrorState = parent != null && parent.inErrorState();
         if (parentInErrorState) return true;
         return errorValue.isSet() && errorValue.get();
+    }
+
+    public static NumberedStatement startOfBlock(NumberedStatement ns, int block) {
+        return ns == null ? null: ns.startOfBlock(block);
+    }
+
+    private NumberedStatement startOfBlock(int i) {
+        if (!blocks.isSet()) return null;
+        List<NumberedStatement> list = blocks.get();
+        return i >= list.size() ? null : list.get(i);
     }
 }
