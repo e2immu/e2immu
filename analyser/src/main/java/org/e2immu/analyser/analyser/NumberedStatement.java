@@ -82,12 +82,19 @@ public class NumberedStatement implements Comparable<NumberedStatement> {
     }
 
     public static NumberedStatement startOfBlock(NumberedStatement ns, int block) {
-        return ns == null ? null: ns.startOfBlock(block);
+        return ns == null ? null : ns.startOfBlock(block);
     }
 
     private NumberedStatement startOfBlock(int i) {
         if (!blocks.isSet()) return null;
         List<NumberedStatement> list = blocks.get();
         return i >= list.size() ? null : list.get(i);
+    }
+
+    public NumberedStatement followReplacements() {
+        if (replacement.isSet()) {
+            return replacement.get().followReplacements();
+        }
+        return this;
     }
 }

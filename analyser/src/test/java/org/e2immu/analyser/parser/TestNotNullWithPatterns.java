@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -36,8 +37,8 @@ import java.io.IOException;
 https://github.com/bnaudts/e2immu/issues/8
 
  */
-public class TestSimpleNotNullChecks extends CommonTestRunner {
-    public TestSimpleNotNullChecks() {
+public class TestNotNullWithPatterns extends CommonTestRunner {
+    public TestNotNullWithPatterns() {
         super(true);
     }
 
@@ -46,11 +47,18 @@ public class TestSimpleNotNullChecks extends CommonTestRunner {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
             Assert.assertEquals("condition.test(initial)?alternative:initial", srv.toString());
         }
+
+        if ("method4bis".equals(methodInfo.name) && iteration > 0) {
+            NumberedStatement start = methodInfo.methodAnalysis.get().numberedStatements.get().get(0).followReplacements();
+            Assert.assertEquals("return a1 == null ? a2 == null ? \"abc\" : a2 : a3 == null ? \"xyz\" : a1;\n",
+                    start.statement.statementString(0, null));
+            Assert.assertNull(start.next.get().orElse(null));
+        }
     };
 
     @Test
     public void test() throws IOException {
-        testClass("SimpleNotNullChecks", 0, new DebugConfiguration.Builder()
+        testClass("NotNullWithPatterns", 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

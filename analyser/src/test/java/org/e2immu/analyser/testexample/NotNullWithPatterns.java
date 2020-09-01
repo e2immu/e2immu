@@ -7,7 +7,11 @@ import org.e2immu.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class SimpleNotNullChecks {
+/**
+ * checks with transformations
+ *
+ */
+public class NotNullWithPatterns {
     public static final String MESSAGE = "Was null...";
 
     /*
@@ -46,6 +50,24 @@ public class SimpleNotNullChecks {
             return "abc";
         } else {
             return a1;
+        }
+    }
+
+
+    @NotNull
+    public static String method4bis(String a1, String a2, String a3) {
+        if (a1 == null) {
+            if (a2 == null) {
+                return "abc";
+            } else {
+                return a2;
+            }
+        } else {
+            if (a3 == null) {
+                return "xyz";
+            } else {
+                return a1;
+            }
         }
     }
 

@@ -54,4 +54,12 @@ public class IdentityChecks {
             return s;
         }
     }
+
+    @Identity
+    @NotModified
+    @NotNull
+    public static String idem4(String s) {
+        LOGGER.debug(s);
+        return "a".equals(s) ? idem(idem2(s, "abc")) : s;
+    }
 }

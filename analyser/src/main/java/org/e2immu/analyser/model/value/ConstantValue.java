@@ -43,6 +43,7 @@ public abstract class ConstantValue implements Value {
                 return Level.DELAY;
             case MODIFIED:
             case NOT_MODIFIED_1:
+            case IDENTITY:
                 return Level.FALSE;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());

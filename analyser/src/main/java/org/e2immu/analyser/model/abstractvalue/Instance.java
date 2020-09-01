@@ -142,32 +142,30 @@ public class Instance implements Value {
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
         TypeInfo bestType = parameterizedType.bestTypeInfo();
+        switch (variableProperty) {
+            case NOT_NULL:
+                return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
+                        MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
 
-        if (VariableProperty.NOT_NULL == variableProperty) {
-            return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
-                    MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
-        if (variableProperty == VariableProperty.SIZE) {
-            return MethodValue.checkSize(null, constructor, constructorParameterValues);
-        }
-        if (variableProperty == VariableProperty.SIZE_COPY) {
-            return MethodValue.checkSizeCopy(constructor, constructorParameterValues);
-        }
+            case SIZE:
+                return MethodValue.checkSize(null, constructor, constructorParameterValues);
 
-        if (variableProperty == VariableProperty.MODIFIED) return Level.FALSE;
+            case SIZE_COPY:
+                return MethodValue.checkSizeCopy(constructor, constructorParameterValues);
 
-        // IMM
-        // CONT
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) {
-            return bestType == null ? variableProperty.falseValue :
-                    Math.max(variableProperty.falseValue, bestType.typeAnalysis.get().getProperty(variableProperty));
+            case MODIFIED:
+            case IDENTITY:
+            case NOT_MODIFIED_1:
+                return Level.FALSE;
+
+            case IMMUTABLE:
+            case CONTAINER:
+                return bestType == null ? variableProperty.falseValue :
+                        Math.max(variableProperty.falseValue, bestType.typeAnalysis.get().getProperty(variableProperty));
+
+            default:
         }
-
-        if (VariableProperty.NOT_MODIFIED_1 == variableProperty) {
-            return Level.FALSE;
-        }
-
         // @NotModified should not be asked here
         throw new UnsupportedOperationException("Asking for " + variableProperty);
     }

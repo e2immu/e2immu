@@ -84,7 +84,7 @@ public class PatternMatcher {
     }
 
     public void reset(MethodInfo methodInfo) {
-        delayedInThisIteration.get(methodInfo).clear();
+        delayedInThisIteration.remove(methodInfo);
     }
 
     public Optional<Replacement> registeredReplacement(Pattern pattern) {
@@ -110,6 +110,9 @@ public class PatternMatcher {
                                            NumberedStatement startStatement) {
         NumberedStatement currentNumberedStatement = startStatement;
         for (Statement template : templateStatements) {
+            if (currentNumberedStatement != null) {
+                currentNumberedStatement = currentNumberedStatement.followReplacements();
+            }
             SimpleMatchResult isFastMatch = fastMatch(template, currentNumberedStatement);
             if (isFastMatch == SimpleMatchResult.NO) return SimpleMatchResult.NO;
             if (isFastMatch == SimpleMatchResult.YES) continue;
@@ -168,7 +171,7 @@ public class PatternMatcher {
         }
         // primary block
         int numActualBlocks = actualNs.blocks.get().size();
-        int blocksPresent =0;
+        int blocksPresent = 0;
         if (templateCo.statements instanceof Block) {
             if (templateCo.statements == Block.EMPTY_BLOCK) {
                 if (numActualBlocks > 0) return SimpleMatchResult.NO;
@@ -193,7 +196,7 @@ public class PatternMatcher {
             ++blocksPresent;
             // TODO next to the statements, we also have to test the expressions for switch, catch
         }
-        if(numActualBlocks != blocksPresent) return SimpleMatchResult.NO;
+        if (numActualBlocks != blocksPresent) return SimpleMatchResult.NO;
         return SimpleMatchResult.YES;
     }
 

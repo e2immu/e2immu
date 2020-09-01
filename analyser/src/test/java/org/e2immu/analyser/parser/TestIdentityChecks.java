@@ -2,10 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
@@ -44,7 +41,7 @@ public class TestIdentityChecks extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+        if ("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
             Value value = d.numberedStatement.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
             Value valueInside = ((PropertyWrapper) value).value;
@@ -73,7 +70,6 @@ public class TestIdentityChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv1.getProperty(VariableProperty.NOT_NULL));
             TransferValue tv2 = methodAnalysis.returnStatementSummaries.get("1.1.0");
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv2.getProperty(VariableProperty.NOT_NULL));
-
             // combining both, we obtain:
             //Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));
         }
@@ -81,11 +77,12 @@ public class TestIdentityChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("IdentityChecks", 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+        testClass("IdentityChecks", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
 }

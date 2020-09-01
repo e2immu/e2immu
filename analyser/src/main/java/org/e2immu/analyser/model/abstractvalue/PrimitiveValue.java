@@ -36,6 +36,7 @@ public abstract class PrimitiveValue implements Value {
             case SIZE_COPY:
                 return Level.DELAY;
             case MODIFIED:
+            case IDENTITY:
                 return Level.FALSE;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());

@@ -26,8 +26,6 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Map;
-
 public class ReturnStatement extends StatementWithExpression {
 
     public ReturnStatement(Expression expression) {
@@ -58,7 +56,7 @@ public class ReturnStatement extends StatementWithExpression {
             return SideEffect.STATIC_ONLY;
         }
         // at least NONE_PURE... unless the expression is tagged as "@Identity", then STATIC_ONLY is allowed
-        int identity = identity(expression);
+        int identity = identityForSideEffect(expression);
         if (identity == Level.DELAY) return SideEffect.DELAYED;
         SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
         return base.combine(expression.sideEffect(evaluationContext));
@@ -76,14 +74,14 @@ public class ReturnStatement extends StatementWithExpression {
         return Level.FALSE;
     }
 
-    public static int identity(Expression expression) {
+    private static int identityForSideEffect(Expression expression) {
         if (isFirstParameter(expression)) return Level.TRUE;
         if (expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expression;
             if (methodCall.parameterExpressions.size() == 0) return Level.FALSE;
             int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
             if (identity != Level.TRUE) return identity;
-            return identity(methodCall.parameterExpressions.get(0));
+            return identityForSideEffect(methodCall.parameterExpressions.get(0));
         }
         return Level.FALSE;
     }

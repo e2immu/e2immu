@@ -138,7 +138,8 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build());
+                .build(),
+                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
 }

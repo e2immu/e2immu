@@ -76,6 +76,24 @@ public class StatementAnalyser {
 
         try {
             while (statement != null) {
+
+                // first attempt at detecting a transformation
+                if (!variableProperties.configuration.analyserConfiguration.skipTransformations) {
+                    Optional<MatchResult> matchResult = variableProperties.patternMatcher.match(methodInfo, statement);
+                    if (matchResult.isPresent()) {
+                        MatchResult mr = matchResult.get();
+                        Optional<Replacement> replacement = variableProperties.patternMatcher.registeredReplacement(mr.pattern);
+                        if (replacement.isPresent()) {
+                            Replacement r = replacement.get();
+                            log(TRANSFORM, "Replacing {} with {} in {} at {}", mr.pattern.name, r.name, methodInfo.distinguishingName(), statement.index);
+                            Replacer.replace(variableProperties, mr, r);
+                            variableProperties.patternMatcher.reset(methodInfo);
+                            changes = true;
+                        }
+                    }
+                }
+                statement = statement.followReplacements();
+
                 String statementId = statement.index;
                 variableProperties.setCurrentStatement(statement);
 
@@ -86,6 +104,7 @@ public class StatementAnalyser {
                 if (computeVariablePropertiesOfStatement(statement, variableProperties)) {
                     changes = true;
                 }
+                statement = statement.followReplacements();
 
                 for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                         ((VariableProperties) evaluationContext).configuration.debugConfiguration.statementAnalyserVariableVisitors) {
@@ -308,6 +327,7 @@ public class StatementAnalyser {
     private boolean computeVariablePropertiesOfStatement(NumberedStatement statement,
                                                          VariableProperties variableProperties) {
         boolean changes = false;
+
         CodeOrganization codeOrganization = statement.statement.codeOrganization();
 
         boolean assignedInLoop = statement.statement instanceof LoopStatement;
@@ -439,10 +459,6 @@ public class StatementAnalyser {
                     } else {
                         transferValue.value.set(value);
                     }
-                }
-                if (transferValue.getProperty(VariableProperty.IDENTITY) == Level.DELAY) {
-                    int identity = ReturnStatement.identity(((ReturnStatement) statement.statement).expression);
-                    transferValue.properties.put(VariableProperty.IDENTITY, identity);
                 }
                 for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
                     int v = variableProperties.getProperty(value, variableProperty);
@@ -620,23 +636,6 @@ public class StatementAnalyser {
         }
 
         // FINALLY, set the state
-
-        // first attempt at detecting a transformation
-        //ConditionalAssignment.tryToDetectTransformation(statement, variableProperties);
-        if (!variableProperties.configuration.analyserConfiguration.skipTransformations) {
-            Optional<MatchResult> matchResult = variableProperties.patternMatcher.match(methodInfo, statement);
-            if (matchResult.isPresent()) {
-                MatchResult mr = matchResult.get();
-                Optional<Replacement> replacement = variableProperties.patternMatcher.registeredReplacement(mr.pattern);
-                if (replacement.isPresent()) {
-                    Replacement r = replacement.get();
-                    log(TRANSFORM, "Replacing {} with {} in {} at {}", mr.pattern.name, r.name, methodInfo.distinguishingName(), statement.index);
-                    Replacer.replace(variableProperties, mr, r);
-                    variableProperties.patternMatcher.reset(methodInfo);
-                    changes = true;
-                }
-            }
-        }
 
         if (!variableProperties.conditionManager.delayedState() && !statement.state.isSet()) {
             statement.state.set(variableProperties.conditionManager.getState());

@@ -122,7 +122,7 @@ public enum VariableProperty {
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, MODIFIED);
 
-    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(NOT_NULL, SIZE, SIZE_COPY);
+    public final static Set<VariableProperty> INTO_RETURN_VALUE_SUMMARY = Set.of(IDENTITY, NOT_NULL, SIZE, SIZE_COPY);
 
     public final static Set<VariableProperty> RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER =
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT); // but not CONTENT_MODIFIED, SIZE, have separate computation

@@ -33,45 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-/*
- Example:
-   String s1 = a1;
-   if (s1 == null) {
-       s1 = "Was null...";
-   }
-   //here s1 != null
-
-
- General structure:
-   LV lv = someExpression;
-   if(someCondition(lv)) {
-     lv = someOtherExpression;
-   }
-
- Replace with:
-   LV tmp = someExpression;
-   LV lv;
-   if(someCondition(tmp)) {
-     lv = someOtherExpression;
-   } else {
-     lv = tmp;
-   }
-   // it is now easier to compute the value of lv
-
- Replace with:
-   LV lv;
-   {
-     LV tmp = someExpression;
-     if(someCondition(tmp)) {
-       lv = someOtherExpression;
-     } else {
-       lv = tmp;
-     }
-   }
-
- Note that the method `conditionalValue` does the same; it should somehow be analysed in a similar way.
- That is possible if we inline, and substitute the predicate in a specific condition (which happens anyway).
- */
 public class ConditionalAssignment {
 
 
@@ -328,6 +289,8 @@ public class ConditionalAssignment {
             someOtherStatements1
             return someOtherExpression2;
           }
+
+          there's 2 replacements, depending on some situation
          */
 
         ParameterizedType pt0 = patternBuilder.matchType();
@@ -350,10 +313,12 @@ public class ConditionalAssignment {
     }
 
     public static Replacement replacement1ToPattern3Extended(Pattern pattern3) {
-        /*
+         /*
          REPLACEMENT 1 of pattern 3 Extended
+         If someExpression1 and someOtherExpression2 do not contain references to variables created in the local block,
+         and the amount of statements is low; otherwise use replacement 2
 
-         lv0 = someBooleanExpression0;
+         lv0 = someCondition0;
          if(lv0) {
            someStatements0;
          } else {
@@ -362,6 +327,35 @@ public class ConditionalAssignment {
          return lv0 ? someExpression1 : someOtherExpression2;
          */
         Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement3Extended1", pattern3);
+        Expression condition = pattern3.expressions.get(0);
+        Expression ifTrue = pattern3.expressions.get(1);
+        Expression ifFalse = pattern3.expressions.get(2);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        replacementBuilder.addStatement(new ReturnStatement(inlineConditional));
+
+        return replacementBuilder.build();
+    }
+
+
+    public static Replacement replacement2ToPattern3Extended(Pattern pattern3) {
+        /*
+         REPLACEMENT 1 of pattern 3 Extended
+
+         return someCondition ? method1(localVars) : method2(localVars);
+
+         +
+         private T0 method1(localVars) {
+           someStatements0;
+           return someExpression1;
+         }
+         private T1 method2(localVars) {
+           someStatements1;
+           return someOtherExpression2;
+         }
+
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement3Extended2", pattern3);
         Expression condition = pattern3.expressions.get(0);
         Expression ifTrue = pattern3.expressions.get(1);
         Expression ifFalse = pattern3.expressions.get(2);
@@ -407,111 +401,6 @@ public class ConditionalAssignment {
         patternBuilder.addStatement(new ForStatement(null, List.of(indexLvc), condition, List.of(updater), block));
 
         return patternBuilder.build();
-    }
-
-
-    // first attempt
-    public static void tryToDetectTransformation(NumberedStatement statement, EvaluationContext evaluationContext) {
-        if (statement.replacement.isSet()) return;
-
-        // assignment or local variable creation
-        if (!(statement.statement instanceof ExpressionAsStatement)) return;
-        if (!statement.valueOfExpression.isSet()) return;
-        Expression expression = ((ExpressionAsStatement) statement.statement).expression;
-        Variable variable;
-        Expression valueExpression;
-        LocalVariable created;
-        if (expression instanceof Assignment) {
-            Assignment assignment = (Assignment) expression;
-            if (assignment.target instanceof VariableExpression) {
-                variable = ((VariableExpression) assignment.target).variable;
-                valueExpression = assignment.value;
-                created = null;
-            } else {
-                return;
-            }
-        } else if (expression instanceof LocalVariableCreation) {
-            LocalVariableCreation localVariableCreation = (LocalVariableCreation) expression;
-            if (localVariableCreation.expression == EmptyExpression.EMPTY_EXPRESSION) return;
-            variable = localVariableCreation.localVariableReference;
-            valueExpression = localVariableCreation.expression;
-            created = localVariableCreation.localVariable;
-        } else {
-            return;
-        }
-
-        // followed by if( ) { } block
-        NumberedStatement next = statement.next.get().orElse(null);
-        if (next == null) return;
-        if (!(next.statement instanceof IfElseStatement)) return;
-        if (!next.valueOfExpression.isSet()) return;
-        IfElseStatement ifElseStatement = (IfElseStatement) next.statement;
-        if (ifElseStatement.elseBlock != Block.EMPTY_BLOCK) return;
-        List<Variable> variablesInCondition = ifElseStatement.expression.variables();
-        if (!variablesInCondition.contains(variable)) return;
-
-        // in the if-block, there has to be an assignment
-        if (ifElseStatement.ifBlock.statements.size() != 1) return;
-        Statement stInIf = ifElseStatement.ifBlock.statements.get(0);
-        if (!(stInIf instanceof ExpressionAsStatement)) return;
-        Expression exprInIf = ((ExpressionAsStatement) stInIf).expression;
-        if (!(exprInIf instanceof Assignment)) return;
-        Assignment assignmentInIf = (Assignment) exprInIf;
-        if (!(assignmentInIf.target instanceof VariableExpression)) return;
-        Variable variableInIf = ((VariableExpression) assignmentInIf.target).variable;
-        if (!variableInIf.equals(variable)) return;
-
-        // REPLACEMENT
-
-        Expression newValueExpression = valueExpression.translate(TranslationMap.EMPTY_MAP);
-        LocalVariable tmp = new LocalVariable(List.of(), "tmp", variable.parameterizedType(), List.of());
-        LocalVariableCreation lvc1 = new LocalVariableCreation(tmp, newValueExpression);
-        Statement newS1 = new ExpressionAsStatement(lvc1);
-        NumberedStatement newNs1 = new NumberedStatement(newS1, statement.parent, statement.indices);
-        log(TRANSFORM, "New statement 1: {}", newS1.statementString(0, null));
-        newNs1.blocks.set(List.of());
-
-        if (created != null) {
-            LocalVariableCreation lvc2 = new LocalVariableCreation(created, EmptyExpression.EMPTY_EXPRESSION);
-            Statement newS2 = new ExpressionAsStatement(lvc2);
-            NumberedStatement newNs2 = new NumberedStatement(newS2, statement.parent, statement.indices);
-            newNs2.blocks.set(List.of());
-            newNs1.next.set(Optional.of(newNs2));
-            log(TRANSFORM, "New statement 2: {}", newS2.statementString(0, null));
-        }
-        statement.replacement.set(newNs1);
-
-        Expression ifExpression = ifElseStatement.expression.translate(
-                TranslationMap.fromVariableMap(Map.of(variable, lvc1.localVariableReference)));
-        ExpressionAsStatement assignToSomeOther = new ExpressionAsStatement(
-                new Assignment(new VariableExpression(variable), assignmentInIf.value.translate(TranslationMap.EMPTY_MAP)));
-        ExpressionAsStatement assignToTmp = new ExpressionAsStatement(
-                new Assignment(new VariableExpression(variable), new VariableExpression(lvc1.localVariableReference)));
-        Block newIfBlock = new Block.BlockBuilder().addStatement(assignToSomeOther).build();
-        Block newElseBlock = new Block.BlockBuilder().addStatement(assignToTmp).build();
-        Statement newS3 = new IfElseStatement(ifExpression, newIfBlock, newElseBlock);
-        log(TRANSFORM, "New statement 3: {}", newS3.statementString(0, null));
-        NumberedStatement newNs3 = new NumberedStatement(newS3, next.parent, next.indices);
-
-        NumberedStatement newNs3_00 = new NumberedStatement(assignToSomeOther, newNs3, ListUtil.immutableConcat(next.indices, List.of(0, 0)));
-        newNs3_00.next.set(Optional.empty());
-        newNs3_00.neverContinues.set(false);
-        newNs3_00.blocks.set(List.of());
-
-        NumberedStatement newNs3_10 = new NumberedStatement(assignToTmp, newNs3, ListUtil.immutableConcat(next.indices, List.of(1, 0)));
-        newNs3_10.next.set(Optional.empty());
-        newNs3_10.neverContinues.set(false);
-        newNs3_10.blocks.set(List.of());
-
-        newNs3.blocks.set(List.of(newNs3_00, newNs3_10));
-        newNs3.neverContinues.set(false);
-
-        if (created == null) {
-            newNs1.next.set(Optional.of(newNs3));
-        } else {
-            newNs1.next.get().orElseThrow().next.set(Optional.of(newNs3));
-        }
-        newNs3.next.set(next.next.get());
     }
 
     public static <T> T conditionalValue(T initial, Predicate<T> condition, T alternative) {

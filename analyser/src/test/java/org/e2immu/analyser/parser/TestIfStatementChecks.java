@@ -1,10 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -82,11 +79,11 @@ public class TestIfStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("IfStatementChecks", 0, new DebugConfiguration.Builder()
+        testClass("IfStatementChecks", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
 }

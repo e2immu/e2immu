@@ -925,11 +925,14 @@ class VariableProperties implements EvaluationContext {
         if (VariableProperty.NOT_NULL == variableProperty && conditionManager.isNotNull(variable)) {
             return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
         }
-        if (VariableProperty.SIZE.equals(variableProperty)) {
+        if (VariableProperty.SIZE == variableProperty) {
             Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
             if (sizeRestriction != null) {
                 return sizeRestriction.encodedSizeRestriction();
             }
+        }
+        if (IDENTITY == variableProperty && aboutVariable.variable instanceof ParameterInfo) {
+            return ((ParameterInfo) aboutVariable.variable).index == 0 ? Level.TRUE : Level.FALSE;
         }
         return aboutVariable.getProperty(variableProperty);
     }
@@ -941,7 +944,8 @@ class VariableProperties implements EvaluationContext {
         }
         // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
         // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
-        // See TestSMapList
+        // See TestSMapList; also, same situation, we may have a conditional value, and the condition will decide...
+        // TODO smells like dedicated code
         if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
             if (VariableProperty.NOT_NULL == variableProperty) {
                 int notNull = conditionManager.notNull(value);
