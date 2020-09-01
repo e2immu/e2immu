@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.SetUtil;
@@ -96,12 +97,16 @@ public class LambdaExpression implements Expression {
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationContext childContext = evaluationContext.child(UnknownValue.EMPTY, null, false);
-        parameters.forEach(pi -> childContext.createLocalVariableOrParameter(pi));
+        parameters.forEach(childContext::createLocalVariableOrParameter);
         Value v = expression.evaluate(childContext, visitor, forwardEvaluationInfo);
         evaluationContext.merge(childContext);
         visitor.visit(this, evaluationContext, v);
 
         MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
-        return new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
+        InlineValue inline = new InlineValue(methodInfo, v);
+        if (!v.isUnknown() && !methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+            methodInfo.methodAnalysis.get().singleReturnValue.set(inline);
+        }
+        return inline;
     }
 }

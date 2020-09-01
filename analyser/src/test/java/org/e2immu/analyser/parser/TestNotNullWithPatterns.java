@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.StringValue;
@@ -46,6 +47,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
         if ("conditionalValue".equals(methodInfo.name) && iteration > 0) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
             Assert.assertEquals("condition.test(initial)?alternative:initial", srv.toString());
+            Assert.assertTrue(srv instanceof InlineValue);
         }
 
         if ("method4bis".equals(methodInfo.name) && iteration > 0) {
@@ -56,10 +58,17 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
         }
     };
 
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if("method7".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+            Assert.assertEquals("null == a1?Was null...:a1", d.numberedStatement.valueOfExpression.get().toString());
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("NotNullWithPatterns", 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

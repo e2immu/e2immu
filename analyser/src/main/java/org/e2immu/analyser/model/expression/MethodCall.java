@@ -244,7 +244,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {
-                return srv.reEvaluate(evaluationContext, EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters));
+                Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
+                return srv.reEvaluate(evaluationContext, translationMap);
             }
             if (srv.isConstant()) {
                 return srv;
