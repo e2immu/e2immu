@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.junit.Assert;
@@ -53,9 +54,9 @@ public class TestEvaluationErrors extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("EvaluationErrors", 2, new DebugConfiguration.Builder()
+        testClass("EvaluationErrors", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .build());
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
 }

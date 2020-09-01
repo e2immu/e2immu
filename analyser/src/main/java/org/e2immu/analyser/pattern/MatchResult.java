@@ -27,22 +27,23 @@ public class MatchResult {
     public final NumberedStatement start;
     public final Pattern pattern;
     public final TranslationMap translationMap;
+    public final NumberedStatement next;
 
-    private MatchResult(Pattern pattern, NumberedStatement start, TranslationMap translationMap) {
+    private MatchResult(Pattern pattern, NumberedStatement start, NumberedStatement next, TranslationMap translationMap) {
         this.start = start;
         this.pattern = pattern;
         this.translationMap = translationMap;
-    }
-
-    public String toString(int indent) {
-        return "Match result for " + pattern.name + " starting at " + start.index;
+        this.next = next;
     }
 
     public static class MatchResultBuilder {
         private final NumberedStatement start;
         private final Pattern pattern;
+        // template variable matching is one-on-one, so we keep maps in both directions
         private final Map<String, Variable> actualVariableNameToTemplateVariable = new HashMap<>();
+        private final Map<String, Variable> templateVariableNameToActualVariable = new HashMap<>();
         private final TranslationMap.TranslationMapBuilder translationMapBuilder = new TranslationMap.TranslationMapBuilder();
+        private NumberedStatement next;
 
         public MatchResultBuilder(Pattern pattern, NumberedStatement start) {
             this.pattern = pattern;
@@ -50,25 +51,25 @@ public class MatchResult {
         }
 
         public MatchResult build() {
-            return new MatchResult(pattern, start, translationMapBuilder.build());
+            return new MatchResult(pattern, start, next, translationMapBuilder.build());
         }
 
         public void matchLocalVariable(LocalVariable templateVar, LocalVariable actualVar) {
             actualVariableNameToTemplateVariable.put(actualVar.name, new LocalVariableReference(templateVar, List.of()));
+            templateVariableNameToActualVariable.put(templateVar.name, new LocalVariableReference(actualVar, List.of()));
 
             if (pattern.indexOfType(templateVar.parameterizedType) >= 0) {
                 translationMapBuilder.put(templateVar.parameterizedType, actualVar.parameterizedType);
             }
         }
 
-        public void matchVariable(Variable varTemplate, Variable varActual) {
-            Variable inMap = actualVariableNameToTemplateVariable.get(varActual.name());
-            if (inMap == null) {
-                actualVariableNameToTemplateVariable.put(varActual.name(), varTemplate);
-            } else if (!inMap.equals(varTemplate)) {
-                throw new UnsupportedOperationException();
-            }
+        public PatternMatcher.SimpleMatchResult matchVariable(Variable varTemplate, Variable varActual) {
+            Variable actualInMap = templateVariableNameToActualVariable.get(varTemplate.name());
+            if (actualInMap != null && !varActual.equals(actualInMap)) return PatternMatcher.SimpleMatchResult.NO;
+            actualVariableNameToTemplateVariable.put(varActual.name(), varTemplate);
+            templateVariableNameToActualVariable.put(varTemplate.name(), varActual);
             translationMapBuilder.put(varTemplate, varActual);
+            return PatternMatcher.SimpleMatchResult.YES;
         }
 
         public boolean containsAllVariables(Set<Variable> templateVar, List<Variable> actualVariables) {
@@ -80,6 +81,10 @@ public class MatchResult {
 
         public void registerPlaceholderExpression(Pattern.PlaceHolderExpression template, Expression actual) {
             translationMapBuilder.put(template, actual);
+        }
+
+        public void setNext(NumberedStatement next) {
+            this.next = next;
         }
     }
 }

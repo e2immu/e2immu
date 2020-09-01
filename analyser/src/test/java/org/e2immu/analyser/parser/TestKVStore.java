@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.junit.BeforeClass;
@@ -19,7 +20,7 @@ public class TestKVStore {
     @BeforeClass
     public static void beforeClass() {
         org.e2immu.analyser.util.Logger.configure(Level.INFO);
-        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, METHOD_CALL);
+        org.e2immu.analyser.util.Logger.activate(ANALYSER, INSPECT, RESOLVE, METHOD_CALL, TRANSFORM);
     }
 
     @Test
@@ -37,6 +38,7 @@ public class TestKVStore {
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/config")
                         .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/ext")
                         .build())
+               // .setAnalyserConfiguration(new AnalyserConfiguration.Builder().setSkipTransformations(true).build())
                 .build();
 
         Parser parser = new Parser(configuration);

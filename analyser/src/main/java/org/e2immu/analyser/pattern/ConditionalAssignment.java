@@ -220,6 +220,60 @@ public class ConditionalAssignment {
     }
 
 
+    public static Pattern pattern2Extended() {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIfExtended");
+
+        /* PATTERN
+
+          if(someCondition0) {
+            someStatements0;
+            return someExpression1;
+          }
+          someOtherStatements1;
+          return someOtherExpression2;
+         */
+
+        ParameterizedType pt0 = patternBuilder.matchType();
+        Expression someCondition0 = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
+
+        Expression someExpression1 = patternBuilder.matchSomeExpression(pt0);
+        Block ifBlock = new Block.BlockBuilder()
+                .addStatement(patternBuilder.matchSomeStatements()) // 0
+                .addStatement(new ReturnStatement(someExpression1)).build();
+
+        patternBuilder.addStatement(new IfElseStatement(someCondition0, ifBlock, Block.EMPTY_BLOCK));
+        patternBuilder.addStatement(patternBuilder.matchSomeStatements()); // 1
+        Expression someOtherExpression2 = patternBuilder.matchSomeExpression(pt0);
+        patternBuilder.addStatement(new ReturnStatement(someOtherExpression2));
+
+        return patternBuilder.build();
+    }
+
+    public static Replacement replacement1ToPattern2Extended(Pattern pattern3) {
+        /*
+         REPLACEMENT 1 of pattern 2 Extended
+         Identical to replacement of pattern 3 extended
+
+         lv0 = someCondition0;
+         if(lv0) {
+           someStatements0;
+         } else {
+           someOtherStatements1;
+         }
+         return lv0 ? someExpression1 : someOtherExpression2;
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement2Extended1", pattern3);
+        Expression condition = pattern3.expressions.get(0);
+        Expression ifTrue = pattern3.expressions.get(1);
+        Expression ifFalse = pattern3.expressions.get(2);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        replacementBuilder.addStatement(new ReturnStatement(inlineConditional));
+
+        return replacementBuilder.build();
+    }
+
+
     public static Pattern pattern3() {
         Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIfElse");
 
@@ -245,14 +299,69 @@ public class ConditionalAssignment {
         return patternBuilder.build();
     }
 
-
     public static Replacement replacement1ToPattern3(Pattern pattern3) {
         /*
-         REPLACEMENT 1 of pattern 2
+         REPLACEMENT 1 of pattern 3
 
          return someExpression ? someExpression : someOtherExpression;
          */
         Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement31", pattern3);
+        Expression condition = pattern3.expressions.get(0);
+        Expression ifTrue = pattern3.expressions.get(1);
+        Expression ifFalse = pattern3.expressions.get(2);
+        InlineConditionalOperator inlineConditional = new InlineConditionalOperator(condition, ifTrue, ifFalse);
+
+        replacementBuilder.addStatement(new ReturnStatement(inlineConditional));
+
+        return replacementBuilder.build();
+    }
+
+    public static Pattern pattern3Extended() {
+        Pattern.PatternBuilder patternBuilder = new Pattern.PatternBuilder("twoReturnsAndIfElseExtended");
+
+        /* PATTERN
+
+          if(someCondition0) {
+            someStatements0
+            return someExpression1;
+          } else {
+            someOtherStatements1
+            return someOtherExpression2;
+          }
+         */
+
+        ParameterizedType pt0 = patternBuilder.matchType();
+        Expression someCondition = patternBuilder.matchSomeExpression(Primitives.PRIMITIVES.booleanParameterizedType);
+        Expression someExpression = patternBuilder.matchSomeExpression(pt0);
+        Expression someOtherExpression = patternBuilder.matchSomeExpression(pt0);
+        Statement someStatements0 = patternBuilder.matchSomeStatements();
+        Statement someOtherStatements1 = patternBuilder.matchSomeStatements();
+
+        Block ifBlock = new Block.BlockBuilder()
+                .addStatement(someStatements0)
+                .addStatement(new ReturnStatement(someExpression)).build();
+        Block elseBlock = new Block.BlockBuilder()
+                .addStatement(someOtherStatements1)
+                .addStatement(new ReturnStatement(someOtherExpression)).build();
+
+        patternBuilder.addStatement(new IfElseStatement(someCondition, ifBlock, elseBlock));
+
+        return patternBuilder.build();
+    }
+
+    public static Replacement replacement1ToPattern3Extended(Pattern pattern3) {
+        /*
+         REPLACEMENT 1 of pattern 3 Extended
+
+         lv0 = someBooleanExpression0;
+         if(lv0) {
+           someStatements0;
+         } else {
+           someOtherStatements1;
+         }
+         return lv0 ? someExpression1 : someOtherExpression2;
+         */
+        Replacement.ReplacementBuilder replacementBuilder = new Replacement.ReplacementBuilder("Replacement3Extended1", pattern3);
         Expression condition = pattern3.expressions.get(0);
         Expression ifTrue = pattern3.expressions.get(1);
         Expression ifFalse = pattern3.expressions.get(2);
@@ -294,7 +403,7 @@ public class ConditionalAssignment {
                 Primitives.PRIMITIVES.lessOperatorInt, sizeCall, BinaryOperator.COMPARISON_PRECEDENCE);
         Expression updater = new Assignment(new VariableExpression(i), EmptyExpression.EMPTY_EXPRESSION,
                 Primitives.PRIMITIVES.assignPlusOperatorInt, false); // i++
-        Block block = new Block.BlockBuilder().addStatement(new Pattern.PlaceHolderStatement()).build();
+        Block block = new Block.BlockBuilder().addStatement(patternBuilder.matchSomeStatements()).build();
         patternBuilder.addStatement(new ForStatement(null, List.of(indexLvc), condition, List.of(updater), block));
 
         return patternBuilder.build();

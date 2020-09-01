@@ -43,9 +43,8 @@ public class Replacer {
         List<NumberedStatement> replacementNsAtStartLevel = startReplacing(update2,
                 matchResult.start.indices, matchResult.start.parent, replacement.statements);
         wireStart(replacementNsAtStartLevel.get(0), matchResult.start);
-        if (matchResult.start.next.get().isPresent()) {
-            wireEnd(replacementNsAtStartLevel.get(replacementNsAtStartLevel.size() - 1), matchResult.start.next.get().get());
-        }
+        NumberedStatement lastReplacement = replacementNsAtStartLevel.get(replacementNsAtStartLevel.size() - 1);
+        lastReplacement.next.set(Optional.ofNullable(matchResult.next));
     }
 
     private static TranslationMap applyTranslationsToPlaceholders(TranslationMap translationMap,
@@ -95,7 +94,7 @@ public class Replacer {
     }
 
     private static void wireEnd(NumberedStatement lastReplacement, NumberedStatement nextOriginal) {
-        lastReplacement.next.set(Optional.of(nextOriginal));
+        lastReplacement.next.set(Optional.ofNullable(nextOriginal));
     }
 
     private static void wireStart(NumberedStatement firstReplacement, NumberedStatement start) {

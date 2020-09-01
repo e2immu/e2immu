@@ -12,6 +12,27 @@ public class MatcherChecks {
         return s1;
     }
 
+    private String s2 = "abc";
+
+    public String method1Negative1(String a1) {
+        String s1 = a1;
+        if (s1 == null) {
+            s2 = "";
+            System.out.println(s1);
+        }
+        return s2;
+    }
+
+    public static String method1Negative2(String a1) {
+        String s1 = a1;
+        if (s1 == null) {
+            s1 = "";
+        } else {
+            s1 = "x";
+        }
+        return s1;
+    }
+
     public static String method2(String a1) {
         if (a1 == null) {
             return "abc";

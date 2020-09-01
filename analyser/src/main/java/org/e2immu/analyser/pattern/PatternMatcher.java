@@ -124,6 +124,7 @@ public class PatternMatcher {
 
             currentNumberedStatement = currentNumberedStatement.next.get().orElse(null);
         }
+        builder.setNext(currentNumberedStatement);
         return SimpleMatchResult.YES;
     }
 
@@ -167,11 +168,13 @@ public class PatternMatcher {
         }
         // primary block
         int numActualBlocks = actualNs.blocks.get().size();
+        int blocksPresent =0;
         if (templateCo.statements instanceof Block) {
             if (templateCo.statements == Block.EMPTY_BLOCK) {
                 if (numActualBlocks > 0) return SimpleMatchResult.NO;
             } else {
                 if (numActualBlocks == 0) return SimpleMatchResult.NO;
+                ++blocksPresent;
                 NumberedStatement firstInBlock = actualNs.blocks.get().get(0);
                 SimpleMatchResult smr = match(builder, templateCo.statements.getStatements(),
                         firstInBlock);
@@ -187,10 +190,10 @@ public class PatternMatcher {
             NumberedStatement firstInBlock = actualNs.blocks.get().get(blockCount);
             SimpleMatchResult smr = match(builder, subCo.statements.getStatements(), firstInBlock);
             if (smr != SimpleMatchResult.YES) return smr;
-
+            ++blocksPresent;
             // TODO next to the statements, we also have to test the expressions for switch, catch
         }
-
+        if(numActualBlocks != blocksPresent) return SimpleMatchResult.NO;
         return SimpleMatchResult.YES;
     }
 
@@ -198,7 +201,6 @@ public class PatternMatcher {
                                            Expression template,
                                            Expression actual) {
         if (template == actual) return SimpleMatchResult.YES; // mainly for EmptyExpression
-
 
         if (template instanceof Pattern.PlaceHolderExpression && actual != EmptyExpression.EMPTY_EXPRESSION) {
             Pattern.PlaceHolderExpression placeHolder = (Pattern.PlaceHolderExpression) template;
@@ -224,7 +226,8 @@ public class PatternMatcher {
             if (aTemplate.target instanceof VariableExpression && aActual.target instanceof VariableExpression) {
                 Variable varTemplate = ((VariableExpression) aTemplate.target).variable;
                 Variable varActual = ((VariableExpression) aActual.target).variable;
-                builder.matchVariable(varTemplate, varActual);
+                SimpleMatchResult smr = builder.matchVariable(varTemplate, varActual);
+                if (smr != SimpleMatchResult.YES) return smr;
             } else {
                 return SimpleMatchResult.NO; // TODO this is too simplistic
             }

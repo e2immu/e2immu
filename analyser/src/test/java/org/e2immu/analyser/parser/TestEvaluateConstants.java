@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
@@ -52,7 +53,14 @@ public class TestEvaluateConstants extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("EvaluateConstants", 3, new DebugConfiguration.Builder()
+        testClass("EvaluateConstants", 3, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+
+        // second time, run with replacement
+
+        testClass("EvaluateConstants", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

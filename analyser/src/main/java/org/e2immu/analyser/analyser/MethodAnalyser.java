@@ -38,7 +38,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.JoinReturnStatements;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
@@ -374,17 +373,8 @@ public class MethodAnalyser {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return false;
         }
-        List<TransferValue> remainingReturnStatementSummaries;
-        if (methodAnalysis.returnStatementSummaries.size() > 1) {
-            remainingReturnStatementSummaries = applyJoinReturnStatementPatterns(methodInfo, methodAnalysis, methodProperties);
-            if (remainingReturnStatementSummaries.isEmpty()) {
-                log(DELAYED, "Not everything known for pattern analysis in {}, delaying", methodInfo.distinguishingName());
-                return false;
-            }
-        } else {
-            remainingReturnStatementSummaries = methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
-        }
-
+        List<TransferValue> remainingReturnStatementSummaries = methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+        
         Value value = null;
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
@@ -425,35 +415,6 @@ public class MethodAnalyser {
 
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
-    }
-
-    @NotNull
-    private List<TransferValue> applyJoinReturnStatementPatterns(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
-        JoinReturnStatements joinReturnStatements = new JoinReturnStatements(evaluationContext);
-        List<NumberedStatement> topLevelStatements = methodAnalysis.numberedStatements.get().stream()
-                .filter(ns -> ns.indices.size() == 1).collect(Collectors.toList());
-        JoinReturnStatements.JoinResult result = joinReturnStatements.joinReturnStatementsInIfThenElse(topLevelStatements);
-        if (result != null) {
-            log(PATTERN, "Successfully applied JoinReturnStatementsInIfThenElse in {}", methodInfo.distinguishingName());
-            return applyJoinResult(methodAnalysis, result);
-        }
-        JoinReturnStatements.JoinResult result2 = joinReturnStatements.joinReturnStatements(topLevelStatements);
-        if (result2 != null) {
-            log(PATTERN, "Successfully applied JoinReturnStatements in {}", methodInfo.distinguishingName());
-            return applyJoinResult(methodAnalysis, result2);
-        }
-        return methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
-    }
-
-    private List<TransferValue> applyJoinResult(MethodAnalysis methodAnalysis, JoinReturnStatements.JoinResult result) {
-        if (result.value == UnknownValue.NO_VALUE) return List.of(); // DELAY
-        List<TransferValue> old = methodAnalysis.returnStatementSummaries.stream()
-                .filter(e -> !result.statementIdsReduced.contains(e.getKey()))
-                .map(Map.Entry::getValue).collect(Collectors.toList());
-        TransferValue transferValue = new TransferValue();
-        transferValue.value.set(result.value);
-        // TODO: state of result.value ??
-        return ListUtil.immutableConcat(old, List.of(transferValue));
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,

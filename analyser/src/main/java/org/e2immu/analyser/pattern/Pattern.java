@@ -36,19 +36,22 @@ public class Pattern {
     public final List<Variable> variables;
     public final List<LocalVariable> localVariables;
     public final List<Expression> expressions;
+    public final List<PlaceHolderStatement> placeHolderStatements;
 
     private Pattern(String name,
                     List<Statement> statements,
                     List<ParameterizedType> types,
                     List<LocalVariable> localVariables,
                     List<Variable> variables,
-                    List<Expression> expressions) {
+                    List<Expression> expressions,
+                    List<PlaceHolderStatement> placeHolderStatements) {
         this.name = Objects.requireNonNull(name);
         this.statements = ImmutableList.copyOf(statements);
         this.types = ImmutableList.copyOf(types);
         this.variables = ImmutableList.copyOf(variables);
         this.expressions = ImmutableList.copyOf(expressions);
         this.localVariables = ImmutableList.copyOf(localVariables);
+        this.placeHolderStatements = ImmutableList.copyOf(placeHolderStatements);
     }
 
     @Override
@@ -97,7 +100,7 @@ public class Pattern {
         private final List<LocalVariable> localVariables = new ArrayList<>();
         private final List<Expression> expressions = new ArrayList<>();
         private final List<Variable> variables = new ArrayList<>();
-
+        private final List<PlaceHolderStatement> placeHolderStatements = new ArrayList<>();
         private final List<Statement> statements = new ArrayList<>();
 
         public PatternBuilder(String name) {
@@ -105,7 +108,7 @@ public class Pattern {
         }
 
         public Pattern build() {
-            return new Pattern(name, statements, types, localVariables, variables, expressions);
+            return new Pattern(name, statements, types, localVariables, variables, expressions, placeHolderStatements);
         }
 
         public ParameterizedType matchType() {
@@ -144,6 +147,13 @@ public class Pattern {
 
         public void registerVariable(Variable v) {
             variables.add(v);
+        }
+
+        public Statement matchSomeStatements() {
+            int index = placeHolderStatements.size();
+            PlaceHolderStatement placeHolderStatement = new PlaceHolderStatement(index);
+            placeHolderStatements.add(placeHolderStatement);
+            return placeHolderStatement;
         }
     }
 
@@ -249,6 +259,24 @@ public class Pattern {
     }
 
     public static class PlaceHolderStatement implements Statement {
+        public final int index;
+
+        public PlaceHolderStatement(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PlaceHolderStatement that = (PlaceHolderStatement) o;
+            return index == that.index;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(index);
+        }
 
         @Override
         public String statementString(int indent, NumberedStatement numberedStatement) {

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -41,7 +42,7 @@ public class SimpleNotNullChecks {
 
     @NotNull
     public static String method4(String a1) {
-        if ("x".equals(a1)) {
+        if (a1 == null) {
             return "abc";
         } else {
             return a1;
@@ -69,7 +70,9 @@ public class SimpleNotNullChecks {
         return conditionalValue(a1, t -> t == null, MESSAGE);
     }
 
-    private static <T> T conditionalValue(T initial, Predicate<T> condition, T alternative) {
+    @Nullable
+    @NotModified
+    private static <T> T conditionalValue(@Nullable T initial, Predicate<T> condition, @Nullable T alternative) {
         return condition.test(initial) ? alternative : initial;
     }
 }

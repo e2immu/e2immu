@@ -34,15 +34,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class TestMatcherChecks extends CommonTestRunner {
     public TestMatcherChecks() {
-        super(false);
+        super(true);
     }
 
     private MethodInfo method1;
+    private MethodInfo method1Negative1;
+    private MethodInfo method1Negative2;
     private MethodInfo method2;
     private MethodInfo method3;
     private MethodInfo method4;
@@ -53,6 +52,8 @@ public class TestMatcherChecks extends CommonTestRunner {
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
         TypeInfo matcherChecks = typeContext.getFullyQualified(MatcherChecks.class);
         method1 = matcherChecks.findUniqueMethod("method1", 1);
+        method1Negative1 = matcherChecks.findUniqueMethod("method1Negative1", 1);
+        method1Negative2 = matcherChecks.findUniqueMethod("method1Negative2", 1);
         method2 = matcherChecks.findUniqueMethod("method2", 1);
         method3 = matcherChecks.findUniqueMethod("method3", 1);
         method4 = matcherChecks.findUniqueMethod("method4", 1);
@@ -80,7 +81,8 @@ public class TestMatcherChecks extends CommonTestRunner {
     }
 
     private List<MethodInfo> others(MethodInfo notThisOne) {
-        return List.of(method1, method2, method3, method4).stream().filter(m -> m != notThisOne).collect(Collectors.toList());
+        return List.of(method1, method1Negative1, method1Negative2, method2, method3, method4)
+                .stream().filter(m -> m != notThisOne).collect(Collectors.toList());
     }
 
     private static final EvaluationContext TEST_EC = new EvaluationContext() {
