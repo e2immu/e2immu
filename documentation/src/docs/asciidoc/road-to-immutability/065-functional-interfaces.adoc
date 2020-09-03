@@ -22,7 +22,7 @@ As such we have to ensure that definitions for functional interfaces which we wi
 
 === Modification
 
-We go back to the annotations of `Collection` in <<collection-interface>>.
+Let us go back to the annotations of `Collection` in <<collection-interface>>.
 Making use of the fact that `Collection` extends `Iterable`, the default implementation of `forEach` could look like:
 
 .Possible implementation of forEach
@@ -33,13 +33,27 @@ default void forEach(Consumer<T> consumer) {
 }
 ----
 
-We will now argue that both `forEach` and should `consumer` should be annotated {nm}.
+In this section, we will argue that `forEach` should be annotated {nm}, and we will find a way to express that this method does not modify its parameter `consumer`.
+However, looking at the definition of `Consumer`,
+
+[source,java]
+----
+@FunctionalInterface
+public interface Consumer<T> {
+    void accept(T t);
+    // ...
+}
+----
+
+it feels too harsh to demand that `accept` is {nm}; similarly we cannot add {nm} in front of the parameter `T t`.
+Too many implementations of this interface are modifying, or modify the parameter.
+
+How do we square these contractions?
 
 ==== Annotating _forEach_
 
 Intuitively, `forEach` should be non-modifying: it should simply iterate over the elements of the collection, _without modifying the fields of the collection object in the process_.
 Because the type `T` has no modifying methods visible to `forEach`, it cannot make explicit changes to the elements it holds, and it should not make changes to the collection structure.
-This is all great.
 
 At the same time, users of `forEach` will very likely want to make changes to the `T` elements.
 Therefore, it will not be productive to enforce the parameter of the consumer's `accept` method to be {nm}.
@@ -75,12 +89,18 @@ By annotating a parameter with {nm1}, we instruct the analyser to ensure that pa
 
 NOTE: The use of the suffix 1 in {nm1}, indicating _one level down_, is in line with {nn1}, an annotation detailed in <<nullable-section>>, which guarantees that the object and its content, in this case, the object and the parameter values of its `accept` method, are never null.
 
+The {nm1} annotation on this particular visitor is less restrictive than a blanket {nm} on the parameter of `accept` in `Consumer`.
+It is still too strong for a generic method like `forEach`, however.
+
+We find a solution in the fact that `accept` may be modifying, but `forEach` has no knowledge of modifying methods.
+Referring back to our original definition of modification in <<modification>>, we extend this definition as follows:
+
 ****
 *Definition*: *Computable modifications* are modifications to those types in the object graph for which modifying methods are available.
-If the analyser encounters modifying methods to elements of the object graph which it cannot compute, it will mark the method (and by implication, the functional interface) doing the modification with the {exposed} annotation.
+If the analyser encounters modifying methods to elements of the object graph which it cannot compute, it will mark the methods (and by implication, the functional interfaces) doing the modification with the {exposed} annotation.
 ****
 
-Going back to `forEach`, we end up writing:
+This means that `forEach` ends up as:
 
 .Without annotation on the parameter
 [source,java]
@@ -91,16 +111,44 @@ void forEach(@Exposed Consumer<T> consumer) {
 }
 ----
 
-rather than the more restrictive
+The {exposed} annotation indicates that modifications on the `T` elements presented are possible, but are outside the scope of the method.
 
-.With annotation on the parameter
+There is a third level of modification that requires attention.
+As `forEach` is iterating over the elements of some `Iterable`, the consumer should not make any attempts at modifying the iterable.
+Doing so will result in a `ConcurrentModificationException`:
+
 [source,java]
+.Modifying the list being iterated over
 ----
-@NotModified
-void forEach(@NotModified1 Consumer<T> consumer) {
-    for(T t: this) consumer.accept(t);
+public class ExampleManualSelfModificationOnForEach {
+
+    @Test
+    public void testDangerous() {
+        List<String> l1 = new ArrayList<>();
+        Collections.addAll(l1, "a", "c", "e");
+        try {
+            print(l1);
+            Assert.fail();
+        } catch(ConcurrentModificationException cme) {
+            // OK
+        }
+    }
+
+    static void print(List<String> list) {
+        list.forEach(l -> {
+            System.out.println(l);
+            if (l.startsWith("a")) {
+                list.add("b"); // <1>
+            }
+        });
+    }
 }
 ----
+<1> The offending modifying method.
+
+The {nm} annotation on `forEach` forces the analyser to reject modifying methods on its scope object.
+
+==== Another example
 
 We provide another example to clarify, making use of the `Counter` class defined a bit higher:
 
@@ -208,27 +256,44 @@ private final Supplier<Integer> addOne = new Supplier() {
 ----
 <1> This annotation is not visible using the lambda syntax.
 
+==== Summary
+
+There are five points of importance for modifications involving functional interfaces:
+
+. The contracted annotation {nm1} on a parameter, field or method of functional interface (return) type ensures that no implementation of the annotated object's single abstract method (SAM) can modify its parameters.
+. {exposed} on a parameter, field or method of functional interface (return) type indicates that implementations may modify the arguments passed to this particular object's SAM; however, these modifications cannot occur in the scope of the current type.
+. When a type assigns a declared implementation of a functional interface to a field, then the {modified} and {nm} annotations on this field indicate that the SAM is modifying resp. not modifying the other fields of the current type.
+. The analyser does not mark functional interface objects not declared in the current type with {nm} or {modified}.
+. When a method with a parameter of functional interface type is {nm}, then the analyser will try to enforce that functional interface implementations of this parameter cannot modify the scope object of the method.
+This point applies irrespective of the parameter being {exposed}, {nm1}, or neither of the two.
+
+In tabular form,
+
+.Annotations of an object of function interface (return) type with modifying SAM
+[options=header]
+|===
+| The annotation on ... | parameter | field | method
+| {modified} | is the norm when the method applies SAM, because SAM is modifying | *with declaration*: if it changes other fields; is #NOT# the norm otherwise | is the norm if applied to part of the fields' object graph
+| {exposed} | modifying SAM only takes objects with out-of-scope modifications on this linked parameter | modifying SAM only takes objects with out-of-scope modifications, across all usages | FI returned has a modifying SAM which only takes objects with out-of-scope modifications in this method
+| {nm} | *contracted*: no implementations with SAMs allowed | *with declaration*: if it does not modify other fields; *contracted*: via linking, enforce that no implementation has a modifying SAM | normal computation: applying SAMs to parts of object graph causes modifications; when contracted, enforce no self changes on top of normal rules
+| {nm1} | *contracted*: no implementations which modify their parameters allowed | computed via declaration or linking | computed via declaration or linking
+|===
+
+When {nm} is contracted on a method with functional interface type parameters, the analyser will enforce that the method receives no argument which is an implementation which calls self-modifying methods.
+
 === Containers
 
 The `Collection` interface as depicted in <<collection-interface>> left the `Consumer` parameter of `forEach` unannotated.
 We would very much like `Collection` to be a container, it is almost the archetypal example of this concept.
 
-The main rule for containers stipulates that the parameter has to be {nm}, implying that the single abstract method of `Consumer` must not be modifying.
-We have just discussed that, unless the functional interface has an implementation inside `Collection`, this will not be the case.
-Even worse, in an interface, where one cannot declare fields, all (functional) interface parameters are {nm}.
-
-We extend the definition by requiring that a container must not change the return values of functional interfaces, if it has them.
-This is more in line with the intuitive promise that 'a container does not change the elements it has been given'.
+The main rule for containers stipulates that the parameter has to be {nm}.
+Following the summary of the previous section, in particular points 2 and 4, we can extend the definition to allow for {exposed} parameters as well.
 Formally,
 
 ****
-*Definition*: a parameter of functional interface type is {nm} when the method of the parameter does not modify the result of applying the function.
+*Definition*: a type is a *container* when no non-private method or constructor modifies its parameters.
+In the case of parameters of functional interface type, {exposed} suffices.
 ****
-
-In the case of `forEach`, the functional type is a `Consumer`, which has no result.
-It therefore automatically satisfies the condition.
-A more meaningful situation is when the functional type is a `Supplier`, which does return a value.
-We present an example of this situation in <<example-lazy>>.
 
 === Immutability
 
