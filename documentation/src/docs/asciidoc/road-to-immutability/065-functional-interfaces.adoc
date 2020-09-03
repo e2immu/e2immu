@@ -258,28 +258,26 @@ private final Supplier<Integer> addOne = new Supplier() {
 
 ==== Summary
 
-There are five points of importance for modifications involving functional interfaces:
-
-. The contracted annotation {nm1} on a parameter, field or method of functional interface (return) type ensures that no implementation of the annotated object's single abstract method (SAM) can modify its parameters.
-. {exposed} on a parameter, field or method of functional interface (return) type indicates that implementations may modify the arguments passed to this particular object's SAM; however, these modifications cannot occur in the scope of the current type.
-. When a type assigns a declared implementation of a functional interface to a field, then the {modified} and {nm} annotations on this field indicate that the SAM is modifying resp. not modifying the other fields of the current type.
-. The analyser does not mark functional interface objects not declared in the current type with {nm} or {modified}.
-. When a method with a parameter of functional interface type is {nm}, then the analyser will try to enforce that functional interface implementations of this parameter cannot modify the scope object of the method.
-This point applies irrespective of the parameter being {exposed}, {nm1}, or neither of the two.
-
 In tabular form,
 
 .Annotations of an object of function interface (return) type with modifying SAM
 [options=header]
 |===
 | The annotation on ... | parameter | field | method
-| {modified} | is the norm when the method applies SAM, because SAM is modifying | *with declaration*: if it changes other fields; is #NOT# the norm otherwise | is the norm if applied to part of the fields' object graph
-| {exposed} | modifying SAM only takes objects with out-of-scope modifications on this linked parameter | modifying SAM only takes objects with out-of-scope modifications, across all usages | FI returned has a modifying SAM which only takes objects with out-of-scope modifications in this method
-| {nm} | *contracted*: no implementations with SAMs allowed | *with declaration*: if it does not modify other fields; *contracted*: via linking, enforce that no implementation has a modifying SAM | normal computation: applying SAMs to parts of object graph causes modifications; when contracted, enforce no self changes on top of normal rules
-| {nm1} | *contracted*: no implementations which modify their parameters allowed | computed via declaration or linking | computed via declaration or linking
+| {modified} | is the norm when the method applies SAM, because SAM is modifying | *with declaration*: if it changes other fields; is the norm otherwise (assume self-modification) | N/A
+| {nm} | *contracted*: no implementations with SAMs allowed that modify this scope: overrides {modified} on SAM; is stronger than {exposed} | *with declaration*: if it does not modify other fields; *contracted*: via linking, enforce that no implementation has a self-modifying SAM | N/A
+| {exposed} | modifications to the parameters are out of scope, which helps non-modification: overrides {modified} on SAM's parameters | modifying SAM only takes objects with out-of-scope modifications, across all usages; does not exclude {nm}, {modified} | Return type: FI returned has a modifying SAM which only takes objects with out-of-scope modifications in this method
+| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm}: does not exclude {nm}, {modified} | computed via declaration or linking;  does not exclude {nm}, {modified} |  Return type: computed via declaration or linking
 |===
 
-When {nm} is contracted on a method with functional interface type parameters, the analyser will enforce that the method receives no argument which is an implementation which calls self-modifying methods.
+It is important to note that all modifications relating to a scope are relating to the scope of the type in which the declaration takes place.
+
+The {modified} annotation on a method with functional interface type parameters is the norm when these parameters are applied to part of the fields' object graph, because their SAM's parameter is {modified}.
+
+When {nm} is _contracted_ on a method with functional interface type parameters, the analyser will enforce that the method receives no argument which is an implementation which calls self-modifying methods.
+Apart from implying all other non-modification rules, this is equivalent to contracting {nm} on all parameters of a functional interface type.
+
+As for the _computation_ of {nm} on these methods, {exposed} causes the analyser to ignore modifying parameters in SAMs.
 
 === Containers
 
@@ -292,7 +290,7 @@ Formally,
 
 ****
 *Definition*: a type is a *container* when no non-private method or constructor modifies its parameters.
-In the case of parameters of functional interface type, {exposed} suffices.
+In the case of parameters of functional interface type, {exposed} suffices instead of {nm}.
 ****
 
 === Immutability
