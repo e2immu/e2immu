@@ -20,6 +20,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,6 +56,13 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
+        if ("NotModifiedChecks".equals(d.methodInfo.name) && "NotModifiedChecks.this.s2".equals(d.variableName)) {
+            Assert.assertEquals("instance type org.e2immu.analyser.testexample.NotModifiedChecks.C1(set2).getSet()", d.currentValue.toString());
+            Assert.assertTrue(d.currentValue.isInstanceOf(MethodValue.class));
+        }
+        if ("C1".equals(d.methodInfo.name) && "C1.this.set".equals(d.variableName)) {
+            Assert.assertEquals("set1,@NotNull", d.currentValue.toString());
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
@@ -72,9 +80,9 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             if (iteration >= 2) {
                 Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
                 Assert.assertTrue(set3.assignedToField.isSet());
-                //   Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
-                //   Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
-                //  Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
+                Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
             }
         }
         if ("addAllOnC".equals(methodInfo.name)) {
@@ -82,36 +90,45 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             Assert.assertEquals("c1", c1.name);
             Assert.assertEquals(Level.TRUE, c1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("c0".equals(fieldInfo.name)) {
-                if (iteration >= 2) {
-                    Assert.assertEquals(0, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
-            }
-            if ("s0".equals(fieldInfo.name)) {
-                if (iteration >= 2) {
-                    // Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+        if ("getSet".equals(methodInfo.name)) {
+            if (iteration > 0) {
+                int identity = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0").getProperty(VariableProperty.IDENTITY);
+                Assert.assertEquals(Level.FALSE, identity);
+                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
             }
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo set = typeContext.getFullyQualified(Set.class);
-
-            MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
-            Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-
-            ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
-            Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("c0".equals(fieldInfo.name)) {
+            if (iteration >= 2) {
+                Assert.assertEquals(0, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
         }
+        if ("s0".equals(fieldInfo.name)) {
+            if (iteration >= 2) {
+                Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
+        }
+        if ("set".equals(fieldInfo.name)) {
+            if (iteration > 0) {
+                Assert.assertEquals("this.set", fieldInfo.fieldAnalysis.get().effectivelyFinalValue.get().toString());
+            }
+            if (iteration > 1) {
+                Assert.assertEquals("[0:set1]", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+            }
+        }
+    };
+
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo set = typeContext.getFullyQualified(Set.class);
+
+        MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
+        Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+        ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
     };
 
 

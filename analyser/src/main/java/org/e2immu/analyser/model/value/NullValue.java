@@ -67,6 +67,7 @@ public class NullValue extends ConstantValue implements Constant<Object> {
             case SIZE_COPY:
             case MODIFIED:
             case IDENTITY:
+            case METHOD_DELAY:
                 return FALSE;
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;

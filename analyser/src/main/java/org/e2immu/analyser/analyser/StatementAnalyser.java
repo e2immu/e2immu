@@ -462,6 +462,12 @@ public class StatementAnalyser {
                 }
                 for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
                     int v = variableProperties.getProperty(value, variableProperty);
+                    if (variableProperty == VariableProperty.IDENTITY && v == Level.DELAY) {
+                        int methodDelay = variableProperties.getProperty(value, VariableProperty.METHOD_DELAY);
+                        if (methodDelay != Level.TRUE) {
+                            v = Level.FALSE;
+                        }
+                    }
                     int current = transferValue.getProperty(variableProperty);
                     if (v > current) {
                         transferValue.properties.put(variableProperty, v);
