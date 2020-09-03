@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -155,8 +152,7 @@ public class ConditionalValue implements Value {
     /*
     There are a few patterns that we can look out for.
 
-    (1) a == null ? xx : a  (note that a != null ? a : xx has been re-written to null == a ? xx: a)
-    (2) a == null ? xx : something(a)
+    (1) a == null ? xx : a
 
     (3)-(4) same wit SIZE, e.g.
     (3) 0 == a.size() ? xx : a
@@ -169,23 +165,23 @@ public class ConditionalValue implements Value {
                     checkSizeRestriction(evaluationContext, NegatedValue.negate(condition), ifFalse, ifTrue));
         }
         if (variableProperty == VariableProperty.NOT_NULL) {
-            Map<Variable, Value> individualNullClauses = condition.filter(FilterMode.REJECT, Value::isIndividualNotNullClause).accepted;
-
-            // a == null ? a : x => x == DELAY -> delay, worst case is a, which is 0 => 0
-            if (ifTrue instanceof ValueWithVariable) {
-                Value isNull = individualNullClauses.get(((ValueWithVariable) ifTrue).variable);
-                if (isNull != null) {
-                    if (!(isNull instanceof NullValue)) throw new UnsupportedOperationException();
-                    return 0;
-                }
+            Value c = condition;
+            boolean not = false;
+            if (c.isInstanceOf(NegatedValue.class)) {
+                c = ((NegatedValue) c).value;
+                not = true;
             }
-            // a == null ? x : a
-            if (ifFalse instanceof ValueWithVariable) {
-                Value isNull = individualNullClauses.get(((ValueWithVariable) ifFalse).variable);
-                if (isNull != null) {
-                    if (!(isNull instanceof NullValue)) throw new UnsupportedOperationException();
-                    return evaluationContext == null ? ifTrue.getPropertyOutsideContext(VariableProperty.NOT_NULL) :
-                            evaluationContext.getProperty(ifTrue, VariableProperty.NOT_NULL);
+            EqualsValue equalsValue;
+            if ((equalsValue = c.asInstanceOf(EqualsValue.class)) != null && equalsValue.lhs.isInstanceOf(NullValue.class)) {
+                // null == rhs or not (null == rhs), now check that rhs appears left or right
+                Value rhs = equalsValue.rhs;
+                if (ifTrue.equals(rhs)) {
+                    // null == a ? a : something;  null != a ? a : something
+                    return not ? Value.safeGetProperty(evaluationContext, ifFalse, variableProperty) : MultiLevel.NULLABLE;
+                }
+                if (ifFalse.equals(rhs)) {
+                    // null == a ? something: a
+                    return not ? MultiLevel.NULLABLE : Value.safeGetProperty(evaluationContext, ifTrue, variableProperty);
                 }
             }
         }

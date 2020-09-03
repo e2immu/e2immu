@@ -54,35 +54,33 @@ public class TestSMapList extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("list".equals(methodInfo.name)) {
-                TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.0");
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("list".equals(methodInfo.name)) {
+            if(iteration == 0) {
+                TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
-
-                // this is the one that needs to combine with the state, which says that the value is NOT null
-                TransferValue returnValue2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("3");
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue2.properties.get(VariableProperty.NOT_NULL));
 
                 // the end result
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            } else {
+                TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
+
+                // the end result
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             }
-            if ("copy".equals(methodInfo.name)) {
-                TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
-                Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
-            }
+        }
+        if ("copy".equals(methodInfo.name)) {
+            TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
+            Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo map = typeContext.getFullyQualified(Map.class);
-            MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
-            Assert.assertEquals(Level.SIZE_COPY_TRUE, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
-            Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE)); // no idea, could be empty
-        }
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo map = typeContext.getFullyQualified(Map.class);
+        MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
+        Assert.assertEquals(Level.SIZE_COPY_TRUE, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
+        Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE)); // no idea, could be empty
     };
 
     @Test

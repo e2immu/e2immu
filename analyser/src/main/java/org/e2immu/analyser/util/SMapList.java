@@ -87,7 +87,7 @@ public class SMapList {
         return set.addAll(bs);
     }
 
-    @NotNull
+    @NotNull1
     @NotModified
     @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
     @Constant(type = AnnotationType.VERIFY_ABSENT)

@@ -233,4 +233,12 @@ public interface Value extends Comparable<Value> {
         }
         return null;
     }
+
+    static int safeGetProperty(EvaluationContext evaluationContext, Value value, VariableProperty variableProperty) {
+        if (evaluationContext == null) {
+            return value.getPropertyOutsideContext(variableProperty);
+        }
+        return value.getProperty(evaluationContext, variableProperty);
+    }
+
 }
