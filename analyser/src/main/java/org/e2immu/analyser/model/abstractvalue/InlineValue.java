@@ -13,6 +13,12 @@ import java.util.function.Consumer;
  can only be created as the single result value of a method
 
  will be substituted at any time in MethodCall
+
+ Big question: do properties come from the expression, or from the method??
+ In the case of Supplier.get() (which is modifying by default), the expression may for example be a parameterized string (t + "abc").
+ The string expression is Level 2 immutable, hence not-modified.
+
+ Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
 public class InlineValue implements Value {
 
@@ -42,11 +48,17 @@ public class InlineValue implements Value {
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
+        if(VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
+            return methodInfo.methodAnalysis.get().getProperty(variableProperty);
+        }
         return value.getPropertyOutsideContext(variableProperty);
     }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if(VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
+            return methodInfo.methodAnalysis.get().getProperty(variableProperty);
+        }
         return value.getProperty(evaluationContext, variableProperty);
     }
 
@@ -57,7 +69,7 @@ public class InlineValue implements Value {
 
     @Override
     public String toString() {
-        return value.toString();
+        return "inline " + methodInfo.name + " on " + value.toString();
     }
 
     @Override

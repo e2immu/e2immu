@@ -33,11 +33,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-/*
-
-https://github.com/bnaudts/e2immu/issues/8
-
- */
 public class TestNotNullWithPatterns extends CommonTestRunner {
     public TestNotNullWithPatterns() {
         super(true);
@@ -46,8 +41,9 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("conditionalValue".equals(methodInfo.name) && iteration > 0) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertEquals("condition.test(initial)?alternative:initial", srv.toString());
+            Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
             Assert.assertTrue(srv instanceof InlineValue);
+
         }
 
         if ("method4bis".equals(methodInfo.name) && iteration > 0) {

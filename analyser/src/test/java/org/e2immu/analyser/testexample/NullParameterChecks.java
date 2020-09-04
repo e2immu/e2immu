@@ -99,14 +99,11 @@ public class NullParameterChecks {
         return t == null ? k.length() : t.length();
     }
 
-    // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
     public static String method11Lambda(@NotNull String t) {
         Supplier<String> supplier = () -> t.trim() + ".";
         return supplier.get();
     }
 
-
-    // we have no way of knowing if the lambda will be executed... but we cannot have a "bomb" waiting
     public static String method12LambdaBlock(@NotNull String t) {
         Supplier<String> supplier = () -> {
             return t.trim() + ".";

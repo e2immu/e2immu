@@ -128,4 +128,6 @@ public enum VariableProperty {
             Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT); // but not CONTENT_MODIFIED, SIZE, have separate computation
 
     public final static Set<VariableProperty> REMOVE_AFTER_ASSIGNMENT = Set.of(NOT_NULL, SIZE);
+
+    public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
 }

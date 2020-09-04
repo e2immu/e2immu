@@ -27,7 +27,7 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("len".equals(methodInfo.name)) {
-            Assert.assertEquals("null == s?(-1):s.length(),?>=0", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
+            Assert.assertEquals("inline len on null == s?(-1):s.length(),?>=0", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
         }
 
         if ("len6".equals(methodInfo.name)) {

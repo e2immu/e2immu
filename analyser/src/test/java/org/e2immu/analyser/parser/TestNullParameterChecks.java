@@ -75,7 +75,9 @@ public class TestNullParameterChecks extends CommonTestRunner {
         if ("method11Lambda".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
             // value was an Instance, which gets translated to a VariableValue that is not null
             Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
-       //     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertEquals("inline apply on instance type java.lang.String()", d.currentValue.toString());
+            InlineValue inlineValue = (InlineValue)d.currentValue;
+            Assert.assertEquals(Level.FALSE, inlineValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("method12LambdaBlock".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
             // value was an Instance, which gets translated to a VariableValue that is not null
