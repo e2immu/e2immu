@@ -626,11 +626,12 @@ public class ParameterizedType {
         if (bestType != null) {
             return bestType.typeAnalysis.get().getProperty(variableProperty);
         }
-        if (variableProperty == VariableProperty.IMMUTABLE) {
-            return MultiLevel.MUTABLE;
-        }
-        if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
-        return Level.FALSE;
+        return variableProperty.falseValue;
+       // if (variableProperty == VariableProperty.IMMUTABLE) {
+       //     return MultiLevel.MUTABLE;
+       // }
+       // if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
+       // return Level.FALSE;
     }
 
     public TypeInfo bestTypeInfo() {
@@ -690,22 +691,25 @@ public class ParameterizedType {
     }
 
     public boolean isAtLeastEventuallyE2Immutable() {
-        if (isUnboundParameterType()) return true;
+        //if (isUnboundParameterType()) return true;
         TypeInfo bestType = bestTypeInfo();
         return bestType != null && MultiLevel.isAtLeastEventuallyE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     }
 
     public boolean cannotBeModifiedByDefinition() {
-        return isPrimitive() || isAtLeastEventuallyE2Immutable() || isUnboundParameterType();
+        return isPrimitive() || isAtLeastEventuallyE2Immutable();// || isUnboundParameterType();
     }
 
-    public Boolean cannotBeModified() {
+    public Boolean noModifyingMeansWithinMyScope() {
         if (cannotBeModifiedByDefinition()) return true;
         TypeInfo bestType = bestTypeInfo();
-        boolean canAccessPrivateMethods = false; // TODO implement
-        return bestType.typeInspection.get().methodStream(TypeInspection.Methods.ALL_RECURSIVE)
-                .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
-                .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+        if(bestType != null) {
+          //  boolean canAccessPrivateMethods = false; // TODO implement
+            return bestType.typeInspection.get().methodStream(TypeInspection.Methods.ALL_RECURSIVE)
+               //     .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
+                    .noneMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+        }
+        return true;
     }
 
     private static boolean methodIsAccessible(MethodInfo methodInfo, TypeInfo fromType) {

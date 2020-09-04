@@ -109,11 +109,11 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
 
     @NotNull
     @E2Container
-    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Iterable<? extends E> iterable);
+    public static <E> ImmutableSet<E> copyOf(@NotNull Iterable<? extends E> iterable);
 
     @NotNull
     @E2Container
-    public static <E> ImmutableSet<E> copyOf(@NotNull @NotModified Collection<? extends E> elements);
+    public static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> elements);
 }
 
 @E2Container

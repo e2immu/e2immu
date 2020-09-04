@@ -17,10 +17,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Modified;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotModified1;
+import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
@@ -30,6 +27,7 @@ public class FunctionalInterfaceModified2 {
 
     @Container
     static class Counter {
+        @Variable
         private int counter;
 
         @Modified
@@ -55,9 +53,11 @@ public class FunctionalInterfaceModified2 {
 
     3. Combining 1 and 2 leads us to the the path of actual modification.
     4. The direct consequence of consumer modifying myCounter1 is that the field becomes @Modified as well
+
+    5. The parameter `consumer` is modified because a modifying `accept` method is called on it.
      */
     @Modified
-    private void acceptMyCounter1(Consumer<Counter> consumer) {
+    public void acceptMyCounter1(@Modified Consumer<Counter> consumer) {
         consumer.accept(myCounter1);
     }
 
@@ -72,7 +72,7 @@ public class FunctionalInterfaceModified2 {
     private final Counter myCounter2 = new Counter();
 
     @NotModified
-    private void acceptMyCounter2(@NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
+    void acceptMyCounter2(@NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
         consumer.accept(myCounter2);
     }
 

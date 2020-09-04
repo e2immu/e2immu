@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -32,6 +33,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -109,11 +112,24 @@ public class TestSetOnceMap extends CommonTestRunner {
     // TODO: Accepting one error now: we have not inferred @Size(min = 1) for put (modifying method)
     // This is work for later
 
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo map = typeContext.getFullyQualified(Map.class);
+        MethodInfo put = map.findUniqueMethod("put", 2);
+        for(ParameterInfo parameterInfo: put.methodInspection.get().parameters) {
+            Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        }
+        TypeInfo objects = typeContext.getFullyQualified(Objects.class);
+        MethodInfo rnn = objects.findUniqueMethod("requireNonNull", 1);
+        ParameterInfo p = rnn.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(Level.FALSE, p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+    };
+
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("Freezable", "SetOnceMap"), 1, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }
 

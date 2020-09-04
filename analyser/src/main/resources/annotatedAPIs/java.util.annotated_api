@@ -32,7 +32,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public interface Iterator<T> {
-    default void forEachRemaining(Consumer<? super T> action) {
+    @NotModified
+    default void forEachRemaining(@Exposed Consumer<? super T> action) {
     }
 
     boolean hasNext();
@@ -439,6 +440,7 @@ public class Stack<E> extends Vector<E> {
 }
 
 @UtilityClass
+@Container
 public class Objects {
     @NotNull
     @NotModified
@@ -458,22 +460,22 @@ public class Objects {
     }
 
     @NotModified
-    public static int hashCode(@NotModified Object object) {
+    public static int hashCode(Object object) {
     }
 
     @NotModified
-    public static int hash(@NotModified Object... values) {
+    public static int hash(Object... values) {
     }
 
     @NotModified
-    public static boolean equals(@NotModified Object left, @NotModified Object right) {
+    public static boolean equals(Object left, Object right) {
     }
 }
 
 @FunctionalInterface
 // again this goes against the API, but we want to raise problems when comparing with null
 public interface Comparator<T> {
-    int compare(T o1, T o2);
+    int compare(@NotModified T o1, @NotModified T o2);
 
     static <U> Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor);
 }

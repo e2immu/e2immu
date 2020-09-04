@@ -60,6 +60,9 @@ public class EvaluateParameters {
                 if (map.containsValue(Level.DELAY)) {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
                 }
+                if (notModified1Scope == Level.TRUE) {
+                    map.put(VariableProperty.MODIFIED, 0);
+                }
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
 
@@ -126,7 +129,7 @@ public class EvaluateParameters {
             // we're in the non-modifying situation
             log(NOT_MODIFIED, "In the @NM1 situation with " + methodInfo.name + " and " + parameterValue);
         } else {
-            Boolean cannotBeModified = formalParameterType.cannotBeModified();
+            Boolean cannotBeModified = formalParameterType.noModifyingMeansWithinMyScope();
             if (cannotBeModified == null) return; // DELAY
             if (cannotBeModified) {
                 // we're in the @Exposed situation

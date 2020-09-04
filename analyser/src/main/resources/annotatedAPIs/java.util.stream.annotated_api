@@ -23,6 +23,7 @@ public interface Collector<T, A, R> {
 }
 
 @UtilityClass
+@Container
 public class Collectors {
     @NotNull1
     static Collector<CharSequence, ?, String> joining();
