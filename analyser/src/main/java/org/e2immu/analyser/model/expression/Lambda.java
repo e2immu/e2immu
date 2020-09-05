@@ -48,12 +48,12 @@ public class Lambda implements Expression {
      */
     public Lambda(@NotNull ParameterizedType abstractFunctionalType,
                   @NotNull ParameterizedType implementation) {
-        methodInfo = implementation.findSingleAbstractMethodOfInterface().methodInfo;
+        methodInfo = implementation.typeInfo.typeInspection.get().methods.get(0);
         this.block = methodInfo.methodInspection.get().methodBody.get();
         this.parameters = methodInfo.methodInspection.get().parameters;
         if (!abstractFunctionalType.isFunctionalInterface()) throw new UnsupportedOperationException();
         this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
-        if (!implementation.isFunctionalInterface()) throw new UnsupportedOperationException();
+        if (!implementation.implementsFunctionalInterface()) throw new UnsupportedOperationException();
         this.implementation = Objects.requireNonNull(implementation);
     }
 

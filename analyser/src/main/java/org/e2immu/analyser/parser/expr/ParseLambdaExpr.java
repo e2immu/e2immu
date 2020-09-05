@@ -27,13 +27,10 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.Resolver;
 import org.e2immu.analyser.parser.VariableContext;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
@@ -52,7 +49,8 @@ public class ParseLambdaExpr {
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
 
-        MethodInfo owner = createAnonymousTypeAndApplyMethod(expressionContext.enclosingType);
+        MethodInfo owner = createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInfo.name,
+                expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
             ParameterizedType parameterType = null;
@@ -98,9 +96,13 @@ public class ParseLambdaExpr {
             inferredReturnType = block.mostSpecificReturnType();
         }
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
-        ParameterizedType anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, owner, parameters, block, functionalType);
-        log(LAMBDA, "End parsing lambda as block, inferred functional type {}", functionalType);
-        return new Lambda(functionalType, anonymousType);
+        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
+        log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
+
+        Resolver.sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+        ensureLambdaAnalysisDefaults(anonymousType);
+
+        return new Lambda(functionalType, anonymousType.asParameterizedType());
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
@@ -109,16 +111,17 @@ public class ParseLambdaExpr {
         return new UnevaluatedLambdaExpression(Set.of(lambdaExpr.getParameters().size()), lambdaExpr.getExpressionBody().isPresent() ? true : null);
     }
 
-    private static MethodInfo createAnonymousTypeAndApplyMethod(TypeInfo enclosingType) {
-        TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + enclosingType.nextIdentifier());
-        return new MethodInfo(typeInfo, "apply", false);
+    private static MethodInfo createAnonymousTypeAndApplyMethod(String name, TypeInfo enclosingType, int nextId) {
+        TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
+        return new MethodInfo(typeInfo, name, false);
     }
 
-    private static ParameterizedType continueCreationOfAnonymousType(TypeInfo enclosingType,
-                                                                     MethodInfo methodInfo,
-                                                                     List<ParameterInfo> parameters,
-                                                                     Block block,
-                                                                     ParameterizedType returnType) {
+    private static TypeInfo continueCreationOfAnonymousType(TypeInfo enclosingType,
+                                                            ParameterizedType functionalInterfaceType,
+                                                            MethodInfo methodInfo,
+                                                            List<ParameterInfo> parameters,
+                                                            Block block,
+                                                            ParameterizedType returnType) {
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(returnType));
         methodInspectionBuilder.addParameters(parameters);
@@ -126,23 +129,23 @@ public class ParseLambdaExpr {
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
 
         TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
-        typeInspectionBuilder.setTypeNature(TypeNature.INTERFACE);
+        typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
+        typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
         typeInspectionBuilder.setEnclosingType(enclosingType);
-        typeInspectionBuilder.addAnnotation(Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression);
         typeInspectionBuilder.addMethod(methodInfo);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
 
-        return typeInfo.asParameterizedType();
+        return typeInfo;
     }
 
     public static void ensureLambdaAnalysisDefaults(TypeInfo typeInfo) {
-       // if(!typeInfo.typeAnalysis.get().supportDataTypes.isSet()) {
-       //     typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
-       // }
-        MethodInfo sam  = typeInfo.findOverriddenSingleAbstractMethod();
-        if(!sam.methodAnalysis.get().partOfConstruction.isSet()) {
+        // if(!typeInfo.typeAnalysis.get().supportDataTypes.isSet()) {
+        //     typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
+        // }
+        MethodInfo sam = typeInfo.findOverriddenSingleAbstractMethod();
+        if (!sam.methodAnalysis.get().partOfConstruction.isSet()) {
             sam.methodAnalysis.get().partOfConstruction.set(false);
         }
     }

@@ -580,6 +580,11 @@ public class ParameterizedType {
         return typeInfo.isFunctionalInterface();
     }
 
+    public boolean implementsFunctionalInterface() {
+        if (typeInfo == null) return false;
+        return typeInfo.typeInspection.get().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
+    }
+
     public boolean isUnboundParameterType() {
         return isTypeParameter() && wildCard == WildCard.NONE;
     }
@@ -627,11 +632,11 @@ public class ParameterizedType {
             return bestType.typeAnalysis.get().getProperty(variableProperty);
         }
         return variableProperty.falseValue;
-       // if (variableProperty == VariableProperty.IMMUTABLE) {
-       //     return MultiLevel.MUTABLE;
-       // }
-       // if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
-       // return Level.FALSE;
+        // if (variableProperty == VariableProperty.IMMUTABLE) {
+        //     return MultiLevel.MUTABLE;
+        // }
+        // if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
+        // return Level.FALSE;
     }
 
     public TypeInfo bestTypeInfo() {
@@ -703,10 +708,10 @@ public class ParameterizedType {
     public Boolean noModifyingMeansWithinMyScope() {
         if (cannotBeModifiedByDefinition()) return true;
         TypeInfo bestType = bestTypeInfo();
-        if(bestType != null) {
-          //  boolean canAccessPrivateMethods = false; // TODO implement
+        if (bestType != null) {
+            //  boolean canAccessPrivateMethods = false; // TODO implement
             return bestType.typeInspection.get().methodStream(TypeInspection.Methods.ALL_RECURSIVE)
-               //     .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
+                    //     .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
                     .noneMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         }
         return true;

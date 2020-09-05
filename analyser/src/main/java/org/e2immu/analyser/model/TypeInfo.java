@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotNull;
@@ -58,9 +59,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     //@Immutable(after="this.inspect()")
     public final SetTwiceSupply<TypeInspection> typeInspection = new SetTwiceSupply<>();
     public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
-
-    // immutable after inspection
-    private final AtomicInteger identifierForAnonymousSubTypes = new AtomicInteger();
 
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
@@ -950,7 +948,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
     }
 
-    // TODO @Only(after="inspection")
     public TypeInfo primaryType() {
         if (typeInspection.isSet()) {
             Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
@@ -962,31 +959,29 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     /*
 
-    Function<String, Integer> f = s -> Integer.parseInt(s);
+    Function<String, Integer> f = Type::someFunction;
+
+    gets converted into
+
     Function<String, Integer> f2 = new Function<String, Integer>() {
         @Override
         public Integer apply(String s) {
-            return Integer.parseInt(s);
+            return Type.someFunction(s);
         }
     };
 
      */
 
-    public MethodInfo createAnonymousTypeWithSingleAbstractMethod(ParameterizedType type, int index, Expression returnExpression) {
-        // no point in creating something that we cannot (yet) deal with...
-        if (returnExpression instanceof NullConstant || returnExpression == EmptyExpression.EMPTY_EXPRESSION) {
-            return null;
-        }
-        if(returnExpression instanceof Lambda) {
-            return ((Lambda)returnExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
-        }
-
-        MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface();
-        TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anon" + index);
+    public MethodInfo convertMethodReferenceIntoLambda(ParameterizedType functionalInterfaceType,
+                                                       TypeInfo enclosingType,
+                                                       MethodReference methodReference,
+                                                       ExpressionContext expressionContext) {
+        MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface();
+        TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
-        builder.addInterfaceImplemented(type);
+        builder.addInterfaceImplemented(functionalInterfaceType);
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 
@@ -994,48 +989,29 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         builder.addMethod(methodInfo);
 
         // compose the content of the method...
-        Block block;
-        /*if (returnExpression instanceof Lambda) {
-            Lambda lambda = (Lambda) returnExpression;
-            Map<Variable, Variable> translationMap = new HashMap<>();
-            int i = 0;
-            for (ParameterInfo lambdaParameter : lambda.parameters) {
-                ParameterInfo interfaceMethodParameter = methodInfo.methodInspection.get().parameters.get(i);
-                translationMap.put(lambdaParameter, interfaceMethodParameter);
-                i++;
-            }
-            Lambda translated = (Lambda) lambda.translate(TranslationMap.fromVariableMap(translationMap));
-            Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
-            translated.block.statements.forEach(blockBuilder::addStatement);
-            block = blockBuilder.build();
-        } else */if (returnExpression instanceof MethodReference) {
-            MethodReference methodReference = (MethodReference) returnExpression;
-            Expression newReturnExpression;
-            if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
-                newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReference.methodInfo, methodInfo);
-            } else {
-                if (methodInfo.methodInspection.get().parameters.size() != 1)
-                    throw new UnsupportedOperationException("Referenced method has multiple parameters");
-                newReturnExpression = methodCallNoParameters(methodInfo, methodReference.methodInfo);
-            }
-            Statement statement;
-            if (methodInfo.isVoid()) {
-                statement = new ExpressionAsStatement(newReturnExpression);
-            } else {
-                statement = new ReturnStatement(newReturnExpression);
-            }
-            block = new Block.BlockBuilder().addStatement(statement).build();
+
+        Expression newReturnExpression;
+        if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
+            newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReference.methodInfo, methodInfo);
         } else {
-            throw new UnsupportedOperationException("Cannot (yet) deal with " + returnExpression.getClass());
+            if (methodInfo.methodInspection.get().parameters.size() != 1)
+                throw new UnsupportedOperationException("Referenced method has multiple parameters");
+            newReturnExpression = methodCallNoParameters(methodInfo, methodReference.methodInfo);
         }
+        Statement statement;
+        if (methodInfo.isVoid()) {
+            statement = new ExpressionAsStatement(newReturnExpression);
+        } else {
+            statement = new ReturnStatement(newReturnExpression);
+        }
+        Block block = new Block.BlockBuilder().addStatement(statement).build();
+
         log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 
-        methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
-        methodInfo.methodAnalysis.get().partOfConstruction.set(false);
-
-        // and done.
+        Resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+        ParseLambdaExpr.ensureLambdaAnalysisDefaults(typeInfo);
 
         return methodInfo;
     }
@@ -1215,10 +1191,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         return result;
-    }
-
-    public int nextIdentifier() {
-        return identifierForAnonymousSubTypes.incrementAndGet();
     }
 
     public String packageName() {

@@ -22,8 +22,7 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.DependencyGraph;
@@ -169,10 +168,15 @@ public class Resolver {
                             sam = anonymousType.findOverriddenSingleAbstractMethod();
                         } else {
                             // implicit anonymous type
-                            sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(fieldInfo.type, expressionContext.topLevel.newIndex(typeInfo), parsedExpression);
-                            if (sam != null) {
-                                Resolver.sortTypes(Map.of(sam.typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
-                                ParseLambdaExpr.ensureLambdaAnalysisDefaults(sam.typeInfo);
+                            // no point in creating something that we cannot (yet) deal with...
+                            if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
+                                sam = null;
+                            } else if (parsedExpression instanceof Lambda) {
+                                sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
+                            } else if (parsedExpression instanceof MethodReference) {
+                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext);
+                            } else {
+                                throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                             }
                         }
                     } else {
