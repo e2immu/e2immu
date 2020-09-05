@@ -770,4 +770,15 @@ public class ParameterizedType {
         }
         return false;
     }
+
+    public ParameterizedType mostSpecific(ParameterizedType other) {
+        if (this == Primitives.PRIMITIVES.voidParameterizedType || other == Primitives.PRIMITIVES.voidParameterizedType) {
+            return Primitives.PRIMITIVES.voidParameterizedType;
+        }
+        if (isAssignableFrom(other)) {
+            return other;
+        }
+        return this;
+    }
+
 }

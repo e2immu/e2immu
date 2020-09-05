@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.e2immu.analyser.analyser.NumberedStatement.startOfBlock;
 
@@ -91,5 +92,11 @@ public class IfElseStatement extends StatementWithExpression {
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
+    }
+
+    public void visit(Consumer<Statement> consumer) {
+        ifBlock.visit(consumer);
+        elseBlock.visit(consumer);
+        consumer.accept(this);
     }
 }

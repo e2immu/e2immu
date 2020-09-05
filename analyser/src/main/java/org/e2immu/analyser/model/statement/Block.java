@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
@@ -30,6 +31,8 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class Block implements Statement, HasStatements {
@@ -158,8 +161,24 @@ public class Block implements Statement, HasStatements {
     }
 
     public ParameterizedType mostSpecificReturnType() {
-        // TODO loop over return statements, distill type
-        return Primitives.PRIMITIVES.voidParameterizedType;
+        AtomicReference<ParameterizedType> mostSpecific = new AtomicReference<>();
+        visit(statement -> {
+            if (statement instanceof ReturnStatement) {
+                ReturnStatement returnStatement = (ReturnStatement) statement;
+                if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
+                    mostSpecific.set(Primitives.PRIMITIVES.voidParameterizedType);
+                } else {
+                    ParameterizedType returnType = returnStatement.expression.returnType();
+                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(returnType));
+                }
+            }
+        });
+        return mostSpecific.get() == null ? Primitives.PRIMITIVES.voidParameterizedType: mostSpecific.get();
+    }
+
+    public void visit(Consumer<Statement> consumer) {
+        statements.forEach(statement -> statement.visit(consumer));
+        consumer.accept(this);
     }
 
     @Override

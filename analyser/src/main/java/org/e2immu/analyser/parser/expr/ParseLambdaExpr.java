@@ -123,7 +123,8 @@ public class ParseLambdaExpr {
                                                             Block block,
                                                             ParameterizedType returnType) {
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
-        methodInspectionBuilder.setReturnType(Objects.requireNonNull(returnType));
+        ParameterizedType bestReturnType = returnType.mostSpecific(functionalInterfaceType.findSingleAbstractMethodOfInterface().methodInfo.returnType());
+        methodInspectionBuilder.setReturnType(Objects.requireNonNull(bestReturnType));
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));

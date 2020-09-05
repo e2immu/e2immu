@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -160,6 +161,12 @@ public abstract class SwitchEntry implements Statement {
             return statements.stream().map(s -> s.sideEffect(evaluationContext))
                     .reduce(sideEffect, SideEffect::combine);
         }
+
+        @Override
+        public void visit(Consumer<Statement> consumer) {
+            statements.forEach(statement -> statement.visit(consumer));
+            consumer.accept(this);
+        }
     }
 
     public static class BlockEntry extends SwitchEntry {
@@ -207,6 +214,12 @@ public abstract class SwitchEntry implements Statement {
         @Override
         public CodeOrganization codeOrganization() {
             return new CodeOrganization.Builder().setExpression(generateConditionExpression()).setStatements(block).build();
+        }
+
+        @Override
+        public void visit(Consumer<Statement> consumer) {
+            block.visit(consumer);
+            consumer.accept(this);
         }
     }
 }

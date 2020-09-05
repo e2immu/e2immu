@@ -5,6 +5,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public abstract class LoopStatement extends StatementWithExpression {
     public final Block block;
@@ -28,5 +29,10 @@ public abstract class LoopStatement extends StatementWithExpression {
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
+    }
+
+    public void visit(Consumer<Statement> consumer) {
+        block.visit(consumer);
+        consumer.accept(this);
     }
 }

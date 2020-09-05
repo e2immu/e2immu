@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.annotation.E2Container;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @E2Container
@@ -46,4 +47,8 @@ public interface Statement {
     }
 
     String statementString(int indent, NumberedStatement numberedStatement);
+
+    default void visit(Consumer<Statement> consumer) {
+        consumer.accept(this);
+    }
 }

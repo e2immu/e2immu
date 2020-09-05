@@ -11,6 +11,7 @@ import org.e2immu.analyser.util.StringUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class TryStatement implements Statement {
@@ -149,4 +150,10 @@ public class TryStatement implements Statement {
         return tryBlock.sideEffect(evaluationContext);
     }
 
+    public void visit(Consumer<Statement> consumer) {
+        tryBlock.visit(consumer);
+        catchClauses.forEach(pair -> pair.getV().visit(consumer));
+        finallyBlock.visit(consumer);
+        consumer.accept(this);
+    }
 }
