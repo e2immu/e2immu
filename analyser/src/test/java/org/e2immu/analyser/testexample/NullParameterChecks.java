@@ -99,12 +99,14 @@ public class NullParameterChecks {
         return t == null ? k.length() : t.length();
     }
 
+    @NotNull
     public static String method11Lambda(@NotNull String t) {
         Supplier<String> supplier = () -> t.trim() + ".";
         return supplier.get();
     }
 
-    public static String method12LambdaBlock(@NotNull String t) {
+    @NotNull
+    public static String method12Lambda(@NotNull String t) {
         Supplier<String> supplier = () -> {
             return t.trim() + ".";
         };

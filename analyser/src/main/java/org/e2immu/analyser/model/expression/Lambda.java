@@ -134,7 +134,12 @@ public class Lambda implements Expression {
             evaluationContext.copyMessages(methodAnalyser.getMessageStream());
             evaluationContext.merge(child);
 
-            if (!methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+                InlineValue inlineValue = methodInfo.methodAnalysis.get().singleReturnValue.get().asInstanceOf(InlineValue.class);
+                if (inlineValue != null) {
+                    result = inlineValue;
+                }
+            } else {
                 result = UnknownValue.NO_VALUE; // DELAY, we may have to iterate again
             }
             visitor.visit(this, child, result, changes);

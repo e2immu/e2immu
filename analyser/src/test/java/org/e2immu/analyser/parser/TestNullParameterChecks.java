@@ -73,26 +73,18 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 }
             }
         }
-        if ("method11Lambda".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
+        if (("method11Lambda".equals(d.methodInfo.name) || "method12Lambda".equals(d.methodInfo.name))
+                && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
             if (d.iteration == 0) {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
             } else {
                 Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
-                Assert.assertEquals("inline apply on inline apply on t.trim() + .", d.currentValue.toString());
+                Assert.assertEquals("inline get on t.trim() + .", d.currentValue.toString());
                 InlineValue inlineValue = (InlineValue) d.currentValue;
                 Assert.assertEquals(Level.FALSE, inlineValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }
 
-        if ("method12LambdaBlock".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
-            // 1st iteration:
-            if (d.iteration == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
-            } else {
-                Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
-                //   Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            }
-        }
     };
 
 
