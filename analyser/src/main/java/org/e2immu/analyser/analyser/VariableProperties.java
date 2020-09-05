@@ -584,12 +584,30 @@ class VariableProperties implements EvaluationContext {
     }
 
 
+    /**
+     * Example: this.j = j; j has a state j<0;
+     *
+     * @param assignmentTarget this.j
+     * @param value            variable value j
+     * @return state, translated to assignment target: this.j < 0
+     */
+    private Value stateOfValue(Variable assignmentTarget, Value value) {
+        ValueWithVariable valueWithVariable;
+        if ((valueWithVariable = value.asInstanceOf(ValueWithVariable.class)) != null && conditionManager.haveNonEmptyState() && !delayedState()) {
+            Value state = conditionManager.individualStateInfo(valueWithVariable.variable);
+            // now translate the state (j < 0) into state of the assignment target (this.j < 0)
+            return state.reEvaluate(this,
+                    Map.of(value, new VariableValue(null, assignmentTarget, assignmentTarget.name())));
+        }
+        return UnknownValue.EMPTY;
+    }
+
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
     private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
         // this breaks an infinite NO_VALUE cycle
         if (aboutVariable.resetValue != UnknownValue.NO_VALUE) {
             aboutVariable.setCurrentValue(aboutVariable.resetValue,
-                    conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
+                    stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
                     instance.getObjectFlow());
         } else {
             aboutVariable.setCurrentValue(instance, UnknownValue.EMPTY, instance.getObjectFlow());
@@ -616,7 +634,7 @@ class VariableProperties implements EvaluationContext {
             resetToNewInstance(aboutVariable, instance);
         } else {
             aboutVariable.setCurrentValue(aboutVariable.initialValue,
-                    conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.initialValue),
+                    stateOfValue(aboutVariable.variable, aboutVariable.initialValue),
                     aboutVariable.initialValue.getObjectFlow());
             if (isRecordType(aboutVariable.variable)) {
                 List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
@@ -630,7 +648,7 @@ class VariableProperties implements EvaluationContext {
 
     private void resetToUnknownValue(AboutVariable aboutVariable) {
         aboutVariable.setCurrentValue(aboutVariable.resetValue,
-                conditionManager.stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
+                stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
                 ObjectFlow.NO_FLOW);
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
@@ -786,13 +804,13 @@ class VariableProperties implements EvaluationContext {
                     localAv.setProperty(VariableProperty.NOT_NULL, worstValue);
                 }
                 Value variableValue = new VariableValue(this, localAv.variable, localAv.name);
-                localAv.setCurrentValue(variableValue, conditionManager.stateOfValue(localAv.variable, variableValue), ObjectFlow.NO_FLOW);
+                localAv.setCurrentValue(variableValue, stateOfValue(localAv.variable, variableValue), ObjectFlow.NO_FLOW);
             } else {
                 // single context, guaranteed to be reached; include this has become irrelevant
                 AboutVariable av = assignmentContexts.get(0).variableProperties.get(name);
                 Value singleValue = av.getCurrentValue();
                 log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
-                localAv.setCurrentValue(singleValue, conditionManager.stateOfValue(localAv.variable, singleValue), av.getObjectFlow());
+                localAv.setCurrentValue(singleValue, stateOfValue(localAv.variable, singleValue), av.getObjectFlow());
                 if (singleValue.isInstanceOf(VariableValue.class)) {
                     int notNull = assignmentContexts.get(0).getProperty(singleValue, VariableProperty.NOT_NULL);
                     localAv.setProperty(VariableProperty.NOT_NULL, notNull);
@@ -1022,14 +1040,14 @@ class VariableProperties implements EvaluationContext {
             } else if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
                 AboutVariable other = findComplain(variableValue.variable);
                 if (other.fieldReferenceState == SINGLE_COPY) {
-                    aboutVariable.setCurrentValue(value, conditionManager.stateOfValue(at, value), value.getObjectFlow());
+                    aboutVariable.setCurrentValue(value, stateOfValue(at, value), value.getObjectFlow());
                 } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
                     aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, UnknownValue.EMPTY, ObjectFlow.NO_FLOW);
                 } else {
                     resetToUnknownValue(aboutVariable);
                 }
             } else {
-                aboutVariable.setCurrentValue(value, conditionManager.stateOfValue(at, value), value.getObjectFlow());
+                aboutVariable.setCurrentValue(value, stateOfValue(at, value), value.getObjectFlow());
             }
             int assigned = aboutVariable.getProperty(VariableProperty.ASSIGNED);
             aboutVariable.setProperty(VariableProperty.ASSIGNED, Level.incrementReadAssigned(assigned));

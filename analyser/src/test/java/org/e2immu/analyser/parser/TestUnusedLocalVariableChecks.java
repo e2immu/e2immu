@@ -5,6 +5,8 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,11 +24,11 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         // ERROR: t.trim() result is not used
-        if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+        if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId) && d.iteration > 1) {
             Assert.assertTrue(d.numberedStatement.errorValue.get());
         }
 
-        if ("method2".equals(d.methodInfo.name)) {
+        if ("method2".equals(d.methodInfo.name) && d.iteration > 1) {
             if ("1".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }
@@ -37,10 +39,19 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
 
         if ("method3".equals(d.methodInfo.name)) {
-            if ("1.0.1".equals(d.numberedStatement.index)) {
-                Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
+            if ("1.0.0".equals(d.statementId)) {
+                Assert.assertEquals("param.contains(a)", d.state.toString());
+
+                if (d.iteration > 1) {
+                    Value value = d.numberedStatement.valueOfExpression.get();
+                    Assert.assertEquals("xzy.toLowerCase()", value.toString());
+                    Assert.assertTrue("Is " + value.getClass(), value instanceof MethodValue);
+                }
             }
-            if ("1.0.1.0.0".equals(d.numberedStatement.index)) {
+            if ("1.0.1".equals(d.numberedStatement.index)) {
+                if (d.iteration > 1) Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
+            }
+            if ("1.0.1.0.0".equals(d.numberedStatement.index) && d.iteration > 1) {
                 Assert.assertTrue(d.numberedStatement.inErrorState());
                 Assert.assertFalse(d.numberedStatement.errorValue.isSet());
             }
@@ -134,11 +145,11 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("UnusedLocalVariableChecks", 9, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build(),
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

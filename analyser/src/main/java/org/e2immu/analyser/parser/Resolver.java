@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -171,6 +172,7 @@ public class Resolver {
                             sam = typeInfo.createAnonymousTypeWithSingleAbstractMethod(fieldInfo.type, expressionContext.topLevel.newIndex(typeInfo), parsedExpression);
                             if (sam != null) {
                                 Resolver.sortTypes(Map.of(sam.typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+                                ParseLambdaExpr.ensureLambdaAnalysisDefaults(sam.typeInfo);
                             }
                         }
                     } else {

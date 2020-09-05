@@ -41,7 +41,6 @@ public class Lambda implements Expression {
     public final List<ParameterInfo> parameters;
     public final ParameterizedType abstractFunctionalType;
     public final ParameterizedType implementation;
-    public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
     /**
      * @param abstractFunctionalType e.g. java.util.Supplier
@@ -60,8 +59,8 @@ public class Lambda implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        // TODO translation of the body still needs implementing
-        return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
+        throw new UnsupportedOperationException();
+        //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
     }
 
     private Expression singleExpression() {
@@ -87,7 +86,7 @@ public class Lambda implements Expression {
         } else {
             if (block.statements.isEmpty()) blockString = "{ }";
             else {
-                List<NumberedStatement> statements = numberedStatements.get();
+                List<NumberedStatement> statements = methodInfo.methodAnalysis.get().numberedStatements.get();
                 NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);
                 blockString = block.statementString(indent, numberedStatement);
             }
@@ -128,7 +127,6 @@ public class Lambda implements Expression {
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
-            parameters.forEach(child::createLocalVariableOrParameter);
 
             MethodAnalyser methodAnalyser = new MethodAnalyser(evaluationContext.getE2ImmuAnnotationExpressions());
             boolean changes = methodAnalyser.analyse(methodInfo, child);

@@ -261,27 +261,9 @@ public class ConditionManager {
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
-    private Value individualStateInfo(Variable variable) {
+    Value individualStateInfo(Variable variable) {
         Value.FilterResult filterResult = state.filter(Value.FilterMode.ACCEPT,
                 value -> obtainVariableFilter(variable, value));
         return filterResult.accepted.getOrDefault(variable, UnknownValue.EMPTY);
-    }
-
-    /**
-     * Example: this.j = j; j has a state j<0;
-     *
-     * @param assignmentTarget this.j
-     * @param value            variable value j
-     * @return state, translated to assignment target: this.j < 0
-     */
-    public Value stateOfValue(Variable assignmentTarget, Value value) {
-        ValueWithVariable valueWithVariable;
-        if ((valueWithVariable = value.asInstanceOf(ValueWithVariable.class)) != null && haveNonEmptyState() && !delayedState()) {
-            Value state = individualStateInfo(valueWithVariable.variable);
-            // now translate the state (j < 0) into state of the assignment target (this.j < 0)
-            return state.reEvaluate(null,
-                    Map.of(value, new VariableValue(null, assignmentTarget, assignmentTarget.name())));
-        }
-        return UnknownValue.EMPTY;
     }
 }

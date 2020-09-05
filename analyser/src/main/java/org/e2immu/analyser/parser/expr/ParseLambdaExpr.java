@@ -111,8 +111,6 @@ public class ParseLambdaExpr {
 
     private static MethodInfo createAnonymousTypeAndApplyMethod(TypeInfo enclosingType) {
         TypeInfo typeInfo = new TypeInfo("LambdaBlock_" + enclosingType.nextIdentifier());
-        TypeAnalysis typeAnalysis = new TypeAnalysis(typeInfo);
-        typeInfo.typeAnalysis.set(typeAnalysis);
         return new MethodInfo(typeInfo, "apply", false);
     }
 
@@ -135,12 +133,17 @@ public class ParseLambdaExpr {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
-        typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
-
-        // this has to come AFTER we set the type to be hasDefined = true, and the block with content
-        MethodAnalysis methodAnalysis = MethodAnalysis.newMethodAnalysisForLambdaBlocks(methodInfo);
-        methodInfo.methodAnalysis.set(methodAnalysis);
 
         return typeInfo.asParameterizedType();
+    }
+
+    public static void ensureLambdaAnalysisDefaults(TypeInfo typeInfo) {
+       // if(!typeInfo.typeAnalysis.get().supportDataTypes.isSet()) {
+       //     typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
+       // }
+        MethodInfo sam  = typeInfo.findOverriddenSingleAbstractMethod();
+        if(!sam.methodAnalysis.get().partOfConstruction.isSet()) {
+            sam.methodAnalysis.get().partOfConstruction.set(false);
+        }
     }
 }

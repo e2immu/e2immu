@@ -977,6 +977,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (returnExpression instanceof NullConstant || returnExpression == EmptyExpression.EMPTY_EXPRESSION) {
             return null;
         }
+        if(returnExpression instanceof Lambda) {
+            return ((Lambda)returnExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
+        }
 
         MethodTypeParameterMap method = type.findSingleAbstractMethodOfInterface();
         TypeInfo typeInfo = new TypeInfo(fullyQualifiedName + "$anon" + index);
@@ -992,7 +995,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // compose the content of the method...
         Block block;
-        if (returnExpression instanceof Lambda) {
+        /*if (returnExpression instanceof Lambda) {
             Lambda lambda = (Lambda) returnExpression;
             Map<Variable, Variable> translationMap = new HashMap<>();
             int i = 0;
@@ -1005,7 +1008,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
             translated.block.statements.forEach(blockBuilder::addStatement);
             block = blockBuilder.build();
-        } else if (returnExpression instanceof MethodReference) {
+        } else */if (returnExpression instanceof MethodReference) {
             MethodReference methodReference = (MethodReference) returnExpression;
             Expression newReturnExpression;
             if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
@@ -1227,11 +1230,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     // this type implements a functional interface, and we need to find the single abstract method
     public MethodInfo findOverriddenSingleAbstractMethod() {
-        ParameterizedType functionalInterface = typeInspection.get().interfacesImplemented.stream()
-                .filter(ParameterizedType::isFunctionalInterface).findFirst().orElseThrow();
-        MethodTypeParameterMap formalSam = functionalInterface.findSingleAbstractMethodOfInterface();
         return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                .filter(mi -> formalSam.methodInfo.sameMethod(mi, formalSam.concreteTypes))
+                .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
                 .findFirst().orElseThrow();
     }
 }

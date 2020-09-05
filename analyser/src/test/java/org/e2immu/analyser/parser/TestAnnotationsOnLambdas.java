@@ -19,33 +19,21 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestTestExamplesWithAnnotatedAPIs extends CommonTestRunner {
-    public TestTestExamplesWithAnnotatedAPIs() {
+public class TestAnnotationsOnLambdas extends CommonTestRunner {
+    public TestAnnotationsOnLambdas() {
         super(true);
     }
 
     @Test
-    public void testCyclicReferences() throws IOException {
-        testClass("CyclicReferences", 0);
-    }
+    public void testAnnotationsOnLambdas() throws IOException {
+        testClass("AnnotationsOnLambdas", 0, 0, new DebugConfiguration.Builder()
 
-    @Test
-    public void testStaticImports() throws IOException {
-        testClass("StaticImports", 0);
-    }
-
-    @Test
-    public void testStaticSideEffectsOnlyChecks() throws IOException {
-        testClass("StaticSideEffectsOnlyChecks", 0);
-    }
-
-    @Test
-    public void testSubTypes() throws IOException {
-        testClass("SubTypes", 2);
+                .build());
     }
 
 }
