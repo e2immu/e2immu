@@ -255,9 +255,6 @@ public class MethodAnalyser {
 
     private boolean computeOnlyMarkAnnotate(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.markAndOnly.isSet()) return false; // done
-        if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) return false;
-        List<Value> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
-        if (preconditions.isEmpty()) return false;
         SetOnceMap<String, Value> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
         if (approvedPreconditions.isEmpty()) {
             log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
@@ -268,6 +265,11 @@ public class MethodAnalyser {
             log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
             return false;
         }
+        if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) {
+            log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
+            return false;
+        }
+        List<Value> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
 
         boolean mark = false;
         Boolean after = null;
@@ -275,7 +277,7 @@ public class MethodAnalyser {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
                 // not going to work...
-                return false;
+                continue;
             }
             Value before = approvedPreconditions.get(markLabel);
             // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
@@ -305,7 +307,16 @@ public class MethodAnalyser {
                 mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo));
             }
         }
-        assert after != null;
+        if (after == null) {
+
+            // this bit of code is here temporarily as a backup; it is the code in the type analyser that should
+            // keep approvedPreconditions empty
+            if (modified == Level.TRUE && !methodAnalysis.complainedAboutApprovedPreconditions.isSet()) {
+                methodAnalysis.complainedAboutApprovedPreconditions.set(true);
+                messages.add(Message.newMessage(new Location(methodInfo), Message.NO_APPROVED_PRECONDITIONS));
+            }
+            return false;
+        }
 
         String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
         MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);

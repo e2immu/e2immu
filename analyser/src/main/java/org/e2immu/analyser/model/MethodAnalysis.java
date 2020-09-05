@@ -235,6 +235,7 @@ public class MethodAnalysis extends Analysis {
     public final SetOnceMap<Variable, Boolean> uselessAssignments = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
+    public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
 
     // ************** SUMMARIES
     // in combination with the properties in the super class, this forms the knowledge about the method itself

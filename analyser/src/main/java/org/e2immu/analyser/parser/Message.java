@@ -88,6 +88,9 @@ public class Message {
 
     public static final String CALLING_MODIFYING_METHOD_ON_E2IMMU = "Calling modifying method on level 2 immutable type";
 
+    public static final String NO_APPROVED_PRECONDITIONS = "No approved preconditions" ;
+
+
     @NotNull1
     @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;

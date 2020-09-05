@@ -310,7 +310,7 @@ public class TypeAnalyser {
         boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get()
                 .methodStream(methodsMode).anyMatch(methodInfo ->
                         methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
-                                methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get() == UnknownValue.NO_VALUE);
+                                methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             return false;
