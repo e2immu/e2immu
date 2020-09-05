@@ -59,9 +59,4 @@ public class TypeValue implements Value {
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return getPropertyOutsideContext(variableProperty);
     }
-
-    @Override
-    public boolean isExpressionOfParameters() {
-        return true;
-    }
 }

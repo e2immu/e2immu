@@ -33,19 +33,21 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
     }
 
     private final StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if("modifySetCreated".equals(d.methodInfo.name)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
-        }
-        if("modifySet1".equals(d.methodInfo.name) && d.iteration > 0) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+        if (d.iteration > 0) {
+            if ("modifySetCreated".equals(d.methodInfo.name)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            }
+            if ("modifySet1".equals(d.methodInfo.name)) {
+                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            }
         }
     };
 
     @Test
     public void test() throws IOException {
         testClass("DynamicTypeAnnotation", 2, 0, new DebugConfiguration.Builder()
-        .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                       .build());
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
     }
 
 }

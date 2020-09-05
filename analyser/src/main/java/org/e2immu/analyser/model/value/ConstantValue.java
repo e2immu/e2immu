@@ -60,11 +60,6 @@ public abstract class ConstantValue implements Value {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return true;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

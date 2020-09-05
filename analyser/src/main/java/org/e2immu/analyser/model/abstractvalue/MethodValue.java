@@ -86,19 +86,6 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        boolean safeParams = parameters.stream().allMatch(Value::isExpressionOfParameters);
-        if (!safeParams) return false;
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        boolean isModified = modified == Level.TRUE;
-        if (isModified) return false; // this method modifies fields
-        int container = methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONTAINER);
-        if (container == Level.TRUE) return true; // does not modify parameters
-        return methodInfo.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
-                parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE);
-    }
-
-    @Override
     public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         Value reObject = object.reEvaluate(evaluationContext, translation);

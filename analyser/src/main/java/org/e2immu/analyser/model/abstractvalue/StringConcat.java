@@ -18,14 +18,16 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
@@ -33,37 +35,42 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class RemainderValue extends PrimitiveValue {
+public class StringConcat implements Value {
     public final Value lhs;
     public final Value rhs;
+    public  final ObjectFlow objectFlow;
 
-    public RemainderValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
-        super(objectFlow);
+    public StringConcat(Value lhs, Value rhs, ObjectFlow objectFlow) {
         this.lhs = lhs;
         this.rhs = rhs;
+        this.objectFlow = objectFlow;
     }
 
-    public static Value remainder(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
-        if (l instanceof NumericValue && l.toInt().value == 0) return l;
-        if (r instanceof NumericValue && r.toInt().value == 0) {
-            evaluationContext.raiseError(Message.DIVISION_BY_ZERO);
-            return l;
+    public static Value stringConcat(Value l, Value r, ObjectFlow objectFlow) {
+        StringValue lsv = l.asInstanceOf(StringValue.class);
+        StringValue rsv = r.asInstanceOf(StringValue.class);
+        if (lsv != null && rsv != null) {
+            return lsv.value.isEmpty() ? r : rsv.value.isEmpty() ? l : new StringValue(lsv.value + rsv.value, objectFlow);
         }
-        if (r instanceof NumericValue && r.toInt().value == 1) return l;
-        if (l instanceof IntValue && r instanceof IntValue)
-            return new IntValue(l.toInt().value % r.toInt().value, objectFlow);
-
+        ConstantValue rcv = r.asInstanceOf(ConstantValue.class);
+        if (lsv != null && rcv != null) {
+            return new StringValue(lsv.value + rcv.toString(), objectFlow);
+        }
+        ConstantValue lcv = l.asInstanceOf(ConstantValue.class);
+        if (rsv != null && lcv != null) {
+            return new StringValue(lcv.toString() + rsv.value, objectFlow);
+        }
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        return new RemainderValue(l, r, objectFlow);
+        return new StringConcat(l, r, objectFlow);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RemainderValue orValue = (RemainderValue) o;
+        StringConcat orValue = (StringConcat) o;
         return lhs.equals(orValue.lhs) &&
                 rhs.equals(orValue.rhs);
     }
@@ -75,22 +82,27 @@ public class RemainderValue extends PrimitiveValue {
 
     @Override
     public String toString() {
-        return lhs + " % " + rhs;
+        return lhs + " + " + rhs;
     }
 
     @Override
     public int order() {
-        return ORDER_REMAINDER;
+        return ORDER_SUM;
     }
 
     @Override
     public int internalCompareTo(Value v) {
         // comparing 2 or values...compare lhs
-        int c = lhs.compareTo(((RemainderValue) v).lhs);
+        int c = lhs.compareTo(((StringConcat) v).lhs);
         if (c == 0) {
-            c = rhs.compareTo(((RemainderValue) v).rhs);
+            c = rhs.compareTo(((StringConcat) v).rhs);
         }
         return c;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return Primitives.PRIMITIVES.stringParameterizedType;
     }
 
     @Override
@@ -99,8 +111,8 @@ public class RemainderValue extends PrimitiveValue {
     }
 
     @Override
-    public ParameterizedType type() {
-        return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override

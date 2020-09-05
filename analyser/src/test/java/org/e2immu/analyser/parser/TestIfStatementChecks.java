@@ -46,7 +46,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
-            if("0".equals(d.statementId)) {
+            if ("0".equals(d.statementId)) {
                 Assert.assertEquals("not (null == a)", d.numberedStatement.state.get().toString());
             }
         }
@@ -54,27 +54,26 @@ public class TestIfStatementChecks extends CommonTestRunner {
 
     // inlining happens when the replacements are active
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if (iteration > 0) {
+            if ("method1".equals(methodInfo.name)) {
+                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+            }
 
-        if ("method1".equals(methodInfo.name)) {
-            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
-        }
+            if ("method2".equals(methodInfo.name)) {
+                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+            }
 
-        if ("method2".equals(methodInfo.name)) {
-            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
-        }
+            if ("method3".equals(methodInfo.name)) {
+                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
+            }
 
-        if ("method3".equals(methodInfo.name)) {
-            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
-        }
-
-        // TODO at some point we will hav an InlineValue here as well, we'll simply have to transform
-        // the pattern X x; if(...) x= else x= into an inline definition
-        if ("method4".equals(methodInfo.name)) {
-            Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, value);
+            if ("method4".equals(methodInfo.name)) {
+                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertEquals("inline method4 on res", value.toString());
+            }
         }
     };
 

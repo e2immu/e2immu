@@ -201,11 +201,6 @@ public class OrValue extends PrimitiveValue {
         return Primitives.PRIMITIVES.booleanParameterizedType;
     }
 
-    @Override
-    public boolean isExpressionOfParameters() {
-        return values.stream().allMatch(Value::isExpressionOfParameters);
-    }
-
     // no implementation of any of the filters
 
     @Override

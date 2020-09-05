@@ -297,11 +297,6 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return value.isExpressionOfParameters();
-    }
-
-    @Override
     public FilterResult isIndividualSizeRestrictionOnParameter() {
         XB xb = extract();
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {

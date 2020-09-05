@@ -111,7 +111,8 @@ public interface Value extends Comparable<Value> {
         if (VariableProperty.NOT_NULL == variableProperty)
             return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
         if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
-
+        if(VariableProperty.IDENTITY == variableProperty) return Level.FALSE;
+        if(VariableProperty.NOT_MODIFIED_1 == variableProperty) return Level.FALSE;
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 
@@ -198,8 +199,6 @@ public interface Value extends Comparable<Value> {
         return null;
     }
 
-    // HELPERS, NO NEED TO IMPLEMENT
-
     default Set<Variable> variables() {
         return Set.of();
     }
@@ -211,10 +210,6 @@ public interface Value extends Comparable<Value> {
     default Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         Value inMap = translation.get(this);
         return inMap == null ? this : inMap;
-    }
-
-    default boolean isExpressionOfParameters() {
-        return false;
     }
 
     ObjectFlow getObjectFlow();

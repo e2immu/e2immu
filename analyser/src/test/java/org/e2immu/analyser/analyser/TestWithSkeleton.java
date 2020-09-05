@@ -156,11 +156,11 @@ public class TestWithSkeleton {
     }
 
     private VariableProperties newVariableProperties(MethodInfo method) {
-        return new VariableProperties(0, new Configuration.Builder().build(), new PatternMatcher(Map.of()), method);
+        return new VariableProperties(null, 0, new Configuration.Builder().build(), new PatternMatcher(Map.of()), method);
     }
 
     private VariableProperties newVariableProperties(TypeInfo typeInfo) {
-        return new VariableProperties(typeInfo, 0, new Configuration.Builder().build(), new PatternMatcher(Map.of()));
+        return new VariableProperties(null, typeInfo, 0, new Configuration.Builder().build(), new PatternMatcher(Map.of()));
     }
 
     @Test

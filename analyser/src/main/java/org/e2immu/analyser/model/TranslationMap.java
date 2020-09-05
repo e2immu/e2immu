@@ -112,6 +112,10 @@ public class TranslationMap {
                 parameterizedType.parameters.stream().map(this::translateType).collect(Collectors.toList()));
     }
 
+    public TypeInfo translateTypeWithBody(TypeInfo typeInfo) {
+        return typeInfo; // TODO
+    }
+
     public LocalVariable translateLocalVariable(LocalVariable localVariable) {
         return localVariables.getOrDefault(localVariable, localVariable).translate(this);
     }

@@ -28,6 +28,7 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -37,6 +38,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public interface EvaluationContext {
+
+    default E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        throw new UnsupportedOperationException();
+    }
 
     default Messages getMessages() {
         throw new UnsupportedOperationException();

@@ -35,12 +35,12 @@ import java.util.stream.Stream;
  * @param <K>
  * @param <V>
  */
-@E2Container(after = "frozen")
+@E2Container(after = "frozen,map")
 public class SetOnceMap<K, V> extends Freezable {
 
     private final Map<K, V> map = new HashMap<>();
 
-    @Only(before = "frozen")
+    @Only(before = "frozen,map")
     @Size(min = 1)
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);
@@ -51,6 +51,7 @@ public class SetOnceMap<K, V> extends Freezable {
     }
 
     @NotNull
+    @Only(after = "map")
     public V get(K k) {
         if (!isSet(k)) throw new UnsupportedOperationException("Not yet decided on " + k);
         return Objects.requireNonNull(map.get(k));

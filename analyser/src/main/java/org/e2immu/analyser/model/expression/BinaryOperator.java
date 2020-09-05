@@ -184,9 +184,13 @@ public class BinaryOperator implements Expression {
          TODO
          */
         if (operator == Primitives.PRIMITIVES.plusOperatorString) {
-            return StringValue.concat(l, r, evaluationContext);
+            return StringConcat.stringConcat(l, r, stringObjectFlow(evaluationContext));
         }
         throw new UnsupportedOperationException("Operator " + operator.fullyQualifiedName());
+    }
+
+    private ObjectFlow stringObjectFlow(EvaluationContext evaluationContext) {
+        return new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.stringParameterizedType, Origin.RESULT_OF_OPERATOR);
     }
 
     private ObjectFlow booleanObjectFlow(EvaluationContext evaluationContext) {

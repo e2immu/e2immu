@@ -158,7 +158,8 @@ public class TypeAnalyser {
 
             for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
                 if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(iteration, configuration, patternMatcher, (MethodInfo) member);
+                    VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
+                            iteration, configuration, patternMatcher, (MethodInfo) member);
 
                     if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
                         changes = true;
@@ -172,8 +173,8 @@ public class TypeAnalyser {
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                         FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                         if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(iteration, configuration, patternMatcher,
-                                    fieldInitialiser.implementationOfSingleAbstractMethod);
+                            VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
+                                    iteration, configuration, patternMatcher, fieldInitialiser.implementationOfSingleAbstractMethod);
 
                             try {
                                 if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
@@ -193,7 +194,8 @@ public class TypeAnalyser {
                         }
                     }
 
-                    VariableProperties fieldProperties = new VariableProperties(iteration, configuration, patternMatcher, fieldInfo);
+                    VariableProperties fieldProperties = new VariableProperties(e2ImmuAnnotationExpressions,
+                            iteration, configuration, patternMatcher, fieldInfo);
                     if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
@@ -383,6 +385,10 @@ public class TypeAnalyser {
     }
 
     public static String labelOfPreconditionForMarkAndOnly(Value value) {
+        if (value instanceof AndValue) {
+            AndValue andValue = (AndValue) value;
+            return andValue.values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).distinct().sorted().collect(Collectors.joining(","));
+        }
         return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
     }
 

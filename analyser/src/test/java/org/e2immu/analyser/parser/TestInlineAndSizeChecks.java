@@ -16,25 +16,25 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId) && "l1".equals(d.variableName)) {
+        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId) && "l1".equals(d.variableName) && d.iteration > 0) {
             Assert.assertEquals("in1.length(),?>=0", d.currentValue.toString());
         }
         // TODO for now, in2.toLowerCase().length() is not reduced to in2.length()
-        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "l2".equals(d.variableName)) {
+        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "l2".equals(d.variableName) && d.iteration > 0) {
             Assert.assertEquals("in2.toLowerCase().length(),?>=0", d.currentValue.toString());
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("len".equals(methodInfo.name)) {
+        if ("len".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals("inline len on null == s?(-1):s.length(),?>=0", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
         }
 
         if ("len6".equals(methodInfo.name)) {
-           // Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
+            // Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
         }
         if ("len7".equals(methodInfo.name)) {
-          //  Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
+            //  Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
         }
     };
 

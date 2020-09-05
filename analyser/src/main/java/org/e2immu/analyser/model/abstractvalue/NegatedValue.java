@@ -154,12 +154,6 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return value.isExpressionOfParameters();
-    }
-
-
-    @Override
     public void visit(Consumer<Value> consumer) {
         value.visit(consumer);
         consumer.accept(this);

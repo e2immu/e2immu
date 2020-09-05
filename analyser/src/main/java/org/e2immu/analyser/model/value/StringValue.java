@@ -41,21 +41,6 @@ public class StringValue extends ConstantValue implements Constant<String> {
         this.value = Objects.requireNonNull(value);
     }
 
-    public static Value concat(Value l, Value r, EvaluationContext evaluationContext) {
-        if (l.isConstant() && r.isConstant()) {
-            String ls = l.toString();
-            String rs = r.toString();
-            if (ls.isEmpty() && r instanceof StringValue) {
-                return r;
-            }
-            if (rs.isEmpty() && l instanceof StringValue) {
-                return l;
-            }
-            return new StringValue(ls + rs, evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.stringParameterizedType));
-        }
-        return Instance.newStringInstance(evaluationContext);
-    }
-
     @Override
     public String toString() {
         return value;

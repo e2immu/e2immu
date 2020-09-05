@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
 public class TestSetOnceMap extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("get".equals(methodInfo.name)) {
+        if ("get".equals(methodInfo.name) && iteration > 0) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
+            Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
 
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
             Assert.assertNotNull(tv);
@@ -52,11 +52,10 @@ public class TestSetOnceMap extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
 
-            if (iteration > 0) {
-                // independent, because does not return a support data type
-                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.TRUE, independent);
-            }
+
+            // independent, because does not return a support data type
+            int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            Assert.assertEquals(Level.TRUE, independent);
         }
         if ("getOtherwiseNull".equals(methodInfo.name)) {
             if (iteration > 0) {
@@ -74,11 +73,12 @@ public class TestSetOnceMap extends CommonTestRunner {
 
             // there is no reason to have a @Size annotation on this expression
             Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
-
-            Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
-            // @Size(equals = 0)
-            Assert.assertEquals(Level.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
+            if (iteration > 0) {
+                Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertEquals("inline isEmpty on 0 == this.map.size(),?>=0", srv.toString());
+                // @Size(equals = 0)
+                Assert.assertEquals(Level.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
+            }
         }
         if ("stream".equals(methodInfo.name)) {
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
@@ -89,10 +89,10 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("put".equals(methodInfo.name)) {
             if (iteration > 0) {
-                Assert.assertEquals("not (this.frozen)", methodInfo.methodAnalysis.get().precondition.get().toString());
+                Assert.assertEquals("(not (this.map.containsKey(k)) and not (this.frozen))", methodInfo.methodAnalysis.get().precondition.get().toString());
             }
             if (iteration > 1) {
-                Assert.assertEquals("not (this.frozen)", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+                Assert.assertEquals("(not (this.map.containsKey(k)) and not (this.frozen))", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
             }
         }
     };
@@ -115,7 +115,7 @@ public class TestSetOnceMap extends CommonTestRunner {
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         MethodInfo put = map.findUniqueMethod("put", 2);
-        for(ParameterInfo parameterInfo: put.methodInspection.get().parameters) {
+        for (ParameterInfo parameterInfo : put.methodInspection.get().parameters) {
             Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);

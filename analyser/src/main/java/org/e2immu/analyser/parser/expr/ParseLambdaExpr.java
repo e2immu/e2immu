@@ -21,11 +21,11 @@ package org.e2immu.analyser.parser.expr;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.LambdaBlock;
-import org.e2immu.analyser.model.expression.LambdaExpression;
+import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.VariableContext;
@@ -81,6 +81,9 @@ public class ParseLambdaExpr {
         }
         ExpressionContext newExpressionContext = expressionContext.newVariableContext(newVariableContext, "lambda");
 
+        Block block;
+        ParameterizedType inferredReturnType;
+
         boolean isExpression = lambdaExpr.getExpressionBody().isPresent();
         if (isExpression) {
             Expression expr = newExpressionContext.parseExpression(lambdaExpr.getExpressionBody());
@@ -88,18 +91,16 @@ public class ParseLambdaExpr {
                 log(LAMBDA, "Body results in unevaluated method call, so I can't be evaluated either");
                 return partiallyParse(lambdaExpr);
             }
-            ParameterizedType inferredReturnType = expr.returnType();
-            ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
-            ParameterizedType anonymousType = createAnonymousType(expressionContext.enclosingType, owner, parameters, functionalType);
-            log(LAMBDA, "End parsing lambda as expression, inferred functional type {}", functionalType);
-            return new LambdaExpression(parameters, expr, functionalType, anonymousType);
+            inferredReturnType = expr.returnType();
+            block = new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build();
+        } else {
+            block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
+            inferredReturnType = block.mostSpecificReturnType();
         }
-        Block block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-        ParameterizedType inferredReturnType = block.mostSpecificReturnType();
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
-        ParameterizedType anonymousType = createAnonymousType(expressionContext.enclosingType, owner, parameters, functionalType);
+        ParameterizedType anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, owner, parameters, block, functionalType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}", functionalType);
-        return new LambdaBlock(parameters, block, functionalType, anonymousType);
+        return new Lambda(functionalType, anonymousType);
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
@@ -115,16 +116,16 @@ public class ParseLambdaExpr {
         return new MethodInfo(typeInfo, "apply", false);
     }
 
-    private static ParameterizedType createAnonymousType(TypeInfo enclosingType,
-                                                         MethodInfo methodInfo,
-                                                         List<ParameterInfo> parameters,
-                                                         ParameterizedType returnType) {
+    private static ParameterizedType continueCreationOfAnonymousType(TypeInfo enclosingType,
+                                                                     MethodInfo methodInfo,
+                                                                     List<ParameterInfo> parameters,
+                                                                     Block block,
+                                                                     ParameterizedType returnType) {
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(returnType));
         methodInspectionBuilder.addParameters(parameters);
+        methodInspectionBuilder.setBlock(block);
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
-        MethodAnalysis methodAnalysis = MethodAnalysis.newMethodAnalysisForLambdaBlocks(methodInfo);
-        methodInfo.methodAnalysis.set(methodAnalysis);
 
         TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
         typeInspectionBuilder.setTypeNature(TypeNature.INTERFACE);
@@ -133,9 +134,13 @@ public class ParseLambdaExpr {
         typeInspectionBuilder.addMethod(methodInfo);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
         typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
-        // TODO this is the absolute minimum to recognize the type + method as functional interface. More needs to be done
+
+        // this has to come AFTER we set the type to be hasDefined = true, and the block with content
+        MethodAnalysis methodAnalysis = MethodAnalysis.newMethodAnalysisForLambdaBlocks(methodInfo);
+        methodInfo.methodAnalysis.set(methodAnalysis);
+
         return typeInfo.asParameterizedType();
     }
 }

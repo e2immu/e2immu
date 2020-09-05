@@ -20,12 +20,11 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.LambdaBlock;
+import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
 
 public class ExpressionAsStatement extends StatementWithExpression {
 
@@ -60,8 +59,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
         } else {
             builder.setExpression(expression);
         }
-        if (expression instanceof LambdaBlock) {
-            builder.setStatements(((LambdaBlock) expression).block);
+        if (expression instanceof Lambda) {
+            builder.setStatements(((Lambda) expression).block);
         }
         return builder.build();
     }

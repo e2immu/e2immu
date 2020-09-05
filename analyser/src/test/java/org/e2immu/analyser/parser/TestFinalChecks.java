@@ -6,6 +6,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
+import org.e2immu.analyser.model.abstractvalue.StringConcat;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,17 +33,13 @@ public class TestFinalChecks extends CommonTestRunner {
             if (d.iteration == 0) {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
             } else if (d.iteration == 1) {
-                Assert.assertEquals("instance type java.lang.String()", d.currentValue.toString());
+                Assert.assertEquals("s1 + abc", d.currentValue.toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
-                Assert.assertEquals("this.s1", d.currentValue.toString());
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
-                if (d.iteration == 2) {
-                    Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                } else {
-                    Assert.assertEquals(MultiLevel.FALSE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                }
+                Assert.assertEquals("s1 + abc", d.currentValue.toString());
+                Assert.assertTrue(d.currentValue instanceof StringConcat);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
             }
         }
 

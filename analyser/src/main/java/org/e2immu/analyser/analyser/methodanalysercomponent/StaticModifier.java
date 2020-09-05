@@ -76,7 +76,7 @@ public class StaticModifier {
 
     public static void detectMissingStaticModifier(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.complainedAboutMissingStaticModifier.isSet()) {
-            if (!methodInfo.isStatic) {
+            if (!methodInfo.isStatic && !methodInfo.typeInfo.isInterface()) {
                 // we need to check if there's fields being read/assigned/
                 if (absentUnlessStatic(methodAnalysis, VariableProperty.READ) &&
                         absentUnlessStatic(methodAnalysis, VariableProperty.ASSIGNED) &&

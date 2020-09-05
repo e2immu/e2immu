@@ -115,7 +115,7 @@ public class MethodAnalyser {
         });
     }
 
-    public boolean analyse(MethodInfo methodInfo, VariableProperties methodProperties) {
+    public boolean analyse(MethodInfo methodInfo, EvaluationContext methodProperties) {
         List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().statements;
         if (!statements.isEmpty()) {
             boolean changes = false;
@@ -137,7 +137,8 @@ public class MethodAnalyser {
         return false;
     }
 
-    private boolean analyseMethod(MethodInfo methodInfo, VariableProperties methodProperties) {
+    private boolean analyseMethod(MethodInfo methodInfo, EvaluationContext evaluationContext) {
+        VariableProperties methodProperties = (VariableProperties) evaluationContext;
         try {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
@@ -231,8 +232,10 @@ public class MethodAnalyser {
 
             methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
                 ParameterAnalysis parameterAnalysis = ((ParameterInfo) of.location.info).parameterAnalysis.get();
-                of.finalize(parameterAnalysis.objectFlow.getFirst());
-                parameterAnalysis.objectFlow.set(of);
+                if (!parameterAnalysis.objectFlow.isSet()) {
+                    of.finalize(parameterAnalysis.objectFlow.getFirst());
+                    parameterAnalysis.objectFlow.set(of);
+                }
             });
 
             TypeAnalysis typeAnalysis = methodInfo.typeInfo.typeAnalysis.get();
@@ -259,6 +262,10 @@ public class MethodAnalyser {
             return false;
         }
         String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
+        if(!approvedPreconditions.isSet(markLabel)) {
+            // not going to work...
+            return false;
+        }
         Value before = approvedPreconditions.get(markLabel);
         boolean after;
         if (before.equals(precondition)) {
@@ -373,7 +380,7 @@ public class MethodAnalyser {
             return false;
         }
         List<TransferValue> remainingReturnStatementSummaries = methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
-        
+
         Value value = null;
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
@@ -389,8 +396,12 @@ public class MethodAnalyser {
             }
             if (single.isConstant()) {
                 value = single;
-            } else if (methodInfo.isStatic && single.isExpressionOfParameters()) {
-                value = new InlineValue(methodInfo, single);
+            } else {
+                int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+                if (modified == Level.DELAY) return false;
+                if (modified == Level.FALSE) {
+                    value = new InlineValue(methodInfo, single);
+                }
             }
         }
         if (!methodAnalysis.objectFlow.isSet()) {
@@ -727,11 +738,16 @@ public class MethodAnalyser {
         List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
         parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
+        boolean allLinkedVariablesSet = methodAnalysis.fieldSummaries.stream().allMatch(e -> e.getValue().linkedVariables.isSet());
+        if (!allLinkedVariablesSet) {
+            log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
+            return false;// DELAY
+        }
         boolean supportDataSet = methodAnalysis.fieldSummaries.stream()
                 .flatMap(e -> e.getValue().linkedVariables.get().stream())
                 .allMatch(MethodAnalyser::isSupportDataFieldSet);
         if (!supportDataSet) {
-            log(DELAYED, "Delaying @Independent on {}, support data not known for all field references", methodInfo.distinguishingName());
+            log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
             return false;
         }
 

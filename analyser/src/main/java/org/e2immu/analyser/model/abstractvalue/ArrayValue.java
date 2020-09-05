@@ -69,11 +69,6 @@ public class ArrayValue implements Value {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return values.stream().allMatch(Value::isExpressionOfParameters);
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

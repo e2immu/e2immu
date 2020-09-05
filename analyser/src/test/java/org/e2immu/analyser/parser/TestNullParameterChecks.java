@@ -10,6 +10,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,16 +74,24 @@ public class TestNullParameterChecks extends CommonTestRunner {
             }
         }
         if ("method11Lambda".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
-            // value was an Instance, which gets translated to a VariableValue that is not null
-            Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
-            Assert.assertEquals("inline apply on instance type java.lang.String()", d.currentValue.toString());
-            InlineValue inlineValue = (InlineValue)d.currentValue;
-            Assert.assertEquals(Level.FALSE, inlineValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            if (d.iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+            } else {
+                Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
+                Assert.assertEquals("inline apply on inline apply on t.trim() + .", d.currentValue.toString());
+                InlineValue inlineValue = (InlineValue) d.currentValue;
+                Assert.assertEquals(Level.FALSE, inlineValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
         }
+
         if ("method12LambdaBlock".equals(d.methodInfo.name) && "supplier".equals(d.variableName) && "0".equals(d.statementId)) {
-            // value was an Instance, which gets translated to a VariableValue that is not null
-            Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof VariableValue);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+            // 1st iteration:
+            if (d.iteration == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+            } else {
+                Assert.assertTrue("Have " + d.currentValue.getClass(), d.currentValue instanceof InlineValue);
+                //   Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            }
         }
     };
 

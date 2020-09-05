@@ -19,12 +19,13 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
@@ -34,45 +35,62 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements.recursivelyCreateNumberedStatements;
 
-public class LambdaBlock implements Expression {
+public class Lambda implements Expression {
+    public final MethodInfo methodInfo;
     public final Block block;
     public final List<ParameterInfo> parameters;
-    public final ParameterizedType returnType;
-    public final ParameterizedType functionalType;
+    public final ParameterizedType abstractFunctionalType;
+    public final ParameterizedType implementation;
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
 
-    public LambdaBlock(@NotNull List<ParameterInfo> parameters,
-                       @NotNull Block block,
-                       @NotNull ParameterizedType returnType,
-                       @NotNull ParameterizedType functionalType) {
-        this.block = Objects.requireNonNull(block);
-        this.parameters = Objects.requireNonNull(parameters);
-        this.returnType = Objects.requireNonNull(returnType);
-        this.functionalType = Objects.requireNonNull(functionalType);
+    /**
+     * @param abstractFunctionalType e.g. java.util.Supplier
+     * @param implementation         anonymous type, with single abstract method with implementation block
+     */
+    public Lambda(@NotNull ParameterizedType abstractFunctionalType,
+                  @NotNull ParameterizedType implementation) {
+        methodInfo = implementation.findSingleAbstractMethodOfInterface().methodInfo;
+        this.block = methodInfo.methodInspection.get().methodBody.get();
+        this.parameters = methodInfo.methodInspection.get().parameters;
+        if (!abstractFunctionalType.isFunctionalInterface()) throw new UnsupportedOperationException();
+        this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
+        if (!implementation.isFunctionalInterface()) throw new UnsupportedOperationException();
+        this.implementation = Objects.requireNonNull(implementation);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new LambdaBlock(parameters.stream().map(v -> (ParameterInfo) translationMap.translateVariable(v)).collect(Collectors.toList()),
-                translationMap.translateBlock(block),
-                translationMap.translateType(returnType),
-                translationMap.translateType(functionalType));
+        // TODO translation of the body still needs implementing
+        return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
+    }
+
+    private Expression singleExpression() {
+        if (block.statements.size() != 1) return null;
+        Statement statement = block.statements.get(0);
+        if (!(statement instanceof ReturnStatement)) return null;
+        ReturnStatement returnStatement = (ReturnStatement) statement;
+        return returnStatement.expression;
     }
 
     // this is a functional interface
     @Override
     public ParameterizedType returnType() {
-        return returnType;
+        return abstractFunctionalType;
     }
 
     @Override
     public String expressionString(int indent) {
         String blockString;
-        if (block.statements.isEmpty()) blockString = "{ }";
-        else {
-            List<NumberedStatement> statements = numberedStatements.get();
-            NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);
-            blockString = block.statementString(indent, numberedStatement);
+        Expression singleExpression = singleExpression();
+        if (singleExpression != null) {
+            blockString = singleExpression.expressionString(indent);
+        } else {
+            if (block.statements.isEmpty()) blockString = "{ }";
+            else {
+                List<NumberedStatement> statements = numberedStatements.get();
+                NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);
+                blockString = block.statementString(indent, numberedStatement);
+            }
         }
         if (parameters.size() == 1) {
             return parameters.get(0).stream() + " -> " + blockString;
@@ -105,35 +123,30 @@ public class LambdaBlock implements Expression {
 
     @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        MethodInfo methodInfo = functionalType.findSingleAbstractMethodOfInterface().methodInfo;
         Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
-        // important to note: MethodValue is the result of a method; we return an instance of the type
-        //new MethodValue(methodInfo, new TypeValue(methodInfo.typeInfo.asParameterizedType()), List.of());
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
             parameters.forEach(child::createLocalVariableOrParameter);
 
-            boolean changes = false;
-            if (!numberedStatements.isSet()) {
-                List<NumberedStatement> numberedStatements = new LinkedList<>();
-                Stack<Integer> indices = new Stack<>();
-                recursivelyCreateNumberedStatements(null,
-                        block.statements,
-                        indices,
-                        numberedStatements, true);
-                this.numberedStatements.set(numberedStatements);
-                changes = true;
-            }
-            StatementAnalyser statementAnalyser = new StatementAnalyser(child.getCurrentMethod());
-            if (!this.numberedStatements.get().isEmpty() && statementAnalyser.computeVariablePropertiesOfBlock(this.numberedStatements.get().get(0), child)) {
-                changes = true;
-            }
-            evaluationContext.copyMessages(statementAnalyser.getMessageStream());
+            MethodAnalyser methodAnalyser = new MethodAnalyser(evaluationContext.getE2ImmuAnnotationExpressions());
+            boolean changes = methodAnalyser.analyse(methodInfo, child);
+
+            evaluationContext.copyMessages(methodAnalyser.getMessageStream());
             evaluationContext.merge(child);
+
+            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
+                Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                if (!singleReturnValue.isUnknown()) {
+                    result = new InlineValue(methodInfo, singleReturnValue);
+                }
+            } else {
+                result = UnknownValue.NO_VALUE; // DELAY
+            }
             visitor.visit(this, child, result, changes);
         }
+
         return result;
     }
 }

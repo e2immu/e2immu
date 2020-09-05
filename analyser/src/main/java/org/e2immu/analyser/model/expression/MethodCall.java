@@ -198,11 +198,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        MethodInfo method;
+        if (objectValue instanceof InlineValue) {
+            method = ((InlineValue) objectValue).methodInfo;
+        } else {
+            method = methodInfo;
+        }
+        int modified = method.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         int immutable = objectValue.getProperty(evaluationContext, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             evaluationContext.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
-                    "Method: " + methodInfo.distinguishingName());
+                    "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.type());
         }
     }
 

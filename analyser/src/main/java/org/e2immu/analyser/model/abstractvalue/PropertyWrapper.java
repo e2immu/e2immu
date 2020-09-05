@@ -130,12 +130,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
         return value.variables();
     }
 
-    // meaning, can we re-evaluate this? can it be part of an inline operation?
-    @Override
-    public boolean isExpressionOfParameters() {
-        return value.isExpressionOfParameters();
-    }
-
     @Override
     public ObjectFlow getObjectFlow() {
         return overwriteObjectFlow != null ? overwriteObjectFlow : value.getObjectFlow();

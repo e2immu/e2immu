@@ -739,7 +739,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * This is the starting place to compute all types that are referred to in any way.
      * This is different from imports, because imports need an explicitly written type.
      *
-     * @return
+     * @return a set of all types referenced
      */
     public Set<TypeInfo> typesReferenced() {
         Set<TypeInfo> result = new HashSet<>();
@@ -992,31 +992,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // compose the content of the method...
         Block block;
-        if (returnExpression instanceof LambdaBlock) {
-            LambdaBlock lambdaBlock = (LambdaBlock) returnExpression;
+        if (returnExpression instanceof Lambda) {
+            Lambda lambda = (Lambda) returnExpression;
             Map<Variable, Variable> translationMap = new HashMap<>();
             int i = 0;
-            for (ParameterInfo lambdaParameter : lambdaBlock.parameters) {
+            for (ParameterInfo lambdaParameter : lambda.parameters) {
                 ParameterInfo interfaceMethodParameter = methodInfo.methodInspection.get().parameters.get(i);
                 translationMap.put(lambdaParameter, interfaceMethodParameter);
                 i++;
             }
-            LambdaBlock translated = (LambdaBlock) lambdaBlock.translate(TranslationMap.fromVariableMap(translationMap));
+            Lambda translated = (Lambda) lambda.translate(TranslationMap.fromVariableMap(translationMap));
             Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
             translated.block.statements.forEach(blockBuilder::addStatement);
             block = blockBuilder.build();
-        } else if (returnExpression instanceof LambdaExpression) {
-            LambdaExpression lambdaExpression = (LambdaExpression) returnExpression;
-            Map<Variable, Variable> translationMap = new HashMap<>();
-            int i = 0;
-            for (ParameterInfo lambdaParameter : lambdaExpression.parameters) {
-                ParameterInfo interfaceMethodParameter = methodInfo.methodInspection.get().parameters.get(i);
-                translationMap.put(lambdaParameter, interfaceMethodParameter);
-                i++;
-            }
-            ReturnStatement returnStatement = new ReturnStatement(
-                    lambdaExpression.expression.translate(TranslationMap.fromVariableMap(translationMap)));
-            block = new Block.BlockBuilder().addStatement(returnStatement).build();
         } else if (returnExpression instanceof MethodReference) {
             MethodReference methodReference = (MethodReference) returnExpression;
             Expression newReturnExpression;

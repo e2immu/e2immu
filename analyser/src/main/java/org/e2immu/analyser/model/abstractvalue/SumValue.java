@@ -138,11 +138,6 @@ public class SumValue extends PrimitiveValue {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return lhs.isExpressionOfParameters() && rhs.isExpressionOfParameters();
-    }
-
-    @Override
     public void visit(Consumer<Value> consumer) {
         lhs.visit(consumer);
         rhs.visit(consumer);

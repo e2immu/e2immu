@@ -84,9 +84,4 @@ public class InstanceOfValue extends PrimitiveValue {
     public Set<Variable> variables() {
         return Set.of(variable);
     }
-
-    @Override
-    public boolean isExpressionOfParameters() {
-        return true;
-    }
 }

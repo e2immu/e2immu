@@ -1,14 +1,12 @@
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrapper {
@@ -194,8 +192,8 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return value.isExpressionOfParameters();
+    public Set<Variable> variables() {
+        return value.variables();
     }
 
     @Override

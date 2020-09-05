@@ -32,6 +32,7 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.pattern.PatternMatcher;
@@ -78,6 +79,7 @@ class VariableProperties implements EvaluationContext {
 
     // the rest should be not modified
 
+    final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     final int depth;
     final int iteration;
     final Configuration configuration;
@@ -97,27 +99,32 @@ class VariableProperties implements EvaluationContext {
     private final List<Value> preconditions = new ArrayList<>();
 
     // TEST ONLY, in type analyser, for fields
-    public VariableProperties(TypeInfo currentType, int iteration, Configuration configuration, PatternMatcher patternMatcher) {
-        this(currentType, iteration, configuration, patternMatcher, null, null, new HashSet<>());
+    public VariableProperties(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                              TypeInfo currentType, int iteration, Configuration configuration, PatternMatcher patternMatcher) {
+        this(e2ImmuAnnotationExpressions, currentType, iteration, configuration, patternMatcher, null, null, new HashSet<>());
     }
 
     // in type analyser, for methods
-    public VariableProperties(int iteration, Configuration configuration, PatternMatcher patternMatcher, MethodInfo currentMethod) {
-        this(currentMethod.typeInfo, iteration, configuration, patternMatcher, currentMethod, null, new HashSet<>());
+    public VariableProperties(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                              int iteration, Configuration configuration, PatternMatcher patternMatcher, MethodInfo currentMethod) {
+        this(e2ImmuAnnotationExpressions, currentMethod.typeInfo, iteration, configuration, patternMatcher, currentMethod, null, new HashSet<>());
     }
 
     // in type analyser, for fields
-    public VariableProperties(int iteration, Configuration configuration, PatternMatcher patternMatcher, FieldInfo currentField) {
-        this(currentField.owner, iteration, configuration, patternMatcher, null, currentField, new HashSet<>());
+    public VariableProperties(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                              int iteration, Configuration configuration, PatternMatcher patternMatcher, FieldInfo currentField) {
+        this(e2ImmuAnnotationExpressions, currentField.owner, iteration, configuration, patternMatcher, null, currentField, new HashSet<>());
     }
 
-    private VariableProperties(TypeInfo currentType,
+    private VariableProperties(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                               TypeInfo currentType,
                                int iteration,
                                Configuration configuration,
                                PatternMatcher patternMatcher,
                                MethodInfo currentMethod,
                                FieldInfo currentField,
                                Set<ObjectFlow> internalObjectFlows) {
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         this.iteration = iteration;
         this.depth = 0;
         this.configuration = configuration;
@@ -158,6 +165,7 @@ class VariableProperties implements EvaluationContext {
                                Runnable uponUsingConditional,
                                boolean inSyncBlock,
                                boolean guaranteedToBeReachedByParentStatement) {
+        this.e2ImmuAnnotationExpressions = parent.e2ImmuAnnotationExpressions;
         this.iteration = parent.iteration;
         this.depth = depth;
         this.configuration = parent.configuration;
@@ -174,6 +182,10 @@ class VariableProperties implements EvaluationContext {
         this.internalObjectFlows = parent.internalObjectFlows; // TODO this is wrong; we should be making a child object flow
         this.messages = parent.messages;
         this.patternMatcher = parent.patternMatcher;
+    }
+
+    public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        return e2ImmuAnnotationExpressions;
     }
 
     @Override

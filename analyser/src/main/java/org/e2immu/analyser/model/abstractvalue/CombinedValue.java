@@ -82,11 +82,6 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public boolean isExpressionOfParameters() {
-        return values.stream().allMatch(Value::isExpressionOfParameters);
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NO_FLOW;
     }

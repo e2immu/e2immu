@@ -86,9 +86,4 @@ public abstract class ValueWithVariable implements Value {
         if (variableOrderDiff != 0) return variableOrderDiff;
         return variable.name().compareTo(vwv.variable.name());
     }
-
-    @Override
-    public boolean isExpressionOfParameters() {
-        return variable instanceof ParameterInfo;
-    }
 }

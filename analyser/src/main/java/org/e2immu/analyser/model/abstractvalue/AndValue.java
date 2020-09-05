@@ -426,17 +426,6 @@ public class AndValue extends PrimitiveValue {
         return values.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toSet());
     }
 
-    public Value removeClausesInvolving(Variable variable, boolean includeEqualityOnVariable) {
-        return new AndValue(objectFlow, values.stream()
-                .filter(value -> !value.variables().contains(variable) ||
-                        !includeEqualityOnVariable && value instanceof EqualsValue).collect(Collectors.toList()));
-    }
-
-    @Override
-    public boolean isExpressionOfParameters() {
-        return values.stream().allMatch(Value::isExpressionOfParameters);
-    }
-
     @Override
     public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
         if (filterMode == FilterMode.REJECT) return new FilterResult(Map.of(), this);

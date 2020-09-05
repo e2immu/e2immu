@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
@@ -28,6 +29,11 @@ public class InlineValue implements Value {
     public InlineValue(MethodInfo methodInfo, Value value) {
         this.methodInfo = methodInfo;
         this.value = value;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return value.type(); // maybe better than methodInfo.returnType()
     }
 
     @Override
