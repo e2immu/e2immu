@@ -257,20 +257,20 @@ public class MethodAnalysis extends Analysis {
 
     protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
         ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
-        preconditionForMarkAndOnly.set(contractMark);
+        preconditionForMarkAndOnly.set(List.of(contractMark));
         this.markAndOnly.set(markAndOnly);
     }
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
     public static class MarkAndOnly {
-        public final Value precondition;
+        public final List<Value> preconditions;
         public final String markLabel;
         public final boolean mark;
         public final Boolean after; // null for a @Mark without @Only
 
-        public MarkAndOnly(Value precondition, String markLabel, boolean mark, Boolean after) {
-            this.precondition = precondition;
+        public MarkAndOnly(List<Value> preconditions, String markLabel, boolean mark, Boolean after) {
+            this.preconditions = preconditions;
             this.mark = mark;
             this.markLabel = markLabel;
             this.after = after;
@@ -278,12 +278,12 @@ public class MethodAnalysis extends Analysis {
 
         @Override
         public String toString() {
-            return markLabel + "=" + precondition + "; after? " + after + "; @Mark? " + mark;
+            return markLabel + "=" + preconditions + "; after? " + after + "; @Mark? " + mark;
         }
     }
 
     // the value here (size will be one)
-    public final SetOnce<Value> preconditionForMarkAndOnly = new SetOnce<>();
+    public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
     public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
 
     // ************* object flow

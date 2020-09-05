@@ -256,61 +256,69 @@ public class MethodAnalyser {
     private boolean computeOnlyMarkAnnotate(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.markAndOnly.isSet()) return false; // done
         if (!methodAnalysis.preconditionForMarkAndOnly.isSet()) return false;
-        Value precondition = methodAnalysis.preconditionForMarkAndOnly.get();
-        if (precondition == UnknownValue.NO_VALUE) return false;
+        List<Value> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
+        if (preconditions.isEmpty()) return false;
         SetOnceMap<String, Value> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
         if (approvedPreconditions.isEmpty()) {
             log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
             return false;
         }
-        String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
-        if (!approvedPreconditions.isSet(markLabel)) {
-            // not going to work...
-            return false;
-        }
-        Value before = approvedPreconditions.get(markLabel);
-        boolean after;
-        if (before.equals(precondition)) {
-            after = false;
-        } else {
-            Value negated = NegatedValue.negate(precondition);
-            if (before.equals(negated)) {
-                after = true;
-            } else {
-                log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.mark.get())) {
-                    methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
-                }
-                if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.only.get())) {
-                    methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
-                }
-                return false;
-            }
-        }
-        boolean mark;
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             log(DELAYED, "Delaying @Only, @Mark, don't know @Modified status in {}", methodInfo.distinguishingName());
             return false;
         }
-        if (modified == Level.FALSE) {
-            log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
-            mark = false;
-        } else {
-            // for the before methods, we need to check again if we were mark or only
-            mark = !after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+
+        boolean mark = false;
+        Boolean after = null;
+        for (Value precondition : preconditions) {
+            String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
+            if (!approvedPreconditions.isSet(markLabel)) {
+                // not going to work...
+                return false;
+            }
+            Value before = approvedPreconditions.get(markLabel);
+            // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
+            // we need a better solution
+            if (before.toString().equals(precondition.toString())) {
+                after = false;
+            } else {
+                Value negated = NegatedValue.negate(precondition);
+                if (before.toString().equals(negated.toString())) {
+                    if (after == null) after = true;
+                } else {
+                    log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
+                    if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.mark.get())) {
+                        methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
+                    }
+                    if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.only.get())) {
+                        methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
+                    }
+                    return false;
+                }
+            }
+
+            if (modified == Level.FALSE) {
+                log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
+            } else {
+                // for the before methods, we need to check again if we were mark or only
+                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo));
+            }
         }
-        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(precondition, markLabel, mark, after);
+        assert after != null;
+
+        String jointMarkLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(preconditions);
+        MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);
         methodAnalysis.markAndOnly.set(markAndOnly);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         if (mark) {
             AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.mark.get().typeInfo,
-                    List.of(new MemberValuePair("value", new StringConstant(markLabel))));
+                    List.of(new MemberValuePair("value", new StringConstant(jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
             methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
         } else {
             AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.only.get().typeInfo,
-                    List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(markLabel))));
+                    List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(jointMarkLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
             methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
         }
@@ -341,7 +349,7 @@ public class MethodAnalyser {
         Value precondition = methodAnalysis.precondition.get();
         if (precondition == UnknownValue.EMPTY) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForMarkAndOnly.set(UnknownValue.NO_VALUE);
+            methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return true;
         }
         // at this point, the null and size checks on parameters have been removed.
@@ -350,12 +358,12 @@ public class MethodAnalyser {
         Value.FilterResult filterResult = precondition.filter(Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
         if (filterResult.accepted.isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
-            methodAnalysis.preconditionForMarkAndOnly.set(UnknownValue.NO_VALUE);
+            methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return true;
         }
-        Value preconditionPart = new AndValue().append(filterResult.accepted.values().toArray(Value[]::new));
+        List<Value> preconditionParts = new ArrayList<>(filterResult.accepted.values());
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition, filterResult.accepted.keySet(), methodInfo.distinguishingName());
-        methodAnalysis.preconditionForMarkAndOnly.set(preconditionPart);
+        methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
         return true;
     }
 

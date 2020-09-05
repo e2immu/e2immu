@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,15 +18,16 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("addIfGreater".equals(methodInfo.name)) {
             if (iteration > 0) {
-                Value precondition = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
-                Assert.assertEquals("this.j > 0", precondition.toString());
-                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(precondition).toString());
+                List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
+                Assert.assertEquals(1, preconditions.size());
+                Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
+                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(preconditions.get(0)).toString());
             }
         }
         if ("setNegativeJ".equals(methodInfo.name)) {
             if (iteration > 0) {
                 Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
-                Assert.assertEquals("(-this.j) >= 0", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+                Assert.assertEquals("[(-this.j) >= 0]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
 
                 FieldInfo fieldJ = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "j".equals(f.name)).findAny().orElseThrow();
                 TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldJ);
@@ -41,8 +43,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
             }
-            if(iteration> 1) {
-                Set<Variable> variables = methodInfo. methodAnalysis.get().variablesLinkedToMethodResult.get();
+            if (iteration > 1) {
+                Set<Variable> variables = methodInfo.methodAnalysis.get().variablesLinkedToMethodResult.get();
                 Assert.assertEquals(1, variables.size());
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(Level.FALSE, independent);

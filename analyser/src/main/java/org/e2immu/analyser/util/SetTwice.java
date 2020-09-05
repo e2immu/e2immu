@@ -45,7 +45,7 @@ public class SetTwice<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
-    @Mark("overwritten+t")
+    @Mark("overwritten,t")
     @Modified
     @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void overwrite(@NotNull T t) {
@@ -58,7 +58,7 @@ public class SetTwice<T> {
         }
     }
 
-    @Mark("overwritten+t")
+    @Mark("overwritten,t")
     @Modified
     @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void freeze() {

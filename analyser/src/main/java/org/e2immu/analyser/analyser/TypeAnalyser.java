@@ -320,25 +320,9 @@ public class TypeAnalyser {
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(methodsMode)) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
-                Value precondition = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
-                Value negated = NegatedValue.negate(precondition);
-                String label = labelOfPreconditionForMarkAndOnly(precondition);
-                Value inMap = tempApproved.get(label);
-
-                boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
-                if (isMark) {
-                    if (inMap == null) {
-                        tempApproved.put(label, precondition);
-                    } else if (inMap.equals(precondition)) {
-                        log(MARK, "OK, precondition for {} turns out to be 'before' already", label);
-                    } else if (inMap.equals(negated)) {
-                        log(MARK, "Precondition for {} turns out to be 'after', we switch");
-                        tempApproved.put(label, precondition);
-                    }
-                } else if (inMap == null) {
-                    tempApproved.put(label, precondition); // no idea yet if before or after
-                } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
+                List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
+                for (Value precondition : preconditions) {
+                    handlePrecondition(methodInfo, precondition, tempApproved);
                 }
             }
         }
@@ -352,6 +336,28 @@ public class TypeAnalyser {
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return true;
+    }
+
+    private void handlePrecondition(MethodInfo methodInfo, Value precondition, Map<String, Value> tempApproved) {
+        Value negated = NegatedValue.negate(precondition);
+        String label = labelOfPreconditionForMarkAndOnly(precondition);
+        Value inMap = tempApproved.get(label);
+
+        boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+        if (isMark) {
+            if (inMap == null) {
+                tempApproved.put(label, precondition);
+            } else if (inMap.equals(precondition)) {
+                log(MARK, "OK, precondition for {} turns out to be 'before' already", label);
+            } else if (inMap.equals(negated)) {
+                log(MARK, "Precondition for {} turns out to be 'after', we switch");
+                tempApproved.put(label, precondition);
+            }
+        } else if (inMap == null) {
+            tempApproved.put(label, precondition); // no idea yet if before or after
+        } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
+            messages.add(Message.newMessage(new Location(methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
+        }
     }
 
     public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
@@ -384,11 +390,11 @@ public class TypeAnalyser {
         return v1.equals(and) || v2.equals(and);
     }
 
+    public static String labelOfPreconditionForMarkAndOnly(List<Value> values) {
+        return values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).sorted().collect(Collectors.joining(","));
+    }
+
     public static String labelOfPreconditionForMarkAndOnly(Value value) {
-        if (value instanceof AndValue) {
-            AndValue andValue = (AndValue) value;
-            return andValue.values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).distinct().sorted().collect(Collectors.joining(","));
-        }
         return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
     }
 

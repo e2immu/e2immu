@@ -34,10 +34,7 @@ import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -342,7 +339,8 @@ public abstract class Analysis {
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
-            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(new ContractMark(markValue), markValue, true, null));
+            List<Value> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
+            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -353,9 +351,15 @@ public abstract class Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(new ContractMark(onlyMark), onlyMark, mark != null, isAfter));
+            List<Value> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
+            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter));
         }
         return messages;
+    }
+
+    private static List<String> safeSplit(String s) {
+        String[] ss = s.split(",\\s*");
+        return Arrays.stream(ss).filter(l -> l.trim().isEmpty()).collect(Collectors.toList());
     }
 
     /**
