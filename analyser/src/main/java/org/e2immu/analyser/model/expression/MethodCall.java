@@ -247,7 +247,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         InlineValue inlineValue;
-        if (methodInfo.typeInfo.isFunctionalInterface() && (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null) {
+        if (methodInfo.typeInfo.isFunctionalInterface() && (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
+                inlineValue.canBeApplied(evaluationContext)) {
             Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }

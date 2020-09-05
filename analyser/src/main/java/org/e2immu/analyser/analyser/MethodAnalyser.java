@@ -44,6 +44,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -262,7 +264,7 @@ public class MethodAnalyser {
             return false;
         }
         String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
-        if(!approvedPreconditions.isSet(markLabel)) {
+        if (!approvedPreconditions.isSet(markLabel)) {
             // not going to work...
             return false;
         }
@@ -400,7 +402,10 @@ public class MethodAnalyser {
                 int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
                 if (modified == Level.DELAY) return false;
                 if (modified == Level.FALSE) {
-                    value = new InlineValue(methodInfo, single);
+                    InlineValue.Applicability applicability = applicability(single);
+                    if (applicability != InlineValue.Applicability.NONE) {
+                        value = new InlineValue(methodInfo, single, applicability);
+                    }
                 }
             }
         }
@@ -425,6 +430,37 @@ public class MethodAnalyser {
 
         log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
         return true;
+    }
+
+    private InlineValue.Applicability applicabilityField(FieldInfo fieldInfo) {
+        List<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().modifiers;
+        for (FieldModifier fieldModifier : fieldModifiers) {
+            if (fieldModifier == FieldModifier.PRIVATE) return InlineValue.Applicability.TYPE;
+            if (fieldModifier == FieldModifier.PUBLIC) return InlineValue.Applicability.EVERYWHERE;
+        }
+        return InlineValue.Applicability.PACKAGE;
+    }
+
+    private InlineValue.Applicability applicability(Value value) {
+        AtomicReference<InlineValue.Applicability> applicability = new AtomicReference<>(InlineValue.Applicability.EVERYWHERE);
+        value.visit(v -> {
+            if (v.isUnknown()) {
+                applicability.set(InlineValue.Applicability.NONE);
+            }
+            ValueWithVariable valueWithVariable;
+            if ((valueWithVariable = v.asInstanceOf(ValueWithVariable.class)) != null) {
+                Variable variable = valueWithVariable.variable;
+                if (variable instanceof LocalVariableReference) {
+                    // TODO make a distinction between a local variable, and a local var outside a lambda
+                    applicability.set(InlineValue.Applicability.NONE);
+                } else if (variable instanceof FieldReference) {
+                    InlineValue.Applicability fieldApplicability = applicabilityField(((FieldReference) variable).fieldInfo);
+                    InlineValue.Applicability current = applicability.get();
+                    applicability.set(current.mostRestrictive(fieldApplicability));
+                }
+            }
+        });
+        return applicability.get();
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,

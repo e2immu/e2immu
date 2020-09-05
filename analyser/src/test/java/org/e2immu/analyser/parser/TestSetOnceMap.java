@@ -26,6 +26,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
@@ -44,14 +45,15 @@ public class TestSetOnceMap extends CommonTestRunner {
         if ("get".equals(methodInfo.name) && iteration > 0) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
-
+            InlineValue inlineValue = (InlineValue) srv;
+            Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
+
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
             Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-
 
             // independent, because does not return a support data type
             int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);

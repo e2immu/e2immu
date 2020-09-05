@@ -284,6 +284,7 @@ public class MethodValue implements Value {
 
     @Override
     public void visit(Consumer<Value> consumer) {
+        object.visit(consumer);
         parameters.forEach(v -> v.visit(consumer));
         consumer.accept(this);
     }
