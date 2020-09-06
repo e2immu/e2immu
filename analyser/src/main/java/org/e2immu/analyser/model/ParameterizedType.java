@@ -727,6 +727,7 @@ public class ParameterizedType {
                 || typeInfo != null && Primitives.PRIMITIVES.boxed.contains(typeInfo)
                 || typeInfo == Primitives.PRIMITIVES.objectTypeInfo
                 || typeInfo == Primitives.PRIMITIVES.stringTypeInfo
+                || isFunctionalInterface()
         );
     }
 

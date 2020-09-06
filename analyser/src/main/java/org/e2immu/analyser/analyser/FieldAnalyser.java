@@ -117,16 +117,16 @@ public class FieldAnalyser {
             changes = true;
 
         // STEP 7: @Size
-        if (!isFunctionalInterface) {
-            if (analyseSize(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
-                changes = true;
 
-            int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
-            if (modified == Level.FALSE &&
-                    analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
-                            fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
-                changes = true;
-        }
+        if (analyseSize(fieldInfo, fieldAnalysis, value, haveInitialiser, fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
+
+        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+        if (modified == Level.FALSE &&
+                analyseDynamicTypeAnnotation(VariableProperty.SIZE, fieldInfo, fieldAnalysis, value, haveInitialiser,
+                        fieldCanBeWrittenFromOutsideThisType, typeInspection, fieldSummariesNotYetSet))
+            changes = true;
+
 
         // STEP 8: @NotModified1 for functional interfaces
         if (isFunctionalInterface && analyseNotModified1(fieldInfo, fieldAnalysis)) {
