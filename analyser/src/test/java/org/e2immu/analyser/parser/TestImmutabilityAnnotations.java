@@ -19,14 +19,10 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.testexample.ImmutabilityAnnotations;
 import org.junit.Assert;
 import org.junit.Test;
@@ -50,8 +46,8 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
 
         ParameterizedType setString = new ParameterizedType(set, List.of(Primitives.PRIMITIVES.stringParameterizedType));
-        ParameterizedType stringArray = new ParameterizedType(Primitives.PRIMITIVES.stringTypeInfo,1 , ParameterizedType.WildCard.NONE, List.of());
-        TypeInfo freezableSet = typeContext.typeStore.get(ImmutabilityAnnotations.class.getCanonicalName()+".FreezableSet");
+        ParameterizedType stringArray = new ParameterizedType(Primitives.PRIMITIVES.stringTypeInfo, 1, ParameterizedType.WildCard.NONE, List.of());
+        TypeInfo freezableSet = typeContext.typeStore.get(ImmutabilityAnnotations.class.getCanonicalName() + ".FreezableSet");
 
         // Set<String> contains Set
         Assert.assertTrue(setString.containsComponent(Primitives.PRIMITIVES.stringParameterizedType));
@@ -69,11 +65,30 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         Assert.assertTrue(stringArray.containsComponent(Primitives.PRIMITIVES.booleanParameterizedType));
     };
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = data -> {
-        if("generateBefore".equals(data.methodInfo.name) && "0".equals(data.statementId) && "list".equals(data.variableName)) {
-            Assert.assertEquals("java.util.List.of(a, b)", data.currentValue.toString());
-            int notNull = data.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("generateBefore".equals(d.methodInfo.name) && "0".equals(d.statementId) && "list".equals(d.variableName)) {
+            Assert.assertEquals("java.util.List.of(a, b)", d.currentValue.toString());
+            int notNull = d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
+        }
+        if ("setFirst".equals(d.methodInfo.name) && "ManyTs.this.ts2".equals(d.variableName)) {
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("setFirst".equals(methodInfo.name)) {
+            FieldInfo ts2 = methodInfo.typeInfo.getFieldByName("ts2");
+            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(ts2);
+            if (iteration > 0) {
+                Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.MODIFIED));
+            }
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("ts2".equals(fieldInfo.name) && iteration > 1) {
+            Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
     };
 
@@ -82,6 +97,8 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         testClass("ImmutabilityAnnotations", 0, 1, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
 
     }

@@ -83,9 +83,9 @@ import java.util.Set;
 @E2Immutable
 public class ImmutabilityAnnotations {
 
-    @E1Immutable(after = "mark")
+    @E1Immutable(after = "frozen")
     static class FreezableSet {
-        @Final(after = "mark")
+        @Final(after = "frozen")
         private boolean frozen;
 
         @SupportData // implying @NotModified type @E1Immutable (which it will be), but there's a dependent constructor
@@ -107,14 +107,14 @@ public class ImmutabilityAnnotations {
         }
 
         @Modified
-        @Mark("mark")
+        @Mark("frozen")
         public void freeze() {
             if (frozen) throw new UnsupportedOperationException();
             frozen = true;
         }
 
         @Modified
-        @Only(before = "mark")
+        @Only(before = "frozen")
         public void addStrings(@NotModified Collection<String> input) {
             if (frozen) throw new UnsupportedOperationException();
             this.strings.addAll(input);
@@ -135,6 +135,7 @@ public class ImmutabilityAnnotations {
 
     @BeforeMark
     @NotModified
+    @NotNull
     private static FreezableSet generateBefore() {
         List<String> list = List.of("a", "b");
         return new FreezableSet(list);
@@ -142,13 +143,16 @@ public class ImmutabilityAnnotations {
 
     @E1Immutable
     @NotModified
+    @Precondition("not (this.frozen)")
+    @NotNull
     private static FreezableSet generateAfter() {
         FreezableSet freezableSet = new FreezableSet(List.of("a", "b"));
         freezableSet.freeze();
         return freezableSet;
     }
 
-    public static void addOne(@Modified Set<Integer> set) {
+    @NotModified
+    public static void addOne(@Modified @NotNull Set<Integer> set) {
         set.add(1);
     }
 
@@ -158,30 +162,37 @@ public class ImmutabilityAnnotations {
         T t;
 
         @Modified
-        public void setT(T t) {
+        public void setT(@NotModified @Nullable T t) {
             this.t = t;
         }
 
         @NotModified
-        public void addT(@Modified Set<T> set) {
+        public void addT(@Modified @NotNull Set<T> set) {
             set.add(t); // WARNING! Causes null-pointer warning
         }
     }
 
-    @E1Container
+    @E1Immutable
     static class ManyTs<T> {
+        @NotNull
+        @NotModified
         public final T[] ts1;
+        @Nullable
+        @Modified
         public final T[] ts2;
 
-        public ManyTs(T[] ts) {
+        public ManyTs(@Modified @Nullable T[] ts) {
             this.ts1 = ts;
             this.ts2 = ts;
         }
 
-        public void setFirst(T t) {
-            ts2[0] = t;
+        @Modified
+        public void setFirst(@NotModified @Nullable T t) {
+            if (ts2 != null) ts2[0] = t;
         }
 
+        @NotModified
+        @Nullable
         public T getFirst() {
             return ts1[0];
         }

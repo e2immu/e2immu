@@ -88,7 +88,9 @@ public class FieldAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case MODIFIED:
-                if (bestType == null) return Level.FALSE; // we cannot modify because we cannot even execute a method
+                if (bestType == null && type.arrays == 0) {
+                    return Level.FALSE; // we cannot modify because we cannot even execute a method
+                }
                 int immutable = getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == Level.DELAY) return Level.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return Level.FALSE;
@@ -102,7 +104,7 @@ public class FieldAnalysis extends Analysis {
             case IMMUTABLE:
                 // dynamic type annotation not relevant here
                 if (bestType != null && bestType.isFunctionalInterface()) return MultiLevel.FALSE;
-
+                if (type.arrays > 0) return MultiLevel.MUTABLE;
                 int fieldImmutable = super.getProperty(variableProperty);
                 if (fieldImmutable == Level.DELAY) return Level.DELAY;
                 int typeImmutable = typeImmutable();

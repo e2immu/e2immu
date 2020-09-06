@@ -702,7 +702,7 @@ public class ParameterizedType {
     }
 
     public boolean cannotBeModifiedByDefinition() {
-        return isPrimitive() || isAtLeastEventuallyE2Immutable();// || isUnboundParameterType();
+        return arrays == 0 && (isPrimitive() || isAtLeastEventuallyE2Immutable());// || isUnboundParameterType();
     }
 
     public Boolean noModifyingMeansWithinMyScope() {

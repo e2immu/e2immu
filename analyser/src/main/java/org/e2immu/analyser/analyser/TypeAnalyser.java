@@ -126,7 +126,6 @@ public class TypeAnalyser {
         check(typeInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
 
         // opposites
-        check(typeInfo, BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
         check(typeInfo, MutableModifiesArguments.class, e2ImmuAnnotationExpressions.mutableModifiesArguments.get());
     }
 
