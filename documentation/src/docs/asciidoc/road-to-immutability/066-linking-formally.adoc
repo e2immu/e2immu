@@ -25,7 +25,7 @@ This is especially clear when `a == this`.
 We discern a number of special cases:
 
 . When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` does not link to `a` nor `b`.
-. If `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
+. If `b` is of primitive or {independent} type (which includes all {e2immutable} types), `v` cannot link to `b`.
 . When `method` has the annotation {independent}, `v` cannot link to `a`.
 . If `a` is of {e2immutable} type, all its methods are independent; therefore, `v` cannot link to `a`.
 
@@ -83,7 +83,6 @@ interface Iterable<T> {
 ----
 
 Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of the type either.
-
 
 Importantly, the independence relates to the support data of the implementation of the iterator: the resulting object's constructor should link to the support data of the fields.
 This allows for modifications on a field responsible for keeping track.

@@ -2,13 +2,10 @@
 == Modification
 
 ****
-*Definition*: a *method is modifying* if it causes a computable assignment in the object graph of the fields of the object it is applied to.
+*Definition*: a *method is modifying* if it causes an assignment in the object graph of the fields of the object it is applied to.
 ****
 
 We use the term 'object graph' to denote the fields of the object, the fields of these fields, etc., to arbitrary depth.
-
-NOTE: The adjective _computable_ is there to indicate that the modification must be made with code reachable from the method.
-We elaborate more on this aspect in the section on <<functional-interfaces>>.
 
 Consequently, a method is not modifying if it only reads from the object graph of the fields.
 The code analyser uses the annotations {nm} and {modified}.
@@ -125,10 +122,9 @@ Other types in the parameters have not been annotated with {nm}:
 * `Object` because it is deeply immutable;
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`.
 No code statically visible to implementations of `Collection` can make modifications to `E`;
-* `Consumer` because it is a functional interface (an interface with a single abstract method); we will add an {exposed} annotation rather than {nm}.
+* `Consumer` because it is a functional interface (an interface with a single abstract method); they are {nm} by definition.
 
-The definitions of modification given in this section are sufficient to follow the narrative, but they will be refined in sections <<modification-part2>>
-and <<functional-interfaces>>.
-We continue with the first use case of modification: containers.
+In order to keep the narrative going, we defer a discussion of modification in the context of parameters of abstract and interface types to the section <<modification-part2>>.
+Here, we continue with the first use case of modification: containers.
 
 // ensure a newline at the end

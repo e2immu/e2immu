@@ -58,14 +58,17 @@ This observation forces us to tighten the definition of a non-modifying method: 
 
 These rules are mostly, but not easily, computable when all code is visible.
 
-When the parameter is of an interface type, and no declarations are present, complications start.
+=== Parameters of abstract and interface types
+
+When the parameter is of an interface type, and no declarations are present, complications arise.
 Starting with an example, we realise that the single abstract method in `Consumer` is, in general, modifying, and that it modifies its parameter:
 
 [source,java]
 ----
 @FunctionalInterface
 public interface Consumer<T> {
-    void accept(T t);
+    @Modified
+    void accept(@Modified T t);
     // ...
 }
 ----
@@ -100,36 +103,86 @@ default Stream<E> stream() {
 Creating a stream is non-modifying.
 The code that pulls from this stream is completely outside the scope of the analysis of the `Collection` type; it is free to modify `E` objects at will.
 
-The solution comes from completing the definition of modifications, which we left intentionally vague in <<modification>>.
-The result is the {exposed} annotation, which we use as a marker to broaden the definition of {container} a bit.
-Finally, we decide not to skip the computation of indirect modifications for parameters of interface and abstract types.
+Firstly, we decide that parameters of abstract and interface types are {nm}.
+Modifications they make to the fields of the class can only be made through methods which are already {modified}; this will not change the overall modification status of the type.
+As a first consequence, we need not look at indirect modifications (which would be nigh on impossible anyway), implying that abstract and interface type parameters have no impact on the modification status of the method.
+Secondly, we do not need to change our definition of containers, which requires parameters that are {nm}.
 
-=== Exposed, Container
+The second change we make is to align the exposure of fields and parts of the fields' object graph to the unknown code of the interface implementation, with the exposure via return values:
 
-Revisiting the definition of modification
+. support data sent into abstract methods will need to be independent of the fields, so that the assumed modifications to the parameter do not impact the fields
+. modifications to non-support-data will be ignored.
 
-****
-*Definition*: *Computable modifications* are modifications to those types in the object graph for which modifying methods are available.
-If the analyser encounters modifying methods to elements of the object graph which it cannot compute, it will mark the methods (and by implication, the functional interfaces) doing the modification with the {exposed} annotation.
-****
+So in effect, the parameter of the `accept` method is modifying _only_ for support data.
+Making the consumer {nm1} forces absence of modifications on the parameters in the implementation; making the consumer {independent} allows support data as arguments while retaining level 2 immutability.
+The annotation {nn1} implies that null arguments will cause exceptions; the analyser will warn against them.
 
-This means that `forEach` ends up as:
+Implementing a visitor using the `forEach` method defined as:
 
-.Without annotation on the parameter
+.Annotated definition of forEach.
 [source,java]
 ----
 @NotModified
-default void forEach(@Exposed Consumer<T> consumer) {
+default void forEach(@NotModified Consumer<T> consumer) {
     for(T t: this) consumer.accept(t);
 }
 ----
 
-The {exposed} annotation indicates that modifications on the `T` elements presented are possible, but are outside the scope of the method.
+renders code like:
 
-The main rule for containers stipulates that the parameter has to be {nm}.
-We extend this:
+.Example use of forEach.
+[source,java]
+----
+@SupportData
+private Set<T> set;
 
-****
-*Definition*: a type is a *container* when no non-private method or constructor modifies its parameters.
-In the case of parameters of abstract or interface type, {exposed} suffices instead of {nm}.
-****
+public void add(T t) { set.add(t); } // T is not support data!
+
+...
+
+@NotModified
+public void visit(@NotModified Consumer<T> consumer) {
+    set.forEach(consumer);
+}
+
+@NotModified
+public void copy(@Independent Consumer<Set<T>> consumer) {
+    consumer.accept(new HashSet<>(set));
+}
+----
+
+=== Lambdas
+
+As `forEach` is iterating over the elements of some `Iterable`, the consumer should not make any attempts at modifying the iterable.
+Doing so will result in a `ConcurrentModificationException`:
+
+[source,java]
+.Modifying the list being iterated over
+----
+public class ExampleManualSelfModificationOnForEach {
+
+    @Test
+    public void testDangerous() {
+        List<String> l1 = new ArrayList<>();
+        Collections.addAll(l1, "a", "c", "e");
+        try {
+            print(l1);
+            Assert.fail();
+        } catch(ConcurrentModificationException cme) {
+            // OK
+        }
+    }
+
+    static void print(List<String> list) {
+        list.forEach(l -> {
+            System.out.println(l);
+            if (l.startsWith("a")) {
+                list.add("b"); // <1>
+            }
+        });
+    }
+}
+----
+<1> The offending modifying method.
+
+The {nm} annotation on `forEach` does prevent the `list.add` method to be called, because the lambda block in the first statement of `print` fully declares the code of the consumer.
