@@ -1,6 +1,11 @@
 [#linking-exposed]
 == Linking and Exposed
 
+=== New definition of independence
+
+Only for support data, on types, ignoring modification.
+Then downgrade the transfer of independence to {independent} types, rather than {e2immutable} types.
+
 === Linking
 
 To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
@@ -43,10 +48,16 @@ For example,
 . type casting does not prevent linking: in `v = (Type)w`, `v` links to `w`
 . Binary operators return primitives or `java.lang.String`, which prevents linking: in `v = a + b`, `v` does not link to `a` nor `b`.
 
+****
+Rule 4: in an array access `v = a[index]`, `v` links to `a`.
+****
+
 === Loop statement
 
 In the loop statement `for(T t: ts)`, does the loop variable `t` link to the source `ts`?
-This becomes visible when one considers a model implementation for this statement:
+Surely it does, for accessing an element links to the source, as rule 4 shows.
+
+This becomes explicit when one considers a model implementation for this statement:
 
 [source,java]
 ----
@@ -57,10 +68,11 @@ while(iterator.hasNext()) {
 }
 ----
 
-When `ts` is of level 2 immutable type, the `Iterator` implementation returned will be independent.
-This prevents linking `iterator` to `ts`, and therefore `t` to `ts`.
+Iterators are, by definition, structures undergoing permanent modification during their life span: some field needs to keep track of the next element to be returned.
+Iterators only modify the structure they iterate on when they implement a `remove` method.
+
 Independence of the iterator is important for the semantics of the loop: it ensures that the act of looping over the elements does not change the type.
-It therefore seems prudent to enforce independence in the interface:
+It therefore seems prudent to enforce independence in the interface, even though this is #inconsistent# with `remove`:
 
 [source,java]
 ----
@@ -70,8 +82,12 @@ interface Iterable<T> {
 }
 ----
 
-Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of of the type either.
-Concluding the discussion: we could imagine situations where `t` links to `ts`, but we will actively prevent them from happening, and program in a world where the loop variable does not link to its collection.
+Note that {nm} is not strong enough: not only should the act of creating an iterator not be modifying, applying the `next` and `hasNext` methods should not affect the fields of the type either.
+
+
+Importantly, the independence relates to the support data of the implementation of the iterator: the resulting object's constructor should link to the support data of the fields.
+This allows for modifications on a field responsible for keeping track.
+It also ignores potential modifications on the non-support-data of type `T`.
 
 === Directionality
 

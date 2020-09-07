@@ -70,10 +70,10 @@ public class GenerateAnnotationsImmutable {
             return res;
         }
 
-        if(isType) {
+        if (isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
-            }  if(container == Level.FALSE) {
+            } else {//  if(container == Level.FALSE) {
                 res.put(MutableModifiesArguments.class, TRUE);
             }
         }

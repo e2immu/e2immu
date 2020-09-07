@@ -16,9 +16,15 @@ The following table lists some frequently used examples:
 |===
 
 It is important not to forget that _any_ interface defining a single abstract method can be seen as a functional interface.
-for example, while the examples above all employ generics, generics are not a requirement for functional interfaces.
+While the examples above all employ generics, generics are not a requirement for functional interfaces.
 The Java language offers syntactic sugar for functional programming, but the types remain Java types.
 As such we have to ensure that definitions for functional interfaces which we will present in this section, are compatible with the definitions for general types.
+
+We will also have to introduce one extra provision for dealing with code for which no declaration is readily available.
+This is the case for interface types and abstract classes.
+Because the actual implementation of such types cannot be known beforehand
+
+The case of overriding implementations
 
 === Modification
 
@@ -106,7 +112,7 @@ This means that `forEach` ends up as:
 [source,java]
 ----
 @NotModified
-void forEach(@Exposed Consumer<T> consumer) {
+default void forEach(@Exposed Consumer<T> consumer) {
     for(T t: this) consumer.accept(t);
 }
 ----
@@ -147,6 +153,17 @@ public class ExampleManualSelfModificationOnForEach {
 <1> The offending modifying method.
 
 The {nm} annotation on `forEach` forces the analyser to reject modifying methods on its scope object.
+If `forEach` were an implementation method to be analysed, rather than an interface method specification, the contracted annotation on the parameter has to be used:
+
+.forEach as normal method
+[source,java]
+----
+@NotModified // <1>
+void forEach(@NotModified(type = CONTRACT) @Exposed Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+<1> The analyser infers this one, knowing the consumer cannot call self-modifying methods, and the `T` elements are free from modification as well.
 
 ==== Another example
 
@@ -265,9 +282,9 @@ In tabular form,
 |===
 | The annotation on ... | parameter | field | method
 | {modified} | is the norm when the method applies SAM, because SAM is modifying | *with declaration*: if it changes other fields; is the norm otherwise (assume self-modification) | N/A
-| {nm} | *contracted*: no implementations with SAMs allowed that modify this scope: overrides {modified} on SAM; is stronger than {exposed} | *with declaration*: if it does not modify other fields; *contracted*: via linking, enforce that no implementation has a self-modifying SAM | N/A
-| {exposed} | modifications to the parameters are out of scope, which helps non-modification: overrides {modified} on SAM's parameters | modifying SAM only takes objects with out-of-scope modifications, across all usages; does not exclude {nm}, {modified} | Return type: FI returned has a modifying SAM which only takes objects with out-of-scope modifications in this method
-| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm}: does not exclude {nm}, {modified} | computed via declaration or linking;  does not exclude {nm}, {modified} |  Return type: computed via declaration or linking
+| {nm} | *contracted*: no implementations with SAMs allowed that modify this scope: overrides {modified} on SAM; can co-exist with {exposed} | *with declaration*: if it does not modify other fields; *contracted*: via linking, enforce that no implementation has a self-modifying SAM | N/A
+| {exposed} | modifications to the parameters are out of scope, which helps non-modification of the method: overrides {modified} on SAM's parameters; no effect on argument | modifying SAM only takes objects with out-of-scope modifications, across all usages; does not exclude {nm}, {modified} | Return type: FI returned has a modifying SAM which only takes objects with out-of-scope modifications in this method
+| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm}: can co-exist with {nm}, stronger than {exposed} | computed via declaration or linking;  does not exclude {nm}, {modified} |  Return type: computed via declaration or linking
 |===
 
 It is important to note that all modifications relating to a scope are relating to the scope of the type in which the declaration takes place.
@@ -278,20 +295,6 @@ When {nm} is _contracted_ on a method with functional interface type parameters,
 Apart from implying all other non-modification rules, this is equivalent to contracting {nm} on all parameters of a functional interface type.
 
 As for the _computation_ of {nm} on these methods, {exposed} causes the analyser to ignore modifying parameters in SAMs.
-
-=== Containers
-
-The `Collection` interface as depicted in <<collection-interface>> left the `Consumer` parameter of `forEach` unannotated.
-We would very much like `Collection` to be a container, it is almost the archetypal example of this concept.
-
-The main rule for containers stipulates that the parameter has to be {nm}.
-Following the summary of the previous section, in particular points 2 and 4, we can extend the definition to allow for {exposed} parameters as well.
-Formally,
-
-****
-*Definition*: a type is a *container* when no non-private method or constructor modifies its parameters.
-In the case of parameters of functional interface type, {exposed} suffices instead of {nm}.
-****
 
 === Immutability
 
@@ -362,8 +365,7 @@ class SetBasedContainer3_3<T> {
 <2> The consumer exposes the support data field `data` safely.
 <3> The consumer exposes `T` elements to the outside world.
 
-In the first case the `consumer` parameter links to the `data` field, clearly violating the tentative independence rule.
-The first rule of level 2 immutability takes over: the consumer is not {nm1}, so `accept` has a parameter which is {modified}.
+In the first case, the consumer is not {nm1}, so `accept` has a parameter which is {modified}.
 Therefore, sending `data` as an argument to such a parameter causes modifications, which makes `data` {modified}, which in turn violates the first rule.
 
 The method `safeVisit1` exposes the support data to the outside world, with a guarantee from the analyser that no code can modify it.

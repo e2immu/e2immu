@@ -1,0 +1,135 @@
+[#modification-part2]
+== Modification, part 2
+
+=== Indirect modifications
+
+Time for more fine print on modifications.
+We need to revisit the situation of non-modifying methods with modifying parameters.
+Up to now, a method is only modifying when it assigns to a field, calls a modifying method on one of the fields, or directly calls a modifying method on `this`.
+However, there could be indirect modifications, as in:
+
+.Indirect modifications
+[source,java]
+----
+@E2Container
+public class ModificationGraphChecks {
+
+    @MutableModifiesArguments
+    static class C1 {
+
+        @Variable
+        private int i;
+
+        @Modified
+        public int incrementAndGet() {
+            return ++i;
+        }
+
+        @Modified // <1>
+        public int useC2(@Modified C2 c2) {
+            return i + c2.incrementAndGetWithI();
+        }
+
+    }
+
+    @E1Immutable
+    static class C2 {
+
+        private final int j;
+
+        @Modified
+        private final C1 c1;
+
+        public C2(int j, @Modified C1 c1) {
+            this.c1 = c1;
+            this.j = j;
+        }
+
+        @Modified
+        public int incrementAndGetWithI() {
+            return c1.incrementAndGet() + j;
+        }
+    }
+}
+----
+<1> `useC2` does not directly modify `i`, but `incrementAndGetWithI` does so indirectly.
+
+This observation forces us to tighten the definition of a non-modifying method: on top of the definition given above, we have to ensure that none of the modifying methods called on a parameter which is {modified}, none of the modifying methods c, recursively, does not call one of 'our' modifying methods.
+
+These rules are mostly, but not easily, computable when all code is visible.
+
+When the parameter is of an interface type, and no declarations are present, complications start.
+Starting with an example, we realise that the single abstract method in `Consumer` is, in general, modifying, and that it modifies its parameter:
+
+[source,java]
+----
+@FunctionalInterface
+public interface Consumer<T> {
+    void accept(T t);
+    // ...
+}
+----
+
+However, if we now use this consumer in the example of the `forEach` method of `Collection`:
+
+.Possible implementation of forEach
+[source,java]
+----
+default void forEach(Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+it immediately follows that:
+
+. the parameter `consumer` is {modified}, because `accept`, as modifying method, runs on this object;
+. the method `forEach` is {modified}, as `t` is linked to `this` and `t` is modified by `accept`.
+
+The first observation is a problem to make containers, because a container does not allow methods to modify their parameters.
+The second problem occurs when creating level 2 immutable types, where the consumers have no means for modifying the fields, even though `accept` claims it does.
+
+There is an obvious need to solve both problems, because semantically, there is little difference between iterating using a `forEach` method, and using a `getStream` as in:
+
+[source,java]
+----
+default Stream<E> stream() {
+    return StreamSupport.stream(spliterator(), false);
+}
+----
+
+Creating a stream is non-modifying.
+The code that pulls from this stream is completely outside the scope of the analysis of the `Collection` type; it is free to modify `E` objects at will.
+
+The solution comes from completing the definition of modifications, which we left intentionally vague in <<modification>>.
+The result is the {exposed} annotation, which we use as a marker to broaden the definition of {container} a bit.
+Finally, we decide not to skip the computation of indirect modifications for parameters of interface and abstract types.
+
+=== Exposed, Container
+
+Revisiting the definition of modification
+
+****
+*Definition*: *Computable modifications* are modifications to those types in the object graph for which modifying methods are available.
+If the analyser encounters modifying methods to elements of the object graph which it cannot compute, it will mark the methods (and by implication, the functional interfaces) doing the modification with the {exposed} annotation.
+****
+
+This means that `forEach` ends up as:
+
+.Without annotation on the parameter
+[source,java]
+----
+@NotModified
+default void forEach(@Exposed Consumer<T> consumer) {
+    for(T t: this) consumer.accept(t);
+}
+----
+
+The {exposed} annotation indicates that modifications on the `T` elements presented are possible, but are outside the scope of the method.
+
+The main rule for containers stipulates that the parameter has to be {nm}.
+We extend this:
+
+****
+*Definition*: a type is a *container* when no non-private method or constructor modifies its parameters.
+In the case of parameters of abstract or interface type, {exposed} suffices instead of {nm}.
+****
