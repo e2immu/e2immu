@@ -1,7 +1,5 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.SupportData;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -17,7 +15,6 @@ import java.util.stream.Stream;
  */
 public class ObjectFlow4 {
 
-    @SupportData
     private final Set<String> set = new HashSet<>();
 
     public void add(String s) {

@@ -1,3 +1,4 @@
+
 == Level 2 immutability
 
 === Definition
@@ -40,10 +41,12 @@ How does it fit the intuitive rule for immutability?
 The type `Pair` holds two objects.
 The type does not change their content, nor will it exchange these two objects for others, or allow others to do so.
 It is clear the users of `Pair` may be able to change the content of the objects they put in the `Pair`.
-Summarizing: `Pair` fits the intuitive definition without any problem.
+Summarizing: `Pair` fits the intuitive definition nicely.
 
 Here is an example which shows the necessity of the first rule more explicitly:
 
+.Point and Line
+[#point-and-line]
 [source,java]
 ----
 @Container
@@ -108,35 +111,33 @@ The translation method modifies their content, rendering the type not level 2 im
 
 Assuming a type's goal is to store a number of objects, it is easy to see that a level 1 immutable type cannot hold additional, modifiable state.
 It follows that every method call on the container object with the same arguments will render the same result.
-(Note that this can be bypassed in Java by using _static_ state, i.e., state specific to the type rather than the object.
-Let us ignore that for now.)
+(Note that this cannot be bypassed by using _static_ state, i.e., state specific to the type rather than the object.
+Our definitions make no distinction between static and instance fields.)
 
-In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have 'support data': think an array, a tree structure, buckets for a hash table, etc.
-The difference between effectively final fields and the rest of the definition of level 2 immutability is essentially about expressing the immutability of the support data.
+In order to hold an arbitrary (or even modestly large) amount of objects, a type has to have _support data_: think an array, a tree structure, buckets for a hash table, etc.
+The rest of the definition of level 2 immutability is essentially about expressing the immutability of this support data.
 After construction, a level 2 immutable type will still hold a fixed number of objects, and the type will not change their content, nor exchange them for other objects, nor allow others to exchange them.
 
 We will introduce two additional rules to the definition of level 2 immutability.
 They will only have to be satisfied by _some_ fields; requiring them for all fields results in too strong a definition, and we have seen higher up that there are situations where the first rule is sufficient.
-The fields we target with those additional rules are the fields containing the support data.
-For now, we try to catch the support data with the following, most likely imperfect rule:
+Rather than specifying which fields need to follow the additional rules, it is easier to say which fields are exempt from them:
+
+. fields that are of level 2 immutable type themselves;
+. fields whose type could be replaced by an unbound type parameter.
+
+For all modification purposes we can replace unbound type parameters with `java.lang.Object`, which is level 2 immutable.
+Therefore, the requirement of level 2 immutability suffices.
+
+We now add rules 2 and 3 to the definition, and obtain:
 
 ****
-If _A_ is the type of a field, and type _B_, which is held by _A_, appears as type of parameter or as return type in non-private methods (directly, or held by a different type _C_), then we need the level 2 immutability rules 2 and 3 for that particular field.
-Otherwise, we skip rules 2 and 3 for the field.
+*Definition: level 2 immutability*:
 
-A type _B_ is held by the type _A_ if _B_ is the type of a field in _A_, directly or via generics or arrays, and potentially transitively.
-****
+*Rule 1*: all fields are {nm}.
 
-Many examples will follow, but it should be clear from the description that types that appear both in fields and in non-private methods, do not need to satisfy rules 2 and 3. This is the case for `Pair`.
+*Rule 2*: all fields are either private, or level 2 immutable themselves.
 
-We now write rules 2 and 3 as:
-
-****
-*Definition: level 2 immutability*: additional rules for support data types.
-
-*Rule 2*: a field is either private, or level 2 immutable itself (by type or dynamic annotation).
-
-*Rule 3*: all constructors and non-private methods are {independent} of the fields of support data types.
+*Rule 3*: all constructors and non-private methods are independent of the fields.
 ****
 
 Rule 2 is there to ensure that the content of the object cannot be modified by means of access to the non-private fields.
@@ -145,7 +146,9 @@ Rule 3 ensures that the content of the object cannot be modified externally.
 The first rule can be reached _eventually_ if there is one or more methods that effect a transition from the mutable to the immutable state.
 This typically means that all methods that assign or modify fields become off-limits after calling this marker method.
 Eventuality for rules 2 and 3 seems too far-fetched.
-More on this topic in the section on eventual immutability.
+We address the topic of eventual immutability fully in the section <<eventual-immutability>>.
+
+The section <<params-abstract-interface>> will discuss modification and independence of abstract and interface types.
 
 Let us go to examples immediately.
 
@@ -199,11 +202,11 @@ class ArrayContainer3<T> {
     }
 }
 ----
-<1> The array is private, and therefore protected from modification.
+<1> The array is private, and therefore protected from external modification.
 <2> The array has been copied, and therefore is independent of the one passed in the parameter.
 
 The independence rule enforces the type to have its own structure rather than someone else's.
-Here's the same group of example, now with JDK Collections:
+Here's the same group of examples, now with JDK Collections:
 
 .Example with collection, v1
 [source,java]
@@ -220,6 +223,8 @@ class SetBasedContainer1<T> {
 ----
 <1> After creation, changes to the source set are effectively changes to the data.
 
+The lack of independence of the constructor violates rule 3 in the first example.
+
 .Example with collection, v2, still not OK
 [source,java]
 ----
@@ -234,6 +239,8 @@ class SetBasedContainer2<T> {
 }
 ----
 <1> Users of this type can modify the content of the set after creation!
+
+Here, the `data` field is public, which allows for external modification.
 
 .Example with set, v3, safe
 [source,java]
@@ -250,6 +257,8 @@ class SetBasedContainer3<T> {
 ----
 <1> The set is private, and therefore protected from external modification.
 <2> The set has been copied, and therefore is independent of the one passed in the parameter.
+
+Finally, we have a level 2 immutable type.
 
 .Example with set, v4, safe
 [source,java]

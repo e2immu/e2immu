@@ -160,14 +160,6 @@ public class FieldAnalysis extends Analysis {
         }
 
         doNotModified1(e2ImmuAnnotationExpressions);
-        doExposed(e2ImmuAnnotationExpressions, List.of());
-
-        // @SupportData
-        if (MultiLevel.isEventuallyE1Immutable(ownerImmutable)
-                && !MultiLevel.isEventuallyE2Immutable(ownerImmutable)
-                && supportData.isSet() && supportData.get()) {
-            annotations.put(e2ImmuAnnotationExpressions.supportData.get(), true);
-        }
 
         // @NotNull
         doNotNull(e2ImmuAnnotationExpressions);

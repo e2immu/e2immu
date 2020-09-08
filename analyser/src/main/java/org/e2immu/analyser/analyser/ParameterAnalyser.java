@@ -52,7 +52,6 @@ public class ParameterAnalyser {
                 e2ImmuAnnotationExpressions.notNull2.get()));
         check(parameterInfo, NotNull1.class, List.of(e2ImmuAnnotationExpressions.notNull1.get(), e2ImmuAnnotationExpressions.notNull2.get()));
         check(parameterInfo, NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
-        check(parameterInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
         check(parameterInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
 
         // opposites

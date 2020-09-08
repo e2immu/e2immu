@@ -41,13 +41,13 @@ public class FunctionalInterfaceModified1 {
         }
     }
 
-    @Modified // 4: follows from 3, myIncrementer is @Modified
+    @Modified // getAndIncrement calls the increment method (even if  we have no idea whether the supplier gets called)
     private final Counter myCounter = new Counter();
 
-    @Modified // 1 & 2
+    @Modified // with declaration, so we can add a @NM, @M annotation
     private final Supplier<Integer> getAndIncrement = myCounter::increment;
 
-    @Modified // 2
+    @Modified // with declaration
     private final Supplier<Integer> explicitGetAndIncrement = new Supplier<Integer>() {
         @Override
         @Modified // 1
@@ -56,12 +56,12 @@ public class FunctionalInterfaceModified1 {
         }
     };
 
-    @Modified // step 3
+    @Modified // calling a modifying method
     public int myIncrementer() {
         return getAndIncrement.get();
     }
 
-    @Modified // step 3
+    @Modified // calling a modifying method
     public int myExplicitIncrementer() {
         return explicitGetAndIncrement.get();
     }

@@ -90,7 +90,6 @@ public class MethodAnalyser {
 
                 // checks for dynamic properties of functional interface types
                 check(methodInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
-                check(methodInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
             }
             check(methodInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
 

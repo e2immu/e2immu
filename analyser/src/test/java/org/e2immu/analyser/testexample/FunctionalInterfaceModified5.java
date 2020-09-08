@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 @Container
 public class FunctionalInterfaceModified5<T> {
 
-    @SupportData
+    @NotModified
     private final Set<T> ts;
 
     @Variable
@@ -46,8 +46,8 @@ public class FunctionalInterfaceModified5<T> {
     // both consumers are allowed to modify T elements;
 
     // these consumers are NOT allowed to call incrementAndGet
-    @NotModified
-    public void nonModifyingVisitor(@NotModified(type = AnnotationType.CONTRACT) @Exposed Consumer<T> consumer) {
+    @NotModified(type = AnnotationType.CONTRACT)
+    public void nonModifyingVisitor(Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);
         }
@@ -55,9 +55,24 @@ public class FunctionalInterfaceModified5<T> {
 
     // these consumers are allowed to call incrementAndGet
     @Modified
-    public void modifyingVisitor(@Exposed Consumer<T> consumer) {
+    public void modifyingVisitor(Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);
         }
+    }
+
+    public static void useNonModifyingVisitor() {
+        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        f.nonModifyingVisitor(i -> System.out.println("I is " + i));
+    }
+
+    public static void useNonModifyingVisitorWithError() {
+        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        f.nonModifyingVisitor(i -> System.out.println("I is " + i + "; counting" + f.incrementAndGet())); // ERROR
+    }
+
+    public static void useModifyingVisitor() {
+        FunctionalInterfaceModified5<Integer> f = new FunctionalInterfaceModified5<>(Set.of(1, 2));
+        f.modifyingVisitor(i -> System.out.println("I is " + i + "; counting" + f.incrementAndGet()));
     }
 }

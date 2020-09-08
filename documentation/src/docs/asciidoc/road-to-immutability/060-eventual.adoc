@@ -1,3 +1,4 @@
+[#eventual-immutability]
 == Eventual immutability
 
 There are many constraints on real-world use cases where immutability is not immediate.
@@ -261,18 +262,6 @@ In the case of eventual level 2 immutability,
 
 * modifications to the support data cease after a given mark
 * the analyser disallows modifications to the other fields.
-
-The following arrangement uses the intermediary annotation {supportData} to indicate that rules 2 and 3 apply to reach level 2 immutability, but are currently not satisfied:
-
-[options=header,cols="50,25,25"]
-|===
-| property       | field | support data field
-| modified       | {modified} | {modified}
-| not modified   | {nm}       | {nm} {supportData}
-| eventually not modified                              |{modified} (not recognized) |  `@NotModified(after="mark")` {supportData}
-| not modified and satisfying rules 2 and 3            | - | {nm}
-| eventually not modified and satisfying rules 2 and 3 |- | `@NotModified(after="mark")`
-|===
 
 Eventual finality simply adds a  `@Final(after="mark")` annotation to each of these situations.
 

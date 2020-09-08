@@ -88,7 +88,6 @@ public class ImmutabilityAnnotations {
         @Final(after = "frozen")
         private boolean frozen;
 
-        @SupportData // implying @NotModified type @E1Immutable (which it will be), but there's a dependent constructor
         private Set<String> strings;
 
         @Independent

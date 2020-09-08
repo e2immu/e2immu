@@ -37,7 +37,6 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> e1Immutable = new Lazy<>(() -> create(E1Immutable.class));
     public final Lazy<AnnotationExpression> e2Immutable = new Lazy<>(() -> create(E2Immutable.class));
     public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
-    public final Lazy<AnnotationExpression> exposed = new Lazy<>(() -> create(Exposed.class));
     public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
     public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
     public final Lazy<AnnotationExpression> ignoreModifications = new Lazy<>(() -> create(IgnoreModifications.class));
@@ -56,7 +55,6 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> precondition = new Lazy<>(() -> create(Precondition.class));
     public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
     public final Lazy<AnnotationExpression> size = new Lazy<>(() -> create(Size.class));
-    public final Lazy<AnnotationExpression> supportData = new Lazy<>(() -> create(SupportData.class));
     public final Lazy<AnnotationExpression> utilityClass = new Lazy<>(() -> create(UtilityClass.class));
     public final Lazy<AnnotationExpression> variableField = new Lazy<>(() -> create(Variable.class));
 

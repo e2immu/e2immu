@@ -150,9 +150,6 @@ public class ParameterAnalysis extends Analysis {
         // @NotModified1
         doNotModified1(e2ImmuAnnotationExpressions);
 
-        // @Exposed
-        doExposed(e2ImmuAnnotationExpressions, exposed.stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).sorted().collect(Collectors.toList()));
-
         // @NotNull, @Size
         doNotNull(e2ImmuAnnotationExpressions);
         doSize(e2ImmuAnnotationExpressions);

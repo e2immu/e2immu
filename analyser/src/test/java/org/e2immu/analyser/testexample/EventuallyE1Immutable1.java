@@ -28,7 +28,6 @@ public class EventuallyE1Immutable1 {
     }
 
     @NotNull
-    @SupportData
     @NotModified
     public final TwoIntegers input;
     private String string;

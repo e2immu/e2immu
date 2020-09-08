@@ -42,22 +42,19 @@ public class FunctionalInterfaceModified2 {
         }
     }
 
-    @Modified
+    @Modified // follows from potential modification in acceptMyCounter1
     private final Counter myCounter1 = new Counter();
 
     /*
-    The reasoning behind acceptMyCounter1 being @Modified:
+    There are no other modifying methods, so acceptMyCounter1 is not immediately @Modified because
+    it calls an abstract method.
 
-    1. Unless specified with @NotModified1 on consumer, accept modifies its parameter.
-    2. The enclosing type has means to modify the field myCounter1: it has modifying methods that can be called.
-
-    3. Combining 1 and 2 leads us to the the path of actual modification.
-    4. The direct consequence of consumer modifying myCounter1 is that the field becomes @Modified as well
-
-    5. The parameter `consumer` is modified because a modifying `accept` method is called on it.
+    The field myCounter1 is NOT support data; however, it is fully modifiable.
+    We'd be contradicting ourselves; TODO not independent, so field is modified
+    TODO problem of support data
      */
     @Modified
-    public void acceptMyCounter1(@Modified Consumer<Counter> consumer) {
+    public void acceptMyCounter1(Consumer<Counter> consumer) {
         consumer.accept(myCounter1);
     }
 

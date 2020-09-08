@@ -27,7 +27,6 @@ import java.util.Set;
 @E1Container(after = "j")
 class ExampleManualEventuallyE1Container {
 
-    @SupportData
     @Modified
     private final Set<Integer> integers = new HashSet<>();
 

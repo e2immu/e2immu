@@ -60,7 +60,6 @@ public class E2ImmuColorSettingsPage implements com.intellij.openapi.options.col
 
                 new AttributesDescriptor(Bundle.INSTANCE.get(SETTINGS + ANNOTATION_NOT_MODIFIED_FIELD), TAK_NOT_MODIFIED_FIELD),
                 new AttributesDescriptor(Bundle.INSTANCE.get(SETTINGS + ANNOTATION_MODIFIED_FIELD), TAK_MODIFIED_FIELD),
-                new AttributesDescriptor(Bundle.INSTANCE.get(SETTINGS + ANNOTATION_SUPPORT_DATA_FIELD), TAK_SUPPORT_DATA_FIELD),
                 new AttributesDescriptor(Bundle.INSTANCE.get(SETTINGS + ANNOTATION_VARIABLE_FIELD), TAK_VARIABLE_FIELD),
                 new AttributesDescriptor(Bundle.INSTANCE.get(SETTINGS + NOT_ANNOTATED_FIELD), TAK_NOT_ANNOTATED_FIELD),
 

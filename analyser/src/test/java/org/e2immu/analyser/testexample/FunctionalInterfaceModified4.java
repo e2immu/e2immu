@@ -17,9 +17,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Exposed;
-import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,8 +26,10 @@ import java.util.function.Consumer;
 @E2Container
 public class FunctionalInterfaceModified4<T> {
 
+    @NotModified
     private final Set<T> ts;
 
+    @Independent
     public FunctionalInterfaceModified4(Set<T> ts) {
         this.ts = new HashSet<>(ts);
     }
@@ -45,31 +45,25 @@ public class FunctionalInterfaceModified4<T> {
         is marked @Exposed
      */
 
-    @NotModified
-    public void visit(@Exposed Consumer<T> consumer) {
+    @NotModified //no self-modifications are possible (no other modifying methods)
+    public void visit(Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);
         }
     }
 
-    /*
-     Here the exposed comes via forwarding (the formal parameter of `forEach` is marked @Exposed)
-     */
-    @NotModified
-    public void visit2(@Exposed Consumer<T> consumer) {
+    @NotModified // forEach is @NotModified
+    public void visit2(Consumer<T> consumer) {
         ts.forEach(consumer);
     }
 
-    /*
-     Here the exposed comes via indirect forwarding (the formal parameter of `forEach` is marked @Exposed)
-     */
-    @NotModified
-    public void visit3(@Exposed Consumer<T> consumer) {
+    @NotModified // simply following modification rules
+    public void visit3(Consumer<T> consumer) {
         doTheVisiting(consumer, ts);
     }
 
-    @NotModified
-    private static <T> void doTheVisiting(@Exposed(1) Consumer<T> consumer, Set<T> set) {
+    @NotModified // trivially, not touching fields
+    private static <T> void doTheVisiting(Consumer<T> consumer, @NotModified Set<T> set) {
         set.forEach(consumer);
     }
 }

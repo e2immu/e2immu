@@ -18,7 +18,6 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.E1Container;
-import org.e2immu.annotation.SupportData;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,7 +31,7 @@ public class IndependentFunctionalParameterChecks {
 
     @E1Container
     static class Example1<T> {
-        @SupportData
+
         private final Set<T> data;
 
         public Example1(Set<T> ts) {

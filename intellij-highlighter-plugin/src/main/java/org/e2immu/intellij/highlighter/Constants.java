@@ -53,7 +53,6 @@ public interface Constants {
     String ANNOTATION_MODIFIED_FIELD = lc(Modified.class) + FIELD; // implies @Final
     String ANNOTATION_NOT_MODIFIED_FIELD = lc(NotModified.class) + FIELD; // implies @Final
     String ANNOTATION_FINAL_FIELD = lc(Final.class) + FIELD; // only for primitives
-    String ANNOTATION_SUPPORT_DATA_FIELD = lc(SupportData.class) + FIELD; // implies @NotModified + owning type @E1Immutable
 
     // dynamic type annotations, transferred to the field's type; NO SEPARATE COLORS!
     String ANNOTATION_E2IMMUTABLE_FIELD = lc(E2Immutable.class) + TYPE_OF_FIELD;
@@ -117,8 +116,6 @@ public interface Constants {
 
     // FIELD
 
-    TextAttributesKey TAK_SUPPORT_DATA_FIELD = TextAttributesKey.createTextAttributesKey(E2I + ANNOTATION_SUPPORT_DATA_FIELD,
-            TAK_DEFAULT);
     TextAttributesKey TAK_VARIABLE_FIELD = TextAttributesKey.createTextAttributesKey(E2I + ANNOTATION_VARIABLE_FIELD,
             TAK_DEFAULT);
     TextAttributesKey TAK_NOT_MODIFIED_FIELD = TextAttributesKey.createTextAttributesKey(E2I + ANNOTATION_NOT_MODIFIED_FIELD,
@@ -175,7 +172,6 @@ public interface Constants {
             .put(ANNOTATION_MODIFIED_FIELD, TAK_MODIFIED_FIELD)
             .put(ANNOTATION_FINAL_FIELD, TAK_FINAL_FIELD)
             .put(ANNOTATION_VARIABLE_FIELD, TAK_VARIABLE_FIELD)
-            .put(ANNOTATION_SUPPORT_DATA_FIELD, TAK_SUPPORT_DATA_FIELD)
             .put(NOT_ANNOTATED_FIELD, TAK_NOT_ANNOTATED_FIELD)
             .put(ANNOTATION_E2CONTAINER_FIELD, TAK_E2CONTAINER_TYPE_OF_FIELD)
             .put(ANNOTATION_E1CONTAINER_FIELD, TAK_E1CONTAINER_TYPE_OF_FIELD)
@@ -200,7 +196,6 @@ public interface Constants {
             .put(Container.class.getCanonicalName(), lc(Container.class))
             .put(NotModified.class.getCanonicalName(), lc(NotModified.class))
             .put(Modified.class.getCanonicalName(), lc(Modified.class))
-            .put(SupportData.class.getCanonicalName(), lc(SupportData.class))
             .put(Variable.class.getCanonicalName(), lc(Variable.class))
             .put(Independent.class.getCanonicalName(), lc(Independent.class))
             .put(Dependent.class.getCanonicalName(), lc(Dependent.class))

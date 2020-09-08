@@ -9,7 +9,7 @@ Then downgrade the transfer of independence to {independent} types, rather than 
 === Linking
 
 To compute linking, the analyser tries to track actual objects, with the aim of knowing if a field links to another field or a parameter.
-It computes a dependency graph of variables depending on other variables, with the following three basic rules:
+It computes a dependency graph of variables depending on other variables, with the following four basic rules:
 
 ****
 Rule 1: in an assignment `v = w`, variable `v` links to variable `w`.
@@ -25,9 +25,9 @@ This is especially clear when `a == this`.
 We discern a number of special cases:
 
 . When `v` is of primitive or {e2immutable} type, there cannot be any linking; `v` does not link to `a` nor `b`.
-. If `b` is of primitive or {independent} type (which includes all {e2immutable} types), `v` cannot link to `b`.
+. If `b` is of primitive or {e2immutable} type, `v` cannot link to `b`.
 . When `method` has the annotation {independent}, `v` cannot link to `a`.
-. If `a` is of {e2immutable} type, all its methods are independent; therefore, `v` cannot link to `a`.
+. If `a` is of {independent} type (which includes all {e2immutable} types), all its methods are independent; therefore, `v` cannot link to `a`.
 
 It is important to note that the analyser only computes independence for non-modifying methods, and that all methods returning non-support-data types are automatically independent.
 

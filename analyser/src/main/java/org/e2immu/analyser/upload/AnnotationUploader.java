@@ -86,7 +86,6 @@ public class AnnotationUploader {
 
         fieldPairs = List.of(
                 new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get()),
-                new Pair<>(lc(SupportData.class), e2ImmuAnnotationExpressions.supportData.get()),
                 new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get()),
                 new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.modified.get()),
                 new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get())

@@ -58,6 +58,7 @@ This observation forces us to tighten the definition of a non-modifying method: 
 
 These rules are mostly, but not easily, computable when all code is visible.
 
+[#params-abstract-interface]
 === Parameters of abstract and interface types
 
 When the parameter is of an interface type, and no declarations are present, complications arise.
@@ -73,7 +74,22 @@ public interface Consumer<T> {
 }
 ----
 
-However, if we now use this consumer in the example of the `forEach` method of `Collection`:
+Indeed, using `Point` defined in <<point-and-line>>,
+
+[source,java]
+----
+Consumer<Point> moveOneToTheRight = point -> point.setX(point.getX() + 1);
+Point p;
+Consumer<Point> addToP = point -> {
+    p.setX(p.getX() + point.getX());
+    p.setY(p.getY() + point.getY());
+}
+----
+
+The first consumer, `moveOneToTheRight`, has a non-modifying `accept` method which modifies its parameter.
+The second one, `addToP`, has a modifying `accept` method, with a parameter which remains unmodified.
+
+However, if we now observe the use of `Consumer` in the example of the `forEach` method of `Collection`:
 
 .Possible implementation of forEach
 [source,java]
@@ -83,7 +99,7 @@ default void forEach(Consumer<T> consumer) {
 }
 ----
 
-it immediately follows that:
+we must conclude that:
 
 . the parameter `consumer` is {modified}, because `accept`, as modifying method, runs on this object;
 . the method `forEach` is {modified}, as `t` is linked to `this` and `t` is modified by `accept`.
@@ -103,19 +119,32 @@ default Stream<E> stream() {
 Creating a stream is non-modifying.
 The code that pulls from this stream is completely outside the scope of the analysis of the `Collection` type; it is free to modify `E` objects at will.
 
-Firstly, we decide that parameters of abstract and interface types are {nm}.
+We address this problem as follows.
+Firstly, we decide that:
+
+****
+*Additional, overriding modification rule*: Parameters of abstract and interface types are {nm}.
+****
+
 Modifications they make to the fields of the class can only be made through methods which are already {modified}; this will not change the overall modification status of the type.
-As a first consequence, we need not look at indirect modifications (which would be nigh on impossible anyway), implying that abstract and interface type parameters have no impact on the modification status of the method.
-Secondly, we do not need to change our definition of containers, which requires parameters that are {nm}.
+As a consequence,
 
-The second change we make is to align the exposure of fields and parts of the fields' object graph to the unknown code of the interface implementation, with the exposure via return values:
+. we need not look at indirect modifications (which would be nigh on impossible anyway), implying that abstract and interface type parameters have no impact on the modification status of the method.
+. we do not need to change our definition of containers, which requires parameters that are {nm}.
 
-. support data sent into abstract methods will need to be independent of the fields, so that the assumed modifications to the parameter do not impact the fields
-. modifications to non-support-data will be ignored.
+Secondly,
+
+****
+*Additional, overriding modification rule*: We treat unbound parameter types as level 2 immutable when passing them as parameters to abstract methods.
+They will not be modified.
+****
 
 So in effect, the parameter of the `accept` method is modifying _only_ for support data.
-Making the consumer {nm1} forces absence of modifications on the parameters in the implementation; making the consumer {independent} allows support data as arguments while retaining level 2 immutability.
+Making the consumer {nm1} forces absence of modifications on the parameters in the implementation.
 The annotation {nn1} implies that null arguments will cause exceptions; the analyser will warn against them.
+
+If the support data passed to the `accept` method is independent of the fields, we annotate the consumer parameter with {independent}.
+The independence shields off the fields from modification, which is a necessary requirement for level 2 immutability.
 
 Implementing a visitor using the `forEach` method defined as:
 
@@ -133,12 +162,7 @@ renders code like:
 .Example use of forEach.
 [source,java]
 ----
-@SupportData
 private Set<T> set;
-
-public void add(T t) { set.add(t); } // T is not support data!
-
-...
 
 @NotModified
 public void visit(@NotModified Consumer<T> consumer) {
@@ -151,7 +175,19 @@ public void copy(@Independent Consumer<Set<T>> consumer) {
 }
 ----
 
-=== Lambdas
+The next section discusses the modification or non-modification of the `visit` and `copy` methods.
+
+=== Indirect modification with abstract or interface types
+
+Once there is modifying method, the analyser cannot exclude that the unknown code will not execute it.
+Therefore,
+
+****
+*Implication of the indirect modification rule*: A method with parameters of abstract or interface type is modifying as soon as there are other non-private modifying methods in the type.
+****
+
+Manually contracting the method to be not modifying will activate the analyser, which may or may not be successful in detecting such unwanted modification calls.
+There is one situation, however, where they are easy to spot: lambdas.
 
 As `forEach` is iterating over the elements of some `Iterable`, the consumer should not make any attempts at modifying the iterable.
 Doing so will result in a `ConcurrentModificationException`:

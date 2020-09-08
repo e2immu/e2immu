@@ -82,12 +82,6 @@
             <option name="FOREGROUND" value="546d1b"/>
         </value>
     </option>
-    <option name="e2i-supportdata-f">
-        <value>
-            <option name="FOREGROUND" value="546d1b"/>
-            <option name="BACKGROUND" value="d5ffd5"/>
-        </value>
-    </option>
     <option name="e2i-modified-f">
         <value>
             <option name="FOREGROUND" value="724728"/>

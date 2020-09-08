@@ -23,11 +23,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/*
+Move from a @E2Container to an @Independent @Container, keeping track of some modifications;
+however, list remains @SupportData @NotModified
+ */
 @Container
 @Independent
 public class ExampleManualIterator2<E> {
 
-    @SupportData
+    @NotModified
     private final List<E> list = new ArrayList<>();
 
     @Variable
@@ -43,8 +47,10 @@ public class ExampleManualIterator2<E> {
     }
 
     interface MyIterator<E> {
+        @Modified
         boolean hasNext();
 
+        @Modified
         E next();
     }
 
@@ -57,13 +63,11 @@ public class ExampleManualIterator2<E> {
     @Container
     public static class MyIteratorImpl<E> implements MyIterator<E> {
 
-        @SupportData
         @NotModified
         private final List<E> list;
         @Modified
         private int index;
 
-        @Independent // 4, otherwise 3 cannot be independent
         private MyIteratorImpl(@NotModified List<E> list) { // 2.
             this.list = list;
         }
@@ -79,13 +83,12 @@ public class ExampleManualIterator2<E> {
         }
     }
 
-    @FunctionalInterface
     interface MyConsumer<E> {
         void accept(E e);
     }
 
-    @NotModified // otherwise we cannot have @E2Immutable; can be computed: no means of self-modifying, + @Exposed solves mods on E
-    public void visit(@NotModified @Exposed MyConsumer<E> consumer) { // follows because there are no means of self-modifying
+    @Modified // now there are other methods that allow modifications
+    public void visit(@NotModified MyConsumer<E> consumer) { // follows because there are no means of self-modifying
         for (E e : list) consumer.accept(e);
     }
 }

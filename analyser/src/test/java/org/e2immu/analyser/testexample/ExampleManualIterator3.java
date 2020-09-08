@@ -23,24 +23,33 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@E2Container
-public class ExampleManualIterator1<E> {
+/*
+the independence of the iterator remains working on a `list` which is @Modified rather than @NotModified @SupportData
+ */
+@Container
+public class ExampleManualIterator3<E> {
 
-    @NotModified
-    private final List<E> list = new ArrayList<>();
+    @Modified
+    private final List<E> list;
 
-    @Independent
-    public ExampleManualIterator1(E[] es) {
-        Collections.addAll(list, es);
+    public ExampleManualIterator3(List<E> list) {
+        this.list = list;
+    }
+
+    @Modified
+    public void add(E e) {
+        list.add(e);
     }
 
     interface MyIterator<E> {
+        @Modified
         boolean hasNext();
 
+        @Modified
         E next();
     }
 
-    @Independent // implies @NotModified; Otherwise we cannot have @E2Container; is @Independent because MyIteratorImpl is @Independent
+    @Independent
     public MyIterator<E> iterator() {
         return new MyIteratorImpl<>(list);
     }
@@ -59,26 +68,23 @@ public class ExampleManualIterator1<E> {
         }
 
         @Override
+        @NotModified
         public boolean hasNext() {
             return index < list.size();
         }
 
         @Override
+        @Modified
         public E next() {
             return list.get(index++);
         }
     }
 
-    @FunctionalInterface
     interface MyConsumer<E> {
-        @Modified
-        void accept(@Modified E e);
+        void accept(E e);
     }
 
-    // @Independent not needed, void method
-    @NotModified // otherwise we cannot have @E2Immutable; can be computed:
-    // "e"'s type is not support-data, so accept does not make a modification
-    // there are no other modifying methods to allow for self-modification
+    @Modified
     public void visit(@NotModified MyConsumer<E> consumer) { // follows because there are no means of self-modifying
         for (E e : list) consumer.accept(e);
     }

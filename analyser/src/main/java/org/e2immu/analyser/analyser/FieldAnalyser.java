@@ -721,7 +721,6 @@ public class FieldAnalyser {
 
         // TODO check the correct field name in @Linked(to="xxxx")
         check(fieldInfo, Linked.class, e2ImmuAnnotationExpressions.linked.get());
-        check(fieldInfo, SupportData.class, e2ImmuAnnotationExpressions.supportData.get());
         check(fieldInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
         check(fieldInfo, NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
         check(fieldInfo, Final.class, e2ImmuAnnotationExpressions.effectivelyFinal.get());
@@ -735,7 +734,6 @@ public class FieldAnalyser {
 
         // checks for dynamic properties of functional interface types
         check(fieldInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
-        check(fieldInfo, Exposed.class, e2ImmuAnnotationExpressions.exposed.get());
 
         // opposites
         check(fieldInfo, org.e2immu.annotation.Variable.class, e2ImmuAnnotationExpressions.variableField.get());
