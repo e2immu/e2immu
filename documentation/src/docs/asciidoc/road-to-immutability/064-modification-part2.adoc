@@ -135,7 +135,7 @@ As a consequence,
 Secondly,
 
 ****
-*Additional, overriding modification rule*: We treat unbound parameter types as level 2 immutable when passing them as parameters to abstract methods.
+*Additional, overriding modification rule*: We treat unbound parameter types (and types that can be replaced by an unbound parameter type) as level 2 immutable when passing them as parameters to abstract methods.
 They will not be modified.
 ****
 
@@ -179,11 +179,11 @@ The next section discusses the modification or non-modification of the `visit` a
 
 === Indirect modification with abstract or interface types
 
-Once there is modifying method, the analyser cannot exclude that the unknown code will not execute it.
+Once there is modifying method in a class, the analyser cannot exclude that the unknown code will not execute it.
 Therefore,
 
 ****
-*Implication of the indirect modification rule*: A method with parameters of abstract or interface type is modifying as soon as there are other non-private modifying methods in the type.
+*Implication of the indirect modification rule*: A method calling any abstract method is modifying as soon as there are other non-private modifying methods in the type.
 ****
 
 Manually contracting the method to be not modifying will activate the analyser, which may or may not be successful in detecting such unwanted modification calls.
@@ -222,3 +222,55 @@ public class ExampleManualSelfModificationOnForEach {
 <1> The offending modifying method.
 
 The {nm} annotation on `forEach` does prevent the `list.add` method to be called, because the lambda block in the first statement of `print` fully declares the code of the consumer.
+
+The following example shows a number of situations:
+
+[source,java]
+----
+private final Consumer<T> consumer;
+private int counter;
+
+@Modified // <1>
+public int incrementAndGet() { return ++counter; }
+
+@Modified // <2>
+public void expose1(T t) {
+    consumer.accept(t1);
+}
+
+@Modified // <2>
+public void expose2(Consumer<Integer> intConsumer) {
+    intConsumer.accept(counter);
+}
+
+@NotModified // <2>
+private static <T> void staticallyExposing(@NotModified T t, Consumer<T> consumer) {
+    consumer.accept(t);
+}
+
+@Modified // <3>
+public void expose2() {
+    staticallyExposing(t2, exposingConsumer2);
+}
+----
+<1> This is the real modifying method, potentially called from undeclared code.
+<2> Modifying because the method calls an abstract method, `accept`.
+<3> Indirectly modifying because `staticallyExposing` is modifying.
+
+Note that we never make a distinction between static and instance fields, or methods, concerning modification.
+
+=== Summary
+
+The following matrix summarizes modification related annotations for abstract or interface types:
+
+.Annotations of an abstract or interface type
+[options=header]
+|===
+| The annotation on ... | parameter | field | method return type
+| {modified} | never | *with declaration*: if it changes other fields; *without declaration*: never | (annotation does not refer to return type)
+| {nm} |  implicit | *with declaration*: if it does not modify other fields;  *without declaration*: implicit | (annotation does not refer to return type)
+| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets abstract methods' parameters to {nm} | computed via declaration or linking |   computed via declaration or linking
+| {independent} | computed when the abstract methods' parameters do not link to a field | N/A | N/A
+| {nn1} | computed when the abstract methods' parameters cannot be `null` | computed via declaration or linking | computed via declaration or linking
+|===
+

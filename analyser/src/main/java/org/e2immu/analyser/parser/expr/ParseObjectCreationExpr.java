@@ -39,7 +39,7 @@ public class ParseObjectCreationExpr {
             anonymousType.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             Resolver.sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
-            anonymousType.typeAnalysis.get().supportDataTypes.set(Set.of());
+            anonymousType.typeAnalysis.get().implicitlyImmutableDataTypes.set(Set.of());
             // TODO at the moment there is no constructor, but we could create an anonymous one
             return new NewObject(parameterizedType, anonymousType);
         }

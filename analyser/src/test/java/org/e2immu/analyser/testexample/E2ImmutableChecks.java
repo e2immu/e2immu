@@ -30,9 +30,7 @@ import java.util.Set;
 public class E2ImmutableChecks {
 
     // 1. all fields are final (explicitly)
-    // 2. all fields are primitive, context class or (XXX)
-    // 3. there are no non-primitive non-context class
-    // 4. ditto
+    // 2. all non-private fields are primitive
 
     @E2Container
     static class E2Container1 {
@@ -50,9 +48,7 @@ public class E2ImmutableChecks {
     }
 
     // 1. all fields are final (explicitly and implicitly)
-    // 2. all fields are primitive, context class or (XXX); added complication: recursive definition
-    // 3. there are no non-primitive non-context class
-    // 4. ditto
+    // 2. all non-private fields are primitive + added complication: recursive definition
 
     @E2Container
     static class E2Container2 {
@@ -80,15 +76,17 @@ public class E2ImmutableChecks {
         }
     }
 
-    // 1. all fields are final (explicitly and implicitly)
-    // 2. all fields are primitive, context class or: not exposed, not linked
-    // 3. there are no non-primitive non-context class
-    // 4. ditto
+    // 1. all fields are final
+    // 2. all fields are not modified
+    // 3. fields are private
+    // 4. constructor and method are independent
     @E2Container
     static class E2Container3 {
         @Linked(type = AnnotationType.VERIFY_ABSENT)
+        @NotModified
         private final Set<String> set3;
 
+        @Independent
         public E2Container3(Set<String> set3Param) {
             set3 = new HashSet<>(set3Param); // not linked
         }
@@ -109,6 +107,7 @@ public class E2ImmutableChecks {
         @NotNull1
         public final Set<String> strings4;
 
+        @Independent
         public E2Immutable4(@NotNull @NotModified Set<String> input4) {
             strings4 = ImmutableSet.copyOf(input4);
         }
@@ -123,8 +122,7 @@ public class E2ImmutableChecks {
         @Identity
         @Linked(type = AnnotationType.VERIFY_ABSENT)
         @Constant(type = AnnotationType.VERIFY_ABSENT)
-        // TODO we should be @NotNull1 for input4
-        public Set<String> mingle(@NotNull @NotModified(type = AnnotationType.VERIFY_ABSENT) Set<String> input4) {
+        public Set<String> mingle(@NotNull1 @Modified Set<String> input4) {
             input4.addAll(strings4);
             return input4;
         }
@@ -166,6 +164,61 @@ public class E2ImmutableChecks {
         @E2Container
         public Map<String, T> getMap5() {
             return ImmutableMap.copyOf(map5);
+        }
+    }
+
+    static class SimpleContainer {
+        private int i;
+
+        public int getI() {
+            return i;
+        }
+
+        public void setI(int i) {
+            this.i = i;
+        }
+    }
+
+    // here, SimpleContainer can be replaced by T or Object
+    @E2Container
+    static class E2Container6 {
+        private final Map<String, SimpleContainer> map6;
+
+        public E2Container6(Map<String, SimpleContainer> map6Param) {
+            map6 = new HashMap<>(map6Param); // not linked
+        }
+
+        public SimpleContainer get6(String input) {
+            return map6.get(input);
+        }
+
+        @E2Container
+        public Map<String, SimpleContainer> getMap6() {
+            return ImmutableMap.copyOf(map6);
+        }
+    }
+
+    // here, SimpleContainer cannot be replaced by T or Object
+    @E1Container
+    static class E2Container7 {
+        @NotModified
+        private final Map<String, SimpleContainer> map7;
+
+        @Independent
+        public E2Container7(Map<String, SimpleContainer> map7Param) {
+            map7 = new HashMap<>(map7Param); // not linked
+        }
+
+        @Dependent
+        public SimpleContainer get7(String input) {
+            return map7.get(input);
+        }
+
+        @Independent
+        public Map<String, SimpleContainer> getMap7() {
+            Map<String, SimpleContainer> incremented = new HashMap<>(map7);
+            incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));
+            return incremented;
         }
     }
 }

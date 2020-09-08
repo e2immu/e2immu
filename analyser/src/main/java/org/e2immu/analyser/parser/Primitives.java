@@ -205,7 +205,7 @@ public class Primitives {
             ti.typeAnalysis.get().properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
             ti.typeAnalysis.get().approvedPreconditions.freeze(); // cannot change these anymore; will never be eventual
             ti.typeAnalysis.get().properties.put(VariableProperty.MODIFIED, Level.FALSE);
-            ti.typeAnalysis.get().supportDataTypes.set(Set.of());
+            ti.typeAnalysis.get().implicitlyImmutableDataTypes.set(Set.of());
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, annotationModeTypeInfo, functionalInterface)) {

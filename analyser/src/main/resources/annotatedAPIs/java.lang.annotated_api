@@ -377,9 +377,9 @@ public @interface FunctionalInterface {
 }
 
 public interface Iterable<T> {
-    // looping over the collection does not change it...
+    // looping over the collection should not not change it!
     @NotModified
-    void forEach(@NotNull @Exposed Consumer<? super T> action);
+    void forEach(@NotNull Consumer<? super T> action);
 
     @NotNull
     Iterator<T> iterator();

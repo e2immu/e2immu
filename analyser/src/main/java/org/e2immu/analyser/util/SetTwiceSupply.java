@@ -57,6 +57,7 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
     }
 
     @Only(after = "set")
+    @Modified
     public T get(@NotNull String errorContext) {
         if (!super.isSet()) {
             if (runnable == null) {
@@ -78,7 +79,7 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
     }
 
     @Override
-    @NotModified
+    @Modified
     public boolean isSet() {
         if (super.isSet()) return true;
         if (runnable == null) return false;

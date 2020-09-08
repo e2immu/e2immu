@@ -1206,4 +1206,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
                 .findFirst().orElseThrow();
     }
+
+    public Set<ParameterizedType> typesOfMethodScopes() {
+        return typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+                .flatMap(methodInfo -> methodInfo.typesOfMethodScopes()
+                        .stream()).collect(Collectors.toSet());
+    }
 }

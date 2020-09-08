@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -754,8 +753,8 @@ public class MethodAnalyser {
         // support data types are not set for types that have not been defined; there, we rely on annotations
         boolean returnObjectIsIndependent;
         if (!methodInfo.isConstructor && !methodInfo.isVoid() &&
-                methodInfo.typeInfo.typeAnalysis.get().supportDataTypes.isSet() &&
-                methodInfo.typeInfo.typeAnalysis.get().supportDataTypes.get().contains(methodInfo.returnType())) {
+                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
+                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
             // method returns a support data type
             if (!methodAnalysis.variablesLinkedToMethodResult.isSet()) {
                 log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",

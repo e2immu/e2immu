@@ -83,12 +83,7 @@ public class TypeAnalysis extends Analysis {
         return String.join(",", marksRequiredForImmutable());
     }
 
-    public final SetOnce<Set<ParameterizedType>> supportDataTypes = new SetOnce<>();
-
-
-    public boolean haveSupportData() {
-        return supportDataTypes.isSet() && !supportDataTypes.get().isEmpty();
-    }
+    public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
     @Override
     public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {

@@ -144,8 +144,8 @@ public class FieldAnalyser {
     private boolean computeSupportData(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         if (fieldAnalysis.supportData.isSet()) return false;
         TypeAnalysis typeAnalysis = fieldInfo.owner.typeAnalysis.get();
-        if (!typeAnalysis.supportDataTypes.isSet()) return false;
-        boolean isSupportData = typeAnalysis.supportDataTypes.get().contains(fieldInfo.type);
+        if (!typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
+        boolean isSupportData = typeAnalysis.implicitlyImmutableDataTypes.get().contains(fieldInfo.type);
         fieldAnalysis.supportData.set(isSupportData);
         return true;
     }

@@ -58,12 +58,11 @@ public class FunctionalInterfaceModified3<T> {
     }
 
     @Modified
-    // TODO interesting
     public void expose2() {
         staticallyExposing(t2, exposingConsumer2);
     }
 
-    @NotModified // because static
+    @Modified
     private static <T> void staticallyExposing(@NotModified T t, Consumer<T> consumer) {
         consumer.accept(t);
     }

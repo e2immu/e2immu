@@ -24,32 +24,31 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-//@E2Container(after = "freeze")
-@E1Container
+@E2Container(after = "frozen")
 public class Trie<T> extends Freezable {
 
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @Modified
     private final TrieNode<T> root = new TrieNode<>();
 
     @Container // by definition, has no methods
     private static class TrieNode<T> {
-        @NotNull(type = AnnotationType.VERIFY_ABSENT)
-        @NotModified(type = AnnotationType.VERIFY_ABSENT)
-        @Final(type = AnnotationType.VERIFY_ABSENT)
+        @Nullable
+        @Modified
+        @Variable
         List<T> data;
-        @NotNull(type = AnnotationType.VERIFY_ABSENT)
-        @NotModified(type = AnnotationType.VERIFY_ABSENT)
-        @Final(type = AnnotationType.VERIFY_ABSENT)
+        @Nullable
+        @Modified
+        @Variable
         Map<String, TrieNode<T>> map;
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @Nullable
     @NotModified
     private TrieNode<T> goTo(String[] strings) {
         return goTo(strings, strings.length);
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @Nullable
     @NotModified
     private TrieNode<T> goTo(String[] strings, int upToPosition) {
         TrieNode<T> node = root;
@@ -68,18 +67,21 @@ public class Trie<T> extends Freezable {
     }
 
     @NotModified
+    @Nullable
     public List<T> get(@NotNull String[] strings) {
         TrieNode<T> node = goTo(strings);
         return node == null ? null : node.data;
     }
 
     @NotModified
+    @Nullable
     public List<T> get(String[] strings, int upToPosition) {
         TrieNode<T> node = goTo(strings, upToPosition);
         return node == null ? null : node.data == null ? List.of() : node.data;
     }
 
-    //@Only(before = "freeze")
+    @Only(before = "frozen")
+    @Modified
     public List<T> getOrCompute(String[] strings, Function<String[], T> action) {
         TrieNode<T> node = goTo(strings);
         if (node == null) {
@@ -92,7 +94,7 @@ public class Trie<T> extends Freezable {
         return node.data;
     }
 
-    @NotModified
+    @NotModified(type = AnnotationType.CONTRACT)
     public void visitLeaves(String[] strings, BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
@@ -105,9 +107,7 @@ public class Trie<T> extends Freezable {
         }
     }
 
-    // @NotModified not possible on visitor (is interface)
-    // by visiting.
-    @NotModified
+    @NotModified(type = AnnotationType.CONTRACT)
     public void visit(String[] strings,
                       BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
@@ -115,6 +115,7 @@ public class Trie<T> extends Freezable {
         recursivelyVisit(node, new Stack<>(), visitor);
     }
 
+    @NotModified // pushed via contract on visit
     private static <T> void recursivelyVisit(TrieNode<T> node,
                                              Stack<String> strings,
                                              BiConsumer<String[], List<T>> visitor) {
@@ -131,7 +132,6 @@ public class Trie<T> extends Freezable {
     }
 
     @NotNull
-    //@Only(before = "freeze")
     public TrieNode<T> add(@NotNull String[] strings,
                            @NotNull T data) {
         TrieNode<T> node = root;

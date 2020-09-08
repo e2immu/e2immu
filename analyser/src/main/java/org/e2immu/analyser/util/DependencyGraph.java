@@ -28,8 +28,7 @@ import java.util.function.BiConsumer;
  *
  * @param <T>
  */
-//@E2Immutable(after = "freeze")
-@E1Container
+@E2Container(after = "frozen")
 public class DependencyGraph<T> extends Freezable {
     private static class Node<T> {
         List<T> dependsOn;
@@ -40,7 +39,7 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @Modified
     private final Map<T, Node<T>> nodeMap = new HashMap<>();
 
     @NotModified
@@ -59,7 +58,6 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     // return all transitive dependencies
-    @NotModified
     @Independent
     public Set<T> dependencies(@NotNull T t) {
         Set<T> result = new HashSet<>();
@@ -69,7 +67,6 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     // return all transitive dependencies, only return terminals
-    @NotModified
     @Independent
     public Set<T> dependenciesOnlyTerminals(@NotNull T t) {
         Set<T> result = new HashSet<>();
@@ -101,7 +98,8 @@ public class DependencyGraph<T> extends Freezable {
     }
 
     @NotNull
-    @Only(before = "freeze")
+    @Modified
+    @Only(before = "frozen")
     private Node<T> getOrCreate(@NotNull T t) {
         ensureNotFrozen();
         Objects.requireNonNull(t);
@@ -113,12 +111,13 @@ public class DependencyGraph<T> extends Freezable {
         return node;
     }
 
-    @NotModified
+    @NotModified(type = AnnotationType.CONTRACT)
     public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
 
-    @Only(before = "freeze")
+    @Only(before = "frozen")
+    @Modified
     public void addNode(@NotNull T t, @NotNull List<T> dependsOn) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
@@ -128,7 +127,6 @@ public class DependencyGraph<T> extends Freezable {
         }
     }
 
-    @NotModified
     @Independent
     public List<T> sorted() {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
@@ -157,7 +155,7 @@ public class DependencyGraph<T> extends Freezable {
         return result;
     }
 
-    public boolean equalTransitiveTerminals(DependencyGraph<T> other) {
+    public boolean equalTransitiveTerminals(@NotNull DependencyGraph<T> other) {
         if (nodeMap.size() != other.nodeMap.size()) return false;
         for (T node : nodeMap.keySet()) {
             Set<T> dependencies = dependenciesOnlyTerminals(node);

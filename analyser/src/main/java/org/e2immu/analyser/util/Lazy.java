@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 public class Lazy<T> {
     @NotNull1
     @Linked(to = "supplierParam")
-    @NotModified(type = CONTRACT)
     private final Supplier<T> supplier;
 
     @Final(after = "get")
@@ -49,7 +48,7 @@ public class Lazy<T> {
      * @param supplierParam the supplier that will compute the value; it should not produce a null value
      * @throws NullPointerException when the argument is <code>null</code>
      */
-    public Lazy(@NotNull1 @NotModified Supplier<T> supplierParam) {
+    public Lazy(@NotNull1 Supplier<T> supplierParam) {
         if (supplierParam == null) throw new NullPointerException("Null not allowed");
         this.supplier = supplierParam;
     }

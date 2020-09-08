@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -32,7 +31,6 @@ import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.pattern.ConditionalAssignment;
 import org.e2immu.analyser.pattern.Pattern;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
@@ -237,17 +235,27 @@ public class TypeAnalyser {
 
     private boolean analyseSupportDataTypes(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        if (typeAnalysis.supportDataTypes.isSet()) return false;
+        if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
 
         log(E2IMMUTABLE, "Computing support types for {}", typeInfo.fullyQualifiedName);
         Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        Set<ParameterizedType> typesOfMethodsAndConstructors = typeInfo.typesOfMethodsAndConstructors();
+        typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
+        Set<ParameterizedType> typesOfMethodScopes = typeInfo.typesOfMethodScopes();
+        typesOfFields.removeIf(type -> {
+            if (type.isUnboundParameterType()) return false;
+            TypeInfo bestType = type.bestTypeInfo();
+            if(bestType == null) return false;
+            boolean self = type.typeInfo == typeInfo;
+            if (self || typeInfo.isPrimitiveOrBoxed()) return true;
 
-        onlyKeepSupportData(typesOfMethodsAndConstructors, typesOfFields);
+            int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            if (immutable == MultiLevel.DELAY && bestType.hasBeenDefined()) return false; // delaying
+            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || typesOfMethodScopes.contains(type);
+        });
 
-        typeAnalysis.supportDataTypes.set(ImmutableSet.copyOf(typesOfFields));
-        log(E2IMMUTABLE, "Support types for {} are: [{}]", typeInfo.fullyQualifiedName,
+        typeAnalysis.implicitlyImmutableDataTypes.set(ImmutableSet.copyOf(typesOfFields));
+        log(E2IMMUTABLE, "Implicitly immutable data types for {} are: [{}]", typeInfo.fullyQualifiedName,
                 StringUtil.join(typesOfFields, ParameterizedType::detailedString));
         return true;
     }

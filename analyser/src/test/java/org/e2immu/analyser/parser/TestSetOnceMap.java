@@ -28,7 +28,6 @@ import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -101,8 +100,8 @@ public class TestSetOnceMap extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
         if ("SetOnceMap".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(1, typeInfo.typeAnalysis.get().supportDataTypes.get().size());
-            ParameterizedType supportDataType = typeInfo.typeAnalysis.get().supportDataTypes.get().stream().findFirst().orElseThrow();
+            Assert.assertEquals(1, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
+            ParameterizedType supportDataType = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().stream().findFirst().orElseThrow();
             Assert.assertEquals("java.util.Map<K, V>", supportDataType.detailedString());
 
             if (iteration > 1) {

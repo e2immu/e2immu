@@ -28,8 +28,14 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
+import org.e2immu.analyser.model.expression.Assignment;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.statement.StatementWithExpression;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
@@ -39,6 +45,7 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
@@ -579,5 +586,23 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean isSingleAbstractMethod() {
         return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
+    }
+
+    public Set<ParameterizedType> typesOfMethodScopes() {
+        Set<ParameterizedType> result = new HashSet<>();
+        Consumer<Statement> statementVisitor = statement -> {
+            if (statement instanceof StatementWithExpression) {
+                Expression expression = ((StatementWithExpression) statement).expression;
+                result.addAll(expression.find(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
+
+                // accept all types of assignments, except for = null, = parameter
+                result.addAll(expression.find(Assignment.class).stream()
+                        .filter(assignment -> !(assignment.value instanceof NullConstant) &&
+                                !(assignment.value instanceof VariableExpression && ((VariableExpression) assignment.value).variable instanceof ParameterInfo))
+                        .map(assignment -> assignment.target.returnType()).collect(Collectors.toSet()));
+            }
+        };
+        methodInspection.get().methodBody.get().visit(statementVisitor);
+        return result;
     }
 }
