@@ -588,11 +588,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
     }
 
+
     public Set<ParameterizedType> typesOfMethodScopes() {
         Set<ParameterizedType> result = new HashSet<>();
         Consumer<Statement> statementVisitor = statement -> {
             if (statement instanceof StatementWithExpression) {
                 Expression expression = ((StatementWithExpression) statement).expression;
+
                 result.addAll(expression.find(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
 
                 // accept all types of assignments, except for = null, = parameter

@@ -147,4 +147,9 @@ public class Lambda implements Expression {
 
         return result;
     }
+
+    @Override
+    public List<Expression> subExpressions() {
+        return block.subExpressions();
+    }
 }

@@ -186,4 +186,8 @@ public class Block implements Statement, HasStatements {
         if (this == EMPTY_BLOCK) return this;
         return new Block(statements.stream().flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()), label);
     }
+
+    public List<Expression> subExpressions() {
+
+    }
 }

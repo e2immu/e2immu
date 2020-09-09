@@ -130,6 +130,13 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     };
 
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if("E2Container7".equals(typeInfo.simpleName)) {
+            Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
+        }
+    };
+
+
     @Test
     public void test() throws IOException {
         testClass("E2ImmutableChecks", 0, 0, new DebugConfiguration.Builder()
@@ -137,6 +144,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
