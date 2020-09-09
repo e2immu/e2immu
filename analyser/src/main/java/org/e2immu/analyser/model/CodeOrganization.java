@@ -63,14 +63,6 @@ public class CodeOrganization {
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
     }
 
-    public <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Class<E> clazz) {
-        Stream<E> s1 = initialisers.stream().flatMap(e -> e.find(clazz).stream());
-        Stream<E> s2 = Stream.concat(s1, expression.find(clazz).stream());
-        Stream<E> s3 = Stream.concat(s2, updaters.stream().flatMap(e -> e.find(clazz).stream()));
-        Stream<E> s4 = Stream.concat(s3, statements.getStatements().stream().flatMap(s -> Statement.findExpressionRecursivelyInStatements(s, clazz)));
-        return Stream.concat(s4, subStatements.stream().flatMap(s -> s.findExpressionRecursivelyInStatements(clazz)));
-    }
-
     public boolean haveSubBlocks() {
         return statements != Block.EMPTY_BLOCK || !subStatements.isEmpty();
     }

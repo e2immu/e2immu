@@ -5,6 +5,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -45,17 +46,7 @@ public class AssertStatement implements Statement {
     }
 
     @Override
-    public Set<String> imports() {
-        return SetUtil.immutableUnion(check.imports(), message == null ? Set.of() : message.imports());
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(check.typesReferenced(), message == null ? Set.of() : message.typesReferenced());
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return check.sideEffect(evaluationContext);
+    public List<? extends Element> subElements() {
+        return message == null ? List.of(check) : List.of(check, message);
     }
 }

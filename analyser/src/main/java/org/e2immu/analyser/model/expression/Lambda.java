@@ -116,11 +116,6 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext sideEffectContext) {
-        return block.sideEffect(sideEffectContext);
-    }
-
-    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
 
@@ -149,7 +144,9 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public List<Expression> subExpressions() {
-        return block.subExpressions();
+    public List<? extends Element> subElements() {
+        return List.of(block);
     }
+
+    // TODO should we add the parameters to variables() ??
 }

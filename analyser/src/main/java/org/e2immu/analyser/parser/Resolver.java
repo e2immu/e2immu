@@ -159,7 +159,7 @@ public class Resolver {
                     MethodInfo sam;
                     boolean artificial;
                     if (fieldInfo.type.isFunctionalInterface()) {
-                        List<NewObject> newObjects = parsedExpression.find(NewObject.class);
+                        List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
                         artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
 
                         if (!artificial) {

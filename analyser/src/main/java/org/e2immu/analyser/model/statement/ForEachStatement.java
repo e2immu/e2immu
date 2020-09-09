@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.Map;
@@ -58,7 +59,7 @@ public class ForEachStatement extends LoopStatement {
 
     @Override
     public Set<String> imports() {
-        return Sets.union(expression.imports(), localVariable.imports());
+        return SetUtil.immutableUnion(expression.imports(), block.imports(), localVariable.imports());
     }
 
     @Override

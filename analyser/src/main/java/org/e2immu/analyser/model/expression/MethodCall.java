@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
@@ -34,8 +32,8 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
@@ -483,25 +481,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>(object == null ? Set.of() : object.imports());
-        parameterExpressions.forEach(pe -> imports.addAll(pe.imports()));
-        return ImmutableSet.copyOf(imports);
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(object == null ? Set.of() : object.typesReferenced(),
-                parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet()));
-    }
-
-    @Override
-    public List<Expression> subExpressions() {
-        List<Expression> list = new ArrayList<>(parameterExpressions);
-        if (object != null) {
-            list.add(object);
-        }
-        return ImmutableList.copyOf(list);
+    public List<? extends Element> subElements() {
+        return ListUtil.immutableConcat(parameterExpressions, object == null ? List.of() : List.of(object));
     }
 
     @Override

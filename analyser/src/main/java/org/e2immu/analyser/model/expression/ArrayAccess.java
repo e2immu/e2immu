@@ -65,17 +65,7 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Set<String> imports() {
-        return Sets.union(expression.imports(), index.imports());
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return Sets.union(expression.typesReferenced(), index.typesReferenced());
-    }
-
-    @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(expression, index);
     }
 
@@ -119,11 +109,6 @@ public class ArrayAccess implements Expression {
     @Override
     public List<Variable> variablesInScopeSide() {
         return expression.variables();
-    }
-
-    @Override
-    public List<Variable> variables() {
-        return ListUtil.immutableConcat(expression.variables(), index.variables());
     }
 
     public static String dependentVariableName(Value array, Value index) {

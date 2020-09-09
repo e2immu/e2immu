@@ -591,14 +591,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public Set<ParameterizedType> typesOfMethodScopes() {
         Set<ParameterizedType> result = new HashSet<>();
-        Consumer<Statement> statementVisitor = statement -> {
+        Consumer<Element> statementVisitor = statement -> {
             if (statement instanceof StatementWithExpression) {
                 Expression expression = ((StatementWithExpression) statement).expression;
 
-                result.addAll(expression.find(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
+                result.addAll(expression.collect(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
 
                 // accept all types of assignments, except for = null, = parameter
-                result.addAll(expression.find(Assignment.class).stream()
+                result.addAll(expression.collect(Assignment.class).stream()
                         .filter(assignment -> !(assignment.value instanceof NullConstant) &&
                                 !(assignment.value instanceof VariableExpression && ((VariableExpression) assignment.value).variable instanceof ParameterInfo))
                         .map(assignment -> assignment.target.returnType()).collect(Collectors.toSet()));

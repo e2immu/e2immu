@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -41,13 +42,6 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect sideEffect = expression.sideEffect(evaluationContext);
-        return switchEntries.stream().map(s -> s.sideEffect(evaluationContext))
-                .reduce(sideEffect, SideEffect::combine);
-    }
-
-    @Override
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder()
                 .setExpression(expression)
@@ -56,5 +50,10 @@ public class SwitchStatement extends StatementWithExpression {
         boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
         builder.setNoBlockMayBeExecuted(haveNoDefault);
         return builder.build();
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return ListUtil.immutableConcat(List.of(expression), switchEntries);
     }
 }

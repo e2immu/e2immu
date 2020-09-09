@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
+
 public class ReturnStatement extends StatementWithExpression {
 
     public ReturnStatement(Expression expression) {
@@ -93,5 +95,10 @@ public class ReturnStatement extends StatementWithExpression {
 
     private boolean isThis() {
         return (expression instanceof VariableExpression) && ((VariableExpression) expression).variable instanceof This;
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression);
     }
 }

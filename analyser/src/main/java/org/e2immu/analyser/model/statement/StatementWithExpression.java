@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -41,13 +42,7 @@ public abstract class StatementWithExpression implements Statement {
     }
 
     @Override
-    // @Immutable inherited
-    public Set<String> imports() {
-        return expression.imports();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return expression.typesReferenced();
+    public List<? extends Element> subElements() {
+        return List.of(expression);
     }
 }

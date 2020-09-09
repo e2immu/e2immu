@@ -26,19 +26,4 @@ public class BreakStatement extends BreakOrContinueStatement {
         sb.append(";\n");
         return sb.toString();
     }
-
-    @Override
-    public Set<String> imports() {
-        return Set.of();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return null;
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return SideEffect.STATIC_ONLY;
-    }
 }

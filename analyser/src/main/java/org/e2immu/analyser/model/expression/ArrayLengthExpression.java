@@ -43,7 +43,7 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(scope);
     }
 

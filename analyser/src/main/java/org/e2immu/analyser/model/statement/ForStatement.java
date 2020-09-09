@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -22,7 +23,8 @@ public class ForStatement extends LoopStatement {
      */
     public ForStatement(String label, List<Expression> initialisers, Expression condition, List<Expression> updaters, Block block) {
         super(label, condition, block);
-        // TODO we can go really far here in analysing the initialiser, condition, and updaters. We should. This will provide a better executedAtLeastOnce predicate.
+        // TODO we can go really far here in analysing the initialiser, condition, and updaters.
+        // We should. This will provide a better executedAtLeastOnce predicate.
         this.initialisers = ImmutableList.copyOf(initialisers);
         this.updaters = ImmutableList.copyOf(updaters);
     }
@@ -34,13 +36,6 @@ public class ForStatement extends LoopStatement {
                 translationMap.translateExpression(expression),
                 updaters.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateBlock(block));
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(initialisers.stream().flatMap(i -> i.typesReferenced().stream()).collect(Collectors.toSet()),
-                updaters.stream().flatMap(i -> i.typesReferenced().stream()).collect(Collectors.toSet()),
-                super.typesReferenced());
     }
 
     @Override
@@ -70,5 +65,10 @@ public class ForStatement extends LoopStatement {
                 .setExpression(expression)
                 .setUpdaters(updaters)
                 .setStatements(block).build();
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return ListUtil.immutableConcat(initialisers, List.of(expression), updaters, List.of(block));
     }
 }

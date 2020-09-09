@@ -379,7 +379,7 @@ public class MethodAnalyser {
     // part of @UtilityClass computation in the type analyser
     private boolean methodCreatesObjectOfSelf(List<NumberedStatement> numberedStatements, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.createObjectOfSelf.isSet()) {
-            boolean createSelf = numberedStatements.stream().flatMap(ns -> Statement.findExpressionRecursivelyInStatements(ns.statement, NewObject.class))
+            boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.collect(NewObject.class).stream())
                     .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
             log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
             methodAnalysis.createObjectOfSelf.set(createSelf);

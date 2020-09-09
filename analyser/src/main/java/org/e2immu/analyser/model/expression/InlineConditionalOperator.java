@@ -89,22 +89,9 @@ public class InlineConditionalOperator implements Expression {
         return 2;
     }
 
-    @Override
-    @NotNull
-    @Independent
-    public Set<String> imports() {
-        return Sets.union(Sets.union(condition.imports(), ifFalse.imports()), ifTrue.imports());
-    }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(condition.typesReferenced(), ifFalse.typesReferenced(), ifTrue.typesReferenced());
-    }
-
-    @Override
-    @NotNull
-    @Independent
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(condition, ifTrue, ifFalse);
     }
 }

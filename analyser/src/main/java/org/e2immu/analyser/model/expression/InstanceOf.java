@@ -112,14 +112,8 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    @NotNull
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(expression);
-    }
-
-    @Override
-    public List<Variable> variables() {
-        return expression.variables();
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
@@ -19,6 +20,7 @@ public class TryStatement implements Statement {
     public final Block tryBlock;
     public final List<Pair<CatchParameter, Block>> catchClauses;
     public final Block finallyBlock;
+    private final List<? extends Element> subElements;
 
     public TryStatement(List<Expression> resources,
                         Block tryBlock,
@@ -28,6 +30,8 @@ public class TryStatement implements Statement {
         this.tryBlock = tryBlock;
         this.catchClauses = ImmutableList.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
+        subElements = ListUtil.immutableConcat(List.of(tryBlock), catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
+                finallyBlock == Block.EMPTY_BLOCK ? List.of() : List.of(finallyBlock));
     }
 
     @Override
@@ -109,22 +113,6 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public Set<String> imports() {
-        Set<String> importsOfResources = resources.stream().flatMap(r -> r.imports().stream()).collect(Collectors.toSet());
-        Set<String> importsOfCatchParameters = catchClauses.stream().flatMap(c -> c.k.imports().stream()).collect(Collectors.toSet());
-        Set<String> importsOfCatchBlocks = catchClauses.stream().flatMap(c -> c.v.imports().stream()).collect(Collectors.toSet());
-        return SetUtil.immutableUnion(tryBlock.imports(), finallyBlock.imports(), importsOfResources, importsOfCatchBlocks, importsOfCatchParameters);
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> importsOfResources = resources.stream().flatMap(r -> r.typesReferenced().stream()).collect(Collectors.toSet());
-        Set<TypeInfo> importsOfCatchParameters = catchClauses.stream().flatMap(c -> c.k.typesReferenced().stream()).collect(Collectors.toSet());
-        Set<TypeInfo> importsOfCatchBlocks = catchClauses.stream().flatMap(c -> c.v.typesReferenced().stream()).collect(Collectors.toSet());
-        return SetUtil.immutableUnion(tryBlock.typesReferenced(), finallyBlock.typesReferenced(), importsOfResources, importsOfCatchBlocks, importsOfCatchParameters);
-    }
-
-    @Override
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
                 .setStatementsExecutedAtLeastOnce(v -> true)
@@ -150,10 +138,8 @@ public class TryStatement implements Statement {
         return tryBlock.sideEffect(evaluationContext);
     }
 
-    public void visit(Consumer<Statement> consumer) {
-        tryBlock.visit(consumer);
-        catchClauses.forEach(pair -> pair.getV().visit(consumer));
-        finallyBlock.visit(consumer);
-        consumer.accept(this);
+    @Override
+    public List<? extends Element> subElements() {
+        return subElements;
     }
 }

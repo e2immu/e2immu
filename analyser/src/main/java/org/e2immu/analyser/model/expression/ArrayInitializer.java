@@ -40,7 +40,6 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-
         return new ArrayInitializer(expressions.stream().map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }
@@ -73,7 +72,7 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return expressions;
     }
 

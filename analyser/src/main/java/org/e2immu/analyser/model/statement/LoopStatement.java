@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.SetUtil;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -18,11 +19,6 @@ public abstract class LoopStatement extends StatementWithExpression {
     }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(super.typesReferenced(), block.typesReferenced());
-    }
-
-    @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         SideEffect blocksSideEffect = block.sideEffect(evaluationContext);
         SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
@@ -31,8 +27,8 @@ public abstract class LoopStatement extends StatementWithExpression {
         return conditionSideEffect.combine(blocksSideEffect);
     }
 
-    public void visit(Consumer<Statement> consumer) {
-        block.visit(consumer);
-        consumer.accept(this);
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression, block);
     }
 }

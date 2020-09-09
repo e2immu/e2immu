@@ -60,19 +60,7 @@ public class ExplicitConstructorInvocation implements Statement {
     }
 
     @Override
-    public Set<String> imports() {
-        return parameterExpressions.stream().flatMap(e -> e.imports().stream()).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet());
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return parameterExpressions.stream()
-                .map(e -> e.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
+    public List<? extends Element> subElements() {
+        return parameterExpressions;
     }
 }

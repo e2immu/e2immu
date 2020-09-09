@@ -47,11 +47,6 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return expression.sideEffect(evaluationContext);
-    }
-
-    @Override
     public CodeOrganization codeOrganization() {
         CodeOrganization.Builder builder = new CodeOrganization.Builder();
         if (expression instanceof LocalVariableCreation) {
@@ -63,5 +58,10 @@ public class ExpressionAsStatement extends StatementWithExpression {
             builder.setStatements(((Lambda) expression).block);
         }
         return builder.build();
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(expression);
     }
 }

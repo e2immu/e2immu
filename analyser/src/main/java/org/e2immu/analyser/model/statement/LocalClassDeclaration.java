@@ -21,8 +21,10 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class LocalClassDeclaration implements Statement {
     public final TypeInfo typeInfo;
@@ -54,5 +56,11 @@ public class LocalClassDeclaration implements Statement {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return typeInfo.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+                .map(methodInfo -> methodInfo.methodInspection.get().methodBody.get()).collect(Collectors.toList());
     }
 }

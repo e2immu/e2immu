@@ -375,7 +375,7 @@ public class StatementAnalyser {
 
         if (statement.statement instanceof LoopStatement) {
             if (!statement.existingVariablesAssignedInLoop.isSet()) {
-                Set<Variable> set = computeExistingVariablesAssignedInLoop(codeOrganization, variableProperties);
+                Set<Variable> set = computeExistingVariablesAssignedInLoop(statement.statement, variableProperties);
                 log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.index,
                         Variable.detailedString(set));
                 statement.existingVariablesAssignedInLoop.set(set);
@@ -650,8 +650,8 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private Set<Variable> computeExistingVariablesAssignedInLoop(CodeOrganization codeOrganization, VariableProperties variableProperties) {
-        return codeOrganization.findExpressionRecursivelyInStatements(Assignment.class)
+    private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties variableProperties) {
+        return statement.collect(Assignment.class).stream()
                 .flatMap(a -> a.assignmentTarget().stream())
                 .filter(variableProperties::isKnown)
                 .collect(Collectors.toSet());

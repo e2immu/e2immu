@@ -21,34 +21,23 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.annotation.E2Container;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @E2Container
-public interface Statement {
-
-    Set<String> imports();
-
-    SideEffect sideEffect(EvaluationContext evaluationContext);
+public interface Statement extends Element {
 
     default CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder().build();
     }
 
-    static <E extends Expression> Stream<E> findExpressionRecursivelyInStatements(Statement statement, Class<E> clazz) {
-        return statement.codeOrganization().findExpressionRecursivelyInStatements(clazz);
-    }
-
-    Set<TypeInfo> typesReferenced();
-
+    @Override
     default Statement translate(TranslationMap translationMap) {
         return this;
     }
 
     String statementString(int indent, NumberedStatement numberedStatement);
 
-    default void visit(Consumer<Statement> consumer) {
-        consumer.accept(this);
-    }
 }

@@ -149,19 +149,7 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
-    public Set<String> imports() {
-        return expression.imports();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return expression.typesReferenced();
-    }
-
-    @Override
-    @NotNull
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(expression);
     }
-
 }

@@ -138,4 +138,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         visitor.visit(this, evaluationContext, result);
         return result;
     }
+
+    @Override
+    public List<? extends Element> subElements() {
+        return List.of(scope);
+    }
 }

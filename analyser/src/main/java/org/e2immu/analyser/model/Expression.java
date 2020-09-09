@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 // at the moment we're modifying evaluation context, we want to be @E2Container
-public interface Expression {
+public interface Expression extends Element {
 
     @NotModified
     ParameterizedType returnType();
@@ -52,26 +52,11 @@ public interface Expression {
     }
 
     @NotModified
-    // TODO later?
-    default List<Expression> subExpressions() {
-        return List.of();
-    }
-
-    @NotModified
     default String bracketedExpressionString(int indent, Expression expression) {
         if (expression.precedence() < precedence()) {
             return "(" + expression.expressionString(indent) + ")";
         }
         return expression.expressionString(indent);
-    }
-
-    /**
-     * @return variables in this expression
-     */
-    @NotModified
-    // TODO immutable
-    default List<Variable> variables() {
-        return List.of();
     }
 
     /**
@@ -82,7 +67,6 @@ public interface Expression {
         return List.of();
     }
 
-    // TODO @Immutable
     @NotModified
     default List<LocalVariableReference> newLocalVariables() {
         return List.of();
@@ -93,34 +77,9 @@ public interface Expression {
         throw new UnsupportedOperationException("Class is " + getClass());
     }
 
-    @NotModified
-    default SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return subExpressions().stream()
-                .map(e -> e.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
-    }
-
-    // *************************** methods that are not meant to be overridden *****************
-
-    @NotModified
-    default <T> void collect(Function<Expression, List<T>> collector, Consumer<List<T>> resultHandler) {
-        resultHandler.accept(collector.apply(this));
-        for (Expression sub : subExpressions()) {
-            sub.collect(collector, resultHandler);
-        }
-    }
-
-    @NotModified
-    default <E extends Expression> List<E> find(Class<E> clazz) {
-        List<E> result = new ArrayList<>();
-        if (clazz.isAssignableFrom(getClass())) result.add((E) this);
-        for (Expression sub : subExpressions()) {
-            result.addAll(sub.find(clazz));
-        }
-        return ImmutableList.copyOf(result);
-    }
-
+    @Override
     default Expression translate(TranslationMap translationMap) {
         return this;
     }
+
 }

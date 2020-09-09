@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -94,9 +95,11 @@ public class IfElseStatement extends StatementWithExpression {
         return conditionSideEffect.combine(blocksSideEffect);
     }
 
-    public void visit(Consumer<Statement> consumer) {
-        ifBlock.visit(consumer);
-        elseBlock.visit(consumer);
-        consumer.accept(this);
+    @Override
+    public List<? extends Element> subElements() {
+        if (elseBlock == Block.EMPTY_BLOCK) {
+            return List.of(expression, ifBlock);
+        }
+        return List.of(expression, ifBlock, elseBlock);
     }
 }

@@ -28,7 +28,7 @@ public class StaticModifier {
             } else {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
                 statementVisitor(numberedStatements, numberedStatement -> {
-                    Stream<MethodCall> methodCalls = numberedStatement.statement.codeOrganization().findExpressionRecursivelyInStatements(MethodCall.class);
+                    Stream<MethodCall> methodCalls = numberedStatement.statement.collect(MethodCall.class).stream();
                     boolean callOnThis = methodCalls.anyMatch(methodCall ->
                             !methodCall.methodInfo.isStatic &&
                                     methodCall.object == null || ((methodCall.object instanceof This) &&

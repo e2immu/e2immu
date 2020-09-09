@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
 import java.util.Map;
 
 public class ThrowStatement extends StatementWithExpression {

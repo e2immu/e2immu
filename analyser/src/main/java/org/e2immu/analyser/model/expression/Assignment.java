@@ -116,18 +116,9 @@ public class Assignment implements Expression {
         return 1; // lowest precedence
     }
 
-    @Override
-    public Set<String> imports() {
-        return Sets.union(target.imports(), value.imports());
-    }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return Sets.union(target.typesReferenced(), value.typesReferenced());
-    }
-
-    @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(target, value);
     }
 

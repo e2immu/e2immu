@@ -114,7 +114,7 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return parameterExpressions;
     }
 

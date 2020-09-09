@@ -24,6 +24,7 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
+import java.util.List;
 import java.util.Set;
 
 @E2Immutable

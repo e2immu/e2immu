@@ -37,7 +37,8 @@ public class LocalVariableCreation implements Expression {
                                  @NotNull Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
-        localVariableReference = new LocalVariableReference(localVariable, subExpressions());
+        localVariableReference = new LocalVariableReference(localVariable,
+                expression == EmptyExpression.EMPTY_EXPRESSION ? List.of() : List.of(expression));
     }
 
     @Override
@@ -84,7 +85,7 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) return List.of();
         return List.of(expression);
     }

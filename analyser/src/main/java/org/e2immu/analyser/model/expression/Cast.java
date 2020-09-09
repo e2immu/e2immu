@@ -68,17 +68,7 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return Sets.union(expression.typesReferenced(), parameterizedType.typesReferenced());
-    }
-
-    @Override
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(expression);
-    }
-
-    @Override
-    public List<Variable> variables() {
-        return expression.variables();
     }
 }

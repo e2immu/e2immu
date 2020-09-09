@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -141,31 +142,8 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public Set<String> imports() {
-            return SetUtil.immutableUnion(
-                    labels.stream().flatMap(s -> s.imports().stream()).collect(Collectors.toSet()),
-                    statements.stream().flatMap(s -> s.imports().stream()).collect(Collectors.toSet()));
-        }
-
-        @Override
-        public Set<TypeInfo> typesReferenced() {
-            return SetUtil.immutableUnion(
-                    labels.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()),
-                    statements.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()));
-        }
-
-        @Override
-        public SideEffect sideEffect(EvaluationContext evaluationContext) {
-            SideEffect sideEffect = labels.stream().map(s -> s.sideEffect(evaluationContext))
-                    .reduce(SideEffect.LOCAL, SideEffect::combine);
-            return statements.stream().map(s -> s.sideEffect(evaluationContext))
-                    .reduce(sideEffect, SideEffect::combine);
-        }
-
-        @Override
-        public void visit(Consumer<Statement> consumer) {
-            statements.forEach(statement -> statement.visit(consumer));
-            consumer.accept(this);
+        public List<? extends Element> subElements() {
+            return ListUtil.immutableConcat(labels, statements);
         }
     }
 
@@ -193,33 +171,13 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public Set<String> imports() {
-            return SetUtil.immutableUnion(labels.stream().flatMap(s -> s.imports().stream()).collect(Collectors.toSet()),
-                    block.imports());
-        }
-
-        @Override
-        public Set<TypeInfo> typesReferenced() {
-            return SetUtil.immutableUnion(labels.stream().flatMap(s -> s.typesReferenced().stream()).collect(Collectors.toSet()),
-                    block.typesReferenced());
-        }
-
-        @Override
-        public SideEffect sideEffect(EvaluationContext evaluationContext) {
-            SideEffect sideEffect = labels.stream().map(s -> s.sideEffect(evaluationContext))
-                    .reduce(SideEffect.LOCAL, SideEffect::combine);
-            return sideEffect.combine(block.sideEffect(evaluationContext));
-        }
-
-        @Override
         public CodeOrganization codeOrganization() {
             return new CodeOrganization.Builder().setExpression(generateConditionExpression()).setStatements(block).build();
         }
 
         @Override
-        public void visit(Consumer<Statement> consumer) {
-            block.visit(consumer);
-            consumer.accept(this);
+        public List<? extends Element> subElements() {
+            return ListUtil.immutableConcat(labels, List.of(block));
         }
     }
 }

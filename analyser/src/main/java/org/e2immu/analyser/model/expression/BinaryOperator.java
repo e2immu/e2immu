@@ -374,24 +374,7 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    @NotNull
-    public Set<String> imports() {
-        return Sets.union(lhs.imports(), rhs.imports());
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return Sets.union(lhs.typesReferenced(), rhs.typesReferenced());
-    }
-
-    @Override
-    @NotNull
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(lhs, rhs);
-    }
-
-    @Override
-    public List<Variable> variables() {
-        return ListUtil.immutableConcat(lhs.variables(), rhs.variables());
     }
 }

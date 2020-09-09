@@ -20,8 +20,10 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -65,7 +67,7 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return block.sideEffect(evaluationContext);
+    public List<? extends Element> subElements() {
+        return List.of(expression, block);
     }
 }

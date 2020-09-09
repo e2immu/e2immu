@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -32,7 +31,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class Block implements Statement, HasStatements {
@@ -45,14 +43,6 @@ public class Block implements Statement, HasStatements {
     private Block(@NotNull List<Statement> statements, String label) {
         this.label = label;
         this.statements = statements;
-    }
-
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> types = new HashSet<>();
-        for (Statement statement : statements) {
-            types.addAll(statement.typesReferenced());
-        }
-        return types;
     }
 
     @Container(builds = Block.class)
@@ -132,22 +122,6 @@ public class Block implements Statement, HasStatements {
     }
 
     @Override
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-        for (Statement statement : statements) {
-            imports.addAll(statement.imports());
-        }
-        return ImmutableSet.copyOf(imports);
-    }
-
-    @Override
-    public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return statements.stream()
-                .map(s -> s.sideEffect(evaluationContext))
-                .reduce(SideEffect.LOCAL, SideEffect::combine);
-    }
-
-    @Override
     public CodeOrganization codeOrganization() {
         return new CodeOrganization.Builder()
                 .setStatementsExecutedAtLeastOnce(v -> true)
@@ -176,18 +150,14 @@ public class Block implements Statement, HasStatements {
         return mostSpecific.get() == null ? Primitives.PRIMITIVES.voidParameterizedType: mostSpecific.get();
     }
 
-    public void visit(Consumer<Statement> consumer) {
-        statements.forEach(statement -> statement.visit(consumer));
-        consumer.accept(this);
+    @Override
+    public List<? extends Element> subElements() {
+        return getStatements();
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
         return new Block(statements.stream().flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()), label);
-    }
-
-    public List<Expression> subExpressions() {
-
     }
 }

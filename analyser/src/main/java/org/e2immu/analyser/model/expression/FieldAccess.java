@@ -64,26 +64,13 @@ public class FieldAccess implements Expression {
         return 16;
     }
 
-    @Override
-    public Set<String> imports() {
-        return expression.imports();
-    }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return expression.typesReferenced();
-    }
-
-    @Override
-    @NotNull
-    @Independent
-    public List<Expression> subExpressions() {
+    public List<? extends Element> subElements() {
         return List.of(expression);
     }
 
     @Override
-    @NotNull
-    @Independent
     public List<Variable> variables() {
         return List.of(variable);
     }
