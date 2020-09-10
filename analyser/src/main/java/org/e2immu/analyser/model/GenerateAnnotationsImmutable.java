@@ -17,11 +17,15 @@ public class GenerateAnnotationsImmutable {
         throw new UnsupportedOperationException();
     }
 
+    // for testing
     public static Map<Class<?>, Map<String, String>> generate(int immutable, int container, boolean isType) {
-        return generate(immutable, container, isType, "abc", false);
+        return generate(immutable, container, isType, false, "abc", false);
     }
 
-    public static Map<Class<?>, Map<String, String>> generate(int immutable, int container, boolean isType, String mark, boolean betterThanFormal) {
+    public static Map<Class<?>, Map<String, String>> generate(int immutable, int container,
+                                                              boolean isType,
+                                                              boolean isInterface,
+                                                              String mark, boolean betterThanFormal) {
         Map<Class<?>, Map<String, String>> res = new HashMap<>();
         boolean haveContainer = container == Level.TRUE;
 
@@ -73,7 +77,7 @@ public class GenerateAnnotationsImmutable {
         if (isType) {
             if (haveContainer) {
                 res.put(Container.class, TRUE);
-            } else {//  if(container == Level.FALSE) {
+            } else if (!isInterface || container == Level.FALSE) {
                 res.put(MutableModifiesArguments.class, TRUE);
             }
         }

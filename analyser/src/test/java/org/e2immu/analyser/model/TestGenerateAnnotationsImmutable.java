@@ -57,19 +57,19 @@ public class TestGenerateAnnotationsImmutable {
     @Test
     public void testEventual() {
         Assert.assertEquals(Map.of(E1Immutable.class, Map.of("after", "mark")),
-                generate(EVENTUALLY_E1IMMUTABLE, 0, true, "mark", false));
+                generate(EVENTUALLY_E1IMMUTABLE, 0, true, false, "mark", false));
         Assert.assertEquals(Map.of(E2Immutable.class, Map.of("after", "mark")),
-                generate(EVENTUALLY_E2IMMUTABLE, 0, true, "mark", false));
+                generate(EVENTUALLY_E2IMMUTABLE, 0, true, false, "mark", false));
         Assert.assertEquals(Map.of(E1Container.class, Map.of("after", "mark")),
-                generate(EVENTUALLY_E1IMMUTABLE, 1, true, "mark", true));
+                generate(EVENTUALLY_E1IMMUTABLE, 1, true, true, "mark", true));
         Assert.assertEquals(Map.of(E2Container.class, Map.of("after", "mark2")),
-                generate(EVENTUALLY_E2IMMUTABLE, 1, true, "mark2", true));
+                generate(EVENTUALLY_E2IMMUTABLE, 1, true, true, "mark2", true));
 
-        Assert.assertTrue(generate(EVENTUALLY_E1IMMUTABLE, 0, false, "mark", false).isEmpty());
-        Assert.assertTrue(generate(EVENTUALLY_E2IMMUTABLE, 1, false, "mark", false).isEmpty());
+        Assert.assertTrue(generate(EVENTUALLY_E1IMMUTABLE, 0, false, false, "mark", false).isEmpty());
+        Assert.assertTrue(generate(EVENTUALLY_E2IMMUTABLE, 1, false, false, "mark", false).isEmpty());
 
         Assert.assertEquals(Map.of(E2Container.class, TRUE),
-                generate(EVENTUALLY_E2IMMUTABLE, 1, false, "mark2", true));
+                generate(EVENTUALLY_E2IMMUTABLE, 1, false, false, "mark2", true));
     }
 
     @Test
@@ -86,14 +86,14 @@ public class TestGenerateAnnotationsImmutable {
         Assert.assertTrue(generate(EFFECTIVELY_E2IMMUTABLE, 1, false).isEmpty());
 
         Assert.assertEquals(Map.of(E2Immutable.class, TRUE),
-                generate(EFFECTIVELY_E2IMMUTABLE, 0, false, null, true));
+                generate(EFFECTIVELY_E2IMMUTABLE, 0, false, false, null, true));
         Assert.assertEquals(Map.of(E2Container.class, TRUE),
-                generate(EFFECTIVELY_E2IMMUTABLE, 1, false, "abc", true));
+                generate(EFFECTIVELY_E2IMMUTABLE, 1, false, false, "abc", true));
 
         Assert.assertEquals(Map.of(E2Immutable.class, TRUE),
                 generate(EFFECTIVELY_E2IMMUTABLE, 0, true));
         Assert.assertEquals(Map.of(E2Container.class, TRUE),
-                generate(EFFECTIVELY_E2IMMUTABLE, 1, true, "xxx", true));
+                generate(EFFECTIVELY_E2IMMUTABLE, 1, true, false,  "xxx", true));
     }
 
     @Test

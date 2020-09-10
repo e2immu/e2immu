@@ -18,8 +18,10 @@
 package org.e2immu.analyser.model.expression.util;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
+import static org.e2immu.analyser.util.Logger.LogTarget.NOT_NULL;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateParameters {
@@ -37,9 +40,11 @@ public class EvaluateParameters {
                                         EvaluationContext evaluationContext,
                                         EvaluationVisitor visitor,
                                         MethodInfo methodInfo,
-                                        int notModified1Scope) {
+                                        int notModified1Scope,
+                                        Value scopeObject) {
         List<Value> parameterValues = new ArrayList<>();
         int i = 0;
+        int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
         for (Expression parameterExpression : parameterExpressions) {
             Value parameterValue;
             if (methodInfo != null) {
@@ -63,6 +68,9 @@ public class EvaluateParameters {
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.MODIFIED, 0);
                 }
+                int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
+                minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
+
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
 
@@ -84,6 +92,16 @@ public class EvaluateParameters {
 
             parameterValues.add(parameterValue);
             i++;
+        }
+
+        ValueWithVariable scopeVariable;
+        if (minNotNullOverParameters == MultiLevel.EFFECTIVELY_NOT_NULL &&
+                i > 0 &&
+                methodInfo != null &&
+                scopeObject != null &&
+                methodInfo.typeInfo.isFunctionalInterface() &&
+                (scopeVariable = scopeObject.asInstanceOf(ValueWithVariable.class)) != null) {
+            evaluationContext.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
         if (methodInfo != null && methodInfo.methodAnalysis.isSet() && methodInfo.methodAnalysis.get().precondition.isSet()) {

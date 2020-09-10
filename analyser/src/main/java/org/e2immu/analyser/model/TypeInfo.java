@@ -1069,7 +1069,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, String where) {
-        boolean hasBeenDefined = hasBeenDefined();
+        boolean acceptVerify = !hasBeenDefined() || isInterface();
         log(RESOLVE, "{}: copy annotations into properties: {}", where, fullyQualifiedName);
         Messages messages = new Messages();
         if (this.typeAnalysis.isSet()) {
@@ -1079,11 +1079,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             TypeAnalysis typeAnalysis = new TypeAnalysis(this);
             this.typeAnalysis.set(typeAnalysis);
         }
-        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined(), typeInspection.get().annotations, typeContext, overwrite));
+        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, typeInspection.get().annotations, typeContext, overwrite));
         typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
-                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite, hasBeenDefined)));
+                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite)));
         typeInspection.get().fields.forEach(fieldInfo ->
-                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite, hasBeenDefined)));
+                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite)));
         return messages;
     }
 

@@ -157,7 +157,7 @@ public class MethodAnalysis extends Analysis {
         // @Dependent @Independent
         if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
             int independent = getProperty(VariableProperty.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent);
+            doIndependent(e2ImmuAnnotationExpressions, independent, methodInfo.typeInfo.isInterface());
         }
 
         if (methodInfo.isConstructor) return;

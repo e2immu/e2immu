@@ -52,7 +52,7 @@ public class ExampleManualIterator1<E> {
 
         @NotModified
         private final List<E> list;
-        @Modified
+        @Variable
         private int index;
 
         @Dependent

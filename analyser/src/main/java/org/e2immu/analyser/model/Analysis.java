@@ -172,11 +172,13 @@ public abstract class Analysis {
         int container = getProperty(VariableProperty.CONTAINER);
         String mark;
         boolean isType = this instanceof TypeAnalysis;
+        boolean isInterface = isType && ((TypeAnalysis) this).typeInfo.isInterface();
         boolean eventual = isType && ((TypeAnalysis) this).isEventual();
         if (eventual) {
             mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
         } else mark = "";
-        Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, mark, betterThanFormal);
+        Map<Class<?>, Map<String, String>> map = GenerateAnnotationsImmutable.generate(immutable, container, isType, isInterface,
+                mark, betterThanFormal);
         for (Map.Entry<Class<?>, Map<String, String>> entry : map.entrySet()) {
             List<Expression> list;
             if (entry.getValue() == GenerateAnnotationsImmutable.TRUE) {
@@ -190,12 +192,13 @@ public abstract class Analysis {
         }
     }
 
-    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent) {
-        if (independent <= MultiLevel.FALSE) {
+    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent, boolean isInterface) {
+        if (independent == MultiLevel.FALSE || !isInterface && independent == MultiLevel.DELAY) {
             annotations.put(e2ImmuAnnotationExpressions.independent.get(), false);
             annotations.put(e2ImmuAnnotationExpressions.dependent.get(), true);
             return;
         }
+        if(independent <= MultiLevel.FALSE) return;
         annotations.put(e2ImmuAnnotationExpressions.dependent.get(), false);
         if (independent == MultiLevel.EFFECTIVE) {
             annotations.put(e2ImmuAnnotationExpressions.independent.get(), true);
@@ -220,7 +223,7 @@ public abstract class Analysis {
     private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
     private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
 
-    public Messages fromAnnotationsIntoProperties(boolean hasBeenDefined,
+    public Messages fromAnnotationsIntoProperties(boolean acceptVerify,
                                                   List<AnnotationExpression> annotations,
                                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                                   boolean overwrite) {
@@ -236,10 +239,8 @@ public abstract class Analysis {
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
-                    // CONTRACT_ABSENT for now only for @SupportData
-                    annotationType == AnnotationType.CONTRACT_ABSENT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
-                    !hasBeenDefined && annotationType == AnnotationType.VERIFY) {
+                    acceptVerify && annotationType == AnnotationType.VERIFY) {
                 TypeInfo t = annotationExpression.typeInfo;
                 if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);

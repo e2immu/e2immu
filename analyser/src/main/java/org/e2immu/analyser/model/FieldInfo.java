@@ -178,9 +178,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public Messages copyAnnotationsIntoFieldAnalysisProperties(E2ImmuAnnotationExpressions typeContext,
-                                                               boolean overwrite,
-                                                               boolean hasBeenDefined) {
+    public Messages copyAnnotationsIntoFieldAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
         if (fieldAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Field analysis already set for " + fullyQualifiedName());
@@ -188,8 +186,9 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             FieldAnalysis fieldAnalysis = new FieldAnalysis(this);
             this.fieldAnalysis.set(fieldAnalysis);
         }
+        boolean acceptVerify = !owner.hasBeenDefined() || owner.isInterface();
         Messages messages = new Messages();
-        messages.addAll(fieldAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, fieldInspection.get().annotations,
+        messages.addAll(fieldAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, fieldInspection.get().annotations,
                 typeContext, overwrite));
         /*if (fieldInspection.get().initialiser.isSet() &&
                 fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null) {

@@ -202,7 +202,7 @@ public class TypeAnalyser {
                 }
             }
 
-            if (typeInfo.hasBeenDefined()) {
+            if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
                 if (analyseOnlyMarkEventuallyE1Immutable(typeInfo)) changes = true;
                 if (analyseEffectivelyE1Immutable(typeInfo)) changes = true;
                 if (analyseIndependent(typeInfo)) changes = true;

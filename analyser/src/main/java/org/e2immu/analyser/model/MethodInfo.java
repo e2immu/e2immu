@@ -559,20 +559,26 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
     }
 
-    public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, boolean hasBeenDefined) {
+    public boolean isAbstract() {
+        return methodInspection.get().modifiers.contains(MethodModifier.ABSTRACT);
+    }
+
+
+    public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
         if (!methodAnalysis.isSet()) {
             MethodAnalysis methodAnalysis = new MethodAnalysis(this);
             this.methodAnalysis.set(methodAnalysis);
         }
+        boolean acceptVerify = !typeInfo.hasBeenDefined() || isAbstract() || typeInfo.isInterface() && !isDefaultImplementation;
         Messages messages = new Messages();
-        messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined, methodInspection.get().annotations,
+        messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
                 typeContext, overwrite));
         methodInspection.get().parameters.forEach(parameterInfo -> {
             if (!parameterInfo.parameterAnalysis.isSet()) {
                 ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo);
                 parameterInfo.parameterAnalysis.set(parameterAnalysis);
             }
-            messages.addAll(parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(hasBeenDefined,
+            messages.addAll(parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(acceptVerify,
                     parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
         });
         return messages;

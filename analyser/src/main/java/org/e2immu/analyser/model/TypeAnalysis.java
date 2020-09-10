@@ -109,7 +109,7 @@ public class TypeAnalysis extends Analysis {
         // @Independent
         int independent = getProperty(VariableProperty.INDEPENDENT);
         if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
-            doIndependent(e2ImmuAnnotationExpressions, independent);
+            doIndependent(e2ImmuAnnotationExpressions, independent, typeInfo.isInterface());
         }
     }
 }
