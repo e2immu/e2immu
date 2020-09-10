@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -82,7 +83,7 @@ public class FieldAnalysis extends Analysis {
 
     public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
 
-    public final SetOnce<Boolean> supportData = new SetOnce<>();
+    public final SetOnce<Boolean> isOfImplicitlyImmutableDataType = new SetOnce<>();
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
@@ -92,7 +93,6 @@ public class FieldAnalysis extends Analysis {
                     return Level.FALSE; // we cannot modify because we cannot even execute a method
                 }
                 int immutable = getProperty(VariableProperty.IMMUTABLE);
-                if (immutable == Level.DELAY) return Level.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return Level.FALSE;
                 break;
 
@@ -153,7 +153,7 @@ public class FieldAnalysis extends Analysis {
         if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
             String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
             annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
-        } else if (!type.cannotBeModifiedByDefinition()) {
+        } else if (allowModificationAnnotation(fieldInfo)) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);
@@ -173,6 +173,15 @@ public class FieldAnalysis extends Analysis {
         if (MultiLevel.isBetterImmutable(fieldImmutable, typeImmutable)) {
             doImmutableContainer(e2ImmuAnnotationExpressions, false, fieldImmutable, true);
         }
+    }
+
+    private boolean allowModificationAnnotation(FieldInfo fieldInfo) {
+        if (fieldInfo.type.isAtLeastEventuallyE2Immutable() == Boolean.TRUE) return false;
+        if (fieldInfo.type.isFunctionalInterface()) {
+            return fieldInfo.fieldInspection.get().initialiser.isSet() &&
+                    fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null;
+        }
+        return true;
     }
 
     private int typeImmutable() {

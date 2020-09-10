@@ -73,7 +73,10 @@ public class ParameterAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED: {
                 // if the parameter is either formally or actually immutable, it cannot be modified
-                if (parameterInfo.parameterizedType.cannotBeModifiedByDefinition()) return Level.FALSE;
+                TypeInfo enclosingType = parameterInfo.owner.typeInfo;
+                Boolean e2immu = parameterInfo.parameterizedType.isImplicitlyOrAtLeastEventuallyE2Immutable(enclosingType);
+                if (e2immu == Boolean.TRUE) return Level.FALSE;
+
                 if (!parameterInfo.owner.isPrivate() &&
                         parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;
@@ -139,9 +142,11 @@ public class ParameterAnalysis extends Analysis {
         // no annotations can be added to primitives
         if (parameterInfo.parameterizedType.isPrimitive()) return;
 
-        int modified = getProperty(VariableProperty.MODIFIED);
         // @NotModified, @Modified
-        if (!parameterInfo.parameterizedType.cannotBeModifiedByDefinition()) {
+        // implicitly @NotModified when E2Immutable, or functional interface
+        int modified = getProperty(VariableProperty.MODIFIED);
+        if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
+                !parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable()) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);
@@ -157,19 +162,5 @@ public class ParameterAnalysis extends Analysis {
 
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
-    }
-
-    public void writeExposedParams(Messages messages, int[] exposedParams) {
-        int numParameters = parameterInfo.owner.methodInspection.get().parameters.size();
-        for (int index : exposedParams) {
-            if (index < -1 || index >= numParameters) {
-                messages.add(Message.newMessage(new Location(parameterInfo), Message.ILLEGAL_PARAMETER_INDEX_IN_EXPOSED, "Index: " + index));
-            }
-            if (exposed.isSet(index)) {
-                messages.add(Message.newMessage(new Location(parameterInfo), Message.ILLEGAL_PARAMETER_INDEX_IN_EXPOSED, "Duplicate index: " + index));
-            } else {
-                this.exposed.put(index, true);
-            }
-        }
     }
 }

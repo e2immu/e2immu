@@ -31,7 +31,6 @@ import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.pattern.ConditionalAssignment;
 import org.e2immu.analyser.pattern.Pattern;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +140,7 @@ public class TypeAnalyser {
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
         // this needs to be done as soon as, so that @Independent computations can be based on the support data only
-        boolean changes = analyseSupportDataTypes(typeInfo);
+        boolean changes = analyseImplicitlyImmutableTypes(typeInfo);
 
         int cnt = 0;
         while (changes) {
@@ -233,19 +232,21 @@ public class TypeAnalyser {
         }
     }
 
-    private boolean analyseSupportDataTypes(TypeInfo typeInfo) {
+    private boolean analyseImplicitlyImmutableTypes(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
 
-        log(E2IMMUTABLE, "Computing support types for {}", typeInfo.fullyQualifiedName);
+        log(E2IMMUTABLE, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
         Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
         typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
         Set<ParameterizedType> typesOfMethodScopes = typeInfo.typesOfMethodScopes();
+        log(E2IMMUTABLE, "Types of method scopes: {}", typesOfMethodScopes);
+
         typesOfFields.removeIf(type -> {
             if (type.isUnboundParameterType()) return false;
             TypeInfo bestType = type.bestTypeInfo();
-            if(bestType == null) return false;
+            if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
             if (self || typeInfo.isPrimitiveOrBoxed()) return true;
 
@@ -255,20 +256,8 @@ public class TypeAnalyser {
         });
 
         typeAnalysis.implicitlyImmutableDataTypes.set(ImmutableSet.copyOf(typesOfFields));
-        log(E2IMMUTABLE, "Implicitly immutable data types for {} are: [{}]", typeInfo.fullyQualifiedName,
-                StringUtil.join(typesOfFields, ParameterizedType::detailedString));
+        log(E2IMMUTABLE, "Implicitly immutable data types for {} are: [{}]", typeInfo.fullyQualifiedName, typesOfFields);
         return true;
-    }
-
-    private void onlyKeepSupportData(Set<ParameterizedType> typesOfMethodsAndConstructors, Set<ParameterizedType> supportData) {
-        supportData.removeIf(ParameterizedType::cannotBeSupportData);
-        supportData.removeIf(type -> {
-            boolean keep = typesOfMethodsAndConstructors.stream().anyMatch(type::containsComponent);
-            if (!keep) {
-                log(E2IMMUTABLE, "Removing {} because none of {} are components", type.detailedString(), typesOfMethodsAndConstructors);
-            }
-            return !keep;
-        });
     }
 
     /**
@@ -491,17 +480,14 @@ public class TypeAnalyser {
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
         boolean eventual = typeAnalysis.isEventual();
-        boolean haveSupportData = false;
+        boolean haveToEnforcePrivateAndIndependenceRules = false;
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-            if (!fieldAnalysis.supportData.isSet()) {
+            if (!fieldAnalysis.isOfImplicitlyImmutableDataType.isSet()) {
                 log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
                 return false;
             }
-            boolean supportData = fieldAnalysis.supportData.get();
-            haveSupportData |= supportData;
-
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
 
             // this follows automatically if they are primitive or E2Immutable themselves
@@ -517,8 +503,13 @@ public class TypeAnalyser {
                 log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
                 return false;
             }
+
             // we're allowing eventualities to cascade!
             if (fieldE2Immutable < MultiLevel.EVENTUAL) {
+
+                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType.get();
+                haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
+
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
@@ -535,8 +526,9 @@ public class TypeAnalyser {
 
                 // RULE 2: ALL @SupportData FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
-                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE) && supportData) {
-                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, is support data, and also exposed (not private)",
+                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
+                        log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, " +
+                                        "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
                         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                         return true;
@@ -549,7 +541,7 @@ public class TypeAnalyser {
 
         // RULE 3: INDEPENDENCE OF CONSTRUCTORS
 
-        if (haveSupportData) {
+        if (haveToEnforcePrivateAndIndependenceRules) {
             for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
                 if (independent == Level.DELAY) {
@@ -567,7 +559,7 @@ public class TypeAnalyser {
 
         // RULE 3: RETURN TYPES OF METHODS
 
-        if (haveSupportData) {
+        if (haveToEnforcePrivateAndIndependenceRules) {
             for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
                 if (methodInfo.isVoid()) continue; // we're looking at return types
                 int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);

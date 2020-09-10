@@ -76,7 +76,7 @@ public class SMapList {
         return set.add(b);
     }
 
-    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull @NotModified List<B> bs) {
+    public static <A, B> boolean add(Map<A, List<B>> map, @NotNull A a, @NotNull1 @NotModified List<B> bs) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);
         }

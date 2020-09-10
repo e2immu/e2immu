@@ -129,7 +129,7 @@ public class EvaluateParameters {
             // we're in the non-modifying situation
             log(NOT_MODIFIED, "In the @NM1 situation with " + methodInfo.name + " and " + parameterValue);
         } else {
-            Boolean cannotBeModified = formalParameterType.noModifyingMeansWithinMyScope();
+            Boolean cannotBeModified = formalParameterType.isImplicitlyOrAtLeastEventuallyE2Immutable(methodInfo.typeInfo);
             if (cannotBeModified == null) return; // DELAY
             if (cannotBeModified) {
                 // we're in the @Exposed situation

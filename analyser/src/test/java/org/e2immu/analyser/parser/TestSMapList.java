@@ -22,10 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,6 +39,9 @@ public class TestSMapList extends CommonTestRunner {
             // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
             Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
+        if ("add".equals(d.methodInfo.name) && "bs".equals(d.variableName) && "3".equals(d.statementId)) {
+            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+        }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -56,7 +56,7 @@ public class TestSMapList extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("list".equals(methodInfo.name)) {
-            if(iteration == 0) {
+            if (iteration == 0) {
                 TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
@@ -73,6 +73,13 @@ public class TestSMapList extends CommonTestRunner {
         if ("copy".equals(methodInfo.name)) {
             TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
             Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
+        }
+        if ("add".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 3) {
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(2);
+            if ("bs".equals(parameterInfo.name)) {
+                int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                Assert.assertEquals(Level.FALSE, modified);
+            }
         }
     };
 

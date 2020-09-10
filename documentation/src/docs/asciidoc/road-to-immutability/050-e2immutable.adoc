@@ -148,7 +148,7 @@ This typically means that all methods that assign or modify fields become off-li
 Eventuality for rules 2 and 3 seems too far-fetched.
 We address the topic of eventual immutability fully in the section <<eventual-immutability>>.
 
-The section <<params-abstract-interface>> will discuss modification and independence of abstract and interface types.
+The section <<params-functional-interface>> will discuss modification and independence of functional interface types.
 
 Let us go to examples immediately.
 

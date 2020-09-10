@@ -135,7 +135,15 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("E2Container7".equals(typeInfo.simpleName)) {
+        if ("E2Container5".equals(typeInfo.simpleName)) {
+            Assert.assertEquals("T", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
+                    .stream().findFirst().orElseThrow().detailedString());
+        } else if ("E2Container6".equals(typeInfo.simpleName)) {
+            Assert.assertEquals("org.e2immu.analyser.testexample.E2ImmutableChecks.SimpleContainer",
+                    typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
+                            .stream().findFirst().orElseThrow().detailedString());
+
+        } else if ("E2Container7".equals(typeInfo.simpleName)) {
             Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
 
             MethodInfo getMap7 = typeInfo.findUniqueMethod("getMap7", 0);
@@ -146,6 +154,8 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             Assert.assertTrue(statement1.getStructure().initialisers.get(0) instanceof LocalVariableCreation);
             Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, statement1.getStructure().expression);
             Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.statementString(0, null));
+        } else {
+            Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
         }
     };
 

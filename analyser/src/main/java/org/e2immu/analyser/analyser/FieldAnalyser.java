@@ -63,7 +63,7 @@ public class FieldAnalyser {
 
         // STEP 0: support data: does this field have to satisfy rules 2 and 3 of level 2 immutability?
 
-        if (computeSupportData(fieldInfo, fieldAnalysis)) changes = true;
+        if (computeImplicitlyImmutableDataType(fieldInfo, fieldAnalysis)) changes = true;
 
         // STEP 1: THE INITIALISER
 
@@ -141,12 +141,12 @@ public class FieldAnalyser {
         return changes;
     }
 
-    private boolean computeSupportData(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        if (fieldAnalysis.supportData.isSet()) return false;
+    private boolean computeImplicitlyImmutableDataType(FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        if (fieldAnalysis.isOfImplicitlyImmutableDataType.isSet()) return false;
         TypeAnalysis typeAnalysis = fieldInfo.owner.typeAnalysis.get();
         if (!typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
-        boolean isSupportData = typeAnalysis.implicitlyImmutableDataTypes.get().contains(fieldInfo.type);
-        fieldAnalysis.supportData.set(isSupportData);
+        boolean implicit = typeAnalysis.implicitlyImmutableDataTypes.get().contains(fieldInfo.type);
+        fieldAnalysis.isOfImplicitlyImmutableDataType.set(implicit);
         return true;
     }
 

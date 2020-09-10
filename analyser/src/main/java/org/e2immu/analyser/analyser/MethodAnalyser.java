@@ -825,12 +825,12 @@ public class MethodAnalyser {
     }
 
     public static boolean isSupportDataFieldSet(Variable v) {
-        return !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.fieldAnalysis.get().supportData.isSet();
+        return !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.isSet();
     }
 
     public static boolean isSupportDataField(Variable variable) {
         if (!(variable instanceof FieldReference)) return false;
-        return ((FieldReference) variable).fieldInfo.fieldAnalysis.get().supportData.get();
+        return ((FieldReference) variable).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.get();
     }
 
     public Stream<Message> getMessageStream() {

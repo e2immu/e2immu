@@ -122,9 +122,9 @@ Other types in the parameters have not been annotated with {nm}:
 * `Object` because it is deeply immutable;
 * `E` because it is of an unbound generic type, it has the same methods available as `Object`.
 No code statically visible to implementations of `Collection` can make modifications to `E`;
-* `Consumer` because it is a functional interface (an interface with a single abstract method); they are {nm} by definition.
+* `Consumer` because it is a functional interface (an interface with a single abstract method or SAM); they are {nm} by definition.
 
-In order to keep the narrative going, we defer a discussion of modification in the context of parameters of abstract and interface types to the section <<modification-part2>>.
+In order to keep the narrative going, we defer a discussion of modification in the context of parameters of functional interface types to the section <<modification-part2>>.
 Here, we continue with the first use case of modification: containers.
 
 // ensure a newline at the end

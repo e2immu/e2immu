@@ -695,40 +695,23 @@ public class ParameterizedType {
         return this; // TODO implement!!
     }
 
-    public boolean isAtLeastEventuallyE2Immutable() {
-        //if (isUnboundParameterType()) return true;
+    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(TypeInfo context) {
+        if (arrays > 0) return false;
+        if (isUnboundParameterType()) return true;
+        Boolean immu = isAtLeastEventuallyE2Immutable();
+        if (immu == Boolean.TRUE) return true;
+        if (!context.typeAnalysis.get().implicitlyImmutableDataTypes.isSet()) return null;
+        boolean implicit = context.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(this);
+        if (implicit) return true;
+        return immu;
+    }
+
+    public Boolean isAtLeastEventuallyE2Immutable() {
         TypeInfo bestType = bestTypeInfo();
-        return bestType != null && MultiLevel.isAtLeastEventuallyE2Immutable(bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-    }
-
-    public boolean cannotBeModifiedByDefinition() {
-        return arrays == 0 && (isPrimitive() || isAtLeastEventuallyE2Immutable());// || isUnboundParameterType();
-    }
-
-    public Boolean noModifyingMeansWithinMyScope() {
-        if (cannotBeModifiedByDefinition()) return true;
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType != null) {
-            //  boolean canAccessPrivateMethods = false; // TODO implement
-            return bestType.typeInspection.get().methodStream(TypeInspection.Methods.ALL_RECURSIVE)
-                    //     .filter(methodInfo -> canAccessPrivateMethods || methodIsAccessible(methodInfo, bestType))
-                    .noneMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
-        }
-        return true;
-    }
-
-    private static boolean methodIsAccessible(MethodInfo methodInfo, TypeInfo fromType) {
-        return true;// TODO !!
-    }
-
-    public boolean cannotBeSupportData() {
-        return arrays == 0 && (isPrimitive()
-                || isUnboundParameterType()
-                || typeInfo != null && Primitives.PRIMITIVES.boxed.contains(typeInfo)
-                || typeInfo == Primitives.PRIMITIVES.objectTypeInfo
-                || typeInfo == Primitives.PRIMITIVES.stringTypeInfo
-                || isFunctionalInterface()
-        );
+        if (bestType == null) return false;
+        int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        if (immutable == Level.DELAY) return null;
+        return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
     }
 
     public TypeInfo boxed() {

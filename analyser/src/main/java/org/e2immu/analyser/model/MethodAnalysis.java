@@ -202,8 +202,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     private boolean allowIndependentOnMethod() {
-        return !returnType.isPrimitive() && !returnType.isVoid() && !returnType.isAtLeastEventuallyE2Immutable()
-                && !typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(returnType);
+        return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeInfo) != Boolean.TRUE;
     }
 
     // ************** LOCAL STORAGE

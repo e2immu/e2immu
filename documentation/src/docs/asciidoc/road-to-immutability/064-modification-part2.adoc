@@ -58,10 +58,10 @@ This observation forces us to tighten the definition of a non-modifying method: 
 
 These rules are mostly, but not easily, computable when all code is visible.
 
-[#params-abstract-interface]
-=== Parameters of abstract and interface types
+[#params-functional-interface]
+=== Parameters of functional interface types
 
-When the parameter is of an interface type, and no declarations are present, complications arise.
+When the parameter is of a functional interface type, and no declarations are present, complications arise.
 Starting with an example, we realise that the single abstract method in `Consumer` is, in general, modifying, and that it modifies its parameter:
 
 [source,java]
@@ -123,19 +123,20 @@ We address this problem as follows.
 Firstly, we decide that:
 
 ****
-*Additional, overriding modification rule*: Parameters of abstract and interface types are {nm}.
+*Additional, overriding modification rule*: Parameters of functional interface types are {nm}.
+We assume the annotation to be implicitly present.
 ****
 
 Modifications they make to the fields of the class can only be made through methods which are already {modified}; this will not change the overall modification status of the type.
 As a consequence,
 
-. we need not look at indirect modifications (which would be nigh on impossible anyway), implying that abstract and interface type parameters have no impact on the modification status of the method.
+. we need not look at indirect modifications (which would be nigh on impossible anyway), implying that functional interface type parameters have no impact on the modification status of the method.
 . we do not need to change our definition of containers, which requires parameters that are {nm}.
 
 Secondly,
 
 ****
-*Additional, overriding modification rule*: We treat unbound parameter types (and types that can be replaced by an unbound parameter type) as level 2 immutable when passing them as parameters to abstract methods.
+*Additional, overriding modification rule*: We treat unbound parameter types, and types that can be replaced by an unbound parameter type, as level 2 immutable when passing them as parameters to abstract methods.
 They will not be modified.
 ****
 
@@ -152,7 +153,7 @@ Implementing a visitor using the `forEach` method defined as:
 [source,java]
 ----
 @NotModified
-default void forEach(@NotModified Consumer<T> consumer) {
+default void forEach(Consumer<T> consumer) {
     for(T t: this) consumer.accept(t);
 }
 ----
@@ -165,7 +166,7 @@ renders code like:
 private Set<T> set;
 
 @NotModified
-public void visit(@NotModified Consumer<T> consumer) {
+public void visit(Consumer<T> consumer) {
     set.forEach(consumer);
 }
 
@@ -177,13 +178,13 @@ public void copy(@Independent Consumer<Set<T>> consumer) {
 
 The next section discusses the modification or non-modification of the `visit` and `copy` methods.
 
-=== Indirect modification with abstract or interface types
+=== Indirect modification with functional interface types
 
 Once there is modifying method in a class, the analyser cannot exclude that the unknown code will not execute it.
 Therefore,
 
 ****
-*Implication of the indirect modification rule*: A method calling any abstract method is modifying as soon as there are other non-private modifying methods in the type.
+*Implication of the indirect modification rule*: A method calling any non-declared single abstract method is modifying as soon as there are other non-private modifying methods in the type.
 ****
 
 Manually contracting the method to be not modifying will activate the analyser, which may or may not be successful in detecting such unwanted modification calls.
@@ -254,23 +255,23 @@ public void expose2() {
 }
 ----
 <1> This is the real modifying method, potentially called from undeclared code.
-<2> Modifying because the method calls an abstract method, `accept`.
+<2> Modifying because the method calls a single abstract method, `accept`.
 <3> Indirectly modifying because `staticallyExposing` is modifying.
 
 Note that we never make a distinction between static and instance fields, or methods, concerning modification.
 
 === Summary
 
-The following matrix summarizes modification related annotations for abstract or interface types:
+The following matrix summarizes modification related annotations for functional interface types:
 
-.Annotations of an abstract or interface type
+.Annotations of a single abstract interface type
 [options=header]
 |===
 | The annotation on ... | parameter | field | method return type
 | {modified} | never | *with declaration*: if it changes other fields; *without declaration*: never | (annotation does not refer to return type)
 | {nm} |  implicit | *with declaration*: if it does not modify other fields;  *without declaration*: implicit | (annotation does not refer to return type)
-| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets abstract methods' parameters to {nm} | computed via declaration or linking |   computed via declaration or linking
-| {independent} | computed when the abstract methods' parameters do not link to a field | N/A | N/A
-| {nn1} | computed when the abstract methods' parameters cannot be `null` | computed via declaration or linking | computed via declaration or linking
+| {nm1} | *contracted*: no implementations which modify their parameters allowed; sets SAM's parameters to {nm} | computed via declaration or linking |   computed via declaration or linking
+| {independent} | computed when the SAM's parameters do not link to a field | N/A | N/A
+| {nn1} | computed when the SAM's parameters cannot be `null` | computed via declaration or linking | computed via declaration or linking
 |===
 
