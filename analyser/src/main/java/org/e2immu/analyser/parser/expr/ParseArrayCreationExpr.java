@@ -59,7 +59,7 @@ public class ParseArrayCreationExpr {
         }
         constructor.methodInspection.set(builder.build(constructor));
         constructor.methodAnalysis.set(new MethodAnalysis(constructor));
-        constructor.methodAnalysis.get().properties.put(VariableProperty.INDEPENDENT, Level.TRUE);
+        constructor.methodAnalysis.get().properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
         return constructor;
     }
 

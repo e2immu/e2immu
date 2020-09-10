@@ -176,7 +176,7 @@ public class MethodAnalyser {
                 if (computeOnlyMarkPrepWork(methodInfo, methodAnalysis)) changes = true;
                 if (computeOnlyMarkAnnotate(methodInfo, methodAnalysis)) changes = true;
             }
-            if (methodIsIndependent(methodInfo, methodAnalysis)) changes = true;
+            if (methodIsIndependent(methodInfo, methodAnalysis, methodProperties)) changes = true;
 
             // size comes after modifications
             if (computeSize(methodInfo, methodAnalysis)) changes = true;
@@ -729,7 +729,7 @@ public class MethodAnalyser {
         return true;
     }
 
-    private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
         if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) {
             return false; // already computed
         }
@@ -738,7 +738,7 @@ public class MethodAnalyser {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) return false; // wait
             if (modified == Level.TRUE) {
-                methodAnalysis.setProperty(VariableProperty.INDEPENDENT, Level.FALSE);
+                methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 return true;
             }
         } // else: for constructors, we assume @Modified so that rule is not that useful
@@ -751,86 +751,122 @@ public class MethodAnalyser {
         // PART 1: check the return object, if it is there
 
         // support data types are not set for types that have not been defined; there, we rely on annotations
-        boolean returnObjectIsIndependent;
-        if (!methodInfo.isConstructor && !methodInfo.isVoid() &&
-                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
-                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
-            // method returns a support data type
-            if (!methodAnalysis.variablesLinkedToMethodResult.isSet()) {
-                log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
-                        methodInfo.fullyQualifiedName());
-                return false;
+        Boolean returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo, methodAnalysis, methodProperties);
+        if (returnObjectIsIndependent == null) {
+            return false; // delay
+        }
+
+        // CONSTRUCTOR ...
+        boolean parametersIndependentOfFields;
+        if (methodInfo.isConstructor) {
+            // TODO check ExplicitConstructorInvocations
+
+            // PART 2: check parameters, but remove those that are recursively of my own type
+            List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
+            parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
+
+            boolean allLinkedVariablesSet = methodAnalysis.fieldSummaries.stream().allMatch(e -> e.getValue().linkedVariables.isSet());
+            if (!allLinkedVariablesSet) {
+                log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
+                return false;// DELAY
             }
-            Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
-            boolean supportDataSet = variables.stream().allMatch(MethodAnalyser::isSupportDataFieldSet);
+            boolean supportDataSet = methodAnalysis.fieldSummaries.stream()
+                    .flatMap(e -> e.getValue().linkedVariables.get().stream())
+                    .allMatch(MethodAnalyser::isImplicitlyImmutableDataTypeSet);
             if (!supportDataSet) {
-                log(DELAYED, "Delaying @Independent on {}, support data not known for all field references", methodInfo.distinguishingName());
+                log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
                 return false;
             }
-            int e2ImmutableStatusOfFieldRefs = variables.stream()
-                    .filter(MethodAnalyser::isSupportDataField)
-                    .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
-                    .min().orElse(MultiLevel.EFFECTIVE);
-            if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
-                log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
-                        variables.stream()
-                                .filter(v -> isSupportDataField(v) &&
-                                        MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
-                                                MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
-                                .map(Variable::detailedString)
-                                .collect(Collectors.joining(", ")));
-                return false;
-            }
-            returnObjectIsIndependent = e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE;
-        } else {
-            // method does not return a support data type.
-            returnObjectIsIndependent = true;
-        }
 
-        // PART 2: check parameters, but remove those that are recursively of my own type
-        List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
-        parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
+            parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream()
+                    .peek(e -> {
+                        if (!e.getValue().linkedVariables.isSet())
+                            LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
+                    })
+                    .flatMap(e -> e.getValue().linkedVariables.get().stream())
+                    .filter(v -> v instanceof ParameterInfo)
+                    .map(v -> (ParameterInfo) v)
+                    .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
+                    .noneMatch(parameters::contains);
 
-        boolean allLinkedVariablesSet = methodAnalysis.fieldSummaries.stream().allMatch(e -> e.getValue().linkedVariables.isSet());
-        if (!allLinkedVariablesSet) {
-            log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
-            return false;// DELAY
-        }
-        boolean supportDataSet = methodAnalysis.fieldSummaries.stream()
-                .flatMap(e -> e.getValue().linkedVariables.get().stream())
-                .allMatch(MethodAnalyser::isSupportDataFieldSet);
-        if (!supportDataSet) {
-            log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
-            return false;
-        }
-
-        boolean parametersIndependentOfFields = methodAnalysis.fieldSummaries.stream()
-                .peek(e -> {
-                    if (!e.getValue().linkedVariables.isSet())
-                        LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
-                })
-                .flatMap(e -> e.getValue().linkedVariables.get().stream())
-                .filter(v -> v instanceof ParameterInfo)
-                .map(v -> (ParameterInfo) v)
-                .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
-                .noneMatch(parameters::contains);
+        } else parametersIndependentOfFields = true;
 
         // conclusion
 
         boolean independent = parametersIndependentOfFields && returnObjectIsIndependent;
-        methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent);
+        methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
     }
 
-    public static boolean isSupportDataFieldSet(Variable v) {
+    private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+        if (methodInfo.isConstructor || methodInfo.isVoid() ||
+                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
+                        methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+            return true;
+        }
+
+        if (!methodAnalysis.variablesLinkedToMethodResult.isSet()) {
+            log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
+                    methodInfo.fullyQualifiedName());
+            return null;
+        }
+        // method does not return an implicitly immutable data type
+        Set<Variable> variables = methodAnalysis.variablesLinkedToMethodResult.get();
+        boolean implicitlyImmutableSet = variables.stream().allMatch(MethodAnalyser::isImplicitlyImmutableDataTypeSet);
+        if (!implicitlyImmutableSet) {
+            log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
+            return null;
+        }
+        int e2ImmutableStatusOfFieldRefs = variables.stream()
+                .filter(MethodAnalyser::isFieldNotOfImplicitlyImmutableType)
+                .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
+                .min().orElse(MultiLevel.EFFECTIVE);
+        if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
+            log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
+                    variables.stream()
+                            .filter(v -> isFieldNotOfImplicitlyImmutableType(v) &&
+                                    MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                                            MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
+                            .map(Variable::detailedString)
+                            .collect(Collectors.joining(", ")));
+            return null;
+        }
+        if (e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE) return true;
+
+        int formalE2ImmutableStatusOfReturnType = MultiLevel.value(methodInfo.returnType().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (formalE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
+            log(DELAYED, "Have formal return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
+            return null;
+        }
+        if (formalE2ImmutableStatusOfReturnType >= MultiLevel.EVENTUAL) {
+            log(INDEPENDENT, "Method {} is independent, formal return type is E2Immutable", methodInfo.distinguishingName());
+            return true;
+        }
+
+        if (methodAnalysis.singleReturnValue.isSet()) {
+            int imm = methodAnalysis.singleReturnValue.get().getProperty(methodProperties, VariableProperty.IMMUTABLE);
+            int dynamicE2ImmutableStatusOfReturnType = MultiLevel.value(imm, MultiLevel.E2IMMUTABLE);
+            if (dynamicE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
+                log(DELAYED, "Have dynamic return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
+                return null;
+            }
+            if (dynamicE2ImmutableStatusOfReturnType >= MultiLevel.EVENTUAL) {
+                log(INDEPENDENT, "Method {} is independent, dynamic return type is E2Immutable", methodInfo.distinguishingName());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isImplicitlyImmutableDataTypeSet(Variable v) {
         return !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.isSet();
     }
 
-    public static boolean isSupportDataField(Variable variable) {
+    public static boolean isFieldNotOfImplicitlyImmutableType(Variable variable) {
         if (!(variable instanceof FieldReference)) return false;
-        return ((FieldReference) variable).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.get();
+        return !((FieldReference) variable).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.get();
     }
 
     public Stream<Message> getMessageStream() {

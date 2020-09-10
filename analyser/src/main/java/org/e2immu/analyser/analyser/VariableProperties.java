@@ -482,9 +482,6 @@ class VariableProperties implements EvaluationContext {
             int immutable = parameterAnalysis.getProperty(IMMUTABLE);
             aboutVariable.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
 
-            int exposed = parameterAnalysis.getProperty(EXPOSED);
-            aboutVariable.setProperty(EXPOSED, exposed);
-
             int notModified1 = parameterAnalysis.getProperty(NOT_MODIFIED_1);
             aboutVariable.setProperty(NOT_MODIFIED_1, notModified1 == Level.DELAY ? NOT_MODIFIED_1.falseValue : notModified1);
 

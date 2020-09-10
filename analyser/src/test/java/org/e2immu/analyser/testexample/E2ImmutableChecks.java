@@ -122,7 +122,7 @@ public class E2ImmutableChecks {
         @Identity
         @Linked(type = AnnotationType.VERIFY_ABSENT)
         @Constant(type = AnnotationType.VERIFY_ABSENT)
-        public Set<String> mingle(@NotNull1 @Modified Set<String> input4) {
+        public Set<String> mingle(@NotNull @Modified Set<String> input4) {
             input4.addAll(strings4);
             return input4;
         }
@@ -167,6 +167,7 @@ public class E2ImmutableChecks {
         }
     }
 
+    @Independent @Container
     static class SimpleContainer {
         private int i;
 

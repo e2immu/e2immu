@@ -104,8 +104,8 @@ public class MethodAnalysis extends Analysis {
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
                     throw new UnsupportedOperationException(); //we should not even be asking
 
-                int immutableType = formalImmutableProperty();
-                int immutableDynamic = dynamicImmutableProperty(immutableType);
+                int immutableType = formalProperty(VariableProperty.IMMUTABLE);
+                int immutableDynamic = dynamicProperty(immutableType, VariableProperty.IMMUTABLE);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
@@ -120,13 +120,13 @@ public class MethodAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
-    private int dynamicImmutableProperty(int formalImmutableProperty) {
+    private int dynamicProperty(int formalImmutableProperty, VariableProperty variableProperty) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
-        return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
+        return Level.best(super.getProperty(variableProperty), immutableTypeAfterEventual);
     }
 
-    private int formalImmutableProperty() {
-        return returnType.getProperty(VariableProperty.IMMUTABLE);
+    private int formalProperty(VariableProperty variableProperty) {
+        return returnType.getProperty(variableProperty);
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
@@ -157,9 +157,7 @@ public class MethodAnalysis extends Analysis {
         // @Dependent @Independent
         if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
             int independent = getProperty(VariableProperty.INDEPENDENT);
-            AnnotationExpression ae = independent == Level.FALSE ? e2ImmuAnnotationExpressions.dependent.get() :
-                    e2ImmuAnnotationExpressions.independent.get();
-            annotations.put(ae, true);
+            doIndependent(e2ImmuAnnotationExpressions, independent);
         }
 
         if (methodInfo.isConstructor) return;
@@ -194,10 +192,10 @@ public class MethodAnalysis extends Analysis {
         doNotModified1(e2ImmuAnnotationExpressions);
 
         // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-        int formallyImmutable = formalImmutableProperty();
-        int dynamicallyImmutable = dynamicImmutableProperty(formallyImmutable);
+        int formallyImmutable = formalProperty(VariableProperty.IMMUTABLE);
+        int dynamicallyImmutable = dynamicProperty(formallyImmutable, VariableProperty.IMMUTABLE);
         if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
-            doImmutableContainer(e2ImmuAnnotationExpressions, false, dynamicallyImmutable, true);
+            doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
         }
     }
 

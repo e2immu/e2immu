@@ -783,7 +783,7 @@ public class StatementAnalyser {
     public static void variableOccursInNotNullContext(Variable variable,
                                                       Value currentValue,
                                                       EvaluationContext evaluationContext,
-                                                      int notNullContext) { // at least TRUE, but could be more?
+                                                      int notNullContext) { // at least TRUE, but could be more!
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (currentValue == NO_VALUE) return; // not yet
         if (variable instanceof This) return; // nothing to be done here
@@ -820,12 +820,6 @@ public class StatementAnalyser {
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }
-    }
-
-    public static void markExposed(EvaluationContext evaluationContext, Variable variable, int value) {
-        VariableProperties variableProperties = (VariableProperties) evaluationContext;
-        if (variable instanceof FieldReference) variableProperties.ensureFieldReference((FieldReference) variable);
-        variableProperties.addPropertyRestriction(variable, VariableProperty.EXPOSED, value);
     }
 
     public static void markMethodCalled(EvaluationContext evaluationContext, Variable variable, int methodCalled) {

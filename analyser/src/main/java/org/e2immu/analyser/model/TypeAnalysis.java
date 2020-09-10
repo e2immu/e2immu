@@ -104,10 +104,12 @@ public class TypeAnalysis extends Analysis {
         }
 
         int immutable = getProperty(VariableProperty.IMMUTABLE);
-        doImmutableContainer(e2ImmuAnnotationExpressions, true, immutable, false);
+        doImmutableContainer(e2ImmuAnnotationExpressions, immutable, false);
 
-        if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable) && getProperty(VariableProperty.INDEPENDENT) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.independent.get(), true);
+        // @Independent
+        int independent = getProperty(VariableProperty.INDEPENDENT);
+        if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
+            doIndependent(e2ImmuAnnotationExpressions, independent);
         }
     }
 }

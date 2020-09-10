@@ -57,8 +57,7 @@ public enum VariableProperty {
     CONTAINER("@Container", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE, MultiLevel.MUTABLE),
     MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
-    INDEPENDENT("@Independent", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
-    SUPPORT_DATA("@SupportData"),
+    INDEPENDENT("@Independent", true, MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),
@@ -69,7 +68,6 @@ public enum VariableProperty {
     ONLY("@Only"),
     SINGLETON("@Singleton"),
     NOT_MODIFIED_1("@NotModified1"),
-    EXPOSED("@Exposed"),
     SIZE("@Size", true, Level.NOT_A_SIZE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE), // the int value is for "min"+"equals", not for "max"
     SIZE_COPY("@Size copy"), // the int value is associated with the @Size(copy, copyMin)
     UTILITY_CLASS("@UtilityClass");
@@ -109,7 +107,7 @@ public enum VariableProperty {
 
     // it is important that NOT_MODIFIED is copied BEFORE SIZE, because SIZE on Parameters is only copied when
     // NOT_MODIFIED == TRUE
-    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE, NOT_MODIFIED_1, EXPOSED);
+    public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, SIZE, NOT_MODIFIED_1);
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
 
     public final static Set<VariableProperty> DYNAMIC_TYPE_PROPERTY = Set.of(IMMUTABLE, CONTAINER);

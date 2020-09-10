@@ -229,7 +229,7 @@ public class MethodValue implements Value {
         int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
-        if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == Level.FALSE)) {
+        if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
             Set<Variable> b = object.linkedVariables(evaluationContext);
             if (b == null) return null;
             result.addAll(b);

@@ -47,7 +47,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Set<Variable> variables = methodInfo.methodAnalysis.get().variablesLinkedToMethodResult.get();
                 Assert.assertEquals(1, variables.size());
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.FALSE, independent);
+                Assert.assertEquals(MultiLevel.FALSE, independent);
             }
         }
     };

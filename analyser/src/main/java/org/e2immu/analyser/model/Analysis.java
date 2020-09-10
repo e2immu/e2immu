@@ -168,10 +168,11 @@ public abstract class Analysis {
         }
     }
 
-    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, boolean isType, int immutable, boolean betterThanFormal) {
+    protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String mark;
-        boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
+        boolean isType = this instanceof TypeAnalysis;
+        boolean eventual = isType && ((TypeAnalysis) this).isEventual();
         if (eventual) {
             mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
         } else mark = "";
@@ -187,6 +188,25 @@ public abstract class Analysis {
                     e2ImmuAnnotationExpressions.getFullyQualified(entry.getKey().getCanonicalName()), list);
             annotations.put(expression, true);
         }
+    }
+
+    protected void doIndependent(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int independent) {
+        if (independent <= MultiLevel.FALSE) {
+            annotations.put(e2ImmuAnnotationExpressions.independent.get(), false);
+            annotations.put(e2ImmuAnnotationExpressions.dependent.get(), true);
+            return;
+        }
+        annotations.put(e2ImmuAnnotationExpressions.dependent.get(), false);
+        if (independent == MultiLevel.EFFECTIVE) {
+            annotations.put(e2ImmuAnnotationExpressions.independent.get(), true);
+            return;
+        }
+        boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
+        if (!eventual) throw new UnsupportedOperationException("??");
+        String mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
+        AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.independent.get().typeInfo,
+                List.of(new MemberValuePair("after", new StringConstant(mark))));
+        annotations.put(ae, true);
     }
 
     private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter) {
@@ -263,9 +283,9 @@ public abstract class Analysis {
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
                     method.accept(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
-                    method.accept(VariableProperty.INDEPENDENT, Level.TRUE);
+                    method.accept(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
-                    method.accept(VariableProperty.INDEPENDENT, Level.FALSE);
+                    method.accept(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
@@ -378,11 +398,5 @@ public abstract class Analysis {
             res.put(property, value);
         }
         return res;
-    }
-
-    private static int[] extractExposedParams(AnnotationExpression annotationExpression) {
-        int[] values = annotationExpression.extract("value", new int[0]);
-        if (values.length == 1 && values[0] == -1) return new int[0];
-        return values;
     }
 }

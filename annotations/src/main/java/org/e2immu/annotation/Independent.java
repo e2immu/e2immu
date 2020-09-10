@@ -29,4 +29,18 @@ import java.lang.annotation.Target;
 @Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.TYPE})
 public @interface Independent {
     AnnotationType type() default AnnotationType.VERIFY;
+    /**
+     * @return when a type is effectively independent, set the empty string.
+     * When it is eventually independent, return a boolean expression of strings from <code>@Mark</code>
+     * values on some of the modifying methods of the type. After these have been called, the
+     * type will become effectively independent.
+     */
+    String after() default "";
+
+    /**
+     * @return when true, the type is Independent after the framework has made all modifications.
+     * This is a short-hand for adding <code>@Only(framework=true) @Mark("framework")</code> on all modifying methods,
+     * and setting <code>after="framework"</code> on this annotation.
+     */
+    boolean framework() default false;
 }

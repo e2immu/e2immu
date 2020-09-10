@@ -33,14 +33,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
-// the @NotNull on value1 travels from isAbc to value1 to value as parameter of the constructor
-
-/*
-
-https://github.com/bnaudts/e2immu/issues/13
-
- */
 public class TestE2ImmutableChecks extends CommonTestRunner {
     public TestE2ImmutableChecks() {
         super(true);
@@ -50,9 +44,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("isAbc".equals(d.methodInfo.name) && "0".equals(d.statementId) && "E2Container1.this.value1".equals(d.variableName)) {
             Assert.assertNull("At iteration " + d.iteration, d.properties.get(VariableProperty.NOT_NULL));
         }
-        // no decision about immutable of "mingle" is ever made
         if ("input4".equals(d.variableName) && "1".equals(d.statementId) && "mingle".equals(d.methodInfo.name)) {
             Assert.assertEquals(MultiLevel.MUTABLE, (int) d.properties.get(VariableProperty.IMMUTABLE));
+        }
+        if ("input4".equals(d.variableName) && "0".equals(d.statementId) && "mingle".equals(d.methodInfo.name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
         }
     };
 
@@ -98,7 +94,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("get4".equals(methodInfo.name)) {
             if (iteration > 1) {
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-                Assert.assertEquals(Level.TRUE, independent);
+                Assert.assertEquals(MultiLevel.EFFECTIVE, independent);
             }
             TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
             if (iteration > 0) {
@@ -108,11 +104,23 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 Assert.assertEquals("[map4]", tv.linkedVariables.get().toString());
             }
         }
+
+        if ("get7".equals(methodInfo.name) && iteration > 1) {
+            Assert.assertEquals(MultiLevel.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
         if ("value1".equals(fieldInfo.name) && iteration > 1) {
             Assert.assertEquals(MultiLevel.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+        if ("map7".equals(fieldInfo.name)) {
+            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, immutable);
+            } else {
+                Assert.assertEquals("Iteration " + iteration, MultiLevel.FALSE, immutable);
+            }
         }
     };
 
@@ -123,7 +131,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 .filter(m -> m.methodInspection.get().parameters.size() == 1)
                 .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
-        Assert.assertEquals(Level.TRUE, constructor1.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        Assert.assertEquals(MultiLevel.EFFECTIVE, constructor1.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
 
         // result of copyOf is @E2Immutable (and therefore the method is independent)
         TypeInfo immutableSet = typeContext.getFullyQualified(ImmutableSet.class);
@@ -132,6 +140,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+
+        TypeInfo set = typeContext.getFullyQualified(Set.class);
+        MethodInfo addAll = set.findUniqueMethod("addAll", 1);
+        ParameterInfo addAllP0 = addAll.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, addAllP0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
@@ -146,6 +159,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         } else if ("E2Container7".equals(typeInfo.simpleName)) {
             Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
 
+            if (iteration > 2) {
+                Assert.assertEquals(MultiLevel.FALSE, typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+            }
+
+            // a bit of inspection check... was a temporary bug during a refactoring.
             MethodInfo getMap7 = typeInfo.findUniqueMethod("getMap7", 0);
             Block block = getMap7.methodInspection.get().methodBody.get();
             Assert.assertEquals(3, block.structure.statements.size());

@@ -110,7 +110,7 @@ public class Instance implements Value {
             int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
             if (independent == Level.DELAY) return null;
 
-            if (MultiLevel.isE2Immutable(immutable) || independent == Level.TRUE) { // RULE 3
+            if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE) { // RULE 3
                 return NO_LINKS;
             }
         }

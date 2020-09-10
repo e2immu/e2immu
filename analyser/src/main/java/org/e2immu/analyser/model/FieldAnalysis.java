@@ -171,7 +171,7 @@ public class FieldAnalysis extends Analysis {
         int typeImmutable = typeImmutable();
         int fieldImmutable = super.getProperty(VariableProperty.IMMUTABLE);
         if (MultiLevel.isBetterImmutable(fieldImmutable, typeImmutable)) {
-            doImmutableContainer(e2ImmuAnnotationExpressions, false, fieldImmutable, true);
+            doImmutableContainer(e2ImmuAnnotationExpressions, fieldImmutable, true);
         }
     }
 
