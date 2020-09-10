@@ -24,13 +24,13 @@ import java.util.Collections;
 import java.util.List;
 
 @E2Container
-public class ExampleManualIterator1<E> {
+public class ExampleManualIteratorInner1<E> {
 
     @NotModified
     private final List<E> list = new ArrayList<>();
 
     @Independent
-    public ExampleManualIterator1(E[] es) {
+    public ExampleManualIteratorInner1(E[] es) {
         Collections.addAll(list, es);
     }
 
@@ -43,22 +43,15 @@ public class ExampleManualIterator1<E> {
     @Independent
     // implies @NotModified; Otherwise we cannot have @E2Container; is @Independent because MyIteratorImpl is @Independent
     public MyIterator<E> iterator() {
-        return new MyIteratorImpl<>(list);
+        return new MyIteratorImpl();
     }
 
     @Container
     @Independent // because impossible to modify
-    public static class MyIteratorImpl<E> implements MyIterator<E> {
+    public class MyIteratorImpl implements MyIterator<E> {
 
-        @NotModified
-        private final List<E> list;
         @Modified
         private int index;
-
-        @Dependent
-        private MyIteratorImpl(@NotModified List<E> list) { // 2.
-            this.list = list;
-        }
 
         @Override
         @NotModified

@@ -3,8 +3,127 @@
 
 === New definition of independence
 
-Only for support data, on types, ignoring modification.
-Then downgrade the transfer of independence to {independent} types, rather than {e2immutable} types.
+More or less half of the definition of level 2 immutability:
+
+****
+*Definition of an independent type:*
+
+. all constructor parameters are {nm}
+. fields linked to constructor parameters are {nm}
+. non-private fields linking to constructor parameters must be level 2 immutable
+. all return values of methods are independent of the fields linking to constructor parameters
+****
+
+Types can be eventually independent (advanced topic).
+A newly created independent type is independent of the arguments, in the sense that _if_ these arguments satisfy all rules for level 2 immutability, the new object will not change this.
+This helps in _extending_ a level 2 immutable type, for example with an iterator:
+
+.Extending a level 2 immutable type with an iterator
+[source,java]
+----
+@E2Container
+public class ExampleManualIterator1<E> {
+
+    @NotModified
+    private final List<E> list = new ArrayList<>();
+
+    @Independent
+    public ExampleManualIterator1(E[] es) {
+        Collections.addAll(list, es);
+    }
+
+    interface MyIterator<E> {
+        boolean hasNext();
+
+        E next();
+    }
+
+    @Independent
+    public MyIterator<E> iterator() {
+        return new MyIteratorImpl<>(list); // <1>
+    }
+
+    @Container
+    @Independent
+    public static class MyIteratorImpl<E> implements MyIterator<E> {
+
+        @NotModified
+        private final List<E> list; // <2>
+        @Modified
+        private int index;
+
+        @Dependent
+        private MyIteratorImpl(@NotModified List<E> list) {
+            this.list = list;
+        }
+
+        @Override
+        @NotModified
+        public boolean hasNext() {
+            return index < list.size();
+        }
+
+        @Override
+        @Modified
+        @NotNull
+        public E next() {
+            return list.get(index++);
+        }
+    }
+}
+----
+<1> The newly created `MyIteratorImpl` object is independent of `list`; which helps in making `ExampleManualIterator1` level 2 immutable.
+<2> This field is central to the rules for `MyIteratorImpl` to be {independent}.
+
+The static nested class `MyIteratorImpl` could have been implemented as a non-static nested one (aka _inner class_):
+
+.Same, but with inner class
+[source, java]
+----
+@E2Container
+public class ExampleManualIteratorInner1<E> {
+
+    @NotModified
+    private final List<E> list = new ArrayList<>();
+
+    @Independent
+    public ExampleManualIteratorInner1(E[] es) {
+        Collections.addAll(list, es);
+    }
+
+    interface MyIterator<E> {
+        boolean hasNext();
+
+        E next();
+    }
+
+    @Independent
+    public MyIterator<E> iterator() {
+        return new MyIteratorImpl();
+    }
+
+    @Container
+    @Independent
+    public class MyIteratorImpl implements MyIterator<E> {
+
+        @Modified
+        private int index;
+
+        @Override
+        @NotModified
+        public boolean hasNext() {
+            return index < list.size();
+        }
+
+        @Override
+        @Modified
+        @NotNull
+        public E next() {
+            return list.get(index++);
+        }
+    }
+}
+----
 
 === Linking
 
