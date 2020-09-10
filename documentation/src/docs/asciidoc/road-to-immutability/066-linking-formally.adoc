@@ -8,13 +8,12 @@ More or less half of the definition of level 2 immutability:
 ****
 *Definition of an independent type:*
 
-. all constructor parameters are {nm}
-. fields linked to constructor parameters are {nm}
+. fields linked to constructor parameters are {nm} (hence these parameters must be {nm} as well)
 . non-private fields linking to constructor parameters must be level 2 immutable
 . all return values of methods are independent of the fields linking to constructor parameters
 ****
 
-Types can be eventually independent (advanced topic).
+Types cannot be eventually independent.
 A newly created independent type is independent of the arguments, in the sense that _if_ these arguments satisfy all rules for level 2 immutability, the new object will not change this.
 This helps in _extending_ a level 2 immutable type, for example with an iterator:
 
@@ -78,7 +77,7 @@ public class ExampleManualIterator1<E> {
 The static nested class `MyIteratorImpl` could have been implemented as a non-static nested one (aka _inner class_):
 
 .Same, but with inner class
-[source, java]
+[source,java]
 ----
 @E2Container
 public class ExampleManualIteratorInner1<E> {
@@ -124,6 +123,8 @@ public class ExampleManualIteratorInner1<E> {
     }
 }
 ----
+
+The rules are made to be compatible with this situation.
 
 === Linking
 
