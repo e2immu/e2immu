@@ -18,15 +18,9 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.*;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-
 public abstract class StatementWithExpression extends StatementWithStructure {
 
-    protected StatementWithExpression(CodeOrganization codeOrganization) {
-        super(codeOrganization);
+    protected StatementWithExpression(Structure structure) {
+        super(structure);
     }
 }

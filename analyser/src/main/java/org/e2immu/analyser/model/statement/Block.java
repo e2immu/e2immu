@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
 public class Block extends StatementWithStructure {
     public static final Block EMPTY_BLOCK = new Block(List.of(), null);
     public final String label;
-    public final CodeOrganization codeOrganization;
+    public final Structure structure;
 
     private Block(@NotNull List<Statement> statements, String label) {
-        codeOrganization = new CodeOrganization.Builder()
+        structure = new Structure.Builder()
                 .setStatementsExecutedAtLeastOnce(v -> true)
                 .setNoBlockMayBeExecuted(false)
                 .setStatements(statements).build();
@@ -81,11 +81,11 @@ public class Block extends StatementWithStructure {
         }
         sb.append(" {");
         if (numberedStatement == null) {
-            if (codeOrganization.statements.isEmpty()) {
+            if (structure.statements.isEmpty()) {
                 sb.append(" }\n");
             } else {
                 sb.append("\n");
-                for (Statement statement : codeOrganization.statements) {
+                for (Statement statement : structure.statements) {
                     sb.append(statement.statementString(indent + 4, null));
                 }
                 StringUtil.indent(sb, indent);
@@ -127,10 +127,10 @@ public class Block extends StatementWithStructure {
         visit(statement -> {
             if (statement instanceof ReturnStatement) {
                 ReturnStatement returnStatement = (ReturnStatement) statement;
-                if (returnStatement.codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
+                if (returnStatement.structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(Primitives.PRIMITIVES.voidParameterizedType);
                 } else {
-                    ParameterizedType returnType = returnStatement.codeOrganization.expression.returnType();
+                    ParameterizedType returnType = returnStatement.structure.expression.returnType();
                     mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(returnType));
                 }
             }
@@ -140,13 +140,13 @@ public class Block extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return codeOrganization.statements;
+        return structure.statements;
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
-        return new Block(codeOrganization.statements.stream()
+        return new Block(structure.statements.stream()
                 .flatMap(st -> translationMap.translateStatement(st).stream())
                 .collect(Collectors.toList()), label);
     }

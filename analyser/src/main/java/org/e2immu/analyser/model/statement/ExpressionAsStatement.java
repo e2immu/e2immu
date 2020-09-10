@@ -32,8 +32,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
         super(createCodeOrganization(expression));
     }
 
-    private static CodeOrganization createCodeOrganization(Expression expression) {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder();
+    private static Structure createCodeOrganization(Expression expression) {
+        Structure.Builder builder = new Structure.Builder();
         builder.setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT);
         if (expression instanceof LocalVariableCreation) {
             builder.addInitialisers(List.of(expression));
@@ -48,20 +48,20 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExpressionAsStatement(translationMap.translateExpression(codeOrganization.expression));
+        return new ExpressionAsStatement(translationMap.translateExpression(structure.expression));
     }
 
     @Override
     public String statementString(int indent, NumberedStatement numberedStatement) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(";\n");
         return sb.toString();
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(codeOrganization.expression);
+        return List.of(structure.expression);
     }
 }

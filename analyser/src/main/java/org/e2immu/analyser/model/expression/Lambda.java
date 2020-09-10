@@ -26,14 +26,11 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements.recursivelyCreateNumberedStatements;
 
 public class Lambda implements Expression {
     public final MethodInfo methodInfo;
@@ -64,11 +61,11 @@ public class Lambda implements Expression {
     }
 
     private Expression singleExpression() {
-        if (block.codeOrganization.statements.size() != 1) return null;
-        Statement statement = block.codeOrganization.statements.get(0);
+        if (block.structure.statements.size() != 1) return null;
+        Statement statement = block.structure.statements.get(0);
         if (!(statement instanceof ReturnStatement)) return null;
         ReturnStatement returnStatement = (ReturnStatement) statement;
-        return returnStatement.codeOrganization.expression;
+        return returnStatement.structure.expression;
     }
 
     // this is a functional interface
@@ -84,7 +81,7 @@ public class Lambda implements Expression {
         if (singleExpression != null) {
             blockString = singleExpression.expressionString(indent);
         } else {
-            if (block.codeOrganization.statements.isEmpty()) blockString = "{ }";
+            if (block.structure.statements.isEmpty()) blockString = "{ }";
             else {
                 List<NumberedStatement> statements = methodInfo.methodAnalysis.get().numberedStatements.get();
                 NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);

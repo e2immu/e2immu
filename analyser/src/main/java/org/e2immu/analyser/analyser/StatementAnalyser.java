@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -328,7 +327,7 @@ public class StatementAnalyser {
                                                          VariableProperties variableProperties) {
         boolean changes = false;
 
-        CodeOrganization codeOrganization = statement.statement.codeOrganization();
+        Structure structure = statement.statement.codeOrganization();
 
         boolean assignedInLoop = statement.statement instanceof LoopStatement;
 
@@ -336,8 +335,8 @@ public class StatementAnalyser {
         // but then for variables in catch clauses)
 
         LocalVariableReference theLocalVariableReference;
-        if (codeOrganization.localVariableCreation != null) {
-            theLocalVariableReference = new LocalVariableReference(codeOrganization.localVariableCreation,
+        if (structure.localVariableCreation != null) {
+            theLocalVariableReference = new LocalVariableReference(structure.localVariableCreation,
                     List.of());
             variableProperties.createLocalVariableOrParameter(theLocalVariableReference);
             if (assignedInLoop)
@@ -349,7 +348,7 @@ public class StatementAnalyser {
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
         // (normal local variables)
 
-        for (Expression initialiser : codeOrganization.initialisers) {
+        for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation) {
                 LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
@@ -364,7 +363,7 @@ public class StatementAnalyser {
                 if (result.changes) changes = true;
 
                 Value value = result.value;
-                if (codeOrganization.initialisers.size() == 1 && value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
+                if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE && !statement.valueOfExpression.isSet()) {
                     statement.valueOfExpression.set(value);
                 }
             } catch (RuntimeException rte) {
@@ -388,7 +387,7 @@ public class StatementAnalyser {
         // used in for-statement, and the parameters of an explicit constructor invocation this(...)
 
         // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
-        for (Expression updater : codeOrganization.updaters) {
+        for (Expression updater : structure.updaters) {
             EvaluationResult result = computeVariablePropertiesOfExpression(updater, variableProperties, statement, ForwardEvaluationInfo.DEFAULT);
             if (result.changes) changes = true;
         }
@@ -396,12 +395,12 @@ public class StatementAnalyser {
         // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
 
         final Value value;
-        if (codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
+        if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
             value = null;
         } else {
             try {
-                EvaluationResult result = computeVariablePropertiesOfExpression(codeOrganization.expression,
-                        variableProperties, statement, codeOrganization.forwardEvaluationInfo);
+                EvaluationResult result = computeVariablePropertiesOfExpression(structure.expression,
+                        variableProperties, statement, structure.forwardEvaluationInfo);
                 if (result.changes) changes = true;
                 value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
                 if (result.encounteredUnevaluatedVariables) {
@@ -541,9 +540,9 @@ public class StatementAnalyser {
 
         int start;
 
-        if (codeOrganization.haveNonEmptyBlock()) {
+        if (structure.haveNonEmptyBlock()) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
-            boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
+            boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value);
 
             // in a synchronized block, some fields can behave like variables
             boolean inSyncBlock = statement.statement instanceof SynchronizedStatement;
@@ -568,7 +567,7 @@ public class StatementAnalyser {
         // PART 8: other conditions, including the else, switch entries, catch clauses
 
         for (int count = start; count < startOfBlocks.size(); count++) {
-            CodeOrganization subStatements = codeOrganization.subStatements.get(count - start);
+            Structure subStatements = structure.subStatements.get(count - start);
 
             // PART 9: evaluate the sub-expression; this can be done in the CURRENT variable properties
             // (only real evaluation for Java 14 conditionals in switch)
@@ -628,11 +627,11 @@ public class StatementAnalyser {
         }
 
         if (!evaluationContextsGathered.isEmpty()) {
-            variableProperties.copyBackLocalCopies(evaluationContextsGathered, codeOrganization.noBlockMayBeExecuted);
+            variableProperties.copyBackLocalCopies(evaluationContextsGathered, structure.noBlockMayBeExecuted);
         }
 
         // we don't want to set the value for break statements themselves; that happens higher up
-        if (haveSubBlocks(codeOrganization) && !statement.breakAndContinueStatements.isSet()) {
+        if (haveSubBlocks(structure) && !statement.breakAndContinueStatements.isSet()) {
             statement.breakAndContinueStatements.set(breakOrContinueStatementsInChildren);
         }
 
@@ -650,10 +649,10 @@ public class StatementAnalyser {
         return changes;
     }
 
-    private static boolean haveSubBlocks(CodeOrganization codeOrganization) {
-        return codeOrganization.haveNonEmptyBlock() ||
-                codeOrganization.statements != null && !codeOrganization.statements.isEmpty() ||
-                !codeOrganization.subStatements.isEmpty();
+    private static boolean haveSubBlocks(Structure structure) {
+        return structure.haveNonEmptyBlock() ||
+                structure.statements != null && !structure.statements.isEmpty() ||
+                !structure.subStatements.isEmpty();
     }
 
     private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties variableProperties) {

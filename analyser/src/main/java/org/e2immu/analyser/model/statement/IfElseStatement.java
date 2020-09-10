@@ -38,14 +38,14 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     // note that we add the expression only once
-    private static CodeOrganization createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+    private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
+        Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
                 .setStatementsExecutedAtLeastOnce(v -> false);
         if (elseBlock != Block.EMPTY_BLOCK) {
-            builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
+            builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementsExecutedAtLeastOnce(v -> false)
                     .setBlock(elseBlock)
                     .build())
@@ -57,8 +57,8 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new IfElseStatement(
-                translationMap.translateExpression(codeOrganization.expression),
-                translationMap.translateBlock(codeOrganization.block),
+                translationMap.translateExpression(structure.expression),
+                translationMap.translateBlock(structure.block),
                 translationMap.translateBlock(elseBlock));
     }
 
@@ -67,9 +67,9 @@ public class IfElseStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("if (");
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(")");
-        sb.append(codeOrganization.block.statementString(indent, startOfBlock(ns, 0)));
+        sb.append(structure.block.statementString(indent, startOfBlock(ns, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             sb.append(" else");
             sb.append(elseBlock.statementString(indent, startOfBlock(ns, 1)));
@@ -80,11 +80,11 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect blocksSideEffect = codeOrganization.block.sideEffect(evaluationContext);
+        SideEffect blocksSideEffect = structure.block.sideEffect(evaluationContext);
         if (elseBlock != Block.EMPTY_BLOCK) {
             blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
         }
-        SideEffect conditionSideEffect = codeOrganization.expression.sideEffect(evaluationContext);
+        SideEffect conditionSideEffect = structure.expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
@@ -93,8 +93,8 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         if (elseBlock == Block.EMPTY_BLOCK) {
-            return List.of(codeOrganization.expression, codeOrganization.block);
+            return List.of(structure.expression, structure.block);
         }
-        return List.of(codeOrganization.expression, codeOrganization.block, elseBlock);
+        return List.of(structure.expression, structure.block, elseBlock);
     }
 }

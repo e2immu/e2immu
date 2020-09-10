@@ -17,26 +17,23 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.CodeOrganization;
 import org.e2immu.analyser.model.Statement;
 
-import java.util.List;
-
 public abstract class StatementWithStructure implements Statement {
-    public final CodeOrganization codeOrganization;
-    public static final CodeOrganization EMPTY_CODE_ORGANIZATION = new CodeOrganization.Builder().build();
+    public final Structure structure;
+    public static final Structure EMPTY_CODE_ORGANIZATION = new Structure.Builder().build();
 
     public StatementWithStructure() {
-        codeOrganization = EMPTY_CODE_ORGANIZATION;
+        structure = EMPTY_CODE_ORGANIZATION;
     }
 
-    public StatementWithStructure(CodeOrganization codeOrganization) {
-        this.codeOrganization = codeOrganization;
+    public StatementWithStructure(Structure structure) {
+        this.structure = structure;
     }
 
     @Override
-    public CodeOrganization codeOrganization() {
-        return codeOrganization;
+    public Structure codeOrganization() {
+        return structure;
     }
 
 }

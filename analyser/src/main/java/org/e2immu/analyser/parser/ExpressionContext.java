@@ -257,7 +257,7 @@ public class ExpressionContext {
                     parseStatement(blockBuilder, statement, null);
                 }
                 boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
-                return new SwitchEntry.StatementsEntry(switchVariableAsExpression, java12Style, labels, blockBuilder.build().codeOrganization.statements);
+                return new SwitchEntry.StatementsEntry(switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements);
             case BLOCK:
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
                 return new SwitchEntry.BlockEntry(switchVariableAsExpression, labels, block);

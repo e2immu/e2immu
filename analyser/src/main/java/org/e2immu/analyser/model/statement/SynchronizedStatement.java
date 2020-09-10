@@ -28,7 +28,7 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     public SynchronizedStatement(Expression expression,
                                  Block block) {
-        super(new CodeOrganization.Builder()
+        super(new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementsExecutedAtLeastOnce(v -> true)
@@ -38,8 +38,8 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SynchronizedStatement(translationMap.translateExpression(codeOrganization.expression),
-                translationMap.translateBlock(codeOrganization.block));
+        return new SynchronizedStatement(translationMap.translateExpression(structure.expression),
+                translationMap.translateBlock(structure.block));
     }
 
     @Override
@@ -47,15 +47,15 @@ public class SynchronizedStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("synchronized (");
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(")");
-        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(codeOrganization.expression, codeOrganization.block);
+        return List.of(structure.expression, structure.block);
     }
 }

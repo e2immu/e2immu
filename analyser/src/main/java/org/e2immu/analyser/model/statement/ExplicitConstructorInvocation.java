@@ -23,20 +23,18 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 // this( )
 public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     public ExplicitConstructorInvocation(List<Expression> parameterExpressions) {
-        super(new CodeOrganization.Builder().setUpdaters(parameterExpressions).build());
+        super(new Structure.Builder().setUpdaters(parameterExpressions).build());
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(codeOrganization.updaters.stream()
+        return new ExplicitConstructorInvocation(structure.updaters.stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }
@@ -46,7 +44,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("this(")
-                .append(codeOrganization.updaters.stream()
+                .append(structure.updaters.stream()
                         .map(e -> e.expressionString(indent)).collect(Collectors.joining(", ")))
                 .append(");\n");
         return sb.toString();
@@ -54,6 +52,6 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return codeOrganization.updaters;
+        return structure.updaters;
     }
 }

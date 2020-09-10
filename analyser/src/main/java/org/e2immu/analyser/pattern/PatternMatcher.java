@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.util.SMapSet;
 import org.e2immu.annotation.NotNull;
 
@@ -119,8 +120,8 @@ public class PatternMatcher {
             assert currentNumberedStatement != null;
 
             // slower method, first computing code organization
-            CodeOrganization codeOrganization = template.codeOrganization();
-            SimpleMatchResult isMatch = match(builder, codeOrganization, currentNumberedStatement);
+            Structure structure = template.codeOrganization();
+            SimpleMatchResult isMatch = match(builder, structure, currentNumberedStatement);
             if (isMatch != SimpleMatchResult.YES) return isMatch;
 
             log(TRANSFORM, "Successfully matched {}", currentNumberedStatement.index);
@@ -145,10 +146,10 @@ public class PatternMatcher {
 
     @NotNull
     private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           CodeOrganization templateCo,
+                                           Structure templateCo,
                                            NumberedStatement actualNs) {
         Statement actual = actualNs.statement;
-        CodeOrganization actualCo = actual.codeOrganization();
+        Structure actualCo = actual.codeOrganization();
         {
             SimpleMatchResult smr = match(builder, templateCo.expression, actualCo.expression);
             if (smr != SimpleMatchResult.YES) return smr;
@@ -188,7 +189,7 @@ public class PatternMatcher {
         }
         // else block, blocks in switch, try
         int blockCount = 1;
-        for (CodeOrganization subCo : templateCo.subStatements) {
+        for (Structure subCo : templateCo.subStatements) {
             if (numActualBlocks <= blockCount) return SimpleMatchResult.NO;
             NumberedStatement firstInBlock = actualNs.blocks.get().get(blockCount);
             SimpleMatchResult smr = match(builder, subCo.getStatements(), firstInBlock);

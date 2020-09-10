@@ -28,7 +28,6 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
 import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NullConstant;
@@ -593,7 +592,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Set<ParameterizedType> result = new HashSet<>();
         Consumer<Element> statementVisitor = statement -> {
             if (statement instanceof StatementWithExpression) {
-                Expression expression = ((StatementWithExpression) statement).codeOrganization.expression;
+                Expression expression = ((StatementWithExpression) statement).structure.expression;
 
                 result.addAll(expression.collect(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
 

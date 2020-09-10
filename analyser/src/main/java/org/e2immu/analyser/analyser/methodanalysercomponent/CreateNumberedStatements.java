@@ -2,7 +2,7 @@ package org.e2immu.analyser.analyser.methodanalysercomponent;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.model.CodeOrganization;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -38,11 +38,11 @@ public class CreateNumberedStatements {
 
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
-            CodeOrganization codeOrganization = statement.codeOrganization();
-            if (codeOrganization.haveStatements()) {
-                blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, codeOrganization.getStatements());
+            Structure structure = statement.codeOrganization();
+            if (structure.haveStatements()) {
+                blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, structure.getStatements());
             }
-            for (CodeOrganization subStatements : codeOrganization.subStatements) {
+            for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
                     blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, subStatements.getStatements());
                 }

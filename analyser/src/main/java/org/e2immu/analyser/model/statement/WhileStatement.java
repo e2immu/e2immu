@@ -23,14 +23,12 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Map;
-
 public class WhileStatement extends LoopStatement {
 
     public WhileStatement(String label,
                           Expression expression,
                           Block block) {
-        super(new CodeOrganization.Builder()
+        super(new Structure.Builder()
                 .setStatementsExecutedAtLeastOnce(v -> v == BoolValue.TRUE)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
@@ -39,8 +37,8 @@ public class WhileStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new WhileStatement(label, translationMap.translateExpression(codeOrganization.expression),
-                translationMap.translateBlock(codeOrganization.block));
+        return new WhileStatement(label, translationMap.translateExpression(structure.expression),
+                translationMap.translateBlock(structure.block));
     }
 
     @Override
@@ -51,9 +49,9 @@ public class WhileStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("while (");
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(")");
-        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }

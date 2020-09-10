@@ -30,21 +30,21 @@ public class TryStatement extends StatementWithStructure {
                 finallyBlock == Block.EMPTY_BLOCK ? List.of() : List.of(finallyBlock));
     }
 
-    private static CodeOrganization codeOrganization(List<Expression> resources,
-                                                     Block tryBlock,
-                                                     List<Pair<CatchParameter, Block>> catchClauses,
-                                                     Block finallyBlock) {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
+    private static Structure codeOrganization(List<Expression> resources,
+                                              Block tryBlock,
+                                              List<Pair<CatchParameter, Block>> catchClauses,
+                                              Block finallyBlock) {
+        Structure.Builder builder = new Structure.Builder().addInitialisers(resources)
                 .setStatementsExecutedAtLeastOnce(v -> true)
                 .setBlock(tryBlock)
                 .setNoBlockMayBeExecuted(false); //there's always the main block
         for (Pair<CatchParameter, Block> pair : catchClauses) {
-            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable)
+            builder.addSubStatement(new Structure.Builder().setLocalVariableCreation(pair.k.localVariable)
                     .setStatementsExecutedAtLeastOnce(v -> false)
                     .setBlock(pair.v).build());
         }
         if (finallyBlock != null) {
-            builder.addSubStatement(new CodeOrganization.Builder()
+            builder.addSubStatement(new Structure.Builder()
                     .setExpression(EmptyExpression.FINALLY_EXPRESSION)
                     .setBlock(finallyBlock)
                     .setStatementsExecutedAtLeastOnce(v -> true)
@@ -56,7 +56,7 @@ public class TryStatement extends StatementWithStructure {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new TryStatement(resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(codeOrganization.block),
+                translationMap.translateBlock(structure.block),
                 catchClauses.stream().map(p -> new Pair<>(
                         TranslationMap.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
                         translationMap.translateBlock(p.v))).collect(Collectors.toList()),
@@ -116,7 +116,7 @@ public class TryStatement extends StatementWithStructure {
             sb.append(resources.stream().map(r -> r.expressionString(0)).collect(Collectors.joining("; ")));
             sb.append(")");
         }
-        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
+        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             sb.append(" catch(");
@@ -135,7 +135,7 @@ public class TryStatement extends StatementWithStructure {
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return codeOrganization.block.sideEffect(evaluationContext);
+        return structure.block.sideEffect(evaluationContext);
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.annotation.Container;
 
 import java.util.*;
@@ -99,15 +100,15 @@ public class Replacement {
         }
 
         private void recursivelyAddNamesCreated(Statement statement) {
-            CodeOrganization codeOrganization = statement.codeOrganization();
-            recursivelyAddNamesCreated(codeOrganization);
-            for (CodeOrganization subCo : codeOrganization.subStatements) {
+            Structure structure = statement.codeOrganization();
+            recursivelyAddNamesCreated(structure);
+            for (Structure subCo : structure.subStatements) {
                 recursivelyAddNamesCreated(subCo);
             }
         }
 
-        private void recursivelyAddNamesCreated(CodeOrganization codeOrganization) {
-            for (Expression initialiser : codeOrganization.initialisers) {
+        private void recursivelyAddNamesCreated(Structure structure) {
+            for (Expression initialiser : structure.initialisers) {
                 if (initialiser instanceof LocalVariableCreation) {
                     String name = ((LocalVariableCreation) initialiser).localVariable.name;
                     if (!name.startsWith(LOCAL_VARIABLE_PREFIX)) {
@@ -115,7 +116,7 @@ public class Replacement {
                     }
                 }
             }
-            for (Statement sub : codeOrganization.getStatements()) {
+            for (Statement sub : structure.getStatements()) {
                 recursivelyAddNamesCreated(sub);
             }
         }

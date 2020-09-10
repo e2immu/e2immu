@@ -1,15 +1,31 @@
-package org.e2immu.analyser.model;
+/*
+ * e2immu: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * <ul>
@@ -22,7 +38,7 @@ import java.util.stream.Stream;
  *     <li>try: EEE - B - [E-B E-B True-B]</li>
  * </ul>
  */
-public class CodeOrganization {
+public class Structure {
 
     public final List<Expression> initialisers; // try, for   (example: int i=0; )
     public final LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
@@ -36,22 +52,22 @@ public class CodeOrganization {
     @NotNull
     public final Predicate<Value> statementsExecutedAtLeastOnce;
 
-    public final List<CodeOrganization> subStatements; // catches, finally, switch entries
+    public final List<Structure> subStatements; // catches, finally, switch entries
 
     // decides if it possible at all that no block (statements, subStatements.statements) will be executed
     // this is possible in if statements without else, switch statements without default, loops that are not while(true), etc. etc.
     public final boolean noBlockMayBeExecuted;
 
-    private CodeOrganization(@NotNull List<Expression> initialisers,
-                             LocalVariable localVariableCreation,
-                             @NotNull Expression expression,
-                             @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
-                             @NotNull List<Expression> updaters,
-                             Block block,
-                             List<Statement> statements,
-                             @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
-                             List<CodeOrganization> subStatements,
-                             boolean noBlockMayBeExecuted) {
+    private Structure(@NotNull List<Expression> initialisers,
+                      LocalVariable localVariableCreation,
+                      @NotNull Expression expression,
+                      @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
+                      @NotNull List<Expression> updaters,
+                      Block block,
+                      List<Statement> statements,
+                      @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
+                      List<Structure> subStatements,
+                      boolean noBlockMayBeExecuted) {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
@@ -61,19 +77,19 @@ public class CodeOrganization {
         this.block = block;
         if (block != null && statements != null)
             throw new UnsupportedOperationException("Either block, or statements, but not both");
-        if(block != null && block.codeOrganization.statements == null) throw new UnsupportedOperationException();
+        if(block != null && block.structure.statements == null) throw new UnsupportedOperationException();
         this.subStatements = Objects.requireNonNull(subStatements);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
     }
 
     public List<Statement> getStatements() {
-        if (block != null) return block.codeOrganization.statements;
+        if (block != null) return block.structure.statements;
         return statements == null ? List.of() : statements;
     }
 
     public boolean haveStatements() {
-        if (block != null) return !block.codeOrganization.statements.isEmpty();
+        if (block != null) return !block.structure.statements.isEmpty();
         return statements != null && !statements.isEmpty();
     }
 
@@ -90,7 +106,7 @@ public class CodeOrganization {
         private Predicate<Value> statementsExecutedAtLeastOnce;
         private List<Statement> statements;  // switch statement, block itself
         private Block block;
-        private final List<CodeOrganization> subStatements = new ArrayList<>(); // catches, finally, switch entries
+        private final List<Structure> subStatements = new ArrayList<>(); // catches, finally, switch entries
         private boolean noBlockMayBeExecuted = true;
 
         public Builder setExpression(Expression expression) {
@@ -118,7 +134,7 @@ public class CodeOrganization {
             return this;
         }
 
-        public Builder addSubStatement(CodeOrganization subStatement) {
+        public Builder addSubStatement(Structure subStatement) {
             this.subStatements.add(subStatement);
             return this;
         }
@@ -144,8 +160,8 @@ public class CodeOrganization {
         }
 
         @NotNull
-        public CodeOrganization build() {
-            return new CodeOrganization(ImmutableList.copyOf(initialisers),
+        public Structure build() {
+            return new Structure(ImmutableList.copyOf(initialisers),
                     localVariableCreation,
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     forwardEvaluationInfo == null ? ForwardEvaluationInfo.DEFAULT : forwardEvaluationInfo,

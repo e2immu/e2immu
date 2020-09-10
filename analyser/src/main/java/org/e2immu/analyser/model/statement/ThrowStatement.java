@@ -22,19 +22,16 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.List;
-import java.util.Map;
-
 public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
-        super(new CodeOrganization.Builder().setExpression(expression)
+        super(new Structure.Builder().setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build());
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ThrowStatement(translationMap.translateExpression(codeOrganization.expression));
+        return new ThrowStatement(translationMap.translateExpression(structure.expression));
     }
 
     @Override
@@ -42,7 +39,7 @@ public class ThrowStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("throw ");
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(";\n");
         return sb.toString();
     }
@@ -50,6 +47,6 @@ public class ThrowStatement extends StatementWithExpression {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         // at least static only
-        return SideEffect.STATIC_ONLY.combine(codeOrganization.expression.sideEffect(evaluationContext));
+        return SideEffect.STATIC_ONLY.combine(structure.expression.sideEffect(evaluationContext));
     }
 }

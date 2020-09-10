@@ -19,17 +19,13 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.annotation.E2Container;
-
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 @E2Container
 public interface Statement extends Element {
 
-    CodeOrganization codeOrganization();
+    Structure codeOrganization();
 
     @Override
     default Statement translate(TranslationMap translationMap) {

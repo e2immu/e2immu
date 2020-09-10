@@ -13,13 +13,13 @@ public class AssertStatement extends StatementWithStructure {
     public AssertStatement(Expression check, Expression message) {
         // IMPORTANT NOTE: we're currently NOT adding message!
         // we regard it as external to the code
-        super(new CodeOrganization.Builder().setExpression(check).build());
+        super(new Structure.Builder().setExpression(check).build());
         this.message = message;
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new AssertStatement(translationMap.translateExpression(codeOrganization.expression), message);
+        return new AssertStatement(translationMap.translateExpression(structure.expression), message);
     }
 
     @Override
@@ -27,7 +27,7 @@ public class AssertStatement extends StatementWithStructure {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("assert ");
-        sb.append(codeOrganization.expression.expressionString(0));
+        sb.append(structure.expression.expressionString(0));
         if (message != null) {
             sb.append(", ");
             sb.append(message.expressionString(0));
@@ -38,6 +38,6 @@ public class AssertStatement extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(codeOrganization.expression);
+        return List.of(structure.expression);
     }
 }

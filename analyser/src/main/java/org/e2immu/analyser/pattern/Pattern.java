@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Container;
 
@@ -299,7 +300,7 @@ public class Pattern {
         }
 
         @Override
-        public CodeOrganization codeOrganization() {
+        public Structure codeOrganization() {
             throw new UnsupportedOperationException();
         }
 

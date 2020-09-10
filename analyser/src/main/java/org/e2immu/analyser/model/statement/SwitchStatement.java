@@ -7,7 +7,6 @@ import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SwitchStatement extends StatementWithExpression {
@@ -18,8 +17,8 @@ public class SwitchStatement extends StatementWithExpression {
         this.switchEntries = ImmutableList.copyOf(switchEntries);
     }
 
-    private static CodeOrganization codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+    private static Structure codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
+        Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
@@ -30,7 +29,7 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatement(translationMap.translateExpression(codeOrganization.expression),
+        return new SwitchStatement(translationMap.translateExpression(structure.expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 
@@ -39,7 +38,7 @@ public class SwitchStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("switch(");
-        sb.append(codeOrganization.expression.expressionString(0));
+        sb.append(structure.expression.expressionString(0));
         sb.append(") {\n");
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
@@ -53,6 +52,6 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(List.of(codeOrganization.expression), switchEntries);
+        return ListUtil.immutableConcat(List.of(structure.expression), switchEntries);
     }
 }

@@ -31,7 +31,7 @@ public class ForEachStatement extends LoopStatement {
                             LocalVariable localVariable,
                             Expression expression,
                             Block block) {
-        super(new CodeOrganization.Builder()
+        super(new Structure.Builder()
                 .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
@@ -43,15 +43,15 @@ public class ForEachStatement extends LoopStatement {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new ForEachStatement(label,
-                translationMap.translateLocalVariable(codeOrganization.localVariableCreation),
-                translationMap.translateExpression(codeOrganization.expression),
-                translationMap.translateBlock(codeOrganization.block));
+                translationMap.translateLocalVariable(structure.localVariableCreation),
+                translationMap.translateExpression(structure.expression),
+                translationMap.translateBlock(structure.block));
     }
 
     @Override
     public Set<String> imports() {
-        return SetUtil.immutableUnion(codeOrganization.expression.imports(), codeOrganization.block.imports(),
-                codeOrganization.localVariableCreation.imports());
+        return SetUtil.immutableUnion(structure.expression.imports(), structure.block.imports(),
+                structure.localVariableCreation.imports());
     }
 
     @Override
@@ -62,13 +62,13 @@ public class ForEachStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("for (");
-        sb.append(codeOrganization.localVariableCreation.parameterizedType.stream());
+        sb.append(structure.localVariableCreation.parameterizedType.stream());
         sb.append(" ");
-        sb.append(codeOrganization.localVariableCreation.name);
+        sb.append(structure.localVariableCreation.name);
         sb.append(" : ");
-        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(structure.expression.expressionString(indent));
         sb.append(")");
-        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }

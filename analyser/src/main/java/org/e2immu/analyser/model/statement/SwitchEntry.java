@@ -35,8 +35,8 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public final List<Expression> labels;
     public final Expression switchVariableAsExpression;
 
-    private SwitchEntry(CodeOrganization codeOrganization, Expression switchVariableAsExpression, List<Expression> labels) {
-        super(codeOrganization);
+    private SwitchEntry(Structure structure, Expression switchVariableAsExpression, List<Expression> labels) {
+        super(structure);
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
     }
@@ -99,7 +99,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
                                boolean java12Style,
                                List<Expression> labels,
                                List<Statement> statements) {
-            super(new CodeOrganization.Builder()
+            super(new Structure.Builder()
                     .setExpression(generateConditionExpression(labels, switchVariableAsExpression))
                     .setStatements(statements == null ? List.of() : statements)
                     .build(), switchVariableAsExpression, labels);
@@ -111,7 +111,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
             return new StatementsEntry(translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    codeOrganization.statements.stream()
+                    structure.statements.stream()
                             .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
         }
 
@@ -121,12 +121,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
             // TODO use the method from Block to catch replacements!
 
-            appendLabels(sb, indent, java12Style, codeOrganization.statements.size() > 1);
-            if (codeOrganization.statements.size() == 1) {
+            appendLabels(sb, indent, java12Style, structure.statements.size() > 1);
+            if (structure.statements.size() == 1) {
                 sb.append(" ");
-                sb.append(codeOrganization.statements.get(0).statementString(0, numberedStatement));
+                sb.append(structure.statements.get(0).statementString(0, numberedStatement));
             } else {
-                for (Statement statement : codeOrganization.statements) {
+                for (Statement statement : structure.statements) {
                     sb.append(statement.statementString(indent + 4, numberedStatement));
                 }
             }
@@ -135,7 +135,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, codeOrganization.statements);
+            return ListUtil.immutableConcat(labels, structure.statements);
         }
     }
 
@@ -144,7 +144,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public static class BlockEntry extends SwitchEntry {
 
         public BlockEntry(Expression switchVariableAsExpression, List<Expression> labels, Block block) {
-            super(new CodeOrganization.Builder().setExpression(generateConditionExpression(labels, switchVariableAsExpression))
+            super(new Structure.Builder().setExpression(generateConditionExpression(labels, switchVariableAsExpression))
                     .setBlock(block).build(), switchVariableAsExpression, labels);
         }
 
@@ -152,20 +152,20 @@ public abstract class SwitchEntry extends StatementWithStructure {
         public Statement translate(TranslationMap translationMap) {
             return new BlockEntry(translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    translationMap.translateBlock(codeOrganization.block));
+                    translationMap.translateBlock(structure.block));
         }
 
         @Override
         public String statementString(int indent, NumberedStatement numberedStatement) {
             StringBuilder sb = new StringBuilder();
             appendLabels(sb, indent, true, false);
-            sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+            sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
             return sb.toString();
         }
 
         @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, List.of(codeOrganization.block));
+            return ListUtil.immutableConcat(labels, List.of(structure.block));
         }
     }
 }

@@ -116,7 +116,7 @@ public class MethodAnalyser {
     }
 
     public boolean analyse(MethodInfo methodInfo, EvaluationContext methodProperties) {
-        List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().codeOrganization.statements;
+        List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().structure.statements;
         if (!statements.isEmpty()) {
             boolean changes = false;
             log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
