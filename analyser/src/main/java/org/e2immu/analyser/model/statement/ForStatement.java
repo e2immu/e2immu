@@ -31,7 +31,7 @@ public class ForStatement extends LoopStatement {
     public Statement translate(TranslationMap translationMap) {
         return new ForStatement(label,
                 structure.initialisers.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateExpression(structure.expression),
+                translationMap.translateExpression(expression),
                 structure.updaters.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateBlock(structure.block));
     }
@@ -46,7 +46,7 @@ public class ForStatement extends LoopStatement {
         sb.append("for(");
         sb.append(structure.initialisers.stream().map(i -> i.expressionString(0)).collect(Collectors.joining(", ")));
         sb.append("; ");
-        sb.append(structure.expression.expressionString(0));
+        sb.append(expression.expressionString(0));
         sb.append("; ");
         sb.append(structure.updaters.stream().map(u -> u.expressionString(0)).collect(Collectors.joining(", ")));
         sb.append(")");
@@ -58,7 +58,7 @@ public class ForStatement extends LoopStatement {
     @Override
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(structure.initialisers,
-                List.of(structure.expression),
+                List.of(expression),
                 structure.updaters,
                 List.of(structure.block));
     }

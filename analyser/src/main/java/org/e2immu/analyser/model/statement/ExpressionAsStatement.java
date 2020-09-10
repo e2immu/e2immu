@@ -29,7 +29,7 @@ import java.util.List;
 public class ExpressionAsStatement extends StatementWithExpression {
 
     public ExpressionAsStatement(Expression expression) {
-        super(createCodeOrganization(expression));
+        super(createCodeOrganization(expression), expression);
     }
 
     private static Structure createCodeOrganization(Expression expression) {
@@ -48,20 +48,20 @@ public class ExpressionAsStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExpressionAsStatement(translationMap.translateExpression(structure.expression));
+        return new ExpressionAsStatement(translationMap.translateExpression(expression));
     }
 
     @Override
     public String statementString(int indent, NumberedStatement numberedStatement) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(";\n");
         return sb.toString();
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(structure.expression);
+        return List.of(expression);
     }
 }

@@ -127,10 +127,10 @@ public class Block extends StatementWithStructure {
         visit(statement -> {
             if (statement instanceof ReturnStatement) {
                 ReturnStatement returnStatement = (ReturnStatement) statement;
-                if (returnStatement.structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
+                if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(Primitives.PRIMITIVES.voidParameterizedType);
                 } else {
-                    ParameterizedType returnType = returnStatement.structure.expression.returnType();
+                    ParameterizedType returnType = returnStatement.expression.returnType();
                     mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(returnType));
                 }
             }

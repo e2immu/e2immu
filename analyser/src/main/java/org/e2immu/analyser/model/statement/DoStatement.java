@@ -36,7 +36,7 @@ public class DoStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new DoStatement(label, translationMap.translateExpression(structure.expression),
+        return new DoStatement(label, translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block));
     }
 
@@ -50,7 +50,7 @@ public class DoStatement extends LoopStatement {
         sb.append("do {");
         sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append(" while(");
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(");\n");
         return sb.toString();
     }

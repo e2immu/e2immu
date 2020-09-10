@@ -100,7 +100,7 @@ public class Replacement {
         }
 
         private void recursivelyAddNamesCreated(Statement statement) {
-            Structure structure = statement.codeOrganization();
+            Structure structure = statement.getStructure();
             recursivelyAddNamesCreated(structure);
             for (Structure subCo : structure.subStatements) {
                 recursivelyAddNamesCreated(subCo);

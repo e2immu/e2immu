@@ -13,7 +13,7 @@ public class SwitchStatement extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatement(Expression selector, List<SwitchEntry> switchEntries) {
-        super(codeOrganization(selector, switchEntries));
+        super(codeOrganization(selector, switchEntries), selector);
         this.switchEntries = ImmutableList.copyOf(switchEntries);
     }
 
@@ -21,7 +21,7 @@ public class SwitchStatement extends StatementWithExpression {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
-        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
+        switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()).setStatementsExecutedAtLeastOnce(v -> false));
         boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
         builder.setNoBlockMayBeExecuted(haveNoDefault);
         return builder.build();
@@ -29,7 +29,7 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatement(translationMap.translateExpression(structure.expression),
+        return new SwitchStatement(translationMap.translateExpression(expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 
@@ -38,7 +38,7 @@ public class SwitchStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("switch(");
-        sb.append(structure.expression.expressionString(0));
+        sb.append(expression.expressionString(0));
         sb.append(") {\n");
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
@@ -52,6 +52,6 @@ public class SwitchStatement extends StatementWithExpression {
 
     @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(List.of(structure.expression), switchEntries);
+        return ListUtil.immutableConcat(List.of(expression), switchEntries);
     }
 }

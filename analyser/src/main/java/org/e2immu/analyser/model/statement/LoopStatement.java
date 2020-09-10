@@ -8,14 +8,14 @@ public abstract class LoopStatement extends StatementWithExpression {
     public final String label;
 
     protected LoopStatement(Structure structure, String label) {
-        super(structure);
+        super(structure, structure.expression);
         this.label = label;
     }
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         SideEffect blocksSideEffect = structure.block.sideEffect(evaluationContext);
-        SideEffect conditionSideEffect = structure.expression.sideEffect(evaluationContext);
+        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
@@ -23,6 +23,6 @@ public abstract class LoopStatement extends StatementWithExpression {
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(structure.expression, structure.block);
+        return List.of(expression, structure.block);
     }
 }

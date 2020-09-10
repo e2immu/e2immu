@@ -25,7 +25,7 @@ import org.e2immu.annotation.E2Container;
 @E2Container
 public interface Statement extends Element {
 
-    Structure codeOrganization();
+    Structure getStructure();
 
     @Override
     default Statement translate(TranslationMap translationMap) {

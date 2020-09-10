@@ -65,7 +65,7 @@ public class Lambda implements Expression {
         Statement statement = block.structure.statements.get(0);
         if (!(statement instanceof ReturnStatement)) return null;
         ReturnStatement returnStatement = (ReturnStatement) statement;
-        return returnStatement.structure.expression;
+        return returnStatement.expression;
     }
 
     // this is a functional interface

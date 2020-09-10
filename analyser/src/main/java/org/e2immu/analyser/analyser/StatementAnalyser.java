@@ -327,7 +327,7 @@ public class StatementAnalyser {
                                                          VariableProperties variableProperties) {
         boolean changes = false;
 
-        Structure structure = statement.statement.codeOrganization();
+        Structure structure = statement.statement.getStructure();
 
         boolean assignedInLoop = statement.statement instanceof LoopStatement;
 

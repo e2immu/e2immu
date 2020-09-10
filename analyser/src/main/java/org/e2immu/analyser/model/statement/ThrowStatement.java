@@ -26,12 +26,12 @@ public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
         super(new Structure.Builder().setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build());
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build(), expression);
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ThrowStatement(translationMap.translateExpression(structure.expression));
+        return new ThrowStatement(translationMap.translateExpression(expression));
     }
 
     @Override
@@ -39,7 +39,7 @@ public class ThrowStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("throw ");
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(";\n");
         return sb.toString();
     }
@@ -47,6 +47,6 @@ public class ThrowStatement extends StatementWithExpression {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         // at least static only
-        return SideEffect.STATIC_ONLY.combine(structure.expression.sideEffect(evaluationContext));
+        return SideEffect.STATIC_ONLY.combine(expression.sideEffect(evaluationContext));
     }
 }

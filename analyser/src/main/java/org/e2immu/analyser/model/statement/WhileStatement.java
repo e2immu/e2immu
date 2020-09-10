@@ -37,7 +37,7 @@ public class WhileStatement extends LoopStatement {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new WhileStatement(label, translationMap.translateExpression(structure.expression),
+        return new WhileStatement(label, translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block));
     }
 
@@ -49,7 +49,7 @@ public class WhileStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("while (");
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(")");
         sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");

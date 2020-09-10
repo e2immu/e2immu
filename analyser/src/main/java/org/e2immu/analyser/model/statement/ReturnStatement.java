@@ -31,7 +31,8 @@ import java.util.List;
 public class ReturnStatement extends StatementWithExpression {
 
     public ReturnStatement(Expression expression) {
-        super(new Structure.Builder().setExpression(expression).setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build());
+        super(new Structure.Builder().setExpression(expression).setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
+                expression);
     }
 
     @Override
@@ -39,9 +40,9 @@ public class ReturnStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("return");
-        if (structure.expression != EmptyExpression.EMPTY_EXPRESSION) {
+        if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             sb.append(" ");
-            sb.append(structure.expression.expressionString(indent));
+            sb.append(expression.expressionString(indent));
         }
         sb.append(";\n");
         return sb.toString();
@@ -49,28 +50,28 @@ public class ReturnStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ReturnStatement(translationMap.translateExpression(structure.expression));
+        return new ReturnStatement(translationMap.translateExpression(expression));
     }
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        if (structure.expression == EmptyExpression.EMPTY_EXPRESSION || isThis() || isFirstParameter(structure.expression)) {
+        if (expression == EmptyExpression.EMPTY_EXPRESSION || isThis() || isFirstParameter(expression)) {
             return SideEffect.STATIC_ONLY;
         }
         // at least NONE_PURE... unless the expression is tagged as "@Identity", then STATIC_ONLY is allowed
-        int identity = identityForSideEffect(structure.expression);
+        int identity = identityForSideEffect(expression);
         if (identity == Level.DELAY) return SideEffect.DELAYED;
         SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
-        return base.combine(structure.expression.sideEffect(evaluationContext));
+        return base.combine(expression.sideEffect(evaluationContext));
     }
 
     public int fluent() {
-        if (structure.expression instanceof VariableExpression) {
-            VariableExpression variableExpression = (VariableExpression) structure.expression;
+        if (expression instanceof VariableExpression) {
+            VariableExpression variableExpression = (VariableExpression) expression;
             if (variableExpression.variable instanceof This) return Level.TRUE;
         }
-        if (structure.expression instanceof MethodCall) {
-            MethodCall methodCall = (MethodCall) structure.expression;
+        if (expression instanceof MethodCall) {
+            MethodCall methodCall = (MethodCall) expression;
             return methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
         }
         return Level.FALSE;
@@ -94,12 +95,12 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     private boolean isThis() {
-        return (structure.expression instanceof VariableExpression) &&
-                ((VariableExpression) structure.expression).variable instanceof This;
+        return (expression instanceof VariableExpression) &&
+                ((VariableExpression) expression).variable instanceof This;
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(structure.expression);
+        return List.of(expression);
     }
 }

@@ -44,13 +44,13 @@ public class ForEachStatement extends LoopStatement {
     public Statement translate(TranslationMap translationMap) {
         return new ForEachStatement(label,
                 translationMap.translateLocalVariable(structure.localVariableCreation),
-                translationMap.translateExpression(structure.expression),
+                translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block));
     }
 
     @Override
     public Set<String> imports() {
-        return SetUtil.immutableUnion(structure.expression.imports(), structure.block.imports(),
+        return SetUtil.immutableUnion(expression.imports(), structure.block.imports(),
                 structure.localVariableCreation.imports());
     }
 
@@ -66,7 +66,7 @@ public class ForEachStatement extends LoopStatement {
         sb.append(" ");
         sb.append(structure.localVariableCreation.name);
         sb.append(" : ");
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(")");
         sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");

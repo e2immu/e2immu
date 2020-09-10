@@ -300,7 +300,7 @@ public class Pattern {
         }
 
         @Override
-        public Structure codeOrganization() {
+        public Structure getStructure() {
             throw new UnsupportedOperationException();
         }
 

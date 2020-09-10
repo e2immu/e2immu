@@ -120,7 +120,7 @@ public class PatternMatcher {
             assert currentNumberedStatement != null;
 
             // slower method, first computing code organization
-            Structure structure = template.codeOrganization();
+            Structure structure = template.getStructure();
             SimpleMatchResult isMatch = match(builder, structure, currentNumberedStatement);
             if (isMatch != SimpleMatchResult.YES) return isMatch;
 
@@ -149,7 +149,7 @@ public class PatternMatcher {
                                            Structure templateCo,
                                            NumberedStatement actualNs) {
         Statement actual = actualNs.statement;
-        Structure actualCo = actual.codeOrganization();
+        Structure actualCo = actual.getStructure();
         {
             SimpleMatchResult smr = match(builder, templateCo.expression, actualCo.expression);
             if (smr != SimpleMatchResult.YES) return smr;

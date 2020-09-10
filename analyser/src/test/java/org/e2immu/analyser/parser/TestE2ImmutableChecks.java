@@ -18,11 +18,15 @@
 package org.e2immu.analyser.parser;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValuePlaceholder;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.statement.Block;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -131,8 +135,17 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
     };
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if("E2Container7".equals(typeInfo.simpleName)) {
+        if ("E2Container7".equals(typeInfo.simpleName)) {
             Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
+
+            MethodInfo getMap7 = typeInfo.findUniqueMethod("getMap7", 0);
+            Block block = getMap7.methodInspection.get().methodBody.get();
+            Assert.assertEquals(3, block.structure.statements.size());
+            Statement statement1 = block.structure.statements.get(0);
+
+            Assert.assertTrue(statement1.getStructure().initialisers.get(0) instanceof LocalVariableCreation);
+            Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, statement1.getStructure().expression);
+            Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.statementString(0, null));
         }
     };
 

@@ -32,7 +32,7 @@ public abstract class StatementWithStructure implements Statement {
     }
 
     @Override
-    public Structure codeOrganization() {
+    public Structure getStructure() {
         return structure;
     }
 

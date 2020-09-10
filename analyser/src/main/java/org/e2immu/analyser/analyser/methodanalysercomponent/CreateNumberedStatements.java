@@ -38,7 +38,7 @@ public class CreateNumberedStatements {
 
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
-            Structure structure = statement.codeOrganization();
+            Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
                 blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, structure.getStatements());
             }

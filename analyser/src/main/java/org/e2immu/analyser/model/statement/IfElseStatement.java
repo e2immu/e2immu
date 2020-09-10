@@ -33,7 +33,7 @@ public class IfElseStatement extends StatementWithExpression {
     public IfElseStatement(Expression expression,
                            Block ifBlock,
                            Block elseBlock) {
-        super(createCodeOrganization(expression, ifBlock, elseBlock));
+        super(createCodeOrganization(expression, ifBlock, elseBlock), expression);
         this.elseBlock = elseBlock;
     }
 
@@ -57,7 +57,7 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new IfElseStatement(
-                translationMap.translateExpression(structure.expression),
+                translationMap.translateExpression(expression),
                 translationMap.translateBlock(structure.block),
                 translationMap.translateBlock(elseBlock));
     }
@@ -67,7 +67,7 @@ public class IfElseStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("if (");
-        sb.append(structure.expression.expressionString(indent));
+        sb.append(expression.expressionString(indent));
         sb.append(")");
         sb.append(structure.block.statementString(indent, startOfBlock(ns, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
@@ -84,7 +84,7 @@ public class IfElseStatement extends StatementWithExpression {
         if (elseBlock != Block.EMPTY_BLOCK) {
             blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
         }
-        SideEffect conditionSideEffect = structure.expression.sideEffect(evaluationContext);
+        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
@@ -93,8 +93,8 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         if (elseBlock == Block.EMPTY_BLOCK) {
-            return List.of(structure.expression, structure.block);
+            return List.of(expression, structure.block);
         }
-        return List.of(structure.expression, structure.block, elseBlock);
+        return List.of(expression, structure.block, elseBlock);
     }
 }
