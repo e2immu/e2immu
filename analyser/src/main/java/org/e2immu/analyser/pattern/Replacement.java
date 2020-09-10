@@ -115,7 +115,7 @@ public class Replacement {
                     }
                 }
             }
-            for (Statement sub : codeOrganization.statements.getStatements()) {
+            for (Statement sub : codeOrganization.getStatements()) {
                 recursivelyAddNamesCreated(sub);
             }
         }

@@ -24,26 +24,21 @@ import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
-public abstract class SwitchEntry implements Statement {
+public abstract class SwitchEntry extends StatementWithStructure {
 
     public final List<Expression> labels;
     public final Expression switchVariableAsExpression;
-    public final MethodInfo operator;
 
-    private SwitchEntry(Expression switchVariableAsExpression, List<Expression> labels) {
+    private SwitchEntry(CodeOrganization codeOrganization, Expression switchVariableAsExpression, List<Expression> labels) {
+        super(codeOrganization);
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
-        boolean primitive = switchVariableAsExpression.variables().get(0).concreteReturnType().isPrimitive();
-        operator = primitive ? Primitives.PRIMITIVES.equalsOperatorInt : Primitives.PRIMITIVES.equalsOperatorObject;
     }
 
     protected void appendLabels(StringBuilder sb, int indent, boolean java12Style, boolean newLine) {
@@ -67,39 +62,48 @@ public abstract class SwitchEntry implements Statement {
         }
     }
 
-    protected Expression generateConditionExpression() {
+    private static Expression generateConditionExpression(List<Expression> labels, Expression switchVariableAsExpression) {
         if (labels.isEmpty()) {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
-        Expression or = equality(labels.get(0));
+        MethodInfo operator = operator(switchVariableAsExpression);
+        Expression or = equality(labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool, equality(labels.get(i)), BinaryOperator.LOGICAL_OR_PRECEDENCE);
+            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool,
+                    equality(labels.get(i), switchVariableAsExpression, operator),
+                    BinaryOperator.LOGICAL_OR_PRECEDENCE);
         }
         return or;
     }
 
-    private Expression equality(Expression label) {
+    private static Expression equality(Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
         return new BinaryOperator(switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
     }
 
-    public abstract CodeOrganization codeOrganization();
+    private static MethodInfo operator(Expression switchVariableAsExpression) {
+        boolean primitive = switchVariableAsExpression.variables().get(0).concreteReturnType().isPrimitive();
+        return primitive ? Primitives.PRIMITIVES.equalsOperatorInt : Primitives.PRIMITIVES.equalsOperatorObject;
+    }
 
     public boolean isNotDefault() {
         return !labels.isEmpty();
     }
 
-    public static class StatementsEntry extends SwitchEntry implements HasStatements {
-        public final List<Statement> statements;
+    //****************************************************************************************************************
+
+    public static class StatementsEntry extends SwitchEntry {
         public final boolean java12Style;
 
         public StatementsEntry(Expression switchVariableAsExpression,
                                boolean java12Style,
                                List<Expression> labels,
                                List<Statement> statements) {
-            super(switchVariableAsExpression, labels);
+            super(new CodeOrganization.Builder()
+                    .setExpression(generateConditionExpression(labels, switchVariableAsExpression))
+                    .setStatements(statements == null ? List.of() : statements)
+                    .build(), switchVariableAsExpression, labels);
             this.java12Style = java12Style;
-            this.statements = statements;
         }
 
         @Override
@@ -107,15 +111,8 @@ public abstract class SwitchEntry implements Statement {
             return new StatementsEntry(translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    statements.stream().flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
-        }
-
-        @Override
-        public CodeOrganization codeOrganization() {
-            return new CodeOrganization.Builder()
-                    .setExpression(generateConditionExpression())
-                    .setStatements(statements == null || statements.isEmpty() ? null : this)
-                    .build();
+                    codeOrganization.statements.stream()
+                            .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
         }
 
         @Override
@@ -124,12 +121,12 @@ public abstract class SwitchEntry implements Statement {
 
             // TODO use the method from Block to catch replacements!
 
-            appendLabels(sb, indent, java12Style, statements.size() > 1);
-            if (statements.size() == 1) {
+            appendLabels(sb, indent, java12Style, codeOrganization.statements.size() > 1);
+            if (codeOrganization.statements.size() == 1) {
                 sb.append(" ");
-                sb.append(statements.get(0).statementString(0, numberedStatement));
+                sb.append(codeOrganization.statements.get(0).statementString(0, numberedStatement));
             } else {
-                for (Statement statement : statements) {
+                for (Statement statement : codeOrganization.statements) {
                     sb.append(statement.statementString(indent + 4, numberedStatement));
                 }
             }
@@ -137,47 +134,38 @@ public abstract class SwitchEntry implements Statement {
         }
 
         @Override
-        public List<Statement> getStatements() {
-            return statements;
-        }
-
-        @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, statements);
+            return ListUtil.immutableConcat(labels, codeOrganization.statements);
         }
     }
 
+    //****************************************************************************************************************
+
     public static class BlockEntry extends SwitchEntry {
-        public final Block block;
 
         public BlockEntry(Expression switchVariableAsExpression, List<Expression> labels, Block block) {
-            super(switchVariableAsExpression, labels);
-            this.block = block;
+            super(new CodeOrganization.Builder().setExpression(generateConditionExpression(labels, switchVariableAsExpression))
+                    .setBlock(block).build(), switchVariableAsExpression, labels);
         }
 
         @Override
         public Statement translate(TranslationMap translationMap) {
             return new BlockEntry(translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    translationMap.translateBlock(block));
+                    translationMap.translateBlock(codeOrganization.block));
         }
 
         @Override
         public String statementString(int indent, NumberedStatement numberedStatement) {
             StringBuilder sb = new StringBuilder();
             appendLabels(sb, indent, true, false);
-            sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+            sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
             return sb.toString();
         }
 
         @Override
-        public CodeOrganization codeOrganization() {
-            return new CodeOrganization.Builder().setExpression(generateConditionExpression()).setStatements(block).build();
-        }
-
-        @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, List.of(block));
+            return ListUtil.immutableConcat(labels, List.of(codeOrganization.block));
         }
     }
 }

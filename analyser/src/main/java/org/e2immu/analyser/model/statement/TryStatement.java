@@ -6,18 +6,14 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class TryStatement implements Statement {
+public class TryStatement extends StatementWithStructure {
     public final List<Expression> resources;
-    public final Block tryBlock;
     public final List<Pair<CatchParameter, Block>> catchClauses;
     public final Block finallyBlock;
     private final List<? extends Element> subElements;
@@ -26,18 +22,41 @@ public class TryStatement implements Statement {
                         Block tryBlock,
                         List<Pair<CatchParameter, Block>> catchClauses,
                         Block finallyBlock) {
+        super(codeOrganization(resources, tryBlock, catchClauses, finallyBlock));
         this.resources = ImmutableList.copyOf(resources);
-        this.tryBlock = tryBlock;
         this.catchClauses = ImmutableList.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
         subElements = ListUtil.immutableConcat(List.of(tryBlock), catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
                 finallyBlock == Block.EMPTY_BLOCK ? List.of() : List.of(finallyBlock));
     }
 
+    private static CodeOrganization codeOrganization(List<Expression> resources,
+                                                     Block tryBlock,
+                                                     List<Pair<CatchParameter, Block>> catchClauses,
+                                                     Block finallyBlock) {
+        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setBlock(tryBlock)
+                .setNoBlockMayBeExecuted(false); //there's always the main block
+        for (Pair<CatchParameter, Block> pair : catchClauses) {
+            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable)
+                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setBlock(pair.v).build());
+        }
+        if (finallyBlock != null) {
+            builder.addSubStatement(new CodeOrganization.Builder()
+                    .setExpression(EmptyExpression.FINALLY_EXPRESSION)
+                    .setBlock(finallyBlock)
+                    .setStatementsExecutedAtLeastOnce(v -> true)
+                    .build());
+        }
+        return builder.build();
+    }
+
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new TryStatement(resources.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(tryBlock),
+                translationMap.translateBlock(codeOrganization.block),
                 catchClauses.stream().map(p -> new Pair<>(
                         TranslationMap.ensureExpressionType(p.k.translate(translationMap), CatchParameter.class),
                         translationMap.translateBlock(p.v))).collect(Collectors.toList()),
@@ -46,6 +65,7 @@ public class TryStatement implements Statement {
 
     public static class CatchParameter implements Expression {
         public final LocalVariable localVariable;
+
         public final List<ParameterizedType> unionOfTypes;
 
         public CatchParameter(LocalVariable localVariable, List<ParameterizedType> unionOfTypes) {
@@ -83,6 +103,7 @@ public class TryStatement implements Statement {
         public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
         }
+
     }
 
     @Override
@@ -95,7 +116,7 @@ public class TryStatement implements Statement {
             sb.append(resources.stream().map(r -> r.expressionString(0)).collect(Collectors.joining("; ")));
             sb.append(")");
         }
-        sb.append(tryBlock.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
+        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             sb.append(" catch(");
@@ -113,29 +134,8 @@ public class TryStatement implements Statement {
     }
 
     @Override
-    public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder().addInitialisers(resources)
-                .setStatementsExecutedAtLeastOnce(v -> true)
-                .setStatements(tryBlock)
-                .setNoBlockMayBeExecuted(false); //there's always the main block
-        for (Pair<CatchParameter, Block> pair : catchClauses) {
-            builder.addSubStatement(new CodeOrganization.Builder().setLocalVariableCreation(pair.k.localVariable)
-                    .setStatementsExecutedAtLeastOnce(v -> false)
-                    .setStatements(pair.v).build());
-        }
-        if (finallyBlock != null) {
-            builder.addSubStatement(new CodeOrganization.Builder()
-                    .setExpression(EmptyExpression.FINALLY_EXPRESSION)
-                    .setStatements(finallyBlock)
-                    .setStatementsExecutedAtLeastOnce(v -> true)
-                    .build());
-        }
-        return builder.build();
-    }
-
-    @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        return tryBlock.sideEffect(evaluationContext);
+        return codeOrganization.block.sideEffect(evaluationContext);
     }
 
     @Override

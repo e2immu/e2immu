@@ -106,11 +106,6 @@ public class ArrayAccess implements Expression {
         return value;
     }
 
-    @Override
-    public List<Variable> variablesInScopeSide() {
-        return expression.variables();
-    }
-
     public static String dependentVariableName(Value array, Value index) {
         return array.toString() + "[" + index.toString() + "]";
     }

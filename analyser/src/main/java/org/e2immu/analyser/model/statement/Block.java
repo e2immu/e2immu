@@ -33,16 +33,17 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-public class Block implements Statement, HasStatements {
+public class Block extends StatementWithStructure {
     public static final Block EMPTY_BLOCK = new Block(List.of(), null);
     public final String label;
-
-    @NotNull
-    public final List<Statement> statements;
+    public final CodeOrganization codeOrganization;
 
     private Block(@NotNull List<Statement> statements, String label) {
+        codeOrganization = new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setNoBlockMayBeExecuted(false)
+                .setStatements(statements).build();
         this.label = label;
-        this.statements = statements;
     }
 
     @Container(builds = Block.class)
@@ -80,11 +81,11 @@ public class Block implements Statement, HasStatements {
         }
         sb.append(" {");
         if (numberedStatement == null) {
-            if (statements.isEmpty()) {
+            if (codeOrganization.statements.isEmpty()) {
                 sb.append(" }\n");
             } else {
                 sb.append("\n");
-                for (Statement statement : statements) {
+                for (Statement statement : codeOrganization.statements) {
                     sb.append(statement.statementString(indent + 4, null));
                 }
                 StringUtil.indent(sb, indent);
@@ -121,43 +122,32 @@ public class Block implements Statement, HasStatements {
         return sb.toString();
     }
 
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> true)
-                .setNoBlockMayBeExecuted(false)
-                .setStatements(this).build();
-    }
-
-    @Override
-    public List<Statement> getStatements() {
-        return statements;
-    }
-
     public ParameterizedType mostSpecificReturnType() {
         AtomicReference<ParameterizedType> mostSpecific = new AtomicReference<>();
         visit(statement -> {
             if (statement instanceof ReturnStatement) {
                 ReturnStatement returnStatement = (ReturnStatement) statement;
-                if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
+                if (returnStatement.codeOrganization.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(Primitives.PRIMITIVES.voidParameterizedType);
                 } else {
-                    ParameterizedType returnType = returnStatement.expression.returnType();
+                    ParameterizedType returnType = returnStatement.codeOrganization.expression.returnType();
                     mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(returnType));
                 }
             }
         });
-        return mostSpecific.get() == null ? Primitives.PRIMITIVES.voidParameterizedType: mostSpecific.get();
+        return mostSpecific.get() == null ? Primitives.PRIMITIVES.voidParameterizedType : mostSpecific.get();
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return getStatements();
+        return codeOrganization.statements;
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
-        return new Block(statements.stream().flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()), label);
+        return new Block(codeOrganization.statements.stream()
+                .flatMap(st -> translationMap.translateStatement(st).stream())
+                .collect(Collectors.toList()), label);
     }
 }

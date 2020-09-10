@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class LocalClassDeclaration implements Statement {
+public class LocalClassDeclaration extends StatementWithStructure {
     public final TypeInfo typeInfo;
 
     public LocalClassDeclaration(TypeInfo typeInfo) {

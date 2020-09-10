@@ -29,9 +29,7 @@ import java.util.stream.Stream;
 @E2Container
 public interface Statement extends Element {
 
-    default CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().build();
-    }
+    CodeOrganization codeOrganization();
 
     @Override
     default Statement translate(TranslationMap translationMap) {

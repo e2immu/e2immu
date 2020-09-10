@@ -18,9 +18,9 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
             Block block = sam.methodInspection.get().methodBody.get();
-            Assert.assertEquals(1, block.statements.size());
-            ReturnStatement returnStatement = (ReturnStatement) block.statements.get(0);
-            Assert.assertEquals("myCounter.add(t)", returnStatement.expression.expressionString(0));
+            Assert.assertEquals(1, block.codeOrganization.statements.size());
+            ReturnStatement returnStatement = (ReturnStatement) block.codeOrganization.statements.get(0);
+            Assert.assertEquals("myCounter.add(t)", returnStatement.codeOrganization.expression.expressionString(0));
         }
 
         if("getAndAdd".equals(fieldInfo.name)) {
@@ -36,9 +36,9 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         if ("getAndIncrement".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
             Block block = sam.methodInspection.get().methodBody.get();
-            Assert.assertEquals(1, block.statements.size());
-            ReturnStatement returnStatement = (ReturnStatement) block.statements.get(0);
-            Assert.assertEquals("myCounter.increment()", returnStatement.expression.expressionString(0));
+            Assert.assertEquals(1, block.codeOrganization.statements.size());
+            ReturnStatement returnStatement = (ReturnStatement) block.codeOrganization.statements.get(0);
+            Assert.assertEquals("myCounter.increment()", returnStatement.codeOrganization.expression.expressionString(0));
         }
         if ("explicitGetAndIncrement".equals(fieldInfo.name)) {
             MethodInfo get = fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;

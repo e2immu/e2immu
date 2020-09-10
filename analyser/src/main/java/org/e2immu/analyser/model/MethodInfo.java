@@ -593,7 +593,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Set<ParameterizedType> result = new HashSet<>();
         Consumer<Element> statementVisitor = statement -> {
             if (statement instanceof StatementWithExpression) {
-                Expression expression = ((StatementWithExpression) statement).expression;
+                Expression expression = ((StatementWithExpression) statement).codeOrganization.expression;
 
                 result.addAll(expression.collect(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
 

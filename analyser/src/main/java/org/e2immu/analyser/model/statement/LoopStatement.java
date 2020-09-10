@@ -9,19 +9,17 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 public abstract class LoopStatement extends StatementWithExpression {
-    public final Block block;
     public final String label;
 
-    protected LoopStatement(String label, Expression condition, Block block) {
-        super(condition, ForwardEvaluationInfo.NOT_NULL);
+    protected LoopStatement(CodeOrganization codeOrganization, String label) {
+        super(codeOrganization);
         this.label = label;
-        this.block = Objects.requireNonNull(block);
     }
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect blocksSideEffect = block.sideEffect(evaluationContext);
-        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
+        SideEffect blocksSideEffect = codeOrganization.block.sideEffect(evaluationContext);
+        SideEffect conditionSideEffect = codeOrganization.expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
@@ -29,6 +27,6 @@ public abstract class LoopStatement extends StatementWithExpression {
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(expression, block);
+        return List.of(codeOrganization.expression, codeOrganization.block);
     }
 }

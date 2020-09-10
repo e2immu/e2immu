@@ -30,7 +30,9 @@ public class CodeOrganization {
     public final ForwardEvaluationInfo forwardEvaluationInfo; // info on the expression to be evaluated
     public final List<Expression> updaters; // for, explicit constructor invocation
 
-    public final HasStatements statements;  // block in loops, statements or block in switch statement
+    public final List<Statement> statements;
+    public final Block block;
+
     @NotNull
     public final Predicate<Value> statementsExecutedAtLeastOnce;
 
@@ -45,7 +47,8 @@ public class CodeOrganization {
                              @NotNull Expression expression,
                              @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
                              @NotNull List<Expression> updaters,
-                             HasStatements statements,
+                             Block block,
+                             List<Statement> statements,
                              @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
                              List<CodeOrganization> subStatements,
                              boolean noBlockMayBeExecuted) {
@@ -54,17 +57,28 @@ public class CodeOrganization {
         this.expression = Objects.requireNonNull(expression);
         this.forwardEvaluationInfo = Objects.requireNonNull(forwardEvaluationInfo);
         this.updaters = Objects.requireNonNull(updaters);
-        this.statements = Objects.requireNonNull(statements);
-        if (this.statements.getStatements().isEmpty() && this.statements != Block.EMPTY_BLOCK) {
-            throw new UnsupportedOperationException();
-        }
+        this.statements = statements;
+        this.block = block;
+        if (block != null && statements != null)
+            throw new UnsupportedOperationException("Either block, or statements, but not both");
+        if(block != null && block.codeOrganization.statements == null) throw new UnsupportedOperationException();
         this.subStatements = Objects.requireNonNull(subStatements);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
     }
 
-    public boolean haveSubBlocks() {
-        return statements != Block.EMPTY_BLOCK || !subStatements.isEmpty();
+    public List<Statement> getStatements() {
+        if (block != null) return block.codeOrganization.statements;
+        return statements == null ? List.of() : statements;
+    }
+
+    public boolean haveStatements() {
+        if (block != null) return !block.codeOrganization.statements.isEmpty();
+        return statements != null && !statements.isEmpty();
+    }
+
+    public boolean haveNonEmptyBlock() {
+        return block != null && block != Block.EMPTY_BLOCK;
     }
 
     public static class Builder {
@@ -74,7 +88,8 @@ public class CodeOrganization {
         private ForwardEvaluationInfo forwardEvaluationInfo;
         private final List<Expression> updaters = new ArrayList<>(); // for
         private Predicate<Value> statementsExecutedAtLeastOnce;
-        private HasStatements statements;  // block in loops, statements or block in switch statement
+        private List<Statement> statements;  // switch statement, block itself
+        private Block block;
         private final List<CodeOrganization> subStatements = new ArrayList<>(); // catches, finally, switch entries
         private boolean noBlockMayBeExecuted = true;
 
@@ -98,7 +113,7 @@ public class CodeOrganization {
             return this;
         }
 
-        public Builder setStatements(HasStatements statements) {
+        public Builder setStatements(List<Statement> statements) {
             this.statements = statements;
             return this;
         }
@@ -123,6 +138,11 @@ public class CodeOrganization {
             return this;
         }
 
+        public Builder setBlock(Block block) {
+            this.block = block;
+            return this;
+        }
+
         @NotNull
         public CodeOrganization build() {
             return new CodeOrganization(ImmutableList.copyOf(initialisers),
@@ -130,7 +150,8 @@ public class CodeOrganization {
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     forwardEvaluationInfo == null ? ForwardEvaluationInfo.DEFAULT : forwardEvaluationInfo,
                     ImmutableList.copyOf(updaters),
-                    statements == null ? Block.EMPTY_BLOCK : statements,
+                    block,
+                    statements == null ? null : ImmutableList.copyOf(statements),
                     statementsExecutedAtLeastOnce == null ? v -> false : statementsExecutedAtLeastOnce,
                     ImmutableList.copyOf(subStatements),
                     noBlockMayBeExecuted);

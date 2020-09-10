@@ -541,7 +541,7 @@ public class StatementAnalyser {
 
         int start;
 
-        if (codeOrganization.statements != Block.EMPTY_BLOCK) {
+        if (codeOrganization.haveNonEmptyBlock()) {
             NumberedStatement startOfFirstBlock = startOfBlocks.get(0);
             boolean statementsExecutedAtLeastOnce = codeOrganization.statementsExecutedAtLeastOnce.test(value);
 
@@ -632,7 +632,7 @@ public class StatementAnalyser {
         }
 
         // we don't want to set the value for break statements themselves; that happens higher up
-        if (codeOrganization.haveSubBlocks() && !statement.breakAndContinueStatements.isSet()) {
+        if (haveSubBlocks(codeOrganization) && !statement.breakAndContinueStatements.isSet()) {
             statement.breakAndContinueStatements.set(breakOrContinueStatementsInChildren);
         }
 
@@ -648,6 +648,12 @@ public class StatementAnalyser {
         }
 
         return changes;
+    }
+
+    private static boolean haveSubBlocks(CodeOrganization codeOrganization) {
+        return codeOrganization.haveNonEmptyBlock() ||
+                codeOrganization.statements != null && !codeOrganization.statements.isEmpty() ||
+                !codeOrganization.subStatements.isEmpty();
     }
 
     private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties variableProperties) {

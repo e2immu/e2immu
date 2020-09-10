@@ -88,11 +88,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public List<Variable> variablesInScopeSide() {
-        return scope.variables();
-    }
-
-    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 

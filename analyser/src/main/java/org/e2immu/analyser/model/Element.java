@@ -33,7 +33,7 @@ public interface Element {
         return List.of();
     }
 
-    // search
+    // search; do not override
 
     default void visit(Consumer<Element> consumer) {
         subElements().forEach(element -> element.visit(consumer));

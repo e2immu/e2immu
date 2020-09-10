@@ -64,11 +64,11 @@ public class Lambda implements Expression {
     }
 
     private Expression singleExpression() {
-        if (block.statements.size() != 1) return null;
-        Statement statement = block.statements.get(0);
+        if (block.codeOrganization.statements.size() != 1) return null;
+        Statement statement = block.codeOrganization.statements.get(0);
         if (!(statement instanceof ReturnStatement)) return null;
         ReturnStatement returnStatement = (ReturnStatement) statement;
-        return returnStatement.expression;
+        return returnStatement.codeOrganization.expression;
     }
 
     // this is a functional interface
@@ -84,7 +84,7 @@ public class Lambda implements Expression {
         if (singleExpression != null) {
             blockString = singleExpression.expressionString(indent);
         } else {
-            if (block.statements.isEmpty()) blockString = "{ }";
+            if (block.codeOrganization.statements.isEmpty()) blockString = "{ }";
             else {
                 List<NumberedStatement> statements = methodInfo.methodAnalysis.get().numberedStatements.get();
                 NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);

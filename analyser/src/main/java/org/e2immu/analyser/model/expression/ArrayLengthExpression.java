@@ -63,11 +63,6 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public List<Variable> variablesInScopeSide() {
-        return scope.variables();
-    }
-
-    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Value v = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
         Value result;

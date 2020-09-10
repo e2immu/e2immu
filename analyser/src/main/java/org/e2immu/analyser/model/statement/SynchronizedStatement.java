@@ -20,28 +20,26 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class SynchronizedStatement extends StatementWithExpression {
-    public final Block block;
 
     public SynchronizedStatement(Expression expression,
                                  Block block) {
-        super(expression, ForwardEvaluationInfo.NOT_NULL);
-        Objects.requireNonNull(block);
-        // elseBlock may be absent
-        this.block = block;
+        super(new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setNoBlockMayBeExecuted(false)
+                .setBlock(block).build());
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SynchronizedStatement(translationMap.translateExpression(expression),
-                translationMap.translateBlock(block));
+        return new SynchronizedStatement(translationMap.translateExpression(codeOrganization.expression),
+                translationMap.translateBlock(codeOrganization.block));
     }
 
     @Override
@@ -49,25 +47,15 @@ public class SynchronizedStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("synchronized (");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(")");
-        sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }
 
     @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setStatementsExecutedAtLeastOnce(v -> true)
-                .setNoBlockMayBeExecuted(false)
-                .setStatements(block).build();
-    }
-
-    @Override
     public List<? extends Element> subElements() {
-        return List.of(expression, block);
+        return List.of(codeOrganization.expression, codeOrganization.block);
     }
 }

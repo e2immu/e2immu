@@ -7,7 +7,7 @@ import org.e2immu.analyser.util.StringUtil;
 import java.util.Map;
 import java.util.Set;
 
-public class EmptyStatement implements Statement {
+public class EmptyStatement extends StatementWithStructure {
     public static final EmptyStatement EMPTY_STATEMENT = new EmptyStatement();
 
     private EmptyStatement() {

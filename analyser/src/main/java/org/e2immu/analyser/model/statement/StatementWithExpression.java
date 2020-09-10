@@ -24,25 +24,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public abstract class StatementWithExpression implements Statement {
-    public final Expression expression;
-    public final ForwardEvaluationInfo forwardEvaluationInfo;
+public abstract class StatementWithExpression extends StatementWithStructure {
 
-    protected StatementWithExpression(Expression expression, ForwardEvaluationInfo forwardEvaluationInfo) {
-        this.expression = Objects.requireNonNull(expression);
-        this.forwardEvaluationInfo = forwardEvaluationInfo;
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setForwardEvaluationInfo(forwardEvaluationInfo)
-                .setExpression(expression)
-                .build();
-    }
-
-    @Override
-    public List<? extends Element> subElements() {
-        return List.of(expression);
+    protected StatementWithExpression(CodeOrganization codeOrganization) {
+        super(codeOrganization);
     }
 }

@@ -24,28 +24,41 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import static org.e2immu.analyser.analyser.NumberedStatement.startOfBlock;
 
 public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;
-    public final Block ifBlock;
 
     public IfElseStatement(Expression expression,
                            Block ifBlock,
                            Block elseBlock) {
-        super(expression, ForwardEvaluationInfo.NOT_NULL);
-        this.ifBlock = ifBlock;
+        super(createCodeOrganization(expression, ifBlock, elseBlock));
         this.elseBlock = elseBlock;
+    }
+
+    // note that we add the expression only once
+    private static CodeOrganization createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
+        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setBlock(ifBlock)
+                .setStatementsExecutedAtLeastOnce(v -> false);
+        if (elseBlock != Block.EMPTY_BLOCK) {
+            builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
+                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setBlock(elseBlock)
+                    .build())
+                    .setNoBlockMayBeExecuted(false); // either the if or the else block, but one shall be executed
+        }
+        return builder.build();
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new IfElseStatement(
-                translationMap.translateExpression(expression),
-                translationMap.translateBlock(ifBlock),
+                translationMap.translateExpression(codeOrganization.expression),
+                translationMap.translateBlock(codeOrganization.block),
                 translationMap.translateBlock(elseBlock));
     }
 
@@ -54,9 +67,9 @@ public class IfElseStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("if (");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(")");
-        sb.append(ifBlock.statementString(indent, startOfBlock(ns, 0)));
+        sb.append(codeOrganization.block.statementString(indent, startOfBlock(ns, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             sb.append(" else");
             sb.append(elseBlock.statementString(indent, startOfBlock(ns, 1)));
@@ -65,31 +78,13 @@ public class IfElseStatement extends StatementWithExpression {
         return sb.toString();
     }
 
-    // note that we add the expression only once
-    @Override
-    public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder()
-                .setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setStatements(ifBlock)
-                .setStatementsExecutedAtLeastOnce(v -> false);
-        if (elseBlock != Block.EMPTY_BLOCK) {
-            builder.addSubStatement(new CodeOrganization.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
-                    .setStatementsExecutedAtLeastOnce(v -> false)
-                    .setStatements(elseBlock)
-                    .build())
-                    .setNoBlockMayBeExecuted(false); // either the if or the else block, but one shall be executed
-        }
-        return builder.build();
-    }
-
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect blocksSideEffect = ifBlock.sideEffect(evaluationContext);
+        SideEffect blocksSideEffect = codeOrganization.block.sideEffect(evaluationContext);
         if (elseBlock != Block.EMPTY_BLOCK) {
             blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
         }
-        SideEffect conditionSideEffect = expression.sideEffect(evaluationContext);
+        SideEffect conditionSideEffect = codeOrganization.expression.sideEffect(evaluationContext);
         if (blocksSideEffect == SideEffect.STATIC_ONLY && conditionSideEffect.lessThan(SideEffect.SIDE_EFFECT))
             return SideEffect.STATIC_ONLY;
         return conditionSideEffect.combine(blocksSideEffect);
@@ -98,8 +93,8 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         if (elseBlock == Block.EMPTY_BLOCK) {
-            return List.of(expression, ifBlock);
+            return List.of(codeOrganization.expression, codeOrganization.block);
         }
-        return List.of(expression, ifBlock, elseBlock);
+        return List.of(codeOrganization.expression, codeOrganization.block, elseBlock);
     }
 }

@@ -136,11 +136,6 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public List<Variable> variablesInScopeSide() {
-        return target.variablesInScopeSide();
-    }
-
-    @Override
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         Variable at;
         if (target instanceof ArrayAccess) {

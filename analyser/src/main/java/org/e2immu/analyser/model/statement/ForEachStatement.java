@@ -18,48 +18,40 @@
 
 package org.e2immu.analyser.model.statement;
 
-import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
-import java.util.Map;
 import java.util.Set;
 
 public class ForEachStatement extends LoopStatement {
-    public final LocalVariable localVariable;
-
     public ForEachStatement(String label,
                             LocalVariable localVariable,
                             Expression expression,
                             Block block) {
-        super(label, expression, block);
-        this.localVariable = localVariable;
-    }
-
-    @Override
-    public Statement translate(TranslationMap translationMap) {
-        return new ForEachStatement(label,
-                translationMap.translateLocalVariable(localVariable),
-                translationMap.translateExpression(expression),
-                translationMap.translateBlock(block));
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
+        super(new CodeOrganization.Builder()
                 .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)
-                .setStatements(block).build();
+                .setBlock(block).build(), label);
+    }
+
+
+    @Override
+    public Statement translate(TranslationMap translationMap) {
+        return new ForEachStatement(label,
+                translationMap.translateLocalVariable(codeOrganization.localVariableCreation),
+                translationMap.translateExpression(codeOrganization.expression),
+                translationMap.translateBlock(codeOrganization.block));
     }
 
     @Override
     public Set<String> imports() {
-        return SetUtil.immutableUnion(expression.imports(), block.imports(), localVariable.imports());
+        return SetUtil.immutableUnion(codeOrganization.expression.imports(), codeOrganization.block.imports(),
+                codeOrganization.localVariableCreation.imports());
     }
 
     @Override
@@ -70,13 +62,13 @@ public class ForEachStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("for (");
-        sb.append(localVariable.parameterizedType.stream());
+        sb.append(codeOrganization.localVariableCreation.parameterizedType.stream());
         sb.append(" ");
-        sb.append(localVariable.name);
+        sb.append(codeOrganization.localVariableCreation.name);
         sb.append(" : ");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(")");
-        sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }

@@ -172,18 +172,18 @@ public class PatternMatcher {
         // primary block
         int numActualBlocks = actualNs.blocks.get().size();
         int blocksPresent = 0;
-        if (templateCo.statements instanceof Block) {
-            if (templateCo.statements == Block.EMPTY_BLOCK) {
+        if (templateCo.block != null) {
+            if (templateCo.block == Block.EMPTY_BLOCK) {
                 if (numActualBlocks > 0) return SimpleMatchResult.NO;
             } else {
                 if (numActualBlocks == 0) return SimpleMatchResult.NO;
                 ++blocksPresent;
                 NumberedStatement firstInBlock = actualNs.blocks.get().get(0);
-                SimpleMatchResult smr = match(builder, templateCo.statements.getStatements(),
+                SimpleMatchResult smr = match(builder, templateCo.getStatements(),
                         firstInBlock);
                 if (smr != SimpleMatchResult.YES) return smr;
             }
-        } else if (!templateCo.statements.getStatements().isEmpty()) {
+        } else if (templateCo.statements != null && !templateCo.statements.isEmpty()) {
             // TODO statements in a switch, between two cases.
         }
         // else block, blocks in switch, try
@@ -191,7 +191,7 @@ public class PatternMatcher {
         for (CodeOrganization subCo : templateCo.subStatements) {
             if (numActualBlocks <= blockCount) return SimpleMatchResult.NO;
             NumberedStatement firstInBlock = actualNs.blocks.get().get(blockCount);
-            SimpleMatchResult smr = match(builder, subCo.statements.getStatements(), firstInBlock);
+            SimpleMatchResult smr = match(builder, subCo.getStatements(), firstInBlock);
             if (smr != SimpleMatchResult.YES) return smr;
             ++blocksPresent;
             // TODO next to the statements, we also have to test the expressions for switch, catch

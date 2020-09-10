@@ -3,9 +3,7 @@ package org.e2immu.analyser.analyser.methodanalysercomponent;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.CodeOrganization;
-import org.e2immu.analyser.model.HasStatements;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
@@ -41,12 +39,12 @@ public class CreateNumberedStatements {
             int blockIndex = 0;
             List<NumberedStatement> blocks = new ArrayList<>();
             CodeOrganization codeOrganization = statement.codeOrganization();
-            if (codeOrganization.statements != Block.EMPTY_BLOCK) {
-                blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, codeOrganization.statements);
+            if (codeOrganization.haveStatements()) {
+                blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, codeOrganization.getStatements());
             }
             for (CodeOrganization subStatements : codeOrganization.subStatements) {
-                if (subStatements.statements != Block.EMPTY_BLOCK) {
-                    blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, subStatements.statements);
+                if (subStatements.haveStatements()) {
+                    blockIndex = createBlock(numberedStatement, indices, numberedStatements, blockIndex, blocks, subStatements.getStatements());
                 }
             }
             numberedStatement.blocks.set(ImmutableList.copyOf(blocks));
@@ -64,10 +62,10 @@ public class CreateNumberedStatements {
                                    List<NumberedStatement> numberedStatements,
                                    int blockIndex,
                                    @NotNull List<NumberedStatement> blocks,
-                                   @NotNull HasStatements statements) {
+                                   @NotNull List<Statement> statements) {
         indices.push(blockIndex);
         NumberedStatement firstOfBlock =
-                recursivelyCreateNumberedStatements(parent, statements.getStatements(), indices, numberedStatements, true);
+                recursivelyCreateNumberedStatements(parent, statements, indices, numberedStatements, true);
         blocks.add(firstOfBlock);
         indices.pop();
         return blockIndex + 1;

@@ -28,24 +28,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 // this( )
-public class ExplicitConstructorInvocation implements Statement {
-
-    public final List<Expression> parameterExpressions;
+public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     public ExplicitConstructorInvocation(List<Expression> parameterExpressions) {
-        this.parameterExpressions = parameterExpressions;
+        super(new CodeOrganization.Builder().setUpdaters(parameterExpressions).build());
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(parameterExpressions.stream()
+        return new ExplicitConstructorInvocation(codeOrganization.updaters.stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setUpdaters(parameterExpressions).build();
     }
 
     @Override
@@ -53,7 +46,7 @@ public class ExplicitConstructorInvocation implements Statement {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("this(")
-                .append(parameterExpressions.stream()
+                .append(codeOrganization.updaters.stream()
                         .map(e -> e.expressionString(indent)).collect(Collectors.joining(", ")))
                 .append(");\n");
         return sb.toString();
@@ -61,6 +54,6 @@ public class ExplicitConstructorInvocation implements Statement {
 
     @Override
     public List<? extends Element> subElements() {
-        return parameterExpressions;
+        return codeOrganization.updaters;
     }
 }

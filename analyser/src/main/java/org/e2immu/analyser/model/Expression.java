@@ -18,13 +18,10 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 // at the moment we're modifying evaluation context, we want to be @E2Container
 public interface Expression extends Element {
@@ -57,14 +54,6 @@ public interface Expression extends Element {
             return "(" + expression.expressionString(indent) + ")";
         }
         return expression.expressionString(indent);
-    }
-
-    /**
-     * @return variables in the scope side of THIS expression (not sub-expressions!)
-     */
-    @NotModified
-    default List<Variable> variablesInScopeSide() {
-        return List.of();
     }
 
     @NotModified

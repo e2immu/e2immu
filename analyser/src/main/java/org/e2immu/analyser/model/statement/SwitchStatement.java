@@ -14,13 +14,23 @@ public class SwitchStatement extends StatementWithExpression {
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatement(Expression selector, List<SwitchEntry> switchEntries) {
-        super(selector, ForwardEvaluationInfo.NOT_NULL);
+        super(codeOrganization(selector, switchEntries));
         this.switchEntries = ImmutableList.copyOf(switchEntries);
+    }
+
+    private static CodeOrganization codeOrganization(Expression expression, List<SwitchEntry> switchEntries) {
+        CodeOrganization.Builder builder = new CodeOrganization.Builder()
+                .setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
+        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
+        boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
+        builder.setNoBlockMayBeExecuted(haveNoDefault);
+        return builder.build();
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SwitchStatement(translationMap.translateExpression(expression),
+        return new SwitchStatement(translationMap.translateExpression(codeOrganization.expression),
                 switchEntries.stream().map(se -> (SwitchEntry) se.translate(translationMap)).collect(Collectors.toList()));
     }
 
@@ -29,7 +39,7 @@ public class SwitchStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("switch(");
-        sb.append(expression.expressionString(0));
+        sb.append(codeOrganization.expression.expressionString(0));
         sb.append(") {\n");
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
@@ -42,18 +52,7 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public CodeOrganization codeOrganization() {
-        CodeOrganization.Builder builder = new CodeOrganization.Builder()
-                .setExpression(expression)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
-        switchEntries.forEach(se -> builder.addSubStatement(se.codeOrganization()).setStatementsExecutedAtLeastOnce(v -> false));
-        boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
-        builder.setNoBlockMayBeExecuted(haveNoDefault);
-        return builder.build();
-    }
-
-    @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(List.of(expression), switchEntries);
+        return ListUtil.immutableConcat(List.of(codeOrganization.expression), switchEntries);
     }
 }

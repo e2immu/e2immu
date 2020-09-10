@@ -28,12 +28,13 @@ import java.util.Map;
 public class ThrowStatement extends StatementWithExpression {
 
     public ThrowStatement(Expression expression) {
-        super(expression, ForwardEvaluationInfo.NOT_NULL);
+        super(new CodeOrganization.Builder().setExpression(expression)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL).build());
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ThrowStatement(translationMap.translateExpression(expression));
+        return new ThrowStatement(translationMap.translateExpression(codeOrganization.expression));
     }
 
     @Override
@@ -41,7 +42,7 @@ public class ThrowStatement extends StatementWithExpression {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("throw ");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(";\n");
         return sb.toString();
     }
@@ -49,6 +50,6 @@ public class ThrowStatement extends StatementWithExpression {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         // at least static only
-        return SideEffect.STATIC_ONLY.combine(expression.sideEffect(evaluationContext));
+        return SideEffect.STATIC_ONLY.combine(codeOrganization.expression.sideEffect(evaluationContext));
     }
 }

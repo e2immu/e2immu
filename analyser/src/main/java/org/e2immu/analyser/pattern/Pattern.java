@@ -299,6 +299,11 @@ public class Pattern {
         }
 
         @Override
+        public CodeOrganization codeOrganization() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Statement translate(TranslationMap translationMap) {
             return null;
         }

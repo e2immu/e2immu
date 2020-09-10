@@ -92,7 +92,7 @@ public class MethodInspection extends Inspection {
     }
 
     public boolean haveCodeBlock() {
-        return methodBody.isSet() && !methodBody.get().statements.isEmpty() ||
+        return methodBody.isSet() && !methodBody.get().codeOrganization.statements.isEmpty() ||
                 !methodBody.isSet() && !methodBody.getFirst().getStatements().isEmpty();
     }
 

@@ -2,33 +2,24 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
-public class AssertStatement implements Statement {
+public class AssertStatement extends StatementWithStructure {
 
-    public final Expression check;
     public final Expression message; // can be null
 
     public AssertStatement(Expression check, Expression message) {
-        this.check = check;
+        // IMPORTANT NOTE: we're currently NOT adding message!
+        // we regard it as external to the code
+        super(new CodeOrganization.Builder().setExpression(check).build());
         this.message = message;
-    }
-
-    // we're currently NOT adding message!
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder().setExpression(check).build();
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new AssertStatement(translationMap.translateExpression(check), translationMap.translateExpression(message));
+        return new AssertStatement(translationMap.translateExpression(codeOrganization.expression), message);
     }
 
     @Override
@@ -36,7 +27,7 @@ public class AssertStatement implements Statement {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("assert ");
-        sb.append(check.expressionString(0));
+        sb.append(codeOrganization.expression.expressionString(0));
         if (message != null) {
             sb.append(", ");
             sb.append(message.expressionString(0));
@@ -47,6 +38,6 @@ public class AssertStatement implements Statement {
 
     @Override
     public List<? extends Element> subElements() {
-        return message == null ? List.of(check) : List.of(check, message);
+        return List.of(codeOrganization.expression);
     }
 }

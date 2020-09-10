@@ -29,39 +29,39 @@ import java.util.List;
 public class ExpressionAsStatement extends StatementWithExpression {
 
     public ExpressionAsStatement(Expression expression) {
-        super(expression, ForwardEvaluationInfo.DEFAULT);
+        super(createCodeOrganization(expression));
     }
 
-    @Override
-    public Statement translate(TranslationMap translationMap) {
-        return new ExpressionAsStatement(translationMap.translateExpression(expression));
-    }
-
-    @Override
-    public String statementString(int indent, NumberedStatement numberedStatement) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append(expression.expressionString(indent));
-        sb.append(";\n");
-        return sb.toString();
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
+    private static CodeOrganization createCodeOrganization(Expression expression) {
         CodeOrganization.Builder builder = new CodeOrganization.Builder();
+        builder.setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT);
         if (expression instanceof LocalVariableCreation) {
             builder.addInitialisers(List.of(expression));
         } else {
             builder.setExpression(expression);
         }
         if (expression instanceof Lambda) {
-            builder.setStatements(((Lambda) expression).block);
+            builder.setBlock(((Lambda) expression).block);
         }
         return builder.build();
     }
 
     @Override
+    public Statement translate(TranslationMap translationMap) {
+        return new ExpressionAsStatement(translationMap.translateExpression(codeOrganization.expression));
+    }
+
+    @Override
+    public String statementString(int indent, NumberedStatement numberedStatement) {
+        StringBuilder sb = new StringBuilder();
+        StringUtil.indent(sb, indent);
+        sb.append(codeOrganization.expression.expressionString(indent));
+        sb.append(";\n");
+        return sb.toString();
+    }
+
+    @Override
     public List<? extends Element> subElements() {
-        return List.of(expression);
+        return List.of(codeOrganization.expression);
     }
 }

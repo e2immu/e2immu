@@ -29,22 +29,17 @@ public class DoStatement extends LoopStatement {
     public DoStatement(String label,
                        Expression expression,
                        Block block) {
-        super(label, expression, block);
+        super(new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setExpression(expression)
+                .setBlock(block).build(), label);
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new DoStatement(label, translationMap.translateExpression(expression),
-                translationMap.translateBlock(block));
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> true)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setExpression(expression)
-                .setStatements(block).build();
+        return new DoStatement(label, translationMap.translateExpression(codeOrganization.expression),
+                translationMap.translateBlock(codeOrganization.block));
     }
 
     @Override
@@ -55,9 +50,9 @@ public class DoStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("do {");
-        sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append(" while(");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(");\n");
         return sb.toString();
     }

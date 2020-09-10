@@ -76,11 +76,6 @@ public class FieldAccess implements Expression {
     }
 
     @Override
-    public List<Variable> variablesInScopeSide() {
-        return expression.variables();
-    }
-
-    @Override
     @NotNull
     public Optional<Variable> assignmentTarget() {
         return Optional.of(variable);

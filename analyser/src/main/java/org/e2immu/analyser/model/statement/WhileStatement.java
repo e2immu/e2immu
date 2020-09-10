@@ -30,21 +30,17 @@ public class WhileStatement extends LoopStatement {
     public WhileStatement(String label,
                           Expression expression,
                           Block block) {
-        super(label, expression, block);
+        super(new CodeOrganization.Builder()
+                .setStatementsExecutedAtLeastOnce(v -> v == BoolValue.TRUE)
+                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
+                .setExpression(expression)
+                .setBlock(block).build(), label);
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new WhileStatement(label, translationMap.translateExpression(expression), translationMap.translateBlock(block));
-    }
-
-    @Override
-    public CodeOrganization codeOrganization() {
-        return new CodeOrganization.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> v == BoolValue.TRUE)
-                .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setExpression(expression)
-                .setStatements(block).build();
+        return new WhileStatement(label, translationMap.translateExpression(codeOrganization.expression),
+                translationMap.translateBlock(codeOrganization.block));
     }
 
     @Override
@@ -55,9 +51,9 @@ public class WhileStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("while (");
-        sb.append(expression.expressionString(indent));
+        sb.append(codeOrganization.expression.expressionString(indent));
         sb.append(")");
-        sb.append(block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(codeOrganization.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
         sb.append("\n");
         return sb.toString();
     }

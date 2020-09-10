@@ -486,11 +486,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public List<Variable> variablesInScopeSide() {
-        return object == null ? List.of() : object.variables();
-    }
-
-    @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         Objects.requireNonNull(evaluationContext);
 
