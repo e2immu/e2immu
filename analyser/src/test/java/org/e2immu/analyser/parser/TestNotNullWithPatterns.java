@@ -39,7 +39,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
     }
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("conditionalValue".equals(methodInfo.name) && iteration > 0) {
+        if ("conditionalValue".equals(methodInfo.name) && iteration > 2) {
             Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
             Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
             Assert.assertTrue(srv instanceof InlineValue);
@@ -55,7 +55,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 0) {
+        if("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
             Assert.assertEquals("null == a1?Was null...:a1", d.numberedStatement.valueOfExpression.get().toString());
         }
     };
