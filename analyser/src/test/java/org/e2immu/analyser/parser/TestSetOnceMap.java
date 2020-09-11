@@ -100,9 +100,8 @@ public class TestSetOnceMap extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
         if ("SetOnceMap".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(1, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
-            ParameterizedType supportDataType = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().stream().findFirst().orElseThrow();
-            Assert.assertEquals("java.util.Map<K, V>", supportDataType.detailedString());
+            Assert.assertEquals("K;V;java.util.Map.Entry<K, V>",
+                    typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
 
             if (iteration > 1) {
                 Assert.assertEquals(2, typeInfo.typeAnalysis.get().approvedPreconditions.size());

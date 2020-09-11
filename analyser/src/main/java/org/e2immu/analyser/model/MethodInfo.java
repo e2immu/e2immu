@@ -597,12 +597,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             if (element instanceof MethodCall) {
                 MethodCall mc = (MethodCall) element;
                 result.add(mc.computedScope.returnType());
+                addTypesFromParameters(result, mc.methodInfo);
             }
 
             // new A() -> A cannot be replaced by unbound type parameter
             if (element instanceof NewObject) {
                 NewObject newObject = (NewObject) element;
                 result.add(newObject.parameterizedType);
+                if (newObject.constructor != null) { // can be null, anonymous implementation of interface
+                    addTypesFromParameters(result, newObject.constructor);
+                }
             }
 
             // a.b -> type of a cannot be replaced by unbound type parameter
@@ -625,5 +629,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         };
         methodInspection.get().methodBody.get().visit(visitor);
         return result;
+    }
+
+    // a.method(b, c) -> unless the formal parameter types are either Object or another unbound parameter type,
+    // they cannot be replaced by unbound type parameter
+    private static void addTypesFromParameters(Set<ParameterizedType> result, MethodInfo methodInfo) {
+        Objects.requireNonNull(methodInfo);
+        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            ParameterizedType formal = parameterInfo.parameterizedType;
+            if (!formal.equals(Primitives.PRIMITIVES.objectParameterizedType) && !formal.isUnboundParameterType()) {
+                result.add(formal);
+            }
+        }
     }
 }
