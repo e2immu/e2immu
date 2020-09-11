@@ -27,14 +27,10 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
+import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.NullConstant;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.statement.StatementWithExpression;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
@@ -593,23 +589,41 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
     }
 
-
-    public Set<ParameterizedType> typesOfMethodScopes() {
+    public Set<ParameterizedType> explicitTypes() {
         Set<ParameterizedType> result = new HashSet<>();
-        Consumer<Element> statementVisitor = statement -> {
-            if (statement instanceof StatementWithExpression) {
-                Expression expression = ((StatementWithExpression) statement).expression;
+        Consumer<Element> visitor = element -> {
 
-                result.addAll(expression.collect(MethodCall.class).stream().map(mc -> mc.computedScope.returnType()).collect(Collectors.toSet()));
+            // a.method() -> type of a cannot be replaced by unbound type parameter
+            if (element instanceof MethodCall) {
+                MethodCall mc = (MethodCall) element;
+                result.add(mc.computedScope.returnType());
+            }
 
-                // accept all types of assignments, except for = null, = parameter
-                result.addAll(expression.collect(Assignment.class).stream()
-                        .filter(assignment -> !(assignment.value instanceof NullConstant) &&
-                                !(assignment.value instanceof VariableExpression && ((VariableExpression) assignment.value).variable instanceof ParameterInfo))
-                        .map(assignment -> assignment.target.returnType()).collect(Collectors.toSet()));
+            // new A() -> A cannot be replaced by unbound type parameter
+            if (element instanceof NewObject) {
+                NewObject newObject = (NewObject) element;
+                result.add(newObject.parameterizedType);
+            }
+
+            // a.b -> type of a cannot be replaced by unbound type parameter
+            if (element instanceof FieldAccess) {
+                FieldAccess fieldAccess = (FieldAccess) element;
+                result.add(fieldAccess.expression.returnType());
+            }
+
+            // for(E e: list) -> type of list cannot be replaced by unbound type parameter
+            if (element instanceof ForEachStatement) {
+                ForEachStatement forEach = (ForEachStatement) element;
+                result.add(forEach.expression.returnType());
+            }
+
+            // switch(e) -> type of e cannot be replaced
+            if (element instanceof SwitchStatement) {
+                SwitchStatement switchStatement = (SwitchStatement) element;
+                result.add(switchStatement.expression.returnType());
             }
         };
-        methodInspection.get().methodBody.get().visit(statementVisitor);
+        methodInspection.get().methodBody.get().visit(visitor);
         return result;
     }
 }

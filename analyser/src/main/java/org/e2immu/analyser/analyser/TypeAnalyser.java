@@ -242,11 +242,16 @@ public class TypeAnalyser {
         Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
         typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
-        Set<ParameterizedType> typesOfMethodScopes = typeInfo.typesOfMethodScopes();
-        log(E2IMMUTABLE, "Types of method scopes: {}", typesOfMethodScopes);
+        typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
+        log(E2IMMUTABLE, "Types of fields, methods and constructors: {}", typesOfFields);
+
+        Set<ParameterizedType> explicitTypes = typeInfo.explicitTypes();
+        log(E2IMMUTABLE, "Explicit types: {}", explicitTypes);
 
         typesOfFields.removeIf(type -> {
+            if (type.arrays > 0) return true;
             if (type.isUnboundParameterType()) return false;
+
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
@@ -254,7 +259,8 @@ public class TypeAnalyser {
 
             int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
             if (immutable == MultiLevel.DELAY && bestType.hasBeenDefined()) return false; // delaying
-            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || typesOfMethodScopes.contains(type);
+            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || explicitTypes.contains(type)
+                    || explicitTypes.stream().anyMatch(type::isAssignableFrom);
         });
 
         typeAnalysis.implicitlyImmutableDataTypes.set(ImmutableSet.copyOf(typesOfFields));

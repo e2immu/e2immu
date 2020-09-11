@@ -106,13 +106,16 @@ public class Instance implements Value {
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-            if (immutable == MultiLevel.DELAY) return null;
             int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            if (independent == Level.DELAY) return null;
+            int typeIndependent = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
 
-            if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE) { // RULE 3
+            if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
+                    || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
                 return NO_LINKS;
             }
+            if (independent == Level.DELAY) return null;
+            if (immutable == MultiLevel.DELAY) return null;
+            if (typeIndependent == MultiLevel.DELAY) return null;
         }
 
         // default case

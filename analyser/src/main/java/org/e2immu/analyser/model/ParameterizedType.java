@@ -243,6 +243,17 @@ public class ParameterizedType {
         this.typeParameter = typeParameter;
     }
 
+    public Set<ParameterizedType> components(boolean includeMySelf) {
+        Set<ParameterizedType> result = new HashSet<>();
+        // T[], int[][], ...
+        if (arrays > 0) result.add(new ParameterizedType(typeInfo, 0, wildCard, List.of(), typeParameter));
+        if (!parameters.isEmpty()) {
+            parameters.forEach(pt -> result.addAll(pt.components(true)));
+        }
+        if (includeMySelf) result.add(this);
+        return result;
+    }
+
     // from one type context into another one
     public ParameterizedType copy(TypeContext localTypeContext) {
         TypeInfo newTypeInfo;

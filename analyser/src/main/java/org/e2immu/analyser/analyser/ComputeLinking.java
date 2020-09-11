@@ -219,7 +219,7 @@ public class ComputeLinking {
                         // break the delay in case the variable is not even read
                         int fieldModified;
                         if (summary == Level.DELAY && tv.getProperty(VariableProperty.READ) < Level.TRUE) {
-                            fieldModified = Level.FALSE; // TODO should this be TRUE? absence of information
+                            fieldModified = Level.FALSE;
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), methodInfo.distinguishingName());

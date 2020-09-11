@@ -119,6 +119,12 @@ public class ParameterAnalysis extends Analysis {
             case SIZE:
                 return getPropertyCheckOverrides(variableProperty);
 
+            case NOT_MODIFIED_1:
+                if (!parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    return Level.FALSE;
+                }
+                break;
+
             default:
         }
         return super.getProperty(variableProperty);
