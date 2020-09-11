@@ -88,7 +88,7 @@ public class ParameterAnalyser {
         boolean changed = false;
         for (ParameterInfo parameterInfo : methodProperties.getCurrentMethod().methodInspection.get().parameters) {
             ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
-            if (parameterAnalysis.assignedToField.isSet()) {
+            if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
                 FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
                 FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
                 boolean delays = false;
@@ -103,10 +103,11 @@ public class ParameterAnalyser {
                             changed = true;
                         }
                     } else {
+                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
                         delays = true;
                     }
                 }
-                if (!delays && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
+                if (!delays) {
                     log(ANALYSER, "No delays anymore on copying from field to parameter");
                     parameterAnalysis.copiedFromFieldToParameters.set(true);
                     changed = true;
