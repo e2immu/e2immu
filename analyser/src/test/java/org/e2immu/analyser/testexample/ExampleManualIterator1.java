@@ -30,7 +30,7 @@ public class ExampleManualIterator1<E> {
     private final List<E> list = new ArrayList<>();
 
     @Independent
-    public ExampleManualIterator1(E[] es) {
+    public ExampleManualIterator1(@NotModified E[] es) {
         Collections.addAll(list, es);
     }
 

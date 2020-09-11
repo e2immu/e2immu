@@ -199,14 +199,15 @@ public class E2ImmutableChecks {
         }
     }
 
-    // here, SimpleContainer cannot be replaced by T or Object
+    // here, SimpleContainer cannot be replaced by T or Object, but there are no fields linked to parameters
     @E1Container
-    static class E2Container7 {
+    @Independent
+    static class E1Container7 {
         @NotModified
         private final Map<String, SimpleContainer> map7;
 
         @Independent
-        public E2Container7(Map<String, SimpleContainer> map7Param) {
+        public E1Container7(Map<String, SimpleContainer> map7Param) {
             map7 = new HashMap<>(map7Param); // not linked
         }
 
@@ -218,6 +219,31 @@ public class E2ImmutableChecks {
         @Independent
         public Map<String, SimpleContainer> getMap7() {
             Map<String, SimpleContainer> incremented = new HashMap<>(map7);
+            incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));
+            return incremented;
+        }
+    }
+
+    // here, SimpleContainer cannot be replaced by T or Object, map8 is linked to the parameter
+    @E1Container
+    @Independent(type = AnnotationType.VERIFY_ABSENT)
+    static class E1Container8 {
+        @NotModified
+        private final Map<String, SimpleContainer> map8;
+
+        @Dependent
+        public E1Container8(Map<String, SimpleContainer> map8Param) {
+            map8 = map8Param; // linked
+        }
+
+        @Dependent
+        public SimpleContainer get8(String input) {
+            return map8.get(input);
+        }
+
+        @Independent
+        public Map<String, SimpleContainer> getMap8() {
+            Map<String, SimpleContainer> incremented = new HashMap<>(map8);
             incremented.values().forEach(sc -> sc.setI(sc.getI() + 1));
             return incremented;
         }

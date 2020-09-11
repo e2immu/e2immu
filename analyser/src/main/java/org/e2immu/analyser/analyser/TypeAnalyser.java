@@ -529,20 +529,28 @@ public class TypeAnalyser {
         // RULE 3
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.ALL)) {
-            boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
-                    .anyMatch(tv -> !tv.linkedVariables.isSet());
-            if (notAllSet) {
-                log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
-                        typeInfo.fullyQualifiedName, methodInfo.name);
-                return false;
-            }
-            boolean safeMethod = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
-                    .allMatch(tv -> Collections.disjoint(tv.linkedVariables.get(), fieldsLinkedToParameters));
-            if (!safeMethod) {
-                log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
-                        typeInfo.fullyQualifiedName, methodInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-                return true;
+            if(!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+                boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
+                        .anyMatch(tv -> !tv.linkedVariables.isSet());
+                if (notAllSet) {
+                    log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
+                            typeInfo.fullyQualifiedName, methodInfo.name);
+                    return false;
+                }
+                boolean safeMethod = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
+                        .allMatch(tv -> {
+                            Set<FieldInfo> linkedFields = tv.linkedVariables.get().stream()
+                                    .filter(v -> v instanceof FieldReference)
+                                    .map(v -> ((FieldReference) v).fieldInfo)
+                                    .collect(Collectors.toSet());
+                            return Collections.disjoint(linkedFields, fieldsLinkedToParameters);
+                        });
+                if (!safeMethod) {
+                    log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
+                            typeInfo.fullyQualifiedName, methodInfo.name);
+                    typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                    return true;
+                }
             }
         }
 

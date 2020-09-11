@@ -76,7 +76,9 @@ public class ParameterAnalysis extends Analysis {
                 TypeInfo enclosingType = parameterInfo.owner.typeInfo;
                 Boolean e2immu = parameterInfo.parameterizedType.isImplicitlyOrAtLeastEventuallyE2Immutable(enclosingType);
                 if (e2immu == Boolean.TRUE) return Level.FALSE;
-
+                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    return Level.FALSE; // by definition, see manual
+                }
                 if (!parameterInfo.owner.isPrivate() &&
                         parameterInfo.owner.typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER) == Level.TRUE) {
                     return Level.FALSE;

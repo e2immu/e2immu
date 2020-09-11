@@ -674,15 +674,16 @@ public class FieldAnalyser {
             return analyseNotModifiedFunctionalInterface(fieldInfo, fieldAnalysis);
         }
         if (fieldSummariesNotYetSet) return false;
-        // no need to check e2immutable == TRUE, because that happened in the first statement (getProperty)
-        boolean allContentModificationsDefined = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(m ->
+
+        // we only consider methods, not constructors!
+        boolean allContentModificationsDefined = typeInspection.methodStream(TypeInspection.Methods.ALL).allMatch(m ->
                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
 
         if (allContentModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
-                    typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
+                    typeInspection.methodStream(TypeInspection.Methods.ALL)
                             .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                             .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) >= Level.TRUE)
                             .anyMatch(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.TRUE);

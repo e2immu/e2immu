@@ -156,11 +156,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                     typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
                             .stream().findFirst().orElseThrow().detailedString());
 
-        } else if ("E2Container7".equals(typeInfo.simpleName)) {
+        } else if ("E1Container7".equals(typeInfo.simpleName)) {
             Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
 
             if (iteration > 2) {
-                Assert.assertEquals(MultiLevel.FALSE, typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             }
 
             // a bit of inspection check... was a temporary bug during a refactoring.

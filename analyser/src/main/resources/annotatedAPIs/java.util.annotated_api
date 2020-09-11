@@ -529,3 +529,10 @@ public class Arrays {
     static IntStream stream(@Size(copy = true) @NotNull int[] array) {
     }
 }
+
+@UtilityClass
+public class Collections {
+
+    static <T> boolean addAll(@Size(copyMin = true) @NotNull @Modified Collection<? super T> c,
+                              @NotModified T... elements);
+}
