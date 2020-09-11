@@ -19,7 +19,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,10 +37,23 @@ public class TestModificationGraphInterface extends CommonTestRunner {
         super(false);
     }
 
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("useC2".equals(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterface.get());
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("c1".equals(fieldInfo.name) && iteration > 0) {
+            Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("ModificationGraphInterface", 0, 0, new DebugConfiguration.Builder()
-
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
 
     }

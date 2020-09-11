@@ -682,6 +682,30 @@ public class MethodAnalyser {
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return false;
 
+        if (!methodAnalysis.callsUndeclaredFunctionalInterface.isSet()) {
+            log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
+                    methodInfo.distinguishingName());
+            return false;
+        }
+        if (methodAnalysis.callsUndeclaredFunctionalInterface.get()) {
+            boolean someOtherMethodsNotYetDecided = methodInfo.typeInfo.typeInspection.get()
+                    .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                    .anyMatch(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.isSet() ||
+                            mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+            if (someOtherMethodsNotYetDecided) {
+                log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface",
+                        methodInfo.distinguishingName());
+                return false;
+            }
+            boolean haveModifying = methodInfo.typeInfo.typeInspection.get()
+                    .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                    .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get())
+                    .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+            methodAnalysis.setProperty(VariableProperty.MODIFIED, haveModifying);
+            log(NOT_MODIFIED, "Set {} to modified? {}", methodInfo.distinguishingName(), haveModifying);
+            return true;
+        }
+
         // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.fieldSummaries.stream()
                 .map(Map.Entry::getValue)

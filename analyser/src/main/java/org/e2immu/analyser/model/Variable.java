@@ -18,6 +18,12 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.Lambda;
+import org.e2immu.analyser.model.expression.MethodCall;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,4 +52,24 @@ public interface Variable {
     SideEffect sideEffect(EvaluationContext evaluationContext);
 
     int variableOrder();
+
+    default boolean isUndeclaredFunctionalInterface(Value currentValue) {
+        TypeInfo bestType = parameterizedType().bestTypeInfo();
+        if (bestType == null || !bestType.isFunctionalInterface()) return false;
+        // check if declared
+        if (this instanceof ParameterInfo) return true;
+        if (currentValue == null) return false; // final fields will have a value set
+        FinalFieldValue finalFieldValue = currentValue.asInstanceOf(FinalFieldValue.class);
+        if (finalFieldValue != null) {
+
+        }
+        VariableValue variableValue = currentValue.asInstanceOf(VariableValue.class);
+        if (variableValue != null) {
+            if (variableValue.variable instanceof ParameterInfo) return true;
+        }
+        if (currentValue.isInstanceOf(InlineValue.class)) return false;
+
+        // TODO
+        return true;
+    }
 }

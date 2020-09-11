@@ -224,6 +224,11 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
 
 
+    // ************** Modification computing
+
+    public final SetOnceMap<TypeInfo, Boolean> typesModified = new SetOnceMap<>();
+    public final SetOnce<Boolean> callsUndeclaredFunctionalInterface = new SetOnce<>();
+
     // ************** ERRORS
 
     public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();

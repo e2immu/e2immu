@@ -810,13 +810,24 @@ public class StatementAnalyser {
         variableProperties.addPropertyRestriction(variable, VariableProperty.SIZE, value);
     }
 
-    public static void markContentModified(EvaluationContext evaluationContext, Variable variable, int value) {
+    public static void markContentModified(EvaluationContext evaluationContext, Variable variable, Value currentValue, int modified) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         if (variable instanceof FieldReference) variableProperties.ensureFieldReference((FieldReference) variable);
         int ignoreContentModifications = variableProperties.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
         if (ignoreContentModifications != Level.TRUE) {
-            log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", value, variable.detailedString());
-            variableProperties.addPropertyRestriction(variable, VariableProperty.MODIFIED, value);
+            log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
+            variableProperties.addPropertyRestriction(variable, VariableProperty.MODIFIED, modified);
+            if (modified == Level.TRUE && evaluationContext.getCurrentMethod() != null) {
+                TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
+                MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
+                if (bestType != null && !methodAnalysis.typesModified.isSet(bestType)) {
+                    methodAnalysis.typesModified.put(bestType, true);
+                }
+                if (variable.isUndeclaredFunctionalInterface(currentValue) &&
+                        !methodAnalysis.callsUndeclaredFunctionalInterface.isSet()) {
+                    methodAnalysis.callsUndeclaredFunctionalInterface.set(true);
+                }
+            }
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

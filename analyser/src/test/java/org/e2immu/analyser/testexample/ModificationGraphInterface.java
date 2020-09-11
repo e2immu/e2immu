@@ -28,7 +28,7 @@ public class ModificationGraphInterface {
         int incrementAndGet();
     }
 
-    @MutableModifiesArguments
+    @Container
     static class C1 {
 
         @Variable

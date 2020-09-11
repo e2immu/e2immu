@@ -64,7 +64,7 @@ public class VariableExpression implements Expression {
             StatementAnalyser.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
-        StatementAnalyser.markContentModified(evaluationContext, variable, modified);
+        StatementAnalyser.markContentModified(evaluationContext, variable, currentValue, modified);
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
         if (notModified1 == Level.TRUE) {

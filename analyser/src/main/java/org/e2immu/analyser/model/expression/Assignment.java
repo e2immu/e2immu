@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import com.google.common.collect.Sets;
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
@@ -27,7 +26,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -41,9 +39,10 @@ public class Assignment implements Expression {
 
     public final Expression target;
     public final Expression value;
-    public final MethodInfo primitiveOperator;
+    public final MethodInfo assignmentOperator;
+    public final MethodInfo binaryOperator;
 
-    // if null, and primitive operator not null, then the primitive operator counts (i += value)
+    // if null, and binary operator not null, then the primitive operator counts (i += value)
     // if true, we have ++i
     // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
     public final Boolean prefixPrimitiveOperator;
@@ -53,18 +52,19 @@ public class Assignment implements Expression {
     }
 
     public Assignment(@NotNull Expression target, @NotNull Expression value,
-                      MethodInfo primitiveOperator,
+                      MethodInfo assignmentOperator,
                       Boolean prefixPrimitiveOperator) {
         this.target = Objects.requireNonNull(target);
         this.value = Objects.requireNonNull(value);
-        this.primitiveOperator = primitiveOperator; // as in i+=1;
+        this.assignmentOperator = assignmentOperator; // as in i+=1;
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
+        binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(assignmentOperator);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new Assignment(translationMap.translateExpression(target),
-                translationMap.translateExpression(value), primitiveOperator, prefixPrimitiveOperator);
+                translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator);
     }
 
     @NotNull
@@ -96,18 +96,14 @@ public class Assignment implements Expression {
     @Override
     public String expressionString(int indent) {
         if (prefixPrimitiveOperator != null) {
-            String operator = primitiveOperator == Primitives.PRIMITIVES.assignPlusOperatorInt ? "++" : "--";
+            String operator = assignmentOperator == Primitives.PRIMITIVES.assignPlusOperatorInt ? "++" : "--";
             if (prefixPrimitiveOperator) {
-                StringBuilder sb = new StringBuilder();
-                StringUtil.indent(sb, indent);
-                sb.append(operator);
-                sb.append(target.expressionString(0));
-                return sb.toString();
+                return operator + target.expressionString(indent);
             }
             return target.expressionString(indent) + operator;
         }
         //  != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
-        String operator = primitiveOperator == null ? "=" : primitiveOperator.name;
+        String operator = assignmentOperator == null ? "=" : assignmentOperator.name;
         return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
     }
 
@@ -152,11 +148,29 @@ public class Assignment implements Expression {
             log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
         }
 
-        // we pass on forwardEvaluation (could be that we require not null)
-        Value resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
-        doAssignmentWork(evaluationContext, at, resultOfExpression);
+        Value resultOfExpression;
+        Value assignedToTarget;
+        if (binaryOperator != null) {
+            BinaryOperator operation = new BinaryOperator(new VariableExpression(at), binaryOperator, value,
+                    BinaryOperator.precedence(binaryOperator));
+            if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
+                // ++i, i += 1
+                resultOfExpression = operation.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+                assignedToTarget = resultOfExpression;
+            } else {
+                // i++
+                resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+                assignedToTarget = operation.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+            }
+        } else {
+            resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+            assignedToTarget = resultOfExpression;
+        }
+        doAssignmentWork(evaluationContext, at, assignedToTarget);
         visitor.visit(this, evaluationContext, resultOfExpression);
+
         // we let the assignment code decide what to do; we'll read the value of the variable afterwards
+        // TODO this does not work well with i++
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
         return evaluationContext.currentValue(assignmentTarget);
     }
