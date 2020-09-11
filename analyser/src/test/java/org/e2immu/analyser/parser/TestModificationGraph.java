@@ -32,15 +32,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestModificationGraphChecks extends CommonTestRunner {
+public class TestModificationGraph extends CommonTestRunner {
 
-    public TestModificationGraphChecks() {
+    public TestModificationGraph() {
         super(false);
     }
 
     @Test
     public void test() throws IOException {
-        testClass("ModificationGraphChecks", 0, 0, new DebugConfiguration.Builder()
+        testClass("ModificationGraph", 0, 0, new DebugConfiguration.Builder()
 
                 .build());
 

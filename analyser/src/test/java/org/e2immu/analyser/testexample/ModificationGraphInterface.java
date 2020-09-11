@@ -18,9 +18,15 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
+import org.junit.Assert;
+import org.junit.Test;
 
 @E2Container
-public class ModificationGraphChecks {
+public class ModificationGraphInterface {
+
+    interface Incrementer {
+        int incrementAndGet();
+    }
 
     @MutableModifiesArguments
     static class C1 {
@@ -34,8 +40,8 @@ public class ModificationGraphChecks {
         }
 
         @Modified // <1>
-        public int useC2(@Modified C2 c2) {
-            return i + c2.incrementAndGetWithI();
+        public int useC2(Incrementer incrementer) {
+            return i + incrementer.incrementAndGet();
         }
 
     }
@@ -57,5 +63,19 @@ public class ModificationGraphChecks {
         public int incrementAndGetWithI() {
             return c1.incrementAndGet() + j;
         }
+    }
+
+    @Test
+    public void useC1AndC2() {
+        C1 c1 = new C1();
+        C2 c2 = new C2(2, c1);
+        Assert.assertEquals(3, c2.incrementAndGetWithI());
+        Assert.assertEquals(1, c1.i);
+        Assert.assertEquals(5, c1.useC2(c2::incrementAndGetWithI));
+        Assert.assertEquals(2, c1.i);
+        Assert.assertEquals(5, c2.incrementAndGetWithI());
+        Assert.assertEquals(3, c1.i);
+        Assert.assertEquals(9, c1.useC2(c2::incrementAndGetWithI));
+        Assert.assertEquals(4, c1.i);
     }
 }
