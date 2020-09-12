@@ -23,6 +23,40 @@ import static org.e2immu.analyser.pattern.PatternDSL.*;
 
 public class IfStatements {
 
+    public static <T> void twoIfsComplement() {
+        boolean someCondition = someExpression(Boolean.class);
+        Statement statements = someStatements();
+        Statement statements2 = someStatements();
+
+        pattern(Quality.WARN, () -> {
+            if (someCondition) {
+                detect(statements);
+            }
+            if (!someCondition) {
+                detect(statements2);
+            }
+        }, () -> {
+            if (someCondition) {
+                replace(statements);
+            } else {
+                replace(statements2);
+            }
+        });
+    }
+
+    public static <T> void collapseIfElse() {
+        boolean someCondition = someExpression(Boolean.class);
+        Statement statements = someStatements();
+
+        pattern(Quality.WARN, () -> {
+            if (someCondition) {
+                detect(statements);
+            } else {
+                detect(statements);
+            }
+        }, () -> replace(statements));
+    }
+
     public static <T> void elseException() {
         boolean someCondition = someExpression(Boolean.class);
         RuntimeException newException = newException();

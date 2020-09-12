@@ -19,6 +19,7 @@ package org.e2immu.analyser.pattern.dsl;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.pattern.PatternDSL.*;
 
@@ -40,5 +41,15 @@ public class StreamSimplification {
                 () -> collection.size());
         partOfExpressionPattern(() -> collection.stream().count(),
                 () -> collection.size());
+    }
+
+    // IMPORTANT: we want collection to be anything that both extends Collection, and with a type that extends CharSequence...
+
+    public static void stringJoining() {
+        CharSequence someDelimiter = someExpression(CharSequence.class);
+        Collection<CharSequence> collection = someExpression(Collection.class);
+
+        partOfExpressionPattern(() -> collection.stream().collect(Collectors.joining(someDelimiter)),
+                () -> String.join(someDelimiter, collection));
     }
 }
