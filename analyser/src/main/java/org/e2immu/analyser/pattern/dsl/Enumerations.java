@@ -33,7 +33,7 @@ public class Enumerations {
         warn(() -> {
             Enumeration<T> enumeration = someEnumeration;
             while (enumeration.hasMoreElements()) {
-                detect(someStatements1, occurs(enumeration, 1));
+                detect(someStatements1, occurs(0, enumeration, 1));
                 T t = enumeration.nextElement();
                 detect(someStatements2, avoid(enumeration));
             }
@@ -43,7 +43,7 @@ public class Enumerations {
             while (enumeration.hasMoreElements()) {
                 detect(someStatements1, avoid(enumeration));
                 T t = enumeration.nextElement();
-                detect(someStatements2, occurs(enumeration, 1));
+                detect(someStatements2, occurs(0, enumeration, 1));
             }
         });
         pattern(() -> {

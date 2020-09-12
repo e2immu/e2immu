@@ -23,6 +23,50 @@ import static org.e2immu.analyser.pattern.PatternDSL.*;
 
 public class IfStatements {
 
+    public static <T> void elseException() {
+        boolean someCondition = someExpression(Boolean.class);
+        RuntimeException newException = newException();
+        Statement statements = someStatements();
+        Statement statements2 = someStatements();
+
+        pattern(() -> {
+            if (someCondition) {
+                detect(statements);
+            } else {
+                detect(statements2);
+                throw newException;
+            }
+        }, () -> {
+            if (!someCondition) {
+                replace(statements2);
+                throw newException;
+            }
+            replace(statements);
+        });
+    }
+
+    public static <T> void ifException() {
+        boolean someCondition = someExpression(Boolean.class);
+        RuntimeException newException = newException();
+        Statement statements = someStatements();
+        Statement statements2 = someStatements();
+
+        pattern(() -> {
+            if (someCondition) {
+                detect(statements2);
+                throw newException;
+            } else {
+                detect(statements);
+            }
+        }, () -> {
+            if (someCondition) {
+                replace(statements2);
+                throw newException;
+            }
+            replace(statements);
+        });
+    }
+
     public static <T> void twoReturns1() {
         Class<T> classT = classOfTypeParameter(0);
         T someExpression = someExpression(classT);

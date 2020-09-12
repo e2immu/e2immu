@@ -35,6 +35,12 @@ public class PatternDSL {
 
     }
 
+    public static final ReplacementInstruction REPLACEMENT_INSTRUCTION = new ReplacementInstruction();
+
+    public static final class ReplacementInstruction {
+
+    }
+
     public static class TypeWithMethod<T> {
         public void accept(T t) {
         }
@@ -51,7 +57,7 @@ public class PatternDSL {
         return new TypeWithMethod<>();
     }
 
-    public static void replace(Statement statement, boolean... booleans) {
+    public static void replace(Statement statement, ReplacementInstruction... instructions) {
     }
 
     public static void detect(Statement statement, Restriction... booleans) {
@@ -86,6 +92,10 @@ public class PatternDSL {
         return null;
     }
 
+    public static <U, T> Function<U, T> someExpressionDependentOn(Class<T> clazz) {
+        return null;
+    }
+
     public static Statement someStatements(Restriction... restrictions) {
         return SOME_STATEMENT;
     }
@@ -111,6 +121,23 @@ public class PatternDSL {
     public static <T> void returnPattern(Supplier<T> pattern, Supplier<T> replacement) {
     }
 
+
+    public static <T> Supplier<T> subPattern(Supplier<T> supplier) {
+        return supplier;
+    }
+
+    public static RuntimeException newException() {
+        return new RuntimeException();
+    }
+
+    // *********************************************************************
+
+    // replacement instructions
+
+    public static ReplacementInstruction occurrence(int index, Object replaceBy) {
+        return REPLACEMENT_INSTRUCTION;
+    }
+
     // *********************************************************************
 
     // restrictions to be added to someStatements, someVariable, someExpression
@@ -127,19 +154,23 @@ public class PatternDSL {
         return RESTRICTION;
     }
 
-    public static Restriction occurs(Object objects, int min, int max) {
+    public static Restriction occurs(int index, Object objects, int min, int max) {
         return RESTRICTION;
     }
 
-    public static Restriction occurs(Object objects, int min) {
+    public static Restriction occurs(int index, Object objects, int min) {
         return RESTRICTION;
     }
 
-    public static Restriction dependsOn(Object... objects) {
+    public static Restriction occurs(int index, Object objects) {
         return RESTRICTION;
     }
 
     public static Restriction nonModifying() {
+        return RESTRICTION;
+    }
+
+    public static Restriction noBreakContinueReturn() {
         return RESTRICTION;
     }
 

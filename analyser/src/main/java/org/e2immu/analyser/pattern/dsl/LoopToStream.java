@@ -18,6 +18,8 @@
 package org.e2immu.analyser.pattern.dsl;
 
 import java.util.Collection;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.e2immu.analyser.pattern.PatternDSL.*;
 
@@ -25,21 +27,53 @@ public class LoopToStream {
 
     public static <T> void findFirst() {
         Collection<T> collection = someExpression(Collection.class, nonModifying());
-        Class<T> classT = classOfTypeParameter(0);
-        T someExpression = someExpression(classT, nonModifying());
+        Function<T, Boolean> someCondition = someExpressionDependentOn(Boolean.class);
         Statement someStatements = someStatements(noModificationOf(collection));
+        Statement someStatementsA = someStatements(noModificationOf(collection), noBreakContinueReturn());
+        Statement someStatementsB = someStatements(noModificationOf(collection), noBreakContinueReturn());
 
-        pattern(() -> {
+        RuntimeException newException = newException();
+
+        Supplier<T> subPattern = subPattern(() -> {
             T t = null;
             for (T c : collection) {
-                if (c.equals(someExpression)) {
+                if (someCondition.apply(c)) {
+                    detect(someStatementsA, occurs(0, c, 0), noModificationOf(c));
                     t = c;
+                    detect(someStatementsB, noModificationOf(c));
                     break;
                 }
             }
+            // not part of the pattern, part of the subPattern logic
+            return t;
+        });
+
+        pattern(() -> {
+            T t = subPattern.get();
             if (t != null) {
-                detect(someStatements, occurs(t, 1));
+                detect(someStatements, occurs(0, t, 1), untilEndOfBlock());
             }
-        }, () -> collection.stream().filter(c -> c.equals(someExpression)).findFirst().ifPresent(t -> replace(someStatements)));
+        }, () -> collection.stream().filter(c -> someCondition.apply(c)).findFirst().ifPresent(t -> {
+            replace(someStatementsA, occurrence(0, t));
+            replace(someStatementsB);
+            replace(someStatements);
+        }));
+
+        // NOTE that "elseException" transforms
+        //    if(t != null) { someStatements; } else throw newException
+        // to the following pattern:
+
+        pattern(() -> {
+            T t = subPattern.get();
+            if (t == null) {
+                throw newException;
+            }
+            detect(someStatements, occurs(0, t, 1), untilEndOfBlock());
+        }, () -> {
+            T t = collection.stream().filter(c -> someCondition.apply(c)).findFirst().orElseThrow(() -> newException);
+            replace(someStatementsA, occurrence(0, t));
+            replace(someStatementsB);
+            replace(someStatements);
+        });
     }
 }

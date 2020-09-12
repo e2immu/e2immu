@@ -20,7 +20,6 @@ package org.e2immu.analyser.pattern.dsl;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.e2immu.analyser.pattern.PatternDSL.*;
 
@@ -28,20 +27,15 @@ public class Loops {
 
     public static <T> void basicForEach() {
         List<T> list = someVariable(List.class);
-        Statement someStatements1 = someStatements(noModificationOf(list));
-        Statement someStatements2 = someStatements(noModificationOf(list));
+        Statement someStatements = someStatements(noModificationOf(list));
 
         pattern(() -> {
             for (int i = 0; i < list.size(); i++) {
-                detect(someStatements1);
-                expressionPartOfStatement(list.get(i), 0);
-                detect(someStatements2);
+                detect(someStatements, occurs(0, list.get(i)));
             }
         }, () -> {
             for (T t : list) {
-                replace(someStatements1);
-                replaceExpressionPartOfStatement(t, 0);
-                replace(someStatements2);
+                replace(someStatements, occurrence(0, t));
             }
         });
     }
@@ -74,7 +68,7 @@ public class Loops {
         pattern(() -> {
             Iterator<T> iterator = collection.iterator();
             while (iterator.hasNext()) {
-                detect(someStatements1, occurs(iterator.next(), 1, 1), avoid());
+                detect(someStatements1, occurs(0, iterator.next(), 1, 1));
             }
         }, () -> {
             for (T t : collection) {
@@ -90,9 +84,9 @@ public class Loops {
 
         pattern(() -> {
             for (Iterator<T> iterator = collection.iterator(); iterator.hasNext(); ) {
-                detect(someStatements1);
+                detect(someStatements1, avoid(iterator));
                 T t = iterator.next();
-                detect(someStatements2, occurs(t, 1));
+                detect(someStatements2, occurs(0, t, 1), avoid(iterator));
             }
         }, () -> {
             for (T t : collection) {
@@ -108,7 +102,7 @@ public class Loops {
 
         pattern(() -> {
             for (Iterator<T> iterator = collection.iterator(); iterator.hasNext(); ) {
-                detect(someStatements1, occurs(iterator.next(), 1, 1), avoid());
+                detect(someStatements1, occurs(0, iterator.next(), 1, 1), avoid(iterator.hasNext()));
             }
         }, () -> {
             for (T t : collection) {

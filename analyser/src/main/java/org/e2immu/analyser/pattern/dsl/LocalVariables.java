@@ -26,19 +26,13 @@ public class LocalVariables {
     public static <T> void singleUseLocalVariable() {
         Class<T> classT = classOfTypeParameter(0);
         T someExpression = someExpression(classT, nonModifying());
-        Statement someStatements1 = someStatements();
-        Statement someStatement = someStatements();
-        Statement someStatements2 = someStatements(untilEndOfBlock(), atLeast(1));
+        Statement someStatements = someStatements();
 
         pattern(() -> {
             T t = someExpression;
-            detect(someStatements1, avoid(t));
-            detect(someStatement, occurs(t, 1, 1));
-            detect(someStatements2, avoid(t));
+            detect(someStatements, occurs(0, t, 1, 1), untilEndOfBlock());
         }, () -> {
-            replace(someStatements1);
-            replace(someStatement); // TODO this needs to be better
-            replace(someStatements2);
+            replace(someStatements, occurrence(0, someExpression));
         });
     }
 
