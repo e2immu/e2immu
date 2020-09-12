@@ -36,6 +36,39 @@ public class LocalVariables {
         });
     }
 
+    public static <T> void introduceLocalVariable() {
+        Class<T> classT = classOfTypeParameter(0);
+        T someExpression = someExpression(classT, nonModifying());
+        Statement someStatements1 = someStatements();
+
+        pattern(() -> {
+            detect(someStatements1, occurs(0, someExpression, 2), untilEndOfBlock());
+        }, () -> {
+            T t = someExpression;
+            replace(someStatements1, occurrence(0, t));
+        });
+    }
+
+    public static <T> void preventReuse() {
+        Class<T> classT = classOfTypeParameter(0);
+        T someExpression = someExpression(classT, nonModifying());
+        T someOtherExpression = someExpression(classT, nonModifying());
+        Statement someStatements1 = someStatements();
+        Statement someStatements2 = someStatements();
+
+        pattern(() -> {
+            T t = someExpression;
+            detect(someStatements1, occurs(0, t, 1));
+            t = someOtherExpression;
+            detect(someStatements2, occurs(1, t, 1));
+        }, () -> {
+            T t = someExpression;
+            replace(someStatements1);
+            T t2 = someOtherExpression;
+            replace(someStatements2, occurrence(1, t2));
+        });
+    }
+
     // important: when there are 2 assignments, we do not want this pattern to keep on hopping between the two!
 
     public static <T> void moveVariableCloser() {
@@ -61,6 +94,7 @@ public class LocalVariables {
         Statement someStatements1 = someStatements();
         Statement someStatements2 = someStatements();
         Statement someStatements3 = someStatements();
+
         pattern(() -> {
             T t = someExpression;
             detect(someStatements1, avoid(t));
@@ -109,7 +143,21 @@ public class LocalVariables {
         }, () -> {
             T t = someCondition ? someExpression : someOtherExpression;
         });
+
+        pattern(() -> {
+            T t;
+            if (someCondition) {
+                t = someExpression;
+            } else {
+                t = someOtherExpression;
+            }
+        }, () -> {
+            T t = someCondition ? someExpression : someOtherExpression;
+        });
     }
+
+    // T t = null; is moved close to the if statement by the move variable closer pattern, so no need for
+    // an additional statement in between
 
     public static <T> void conditionalAssignment3() {
         Class<T> classT = classOfTypeParameter(0);
