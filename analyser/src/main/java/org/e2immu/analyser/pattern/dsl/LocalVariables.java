@@ -36,6 +36,46 @@ public class LocalVariables {
         });
     }
 
+    // important: when there are 2 assignments, we do not want this pattern to keep on hopping between the two!
+
+    public static <T> void moveVariableCloser() {
+        Class<T> classT = classOfTypeParameter(0);
+        T someExpression = someExpression(classT, nonModifying());
+        Statement someStatements1 = someStatements();
+        Statement someStatements2 = someStatements();
+
+        pattern(() -> {
+            T t = someExpression;
+            detect(someStatements1, avoid(t));
+            detect(someStatements2, occurs(0, t, 2)); // minimum 2 because singleUseLocalVariable picks up max 1
+        }, () -> {
+            replace(someStatements1);
+            T t = someExpression;
+            replace(someStatements2);
+        });
+    }
+
+    public static <T> void moveVariableIntoBlock() {
+        Class<T> classT = classOfTypeParameter(0);
+        T someExpression = someExpression(classT, nonModifying());
+        Statement someStatements1 = someStatements();
+        Statement someStatements2 = someStatements();
+        Statement someStatements3 = someStatements();
+        pattern(() -> {
+            T t = someExpression;
+            detect(someStatements1, avoid(t));
+            startBlock(someStatements2, avoid(t));
+            detect(someStatements3, occurs(0, t, 1));
+            endBlock();
+        }, () -> {
+            replace(someStatements1);
+            startBlock(someStatements2);
+            T t = someExpression;
+            replace(someStatements3);
+            endBlock();
+        });
+    }
+
     public static <T> void conditionalAssignment1() {
         Class<T> classT = classOfTypeParameter(0);
         T someExpression = someExpression(classT);
@@ -50,6 +90,59 @@ public class LocalVariables {
         }, () -> {
             T tmp = someExpression;
             T lv = someCondition.apply(tmp) ? someOtherExpression : tmp;
+        });
+    }
+
+    public static <T> void conditionalAssignment2() {
+        Class<T> classT = classOfTypeParameter(0);
+        boolean someCondition = someExpression(Boolean.class);
+        T someExpression = someExpression(classT);
+        T someOtherExpression = someExpression(classT);
+
+        pattern(() -> {
+            T t = null;
+            if (someCondition) {
+                t = someExpression;
+            } else {
+                t = someOtherExpression;
+            }
+        }, () -> {
+            T t = someCondition ? someExpression : someOtherExpression;
+        });
+    }
+
+    public static <T> void conditionalAssignment3() {
+        Class<T> classT = classOfTypeParameter(0);
+        boolean someCondition = someExpression(Boolean.class);
+        T someExpression = someExpression(classT);
+        T someOtherExpression = someExpression(classT);
+        Statement someStatements1 = someStatements();
+        Statement someStatements2 = someStatements();
+        Statement someStatements3 = someStatements();
+        Statement someStatements4 = someStatements();
+
+        pattern(() -> {
+            T t = null;
+            if (someCondition) {
+                detect(someStatements1, avoid(t));
+                t = someExpression;
+                detect(someStatements2);
+            } else {
+                detect(someStatements3, avoid(t));
+                t = someOtherExpression;
+                detect(someStatements4);
+            }
+        }, () -> {
+            T t;
+            if (someCondition) {
+                detect(someStatements1);
+                t = someExpression;
+                detect(someStatements2);
+            } else {
+                detect(someStatements3);
+                t = someOtherExpression;
+                detect(someStatements4);
+            }
         });
     }
 }

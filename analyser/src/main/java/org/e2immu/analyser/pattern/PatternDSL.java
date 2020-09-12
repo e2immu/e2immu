@@ -60,23 +60,23 @@ public class PatternDSL {
     public static void replace(Statement statement, ReplacementInstruction... instructions) {
     }
 
-    public static void detect(Statement statement, Restriction... booleans) {
+    public static void detect(Statement statement, Restriction... restrictions) {
     }
 
+    public static void scan(Statement statement, Restriction... restrictions) {
+    }
+
+    public static void startBlock(Statement statement, Restriction... restrictions) {
+    }
+
+    public static void endBlock() {
+    }
 
     public static <T> Class<T> classOfTypeParameter(int index) {
         return (Class<T>) Object.class;
     }
 
-    public static Restriction noModificationOf(Object... objects) {
-        return RESTRICTION;
-    }
-
     public static <T> void expressionPartOfStatement(T t, int index) {
-
-    }
-
-    public static <T> void replaceExpressionPartOfStatement(T t, int index) {
 
     }
 
@@ -85,6 +85,10 @@ public class PatternDSL {
     }
 
     public static <T> T someExpression(Class<T> clazz, Restriction... restrictions) {
+        return (T) new Object();
+    }
+
+    public static <T> T someConstant(Class<T> clazz) {
         return (T) new Object();
     }
 
@@ -97,6 +101,10 @@ public class PatternDSL {
     }
 
     public static Statement someStatements(Restriction... restrictions) {
+        return SOME_STATEMENT;
+    }
+
+    public static Statement returnStatement(Restriction... restrictions) {
         return SOME_STATEMENT;
     }
 
@@ -121,6 +129,8 @@ public class PatternDSL {
     public static <T> void returnPattern(Supplier<T> pattern, Supplier<T> replacement) {
     }
 
+    public static <T> void multiple(int index, Runnable runnable) {
+    }
 
     public static <T> Supplier<T> subPattern(Supplier<T> supplier) {
         return supplier;
@@ -128,6 +138,32 @@ public class PatternDSL {
 
     public static RuntimeException newException() {
         return new RuntimeException();
+    }
+
+    // *********************************************************************
+
+    // helpers for loops
+
+    // announce that an expression or statement are actually multiple
+
+    public static Restriction multiple() {
+        return RESTRICTION;
+    }
+
+    public static Restriction multiple(int dimensions) {
+        return RESTRICTION;
+    }
+
+    public static <T> T multipleParameters(int index, T t) {
+        return t;
+    }
+
+    public static <T> T expandParameters(T t, int... indices) {
+        return t;
+    }
+
+    public static ReplacementInstruction expand(int... indices) {
+        return REPLACEMENT_INSTRUCTION;
     }
 
     // *********************************************************************
@@ -170,7 +206,19 @@ public class PatternDSL {
         return RESTRICTION;
     }
 
+    public static Restriction independentOf(Object... objects) {
+        return RESTRICTION;
+    }
+
+    public static Restriction noModificationOf(Object... objects) {
+        return RESTRICTION;
+    }
+
     public static Restriction noBreakContinueReturn() {
+        return RESTRICTION;
+    }
+
+    public static Restriction expressionOfStatement(Restriction... restrictions) {
         return RESTRICTION;
     }
 

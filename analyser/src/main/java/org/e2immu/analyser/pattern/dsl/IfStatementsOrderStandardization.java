@@ -17,12 +17,9 @@
 
 package org.e2immu.analyser.pattern.dsl;
 
-import org.e2immu.analyser.pattern.PatternDSL;
-
 import java.util.Collection;
 
 import static org.e2immu.analyser.pattern.PatternDSL.*;
-import static org.e2immu.analyser.pattern.PatternDSL.replace;
 
 /**
  * standardization of the order of the if-else clauses
@@ -31,6 +28,8 @@ import static org.e2immu.analyser.pattern.PatternDSL.replace;
  * if(collection.isEmpty()) { } else { }
  */
 public class IfStatementsOrderStandardization {
+
+    // note that we always put the constant first!
 
     public static <T> void nullCheckAlwaysFirst() {
         Class<T> classT = classOfTypeParameter(0);
@@ -45,7 +44,7 @@ public class IfStatementsOrderStandardization {
                 detect(statements2);
             }
         }, () -> {
-            if (someExpression == null) {
+            if (null == someExpression) {
                 replace(statements2);
             } else {
                 replace(statements1);
@@ -54,11 +53,13 @@ public class IfStatementsOrderStandardization {
     }
 
     // even if internally we treat it as size == 0, in the code we'd rather see the method
+    // ==, != is commutative, we assume here that we grab both situations
     public static <T> void size0isEmpty() {
         Collection<T> collection = someExpression(Collection.class, nonModifying());
 
         partOfExpressionPattern(collection, () -> collection.size() != 0, () -> !collection.isEmpty());
         partOfExpressionPattern(collection, () -> collection.size() > 0, () -> !collection.isEmpty());
+        partOfExpressionPattern(collection, () -> collection.size() >= 1, () -> !collection.isEmpty());
         partOfExpressionPattern(collection, () -> collection.size() == 0, () -> collection.isEmpty());
         partOfExpressionPattern(collection, () -> collection.size() <= 0, () -> collection.isEmpty());
         partOfExpressionPattern(collection, () -> collection.size() < 1, () -> collection.isEmpty());
