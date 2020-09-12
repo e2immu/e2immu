@@ -83,10 +83,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                     .map(Object::toString)
                     .collect(Collectors.joining(";")));
         }
-        Set<ParameterizedType> supportData = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get();
-        Assert.assertEquals(1, supportData.size());
-        ParameterizedType supportDataType = supportData.stream().findAny().orElseThrow();
-        Assert.assertEquals("java.util.Set<java.lang.Integer>", supportDataType.detailedString());
+        Set<ParameterizedType> implicitlyImmutable = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get();
+        Assert.assertTrue( implicitlyImmutable.isEmpty());
     };
 
     @Test

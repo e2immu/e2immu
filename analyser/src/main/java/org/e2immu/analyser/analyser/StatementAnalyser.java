@@ -817,6 +817,9 @@ public class StatementAnalyser {
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
             variableProperties.addPropertyRestriction(variable, VariableProperty.MODIFIED, modified);
+
+            // FIND MODIFYING CALLS TO UNDECLARED FUNCTIONAL INTERFACES
+
             if (modified == Level.TRUE && evaluationContext.getCurrentMethod() != null) {
                 TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
                 MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();

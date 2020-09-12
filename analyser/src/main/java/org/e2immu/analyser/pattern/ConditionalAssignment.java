@@ -28,10 +28,9 @@ import org.e2immu.analyser.util.ListUtil;
 import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class ConditionalAssignment {
 
@@ -406,4 +405,30 @@ public class ConditionalAssignment {
     public static <T> T conditionalValue(T initial, Predicate<T> condition, T alternative) {
         return condition.test(initial) ? alternative : initial;
     }
+
+    /* detect: .stream().forEach(), with the aim of replacing with .forEach directly */
+
+    public static Pattern streamForEachPattern(TypeContext typeContext) {
+        Pattern.PatternBuilder builder = new Pattern.PatternBuilder("streamForEach");
+        TypeInfo stream = typeContext.getFullyQualified(Stream.class);
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        MethodInfo streamMethod = collection.findUniqueMethod("stream", 0);
+        MethodInfo forEachMethod = stream.findUniqueMethod("forEach", 0);
+
+        // <T>
+        ParameterizedType typeParameter = builder.matchType();
+        // Collection<T>
+        Expression source = builder.matchSomeExpression(new ParameterizedType(collection, List.of(typeParameter)));
+        // .stream()
+        MethodCall streamCall = new MethodCall(source, source, new MethodTypeParameterMap(streamMethod, Map.of()), List.of());
+        // .forEach()
+        MethodCall forEachCall = new MethodCall(streamCall, streamCall,
+                new MethodTypeParameterMap(forEachMethod, Map.of()), List.of());
+        // as part of some statement
+        Statement someStatement = builder.matchStatementWithExpression(forEachCall);
+        builder.addStatement(someStatement);
+        return builder.build();
+    }
+
+
 }

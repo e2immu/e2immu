@@ -143,11 +143,11 @@ Secondly,
 They will not be modified.
 ****
 
-So in effect, the parameter of the `accept` method is modifying _only_ for support data.
+So in effect, the parameter of the `accept` method is modifying for all types except the ones where modifications don't matter to the type.
 Making the consumer {nm1} forces absence of modifications on the parameters in the implementation.
 The annotation {nn1} implies that null arguments will cause exceptions; the analyser will warn against them.
 
-If the support data passed to the `accept` method is independent of the fields, we annotate the consumer parameter with {independent}.
+If the data passed to the `accept` method is independent of the fields, we annotate the consumer parameter with {independent}.
 The independence shields off the fields from modification, which is a necessary requirement for level 2 immutability.
 
 Implementing a visitor using the `forEach` method defined as:
@@ -187,8 +187,14 @@ Once there is modifying method in a class, the analyser cannot exclude that the 
 Therefore,
 
 ****
-*Implication of the indirect modification rule*: A method calling any non-declared single abstract method is modifying as soon as there are other non-private modifying methods in the type.
+*Implication of the indirect modification rule*: A method calling any non-declared single abstract method is modifying as soon as there are
+
+. other non-private modifying methods in the type,
+. or non-private fields
+. or other non-independent non-private methods
 ****
+
+These are a subset of the rules used in level 2 immutability; they are very similar to those of an independent type.
 
 Manually contracting the method to be not modifying will activate the analyser, which may or may not be successful in detecting such unwanted modification calls.
 There is one situation, however, where they are easy to spot: lambdas.

@@ -688,19 +688,8 @@ public class MethodAnalyser {
             return false;
         }
         if (methodAnalysis.callsUndeclaredFunctionalInterface.get()) {
-            boolean someOtherMethodsNotYetDecided = methodInfo.typeInfo.typeInspection.get()
-                    .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                    .anyMatch(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.isSet() ||
-                            mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
-            if (someOtherMethodsNotYetDecided) {
-                log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface",
-                        methodInfo.distinguishingName());
-                return false;
-            }
-            boolean haveModifying = methodInfo.typeInfo.typeInspection.get()
-                    .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                    .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get())
-                    .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+            Boolean haveModifying = findOtherModifyingElements(methodInfo);
+            if (haveModifying == null) return false;
             methodAnalysis.setProperty(VariableProperty.MODIFIED, haveModifying);
             log(NOT_MODIFIED, "Set {} to modified? {}", methodInfo.distinguishingName(), haveModifying);
             return true;
@@ -751,6 +740,31 @@ public class MethodAnalyser {
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified);
         return true;
+    }
+
+    private Boolean findOtherModifyingElements(MethodInfo methodInfo) {
+        boolean nonPrivateFields = methodInfo.typeInfo.typeInspection.get().fields.stream()
+                .filter(fieldInfo -> fieldInfo.type.isFunctionalInterface() &&
+                        fieldInfo.fieldAnalysis.get().isDeclaredFunctionalInterface())
+                .anyMatch(fieldInfo -> !fieldInfo.isPrivate());
+        if (nonPrivateFields) {
+            return true;
+        }
+        boolean someOtherMethodsNotYetDecided = methodInfo.typeInfo.typeInspection.get()
+                .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .anyMatch(mi ->
+                        !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.isSet() ||
+                                (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get() &&
+                                        mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY));
+        if (someOtherMethodsNotYetDecided) {
+            log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface",
+                    methodInfo.distinguishingName());
+            return null;
+        }
+        return methodInfo.typeInfo.typeInspection.get()
+                .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get())
+                .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
     }
 
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {

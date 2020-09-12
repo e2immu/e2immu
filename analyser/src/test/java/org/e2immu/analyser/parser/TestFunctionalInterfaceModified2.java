@@ -1,9 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -12,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
@@ -31,6 +30,19 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         }
     };
 
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if (Set.of("acceptMyCounter1", "acceptMyCounter2", "acceptInt1").contains(methodInfo.name)) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterface.get());
+        }
+    };
+
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if ("FunctionalInterfaceModified2".equals(typeInfo.name())) {
+            Assert.assertEquals("[Type org.e2immu.analyser.testexample.FunctionalInterfaceModified2.Counter]",
+                    typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().toString());
+        }
+    };
+
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo consumer = typeContext.getFullyQualified(Consumer.class);
         MethodInfo accept = consumer.findUniqueMethod("accept", 1);
@@ -44,6 +56,8 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         testClass("FunctionalInterfaceModified2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

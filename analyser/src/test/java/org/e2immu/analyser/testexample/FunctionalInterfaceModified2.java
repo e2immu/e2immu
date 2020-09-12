@@ -45,30 +45,38 @@ public class FunctionalInterfaceModified2 {
     @Modified // follows from potential modification in acceptMyCounter1
     private final Counter myCounter1 = new Counter();
 
+    private final int i = 5;
+
     /*
     There are no other modifying methods, so acceptMyCounter1 is not immediately @Modified because
-    it calls an abstract method.
+    it calls a SAM.
 
-    The field myCounter1 is NOT support data; however, it is fully modifiable.
-    We'd be contradicting ourselves; TODO not independent, so field is modified
-    TODO problem of support data
      */
     @Modified
     public void acceptMyCounter1(Consumer<Counter> consumer) {
         consumer.accept(myCounter1);
     }
 
-    /*
-    The reasoning behind acceptMyCount2 being @NotModified:
+    @Modified
+    public void acceptInt1(Consumer<Integer> consumer) {
+        consumer.accept(i);
+    }
 
-    1. The consumer is @NotModified1, implying that the accept method does not modify myCounter2
-    2. As a consequence, acceptMyCounter2 does not modify any fields
-    3. As a consequence, myCounter2 is @NotModified
-     */
+    public int getI() {
+        return i;
+    }
+
+    /*
+        The reasoning behind acceptMyCount2 being @NotModified:
+
+        1. The consumer is @NotModified1, implying that the accept method does not modify myCounter2
+        2. As a consequence, acceptMyCounter2 does not modify any fields
+        3. As a consequence, myCounter2 is @NotModified
+         */
     @NotModified
     private final Counter myCounter2 = new Counter();
 
-    @NotModified
+    @Modified
     void acceptMyCounter2(@NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
         consumer.accept(myCounter2);
     }

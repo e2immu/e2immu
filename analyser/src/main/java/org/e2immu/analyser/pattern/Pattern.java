@@ -137,7 +137,8 @@ public class Pattern {
 
         public Expression matchSomeExpression(ParameterizedType returnType, Variable... variables) {
             int index = expressions.size();
-            PlaceHolderExpression placeHolderExpression = new PlaceHolderExpression(index, returnType, Arrays.stream(variables).collect(Collectors.toSet()));
+            PlaceHolderExpression placeHolderExpression =
+                    new PlaceHolderExpression(index, returnType, Arrays.stream(variables).collect(Collectors.toSet()));
             expressions.add(placeHolderExpression);
             return placeHolderExpression;
         }
@@ -152,7 +153,14 @@ public class Pattern {
 
         public Statement matchSomeStatements() {
             int index = placeHolderStatements.size();
-            PlaceHolderStatement placeHolderStatement = new PlaceHolderStatement(index);
+            PlaceHolderStatement placeHolderStatement = new PlaceHolderStatement(index, null);
+            placeHolderStatements.add(placeHolderStatement);
+            return placeHolderStatement;
+        }
+
+        public Statement matchStatementWithExpression(Expression expression) {
+            int index = placeHolderStatements.size();
+            PlaceHolderStatement placeHolderStatement = new PlaceHolderStatement(index, expression);
             placeHolderStatements.add(placeHolderStatement);
             return placeHolderStatement;
         }
@@ -262,7 +270,7 @@ public class Pattern {
     public static class PlaceHolderStatement implements Statement {
         public final int index;
 
-        public PlaceHolderStatement(int index) {
+        public PlaceHolderStatement(int index, Expression expression) {
             this.index = index;
         }
 

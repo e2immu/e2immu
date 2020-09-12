@@ -188,4 +188,8 @@ public class FieldAnalysis extends Analysis {
         return owner == bestType || bestType == null ? MultiLevel.FALSE :
                 bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
     }
+
+    public boolean isDeclaredFunctionalInterface() {
+        return false; // TODO
+    }
 }

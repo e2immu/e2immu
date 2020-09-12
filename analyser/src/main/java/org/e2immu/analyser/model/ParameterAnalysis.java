@@ -72,9 +72,8 @@ public class ParameterAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case MODIFIED: {
-                // if the parameter is either formally or actually immutable, it cannot be modified
-                TypeInfo enclosingType = parameterInfo.owner.typeInfo;
-                Boolean e2immu = parameterInfo.parameterizedType.isImplicitlyOrAtLeastEventuallyE2Immutable(enclosingType);
+                // if the parameter is level 2 immutable, it cannot be modified
+                Boolean e2immu = parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable();
                 if (e2immu == Boolean.TRUE) return Level.FALSE;
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
                     return Level.FALSE; // by definition, see manual
