@@ -256,11 +256,25 @@ public class TypeAnalyser {
             if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
             if (self || typeInfo.isPrimitiveOrBoxed()) return true;
+            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(type::isAssignableFrom);
+        });
 
+        // e2immu is more work, we need to check delays
+        boolean e2immuDelay = typesOfFields.stream().anyMatch(type -> {
+            TypeInfo bestType = type.bestTypeInfo();
+            if (bestType == null) return false;
             int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-            if (immutable == MultiLevel.DELAY && bestType.hasBeenDefined()) return false; // delaying
-            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable) || explicitTypes.contains(type)
-                    || explicitTypes.stream().anyMatch(type::isAssignableFrom);
+            return immutable == MultiLevel.DELAY && bestType.hasBeenDefined();
+        });
+        if (e2immuDelay) {
+            log(DELAYED, "Delaying implicitly immutable data types on {} because of immutable", typeInfo.fullyQualifiedName);
+            return false;
+        }
+        typesOfFields.removeIf(type -> {
+            TypeInfo bestType = type.bestTypeInfo();
+            if (bestType == null) return false;
+            int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         });
 
         typeAnalysis.implicitlyImmutableDataTypes.set(ImmutableSet.copyOf(typesOfFields));
@@ -529,7 +543,7 @@ public class TypeAnalyser {
         // RULE 3
 
         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.ALL)) {
-            if(!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+            if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
                 boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
                         .anyMatch(tv -> !tv.linkedVariables.isSet());
                 if (notAllSet) {

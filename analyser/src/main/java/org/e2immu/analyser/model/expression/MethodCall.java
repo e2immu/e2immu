@@ -49,7 +49,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression computedScope;
     public final List<Expression> parameterExpressions;
     public final MethodTypeParameterMap methodTypeParameterMap;
-    public final boolean isSAM;
 
     public MethodCall(@NotNull Expression object,
                       @NotNull Expression computedScope,
@@ -60,8 +59,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.computedScope = Objects.requireNonNull(computedScope);
         this.methodTypeParameterMap = methodTypeParameterMap;
-        isSAM = methodTypeParameterMap.methodInfo.typeInfo.isFunctionalInterface() &&
-               !methodTypeParameterMap.methodInfo.isDefaultImplementation;
     }
 
     @Override
@@ -92,7 +89,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (evaluationContext.getCurrentMethod() != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
             boolean circularCall = evaluationContext.getCurrentType().typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
-            boolean undeclaredFunctionalInterface = isSAM && tryToDetectUndeclared(evaluationContext, computedScope);
+            boolean undeclaredFunctionalInterface = methodInfo.isSingleAbstractMethod() && tryToDetectUndeclared(evaluationContext, computedScope);
 
             if ((circularCall || undeclaredFunctionalInterface) && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
                 methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);

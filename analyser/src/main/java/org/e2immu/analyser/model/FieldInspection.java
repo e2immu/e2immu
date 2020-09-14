@@ -138,7 +138,7 @@ public class FieldInspection extends Inspection {
 
         public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod, boolean artificial) {
             this.implementationOfSingleAbstractMethod = implementationOfSingleAbstractMethod;
-            this.initialiser = initialiser;
+            this.initialiser = Objects.requireNonNull(initialiser);
             this.artificial = artificial;
         }
     }

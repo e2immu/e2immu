@@ -590,6 +590,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<ParameterizedType> explicitTypes() {
+        return explicitTypes(methodInspection.get().methodBody.get());
+    }
+
+    public static Set<ParameterizedType> explicitTypes(Element start) {
         Set<ParameterizedType> result = new HashSet<>();
         Consumer<Element> visitor = element -> {
 
@@ -627,7 +631,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 result.add(switchStatement.expression.returnType());
             }
         };
-        methodInspection.get().methodBody.get().visit(visitor);
+        start.visit(visitor);
         return result;
     }
 

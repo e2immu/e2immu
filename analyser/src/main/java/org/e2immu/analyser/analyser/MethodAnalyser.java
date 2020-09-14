@@ -757,21 +757,28 @@ public class MethodAnalyser {
         if (nonPrivateFields) {
             return true;
         }
-        boolean someOtherMethodsNotYetDecided = methodInfo.typeInfo.typeInspection.get()
+        // We also check independence (maybe the user calls a method which returns one of the fields,
+        // and calls a modification directly)
+
+        Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                .anyMatch(mi ->
+                .filter(mi ->
                         !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
                                 (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
-                                        mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY));
-        if (someOtherMethodsNotYetDecided) {
-            log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface",
-                    methodInfo.distinguishingName());
+                                        (mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
+                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) == null ||
+                                                mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
+                .findFirst();
+        if (someOtherMethodNotYetDecided.isPresent()) {
+            log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface, because of {}",
+                    methodInfo.distinguishingName(), someOtherMethodNotYetDecided.get().name);
             return null;
         }
         return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get())
-                .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+                .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
+                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) &&
+                                mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
     private boolean methodIsIndependent(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {

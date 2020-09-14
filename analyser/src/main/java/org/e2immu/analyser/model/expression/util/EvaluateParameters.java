@@ -66,17 +66,20 @@ public class EvaluateParameters {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
                 }
                 if (notModified1Scope == Level.TRUE) {
-                    map.put(VariableProperty.MODIFIED, 0);
+                    map.put(VariableProperty.MODIFIED, Level.FALSE);
+                } else if (methodInfo.isSingleAbstractMethod()) {
+                    // we compute on the parameter expression, not the value (chicken and egg)
+                    Boolean cannotBeModified = parameterExpression.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(methodInfo.typeInfo);
+                    if (cannotBeModified == null) map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
+                    else if (cannotBeModified) {
+                        map.put(VariableProperty.MODIFIED, Level.FALSE);
+                    }
                 }
                 int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
-
-                if (methodInfo.isSingleAbstractMethod()) {
-                    handleSAM(methodInfo, parameterInfo.parameterizedType, parameterValue, notModified1Scope);
-                }
 
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
@@ -140,23 +143,6 @@ public class EvaluateParameters {
             }
         }
         return parameterValues;
-    }
-
-    private static void handleSAM(MethodInfo methodInfo, ParameterizedType formalParameterType, Value parameterValue, int notModified1) {
-        if (notModified1 == Level.TRUE) {
-            // we're in the non-modifying situation
-            log(NOT_MODIFIED, "In the @NM1 situation with " + methodInfo.name + " and " + parameterValue);
-        } else {
-            Boolean cannotBeModified = formalParameterType.isImplicitlyOrAtLeastEventuallyE2Immutable(methodInfo.typeInfo);
-            if (cannotBeModified == null) return; // DELAY
-            if (cannotBeModified) {
-                // we're in the @Exposed situation
-                log(NOT_MODIFIED, "In the @Exposed situation with " + methodInfo.name + " and " + parameterValue);
-
-            } else {
-                log(NOT_MODIFIED, "In the @Modified situation with " + methodInfo.name + " and " + parameterValue);
-            }
-        }
     }
 
     public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {

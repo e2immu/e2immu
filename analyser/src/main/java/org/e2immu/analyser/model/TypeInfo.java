@@ -1209,9 +1209,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Set<ParameterizedType> explicitTypes() {
-        return typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
-                .flatMap(methodInfo -> methodInfo.explicitTypes()
-                        .stream()).collect(Collectors.toSet());
+        // handles SAMs of fields as well
+        Stream<ParameterizedType> methods = typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
+        Stream<ParameterizedType> fields = typeInspection.get().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
+        return Stream.concat(methods, fields).collect(Collectors.toSet());
     }
 
     public MethodInfo findConstructor(int parameters) {
