@@ -63,6 +63,18 @@ public class FunctionalInterfaceModified3<T> {
     }
 
     @Modified
+    public void expose3(Consumer<T> consumer) {
+        staticallyExposing(t2, consumer);
+    }
+
+    // passing on an undeclared FI object amounts to same as invoking it: you copy the modification status
+    // from the method you pass the FI on to
+    @Modified
+    public void expose4(Consumer<T> consumer) {
+        expose3(consumer);
+    }
+
+    @Modified
     private static <T> void staticallyExposing(@NotModified T t, Consumer<T> consumer) {
         consumer.accept(t);
     }

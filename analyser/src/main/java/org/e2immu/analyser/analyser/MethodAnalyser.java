@@ -744,6 +744,17 @@ public class MethodAnalyser {
                 isModified = haveModifying;
             }
         }
+        if (!isModified) {
+            OptionalInt maxModified = methodAnalysis.copyModificationStatusFrom.stream().mapToInt(mi -> mi.getKey().methodAnalysis.get().getProperty(VariableProperty.MODIFIED)).max();
+            if (maxModified.isPresent()) {
+                int mm = maxModified.getAsInt();
+                if (mm == Level.DELAY) {
+                    log(DELAYED, "Delaying modification on method {}, waiting to copy", methodInfo.distinguishingName());
+                    return false;
+                }
+                isModified = maxModified.getAsInt() == Level.TRUE;
+            }
+        }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified);
         return true;

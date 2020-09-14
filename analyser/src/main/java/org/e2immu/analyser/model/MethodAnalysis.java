@@ -227,6 +227,7 @@ public class MethodAnalysis extends Analysis {
     // ************** Modification computing
 
     public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
+    public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // ************** ERRORS
 

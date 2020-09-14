@@ -89,7 +89,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (evaluationContext.getCurrentMethod() != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
             boolean circularCall = evaluationContext.getCurrentType().typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
-            boolean undeclaredFunctionalInterface = methodInfo.isSingleAbstractMethod() && tryToDetectUndeclared(evaluationContext, computedScope);
+            boolean undeclaredFunctionalInterface = methodInfo.isSingleAbstractMethod() &&
+                    EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
 
             if ((circularCall || undeclaredFunctionalInterface) && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
                 methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
@@ -175,19 +176,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return result;
     }
 
-    // we should normally look at the value, but there is a chicken and egg problem
-    private boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
-        if(scope instanceof VariableExpression) {
-            VariableExpression variableExpression = (VariableExpression)scope;
-            if(variableExpression.variable instanceof ParameterInfo) return true;
-            Value value = evaluationContext.currentValue(variableExpression.variable);
-            VariableValue variableValue = value.asInstanceOf(VariableValue.class);
-            if (variableValue != null) {
-                return variableValue.variable instanceof ParameterInfo;
-            }
-        }
-        return false;
-    }
 
     private int notNullRequirementOnScope(int notNullRequirement) {
         if (methodInfo.typeInfo.isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
