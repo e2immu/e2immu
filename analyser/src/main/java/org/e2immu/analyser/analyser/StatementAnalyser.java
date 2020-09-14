@@ -817,20 +817,6 @@ public class StatementAnalyser {
         if (ignoreContentModifications != Level.TRUE) {
             log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
             variableProperties.addPropertyRestriction(variable, VariableProperty.MODIFIED, modified);
-
-            // FIND MODIFYING CALLS TO UNDECLARED FUNCTIONAL INTERFACES
-
-            if (modified == Level.TRUE && evaluationContext.getCurrentMethod() != null) {
-                TypeInfo bestType = variable.parameterizedType().bestTypeInfo();
-                MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
-                if (bestType != null && !methodAnalysis.typesModified.isSet(bestType)) {
-                    methodAnalysis.typesModified.put(bestType, true);
-                }
-                if (variable.isUndeclaredFunctionalInterface(currentValue) &&
-                        !methodAnalysis.callsUndeclaredFunctionalInterface.isSet()) {
-                    methodAnalysis.callsUndeclaredFunctionalInterface.set(true);
-                }
-            }
         } else {
             log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
         }

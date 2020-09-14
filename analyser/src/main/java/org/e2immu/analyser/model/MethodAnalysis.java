@@ -226,8 +226,7 @@ public class MethodAnalysis extends Analysis {
 
     // ************** Modification computing
 
-    public final SetOnceMap<TypeInfo, Boolean> typesModified = new SetOnceMap<>();
-    public final SetOnce<Boolean> callsUndeclaredFunctionalInterface = new SetOnce<>();
+    public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
 
     // ************** ERRORS
 

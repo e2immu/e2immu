@@ -48,4 +48,17 @@ public class TestMultiLevel {
         Assert.assertEquals(EFFECTIVE, value(EFFECTIVELY_NOT_NULL, NOT_NULL));
         Assert.assertEquals(DELAY, value(EFFECTIVELY_NOT_NULL, NOT_NULL_1));
     }
+
+    @Test
+    public void testDelayToFalse() {
+        Assert.assertEquals(FALSE, MultiLevel.delayToFalse(0));
+    }
+
+    @Test
+    public void testEventual() {
+        Assert.assertEquals(DELAY, MultiLevel.eventual(Level.DELAY, true));
+        Assert.assertEquals(DELAY, MultiLevel.eventual(Level.DELAY, false));
+        Assert.assertEquals(DELAY, MultiLevel.eventual(DELAY, true));
+        Assert.assertEquals(DELAY, MultiLevel.eventual(DELAY, false));
+    }
 }

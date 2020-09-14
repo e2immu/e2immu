@@ -49,6 +49,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public final Expression computedScope;
     public final List<Expression> parameterExpressions;
     public final MethodTypeParameterMap methodTypeParameterMap;
+    public final boolean isSAM;
 
     public MethodCall(@NotNull Expression object,
                       @NotNull Expression computedScope,
@@ -59,6 +60,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.computedScope = Objects.requireNonNull(computedScope);
         this.methodTypeParameterMap = methodTypeParameterMap;
+        isSAM = methodTypeParameterMap.methodInfo.typeInfo.isFunctionalInterface() &&
+               !methodTypeParameterMap.methodInfo.isDefaultImplementation;
     }
 
     @Override
@@ -83,8 +86,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
         StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 
+        // potential circular reference?
+        boolean alwaysModifying;
+
+        if (evaluationContext.getCurrentMethod() != null) {
+            MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
+            boolean circularCall = evaluationContext.getCurrentType().typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
+            boolean undeclaredFunctionalInterface = isSAM && tryToDetectUndeclared(evaluationContext, computedScope);
+
+            if ((circularCall || undeclaredFunctionalInterface) && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+                methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+            }
+            alwaysModifying = circularCall || undeclaredFunctionalInterface;
+        } else {
+            alwaysModifying = false;
+        }
+
         // is the method modifying, do we need to wait?
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int modified = alwaysModifying ? Level.TRUE : methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         int methodDelay = Level.fromBool(modified == Level.DELAY);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -157,6 +176,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(evaluationContext, objectValue);
 
         return result;
+    }
+
+    // we should normally look at the value, but there is a chicken and egg problem
+    private boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
+        if(scope instanceof VariableExpression) {
+            VariableExpression variableExpression = (VariableExpression)scope;
+            if(variableExpression.variable instanceof ParameterInfo) return true;
+            Value value = evaluationContext.currentValue(variableExpression.variable);
+            VariableValue variableValue = value.asInstanceOf(VariableValue.class);
+            if (variableValue != null) {
+                return variableValue.variable instanceof ParameterInfo;
+            }
+        }
+        return false;
     }
 
     private int notNullRequirementOnScope(int notNullRequirement) {
@@ -289,7 +322,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
                 int methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
-                if(methodNotNull != Level.DELAY) {
+                if (methodNotNull != Level.DELAY) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
                         evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,

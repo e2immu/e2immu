@@ -975,7 +975,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public MethodInfo convertMethodReferenceIntoLambda(ParameterizedType functionalInterfaceType,
                                                        TypeInfo enclosingType,
                                                        MethodReference methodReference,
-                                                       ExpressionContext expressionContext) {
+                                                       ExpressionContext expressionContext,
+                                                       Resolver resolver) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface();
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
@@ -1010,7 +1011,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 
-        Resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+        resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
         ParseLambdaExpr.ensureLambdaAnalysisDefaults(typeInfo);
 
         return methodInfo;

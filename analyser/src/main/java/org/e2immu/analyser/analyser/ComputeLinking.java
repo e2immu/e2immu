@@ -403,8 +403,8 @@ public class ComputeLinking {
             }
         }
         // this is set even in the face of method delays
-        if(!methodAnalysis.callsUndeclaredFunctionalInterface.isSet()) {
-            methodAnalysis.callsUndeclaredFunctionalInterface.set(false);
+        if(!methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+            methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
         return changes;
     }

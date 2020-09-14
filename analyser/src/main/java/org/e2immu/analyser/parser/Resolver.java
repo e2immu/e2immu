@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
@@ -40,7 +41,13 @@ import static org.e2immu.analyser.util.Logger.log;
 public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
-    public static List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private final Messages messages = new Messages();
+
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
+    }
+
+    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
@@ -57,16 +64,18 @@ public class Resolver {
         return sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
     }
 
-    private static List<TypeInfo> sorted(DependencyGraph<TypeInfo> typeGraph) {
+    private List<TypeInfo> sorted(DependencyGraph<TypeInfo> typeGraph) {
         Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
             Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
             log(RESOLVE, "Type {} is part of cycle: {}", typeInfo,
                     () -> typesInCycle.stream().map(t -> t.simpleName).collect(Collectors.joining(",")));
-            for(TypeInfo other: typesInCycle) {
+            for (TypeInfo other : typesInCycle) {
                 SMapSet.add(participatesInCycles, other, typesInCycle);
             }
+            messages.add(Message.newMessage(new Location(typeInfo), Message.CIRCULAR_TYPE_DEPENDENCY,
+                    typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
         for (TypeInfo typeInfo : sorted) {
             Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
@@ -79,12 +88,12 @@ public class Resolver {
     // one level down, it contains the imports, the top-level types, and for one top-level type, all sub-level types
 
     // the typeContextOfFile contains the types imported; we have no other access to import statements here
-    private static void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
-                                                  Map<TypeInfo, SortedType> toSortedType,
-                                                  Set<TypeInfo> stayWithin,
-                                                  TypeInfo typeInfo,
-                                                  TypeContext typeContextOfFile,
-                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
+                                           Map<TypeInfo, SortedType> toSortedType,
+                                           Set<TypeInfo> stayWithin,
+                                           TypeInfo typeInfo,
+                                           TypeContext typeContextOfFile,
+                                           E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         Set<TypeInfo> typeDependencies = new HashSet<>();
 
         TypeInspection ti = typeInfo.typeInspection.get();
@@ -120,7 +129,7 @@ public class Resolver {
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
     }
 
-    private static DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
+    private DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
@@ -197,7 +206,7 @@ public class Resolver {
                             } else if (parsedExpression instanceof Lambda) {
                                 sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
                             } else if (parsedExpression instanceof MethodReference) {
-                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext);
+                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext, this);
                             } else {
                                 throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                             }

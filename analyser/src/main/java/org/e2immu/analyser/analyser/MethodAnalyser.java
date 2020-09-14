@@ -682,28 +682,17 @@ public class MethodAnalyser {
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return false;
 
-        if (!methodAnalysis.callsUndeclaredFunctionalInterface.isSet()) {
-            log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
-                    methodInfo.distinguishingName());
-            return false;
-        }
-        if (methodAnalysis.callsUndeclaredFunctionalInterface.get()) {
-            Boolean haveModifying = findOtherModifyingElements(methodInfo);
-            if (haveModifying == null) return false;
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, haveModifying);
-            log(NOT_MODIFIED, "Set {} to modified? {}", methodInfo.distinguishingName(), haveModifying);
-            return true;
-        }
-
         // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.fieldSummaries.stream()
                 .map(Map.Entry::getValue)
                 .anyMatch(tv -> tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
-            log(NOT_MODIFIED, "Method {} cannot be @NotModified/is @Modified: fields are being assigned", methodInfo.distinguishingName());
+            log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
+
+        // if there are no field assignments, there may be modifying method calls
 
         // second step, check that linking has been computed
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) {
@@ -737,6 +726,24 @@ public class MethodAnalyser {
                         isModified ? "@Modified" : "@NotModified");
             }
         } // else: already true, so no need to look at this
+
+        if (!isModified) {
+            // if there are no modifying method calls, we still may have a modifying method
+            // this will be due to calling undeclared SAMs, or calling non-modifying methods in a circular type situation
+            // (A.nonModifying() calls B.modifying() on a parameter (NOT a field, so nonModifying is just that) which itself calls A.modifying()
+            // NOTE that in this situation we cannot have a container, as we require a modifying! (TODO check this statement is correct)
+
+            if (!methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+                log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
+                        methodInfo.distinguishingName());
+                return false;
+            }
+            if (methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get()) {
+                Boolean haveModifying = findOtherModifyingElements(methodInfo);
+                if (haveModifying == null) return false;
+                isModified = haveModifying;
+            }
+        }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
         methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified);
         return true;
@@ -753,8 +760,8 @@ public class MethodAnalyser {
         boolean someOtherMethodsNotYetDecided = methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .anyMatch(mi ->
-                        !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.isSet() ||
-                                (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get() &&
+                        !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
+                                (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
                                         mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY));
         if (someOtherMethodsNotYetDecided) {
             log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface",
@@ -763,7 +770,7 @@ public class MethodAnalyser {
         }
         return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
-                .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterface.get())
+                .filter(mi -> !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get())
                 .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
     }
 

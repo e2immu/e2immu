@@ -1,3 +1,4 @@
+
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -16,34 +17,23 @@
  *
  */
 
-package org.e2immu.analyser.model;
+package org.e2immu.analyser.parser;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * groups: FieldInfo, ParameterInfo, LocalVariable
- */
+import java.io.IOException;
 
-// at some point: @E2Container
-public interface Variable {
+public class TestModifyParameterChecks extends CommonTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestModifyParameterChecks.class);
 
-    static String detailedString(Set<Variable> dependencies) {
-        if (dependencies == null) return "";
-        return dependencies.stream().map(Variable::detailedString).collect(Collectors.joining("; "));
+    public TestModifyParameterChecks() {
+        super(false);
     }
 
-    ParameterizedType concreteReturnType();
-
-    ParameterizedType parameterizedType();
-
-    String name();
-
-    String detailedString();
-
-    boolean isStatic();
-
-    SideEffect sideEffect(EvaluationContext evaluationContext);
-
-    int variableOrder();
+    @Test
+    public void testModifyParameterChecks() throws IOException {
+        testClass("ModifyParameterChecks", 2);
+    }
 }

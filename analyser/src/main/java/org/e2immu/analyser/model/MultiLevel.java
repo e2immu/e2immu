@@ -172,6 +172,7 @@ public class MultiLevel {
     }
 
     public static int delayToFalse(int i) {
+        if (i < MultiLevel.FALSE) return MultiLevel.FALSE;
         return modifyEachComponent(i, MultiLevel::delayToFalseKeepRest);
     }
 

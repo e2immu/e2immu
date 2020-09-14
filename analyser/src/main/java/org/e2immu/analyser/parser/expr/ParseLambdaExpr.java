@@ -99,7 +99,7 @@ public class ParseLambdaExpr {
         TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
-        Resolver.sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+        new Resolver().sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
         ensureLambdaAnalysisDefaults(anonymousType);
 
         return new Lambda(functionalType, anonymousType.asParameterizedType());

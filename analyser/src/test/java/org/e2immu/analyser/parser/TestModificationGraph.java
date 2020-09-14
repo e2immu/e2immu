@@ -19,15 +19,18 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.stream.Collectors;
 
 public class TestModificationGraph extends CommonTestRunner {
 
@@ -35,14 +38,29 @@ public class TestModificationGraph extends CommonTestRunner {
         super(false);
     }
 
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if("c1".equals(fieldInfo.name)) {
+            int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            int expect = iteration < 2 ? Level.DELAY: Level.TRUE;
+            Assert.assertEquals(expect, modified);
+        }
+    };
+
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("incrementAndGetWithI".equals(methodInfo.name)) {
-            Assert.assertEquals("C1", methodInfo.methodAnalysis.get().typesModified
-                    .stream().map(e -> e.getKey().simpleName).sorted().collect(Collectors.joining(",")));
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("useC2".equals(methodInfo.name) && iteration > 1) {
-            // Assert.assertEquals("C2", methodInfo.methodAnalysis.get().typesModified
-            //        .stream().map(e -> e.getKey().simpleName).sorted().collect(Collectors.joining(",")));
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+        }
+        if ("C2".equals(methodInfo.name)) {
+            ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(1);
+            if (iteration > 0) {
+                Assert.assertEquals("c1", c1.parameterAnalysis.get().assignedToField.get().name);
+                if (iteration > 1) {
+               //     Assert.assertTrue(c1.parameterAnalysis.get().copiedFromFieldToParameters.get());
+                }
+            }
         }
     };
 
@@ -52,13 +70,18 @@ public class TestModificationGraph extends CommonTestRunner {
         }
         if ("C2".equals(typeInfo.simpleName)) {
             Assert.assertEquals(2, typeInfo.typeAnalysis.get().circularDependencies.get().size());
+            Assert.assertEquals("[]", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().toString());
         }
     };
 
+    // expect one warning for circular dependencies
+
     @Test
     public void test() throws IOException {
-        testClass("ModificationGraph", 0, 0, new DebugConfiguration.Builder()
+        testClass("ModificationGraph", 0, 1, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
 
     }

@@ -108,8 +108,10 @@ public class Parser {
 
     private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile) {
         // phase 2: resolve methods and fields
+        Resolver resolver = new Resolver();
+        List<SortedType> sortedTypes = resolver.sortTypes(inspectedTypesToTypeContextOfFile, e2ImmuAnnotationExpressions);
+        messages.addAll(resolver.getMessageStream());
 
-        List<SortedType> sortedTypes = Resolver.sortTypes(inspectedTypesToTypeContextOfFile, e2ImmuAnnotationExpressions);
         if (configuration.skipAnalysis) return sortedTypes;
 
         checkTypeAnalysisOfLoadedObjects();

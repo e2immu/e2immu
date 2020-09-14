@@ -23,13 +23,14 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+
+// in this test, the introduction of a functional interface has resolved the circular dependency
+// however, useC2 remains modifying because of the functional interface
 
 public class TestModificationGraphInterface extends CommonTestRunner {
 
@@ -39,7 +40,7 @@ public class TestModificationGraphInterface extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("useC2".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterface.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("incrementAndGetWithI".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));

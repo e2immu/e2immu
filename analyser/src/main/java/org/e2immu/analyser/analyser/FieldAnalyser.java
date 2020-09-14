@@ -461,13 +461,24 @@ public class FieldAnalyser {
 
     private int computeValueFromAssignment(TypeInspection typeInspection, FieldInfo fieldInfo, boolean haveInitialiser, Value value,
                                            VariableProperty property, boolean allDelaysResolved) {
-        IntStream assignments = typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL)
-                .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
-                .filter(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.isSet())
-                .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).value.get().getPropertyOutsideContext(property));
-        IntStream initialiser = haveInitialiser ? IntStream.of(value.getPropertyOutsideContext(property)) : IntStream.empty();
-        IntStream combined = IntStream.concat(assignments, initialiser);
-        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(messages, new Location(fieldInfo), combined) : combined.min().orElse(property.falseValue);
+        // we can make this very efficient with streams, but it becomes pretty hard to debug
+        List<Integer> values = new ArrayList<>();
+        typeInspection.constructorAndMethodStream(TypeInspection.Methods.ALL).forEach(methodInfo -> {
+            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+            if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
+                TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
+                if(tv.value.isSet()) {
+                    int v = tv.value.get().getPropertyOutsideContext(property);
+                    values.add(v);
+                }
+            }
+        });
+        if (haveInitialiser) {
+            int v = value.getPropertyOutsideContext(property);
+            values.add(v);
+        }
+        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(messages, new Location(fieldInfo), values.stream().mapToInt(Integer::intValue)) :
+                values.stream().mapToInt(Integer::intValue).min().orElse(property.falseValue);
         if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
     }

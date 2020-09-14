@@ -84,7 +84,7 @@ public class Message {
     public static final String ONLY_WRONG_MARK_LABEL = "@Only annotation, wrong mark label";
     public static final String DUPLICATE_MARK_LABEL = "Duplicate mark label";
 
-    public static final String ILLEGAL_PARAMETER_INDEX_IN_EXPOSED = "Illegal parameter index in @Exposed";
+    public static final String CIRCULAR_TYPE_DEPENDENCY = "Detected circular type dependency: this affects modification computations";
 
     public static final String CALLING_MODIFYING_METHOD_ON_E2IMMU = "Calling modifying method on level 2 immutable type";
 
@@ -102,6 +102,7 @@ public class Message {
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
+        map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }
