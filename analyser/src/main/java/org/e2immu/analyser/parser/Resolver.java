@@ -42,6 +42,11 @@ public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
     private final Messages messages = new Messages();
+    private final boolean subResolver;
+
+    public Resolver(boolean subResolver) {
+        this.subResolver = subResolver;
+    }
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
@@ -60,7 +65,11 @@ public class Resolver {
                 throw rte;
             }
         }
-
+        if (subResolver) {
+            TypeInfo typeInfo = inspectedTypes.keySet().stream().findAny().orElseThrow();
+            typeInfo.typeAnalysis.get().circularDependencies.set(Set.of());
+            return List.of(new SortedType(typeInfo));
+        }
         return sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
     }
 
@@ -84,10 +93,14 @@ public class Resolver {
         return sorted;
     }
 
-    // the type context of the file contains the imports and the top-level types of the compilation unit
-    // one level down, it contains the imports, the top-level types, and for one top-level type, all sub-level types
-
-    // the typeContextOfFile contains the types imported; we have no other access to import statements here
+    /**
+     * @param typeGraph                   the type graph
+     * @param toSortedType                output parameter!!!
+     * @param stayWithin                  restrict dependencies to this set
+     * @param typeInfo                    the type to resolve
+     * @param typeContextOfFile           the type context in which inspection took place; contains the types imported; we have no other access to import statements here
+     * @param e2ImmuAnnotationExpressions the annotation registry
+     */
     private void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
                                            Map<TypeInfo, SortedType> toSortedType,
                                            Set<TypeInfo> stayWithin,
@@ -206,7 +219,9 @@ public class Resolver {
                             } else if (parsedExpression instanceof Lambda) {
                                 sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
                             } else if (parsedExpression instanceof MethodReference) {
-                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext, this);
+                                Resolver resolver = new Resolver(true);
+                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext, resolver);
+                                messages.addAll(resolver.getMessageStream());
                             } else {
                                 throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                             }

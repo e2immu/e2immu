@@ -220,4 +220,22 @@ public class TestDependencyGraph {
         Assert.assertEquals('e', (int) sorted.get(0));
         Assert.assertEquals(1, countCycles.get());
     }
+
+    @Test
+    public void test8Undefined() {
+        DependencyGraph<Character> graph = new DependencyGraph<>();
+
+        graph.addNode('a', List.of('a', 'b'));
+        // we have NOT added b -> {}
+
+        // the result is a cycle, because b -> {} does not exist
+        AtomicInteger countCycles = new AtomicInteger();
+        List<Character> sorted = graph.sorted(c -> {
+            System.out.println("Breaking a cycle with " + c);
+            countCycles.incrementAndGet();
+        });
+        Assert.assertEquals("[a]", sorted.toString());
+        Assert.assertEquals("[a, b]", graph.dependencies('a').toString());
+        Assert.assertEquals(1, countCycles.get());
+    }
 }
