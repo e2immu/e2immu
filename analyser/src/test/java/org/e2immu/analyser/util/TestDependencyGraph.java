@@ -18,14 +18,21 @@
 
 package org.e2immu.analyser.util;
 
+import org.checkerframework.checker.units.qual.A;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class TestDependencyGraph {
+
+    private static final Consumer<Character> NO_CYCLES = c -> {
+        throw new UnsupportedOperationException(c + " participates in cycle");
+    };
 
     @Test
     public void test() {
@@ -34,7 +41,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of());
         graph.addNode('b', List.of());
         graph.addNode('c', List.of('a', 'b'));
-        List<Character> sorted = graph.sorted();
+        List<Character> sorted = graph.sorted(NO_CYCLES);
         Assert.assertEquals("[a, b, c]", sorted.toString());
 
         Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('a').toString());
@@ -52,7 +59,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of());
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of('a'));
-        List<Character> sorted = graph.sorted();
+        List<Character> sorted = graph.sorted(NO_CYCLES);
         Assert.assertEquals("[a, c, b]", sorted.toString());
 
         Assert.assertEquals("[a]", graph.dependenciesOnlyTerminals('a').toString());
@@ -70,7 +77,7 @@ public class TestDependencyGraph {
         graph.addNode('a', List.of('c'));
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of());
-        List<Character> sorted = graph.sorted();
+        List<Character> sorted = graph.sorted(NO_CYCLES);
         Assert.assertEquals("[c, a, b]", sorted.toString());
 
         Assert.assertEquals("[c]", graph.dependenciesOnlyTerminals('a').toString());
@@ -83,13 +90,16 @@ public class TestDependencyGraph {
 
     @Test
     public void test4() {
+        // cycle: a<->c, b->c
         DependencyGraph<Character> graph = new DependencyGraph<>();
         Assert.assertTrue(graph.isEmpty());
 
         graph.addNode('a', List.of('c'));
         graph.addNode('b', List.of('c'));
         graph.addNode('c', List.of('a'));
-        List<Character> sorted = graph.sorted();
+        List<Character> sorted = graph.sorted(c -> {
+            if ('b' == c) throw new UnsupportedOperationException();
+        });
         Assert.assertEquals("[a, c, b]", sorted.toString());
 
         Set<Character> elements = new TreeSet<>();
@@ -105,12 +115,17 @@ public class TestDependencyGraph {
     public void test5() {
         DependencyGraph<Character> graph = new DependencyGraph<>();
 
+        // b -> d, c -> a, b, d -> a, b, c
         graph.addNode('a', List.of());
         graph.addNode('b', List.of('d'));
         graph.addNode('c', List.of('a', 'b'));
         graph.addNode('d', List.of('a', 'b', 'c'));
-        List<Character> sorted = graph.sorted();
+        AtomicInteger countCycles = new AtomicInteger();
+        List<Character> sorted = graph.sorted(c -> {
+            countCycles.incrementAndGet();
+        });
         Assert.assertEquals("[a, b, c, d]", sorted.toString());
+        Assert.assertEquals(1, countCycles.get());
 
         Assert.assertFalse(graph.isFrozen());
         graph.ensureNotFrozen();
@@ -179,5 +194,30 @@ public class TestDependencyGraph {
         graph2.addNode('f', List.of('g'));
         System.out.println("Deps of 'f': " + graph2.dependenciesOnlyTerminals('f'));
         Assert.assertFalse(graph.equalTransitiveTerminals(graph2));
+    }
+
+    @Test
+    public void test7Circular() {
+        DependencyGraph<Character> graph = new DependencyGraph<>();
+
+        // d -> c -> b -> a -> d, a -> e
+        graph.addNode('a', List.of('d', 'e'));
+        graph.addNode('b', List.of('a'));
+        graph.addNode('c', List.of('b'));
+        graph.addNode('d', List.of('c'));
+        graph.addNode('e', List.of());
+
+        for (char c : new char[]{'a', 'b', 'c', 'd'}) {
+            Assert.assertEquals("[a, b, c, d, e]", graph.dependencies(c).toString());
+        }
+        Assert.assertEquals("[e]", graph.dependencies('e').toString());
+
+        AtomicInteger countCycles = new AtomicInteger();
+        List<Character> sorted = graph.sorted(c -> {
+            System.out.println("Breaking a cycle with " + c);
+            countCycles.incrementAndGet();
+        });
+        Assert.assertEquals('e', (int) sorted.get(0));
+        Assert.assertEquals(1, countCycles.get());
     }
 }

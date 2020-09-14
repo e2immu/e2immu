@@ -50,6 +50,10 @@ public class TypeAnalysis extends Analysis {
         return typeInfo.typeInspection.get().annotationMode;
     }
 
+    // computed during inspection
+
+    public final SetOnce<Set<TypeInfo>> circularDependencies = new SetOnce<>();
+
     // to avoid repetitions
     public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
 

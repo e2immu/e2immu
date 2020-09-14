@@ -21,11 +21,12 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.SMapSet;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,26 @@ public class Resolver {
                 throw rte;
             }
         }
-        return typeGraph.sorted().stream().map(toSortedType::get).collect(Collectors.toList());
+
+        return sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+    }
+
+    private static List<TypeInfo> sorted(DependencyGraph<TypeInfo> typeGraph) {
+        Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
+        List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
+            // typeInfo is part of a cycle, dependencies are:
+            Set<TypeInfo> typesInCycle = typeGraph.dependencies(typeInfo);
+            log(RESOLVE, "Type {} is part of cycle: {}", typeInfo,
+                    () -> typesInCycle.stream().map(t -> t.simpleName).collect(Collectors.joining(",")));
+            for(TypeInfo other: typesInCycle) {
+                SMapSet.add(participatesInCycles, other, typesInCycle);
+            }
+        });
+        for (TypeInfo typeInfo : sorted) {
+            Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
+            typeInfo.typeAnalysis.get().circularDependencies.set(circularDependencies == null ? Set.of() : ImmutableSet.copyOf(circularDependencies));
+        }
+        return sorted;
     }
 
     // the type context of the file contains the imports and the top-level types of the compilation unit
@@ -73,10 +93,13 @@ public class Resolver {
             typeDependencies.addAll(ti.parentClass.typeInfoSet());
 
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
+
+        TypeInfo primaryType = typeInfo.primaryType();
+        stayWithin.addAll(primaryType.typeInspection.get().allTypesInPrimaryType);
+
         typeDependencies.addAll(ti.subTypes); // dependencies for subtypes go from enclosing to sub
         ti.subTypes.forEach(typeContextOfType::addToContext);
         ti.subTypes.forEach(subType -> {
-            stayWithin.add(subType);
             recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType, e2ImmuAnnotationExpressions);
         });
         DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType, typeDependencies);

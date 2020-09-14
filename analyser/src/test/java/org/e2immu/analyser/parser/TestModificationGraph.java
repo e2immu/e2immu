@@ -21,6 +21,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,15 +40,25 @@ public class TestModificationGraph extends CommonTestRunner {
             Assert.assertEquals("C1", methodInfo.methodAnalysis.get().typesModified
                     .stream().map(e -> e.getKey().simpleName).sorted().collect(Collectors.joining(",")));
         }
-        if ("useC2".equals(methodInfo.name) && iteration>1) {
-           // Assert.assertEquals("C2", methodInfo.methodAnalysis.get().typesModified
+        if ("useC2".equals(methodInfo.name) && iteration > 1) {
+            // Assert.assertEquals("C2", methodInfo.methodAnalysis.get().typesModified
             //        .stream().map(e -> e.getKey().simpleName).sorted().collect(Collectors.joining(",")));
+        }
+    };
+
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if ("C1".equals(typeInfo.simpleName)) {
+            Assert.assertEquals(2, typeInfo.typeAnalysis.get().circularDependencies.get().size());
+        }
+        if ("C2".equals(typeInfo.simpleName)) {
+            Assert.assertEquals(2, typeInfo.typeAnalysis.get().circularDependencies.get().size());
         }
     };
 
     @Test
     public void test() throws IOException {
         testClass("ModificationGraph", 0, 0, new DebugConfiguration.Builder()
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
 
     }

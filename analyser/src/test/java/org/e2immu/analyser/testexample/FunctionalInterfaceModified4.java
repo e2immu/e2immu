@@ -45,24 +45,24 @@ public class FunctionalInterfaceModified4<T> {
         is marked @Exposed
      */
 
-    @NotModified //no self-modifications are possible (no other modifying methods)
+    @NotModified // no other means of modification
     public void visit(Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);
         }
     }
 
-    @NotModified // forEach is @NotModified
+    @NotModified // no other means of modification
     public void visit2(Consumer<T> consumer) {
         ts.forEach(consumer);
     }
 
-    @NotModified // simply following modification rules
+    @NotModified // no other means of modification
     public void visit3(Consumer<T> consumer) {
         doTheVisiting(consumer, ts);
     }
 
-    @NotModified // trivially, not touching fields
+    @NotModified // ?
     private static <T> void doTheVisiting(Consumer<T> consumer, @NotModified Set<T> set) {
         set.forEach(consumer);
     }

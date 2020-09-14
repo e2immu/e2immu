@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @UtilityClass
@@ -148,4 +149,19 @@ public class Logger {
         }
     }
 
+    @NotModified
+    public static void log(LogTarget logTarget, String msg, Object object, Supplier<Object> supplier) {
+        if (logTargets == null) throw new UnsupportedOperationException("You must activate the log system");
+        if (logTargets.contains(logTarget)) {
+            logger.log(logTarget, msg, object, supplier.get());
+        }
+    }
+
+    @NotModified
+    public static void log(LogTarget logTarget, String msg, Supplier<Object> supplier) {
+        if (logTargets == null) throw new UnsupportedOperationException("You must activate the log system");
+        if (logTargets.contains(logTarget)) {
+            logger.log(logTarget, msg, supplier.get());
+        }
+    }
 }

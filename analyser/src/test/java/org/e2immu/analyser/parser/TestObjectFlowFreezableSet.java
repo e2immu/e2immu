@@ -183,10 +183,10 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("ObjectFlowFreezableSet", 3, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());
 

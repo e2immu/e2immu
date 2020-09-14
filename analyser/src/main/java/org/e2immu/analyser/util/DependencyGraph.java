@@ -22,6 +22,7 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * In-house implementation of a directed graph that can be used to model dependencies between objects.
@@ -129,6 +130,11 @@ public class DependencyGraph<T> extends Freezable {
 
     @Independent
     public List<T> sorted() {
+        return sorted(t -> {});
+    }
+
+    @Independent
+    public List<T> sorted(Consumer<T> reportPartOfCycle) {
         Map<T, Node<T>> toDo = new HashMap<>(nodeMap);
         Set<T> done = new HashSet<>();
         List<T> result = new ArrayList<>(nodeMap.size());
@@ -142,11 +148,13 @@ public class DependencyGraph<T> extends Freezable {
                 }
             }
             if (keys.isEmpty()) {
+                // we have a cycle, break by taking one with a minimal number of dependencies
                 Map.Entry<T, Node<T>> toRemove = toDo.entrySet().stream().min(Comparator.comparingInt(e -> e.getValue().dependsOn.size())).orElseThrow();
                 T key = toRemove.getKey();
                 toDo.remove(key);
                 done.add(key);
                 result.add(key);
+                reportPartOfCycle.accept(key);
             } else {
                 toDo.keySet().removeAll(keys);
                 result.addAll(keys);
