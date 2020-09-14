@@ -288,15 +288,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (!contentNotNullRequired) {
             int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
-                boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodAnalysis.getProperty(VariableProperty.NOT_NULL));
-                if (!isNotNull) {
-                    evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                            "Result of method call " + methodInfo.distinguishingName());
-                }
+                int methodNotNull = methodAnalysis.getProperty(VariableProperty.NOT_NULL);
+                if(methodNotNull != Level.DELAY) {
+                    boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
+                    if (!isNotNull) {
+                        evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Result of method call " + methodInfo.distinguishingName());
+                    }
+                } // else: delaying is fine
             }
         } // else: we've already requested this from the scope (functional interface)
-
-        // TODO @NotModified1
 
         int requiredSize = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
         if (requiredSize > Level.FALSE) {

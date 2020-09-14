@@ -17,7 +17,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,10 +35,30 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
         super(true);
     }
 
+    // the @NotNull1 on stream() is only known after the first iteration
+    // it should not yet cause an error in the first.
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if("getFirst".equals(d.methodInfo.name) && d.iteration == 0) {
+            Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("stream".equals(methodInfo.name)) {
+            int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, notNull);
+            } else {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
+            }
+        }
+    };
 
     @Test
     public void test() throws IOException {
         testClass("IndependentFunctionalParameterChecks", 0, 0, new DebugConfiguration.Builder()
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

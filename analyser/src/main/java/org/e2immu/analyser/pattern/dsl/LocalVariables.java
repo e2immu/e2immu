@@ -193,4 +193,23 @@ public class LocalVariables {
             }
         });
     }
+
+    /*
+        TODO create pattern
+
+        int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+        if (iteration == 0) {
+            Assert.assertEquals(Level.DELAY, notNull);
+        } else {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
+        }
+
+        should probably be better as
+
+        int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+        int expected = iteration == 0 ? Level.DELAY : MultiLevel. EFFECTIVELY_CONTENT_NOT_NULL;
+        Assert.assertEquals(expected, notNull);
+
+        try not to repeat more complicated expressions (here: Assert.assertEquals)
+     */
 }
