@@ -80,13 +80,14 @@ public class EvaluateParameters {
                     }
                 }
 
-                if (parameterInfo.parameterizedType.isFunctionalInterface() &&
-                        tryToDetectUndeclared(evaluationContext, parameterExpression) &&
-                        evaluationContext.getCurrentMethod() != null &&
-                        !evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.isSet(methodInfo)) {
-                    evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.put(methodInfo, true);
+                if (parameterInfo.parameterizedType.isFunctionalInterface()) {
+                    Boolean undeclared = tryToDetectUndeclared(evaluationContext, parameterExpression);
+                    if (undeclared == Boolean.TRUE &&
+                            evaluationContext.getCurrentMethod() != null &&
+                            !evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.isSet(methodInfo)) {
+                        evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.put(methodInfo, true);
+                    }
                 }
-
                 int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
 
@@ -171,24 +172,14 @@ public class EvaluateParameters {
 
 
     // we should normally look at the value, but there is a chicken and egg problem
-    public static boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
+    public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
         if (scope instanceof VariableExpression) {
             VariableExpression variableExpression = (VariableExpression) scope;
             if (variableExpression.variable instanceof ParameterInfo) return true;
             Value value = evaluationContext.currentValue(variableExpression.variable);
-            if (value == UnknownValue.NO_VALUE) return false; // delay
-            VariableValue variableValue = value.asInstanceOf(VariableValue.class);
-            if (variableValue != null) {
-                return variableValue.variable instanceof ParameterInfo;
-            }
-            FinalFieldValue finalFieldValue = value.asInstanceOf(FinalFieldValue.class);
-            if (finalFieldValue != null) {
-                return true; // if it were a method, it would not be a FFV
-            }
-            FinalFieldValueObjectFlowInContext finalFieldValueObjectFlowInContext = value.asInstanceOf(FinalFieldValueObjectFlowInContext.class);
-            if (finalFieldValueObjectFlowInContext != null) {
-                return true; // if it were a method, it would not be a FFV
-            }
+            if (value == UnknownValue.NO_VALUE) return null; // delay
+            // TODO
+            return true;
         }
         return false;
     }

@@ -35,7 +35,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
             ParameterInfo set = methodInfo.methodInspection.get().parameters.get(1);
             Assert.assertEquals("set", set.name);
             Assert.assertEquals(Level.FALSE, set.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-        //    Assert.assertEquals(Level.IS_A_SIZE, set.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
+            //    Assert.assertEquals(Level.IS_A_SIZE, set.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
         }
         if ("visit2".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals(Level.FALSE, modified);
@@ -47,8 +47,8 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
             FieldInfo ts = methodInfo.typeInfo.getFieldByName("ts");
             TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(ts);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
-            if (iteration > 0) {
-                //      Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.MODIFIED));
+            if (iteration > 1) {
+                Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.MODIFIED));
             }
             MethodInfo doTheVisiting = methodInfo.typeInfo.findUniqueMethod("doTheVisiting", 2);
             Assert.assertTrue(methodInfo.methodAnalysis.get().copyModificationStatusFrom.isSet(doTheVisiting));
@@ -58,8 +58,8 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("FunctionalInterfaceModified4", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

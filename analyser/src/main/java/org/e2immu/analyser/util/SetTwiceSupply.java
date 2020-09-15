@@ -58,7 +58,7 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
 
     @Only(after = "set")
     @Modified
-    public T get(@NotNull String errorContext) {
+    public T get(String errorContext) {
         if (!super.isSet()) {
             if (runnable == null) {
                 throw new UnsupportedOperationException("Not yet set, and no runnable provided: " + errorContext);

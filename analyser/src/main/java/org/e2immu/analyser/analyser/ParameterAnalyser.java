@@ -99,7 +99,7 @@ public class ParameterAnalyser {
                         if (inField > inParameter && verifySizeNotModified(variableProperty, parameterInfo, parameterAnalysis)) {
                             log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
-                            parameterAnalysis.setProperty(variableProperty, inField);
+                            parameterAnalysis.setProperty(methodProperties, variableProperty, inField);
                             changed = true;
                         }
                     } else {

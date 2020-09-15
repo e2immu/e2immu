@@ -68,6 +68,20 @@ public class ParameterAnalysis extends Analysis {
         return parameterInfo.owner.typeInfo.typeAnalysis.get().annotationMode();
     }
 
+    public void setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
+        // raise error if the situation gets worse
+        int valueFromOverrides = parameterInfo.owner.methodAnalysis.get().overrides.stream()
+                .map(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index))
+                .mapToInt(pi -> pi.parameterAnalysis.get().getProperty(variableProperty)).max().orElse(Level.DELAY);
+        if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+            boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
+            if (complain) {
+                evaluationContext.raiseError(Message.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER, variableProperty.name + ", parameter " + parameterInfo.name);
+            }
+        }
+        super.setProperty(variableProperty, value);
+    }
+
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
@@ -133,9 +147,15 @@ public class ParameterAnalysis extends Analysis {
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
-        IntStream overrideValues = parameterInfo.owner.methodAnalysis.get().overrides.stream()
-                .mapToInt(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index).parameterAnalysis.get().getPropertyAsIs(variableProperty));
-        int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
+        IntStream theStream;
+        if (hasBeenDefined) {
+            theStream = mine;
+        } else {
+            IntStream overrideValues = parameterInfo.owner.methodAnalysis.get().overrides.stream()
+                    .mapToInt(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index).parameterAnalysis.get().getPropertyAsIs(variableProperty));
+            theStream = IntStream.concat(mine, overrideValues);
+        }
+        int max = theStream.max().orElse(Level.DELAY);
         if (max == Level.DELAY && !hasBeenDefined) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());

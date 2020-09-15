@@ -244,7 +244,7 @@ public class ComputeLinking {
                                     methodInfo.distinguishingName());
                             int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                             if (currentModified == Level.DELAY) {
-                                parameterAnalysis.setProperty(VariableProperty.MODIFIED, summary);
+                                parameterAnalysis.setProperty(methodProperties, VariableProperty.MODIFIED, summary);
                                 changes = true;
                             }
                         }
@@ -367,10 +367,12 @@ public class ComputeLinking {
     private static boolean copyContextProperties(MethodInfo methodInfo, VariableProperties methodProperties) {
         boolean changes = false;
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        boolean anyDelay = false;
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
             int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
             boolean haveDelay = methodDelay == Level.TRUE || aboutVariable.getCurrentValue() == UnknownValue.NO_VALUE;
+            if (haveDelay) anyDelay = true;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
@@ -409,14 +411,13 @@ public class ComputeLinking {
                         // we could not find anything related to size, let's advertise that
                         int sizeInParam = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
-                            parameterInfo.parameterAnalysis.get().setProperty(VariableProperty.SIZE, Level.IS_A_SIZE);
+                            parameterInfo.parameterAnalysis.get().setProperty(methodProperties, VariableProperty.SIZE, Level.IS_A_SIZE);
                         }
                     }
                 }
             }
         }
-        // this is set even in the face of method delays
-        if (!methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        if (!anyDelay && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
         return changes;

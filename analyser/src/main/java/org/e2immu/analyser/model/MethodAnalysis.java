@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -73,6 +75,19 @@ public class MethodAnalysis extends Analysis {
     @Override
     public AnnotationMode annotationMode() {
         return typeInfo.typeAnalysis.get().annotationMode();
+    }
+
+    public void setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
+        // raise error if the situation gets worse
+        int valueFromOverrides = valueFromOverrides(variableProperty);
+        if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+            boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
+            if (complain) {
+                evaluationContext.raiseError(Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name);
+            }
+        }
+        // normal operation
+        setProperty(variableProperty, value);
     }
 
     @Override
@@ -129,10 +144,20 @@ public class MethodAnalysis extends Analysis {
         return returnType.getProperty(variableProperty);
     }
 
+    private int valueFromOverrides(VariableProperty variableProperty) {
+        return overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+    }
+
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
-        IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
-        int max = IntStream.concat(mine, overrideValues).max().orElse(Level.DELAY);
+        IntStream theStream;
+        if (hasBeenDefined) {
+            theStream = mine;
+        } else {
+            IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
+            theStream = IntStream.concat(mine, overrideValues);
+        }
+        int max = theStream.max().orElse(Level.DELAY);
         if (max == Level.DELAY && !hasBeenDefined) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());

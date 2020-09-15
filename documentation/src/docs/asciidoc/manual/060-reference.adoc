@@ -1,2 +1,6 @@
-
 == Overview of annotations
+
+=== Inheritance of method annotations
+
+In general, the analyser allows a method to do better than the method it overrides.
+It will raise an error when the overriding method is {modified}, where the original is {nm}.

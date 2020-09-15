@@ -19,16 +19,55 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.TypeInfo;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
 
 public class TestSetTwiceSupply extends CommonTestRunner {
+
+    // !! BE CAREFUL, SetTwiceSupply inherits from SetTwice, and the same method name is present multiple times
+
+    public TestSetTwiceSupply() {
+        super(true);
+    }
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
+        @Override
+        public void visit(int iteration, FieldInfo fieldInfo) {
+            if ("runnable".equals(fieldInfo.name) && iteration > 0) {
+                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            }
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("isSet".equals(methodInfo.name) && "SetTwiceSupply".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
+            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+        }
+    };
+
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo runnable = typeContext.getFullyQualified(Runnable.class);
+        Assert.assertTrue(runnable.isFunctionalInterface());
+    };
+
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("SetTwice", "SetTwiceSupply"), 0, 0, new DebugConfiguration.Builder()
+                .addTypeContextVisitor(typeContextVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

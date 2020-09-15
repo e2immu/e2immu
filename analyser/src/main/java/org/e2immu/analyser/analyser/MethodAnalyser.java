@@ -161,7 +161,7 @@ public class MethodAnalyser {
                 if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
                     // internal check
                     if (methodInfo.isVoid()) throw new UnsupportedOperationException();
-                    if (propertiesOfReturnStatements(methodInfo, methodAnalysis))
+                    if (propertiesOfReturnStatements(methodInfo, methodAnalysis, methodProperties))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
                     if (methodIsConstant(methodInfo, methodAnalysis, methodProperties)) changes = true;
@@ -170,7 +170,7 @@ public class MethodAnalyser {
                     if (methodCreatesObjectOfSelf(numberedStatements, methodInfo, methodAnalysis)) changes = true;
                 }
                 StaticModifier.detectMissingStaticModifier(messages, methodInfo, methodAnalysis);
-                if (methodIsNotModified(methodInfo, methodAnalysis)) changes = true;
+                if (methodIsModified(methodInfo, methodAnalysis, methodProperties)) changes = true;
 
                 // @Only, @Mark comes after modifications
                 if (computeOnlyMarkPrepWork(methodInfo, methodAnalysis)) changes = true;
@@ -179,8 +179,8 @@ public class MethodAnalyser {
             if (methodIsIndependent(methodInfo, methodAnalysis, methodProperties)) changes = true;
 
             // size comes after modifications
-            if (computeSize(methodInfo, methodAnalysis)) changes = true;
-            if (computeSizeCopy(methodInfo, methodAnalysis)) changes = true;
+            if (computeSize(methodInfo, methodAnalysis, methodProperties)) changes = true;
+            if (computeSizeCopy(methodInfo, methodAnalysis, methodProperties)) changes = true;
 
             if (parameterAnalyser.analyse(methodProperties)) changes = true;
             return changes;
@@ -481,10 +481,11 @@ public class MethodAnalyser {
     }
 
     private boolean propertiesOfReturnStatements(MethodInfo methodInfo,
-                                                 MethodAnalysis methodAnalysis) {
+                                                 MethodAnalysis methodAnalysis,
+                                                 EvaluationContext evaluationContext) {
         boolean changes = false;
         for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            if (propertyOfReturnStatements(variableProperty, methodInfo, methodAnalysis))
+            if (propertyOfReturnStatements(variableProperty, methodInfo, methodAnalysis, evaluationContext))
                 changes = true;
         }
         return changes;
@@ -494,7 +495,8 @@ public class MethodAnalyser {
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
     private boolean propertyOfReturnStatements(VariableProperty variableProperty,
                                                MethodInfo methodInfo,
-                                               MethodAnalysis methodAnalysis) {
+                                               MethodAnalysis methodAnalysis,
+                                               EvaluationContext evaluationContext) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return false;
@@ -516,11 +518,11 @@ public class MethodAnalyser {
         }
         if (value <= currentValue) return false; // not improving.
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(variableProperty, value);
+        methodAnalysis.setProperty(evaluationContext, variableProperty, value);
         return true;
     }
 
-    private boolean computeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean computeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
         int current = methodAnalysis.getProperty(VariableProperty.SIZE);
         if (current != Level.DELAY) return false;
 
@@ -542,11 +544,12 @@ public class MethodAnalyser {
                 }
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
-                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimumForSize(messages, new Location(methodInfo), stream));
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimumForSize(messages, new Location(methodInfo), stream), evaluationContext);
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
-            return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, propagateSizeAnnotations(methodInfo, methodAnalysis));
+            return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE,
+                    propagateSizeAnnotations(methodInfo, methodAnalysis), evaluationContext);
         }
 
         // modifying method
@@ -560,7 +563,7 @@ public class MethodAnalyser {
     }
 
 
-    private boolean computeSizeCopy(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean computeSizeCopy(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
         int current = methodAnalysis.getProperty(VariableProperty.SIZE_COPY);
         if (current != Level.DELAY) return false;
 
@@ -581,7 +584,7 @@ public class MethodAnalyser {
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE_COPY));
                 int min = stream.min().orElse(Level.DELAY);
-                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min);
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE_COPY, min, evaluationContext);
             }
             return false;
         }
@@ -600,7 +603,11 @@ public class MethodAnalyser {
         return false; // TODO NYI
     }
 
-    private boolean writeSize(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperty variableProperty, int value) {
+    private boolean writeSize(MethodInfo methodInfo,
+                              MethodAnalysis methodAnalysis,
+                              VariableProperty variableProperty,
+                              int value,
+                              EvaluationContext evaluationContext) {
         if (value == Level.DELAY) {
             log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
             return false;
@@ -608,7 +615,7 @@ public class MethodAnalyser {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (value <= currentValue) return false; // not improving.
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(variableProperty, value);
+        methodAnalysis.setProperty(evaluationContext, variableProperty, value);
         return true;
     }
 
@@ -679,7 +686,7 @@ public class MethodAnalyser {
         return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
-    private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private boolean methodIsModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return false;
 
         // first step, check field assignments
@@ -688,7 +695,7 @@ public class MethodAnalyser {
                 .anyMatch(tv -> tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
 
@@ -756,7 +763,7 @@ public class MethodAnalyser {
             }
         }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(VariableProperty.MODIFIED, isModified);
+        methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, isModified ? Level.TRUE : Level.FALSE);
         return true;
     }
 
@@ -801,7 +808,7 @@ public class MethodAnalyser {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) return false; // wait
             if (modified == Level.TRUE) {
-                methodAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                methodAnalysis.setProperty(methodProperties, VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 return true;
             }
         } // else: for constructors, we assume @Modified so that rule is not that useful
@@ -857,7 +864,7 @@ public class MethodAnalyser {
         // conclusion
 
         boolean independent = parametersIndependentOfFields && returnObjectIsIndependent;
-        methodAnalysis.setProperty(VariableProperty.INDEPENDENT, independent ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
+        methodAnalysis.setProperty(methodProperties, VariableProperty.INDEPENDENT, independent ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;

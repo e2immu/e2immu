@@ -29,7 +29,6 @@ import java.util.Objects;
 @E2Container
 public class Message {
 
-
     public enum Severity {
         WARN,
         ERROR
@@ -88,8 +87,9 @@ public class Message {
 
     public static final String CALLING_MODIFYING_METHOD_ON_E2IMMU = "Calling modifying method on level 2 immutable type";
 
-    public static final String NO_APPROVED_PRECONDITIONS = "No approved preconditions" ;
-
+    public static final String NO_APPROVED_PRECONDITIONS = "No approved preconditions";
+    public static final String WORSE_THAN_OVERRIDDEN_METHOD = "Property value worse than overridden method";
+    public static final String WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER = "Property value worse than overridden method's parameter";
 
     @NotNull1
     @E2Container
@@ -103,6 +103,7 @@ public class Message {
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
         map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
+        map.put(WORSE_THAN_OVERRIDDEN_METHOD, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }

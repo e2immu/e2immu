@@ -85,13 +85,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // potential circular reference?
         boolean alwaysModifying;
+        boolean delayUndeclared = false;
 
         if (evaluationContext.getCurrentMethod() != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
             boolean circularCall = evaluationContext.getCurrentType().typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
-            boolean undeclaredFunctionalInterface = methodInfo.isSingleAbstractMethod() &&
-                    EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
-
+            boolean undeclaredFunctionalInterface;
+            if (methodInfo.isSingleAbstractMethod()) {
+                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
+                undeclaredFunctionalInterface = b != null && b;
+                delayUndeclared = b == null;
+            } else {
+                undeclaredFunctionalInterface = false;
+            }
             if ((circularCall || undeclaredFunctionalInterface) && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
                 methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
             }
@@ -102,7 +108,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // is the method modifying, do we need to wait?
         int modified = alwaysModifying ? Level.TRUE : methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        int methodDelay = Level.fromBool(modified == Level.DELAY);
+        int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
         int notNullForward = notNullRequirementOnScope(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL));
