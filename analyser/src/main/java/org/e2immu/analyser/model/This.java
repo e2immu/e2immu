@@ -26,14 +26,16 @@ import java.util.Objects;
 public class This implements Variable {
     public final TypeInfo typeInfo;
     public final boolean explicitlyWriteType;
+    public final boolean writeSuper;
 
     public This(TypeInfo typeInfo) {
-        this(typeInfo, false);
+        this(typeInfo, false, false);
     }
 
-    public This(TypeInfo typeInfo, boolean explicitlyWriteType) {
+    public This(TypeInfo typeInfo, boolean explicitlyWriteType, boolean writeSuper) {
         this.typeInfo = Objects.requireNonNull(typeInfo);
         this.explicitlyWriteType = explicitlyWriteType;
+        this.writeSuper = writeSuper;
     }
 
     @Override
@@ -66,18 +68,18 @@ public class This implements Variable {
 
     @Override
     public String name() {
-        if (explicitlyWriteType) return typeInfo.simpleName + ".this";
-        return "this";
+        if (explicitlyWriteType) return typeInfo.simpleName + (writeSuper ? ".super" : ".this");
+        return writeSuper ? "super" : "this";
     }
 
     @Override
     public String toString() {
-        return typeInfo.simpleName + ".this";
+        return typeInfo.simpleName + (writeSuper ? ".super" : ".this");
     }
 
     @Override
     public String detailedString() {
-        return "this keyword (of " + typeInfo.fullyQualifiedName + ")";
+        return (writeSuper ? "super" : "this") + " keyword (of " + typeInfo.fullyQualifiedName + ")";
     }
 
     @Override

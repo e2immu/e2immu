@@ -459,13 +459,18 @@ public class ExpressionContext {
                 ThisExpr thisExpr = expression.asThisExpr();
                 Variable variable = thisExpr.getTypeName().map(typeName -> {
                     NamedType superType = typeContext.get(typeName.asString(), true);
-                    if(!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
-                    return new This((TypeInfo)superType, true);
+                    if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
+                    return new This((TypeInfo) superType, true, false);
                 }).orElse(new This(enclosingType));
                 return new VariableExpression(variable);
             }
             if (expression.isSuperExpr()) {
-                Variable variable = new This(enclosingType); // TODO
+                SuperExpr superExpr = expression.asSuperExpr();
+                Variable variable = superExpr.getTypeName().map(typeName -> {
+                    NamedType superType = typeContext.get(typeName.asString(), true);
+                    if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
+                    return new This((TypeInfo) superType, true, true);
+                }).orElse(new This(enclosingType, false, true));
                 return new VariableExpression(variable);
             }
             if (expression.isTypeExpr()) {
