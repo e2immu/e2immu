@@ -52,8 +52,20 @@ public class TestSetTwiceSupply extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("isSet".equals(methodInfo.name) && "SetTwiceSupply".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
+        if ("isSetPotentiallyRun".equals(methodInfo.name) && iteration > 0) {
             Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+        }
+        if ("set".equals(methodInfo.name) && "SetTwiceSupply".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
+            Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());
+        }
+        if ("getPotentiallyRun".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 0 && iteration > 0) {
+            Assert.assertEquals("not (null == this.t)", methodInfo.methodAnalysis.get().precondition.get().toString());
+        }
+        if ("getPotentiallyRun".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
+            Assert.assertEquals("not (null == this.t)", methodInfo.methodAnalysis.get().precondition.get().toString());
+        }
+        if("setRunnable".equals(methodInfo.name) && iteration>0) {
+            Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());
         }
     };
 

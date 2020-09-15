@@ -51,12 +51,15 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
     }
 
     @Only(after = "set")
+    @NotNull
+    @Modified
     public T getPotentiallyRun() {
         return getPotentiallyRun("?");
     }
 
     @Only(after = "set")
     @Modified
+    @NotNull
     public T getPotentiallyRun(String errorContext) {
         if (!isSet()) {
             if (runnable == null) {

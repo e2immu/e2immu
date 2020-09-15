@@ -40,6 +40,7 @@ public class VariableValuePlaceholder extends ValueWithVariable {
 
     public final ObjectFlow objectFlow;
     private final Map<VariableProperty, Integer> properties;
+    private final Set<Variable> linkedVariables;
 
     public VariableValuePlaceholder(Value valueForProperties, VariableValue original, EvaluationContext evaluationContext, ObjectFlow objectFlow) {
 
@@ -55,6 +56,11 @@ public class VariableValuePlaceholder extends ValueWithVariable {
             }
         }
         properties = builder.build();
+        if (evaluationContext != null) {
+            linkedVariables = original.linkedVariables(evaluationContext);
+        } else {
+            linkedVariables = Set.of();
+        }
     }
 
     @Override
@@ -79,6 +85,6 @@ public class VariableValuePlaceholder extends ValueWithVariable {
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException();
+        return linkedVariables;
     }
 }

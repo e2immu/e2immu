@@ -51,6 +51,15 @@ public class ParseMethodCallExpr {
             scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
         } else {
             scopeType = scope.returnType();
+            if(scope instanceof VariableExpression) {
+                VariableExpression variableExpression  = (VariableExpression) scope;
+                if(variableExpression.variable instanceof This) {
+                    This v = (This)variableExpression.variable;
+                    if(v.writeSuper) {
+                        scopeType = v.typeInfo.typeInspection.getPotentiallyRun().parentClass;
+                    }
+                }
+            }
         }
         Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap();
         log(METHOD_CALL, "Type map of method call {} is {}", methodCallExpr.getNameAsString(), scopeTypeMap);

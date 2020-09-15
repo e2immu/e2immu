@@ -311,6 +311,7 @@ public class ComputeLinking {
                     copy(aboutVariable, tv);
                 }
             } else if (variable instanceof This) {
+                // TODO there may be multiple This's, and Super's
                 if (!methodAnalysis.thisSummary.isSet()) {
                     TransferValue tv = new TransferValue();
                     methodAnalysis.thisSummary.set(tv);
@@ -330,6 +331,8 @@ public class ComputeLinking {
         }
         return changes;
     }
+
+    // TODO why don't we copy MODIFIED? at least of thisSummary that seems very opportune
 
     private static void copy(AboutVariable aboutVariable, TransferValue transferValue) {
         for (VariableProperty variableProperty : VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD) {
