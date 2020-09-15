@@ -672,6 +672,11 @@ public class FieldAnalyser {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
             return true;
         }
+
+        if (fieldInfo.type.isFunctionalInterface()) {
+            return analyseNotModifiedFunctionalInterface(fieldInfo, fieldAnalysis);
+        }
+
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int e2immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
         if (e2immutable == MultiLevel.DELAY) {
@@ -682,9 +687,6 @@ public class FieldAnalyser {
         // NOTE: we do not need code to check if e2immutable is at least eventually level 2, since the getProperty(MODIFIED) in the first line
         // intercepts this!
 
-        if (fieldInfo.type.isFunctionalInterface()) {
-            return analyseNotModifiedFunctionalInterface(fieldInfo, fieldAnalysis);
-        }
         if (fieldSummariesNotYetSet) return false;
 
         // we only consider methods, not constructors!
@@ -729,8 +731,9 @@ public class FieldAnalyser {
             fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
             return true;
         }
-        log(NOT_MODIFIED, "Field {} of functional interface type has no known method, delaying", fieldInfo.fullyQualifiedName());
-        return false;
+        log(NOT_MODIFIED, "Field {} of functional interface type: undeclared, so not modified", fieldInfo.fullyQualifiedName());
+        fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        return true;
     }
 
     public void check(FieldInfo fieldInfo) {
