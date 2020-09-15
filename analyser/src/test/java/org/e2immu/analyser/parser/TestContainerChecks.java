@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,6 +33,17 @@ public class TestContainerChecks extends CommonTestRunner {
         if ("setStrings3".equals(d.methodInfo.name)) {
             if ("strings3param".equals(d.variableName) && "0".equals(d.statementId)) {
                 Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            }
+        }
+        if ("Container4".equals(d.methodInfo.name)) {
+            if("strings4Param".equals(d.variableName)) {
+                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+            }
+            if ("Container4.this.strings4".equals(d.variableName)) {
+                Assert.assertTrue(d.currentValue instanceof PropertyWrapper);
+                Assert.assertEquals("strings4Param,@NotNull", d.currentValue.toString());
+                Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
+                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
             }
         }
     };
@@ -135,10 +147,10 @@ public class TestContainerChecks extends CommonTestRunner {
     public void test() throws IOException {
         // warning to expect: the potential null pointer exception of strings2
         testClass("ContainerChecks", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+        //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+        //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }

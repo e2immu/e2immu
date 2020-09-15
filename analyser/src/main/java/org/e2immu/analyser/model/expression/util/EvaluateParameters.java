@@ -62,16 +62,20 @@ public class EvaluateParameters {
                 }
                 // NOT_NULL, NOT_MODIFIED, SIZE
                 Map<VariableProperty, Integer> map = parameterInfo.parameterAnalysis.get().getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+
+                if (notModified1Scope == Level.TRUE) {
+                    map.put(VariableProperty.MODIFIED, Level.FALSE);
+                }
+
                 if (map.containsValue(Level.DELAY)) {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
                 }
-                if (notModified1Scope == Level.TRUE) {
-                    map.put(VariableProperty.MODIFIED, Level.FALSE);
-                } else if (methodInfo.isSingleAbstractMethod()) {
+                if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
                     Boolean cannotBeModified = parameterExpression.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(methodInfo.typeInfo);
-                    if (cannotBeModified == null) map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
-                    else if (cannotBeModified) {
+                    if (cannotBeModified == null) {
+                        map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
+                    } else if (cannotBeModified) {
                         map.put(VariableProperty.MODIFIED, Level.FALSE);
                     }
                 }

@@ -32,6 +32,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -264,8 +265,8 @@ public class FieldAnalyser {
                                    boolean fieldCanBeWrittenFromOutsideThisType,
                                    TypeInspection typeInspection,
                                    boolean fieldSummariesNotYetSet) {
-        int currentValue = MultiLevel.value(fieldAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
-        if (currentValue != MultiLevel.DELAY) return false; // already decided
+        int nn = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if (nn > MultiLevel.DELAY) return false;
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {
             log(DELAYED, "Delaying @NotNull on {} until we know about @Final", fieldInfo.fullyQualifiedName());
@@ -467,7 +468,7 @@ public class FieldAnalyser {
             MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
             if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
-                if(tv.value.isSet()) {
+                if (tv.value.isSet()) {
                     int v = tv.value.get().getPropertyOutsideContext(property);
                     values.add(v);
                 }
@@ -702,8 +703,15 @@ public class FieldAnalyser {
             log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
             return true;
         }
-        log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
-                fieldInfo.fullyQualifiedName());
+        if (Logger.isLogEnabled(DELAYED)) {
+            log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
+                    fieldInfo.fullyQualifiedName());
+            typeInspection.methodStream(TypeInspection.Methods.ALL).filter(m ->
+                    m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) &&
+                            m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) == Level.TRUE &&
+                            m.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.DELAY)
+                    .forEach(m -> log(DELAYED, "Method {} reads the field, but we're still waiting"));
+        }
         return false;
     }
 
