@@ -60,6 +60,10 @@ public class PatternDSL {
     public static void replace(Statement statement, ReplacementInstruction... instructions) {
     }
 
+    public static <T> T replace(T t, ReplacementInstruction... instructions) {
+        return t;
+    }
+
     public static void detect(Statement statement, Restriction... restrictions) {
     }
 
@@ -92,11 +96,11 @@ public class PatternDSL {
         return (T) new Object();
     }
 
-    public static <U, T> Function<U, T> someExpressionDependentOn(Class<T> clazz, U variable) {
+    public static <U, T> Function<U, T> someExpressionDependentOn(Class<T> clazz, U variable, Restriction... restrictions) {
         return null;
     }
 
-    public static <U, T> Function<U, T> someExpressionDependentOn(Class<T> clazz) {
+    public static <U, T> Function<U, T> someExpressionDependentOn(Class<T> clazz, Restriction... restrictions) {
         return null;
     }
 
@@ -221,6 +225,18 @@ public class PatternDSL {
     public static Restriction expressionOfStatement(Restriction... restrictions) {
         return RESTRICTION;
     }
+
+    public static Restriction noCallsToMethodsAccessing(Object object) {
+        return RESTRICTION;
+    }
+
+    // *********************************************************************
+
+    // restrictions on locations
+
+    public static void inConstructorsOnly() { }
+
+    // *********************************************************************
 
     public enum Quality {
         WARN, BAD, OK
