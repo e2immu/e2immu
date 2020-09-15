@@ -173,14 +173,14 @@ public class TypeContext {
         for (Map.Entry<String, TypeInfo> entry : importStaticMemberToTypeInfo.entrySet()) {
             TypeInfo typeInfo = entry.getValue();
             String memberName = entry.getKey();
-            typeInfo.typeInspection.get().fields.stream()
+            typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                     .filter(FieldInfo::isStatic)
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
                     .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(fieldInfo, null)));
         }
         for (TypeInfo typeInfo : importStaticAsterisk) {
-            typeInfo.typeInspection.get().fields.stream()
+            typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                     .filter(FieldInfo::isStatic)
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(fieldInfo, null)));
         }
@@ -208,10 +208,10 @@ public class TypeContext {
         List<TypeInfo> types = extractTypeInfo(typeOfObject, typeMap);
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
-        if (parametersPresented == 0 && typeInfo.typeInspection.get().constructors.isEmpty()) {
+        if (parametersPresented == 0 && typeInfo.typeInspection.getPotentiallyRun().constructors.isEmpty()) {
             return List.of(new MethodCandidate(new MethodTypeParameterMap(emptyConstructor(typeInfo), Map.of()), Set.of()));
         }
-        return typeInfo.typeInspection.get().constructors.stream()
+        return typeInfo.typeInspection.getPotentiallyRun().constructors.stream()
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
                 .collect(Collectors.toList());
@@ -265,10 +265,10 @@ public class TypeContext {
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
                                                     Set<TypeInfo> visited) {
-        if (!typeInfo.typeInspection.isSet()) {
+        if (!typeInfo.typeInspection.isSetPotentiallyRun()) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected yet");
         }
-        typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)
@@ -277,19 +277,19 @@ public class TypeContext {
                 .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
                 .forEach(result::add);
 
-        ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
+        ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
         if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, parentClass), result, visited, staticOnly);
         }
-        for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.get().interfacesImplemented) {
+        for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
         if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
             recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
+        if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
-            ParameterizedType enclosingType = typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().asParameterizedType();
+            ParameterizedType enclosingType = typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight().asParameterizedType();
             boolean onlyStatic = staticOnly || typeInfo.isStatic();
             recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
         }
@@ -299,8 +299,8 @@ public class TypeContext {
         Set<Integer> res = new HashSet<>();
         int i = 0;
         for (ParameterInfo parameterInfo : m.methodInspection.get().parameters) {
-            if (parameterInfo.parameterizedType.typeInfo != null && parameterInfo.parameterizedType.typeInfo.typeInspection.isSet()) {
-                TypeInspection typeInspection = parameterInfo.parameterizedType.typeInfo.typeInspection.get();
+            if (parameterInfo.parameterizedType.typeInfo != null && parameterInfo.parameterizedType.typeInfo.typeInspection.isSetPotentiallyRun()) {
+                TypeInspection typeInspection = parameterInfo.parameterizedType.typeInfo.typeInspection.getPotentiallyRun();
                 if (typeInspection.typeNature == TypeNature.INTERFACE && typeInspection.annotations.contains(
                         Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression)) {
                     res.add(i);

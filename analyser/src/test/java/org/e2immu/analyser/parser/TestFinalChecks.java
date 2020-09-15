@@ -5,7 +5,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
 import org.e2immu.analyser.model.abstractvalue.StringConcat;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
@@ -57,7 +56,7 @@ public class TestFinalChecks extends CommonTestRunner {
 
         // there is no size restriction
         if (iteration > 0) {
-            FieldInfo s1 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
+            FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
             if ("toString".equals(methodInfo.name)) {
                 Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
             }

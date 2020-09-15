@@ -53,7 +53,7 @@ public class Instance implements Value {
     }
 
     public static Instance newStringInstance(EvaluationContext evaluationContext) {
-        MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.get().constructors.get(0);
+        MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.getPotentiallyRun().constructors.get(0);
         return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of(), evaluationContext);
     }
 

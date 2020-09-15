@@ -82,7 +82,7 @@ public abstract class CommonAbstractValue {
     }
 
     static ParameterInfo createParameter(String name) {
-        if (!Primitives.PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
+        if (!Primitives.PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
             Primitives.PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName("java.lang")
                     .build(false, Primitives.PRIMITIVES.objectTypeInfo));

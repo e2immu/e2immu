@@ -20,7 +20,6 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -123,7 +122,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
 
-        MethodInfo addAll = set.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
+        MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
         ParameterInfo first = addAll.methodInspection.get().parameters.get(0);

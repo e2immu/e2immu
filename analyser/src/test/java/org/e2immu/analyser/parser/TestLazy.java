@@ -69,8 +69,8 @@ public class TestLazy extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        FieldInfo supplier = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
-        FieldInfo t = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
+        FieldInfo supplier = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
+        FieldInfo t = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
 
         if ("Lazy".equals(methodInfo.name)) {
             TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);

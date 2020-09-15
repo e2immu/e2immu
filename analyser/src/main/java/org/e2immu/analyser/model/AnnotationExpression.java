@@ -135,8 +135,8 @@ public class AnnotationExpression {
         if (!expressions.isSet()) throw new UnsupportedOperationException("??");
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {
-            if (typeInfo.typeInspection.isSet()) {
-                ParameterizedType returnType = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+            if (typeInfo.typeInspection.isSetPotentiallyRun()) {
+                ParameterizedType returnType = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                         .filter(m -> m.name.equals(fieldName))
                         .findFirst()
                         .map(MethodInfo::returnType).orElseThrow();
@@ -208,7 +208,7 @@ public class AnnotationExpression {
     }
 
     private static Object enumInstance(ParameterizedType type, TypeInfo observedType, String name) {
-        if (type.typeInfo.typeInspection.get().typeNature != TypeNature.ENUM) {
+        if (type.typeInfo.typeInspection.getPotentiallyRun().typeNature != TypeNature.ENUM) {
             throw new UnsupportedOperationException();
         }
         if (observedType != type.typeInfo) throw new UnsupportedOperationException("??");

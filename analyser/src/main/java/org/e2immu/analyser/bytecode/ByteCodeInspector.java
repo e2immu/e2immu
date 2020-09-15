@@ -65,7 +65,7 @@ public class ByteCodeInspector implements OnDemandInspection {
             String pathOfPrimaryType = path.substring(0, dollar);
             String fqnPrimaryType = pathOfPrimaryType.replace('/', '.');
             TypeInfo primaryType = typeContext.typeStore.get(fqnPrimaryType);
-            if (primaryType == null || (!primaryType.typeInspection.isSetDoNotTriggerRunnable() && !inProcess.contains(primaryType))) {
+            if (primaryType == null || (!primaryType.typeInspection.isSet() && !inProcess.contains(primaryType))) {
                 inspectFromPath(pathOfPrimaryType, inProcess);
             }
             String fqn = MyClassVisitor.pathToFqn(path);

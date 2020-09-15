@@ -228,7 +228,7 @@ public class TypeAnalyser {
             typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
         }
 
-        if (!typeInfo.typeInspection.get().subTypes.isEmpty() && !typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
+        if (!typeInfo.typeInspection.getPotentiallyRun().subTypes.isEmpty() && !typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
             postAnalysisIntoNestedTypes(typeInfo, configuration);
             typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
         }
@@ -239,7 +239,7 @@ public class TypeAnalyser {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
 
         log(E2IMMUTABLE, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
-        Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.get().fields.stream()
+        Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
         typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
         typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
@@ -290,7 +290,7 @@ public class TypeAnalyser {
     private void postAnalysisIntoNestedTypes(TypeInfo typeInfo, Configuration configuration) {
         log(ANALYSER, "\n--------\nStarting post-analysis into method calls from nested types to {}\n--------",
                 typeInfo.fullyQualifiedName);
-        for (TypeInfo nestedType : typeInfo.typeInspection.get().subTypes) {
+        for (TypeInfo nestedType : typeInfo.typeInspection.getPotentiallyRun().subTypes) {
             SortedType sortedType = new SortedType(nestedType);
             // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
 
@@ -312,12 +312,12 @@ public class TypeAnalyser {
             return false; // already done
         }
         final TypeInspection.Methods methodsMode = TypeInspection.Methods.EXCLUDE_FIELD_SAM;
-        boolean someModifiedNotSet = typeInfo.typeInspection.get()
+        boolean someModifiedNotSet = typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(methodsMode)
                 .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
         if (someModifiedNotSet) return false;
 
-        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.get()
+        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(methodsMode)
                 .filter(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
                 .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.isSet());
@@ -325,7 +325,7 @@ public class TypeAnalyser {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.get()
+        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(methodsMode).anyMatch(methodInfo ->
                         methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
                                 methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().isEmpty());
@@ -335,7 +335,7 @@ public class TypeAnalyser {
         }
 
         Map<String, Value> tempApproved = new HashMap<>();
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(methodsMode)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(methodsMode)) {
             int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
                 List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
@@ -421,14 +421,14 @@ public class TypeAnalyser {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return false;
 
-        boolean fieldsReady = typeInfo.typeInspection.get().fields.stream().allMatch(
+        boolean fieldsReady = typeInfo.typeInspection.getPotentiallyRun().fields.stream().allMatch(
                 fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE ||
                         fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
         if (!fieldsReady) {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return false;
         }
-        boolean allReady = typeInfo.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(
+        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(
                 m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
                         !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
                                 parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));
@@ -436,7 +436,7 @@ public class TypeAnalyser {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
             return false;
         }
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             if (!methodInfo.isPrivate()) {
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                     int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED);
@@ -462,7 +462,7 @@ public class TypeAnalyser {
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return false; // we have a decision already
 
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
             int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) return false; // cannot decide
             if (effectivelyFinal == Level.FALSE) {
@@ -497,14 +497,14 @@ public class TypeAnalyser {
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return false;
 
-        boolean variablesLinkedNotSet = typeInfo.typeInspection.get().fields.stream()
+        boolean variablesLinkedNotSet = typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                 .anyMatch(fieldInfo -> !fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
         if (variablesLinkedNotSet) {
             log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
             return false;
         }
         List<FieldInfo> fieldsLinkedToParameters =
-                typeInfo.typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.fieldAnalysis.get().
+                typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(fieldInfo -> fieldInfo.fieldAnalysis.get().
                         variablesLinkedToMe.get().stream().filter(v -> v instanceof ParameterInfo)
                         .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
 
@@ -542,7 +542,7 @@ public class TypeAnalyser {
 
         // RULE 3
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.ALL)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.ALL)) {
             if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
                 boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
                         .anyMatch(tv -> !tv.linkedVariables.isSet());
@@ -600,7 +600,7 @@ public class TypeAnalyser {
         boolean eventual = typeAnalysis.isEventual();
         boolean haveToEnforcePrivateAndIndependenceRules = false;
 
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
             if (!fieldAnalysis.isOfImplicitlyImmutableDataType.isSet()) {
                 log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
@@ -659,7 +659,7 @@ public class TypeAnalyser {
 
         if (haveToEnforcePrivateAndIndependenceRules) {
 
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().constructors) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().constructors) {
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
                 if (independent == Level.DELAY) {
                     log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
@@ -673,7 +673,7 @@ public class TypeAnalyser {
                 }
             }
 
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods) {
                 if (methodInfo.isVoid()) continue; // we're looking at return types
                 int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
                 // in the eventual case, we only need to look at the non-modifying methods
@@ -729,7 +729,7 @@ public class TypeAnalyser {
 
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
                 ParameterizedType typeOfFirstParameter;
@@ -775,7 +775,7 @@ public class TypeAnalyser {
             return true;
         }
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.isStatic) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
@@ -784,7 +784,7 @@ public class TypeAnalyser {
             }
         }
         // this is technically enough, but we'll verify the constructors (should be private)
-        for (MethodInfo constructor : typeInfo.typeInspection.get().constructors) {
+        for (MethodInfo constructor : typeInfo.typeInspection.getPotentiallyRun().constructors) {
             if (!constructor.isPrivate()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
@@ -793,7 +793,7 @@ public class TypeAnalyser {
             }
         }
 
-        if (typeInfo.typeInspection.get().constructors.isEmpty()) {
+        if (typeInfo.typeInspection.getPotentiallyRun().constructors.isEmpty()) {
             log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
@@ -801,7 +801,7 @@ public class TypeAnalyser {
         }
 
         // and there should be no means of generating an object
-        for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.methodAnalysis.get().createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
                         typeInfo.fullyQualifiedName, methodInfo.name);

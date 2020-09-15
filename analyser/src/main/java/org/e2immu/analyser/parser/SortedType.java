@@ -42,7 +42,7 @@ public class SortedType {
 
     public SortedType(TypeInfo typeInfo) {
         this.typeInfo = typeInfo;
-        this.methodsAndFields = ListUtil.immutableConcat(typeInfo.typeInspection.get().methodsAndConstructors(),
-                typeInfo.typeInspection.get().fields);
+        this.methodsAndFields = ListUtil.immutableConcat(typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(),
+                typeInfo.typeInspection.getPotentiallyRun().fields);
     }
 }

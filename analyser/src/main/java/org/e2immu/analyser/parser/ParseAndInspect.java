@@ -160,7 +160,7 @@ public class ParseAndInspect {
         }
         typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
             if (!typeInfo.typeInspection.hasRunnable() &&
-                    !typeInfo.typeInspection.isSetDoNotTriggerRunnable() &&
+                    !typeInfo.typeInspection.isSet() &&
                     // this is to check that we're not talking about a subtype of a source type
                     !sourceTypeStore.containsPrefix(typeInfo.fullyQualifiedName)) {
                 log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
@@ -183,7 +183,7 @@ public class ParseAndInspect {
             TypeInfo typeInfo = typeContextOfFile.typeStore.get(packageName + "." + name);
             // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
             // have already been inspected (AnnotationType as well)
-            if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
+            if (!typeInfo.typeInspection.isSet()) {
                 try {
                     ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
                             new TypeContext(packageName, typeContextOfFile));
@@ -200,7 +200,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {
         TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null || !typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !sourceTypeStore.containsPrefix(fqn)) {
+        if (typeInfo == null || !typeInfo.typeInspection.isSet() && !sourceTypeStore.containsPrefix(fqn)) {
             return inspectWithByteCodeInspector(fqn, typeContext);
         }
         return typeInfo;

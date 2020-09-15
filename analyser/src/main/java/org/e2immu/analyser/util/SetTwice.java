@@ -24,10 +24,10 @@ import org.e2immu.annotation.*;
  * Semantics: set once with `set`, then either overwrite with `overwrite`, or freeze with `freeze`.
  * Setting with <code>set</code> changes <code>t</code> from null to not-null;
  * overwriting or freezing changes <code>overwritten</code> to true.
- *
+ * <p>
  * From the point of view of eventual immutability, there are two allowed preconditions.
  * In before state, they are:
- *
+ * <p>
  * First: null == this.t
  * Second: not (null == this.t) and not overwritten
  *
@@ -51,7 +51,7 @@ public class SetTwice<T> {
     public void overwrite(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
-            if (this.t == null || overwritten) {
+            if (!isSet() || overwritten) {
                 throw new UnsupportedOperationException("Not yet set");
             }
             this.t = t;
@@ -62,7 +62,7 @@ public class SetTwice<T> {
     @Modified
     @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void freeze() {
-        if(this.t == null || overwritten) {
+        if (!isSet() || overwritten) {
             throw new UnsupportedOperationException("Not yet set");
         }
         overwritten = true;
@@ -74,7 +74,7 @@ public class SetTwice<T> {
     public void set(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
-            if (this.t != null) {
+            if (isSet()) {
                 throw new UnsupportedOperationException("Already set");
             }
             this.t = t;
@@ -86,14 +86,14 @@ public class SetTwice<T> {
     @NotModified
     @Precondition("not (null == this.t)")
     public T get() {
-        if (t == null) {
+        if (!isSet()) {
             throw new UnsupportedOperationException("Not yet set");
         }
         return t;
     }
 
     @NotModified
-    public boolean isSet() {
+    public final boolean isSet() {
         return t != null;
     }
 }

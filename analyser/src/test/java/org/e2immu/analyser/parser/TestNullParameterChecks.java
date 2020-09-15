@@ -7,11 +7,9 @@ import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -96,7 +94,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo objects = typeContext.typeStore.get("java.util.Objects");
-        MethodInfo requireNonNull = objects.typeInspection.get()
+        MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun()
                 .methods.stream().filter(mi -> "requireNonNull".equals(mi.name) &&
                         1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));

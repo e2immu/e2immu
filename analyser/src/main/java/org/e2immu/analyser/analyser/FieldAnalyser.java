@@ -57,7 +57,7 @@ public class FieldAnalyser {
         log(ANALYSER, "Analysing field {}", fieldInfo.fullyQualifiedName());
 
         boolean changes = false;
-        TypeInspection typeInspection = fieldInfo.owner.typeInspection.get();
+        TypeInspection typeInspection = fieldInfo.owner.typeInspection.getPotentiallyRun();
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
@@ -348,7 +348,7 @@ public class FieldAnalyser {
     }
 
     private static List<MethodInfo> methodsWhereFieldIsAssigned(FieldInfo fieldInfo) {
-        return fieldInfo.owner.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+        return fieldInfo.owner.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .filter(mi -> mi.methodAnalysis.get().fieldSummaries.isSet(fieldInfo))
                 .filter(mi -> mi.methodAnalysis.get().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED) >= Level.TRUE)
                 .collect(Collectors.toList());
@@ -361,7 +361,7 @@ public class FieldAnalyser {
             if (!fieldInfo.isStatic()) {
                 if (fieldSummariesNotYetSet) return false;
                 List<TypeInfo> allTypes = fieldInfo.owner.allTypesInPrimaryType();
-                int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL))
+                int readInMethods = allTypes.stream().flatMap(ti -> ti.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL))
                         .filter(m -> !(m.isConstructor && m.typeInfo == fieldInfo.owner)) // not my own constructors
                         .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo)) // field seen
                         .mapToInt(m -> m.methodAnalysis.get().fieldSummaries.get(fieldInfo).properties.getOtherwise(VariableProperty.READ, Level.FALSE))

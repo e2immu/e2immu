@@ -26,7 +26,7 @@ public class TestSizeChecks2 extends CommonTestRunner {
             TypeInfo collection = typeContext.getFullyQualified(Collection.class);
 
             TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-            MethodInfo constructor1 = hashSet.typeInspection.get().constructors.stream()
+            MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
                     .filter(m -> m.methodInspection.get().parameters.size() == 1)
                     .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                     .findAny().orElseThrow();

@@ -227,7 +227,7 @@ public class ExpressionContext {
         if (enumType != null) {
             newExpressionContext = newVariableContext("switch-statement");
             Variable scope = new This(enumType);
-            enumType.typeInspection.get().fields.forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
+            enumType.typeInspection.getPotentiallyRun().fields.forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
         } else {
             newExpressionContext = this;
         }
@@ -240,7 +240,7 @@ public class ExpressionContext {
 
     private static TypeInfo selectorIsEnumType(@NotNull Expression selector) {
         TypeInfo typeInfo = selector.returnType().typeInfo;
-        if (typeInfo != null && typeInfo.typeInspection.get().typeNature == TypeNature.ENUM) {
+        if (typeInfo != null && typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.ENUM) {
             return typeInfo;
         }
         return null;

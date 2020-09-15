@@ -47,7 +47,7 @@ public class TypeAnalysis extends Analysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return typeInfo.typeInspection.get().annotationMode;
+        return typeInfo.typeInspection.getPotentiallyRun().annotationMode;
     }
 
     // computed during inspection

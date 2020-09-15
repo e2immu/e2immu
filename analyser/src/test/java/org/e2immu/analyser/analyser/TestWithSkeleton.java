@@ -20,7 +20,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.EqualsValue;
@@ -91,13 +90,13 @@ public class TestWithSkeleton {
     public void testProperties() {
         TypeInfo set = typeContext.typeStore.get("java.util.Set");
         Assert.assertNotNull(set);
-        Assert.assertFalse(set.typeInspection.get().hasBeenDefined);
+        Assert.assertFalse(set.typeInspection.getPotentiallyRun().hasBeenDefined);
         Assert.assertTrue(set.annotatedWith(e2ImmuAnnotationExpressions.container.get()));
         TypeAnalysis setAnalysis = set.typeAnalysis.get();
         Assert.assertEquals(TRUE, setAnalysis.getProperty(VariableProperty.CONTAINER));
         Assert.assertEquals(MultiLevel.NULLABLE, setAnalysis.getProperty(VariableProperty.NOT_NULL));
 
-        set.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
+        set.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 
         MethodInfo setOf = set.getMethodOrConstructorByDistinguishingName("java.util.Set.of()");
         MethodAnalysis setOfAnalysis = setOf.methodAnalysis.get();
@@ -107,7 +106,7 @@ public class TestWithSkeleton {
         Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(setOfAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE));
 
         TypeInfo system = typeContext.typeStore.get("java.lang.System");
-        FieldInfo out = system.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();
+        FieldInfo out = system.typeInspection.getPotentiallyRun().fields.stream().filter(fi -> fi.name.equals("out")).findAny().orElseThrow();
 
         Assert.assertEquals(TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
@@ -116,7 +115,7 @@ public class TestWithSkeleton {
     @Test
     public void testCopyOfMethod() {
         TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
-        collection.typeInspection.get().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
+        collection.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(mi -> LOGGER.info("Have {}", mi.distinguishingName()));
 
         MethodInfo forEach = collection.getMethodOrConstructorByDistinguishingName("java.util.Collection.forEach(java.util.function.Consumer<? super T0>)");
         Assert.assertNotNull(forEach);
@@ -124,7 +123,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testAddLocalVariable() {
-        MethodInfo method = testSkeleton.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
+        MethodInfo method = testSkeleton.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
         VariableProperties variableProperties = newVariableProperties(method);
         LocalVariable variableS = new LocalVariable(List.of(), "s", Primitives.PRIMITIVES.stringParameterizedType, List.of());
         LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
@@ -165,7 +164,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testAddLocalVariableAssignToParam() {
-        MethodInfo method = testSkeleton.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
+        MethodInfo method = testSkeleton.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("method")).findAny().orElseThrow();
         VariableProperties variableProperties = newVariableProperties(method);
         LocalVariable variableS = new LocalVariable(List.of(), "s", Primitives.PRIMITIVES.stringParameterizedType, List.of());
         LocalVariableReference localS = new LocalVariableReference(variableS, List.of());
@@ -186,7 +185,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testFinalField() {
-        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
+        FieldInfo finalString = testSkeleton.typeInspection.getPotentiallyRun().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
         finalString.fieldAnalysis.get().effectivelyFinalValue.set(new StringValue("this is the final value"));
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
@@ -212,7 +211,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testFinalFieldWithoutFinalValue() {
-        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
+        FieldInfo finalString = testSkeleton.typeInspection.getPotentiallyRun().fields.stream().filter(fi -> fi.name.equals("finalString")).findAny().orElseThrow();
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
 
@@ -231,7 +230,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testNotYetFinalField() {
-        FieldInfo finalString = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("notYetFinalString")).findAny().orElseThrow();
+        FieldInfo finalString = testSkeleton.typeInspection.getPotentiallyRun().fields.stream().filter(fi -> fi.name.equals("notYetFinalString")).findAny().orElseThrow();
         finalString.fieldAnalysis.get().setProperty(VariableProperty.FINAL, DELAY);
 
         FieldReference finalStringRef = new FieldReference(finalString, new This(testSkeleton));
@@ -255,7 +254,7 @@ public class TestWithSkeleton {
 
     @Test
     public void testNonFinalField() {
-        FieldInfo set = testSkeleton.typeInspection.get().fields.stream().filter(fi -> fi.name.equals("set")).findAny().orElseThrow();
+        FieldInfo set = testSkeleton.typeInspection.getPotentiallyRun().fields.stream().filter(fi -> fi.name.equals("set")).findAny().orElseThrow();
         set.fieldAnalysis.get().setProperty(VariableProperty.FINAL, FALSE);
 
         FieldReference setRef = new FieldReference(set, new This(testSkeleton));

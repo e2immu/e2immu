@@ -479,7 +479,7 @@ public class ParseMethodCallExpr {
         if (singleAbstractMethod.isSingleAbstractMethod() && singleAbstractMethod.methodInfo.typeInfo.equals(method.methodInfo.typeInfo)) {
             Map<NamedType, ParameterizedType> links = new HashMap<>();
             int pos = 0;
-            for (TypeParameter key : singleAbstractMethod.methodInfo.typeInfo.typeInspection.get().typeParameters) {
+            for (TypeParameter key : singleAbstractMethod.methodInfo.typeInfo.typeInspection.getPotentiallyRun().typeParameters) {
                 NamedType abstractTypeInCandidate = method.methodInfo.methodInspection.get().returnType.parameters.get(pos).typeParameter;
                 ParameterizedType valueOfKey = singleAbstractMethod.applyMap(key);
                 links.put(abstractTypeInCandidate, valueOfKey);

@@ -85,7 +85,7 @@ public class TestSMapList extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo map = typeContext.getFullyQualified(Map.class);
-        MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
+        MethodInfo entrySet = map.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("entrySet")).findFirst().orElseThrow();
         Assert.assertEquals(Level.SIZE_COPY_TRUE, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
         Assert.assertEquals(0, entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE)); // no idea, could be empty
     };

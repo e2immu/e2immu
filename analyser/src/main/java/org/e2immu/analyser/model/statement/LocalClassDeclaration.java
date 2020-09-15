@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,7 +59,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return typeInfo.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+        return typeInfo.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .map(methodInfo -> methodInfo.methodInspection.get().methodBody.get()).collect(Collectors.toList());
     }
 }

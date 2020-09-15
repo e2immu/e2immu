@@ -29,7 +29,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
                 Assert.assertEquals("[(-this.j) >= 0]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
 
-                FieldInfo fieldJ = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "j".equals(f.name)).findAny().orElseThrow();
+                FieldInfo fieldJ = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "j".equals(f.name)).findAny().orElseThrow();
                 TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldJ);
                 Assert.assertNotNull(tv);
                 Value value = tv.value.get();

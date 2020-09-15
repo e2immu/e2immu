@@ -39,7 +39,7 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
     @Modified
     @Only(before = "t")
     public void setRunnable(Runnable runnable) {
-        if (super.isSet()) throw new UnsupportedOperationException("Already set");
+        if (isSet()) throw new UnsupportedOperationException("Already set");
         this.runnable = runnable;
     }
 
@@ -50,16 +50,15 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
         runnable = null;
     }
 
-    @Override
     @Only(after = "set")
-    public T get() {
-        return get("?");
+    public T getPotentiallyRun() {
+        return getPotentiallyRun("?");
     }
 
     @Only(after = "set")
     @Modified
-    public T get(String errorContext) {
-        if (!super.isSet()) {
+    public T getPotentiallyRun(String errorContext) {
+        if (!isSet()) {
             if (runnable == null) {
                 throw new UnsupportedOperationException("Not yet set, and no runnable provided: " + errorContext);
             }
@@ -67,26 +66,20 @@ public class SetTwiceSupply<T> extends SetTwice<T> {
             Runnable localRunnable = runnable;
             runnable = null;
             localRunnable.run();
-            if (!super.isSet())
+            if (!isSet())
                 throw new NullPointerException("Not yet set, the runnable did not set the value: " + errorContext);
         }
-        return super.get();
+        return get();
     }
 
-    @NotModified
-    public boolean isSetDoNotTriggerRunnable() {
-        return super.isSet();
-    }
-
-    @Override
     @Modified
-    public boolean isSet() {
-        if (super.isSet()) return true;
+    public boolean isSetPotentiallyRun() {
+        if (isSet()) return true;
         if (runnable == null) return false;
         Runnable localRunnable = runnable;
         runnable = null;
         localRunnable.run();
-        return super.isSet();
+        return isSet();
     }
 
     public boolean hasRunnable() {

@@ -42,7 +42,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         }
         if ("MyIterator".equals(typeInfo.simpleName)) {
             MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
-            Assert.assertSame(AnnotationMode.DEFENSIVE, typeInfo.typeInspection.get().annotationMode);
+            Assert.assertSame(AnnotationMode.DEFENSIVE, typeInfo.typeInspection.getPotentiallyRun().annotationMode);
             // Assert.assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
@@ -53,7 +53,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.get().annotationMode);
+        Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.getPotentiallyRun().annotationMode);
         MethodInfo size = list.findUniqueMethod("size", 0);
         Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };

@@ -82,7 +82,7 @@ public class Parser {
         Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
         urls.forEach((typeInfo, url) -> typeInfo.typeInspection.setRunnable(() -> {
-            if (!typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
+            if (!typeInfo.typeInspection.isSet()) {
                 try {
                     LOGGER.info("Starting source code inspection of {}", url);
                     InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
@@ -102,7 +102,7 @@ public class Parser {
             }
         }));
         // TODO this can be a bit more efficient
-        urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e -> e.getKey().typeInspection.get());
+        urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e -> e.getKey().typeInspection.getPotentiallyRun());
         return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
     }
 
@@ -157,7 +157,7 @@ public class Parser {
     private void checkTypeAnalysisOfLoadedObjects() {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSetDoNotTriggerRunnable() && !typeInfo.typeAnalysis.isSet()) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet()) {
                     typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "parser");
                 }
             }

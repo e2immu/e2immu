@@ -114,10 +114,10 @@ public class InspectAnnotatedAPIs {
         List<MethodInfo> extraMethods = findMissingCheckOverride(typeFrom, typeTo, METHODS);
 
         if (typeFrom == typeTo) return; // same object, nothing to do
-        typeTo.typeInspection.overwrite(typeTo.typeInspection.get().copy(typeFrom.typeInspection.get().annotations,
+        typeTo.typeInspection.overwrite(typeTo.typeInspection.getPotentiallyRun().copy(typeFrom.typeInspection.getPotentiallyRun().annotations,
                 extraConstructors,
                 extraMethods));
-        typeTo.typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
+        typeTo.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo -> {
             MethodInfo methodFrom = typeFrom.getMethodOrConstructorByDistinguishingName(methodInfo.distinguishingName());
             if (methodFrom != null) {
                 methodInfo.methodInspection.overwrite(methodInfo.methodInspection.get().copy(methodFrom.methodInspection.get().annotations));
@@ -134,7 +134,7 @@ public class InspectAnnotatedAPIs {
                 log(MERGE_ANNOTATIONS, "Method {} not found in merge", methodInfo.fullyQualifiedName());
             }
         });
-        typeTo.typeInspection.get().fields.forEach(fieldInfo -> {
+        typeTo.typeInspection.getPotentiallyRun().fields.forEach(fieldInfo -> {
             FieldInfo fieldFrom = typeFrom.getFieldByName(fieldInfo.name);
             if (fieldFrom != null) {
                 fieldInfo.fieldInspection.overwrite(fieldInfo.fieldInspection.get().copy(fieldFrom.fieldInspection.get().annotations));
@@ -149,10 +149,10 @@ public class InspectAnnotatedAPIs {
             TypeInfo typeTo,
             Function<TypeInspection, List<MethodInfo>> extractor) {
         List<MethodInfo> res = new ArrayList<>();
-        Map<String, MethodInfo> inTypeTo = extractor.apply(typeTo.typeInspection.get())
+        Map<String, MethodInfo> inTypeTo = extractor.apply(typeTo.typeInspection.getPotentiallyRun())
                 .stream()
                 .collect(Collectors.toMap(MethodInfo::distinguishingName, mi -> mi));
-        for (MethodInfo methodInfo : extractor.apply(typeFrom.typeInspection.get())) {
+        for (MethodInfo methodInfo : extractor.apply(typeFrom.typeInspection.getPotentiallyRun())) {
             String distinguishingName = methodInfo.distinguishingName();
             boolean isInTypeTo = inTypeTo.containsKey(distinguishingName);
             if (!isInTypeTo) {
@@ -210,11 +210,11 @@ public class InspectAnnotatedAPIs {
     }
 
     private void recursivelyAddTypeParameters(TypeInfo typeInfo, TypeContext typeContext) {
-        for (TypeParameter typeParameter : typeInfo.typeInspection.get().typeParameters) {
+        for (TypeParameter typeParameter : typeInfo.typeInspection.getPotentiallyRun().typeParameters) {
             typeContext.addToContext(typeParameter);
         }
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isRight()) {
-            recursivelyAddTypeParameters(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight(), typeContext);
+        if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
+            recursivelyAddTypeParameters(typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight(), typeContext);
         }
     }
 

@@ -338,12 +338,12 @@ public class MethodAnalyser {
         if (methodAnalysis.preconditionForMarkAndOnly.isSet()) return false; // already done
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
-            boolean haveNonFinalFields = typeInfo.typeInspection.get().fields.stream().anyMatch(field ->
+            boolean haveNonFinalFields = typeInfo.typeInspection.getPotentiallyRun().fields.stream().anyMatch(field ->
                     field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }
-            ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass;
+            ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
             typeInfo = parentClass.bestTypeInfo();
             if (typeInfo == null) {
                 log(DELAYED, "Delaying/Ignoring @Only and @Mark, cannot find a non-final field in {}", methodInfo.distinguishingName());
@@ -768,7 +768,7 @@ public class MethodAnalyser {
     }
 
     private Boolean findOtherModifyingElements(MethodInfo methodInfo) {
-        boolean nonPrivateFields = methodInfo.typeInfo.typeInspection.get().fields.stream()
+        boolean nonPrivateFields = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                 .filter(fieldInfo -> fieldInfo.type.isFunctionalInterface() &&
                         fieldInfo.fieldAnalysis.get().isDeclaredFunctionalInterface())
                 .anyMatch(fieldInfo -> !fieldInfo.isPrivate());
@@ -778,7 +778,7 @@ public class MethodAnalyser {
         // We also check independence (maybe the user calls a method which returns one of the fields,
         // and calls a modification directly)
 
-        Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.get()
+        Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(mi ->
                         !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
@@ -792,7 +792,7 @@ public class MethodAnalyser {
                     methodInfo.distinguishingName(), someOtherMethodNotYetDecided.get().name);
             return null;
         }
-        return methodInfo.typeInfo.typeInspection.get()
+        return methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
                         !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) &&

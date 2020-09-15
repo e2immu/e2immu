@@ -18,7 +18,6 @@
 package org.e2immu.analyser.parser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -54,7 +53,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("isAbc".equals(methodInfo.name) && iteration > 0) {
-            FieldInfo value1 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "value1".equals(f.name)).findFirst().orElseThrow();
+            FieldInfo value1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "value1".equals(f.name)).findFirst().orElseThrow();
             TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(value1);
             Assert.assertTrue("Got: " + transferValue.linkedVariables.get(), transferValue.linkedVariables.get().isEmpty());
         }
@@ -65,7 +64,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
         if ("E2Container2".equals(methodInfo.name) && 2 == methodInfo.methodInspection.get().parameters.size()) {
             if (iteration > 2) {
-                FieldInfo parent2 = methodInfo.typeInfo.typeInspection.get().fields.stream().filter(f -> "parent2".equals(f.name)).findFirst().orElseThrow();
+                FieldInfo parent2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "parent2".equals(f.name)).findFirst().orElseThrow();
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(parent2);
                 Assert.assertEquals("[0:parent2Param]", transferValue.linkedVariables.get().toString());
                 // NOTE: we allow the linking to take place, but ignore its presence in independent computation
@@ -127,7 +126,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-        MethodInfo constructor1 = hashSet.typeInspection.get().constructors.stream()
+        MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
                 .filter(m -> m.methodInspection.get().parameters.size() == 1)
                 .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
@@ -135,7 +134,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
         // result of copyOf is @E2Immutable (and therefore the method is independent)
         TypeInfo immutableSet = typeContext.getFullyQualified(ImmutableSet.class);
-        MethodInfo copyOf = immutableSet.typeInspection.get().methods.stream()
+        MethodInfo copyOf = immutableSet.typeInspection.getPotentiallyRun().methods.stream()
                 .filter(m -> "copyOf".equals(m.name) && m.methodInspection.get().parameters.size() == 1)
                 .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();

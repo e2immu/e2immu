@@ -62,7 +62,7 @@ public class ParseFieldAccessExpr {
             if (oFieldInfo.isPresent()) {
                 return fieldAccess(expressionContext, oFieldInfo.get(), object);
             }
-            Optional<TypeInfo> oSubType = objectType.typeInfo.typeInspection.get().subTypes.stream().filter(s -> name.equals(s.name())).findFirst();
+            Optional<TypeInfo> oSubType = objectType.typeInfo.typeInspection.getPotentiallyRun().subTypes.stream().filter(s -> name.equals(s.name())).findFirst();
             if (oSubType.isPresent()) {
                 return new TypeExpression(oSubType.get().asParameterizedType());
             }

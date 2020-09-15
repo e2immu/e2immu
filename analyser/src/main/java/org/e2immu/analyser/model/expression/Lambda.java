@@ -45,7 +45,7 @@ public class Lambda implements Expression {
      */
     public Lambda(@NotNull ParameterizedType abstractFunctionalType,
                   @NotNull ParameterizedType implementation) {
-        methodInfo = implementation.typeInfo.typeInspection.get().methods.get(0);
+        methodInfo = implementation.typeInfo.typeInspection.getPotentiallyRun().methods.get(0);
         this.block = methodInfo.methodInspection.get().methodBody.get();
         this.parameters = methodInfo.methodInspection.get().parameters;
         if (!abstractFunctionalType.isFunctionalInterface()) throw new UnsupportedOperationException();

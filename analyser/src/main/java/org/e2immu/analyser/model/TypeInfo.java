@@ -90,7 +90,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     @Override
     public Inspection getInspection() {
-        return typeInspection.get();
+        return typeInspection.getPotentiallyRun();
     }
 
     @Override
@@ -100,12 +100,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean hasBeenInspected() {
-        return typeInspection.isSet();
+        return typeInspection.isSetPotentiallyRun();
     }
 
     @Override
     public boolean hasBeenDefined() {
-        return hasBeenInspected() && typeInspection.get().hasBeenDefined;
+        return hasBeenInspected() && typeInspection.getPotentiallyRun().hasBeenDefined;
     }
 
     public void inspectAnonymousType(ParameterizedType classImplemented,
@@ -113,7 +113,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                      NodeList<BodyDeclaration<?>> members) {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(expressionContext.enclosingType);
-        if (classImplemented.typeInfo.typeInspection.get().typeNature == TypeNature.INTERFACE) {
+        if (classImplemented.typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.INTERFACE) {
             builder.addInterfaceImplemented(classImplemented);
         } else {
             builder.setParentClass(classImplemented);
@@ -278,9 +278,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
         boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType.fullyQualifiedName);
         if (!insideCompilationUnit) {
-            parameterizedType.typeInfo.typeInspection.get(parameterizedType.typeInfo.fullyQualifiedName);
+            parameterizedType.typeInfo.typeInspection.getPotentiallyRun(parameterizedType.typeInfo.fullyQualifiedName);
             // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
-            TypeInspection typeInspection = parameterizedType.typeInfo.typeInspection.get();
+            TypeInspection typeInspection = parameterizedType.typeInfo.typeInspection.getPotentiallyRun();
             for (TypeInfo subType : typeInspection.subTypes) {
                 expressionContext.typeContext.addToContext(subType);
             }
@@ -433,9 +433,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
-        if (typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        if (typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
-        for (ParameterizedType superInterface : typeInspection.get().interfacesImplemented) {
+        for (ParameterizedType superInterface : typeInspection.getPotentiallyRun().interfacesImplemented) {
             if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
                 return true;
             }
@@ -452,18 +452,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         visited.add(this);
         Stream<TypeInfo> mySelf = Stream.of(this);
 
-        TypeInspection typeInspection = this.typeInspection.get();
+        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun();
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
         boolean inSamePackage = !inSameCompilationUnit &&
-                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
-                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+                primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(
+                        startingPoint.primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft());
 
         Stream<TypeInfo> localStream = typeInspection.subTypes
                 .stream()
                 .filter(typeInfo -> inSameCompilationUnit ||
-                        typeInfo.typeInspection.get().access == TypeModifier.PUBLIC ||
-                        inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PACKAGE ||
-                        !inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PROTECTED);
+                        typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PUBLIC ||
+                        inSamePackage && typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PACKAGE ||
+                        !inSamePackage && typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PROTECTED);
         Stream<TypeInfo> parentStream;
         if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
             parentStream = typeInspection.parentClass.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
@@ -482,11 +482,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private Stream<FieldInfo> accessibleFieldsStream(TypeInfo startingPoint) {
-        TypeInspection typeInspection = this.typeInspection.get();
+        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun();
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
         boolean inSamePackage = !inSameCompilationUnit &&
-                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
-                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+                primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(
+                        startingPoint.primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft());
 
         // my own field
         Stream<FieldInfo> localStream = typeInspection.fields
@@ -570,7 +570,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         String packageName;
 
         if (hasBeenInspected()) {
-            TypeInspection typeInspection = this.typeInspection.get();
+            TypeInspection typeInspection = this.typeInspection.getPotentiallyRun();
             typeNature = typeInspection.typeNature.toJava();
             typeModifiers = typeInspection.modifiers.stream().map(TypeModifier::toJava);
             packageName = typeInspection.packageNameOrEnclosingType.getLeftOrElse("");
@@ -673,8 +673,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private boolean inSamePackage(String i) {
         // TODO this should be done better
         int lastDot = i.lastIndexOf('.');
-        if (lastDot > 0 && hasBeenInspected() && typeInspection.get().packageNameOrEnclosingType.isLeft()) {
-            return typeInspection.get().packageNameOrEnclosingType.getLeft().equals(i.substring(0, lastDot));
+        if (lastDot > 0 && hasBeenInspected() && typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft()) {
+            return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(i.substring(0, lastDot));
         }
         return false;
     }
@@ -717,16 +717,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // explicitly adding this to allow for computed annotations, which will happen all the time
         imports.add(AnnotationType.class.getCanonicalName());
         if (hasBeenInspected()) {
-            for (AnnotationExpression annotation : typeInspection.get().annotations) {
+            for (AnnotationExpression annotation : typeInspection.getPotentiallyRun().annotations) {
                 imports.add(annotation.typeInfo.fullyQualifiedName);
             }
-            for (TypeInfo subType : typeInspection.get().subTypes) {
+            for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
                 imports.addAll(subType.imports());
             }
-            for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+            for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
                 imports.addAll(methodInfo.imports());
             }
-            for (FieldInfo fieldInfo : typeInspection.get().fields) {
+            for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
                 imports.addAll(fieldInfo.imports());
             }
         }
@@ -743,16 +743,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Set<TypeInfo> result = new HashSet<>();
         result.add(this);
 
-        for (AnnotationExpression annotation : typeInspection.get().annotations) {
+        for (AnnotationExpression annotation : typeInspection.getPotentiallyRun().annotations) {
             result.add(annotation.typeInfo);
         }
-        for (TypeInfo subType : typeInspection.get().subTypes) {
+        for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
             result.addAll(subType.typesReferenced());
         }
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             result.addAll(methodInfo.typesReferenced());
         }
-        for (FieldInfo fieldInfo : typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
             result.addAll(fieldInfo.typesReferenced());
         }
         return result;
@@ -784,8 +784,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN)))
                 .findFirst();
         if (fromType.isPresent()) return fromType;
-        if (typeInspection.get().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-            Optional<AnnotationExpression> fromParent = typeInspection.get().parentClass.typeInfo.hasTestAnnotation(annotation);
+        if (typeInspection.getPotentiallyRun().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+            Optional<AnnotationExpression> fromParent = typeInspection.getPotentiallyRun().parentClass.typeInfo.hasTestAnnotation(annotation);
             if (fromParent.isPresent()) return fromParent;
         }
         return Optional.empty();
@@ -799,12 +799,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInfo == this) return Optional.of(this);
         if (visited.contains(this)) return Optional.empty();
         visited.add(this);
-        if (typeInspection.get().packageNameOrEnclosingType.isRight()) {
-            TypeInfo parentClass = typeInspection.get().packageNameOrEnclosingType.getRight();
+        if (typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
+            TypeInfo parentClass = typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight();
             Optional<TypeInfo> viaParent = parentClass.inTypeInnerOuterHierarchy(typeInfo, visited);
             if (viaParent.isPresent()) return viaParent;
         }
-        for (TypeInfo subType : typeInspection.get().subTypes) {
+        for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
             Optional<TypeInfo> viaSubType = subType.inTypeInnerOuterHierarchy(typeInfo, visited);
             if (viaSubType.isPresent()) return viaSubType;
         }
@@ -812,17 +812,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public ParameterizedType asParameterizedType() {
-        if (!typeInspection.isSet()) {
+        if (!typeInspection.isSetPotentiallyRun()) {
             return new ParameterizedType(this, List.of());
         }
-        return new ParameterizedType(this, typeInspection.get().typeParameters
+        return new ParameterizedType(this, typeInspection.getPotentiallyRun().typeParameters
                 .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
     }
 
     public boolean isStatic() {
-        if (!typeInspection.isSet()) throw new UnsupportedOperationException();
-        if (typeInspection.get().packageNameOrEnclosingType.isLeft()) return true; // independent type
-        return typeInspection.get().modifiers.contains(TypeModifier.STATIC); // static sub type
+        if (!typeInspection.isSetPotentiallyRun()) throw new UnsupportedOperationException();
+        if (typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft()) return true; // independent type
+        return typeInspection.getPotentiallyRun().modifiers.contains(TypeModifier.STATIC); // static sub type
     }
 
     /**
@@ -833,7 +833,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @return the method of this, if deemed the same
      */
     private MethodInfo findUniqueMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
-        for (MethodInfo methodInfo : typeInspection.get(fullyQualifiedName).methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInspection.getPotentiallyRun(fullyQualifiedName).methodsAndConstructors()) {
             if (methodInfo.sameMethod(target, translationMap)) {
                 return methodInfo;
             }
@@ -844,7 +844,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public List<ParameterizedType> directSuperTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
         List<ParameterizedType> list = new ArrayList<>();
-        ParameterizedType parentPt = typeInspection.get().parentClass;
+        ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         ParameterizedType parent;
         if (parentIsJLO) {
@@ -853,20 +853,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             parent = Objects.requireNonNull(parentPt);
         }
         list.add(parent);
-        list.addAll(typeInspection.get().interfacesImplemented);
+        list.addAll(typeInspection.getPotentiallyRun().interfacesImplemented);
         return list;
     }
 
     public List<TypeInfo> superTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
-        if (typeInspection.get().superTypes.isSet()) return typeInspection.get().superTypes.get();
+        if (typeInspection.getPotentiallyRun().superTypes.isSet()) return typeInspection.getPotentiallyRun().superTypes.get();
         List<TypeInfo> list = new ArrayList<>();
-        ParameterizedType parentPt = typeInspection.get().parentClass;
+        ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         TypeInfo parent;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         if (parentIsJLO) {
             parent = Objects.requireNonNull(PRIMITIVES.objectTypeInfo);
-            if (typeInspection.get().isClass()) {
+            if (typeInspection.getPotentiallyRun().isClass()) {
                 list.add(parent);
             }
         } else {
@@ -875,12 +875,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             list.addAll(parent.superTypes());
         }
 
-        typeInspection.get().interfacesImplemented.forEach(i -> {
+        typeInspection.getPotentiallyRun().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
             list.addAll(i.typeInfo.superTypes());
         });
         List<TypeInfo> immutable = ImmutableList.copyOf(list);
-        typeInspection.get().superTypes.set(immutable);
+        typeInspection.getPotentiallyRun().superTypes.set(immutable);
         return immutable;
     }
 
@@ -895,13 +895,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // NOTE: we cache, but only at our own level
         boolean ourOwnLevel = methodInfo.typeInfo == this;
         if (cacheResult) {
-            Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.get().overrides.getOtherwiseNull(methodInfo) : null;
+            Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.getPotentiallyRun().overrides.getOtherwiseNull(methodInfo) : null;
             if (myOverrides != null) return myOverrides;
         }
         Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
         if (ourOwnLevel && cacheResult) {
-            typeInspection.get().overrides.put(methodInfo, immutable);
+            typeInspection.getPotentiallyRun().overrides.put(methodInfo, immutable);
         }
         return immutable;
     }
@@ -939,18 +939,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo getMethodOrConstructorByDistinguishingName(String distinguishingName) {
-        return typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        return typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName))
                 .findFirst().orElse(null);
     }
 
     public FieldInfo getFieldByName(String name) {
-        return typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
+        return typeInspection.getPotentiallyRun().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
     }
 
     public TypeInfo primaryType() {
-        if (typeInspection.isSet()) {
-            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
+        if (typeInspection.isSetPotentiallyRun()) {
+            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.getPotentiallyRun().packageNameOrEnclosingType;
             if (packageNameOrEnclosingType.isLeft()) return this;
             return packageNameOrEnclosingType.getRight().primaryType();
         }
@@ -1040,26 +1040,26 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isNestedType() {
-        return typeInspection.get().packageNameOrEnclosingType.isRight();
+        return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight();
     }
 
     public List<TypeInfo> allTypesInPrimaryType() {
-        return primaryType().typeInspection.get().allTypesInPrimaryType;
+        return primaryType().typeInspection.getPotentiallyRun().allTypesInPrimaryType;
     }
 
     public boolean isPrivate() {
-        return typeInspection.get().modifiers.contains(TypeModifier.PRIVATE);
+        return typeInspection.getPotentiallyRun().modifiers.contains(TypeModifier.PRIVATE);
     }
 
     public boolean isAnEnclosingTypeOf(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) return false;
-        return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight());
+        if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft()) return false;
+        return isAnEnclosingTypeOf(typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight());
     }
 
     public List<TypeInfo> myselfAndMyEnclosingTypes() {
         if (isNestedType()) {
-            return ListUtil.immutableConcat(List.of(this), typeInspection.get().packageNameOrEnclosingType
+            return ListUtil.immutableConcat(List.of(this), typeInspection.getPotentiallyRun().packageNameOrEnclosingType
                     .getRight().myselfAndMyEnclosingTypes());
         }
         return List.of(this);
@@ -1080,19 +1080,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             TypeAnalysis typeAnalysis = new TypeAnalysis(this);
             this.typeAnalysis.set(typeAnalysis);
         }
-        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, typeInspection.get().annotations, typeContext, overwrite));
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo ->
+        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, typeInspection.getPotentiallyRun().annotations, typeContext, overwrite));
+        typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo ->
                 messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite)));
-        typeInspection.get().fields.forEach(fieldInfo ->
+        typeInspection.getPotentiallyRun().fields.forEach(fieldInfo ->
                 messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite)));
         return messages;
     }
 
     public void resolveAllAnnotations(ExpressionContext expressionContext) {
-        typeInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
+        typeInspection.getPotentiallyRun().annotations.stream().filter(ae -> !ae.expressions.isSet())
                 .forEach(ae -> ae.resolve(expressionContext));
-        typeInspection.get().subTypes.forEach(subType -> subType.resolveAllAnnotations(expressionContext));
-        typeInspection.get().methodsAndConstructors().forEach(methodInfo -> {
+        typeInspection.getPotentiallyRun().subTypes.forEach(subType -> subType.resolveAllAnnotations(expressionContext));
+        typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo -> {
             methodInfo.methodInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
                     .forEach(ae -> ae.resolve(expressionContext));
             methodInfo.methodInspection.get().parameters.forEach(parameterInfo ->
@@ -1100,24 +1100,24 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                             .stream().filter(ae -> !ae.expressions.isSet())
                             .forEach(ae -> ae.resolve(expressionContext)));
         });
-        typeInspection.get().fields.forEach(fieldInfo ->
+        typeInspection.getPotentiallyRun().fields.forEach(fieldInfo ->
                 fieldInfo.fieldInspection.get().annotations.stream().filter(ae -> !ae.expressions.isSet())
                         .forEach(ae -> ae.resolve(expressionContext)));
     }
 
     public boolean isInterface() {
-        return typeInspection.get().typeNature == TypeNature.INTERFACE;
+        return typeInspection.getPotentiallyRun().typeNature == TypeNature.INTERFACE;
     }
 
     public boolean isFunctionalInterface() {
-        if (typeInspection.get("isFunctionalInterface on " + fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
+        if (typeInspection.getPotentiallyRun("isFunctionalInterface on " + fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
             return false;
         }
-        return typeInspection.get().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
+        return typeInspection.getPotentiallyRun().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
     }
 
     public MethodInfo sizeMethod() {
-        MethodInfo methodInfo = typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
                 .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
@@ -1140,7 +1140,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public Set<ObjectFlow> objectFlows() {
         Set<ObjectFlow> result = typeAnalysis.get().getConstantObjectFlows().collect(Collectors.toCollection(HashSet::new));
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             // set, because the returned object flow could equal either one of the non-returned, or parameter flows
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                 result.add(parameterInfo.parameterAnalysis.get().getObjectFlow());
@@ -1153,14 +1153,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         // for fields we only add those owned by the field itself (i.e. with an initialiser)
-        for (FieldInfo fieldInfo : typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
             ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
             if (objectFlow != null && objectFlow.location.info == fieldInfo) {
                 result.add(objectFlow);
             }
             result.addAll(fieldInfo.fieldAnalysis.get().internalObjectFlows.get());
         }
-        for (TypeInfo subType : typeInspection.get().subTypes) {
+        for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
             result.addAll(subType.objectFlows());
         }
         return result;
@@ -1176,14 +1176,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
-        return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).
+        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).
                 filter(m -> m.name.equals(methodName) && m.methodInspection.get().parameters.size() == parameters)
                 .findAny().orElseThrow();
     }
 
     public Set<ParameterizedType> typesOfMethodsAndConstructors() {
         Set<ParameterizedType> result = new HashSet<>();
-        for (MethodInfo methodInfo : typeInspection.get().methodsAndConstructors()) {
+        for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
                 result.add(methodInfo.returnType());
             }
@@ -1195,29 +1195,29 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
-        if (!typeInspection.isSetDoNotTriggerRunnable()) return null;
-        if (typeInspection.get().packageNameOrEnclosingType.isLeft())
-            return typeInspection.get().packageNameOrEnclosingType.getLeft();
-        return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();
+        if (!typeInspection.isSet()) return null;
+        if (typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft())
+            return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft();
+        return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight().packageName();
     }
 
     // this type implements a functional interface, and we need to find the single abstract method
     public MethodInfo findOverriddenSingleAbstractMethod() {
-        return typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
                 .findFirst().orElseThrow();
     }
 
     public Set<ParameterizedType> explicitTypes() {
         // handles SAMs of fields as well
-        Stream<ParameterizedType> methods = typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.ALL)
+        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL)
                 .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
-        Stream<ParameterizedType> fields = typeInspection.get().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
+        Stream<ParameterizedType> fields = typeInspection.getPotentiallyRun().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
         return Stream.concat(methods, fields).collect(Collectors.toSet());
     }
 
     public MethodInfo findConstructor(int parameters) {
-        return typeInspection.get().constructors.stream()
+        return typeInspection.getPotentiallyRun().constructors.stream()
                 .filter(c -> c.methodInspection.get().parameters.size() == parameters)
                 .findFirst().orElseThrow();
     }

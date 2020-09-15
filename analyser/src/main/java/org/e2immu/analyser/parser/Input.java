@@ -139,7 +139,7 @@ public class Input {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = ParseAndInspect.fqnOfClassFile(thePackage, expansion);
                 TypeInfo typeInfo = (TypeInfo) globalTypeContext.getFullyQualified(fqn, false);
-                if (typeInfo == null || !typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
+                if (typeInfo == null || !typeInfo.typeInspection.isSet()) {
                     String path = fqn.replace(".", "/"); // this is correct!
                     byteCodeInspector.inspectFromPath(path);
                     inspected.incrementAndGet();

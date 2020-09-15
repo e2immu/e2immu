@@ -139,7 +139,7 @@ public class AnnotationUploader {
                 break;
             }
         }
-        type.typeInspection.get().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
+        type.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
@@ -172,7 +172,7 @@ public class AnnotationUploader {
                 }
             }
         });
-        for (FieldInfo fieldInfo : type.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : type.typeInspection.getPotentiallyRun().fields) {
             String fieldQn = typeQn + ":" + fieldInfo.name;
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
 

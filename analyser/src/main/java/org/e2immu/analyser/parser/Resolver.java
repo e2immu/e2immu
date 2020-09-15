@@ -109,7 +109,7 @@ public class Resolver {
                                            E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         Set<TypeInfo> typeDependencies = new HashSet<>();
 
-        TypeInspection ti = typeInfo.typeInspection.get();
+        TypeInspection ti = typeInfo.typeInspection.getPotentiallyRun();
         ti.interfacesImplemented.forEach(pt -> typeDependencies.addAll(pt.typeInfoSet()));
         if (ti.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT)
             typeDependencies.addAll(ti.parentClass.typeInfoSet());
@@ -117,7 +117,7 @@ public class Resolver {
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
 
         TypeInfo primaryType = typeInfo.primaryType();
-        stayWithin.addAll(primaryType.typeInspection.get().allTypesInPrimaryType);
+        stayWithin.addAll(primaryType.typeInspection.getPotentiallyRun().allTypesInPrimaryType);
 
         typeDependencies.addAll(ti.subTypes); // dependencies for subtypes go from enclosing to sub
         ti.subTypes.forEach(typeContextOfType::addToContext);
@@ -143,7 +143,7 @@ public class Resolver {
     }
 
     private DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType, Set<TypeInfo> typeDependencies) {
-        TypeInspection typeInspection = typeInfo.typeInspection.get();
+        TypeInspection typeInspection = typeInfo.typeInspection.getPotentiallyRun();
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
         ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,

@@ -27,7 +27,6 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
@@ -394,8 +393,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
     public List<ParameterizedType> typeParametersComputed(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
-        if (typeInfo.typeInspection.get().typeParameters.isEmpty()) return List.of();
-        return typeInfo.typeInspection.get().typeParameters.stream().map(typeParameter -> {
+        if (typeInfo.typeInspection.getPotentiallyRun().typeParameters.isEmpty()) return List.of();
+        return typeInfo.typeInspection.getPotentiallyRun().typeParameters.stream().map(typeParameter -> {
             int cnt = 0;
             for (ParameterInfo parameterInfo : methodInspection.get().parameters) {
                 if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
@@ -517,7 +516,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return isStatic ||
                 methodInspection.get().modifiers.contains(MethodModifier.FINAL)
                 || methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)
-                || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
+                || typeInfo.typeInspection.getPotentiallyRun().modifiers.contains(TypeModifier.FINAL);
     }
 
     public boolean isPrivate() {
@@ -534,12 +533,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true if there is a non-private method in this class which calls this private method.
      */
     public boolean isCalledFromNonPrivateMethod() {
-        for (MethodInfo other : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo other : typeInfo.typeInspection.getPotentiallyRun().methods) {
             if (!other.isPrivate() && other.methodAnalysis.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
             if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiser.isSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod != null &&

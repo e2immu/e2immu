@@ -84,12 +84,12 @@ public class TestSizeChecks extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        MethodInfo isEmpty = collection.typeInspection.get().methods.stream().filter(m -> m.name.equals("isEmpty")).findAny().orElseThrow();
+        MethodInfo isEmpty = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("isEmpty")).findAny().orElseThrow();
         int size = isEmpty.methodAnalysis.get().getProperty(VariableProperty.SIZE);
         Assert.assertEquals(Level.SIZE_EMPTY, size);
 
         TypeInfo map = typeContext.getFullyQualified(Map.class);
-        MethodInfo entrySet = map.typeInspection.get().methods.stream().filter(m -> m.name.equals("entrySet")).findAny().orElseThrow();
+        MethodInfo entrySet = map.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("entrySet")).findAny().orElseThrow();
         int sizeCopy = entrySet.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
         Assert.assertEquals(Level.SIZE_COPY_TRUE, sizeCopy);
     };

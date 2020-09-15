@@ -48,7 +48,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         @Override
         public void visit(TypeContext typeContext) {
             TypeInfo objects = typeContext.getFullyQualified(Objects.class);
-            MethodInfo requireNonNull = objects.typeInspection.get().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
+            MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
                     1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));

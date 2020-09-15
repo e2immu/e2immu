@@ -288,7 +288,7 @@ public class TypeInspection extends Inspection {
 
         private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
             result.add(typeInfo);
-            for (TypeInfo sub : typeInfo.typeInspection.get().subTypes) {
+            for (TypeInfo sub : typeInfo.typeInspection.getPotentiallyRun().subTypes) {
                 recursivelyCollectSubTypes(sub, result);
             }
         }

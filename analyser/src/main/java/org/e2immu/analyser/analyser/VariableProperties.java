@@ -20,9 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.ArrayAccess;
@@ -501,7 +499,7 @@ class VariableProperties implements EvaluationContext {
         // regardless of whether we're a field, a parameter or a local variable...
         if (isRecordType(variable)) {
             TypeInfo recordType = variable.parameterizedType().typeInfo;
-            for (FieldInfo recordField : recordType.typeInspection.get().fields) {
+            for (FieldInfo recordField : recordType.typeInspection.getPotentiallyRun().fields) {
                 String newName = name + "." + recordField.name;
                 FieldReference fieldReference = new FieldReference(recordField, variable);
                 Variable newVariable = new RecordField(fieldReference, newName);
@@ -557,7 +555,7 @@ class VariableProperties implements EvaluationContext {
 
     private static List<String> variableNamesOfLocalRecordVariables(AboutVariable aboutVariable) {
         TypeInfo recordType = aboutVariable.variable.parameterizedType().typeInfo;
-        return recordType.typeInspection.get().fields.stream()
+        return recordType.typeInspection.getPotentiallyRun().fields.stream()
                 .map(fieldInfo -> aboutVariable.name + "." + fieldInfo.name).collect(Collectors.toList());
     }
 

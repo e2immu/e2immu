@@ -38,18 +38,18 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
     //@Mark("freeze")
     public TypeItem(TypeInfo typeInfo) {
         this.name = typeInfo.fullyQualifiedName;
-        boolean haveTypeInspection = typeInfo.typeInspection.isSetDoNotTriggerRunnable();
-        addAnnotations(haveTypeInspection ? typeInfo.typeInspection.get().annotations : List.of(),
+        boolean haveTypeInspection = typeInfo.typeInspection.isSet();
+        addAnnotations(haveTypeInspection ? typeInfo.typeInspection.getPotentiallyRun().annotations : List.of(),
                 typeInfo.typeAnalysis.isSet() ?
                         typeInfo.typeAnalysis.get().annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
                                 .map(Map.Entry::getKey)
                                 .collect(Collectors.toList()) : List.of());
         if (haveTypeInspection) {
-            for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+            for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
                 MethodItem methodItem = new MethodItem(methodInfo);
                 methodItems.put(methodItem.name, methodItem);
             }
-            for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+            for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
                 FieldItem fieldItem = new FieldItem(fieldInfo);
                 fieldItems.put(fieldItem.name, fieldItem);
             }

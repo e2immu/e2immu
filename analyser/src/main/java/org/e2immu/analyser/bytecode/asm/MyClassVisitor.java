@@ -92,7 +92,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (currentType == null) {
             currentType = new TypeInfo(fqName);
             typeContext.typeStore.add(currentType);
-        } else if (currentType.typeInspection.isSetDoNotTriggerRunnable()) {
+        } else if (currentType.typeInspection.isSet()) {
             log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
             types.add(currentType);
             currentType = null;
@@ -203,7 +203,7 @@ public class MyClassVisitor extends ClassVisitor {
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
         if (path.equals(currentTypePath)) return currentType;
         TypeInfo alreadyKnown = typeContext.typeStore.get(fqn);
-        if (alreadyKnown != null && alreadyKnown.typeInspection.isSetDoNotTriggerRunnable()) {
+        if (alreadyKnown != null && alreadyKnown.typeInspection.isSet()) {
             return alreadyKnown;
         }
         if (alreadyKnown != null) {
@@ -224,7 +224,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
         TypeInfo result = typeContext.typeStore.get(fqn);
-        return result != null && result.typeInspection.isSetDoNotTriggerRunnable() ? result : null;
+        return result != null && result.typeInspection.isSet() ? result : null;
     }
 
     private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
@@ -551,7 +551,7 @@ public class MyClassVisitor extends ClassVisitor {
         } else if (innerName != null && currentTypePath.equals(outerName)) {
             log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of {}", name, currentType.fullyQualifiedName);
             TypeInfo subTypeInMap = typeContext.typeStore.get(pathToFqn(name));
-            if (subTypeInMap == null || !subTypeInMap.typeInspection.isSetDoNotTriggerRunnable() && !inProcess.contains(subTypeInMap)) {
+            if (subTypeInMap == null || !subTypeInMap.typeInspection.isSet() && !inProcess.contains(subTypeInMap)) {
                 enclosingTypes.push(currentType);
                 TypeInfo subType = onDemandInspection.inspectFromPath(name, inProcess, enclosingTypes, typeContext);
                 enclosingTypes.pop();
@@ -602,7 +602,7 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     private void errorStateForType(String pathCausingFailure) {
-        if (currentType == null || currentType.typeInspection.isSetDoNotTriggerRunnable())
+        if (currentType == null || currentType.typeInspection.isSet())
             throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
         log(BYTECODE_INSPECTOR, message);

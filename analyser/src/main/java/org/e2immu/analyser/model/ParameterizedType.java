@@ -118,12 +118,12 @@ public class ParameterizedType {
                 ParameterizedType scopePt = from(context, scopeType);
                 // name probably is a sub type in scopePt...
                 if (scopePt.typeInfo != null) {
-                    if (scopePt.typeInfo.typeInspection.isSetDoNotTriggerRunnable()) {
-                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
+                    if (scopePt.typeInfo.typeInspection.isSet()) {
+                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.getPotentiallyRun().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
                         if (subType.isPresent()) {
                             return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
                         }
-                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals(name)).findFirst();
+                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals(name)).findFirst();
                         if (field.isPresent()) return field.get().type;
                         throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
                     }
@@ -545,11 +545,11 @@ public class ParameterizedType {
                     return arrays == 0 && type.checkBoxing(typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
                 }
 
-                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
+                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
                     int scoreInterface = numericIsAssignableFrom(interfaceImplemented, true);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
-                ParameterizedType parentClass = type.typeInfo.typeInspection.get().parentClass;
+                ParameterizedType parentClass = type.typeInfo.typeInspection.getPotentiallyRun().parentClass;
                 if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
                     int scoreParent = numericIsAssignableFrom(parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
@@ -593,7 +593,7 @@ public class ParameterizedType {
 
     public boolean implementsFunctionalInterface() {
         if (typeInfo == null) return false;
-        return typeInfo.typeInspection.get().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
+        return typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
     }
 
     public boolean isUnboundParameterType() {
@@ -606,10 +606,10 @@ public class ParameterizedType {
 
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(boolean complain) {
         if (!isFunctionalInterface()) return null;
-        Optional<MethodInfo> theMethod = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        Optional<MethodInfo> theMethod = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
         if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
-        for (ParameterizedType extension : typeInfo.typeInspection.get().interfacesImplemented) {
+        for (ParameterizedType extension : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
             MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(false);
             if (ofExtension != null) {
                 return ofExtension;
@@ -759,7 +759,7 @@ public class ParameterizedType {
         TypeInfo bestType = bestTypeInfo();
         if (bestType != null) {
             // one of my fields is "component"
-            for (FieldInfo fieldInfo : bestType.typeInspection.get().fields) {
+            for (FieldInfo fieldInfo : bestType.typeInspection.getPotentiallyRun().fields) {
                 if (fieldInfo.type.equals(component) || fieldInfo.type.equals(boxedComponent)) return true;
             }
         }

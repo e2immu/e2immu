@@ -66,14 +66,14 @@ public class TestContainerChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("setStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("strings1", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
             }
             if ("getStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("strings1", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
@@ -89,14 +89,14 @@ public class TestContainerChecks extends CommonTestRunner {
                 }
             }
             if ("add2".equals(methodInfo.name) && iteration >= 1) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("strings2", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
             }
             if ("add2b".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.get().fields.get(0);
+                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("strings2b", strings.name);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
@@ -129,11 +129,11 @@ public class TestContainerChecks extends CommonTestRunner {
         @Override
         public void visit(TypeContext typeContext) {
             TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-            MethodInfo forEach = collection.typeInspection.get().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
+            MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
             Assert.assertSame(Primitives.PRIMITIVES.voidTypeInfo, forEach.returnType().typeInfo);
 
             TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-            MethodInfo constructor1 = hashSet.typeInspection.get().constructors.stream()
+            MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
                     .filter(m -> m.methodInspection.get().parameters.size() == 1)
                     .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
                     .findAny().orElseThrow();
