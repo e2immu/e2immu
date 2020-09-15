@@ -400,10 +400,23 @@ public class ComputeLinking {
                     log(DELAYED, "Marking that delays need resolving on {}", aboutVariable.name);
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
+            } else if (variable instanceof ParameterInfo) {
+                ParameterInfo parameterInfo = (ParameterInfo) variable;
+
+                if (parameterInfo.parameterizedType.hasSize()) {
+                    int size = aboutVariable.getProperty(VariableProperty.SIZE);
+                    if (size == Level.DELAY && !haveDelay) {
+                        // we could not find anything related to size, let's advertise that
+                        int sizeInParam = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
+                        if (sizeInParam == Level.DELAY) {
+                            parameterInfo.parameterAnalysis.get().setProperty(VariableProperty.SIZE, Level.IS_A_SIZE);
+                        }
+                    }
+                }
             }
         }
         // this is set even in the face of method delays
-        if(!methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        if (!methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
         return changes;

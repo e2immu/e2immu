@@ -35,7 +35,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
             ParameterInfo set = methodInfo.methodInspection.get().parameters.get(1);
             Assert.assertEquals("set", set.name);
             Assert.assertEquals(Level.FALSE, set.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-            Assert.assertEquals(Level.IS_A_SIZE, set.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
+        //    Assert.assertEquals(Level.IS_A_SIZE, set.parameterAnalysis.get().getProperty(VariableProperty.SIZE));
         }
         if ("visit2".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals(Level.FALSE, modified);

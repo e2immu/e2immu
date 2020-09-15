@@ -318,7 +318,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } // else: we've already requested this from the scope (functional interface)
 
         int requiredSize = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        if (requiredSize > Level.FALSE) {
+        if (requiredSize > Level.IS_A_SIZE) {
             int currentSize = methodAnalysis.getProperty(VariableProperty.SIZE);
             if (!Level.compatibleSizes(currentSize, requiredSize)) {
                 evaluationContext.raiseError(Message.POTENTIAL_SIZE_PROBLEM);

@@ -149,6 +149,17 @@ public abstract class Analysis {
 
     protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
+        // size copy
+        int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
+        if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
+            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
+            return;
+        }
+        if (sizeCopy == Level.SIZE_COPY_TRUE) {
+            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
+            return;
+        }
+
         // size
         int size = getProperty(VariableProperty.SIZE);
         if (size >= Level.IS_A_SIZE) {
@@ -157,14 +168,6 @@ public abstract class Analysis {
             } else {
                 annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "min", Level.decodeSizeMin(size)), true);
             }
-        }
-
-        // size copy
-        int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
-        if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
-            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
-        } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
-            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
         }
     }
 
@@ -198,7 +201,7 @@ public abstract class Analysis {
             annotations.put(e2ImmuAnnotationExpressions.dependent.get(), true);
             return;
         }
-        if(independent <= MultiLevel.FALSE) return;
+        if (independent <= MultiLevel.FALSE) return;
         annotations.put(e2ImmuAnnotationExpressions.dependent.get(), false);
         if (independent == MultiLevel.EFFECTIVE) {
             annotations.put(e2ImmuAnnotationExpressions.independent.get(), true);

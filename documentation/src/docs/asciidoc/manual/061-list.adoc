@@ -409,6 +409,73 @@ Summary:: The annotation indicates that the type, typically a container, has a `
 It can be used to request minimal size, and to indicate that resulting objects have the same size as incoming objects.
 Mode:: There is no opposite for this annotation.
 
+Details:: A type becomes _sizable_ when it has at least one non-modifying method returning an `int`, or a `long`, annotated with `@Size`.
+It is this method that will return the size of the type.
+In practice, we're looking at the `size()` method of the collection classes:
+
+[source,java]
+----
+@Size
+int size();
+----
+
+Non-modifying methods that return a boolean can have their value explained:
+
+[source,java]
+----
+@Size(equals = 0) // or @Size, given that equals=0 is the default
+boolean isEmpty();
+
+@Size(min = 1)
+boolean isNotEmpty();
+----
+
+Non-modifying methods that return a sizable object can have their value explained as well:
+
+[source,java]
+----
+@Size(equals = 2)
+Set<Integer> returnSetOf2(int i1, int i2) { return Set.of(i1, i2); }
+----
+
+In modifying methods, the annotation describes how the size of the object in scope changes:
+
+[source,java]
+----
+@Size(equals = 0)
+void clear(); // empties the collection
+
+@Size(min = 1)
+boolean add(T t); // after adding, there will be at least one element in the collection
+----
+
+As a second option in modifying methods, we can transfer the size restriction of a parameter to the object itself:
+
+[source,java]
+----
+boolean addAll(@Size(copyMin = true) Collection<? extends E> collection);
+----
+
+This indicates that after a call to `addAll`, the minimum size of the object combines with the current minimum.
+In other words, if the size of the argument is `size >= 2`, then the current object will also have `size >= 2` assuming it started with a `size >= i` with `0 \<= i \<= 2`.
+The analyser allows only one `copyMin` or `copyEquals` annotation per (modifying) method.
+If a modifying method has a `copyMin` or `copyEquals` annotation on a parameter, then the potential `@Size` annotation on the method will be interpreted as size information on the return value.
+
+A parameter annotated with `@Size(min = n)` or `@Size(equals = n)` sets a size requirement, regardless the type of method:
+
+[source,java]
+----
+@Identity
+static <T> Collection<T> requireNotEmpty(@Size(min = 1) Collection<T> ts) {
+    if(ts.isEmpty()) throw new UnsupportedOperationException();
+    return ts;
+}
+----
+
+The analyser can infer `@Size` annotations on fields and return values of non-modifying methods.
+It can also infer `@Size` restriction on parameters (like the one in the above example).
+The analyser switches from 'restriction mode' into 'size computation mode' as soon as one modifying method has been applied to the sizable object.
+
 ==== @SupportData
 
 |===

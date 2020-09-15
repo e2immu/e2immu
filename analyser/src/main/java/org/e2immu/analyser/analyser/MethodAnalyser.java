@@ -507,7 +507,7 @@ public class MethodAnalyser {
         IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                 .mapToInt(entry -> entry.getValue().getProperty(variableProperty));
         int value = variableProperty == VariableProperty.SIZE ?
-                safeMinimum(messages, new Location(methodInfo), stream) :
+                safeMinimumForSize(messages, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);
 
         if (value == Level.DELAY) {
@@ -542,7 +542,7 @@ public class MethodAnalyser {
                 }
                 IntStream stream = methodAnalysis.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
-                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimum(messages, new Location(methodInfo), stream));
+                return writeSize(methodInfo, methodAnalysis, VariableProperty.SIZE, safeMinimumForSize(messages, new Location(methodInfo), stream));
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
@@ -668,7 +668,7 @@ public class MethodAnalyser {
         return Level.DELAY;
     }
 
-    static int safeMinimum(Messages messages, Location location, IntStream intStream) {
+    static int safeMinimumForSize(Messages messages, Location location, IntStream intStream) {
         int res = intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
             if (Level.haveEquals(v1) && Level.haveEquals(v2) && v1 != v2) {
                 messages.add(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
@@ -676,7 +676,7 @@ public class MethodAnalyser {
             }
             return Math.min(v1, v2);
         });
-        return res == Integer.MAX_VALUE ? Level.DELAY : res;
+        return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
     private boolean methodIsNotModified(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {

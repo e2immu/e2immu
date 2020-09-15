@@ -478,7 +478,7 @@ public class FieldAnalyser {
             int v = value.getPropertyOutsideContext(property);
             values.add(v);
         }
-        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimum(messages, new Location(fieldInfo), values.stream().mapToInt(Integer::intValue)) :
+        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimumForSize(messages, new Location(fieldInfo), values.stream().mapToInt(Integer::intValue)) :
                 values.stream().mapToInt(Integer::intValue).min().orElse(property.falseValue);
         if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
