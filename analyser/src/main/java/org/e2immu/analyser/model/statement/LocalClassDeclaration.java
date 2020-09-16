@@ -20,9 +20,9 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class LocalClassDeclaration extends StatementWithStructure {
@@ -43,12 +43,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public Set<String> imports() {
-        return typeInfo.imports();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return typeInfo.typesReferenced();
     }
 
@@ -59,7 +54,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return typeInfo.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL)
+        return typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
                 .map(methodInfo -> methodInfo.methodInspection.get().methodBody.get()).collect(Collectors.toList());
     }
 }

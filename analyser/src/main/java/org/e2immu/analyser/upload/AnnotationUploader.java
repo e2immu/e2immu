@@ -102,7 +102,7 @@ public class AnnotationUploader {
                 new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
                 new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get()),
                 new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.e1Immutable.get())
-                );
+        );
     }
 
     public Map<String, String> createMap(Collection<TypeInfo> types) {
@@ -112,7 +112,7 @@ public class AnnotationUploader {
         for (TypeInfo type : types) {
             add(map, type);
             log(UPLOAD, "Adding annotations of {}", type.fullyQualifiedName);
-            referredTo.addAll(type.typesReferenced());
+            type.typesReferenced().stream().map(Map.Entry::getKey).forEach(referredTo::add);
         }
         referredTo.removeAll(types);
 
@@ -139,7 +139,7 @@ public class AnnotationUploader {
                 break;
             }
         }
-        type.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
+        type.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {

@@ -609,9 +609,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 sb.append(";\n\n");
             }
             if (!imports.isEmpty()) {
-                imports.stream()
-                        .filter(i -> !i.startsWith("java.lang.") && !inSamePackage(i))
-                        .sorted().forEach(i ->
+                imports.stream().sorted().forEach(i ->
                         sb.append("import ")
                                 .append(i)
                                 .append(";\n"));
@@ -670,6 +668,33 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return sb.toString();
     }
 
+    private Set<String> imports() {
+        Set<TypeInfo> typesReferenced = typesReferenced().stream().filter(Map.Entry::getValue)
+                .filter(e -> !e.getKey().isJavaLang())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        Map<String, List<TypeInfo>> perPackage = new HashMap<>();
+        String myPackage = packageName();
+        typesReferenced.forEach(typeInfo -> {
+            String packageName = typeInfo.packageName();
+            if (packageName != null && !myPackage.equals(packageName)) {
+                SMapList.add(perPackage, packageName, typeInfo);
+            }
+        });
+        Set<String> result = new TreeSet<>();
+        for (Map.Entry<String, List<TypeInfo>> e : perPackage.entrySet()) {
+            List<TypeInfo> list = e.getValue();
+            if (list.size() >= 4) {
+                result.add(e.getKey() + ".*");
+            } else {
+                for (TypeInfo typeInfo : list) {
+                    result.add(typeInfo.fullyQualifiedName);
+                }
+            }
+        }
+        return result;
+    }
+
     private boolean inSamePackage(String i) {
         // TODO this should be done better
         int lastDot = i.lastIndexOf('.');
@@ -708,54 +733,24 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isJavaLang() {
         if (isPrimitive()) return true;
-        return fullyQualifiedName.startsWith(Primitives.JAVA_LANG);
-    }
-
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-
-        // explicitly adding this to allow for computed annotations, which will happen all the time
-        imports.add(AnnotationType.class.getCanonicalName());
-        if (hasBeenInspected()) {
-            for (AnnotationExpression annotation : typeInspection.getPotentiallyRun().annotations) {
-                imports.add(annotation.typeInfo.fullyQualifiedName);
-            }
-            for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
-                imports.addAll(subType.imports());
-            }
-            for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
-                imports.addAll(methodInfo.imports());
-            }
-            for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
-                imports.addAll(fieldInfo.imports());
-            }
-        }
-        return imports;
+        return Primitives.JAVA_LANG.equals(packageName());
     }
 
     /**
      * This is the starting place to compute all types that are referred to in any way.
      * It is different from imports, because imports need an explicitly written type.
      *
-     * @return a set of all types referenced
+     * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
      */
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> result = new HashSet<>();
-        result.add(this);
-
-        for (AnnotationExpression annotation : typeInspection.getPotentiallyRun().annotations) {
-            result.add(annotation.typeInfo);
-        }
-        for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
-            result.addAll(subType.typesReferenced());
-        }
-        for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
-            result.addAll(methodInfo.typesReferenced());
-        }
-        for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
-            result.addAll(fieldInfo.typesReferenced());
-        }
-        return result;
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(
+                UpgradableBooleanMap.of(this, true),
+                typeInspection.getPotentiallyRun().annotations.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                typeInspection.getPotentiallyRun().subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
+                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                typeInspection.getPotentiallyRun().fields.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+        );
     }
 
     @Override
@@ -859,7 +854,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public List<TypeInfo> superTypes() {
         if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
-        if (typeInspection.getPotentiallyRun().superTypes.isSet()) return typeInspection.getPotentiallyRun().superTypes.get();
+        if (typeInspection.getPotentiallyRun().superTypes.isSet())
+            return typeInspection.getPotentiallyRun().superTypes.get();
         List<TypeInfo> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         TypeInfo parent;
@@ -939,7 +935,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo getMethodOrConstructorByDistinguishingName(String distinguishingName) {
-        return typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        return typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
                 .filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName))
                 .findFirst().orElse(null);
     }
@@ -1195,7 +1191,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
-        if (!typeInspection.isSet()) return null;
+        if(!typeInspection.isSet()) {
+            // it's too late now
+            return computePackageName();
+        }
         if (typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft())
             return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft();
         return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight().packageName();
@@ -1210,7 +1209,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public Set<ParameterizedType> explicitTypes() {
         // handles SAMs of fields as well
-        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL)
+        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
                 .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
         Stream<ParameterizedType> fields = typeInspection.getPotentiallyRun().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
         return Stream.concat(methods, fields).collect(Collectors.toSet());

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -61,10 +62,8 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>(expression.imports());
-        if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
-        return ImmutableSet.copyOf(imports);
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(expression.typesReferenced(), parameterizedType.typesReferenced(true));
     }
 
     @Override

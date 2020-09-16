@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
 import java.util.Set;
@@ -74,13 +75,8 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public Set<String> imports() {
-            return unionOfTypes.stream().map(type -> type.typeInfo.fullyQualifiedName).collect(Collectors.toSet());
-        }
-
-        @Override
-        public Set<TypeInfo> typesReferenced() {
-            return unionOfTypes.stream().flatMap(pt -> pt.typesReferenced().stream()).collect(Collectors.toSet());
+        public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+            return UpgradableBooleanMap.of(unionOfTypes.stream().flatMap(pt -> pt.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()));
         }
 
         @Override

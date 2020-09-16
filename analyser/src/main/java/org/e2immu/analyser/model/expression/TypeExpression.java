@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
@@ -49,14 +50,8 @@ public class TypeExpression implements Expression {
     }
 
     @Override
-    public Set<String> imports() {
-        if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
-        return Set.of();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return parameterizedType.typesReferenced();
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return parameterizedType.typesReferenced(true);
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
@@ -38,14 +39,8 @@ public interface Expression extends Element {
     @NotModified
     Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo);
 
-    @NotModified
-    @E2Container
-    default Set<String> imports() {
-        return Set.of();
-    }
-
-    default Set<TypeInfo> typesReferenced() {
-        return Set.of();
+    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of();
     }
 
     @NotModified

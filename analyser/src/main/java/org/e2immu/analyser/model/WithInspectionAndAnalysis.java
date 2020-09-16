@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.util.UpgradableBooleanMap;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +32,8 @@ public interface WithInspectionAndAnalysis {
     String name();
 
     Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation);
+
+    UpgradableBooleanMap<TypeInfo> typesReferenced();
 
     // byte code inspection + annotated APIs: hasBeenDefined on type == false
     // classes and enumerations with at least one field with initialiser or method with code block: hasBeenDefined == true

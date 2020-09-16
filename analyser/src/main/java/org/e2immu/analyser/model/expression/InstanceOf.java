@@ -28,6 +28,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -104,20 +105,12 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    @NotNull
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>(expression.imports());
-        if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
-        return ImmutableSet.copyOf(imports);
-    }
-
-    @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
     }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(expression.typesReferenced(), parameterizedType.typesReferenced());
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(expression.typesReferenced(), parameterizedType.typesReferenced(true));
     }
 }

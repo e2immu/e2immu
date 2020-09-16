@@ -27,6 +27,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,17 +45,6 @@ public class ParameterizedType {
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
-
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> result = new HashSet<>();
-        for (ParameterizedType parameter : parameters) {
-            result.addAll(parameter.typesReferenced());
-        }
-        if (isType() && !typeInfo.isPrimitive()) {
-            result.add(typeInfo);
-        }
-        return result;
-    }
 
     public enum WildCard {
         NONE, UNBOUND, SUPER, EXTENDS
@@ -350,17 +340,6 @@ public class ParameterizedType {
             }
         }
         return sb.toString();
-    }
-
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-        if (isType()) {
-            if (!typeInfo.isJavaLang()) {
-                imports.add(typeInfo.fullyQualifiedName);
-            }
-            parameters.forEach(p -> imports.addAll(p.imports()));
-        }
-        return imports;
     }
 
     @Override
@@ -774,6 +753,12 @@ public class ParameterizedType {
             return other;
         }
         return this;
+    }
+
+    public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
+        return UpgradableBooleanMap.of(
+                parameters.stream().flatMap(pt -> pt.typesReferenced(explicit).stream()).collect(UpgradableBooleanMap.collector()),
+                isType() && !typeInfo.isPrimitive() ? UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
     }
 
 }

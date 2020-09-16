@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -114,7 +115,7 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
-        return variable.typesReferenced();
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return variable.typesReferenced(false);
     }
 }

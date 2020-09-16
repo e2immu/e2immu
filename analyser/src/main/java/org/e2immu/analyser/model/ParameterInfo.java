@@ -23,6 +23,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
 
@@ -151,17 +152,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return sb.toString();
     }
 
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-        if (hasBeenInspected()) {
-            for (AnnotationExpression annotationExpression : parameterInspection.get().annotations) {
-                imports.addAll(annotationExpression.imports());
-            }
-        }
-        imports.addAll(parameterizedType.imports());
-        return imports;
-    }
-
     public void inspect(Parameter parameter, ExpressionContext expressionContext, boolean isVarArgs) {
         ParameterInspection.ParameterInspectionBuilder builder = new ParameterInspection.ParameterInspectionBuilder();
         for (AnnotationExpr ae : parameter.getAnnotations()) {
@@ -199,14 +189,16 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         return (owner == null ? "-" : owner.fullyQualifiedName()) + "#" + index;
     }
 
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> types = new HashSet<>();
-        if (hasBeenInspected()) {
-            for (AnnotationExpression annotationExpression : parameterInspection.get().annotations) {
-                types.addAll(annotationExpression.typesReferenced());
-            }
-        }
-        types.addAll(parameterizedType.typesReferenced());
-        return types;
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return typesReferenced(false);
+    }
+
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
+        return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit),
+                hasBeenInspected() ?
+                        parameterInspection.get().annotations.stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                        : UpgradableBooleanMap.of());
     }
 }

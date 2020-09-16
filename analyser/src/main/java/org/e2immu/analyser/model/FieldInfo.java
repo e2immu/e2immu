@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -87,23 +88,14 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return owner.hasBeenDefined() && (!owner.isInterface() || fieldInspection.get().haveInitialiser());
     }
 
-    public Set<String> imports() {
-        if (type.isTypeParameter()) return Collections.emptySet();
-        TypeInfo typeInfo = type.typeInfo;
-        if (typeInfo.isPrimitive() || typeInfo.isJavaLang()) {
-            return Collections.emptySet();
-        }
-        return Collections.singleton(typeInfo.fullyQualifiedName);
-    }
-
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> types = new HashSet<>();
-        if (fieldInspection.isSet() && fieldInspection.get().initialiser.isSet()) {
-            FieldInspection.FieldInitialiser initialiser = fieldInspection.get().initialiser.get();
-            types.addAll(initialiser.initialiser.typesReferenced());
-        }
-        types.addAll(type.typesReferenced());
-        return types;
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(
+                type.typesReferenced(true),
+                fieldInspection.isSet() && fieldInspection.get().initialiser.isSet() ?
+                        fieldInspection.get().initialiser.get().initialiser.typesReferenced()
+                        : UpgradableBooleanMap.of()
+        );
     }
 
     public String stream(int indent) {

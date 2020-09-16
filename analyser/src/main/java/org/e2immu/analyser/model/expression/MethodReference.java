@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
 import java.util.Map;
@@ -63,15 +64,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public Set<String> imports() {
-        return methodInfo.returnType().typeInfo != null ?
-                Set.of(methodInfo.returnType().typeInfo.fullyQualifiedName)
-                : Set.of();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(methodInfo.returnType().typesReferenced(), scope.typesReferenced());
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(methodInfo.returnType().typesReferenced(false), scope.typesReferenced());
     }
 
     // if we pass on one of our own methods to some other method, we need to take into account our exposure to the

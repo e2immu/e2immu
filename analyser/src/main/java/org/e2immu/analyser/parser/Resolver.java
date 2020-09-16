@@ -245,7 +245,7 @@ public class Resolver {
 
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
 
-        typeInspection.constructorAndMethodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
+        typeInspection.methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
                 MethodInspection methodInspection = methodInfo.methodInspection.get();
 

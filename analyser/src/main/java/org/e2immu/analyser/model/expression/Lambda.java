@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
@@ -26,7 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -100,16 +99,12 @@ public class Lambda implements Expression {
         return 16;
     }
 
+    // TODO: the "true" in the types referenced of the parameter is not necessarily true (probably even false!)
     @Override
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>(block.imports());
-        parameters.forEach(pe -> imports.addAll(pe.imports()));
-        return ImmutableSet.copyOf(imports);
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(block.typesReferenced(), parameters.stream().flatMap(p -> p.typesReferenced().stream()).collect(Collectors.toSet()));
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(
+                block.typesReferenced(),
+                parameters.stream().flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()));
     }
 
     @Override

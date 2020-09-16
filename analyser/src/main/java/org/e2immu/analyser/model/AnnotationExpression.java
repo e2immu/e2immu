@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,8 +254,8 @@ public class AnnotationExpression {
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 
-    public Set<TypeInfo> typesReferenced() {
-        return Set.of(typeInfo);
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(typeInfo, true);
     }
 
     @Container(builds = AnnotationExpression.class)

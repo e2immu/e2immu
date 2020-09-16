@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.util.UpgradableBooleanMap;
+
 import java.util.Objects;
 import java.util.Set;
 
@@ -94,10 +96,11 @@ public class This implements Variable {
     }
 
     @Override
-    public Set<TypeInfo> typesReferenced() {
+    public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
+        boolean b = explicit && explicitlyWriteType;
         if (writeSuper) {
-            return Set.of(typeInfo, typeInfo.typeInspection.get().parentClass.bestTypeInfo());
+            return UpgradableBooleanMap.of(typeInfo, b, typeInfo.typeInspection.get().parentClass.bestTypeInfo(), false);
         }
-        return Set.of(typeInfo);
+        return UpgradableBooleanMap.of(typeInfo, b);
     }
 }

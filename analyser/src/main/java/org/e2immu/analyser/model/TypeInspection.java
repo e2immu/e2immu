@@ -133,7 +133,7 @@ public class TypeInspection extends Inspection {
         ALL_RECURSIVE
     }
 
-    public Stream<MethodInfo> constructorAndMethodStream(Methods methodsMode) {
+    public Stream<MethodInfo> methodsAndConstructors(Methods methodsMode) {
         return Stream.concat(constructors.stream(), methodStream(methodsMode));
     }
 

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -64,14 +65,8 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    public Set<String> imports() {
-        if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
-        return Set.of();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return parameterizedType.typesReferenced();
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return parameterizedType.typesReferenced(true);
     }
 
     @Override

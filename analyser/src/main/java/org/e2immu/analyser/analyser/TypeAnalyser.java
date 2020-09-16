@@ -428,7 +428,7 @@ public class TypeAnalyser {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return false;
         }
-        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().constructorAndMethodStream(TypeInspection.Methods.ALL).allMatch(
+        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL).allMatch(
                 m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
                         !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
                                 parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 
 import java.util.*;
@@ -293,18 +294,13 @@ public class Pattern {
         }
 
         @Override
-        public Set<String> imports() {
-            return null;
-        }
-
-        @Override
         public SideEffect sideEffect(EvaluationContext evaluationContext) {
             return null;
         }
 
         @Override
-        public Set<TypeInfo> typesReferenced() {
-            return null;
+        public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+            return UpgradableBooleanMap.of();
         }
 
         @Override

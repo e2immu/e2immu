@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -100,17 +101,10 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-        if (parameterizedType.typeInfo != null) imports.add(parameterizedType.typeInfo.fullyQualifiedName);
-        parameterExpressions.forEach(pe -> imports.addAll(pe.imports()));
-        return ImmutableSet.copyOf(imports);
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
-        return SetUtil.immutableUnion(parameterizedType.typesReferenced(),
-                parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet()));
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(
+                parameterizedType.typesReferenced(true),
+                parameterExpressions.stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()));
     }
 
     @Override

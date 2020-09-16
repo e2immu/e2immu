@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Set;
 
@@ -49,9 +50,10 @@ public class ForEachStatement extends LoopStatement {
     }
 
     @Override
-    public Set<String> imports() {
-        return SetUtil.immutableUnion(expression.imports(), structure.block.imports(),
-                structure.localVariableCreation.imports());
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(expression.typesReferenced(),
+                structure.block.typesReferenced(),
+                structure.localVariableCreation.parameterizedType.typesReferenced(true));
     }
 
     @Override

@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.util.UpgradableBooleanMap;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,7 +49,7 @@ public interface Variable {
 
     int variableOrder();
 
-    default Set<TypeInfo> typesReferenced() {
-        return parameterizedType().typesReferenced();
+    default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
+        return parameterizedType().typesReferenced(explicit);
     }
 }

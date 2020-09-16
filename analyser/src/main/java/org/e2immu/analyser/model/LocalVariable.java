@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.LocalVariableModifier;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
@@ -55,11 +56,6 @@ public class LocalVariable {
     @Override
     public int hashCode() {
         return Objects.hash(name);
-    }
-
-    public Set<String> imports() {
-        if (parameterizedType.typeInfo != null) return Set.of(parameterizedType.typeInfo.fullyQualifiedName);
-        return Set.of();
     }
 
     @Override

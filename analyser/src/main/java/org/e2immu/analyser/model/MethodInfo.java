@@ -34,6 +34,7 @@ import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -228,50 +229,21 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
     }
 
-    public Set<String> imports() {
-        Set<String> imports = new HashSet<>();
-        if (!isConstructor) {
-            imports.addAll(hasBeenInspected() ? methodInspection.get().returnType.imports() :
-                    returnTypeObserved.imports());
-        }
-        for (ParameterInfo parameterInfo : (hasBeenInspected() ? methodInspection.get().parameters : parametersAsObserved)) {
-            imports.addAll(parameterInfo.imports());
-        }
-        if (hasBeenInspected()) {
-            for (AnnotationExpression annotationExpression : methodInspection.get().annotations) {
-                imports.addAll(annotationExpression.imports());
-            }
-            for (ParameterizedType parameterizedType : methodInspection.get().exceptionTypes) {
-                imports.addAll(parameterizedType.imports());
-            }
-            if (methodInspection.get().methodBody.isSet()) {
-                imports.addAll(methodInspection.get().methodBody.get().imports());
-            }
-        }
-        return imports;
-    }
-
-    public Set<TypeInfo> typesReferenced() {
-        Set<TypeInfo> references = new HashSet<>();
-        if (!isConstructor) {
-            references.addAll(hasBeenInspected() ? methodInspection.get().returnType.typesReferenced() :
-                    returnTypeObserved.typesReferenced());
-        }
-        for (ParameterInfo parameterInfo : (hasBeenInspected() ? methodInspection.get().parameters : parametersAsObserved)) {
-            references.addAll(parameterInfo.typesReferenced());
-        }
-        if (hasBeenInspected()) {
-            for (AnnotationExpression annotationExpression : methodInspection.get().annotations) {
-                references.addAll(annotationExpression.typesReferenced());
-            }
-            for (ParameterizedType parameterizedType : methodInspection.get().exceptionTypes) {
-                references.addAll(parameterizedType.typesReferenced());
-            }
-            if (methodInspection.get().methodBody.isSet()) {
-                references.addAll(methodInspection.get().methodBody.get().typesReferenced());
-            }
-        }
-        return references;
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() : hasBeenInspected() ?
+                methodInspection.get().returnType.typesReferenced(true) : returnTypeObserved.typesReferenced(true);
+        UpgradableBooleanMap<TypeInfo> parameterTypes =
+                (hasBeenInspected() ? methodInspection.get().parameters : parametersAsObserved)
+                        .stream().flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> annotationTypes = hasBeenInspected() ?
+                methodInspection.get().annotations.stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) :
+                UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> exceptionTypes = hasBeenInspected() ?
+                methodInspection.get().exceptionTypes.stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
+                UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() && methodInspection.get().methodBody.isSet() ? methodInspection.get().methodBody.get().typesReferenced() : UpgradableBooleanMap.of();
+        return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, bodyTypes);
     }
 
     public String stream(int indent) {

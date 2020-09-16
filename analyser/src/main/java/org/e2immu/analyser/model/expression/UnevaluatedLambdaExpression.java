@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
@@ -56,14 +57,7 @@ public class UnevaluatedLambdaExpression implements Expression {
     }
 
     @Override
-    @Independent
-    @NotNull
-    public Set<String> imports() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Set<TypeInfo> typesReferenced() {
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         throw new UnsupportedOperationException();
     }
 

@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,16 +67,10 @@ public interface Element {
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
     }
 
-    // imports
-
-    default Set<String> imports() {
-        return subElements().stream().flatMap(e -> e.imports().stream()).collect(Collectors.toSet());
-    }
-
-    // types referenced
-
-    default Set<TypeInfo> typesReferenced() {
-        return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(Collectors.toSet());
+    // types referenced (used for imports, uploading annotations, dependency tree between types)
+    // the boolean distinguishes between an explicit mention (used for import) and an implicit one.
+    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return subElements().stream().flatMap(e -> e.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
     }
 
     // variables, in order of appearance
