@@ -411,7 +411,7 @@ class VariableProperties implements EvaluationContext {
             }
         } else if (variable instanceof This) {
             This thisVariable = (This) variable;
-            name = thisVariable.typeInfo.simpleName + ".this";
+            name = thisVariable.toString();
         } else {
             // parameter, local variable
             name = variable.name();

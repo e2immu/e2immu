@@ -136,8 +136,10 @@ public class Resolver {
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
-        typeDependencies.removeAll(typeInfo.myselfAndMyEnclosingTypes());
+        typeDependencies.remove(typeInfo);
         typeDependencies.retainAll(stayWithin);
+        log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
+        log(RESOLVE, "Stay within: {}", stayWithin);
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
     }
 

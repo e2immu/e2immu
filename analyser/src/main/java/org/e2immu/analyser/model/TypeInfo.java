@@ -745,8 +745,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         TypeInspection ti = typeInspection.getPotentiallyRun();
         return UpgradableBooleanMap.of(
-                UpgradableBooleanMap.of(this, true),
                 ti.parentClass.typesReferenced(true),
+                ti.packageNameOrEnclosingType.isRight() && !isStatic() ?
+                        UpgradableBooleanMap.of(ti.packageNameOrEnclosingType.getRight(), false) :
+                        UpgradableBooleanMap.of(),
                 ti.interfacesImplemented.stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
                 ti.annotations.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
                 ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),

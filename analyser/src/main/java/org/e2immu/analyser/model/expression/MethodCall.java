@@ -508,7 +508,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(parameterExpressions, object == null ? List.of() : List.of(object));
+        return ListUtil.immutableConcat(parameterExpressions, List.of(computedScope));
     }
 
     @Override

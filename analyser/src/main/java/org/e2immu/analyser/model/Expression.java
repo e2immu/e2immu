@@ -39,10 +39,6 @@ public interface Expression extends Element {
     @NotModified
     Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo);
 
-    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        return UpgradableBooleanMap.of();
-    }
-
     @NotModified
     default String bracketedExpressionString(int indent, Expression expression) {
         if (expression.precedence() < precedence()) {
