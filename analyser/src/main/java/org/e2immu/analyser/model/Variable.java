@@ -46,4 +46,8 @@ public interface Variable {
     SideEffect sideEffect(EvaluationContext evaluationContext);
 
     int variableOrder();
+
+    default Set<TypeInfo> typesReferenced() {
+        return parameterizedType().typesReferenced();
+    }
 }

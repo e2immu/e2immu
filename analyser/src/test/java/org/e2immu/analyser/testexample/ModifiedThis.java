@@ -59,12 +59,29 @@ public class ModifiedThis {
 
     static class ChildClass extends ParentClass {
 
+        private final Set<String> childSet = new HashSet<>();
+
         @Modified
         public void clearAndLog() {
             super.clearAndLog();
             System.out.println("Cleared from child");
         }
 
+        @Modified
+        public void addToChild(String s) {
+            childSet.add(s);
+        }
+
+        @Modified
+        public void clearAndAdd(String s) {
+            super.clearAndLog();
+            this.childSet.add(s);
+        }
+
+        @NotModified
+        public Set<String> getChildSet() {
+            return childSet;
+        }
 
         class InnerOfChild {
 

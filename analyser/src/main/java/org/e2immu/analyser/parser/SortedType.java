@@ -45,4 +45,9 @@ public class SortedType {
         this.methodsAndFields = ListUtil.immutableConcat(typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(),
                 typeInfo.typeInspection.getPotentiallyRun().fields);
     }
+
+    @Override
+    public String toString() {
+        return typeInfo.fullyQualifiedName + ": " + methodsAndFields;
+    }
 }

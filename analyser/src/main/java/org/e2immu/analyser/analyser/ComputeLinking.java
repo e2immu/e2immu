@@ -308,7 +308,7 @@ public class ComputeLinking {
                     TransferValue tv = new TransferValue();
                     methodAnalysis.fieldSummaries.put(fieldInfo, tv);
                     changes = true;
-                    copy(aboutVariable, tv);
+                    copy(aboutVariable, tv, VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD);
                 }
             } else if (variable instanceof This) {
                 // TODO there may be multiple This's, and Super's
@@ -316,7 +316,7 @@ public class ComputeLinking {
                     TransferValue tv = new TransferValue();
                     methodAnalysis.thisSummary.set(tv);
                     changes = true;
-                    copy(aboutVariable, tv);
+                    copy(aboutVariable, tv, VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD_THIS);
                 }
             }
         }
@@ -334,8 +334,8 @@ public class ComputeLinking {
 
     // TODO why don't we copy MODIFIED? at least of thisSummary that seems very opportune
 
-    private static void copy(AboutVariable aboutVariable, TransferValue transferValue) {
-        for (VariableProperty variableProperty : VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD) {
+    private static void copy(AboutVariable aboutVariable, TransferValue transferValue, Set<VariableProperty> properties) {
+        for (VariableProperty variableProperty : properties) {
             int value = aboutVariable.getProperty(variableProperty);
             transferValue.properties.put(variableProperty, value);
         }

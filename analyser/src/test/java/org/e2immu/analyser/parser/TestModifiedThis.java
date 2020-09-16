@@ -24,6 +24,10 @@ public class TestModifiedThis extends CommonTestRunner {
             Assert.assertEquals("ChildClass.this", d.variableName);
             Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
         }
+        if("clear".equals(d.methodInfo.name) && "InnerOfChild".equals(d.methodInfo.typeInfo.simpleName)) {
+            Assert.assertEquals("ChildClass.this", d.variableName);
+            Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+        }
     };
 
     @Test

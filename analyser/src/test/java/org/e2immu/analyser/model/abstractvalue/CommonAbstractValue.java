@@ -107,6 +107,11 @@ public abstract class CommonAbstractValue {
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
+        public TypeInfo getCurrentType() {
+            return null; // should be enough to determine "self"
+        }
+
+        @Override
         public Value currentValue(Variable variable) {
             return new VariableValue(this, variable, variable.name());
         }

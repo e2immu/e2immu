@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Variable representing the "this" keyword
@@ -90,5 +91,13 @@ public class This implements Variable {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        if (writeSuper) {
+            return Set.of(typeInfo, typeInfo.typeInspection.get().parentClass.bestTypeInfo());
+        }
+        return Set.of(typeInfo);
     }
 }

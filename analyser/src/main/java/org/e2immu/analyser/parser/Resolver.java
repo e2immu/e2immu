@@ -70,7 +70,9 @@ public class Resolver {
             typeInfo.typeAnalysis.get().circularDependencies.set(Set.of());
             return List.of(new SortedType(typeInfo));
         }
-        return sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+        List<SortedType> result = sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+        log(RESOLVE, "Result of type sorting: {}", result);
+        return result;
     }
 
     private List<TypeInfo> sorted(DependencyGraph<TypeInfo> typeGraph) {

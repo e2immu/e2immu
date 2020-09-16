@@ -735,7 +735,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     /**
      * This is the starting place to compute all types that are referred to in any way.
-     * This is different from imports, because imports need an explicitly written type.
+     * It is different from imports, because imports need an explicitly written type.
      *
      * @return a set of all types referenced
      */

@@ -23,10 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public class VariableExpression implements Expression {
     public final Variable variable;
@@ -114,5 +111,10 @@ public class VariableExpression implements Expression {
     @Override
     public String toString() {
         return expressionString(0);
+    }
+
+    @Override
+    public Set<TypeInfo> typesReferenced() {
+        return variable.typesReferenced();
     }
 }
