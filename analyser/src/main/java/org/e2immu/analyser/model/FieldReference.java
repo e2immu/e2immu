@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import java.util.Objects;
+
 public class FieldReference extends VariableWithConcreteReturnType {
     public final FieldInfo fieldInfo;
 
@@ -31,7 +33,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     /**
-     *
      * @param o the other one
      * @return true if the same field is being referred to
      */
@@ -46,7 +47,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
     @Override
     public int hashCode() {
         return fieldInfo.hashCode();
-       // return Objects.hash(fieldInfo, scope);
+        // return Objects.hash(fieldInfo, scope);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class FieldReference extends VariableWithConcreteReturnType {
 
     public FieldReference(FieldInfo fieldInfo, Variable scope) {
         super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters(scope.concreteReturnType()));
-        this.fieldInfo = fieldInfo;
+        this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
     }
 

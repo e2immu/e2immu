@@ -51,11 +51,11 @@ public class ParseMethodCallExpr {
             scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
         } else {
             scopeType = scope.returnType();
-            if(scope instanceof VariableExpression) {
-                VariableExpression variableExpression  = (VariableExpression) scope;
-                if(variableExpression.variable instanceof This) {
-                    This v = (This)variableExpression.variable;
-                    if(v.writeSuper) {
+            if (scope instanceof VariableExpression) {
+                VariableExpression variableExpression = (VariableExpression) scope;
+                if (variableExpression.variable instanceof This) {
+                    This v = (This) variableExpression.variable;
+                    if (v.writeSuper) {
                         scopeType = v.typeInfo.typeInspection.getPotentiallyRun().parentClass;
                     }
                 }
@@ -90,11 +90,6 @@ public class ParseMethodCallExpr {
                 methodCallExpr, StringUtil.join(newParameterExpressions, Expression::returnType),
                 method.getConcreteReturnType().detailedString(), mapExpansion);
 
-        if (method.methodInfo.typeInfo == expressionContext.enclosingType) {
-            // only when we're in the same type shall we add method dependencies
-            log(RESOLVE, "Add method dependency to {}", method.methodInfo.name);
-            expressionContext.dependenciesOnOtherMethodsAndFields.add(method.methodInfo);
-        }
         Expression computedScope;
         if (scope == null) {
             if (method.methodInfo.isStatic) {

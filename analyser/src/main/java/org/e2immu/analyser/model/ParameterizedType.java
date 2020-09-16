@@ -455,15 +455,6 @@ public class ParameterizedType {
         return res;
     }
 
-    public Set<TypeInfo> typeInfoSet() {
-        Set<TypeInfo> set = new HashSet<>();
-        if (isType()) set.add(typeInfo);
-        for (ParameterizedType pt : parameters) {
-            set.addAll(pt.typeInfoSet());
-        }
-        return set;
-    }
-
     // semantics: can type be assigned to me? I should be equal or a super type of type
 
     /*

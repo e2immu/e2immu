@@ -31,7 +31,6 @@ import java.util.*;
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
         ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, objectCreationExpr.getType());
-        expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed

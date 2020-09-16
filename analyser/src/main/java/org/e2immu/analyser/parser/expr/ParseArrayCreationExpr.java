@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
         ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, arrayCreationExpr.createdType());
-        expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i -> new ArrayInitializer(i.getValues().stream()
                 .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()

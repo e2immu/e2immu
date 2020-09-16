@@ -743,13 +743,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
      */
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        TypeInspection ti = typeInspection.getPotentiallyRun();
         return UpgradableBooleanMap.of(
                 UpgradableBooleanMap.of(this, true),
-                typeInspection.getPotentiallyRun().annotations.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                typeInspection.getPotentiallyRun().subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
+                ti.parentClass.typesReferenced(true),
+                ti.interfacesImplemented.stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
+                ti.annotations.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                ti.methodsAndConstructors(TypeInspection.Methods.ALL)
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                typeInspection.getPotentiallyRun().fields.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                ti.fields.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
         );
     }
 
@@ -1191,7 +1194,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
-        if(!typeInspection.isSet()) {
+        if (!typeInspection.isSet()) {
             // it's too late now
             return computePackageName();
         }

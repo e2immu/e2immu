@@ -46,7 +46,6 @@ public class ParseFieldAccessExpr {
             String fullyQualifiedName = String.join(".", packagePrefix.prefix) + "." + name;
             TypeInfo typeInfo = expressionContext.typeContext.getFullyQualified(fullyQualifiedName, true);
             ParameterizedType objectType = new ParameterizedType(typeInfo, 0);
-            expressionContext.dependenciesOnOtherTypes.addAll(objectType.typeInfoSet());
             return new TypeExpression(objectType);
         }
         return createFieldAccess(expressionContext, object, name, fieldAccessExpr.getBegin().orElseThrow());
@@ -54,7 +53,6 @@ public class ParseFieldAccessExpr {
 
     public static Expression createFieldAccess(ExpressionContext expressionContext, Expression object, String name, Position positionForErrorReporting) {
         ParameterizedType objectType = object.returnType();
-        expressionContext.dependenciesOnOtherTypes.addAll(objectType.typeInfoSet());
         if (objectType.arrays > 0 && "length".equals(name)) return new ArrayLengthExpression(object);
 
         if (objectType.typeInfo != null) {
@@ -75,7 +73,6 @@ public class ParseFieldAccessExpr {
     private static FieldAccess fieldAccess(ExpressionContext expressionContext, FieldInfo fieldInfo, Expression object) {
         if (fieldInfo.owner == expressionContext.enclosingType) {
             log(RESOLVE, "Adding dependency on field {}", fieldInfo.fullyQualifiedName());
-            expressionContext.dependenciesOnOtherMethodsAndFields.add(fieldInfo);
         }
         // in a static context, the object is a type expression.
         // it can be a method call, such as findNode().data (data is the field)

@@ -42,7 +42,6 @@ public class ParseMethodReferenceExpr {
         Expression scope = expressionContext.parseExpression(methodReferenceExpr.getScope());
         boolean scopeIsAType = scopeIsAType(scope);
         ParameterizedType parameterizedType = scope.returnType();
-        expressionContext.dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 

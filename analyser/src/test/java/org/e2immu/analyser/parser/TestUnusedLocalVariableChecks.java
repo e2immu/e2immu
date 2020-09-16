@@ -9,8 +9,6 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -20,15 +18,13 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         super(true);
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestUnusedLocalVariableChecks.class);
-
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         // ERROR: t.trim() result is not used
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId) && d.iteration > 1) {
             Assert.assertTrue(d.numberedStatement.errorValue.get());
         }
 
-        if ("method2".equals(d.methodInfo.name) && d.iteration > 1) {
+        if ("method2".equals(d.methodInfo.name) && d.iteration > 2) {
             if ("1".equals(d.numberedStatement.index)) {
                 Assert.assertTrue(d.numberedStatement.errorValue.get()); // if switches
             }

@@ -54,8 +54,6 @@ public class ExpressionContext {
     public final TypeInfo primaryType;
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final TopLevel topLevel;
-    public final Set<TypeInfo> dependenciesOnOtherTypes;
-    public final Set<WithInspectionAndAnalysis> dependenciesOnOtherMethodsAndFields;
 
     public static class TopLevel {
         final Map<TypeInfo, AtomicInteger> anonymousClassCounter = new HashMap<>();
@@ -71,40 +69,31 @@ public class ExpressionContext {
         return new ExpressionContext(Objects.requireNonNull(typeInfo), typeInfo,
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(new HashMap<>()),
-                new TopLevel(),
-                new HashSet<>(),
-                null);
+                new TopLevel());
     }
 
     public static ExpressionContext forBodyParsing(@NotNull @NotModified TypeInfo enclosingType,
                                                    @NotNull @NotModified TypeInfo primaryType,
-                                                   @NotNull @NotModified TypeContext typeContext,
-                                                   @NotNull Set<TypeInfo> dependenciesOnOtherTypes) {
+                                                   @NotNull @NotModified TypeContext typeContext) {
         Map<String, FieldReference> staticallyImportedFields = typeContext.staticFieldImports();
         log(CONTEXT, "Creating a new expression context for {}", enclosingType.fullyQualifiedName);
         return new ExpressionContext(Objects.requireNonNull(enclosingType),
                 Objects.requireNonNull(primaryType),
                 Objects.requireNonNull(typeContext),
                 VariableContext.initialVariableContext(staticallyImportedFields),
-                new TopLevel(),
-                Objects.requireNonNull(dependenciesOnOtherTypes),
-                null);
+                new TopLevel());
     }
 
     private ExpressionContext(TypeInfo enclosingType,
                               TypeInfo primaryType,
                               TypeContext typeContext,
                               VariableContext variableContext,
-                              TopLevel topLevel,
-                              Set<TypeInfo> dependenciesOnOtherTypes,
-                              Set<WithInspectionAndAnalysis> dependenciesOnOtherMethods) {
+                              TopLevel topLevel) {
         this.typeContext = typeContext;
         this.primaryType = primaryType;
         this.enclosingType = enclosingType;
         this.topLevel = topLevel;
         this.variableContext = variableContext;
-        this.dependenciesOnOtherTypes = dependenciesOnOtherTypes;
-        this.dependenciesOnOtherMethodsAndFields = dependenciesOnOtherMethods;
         this.e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(typeContext.typeStore);
     }
 
@@ -112,25 +101,24 @@ public class ExpressionContext {
         log(CONTEXT, "Creating a new variable context for {}", reason);
         return new ExpressionContext(enclosingType, primaryType,
                 typeContext, VariableContext.dependentVariableContext(variableContext),
-                topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
+                topLevel);
     }
 
     public ExpressionContext newVariableContext(@NotNull VariableContext newVariableContext, String reason) {
         log(CONTEXT, "Creating a new variable context for {}", reason);
-        return new ExpressionContext(enclosingType, primaryType, typeContext,
-                newVariableContext, topLevel, dependenciesOnOtherTypes, dependenciesOnOtherMethodsAndFields);
+        return new ExpressionContext(enclosingType, primaryType, typeContext, newVariableContext, topLevel);
     }
 
     public ExpressionContext newSubType(@NotNull TypeInfo subType) {
         log(CONTEXT, "Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContext(subType, primaryType,
-                new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
+                new TypeContext(typeContext), variableContext, topLevel);
     }
 
     public ExpressionContext newTypeContext(String reason) {
         log(CONTEXT, "Creating a new type context for {}", reason);
         return new ExpressionContext(enclosingType, primaryType,
-                new TypeContext(typeContext), variableContext, topLevel, dependenciesOnOtherTypes, new HashSet<>());
+                new TypeContext(typeContext), variableContext, topLevel);
     }
 
     @NotNull
@@ -411,7 +399,6 @@ public class ExpressionContext {
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, castExpr.getType());
-                dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                 return new Cast(parseExpression(castExpr.getExpression()), parameterizedType);
             }
             if (expression.isBinaryExpr()) {
@@ -484,11 +471,9 @@ public class ExpressionContext {
                         Variable variable = variableContext.get(cit.getScope().get().getNameAsString(), false);
                         Expression scope;
                         if (variable != null) {
-                            dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
-                            scope = ParseNameExpr.fromVariableToExpression(this, variable);
+                            scope = new VariableExpression(variable);
                         } else {
                             ParameterizedType parameterizedType = ParameterizedType.from(typeContext, cit.getScope().get());
-                            dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                             scope = new TypeExpression(parameterizedType);
                         }
                         return ParseFieldAccessExpr.createFieldAccess(this, scope, cit.getNameAsString(), expression.getBegin().orElseThrow());
@@ -497,18 +482,15 @@ public class ExpressionContext {
                     // therefore we check the variable context first
                     Variable variable = variableContext.get(typeExpr.getTypeAsString(), false);
                     if (variable != null) {
-                        dependenciesOnOtherTypes.addAll(variable.parameterizedType().typeInfoSet());
-                        return ParseNameExpr.fromVariableToExpression(this, variable);
+                        return new VariableExpression(variable);
                     }
                 }
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, typeExpr.getType());
-                dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                 return new TypeExpression(parameterizedType);
             }
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, classExpr.getType());
-                dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                 return new ClassExpression(parameterizedType);
             }
             if (expression.isNameExpr()) {
@@ -522,7 +504,6 @@ public class ExpressionContext {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
                 VariableDeclarator var = vde.getVariable(0);
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, var.getType());
-                dependenciesOnOtherTypes.addAll(parameterizedType.typeInfoSet());
                 LocalVariable.LocalVariableBuilder localVariable = new LocalVariable.LocalVariableBuilder()
                         .setName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
