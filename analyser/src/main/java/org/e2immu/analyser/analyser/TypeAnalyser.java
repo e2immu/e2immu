@@ -188,7 +188,7 @@ public class TypeAnalyser {
 
                     VariableProperties fieldProperties = new VariableProperties(e2ImmuAnnotationExpressions,
                             iteration, configuration, patternMatcher, fieldInfo);
-                    if (fieldAnalyser.analyse(fieldInfo, new This(typeInfo), fieldProperties))
+                    if (fieldAnalyser.analyse(fieldInfo, fieldProperties))
                         changes = true;
                     for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
                         fieldAnalyserVisitor.visit(iteration, fieldInfo);

@@ -332,8 +332,6 @@ public class ComputeLinking {
         return changes;
     }
 
-    // TODO why don't we copy MODIFIED? at least of thisSummary that seems very opportune
-
     private static void copy(AboutVariable aboutVariable, TransferValue transferValue, Set<VariableProperty> properties) {
         for (VariableProperty variableProperty : properties) {
             int value = aboutVariable.getProperty(variableProperty);

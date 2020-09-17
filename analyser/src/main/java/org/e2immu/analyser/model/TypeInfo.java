@@ -935,8 +935,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findFirst().orElse(null);
     }
 
-    public FieldInfo getFieldByName(String name) {
-        return typeInspection.getPotentiallyRun().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst().orElse(null);
+    public FieldInfo getFieldByName(String name, boolean complain) {
+        Optional<FieldInfo> result = typeInspection.getPotentiallyRun().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
+        return complain ? result.orElseThrow() : result.orElse(null);
     }
 
     public TypeInfo primaryType() {

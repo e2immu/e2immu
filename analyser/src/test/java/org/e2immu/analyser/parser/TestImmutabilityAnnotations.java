@@ -78,7 +78,7 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("setFirst".equals(methodInfo.name)) {
-            FieldInfo ts2 = methodInfo.typeInfo.getFieldByName("ts2");
+            FieldInfo ts2 = methodInfo.typeInfo.getFieldByName("ts2", true);
             TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(ts2);
             if (iteration > 0) {
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.MODIFIED));

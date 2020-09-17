@@ -131,31 +131,52 @@ public class TypeInspection extends Inspection {
 
     public enum Methods {
 
-        THIS_TYPE_ONLY(false), THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM(false), THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM(false),
-        INCLUDE_SUBTYPES(true),;
+        THIS_TYPE_ONLY(false, null),
+        THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM(false, null),
+        THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM(false, null),
+        INCLUDE_SUBTYPES(true, THIS_TYPE_ONLY);
 
-        private Methods(boolean recurse) {
+        Methods(boolean recurse, Methods nonRecursiveVariant) {
             this.recurse = recurse;
+            this.nonRecursiveVariant = nonRecursiveVariant;
         }
 
         public final boolean recurse;
+        public final Methods nonRecursiveVariant;
     }
 
     public Stream<MethodInfo> methodsAndConstructors(Methods methodsMode) {
-        return Stream.concat(constructors.stream(), methodStream(methodsMode));
+        return Stream.concat(constructorStream(methodsMode), methodStream(methodsMode));
     }
 
     public Stream<MethodInfo> methodStream(Methods methodsMode) {
-        if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods.stream();
-        return Stream.concat(methods.stream(), methodsInFieldInitializers(methodsMode == Methods.THIS_TYPE_ONLY));
+        if (methodsMode.recurse) {
+            return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
+                    subTypes.stream().flatMap(subType -> subType.typeInspection.getPotentiallyRun().methodStream(methodsMode)));
+        }
+        return nonRecursiveMethodStream(methodsMode);
     }
 
-    public Iterable<MethodInfo> methodsAndConstructors() {
-        return Iterables.concat(methods, constructors);
+    private Stream<MethodInfo> nonRecursiveMethodStream(Methods methodsMode) {
+        if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods.stream();
+        return Stream.concat(methods.stream(),
+                methodsInFieldInitializers(methodsMode != Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM));
+    }
+
+    public Stream<MethodInfo> constructorStream(Methods methodsMode) {
+        if (methodsMode.recurse) {
+            return Stream.concat(constructors.stream(), subTypes.stream()
+                    .flatMap(subType -> subType.typeInspection.getPotentiallyRun().constructorStream(methodsMode)));
+        }
+        return constructors.stream();
     }
 
     public Iterable<MethodInfo> methods(Methods methodsMode) {
         return () -> methodStream(methodsMode).iterator();
+    }
+
+    public Iterable<MethodInfo> methodsAndConstructors() {
+        return Iterables.concat(methods, constructors);
     }
 
     public Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {

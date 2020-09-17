@@ -53,13 +53,14 @@ public class FieldAnalyser {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
-    public boolean analyse(FieldInfo fieldInfo, Variable thisVariable, VariableProperties fieldProperties) {
+    public boolean analyse(FieldInfo fieldInfo, VariableProperties fieldProperties) {
         log(ANALYSER, "Analysing field {}", fieldInfo.fullyQualifiedName());
 
         boolean changes = false;
         TypeInspection primaryType = fieldInfo.owner.primaryType().typeInspection.getPotentiallyRun();
 
         FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+        This thisVariable = new This(fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         boolean fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
 

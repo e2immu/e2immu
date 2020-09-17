@@ -137,14 +137,10 @@ public class ParseLambdaExpr {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
-
         return typeInfo;
     }
 
     public static void ensureLambdaAnalysisDefaults(TypeInfo typeInfo) {
-        // if(!typeInfo.typeAnalysis.get().supportDataTypes.isSet()) {
-        //     typeInfo.typeAnalysis.get().supportDataTypes.set(Set.of());
-        // }
         MethodInfo sam = typeInfo.findOverriddenSingleAbstractMethod();
         if (!sam.methodAnalysis.get().partOfConstruction.isSet()) {
             sam.methodAnalysis.get().partOfConstruction.set(false);

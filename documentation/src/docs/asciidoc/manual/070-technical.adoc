@@ -4,14 +4,47 @@
 
 === Analysis
 
-==== Side effects
+==== Circular dependencies
 
-#TODO#
+The analyser approaches primary types independently, albeit in a carefully computed order of dependency between them.
+When it detects a circular dependency between two or more primary types, it issues a warning to indicate that a different, less powerful modification detection algorithm kicks in.
+We consider circular dependencies bad programming practice; generally, interfaces can be introduced to remedy this.
+The manual modification annotations on the interface method effectively substitute for the assumptions that the less powerful modification algorithm makes.
 
-==== Support data
+Inside a primary type, the analyser deals with circular dependencies between the sub-types, the methods and the fields by running multiple iterations.
+The main reason it has to do this is that all fields are visible to all sub-types, even if they are marked `private`.
 
-Whether a field is {supportData} or not is determined by its type.
-The analyser computes the support data types in `TypeAnalyser.analyseSupportDataTypes`.
+The processing list determines the order in which the analyser processes fields, methods and sub-types.
+
+==== Modification of a field
+
+The code executes the following steps:
+
+. Wait until {final} or {variable} has been established.
+If {variable}, then the field becomes {modified}.
+. If the field is of a functional interface type, the field is {nm} unless we can establish that there is an initializer or unambiguous constructor assignment with an explicit declaration (method reference, lambda, anonymous class implementation).
+. As a short-cut, determine that the field is {nm} if its type is level 2 immutable.
+Whilst not technically necessary, this short-cut may resolve situations more quickly.
+. Wait until the field summaries in methods have been set.
+This typically takes exactly one iteration, because a method which reads a field is later in the processing list.
+. Wait until modification information is available for those methods which read the field.
+Importantly, we consider the methods (and SAM declarations of fields) of all types in the primary type.
+. Determine modification based on the modification information in the field summaries.
+
+==== Modification of a method
+
+The code executes the following steps:
+
+. If the method's field summaries contains an assignment to any field, inside the primary type, then the method is {modified}.
+. Wait until linking information (and hence modification information on fields) becomes available.
+. If any of the field summaries contains a marker for a modified field, then the method becomes {modified}.
+The analyser provides these marks when, amongst others, it sees a modifying method call on the field, or the field is an argument to a modifying parameter.
+. Next, check the modification status of `this` in `thisSummary`, when the analyser has observed a local method call.
+The method is {modified} when the analyser has observed a modification to any of the `this` objects (`super`, ...).
+. Then, check the marker for circular method calls or undeclared functional interfaces.
+In this situation, the modification status of the method depends on the presence of other modifying methods, non-private fields, on dependent methods.
+. Finally, check the marker to copy the modification status from another method.
+The analyser issues this marker when the method passes on a functional interface argument to the other method.
 
 ==== Condition and state
 

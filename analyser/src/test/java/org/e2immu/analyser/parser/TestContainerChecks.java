@@ -36,14 +36,21 @@ public class TestContainerChecks extends CommonTestRunner {
             }
         }
         if ("Container4".equals(d.methodInfo.name)) {
-            if("strings4Param".equals(d.variableName)) {
-                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+            if ("strings4Param".equals(d.variableName)) {
+                //    Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
             }
             if ("Container4.this.strings4".equals(d.variableName)) {
                 Assert.assertTrue(d.currentValue instanceof PropertyWrapper);
                 Assert.assertEquals("strings4Param,@NotNull", d.currentValue.toString());
-                Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
-                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+                //  Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
+                //   Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+            }
+        }
+        if ("addAll5".equals(d.methodInfo.name)) {
+            if ("Container5.this.list".equals(d.variableName)) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.METHOD_DELAY));
             }
         }
     };
@@ -66,15 +73,13 @@ public class TestContainerChecks extends CommonTestRunner {
         @Override
         public void visit(int iteration, MethodInfo methodInfo) {
             if ("setStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
-                Assert.assertEquals("strings1", strings.name);
+                FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
             }
             if ("getStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
-                Assert.assertEquals("strings1", strings.name);
+                FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
                 TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
@@ -103,43 +108,45 @@ public class TestContainerChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
                 Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             }
-        }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("strings1".equals(fieldInfo.name)) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                } else {
-                    // setter may not have been called yet; there is no initialiser
-                    Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                }
-            }
-            if ("strings2".equals(fieldInfo.name)) {
-                if (iteration >= 1) {
-                    Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            if ("addAll5".equals(methodInfo.name)) {
+                FieldInfo list = methodInfo.typeInfo.getFieldByName("list", true);
+                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(list);
+                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
+                if (iteration > 0) {
+                    Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));
                 }
             }
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-            MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
-            Assert.assertSame(Primitives.PRIMITIVES.voidTypeInfo, forEach.returnType().typeInfo);
-
-            TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-            MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
-                    .filter(m -> m.methodInspection.get().parameters.size() == 1)
-                    .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
-                    .findAny().orElseThrow();
-            ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
-            Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("strings1".equals(fieldInfo.name)) {
+            if (iteration == 0) {
+                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            } else {
+                // setter may not have been called yet; there is no initialiser
+                Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            }
         }
+        if ("strings2".equals(fieldInfo.name)) {
+            if (iteration >= 1) {
+                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+            }
+        }
+    };
+
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
+        Assert.assertSame(Primitives.PRIMITIVES.voidTypeInfo, forEach.returnType().typeInfo);
+
+        TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
+        MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
+                .filter(m -> m.methodInspection.get().parameters.size() == 1)
+                .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+                .findAny().orElseThrow();
+        ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 
 
@@ -147,10 +154,10 @@ public class TestContainerChecks extends CommonTestRunner {
     public void test() throws IOException {
         // warning to expect: the potential null pointer exception of strings2
         testClass("ContainerChecks", 0, 1, new DebugConfiguration.Builder()
-        //        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-        //        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-        //        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-        //        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }

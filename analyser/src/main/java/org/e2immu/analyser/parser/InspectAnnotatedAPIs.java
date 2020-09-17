@@ -135,7 +135,7 @@ public class InspectAnnotatedAPIs {
             }
         });
         typeTo.typeInspection.getPotentiallyRun().fields.forEach(fieldInfo -> {
-            FieldInfo fieldFrom = typeFrom.getFieldByName(fieldInfo.name);
+            FieldInfo fieldFrom = typeFrom.getFieldByName(fieldInfo.name, false);
             if (fieldFrom != null) {
                 fieldInfo.fieldInspection.overwrite(fieldInfo.fieldInspection.get().copy(fieldFrom.fieldInspection.get().annotations));
             } else {

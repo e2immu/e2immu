@@ -181,7 +181,7 @@ public class ContainerChecks {
         @Independent
         public Container5(@NotNull Collection<String> coll5) {
             this();
-            addAll(coll5);
+            addAll5(coll5);
         }
 
         @Modified
@@ -190,7 +190,7 @@ public class ContainerChecks {
         }
 
         @NotModified(type = VERIFY_ABSENT)
-        public void addAll(@NotNull Collection<String> collection) {
+        public void addAll5(@NotNull1 Collection<String> collection) {
             list.addAll(collection);
         }
 

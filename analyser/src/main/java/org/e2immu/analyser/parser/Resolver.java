@@ -81,6 +81,9 @@ public class Resolver {
                 throw rte;
             }
         }
+        if (subResolver) {
+            return ImmutableList.copyOf(toSortedType.values());
+        }
         List<SortedType> result = sortWarnForCircularDependencies(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
         log(RESOLVE, "Result of type sorting: {}", result);
         return result;
@@ -101,6 +104,8 @@ public class Resolver {
         });
         for (TypeInfo typeInfo : sorted) {
             Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
+            assert typeInfo.typeAnalysis.isSet() : "Type analysis of " + typeInfo.fullyQualifiedName + " has not been set";
+
             typeInfo.typeAnalysis.get().circularDependencies.set(circularDependencies == null ? Set.of() : ImmutableSet.copyOf(circularDependencies));
         }
         return sorted;
@@ -117,7 +122,12 @@ public class Resolver {
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
         doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
-        typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "resolver");
+        if (subResolver) {
+            typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "sub-resolver");
+        } else {
+            typeInfo.allTypesInPrimaryType()
+                    .forEach(ti -> ti.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "resolver"));
+        }
         fillInternalMethodCalls(methodFieldSubTypeGraph);
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
@@ -179,12 +189,6 @@ public class Resolver {
         List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
         typeDependencies.retainAll(allTypesInPrimaryType);
         methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
-
-        if (isLogEnabled(RESOLVE)) {
-            log(RESOLVE, "Method-Field-SubType graph of {} has {} entries", typeInfo.fullyQualifiedName, methodFieldSubTypeGraph.size());
-            methodFieldSubTypeGraph.visit((n, list) -> log(RESOLVE, " -- Node {} --> {}", n.name(),
-                    list == null ? "[]" : StringUtil.join(list, WithInspectionAndAnalysis::name)));
-        }
     }
 
     private void doFields(TypeInspection typeInspection,
@@ -377,6 +381,9 @@ public class Resolver {
                 MethodInfo methodInfo = ((MethodInfo) from);
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
+
+                assert methodInfo.methodAnalysis.isSet() : "Method analysis of " + methodInfo.distinguishingName() + " not yet set";
+
                 methodInfo.methodAnalysis.get().methodsOfOwnClassReached.set(methodsReached);
             }
         });

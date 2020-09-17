@@ -44,7 +44,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
             if (iteration > 0) {
                 Assert.assertEquals(Level.FALSE, modified);
             }
-            FieldInfo ts = methodInfo.typeInfo.getFieldByName("ts");
+            FieldInfo ts = methodInfo.typeInfo.getFieldByName("ts", true);
             TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(ts);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             if (iteration > 1) {

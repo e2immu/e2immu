@@ -89,7 +89,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         if (evaluationContext.getCurrentMethod() != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
-            boolean circularCall = evaluationContext.getCurrentType().typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
+            TypeInfo primaryType = evaluationContext.getCurrentType().primaryType();
+            assert primaryType.typeAnalysis.isSet() : "Type analysis of " + primaryType.fullyQualifiedName + " not set";
+            assert primaryType.typeAnalysis.get().circularDependencies.isSet() :
+                    "Circular dependencies of type " + primaryType.fullyQualifiedName + " not yet set";
+
+            boolean circularCall = primaryType.typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
                 Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
