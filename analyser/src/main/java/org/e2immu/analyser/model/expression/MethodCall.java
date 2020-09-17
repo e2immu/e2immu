@@ -285,6 +285,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // if this method was identity?
             Value srv = methodAnalysis.singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {
+                InlineValue iv = srv.asInstanceOf(InlineValue.class);
+
+                // special situation
+                // we have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
+                // this we can resolve immediately
+                if (objectValue instanceof Instance && iv.value instanceof ValueWithVariable) {
+                    Variable variable = ((ValueWithVariable) iv.value).variable;
+                    if (variable instanceof FieldReference) {
+                        FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+                        if (fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.TRUE) {
+                            Instance instance = (Instance) objectValue;
+                            int i = 0;
+                            for (ParameterInfo parameterInfo : instance.constructor.methodInspection.get().parameters) {
+                                if (parameterInfo.parameterAnalysis.get().assignedToField.isSet() &&
+                                        parameterInfo.parameterAnalysis.get().assignedToField.get() == fieldInfo) {
+                                    return instance.constructorParameterValues.get(i);
+                                }
+                                i++;
+                            }
+                        }
+                    }
+                }
                 Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
                 return srv.reEvaluate(evaluationContext, translationMap);
             }

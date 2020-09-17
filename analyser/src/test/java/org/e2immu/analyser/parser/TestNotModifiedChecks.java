@@ -89,7 +89,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             if (iteration > 1) {
                 Set<Variable> s2links = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
                         .get(new FieldReference(s2, new This(s2.owner)));
-                Assert.assertTrue("Got: " + s2links, s2links.isEmpty());
+                Assert.assertEquals("[1:set2]", s2links.toString());
             }
             FieldInfo set = methodInfo.typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
             Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.isSet(set));

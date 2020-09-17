@@ -52,11 +52,6 @@ public class Instance implements Value {
         objectFlow = evaluationContext.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
     }
 
-    public static Instance newStringInstance(EvaluationContext evaluationContext) {
-        MethodInfo constructor = Primitives.PRIMITIVES.stringTypeInfo.typeInspection.getPotentiallyRun().constructors.get(0);
-        return new Instance(Primitives.PRIMITIVES.stringParameterizedType, constructor, List.of(), evaluationContext);
-    }
-
     // every new instance is different.
     // we may come back to this later, but for now...
     @Override
