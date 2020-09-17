@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Resolver {
@@ -52,30 +53,40 @@ public class Resolver {
         return messages.getMessageStream();
     }
 
+    /**
+     * Responsible for resolving, circular dependency detection.
+     *
+     * @param inspectedTypes              when a subResolver, the map contains only one type, and it will not be a primary type.
+     *                                    When not a subResolver, it only contains primary types.
+     * @param e2ImmuAnnotationExpressions The store with annotations
+     * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
+     */
+
     public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
-        Set<TypeInfo> stayWithin = new HashSet<>(inspectedTypes.keySet());
+        Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
+                .flatMap(typeInfo -> typeInfo.allTypesInPrimaryType().stream()).collect(Collectors.toSet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
-                recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, entry.getKey(), entry.getValue(), e2ImmuAnnotationExpressions);
+                TypeInfo typeInfo = entry.getKey();
+                TypeContext typeContext = entry.getValue();
+
+                assert subResolver || typeInfo.isPrimaryType();
+                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext, e2ImmuAnnotationExpressions);
+                toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
                 throw rte;
             }
         }
-        if (subResolver) {
-            TypeInfo typeInfo = inspectedTypes.keySet().stream().findAny().orElseThrow();
-            typeInfo.typeAnalysis.get().circularDependencies.set(Set.of());
-            return List.of(new SortedType(typeInfo));
-        }
-        List<SortedType> result = sorted(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+        List<SortedType> result = sortWarnForCircularDependencies(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
         log(RESOLVE, "Result of type sorting: {}", result);
         return result;
     }
 
-    private List<TypeInfo> sorted(DependencyGraph<TypeInfo> typeGraph) {
+    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph) {
         Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
@@ -95,56 +106,48 @@ public class Resolver {
         return sorted;
     }
 
-    /**
-     * @param typeGraph                   the type graph
-     * @param toSortedType                output parameter!!!
-     * @param stayWithin                  restrict dependencies to this set
-     * @param typeInfo                    the type to resolve
-     * @param typeContextOfFile           the type context in which inspection took place; contains the types imported; we have no other access to import statements here
-     * @param e2ImmuAnnotationExpressions the annotation registry
-     */
-    private void recursivelyAddToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
-                                           Map<TypeInfo, SortedType> toSortedType,
-                                           Set<TypeInfo> stayWithin,
-                                           TypeInfo typeInfo,
-                                           TypeContext typeContextOfFile,
-                                           E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
+                                      Set<TypeInfo> stayWithin,
+                                      TypeInfo typeInfo,
+                                      TypeContext typeContextOfFile,
+                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
-        TypeInspection ti = typeInfo.typeInspection.getPotentiallyRun();
+        // main call
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
-
-        TypeInfo primaryType = typeInfo.primaryType();
-        stayWithin.addAll(primaryType.typeInspection.getPotentiallyRun().allTypesInPrimaryType);
-
-        ti.subTypes.forEach(typeContextOfType::addToContext);
-        ti.subTypes.forEach(subType -> {
-            recursivelyAddToTypeGraph(typeGraph, toSortedType, stayWithin, subType, typeContextOfType, e2ImmuAnnotationExpressions);
-        });
-
-        DependencyGraph<WithInspectionAndAnalysis> methodGraph = doType(typeInfo, typeContextOfType);
+        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
+        doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
         typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "resolver");
-        fillInternalMethodCalls(methodGraph);
-
-        toSortedType.put(typeInfo, new SortedType(typeInfo, methodGraph.sorted()));
-
-
-        ImmutableList<WithInspectionAndAnalysis> methodOrder = ImmutableList.copyOf(methodGraph.sorted());
-        log(RESOLVE, "Method graph has {} relations", methodGraph.relations());
-        log(RESOLVE, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
-                methodOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
+        fillInternalMethodCalls(methodFieldSubTypeGraph);
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
-        typeDependencies.remove(typeInfo);
+
+        List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
+        typeDependencies.removeAll(allTypesInPrimaryType);
         typeDependencies.retainAll(stayWithin);
-        log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
-        log(RESOLVE, "Stay within: {}", stayWithin);
-        typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+
+        ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());
+
+        if (isLogEnabled(RESOLVE)) {
+            log(RESOLVE, "Method graph has {} relations", methodFieldSubTypeGraph.relations());
+            log(RESOLVE, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
+                    methodFieldSubTypeOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
+            log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
+            typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+        }
+
+        return new SortedType(typeInfo, methodFieldSubTypeOrder);
     }
 
-    private DependencyGraph<WithInspectionAndAnalysis> doType(TypeInfo typeInfo, TypeContext typeContextOfType) {
+    private void doType(TypeInfo typeInfo, TypeContext typeContextOfType,
+                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         TypeInspection typeInspection = typeInfo.typeInspection.getPotentiallyRun();
+
+        typeInspection.subTypes.forEach(typeContextOfType::addToContext);
+
+        // recursion, do sub-types first
+        typeInspection.subTypes.forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
         ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
@@ -159,8 +162,6 @@ public class Resolver {
         typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
                 fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
-        DependencyGraph<WithInspectionAndAnalysis> methodGraph = new DependencyGraph<>();
-
         // ANNOTATIONS ON THE TYPE
 
         typeInspection.annotations.forEach(annotationExpression -> {
@@ -169,136 +170,164 @@ public class Resolver {
             }
         });
 
-        // FIELDS
+        doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
+        doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
 
+        // dependencies of the type
+
+        Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
+        List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
+        typeDependencies.retainAll(allTypesInPrimaryType);
+        methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+
+        if (isLogEnabled(RESOLVE)) {
+            log(RESOLVE, "Method-Field-SubType graph of {} has {} entries", typeInfo.fullyQualifiedName, methodFieldSubTypeGraph.size());
+            methodFieldSubTypeGraph.visit((n, list) -> log(RESOLVE, " -- Node {} --> {}", n.name(),
+                    list == null ? "[]" : StringUtil.join(list, WithInspectionAndAnalysis::name)));
+        }
+    }
+
+    private void doFields(TypeInspection typeInspection,
+                          ExpressionContext expressionContext,
+                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         typeInspection.fields.forEach(fieldInfo -> {
-            if (!fieldInfo.fieldInspection.get().initialiser.isSet()) {
-                FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
 
-                // ANNOTATIONS
+            // ANNOTATIONS
 
-                fieldInspection.annotations.forEach(annotationExpression -> {
-                    if (!annotationExpression.expressions.isSet()) {
-                        annotationExpression.resolve(expressionContext);
-                    }
-                });
-
-                // INITIALISERS
-
-                Expression expression = fieldInspection.initialiser.getFirst();
-                FieldInspection.FieldInitialiser fieldInitialiser;
-                List<WithInspectionAndAnalysis> dependencies;
-
-                if (expression != FieldInspection.EMPTY) {
-                    ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
-
-                    // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-                    MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface();
-                    if (singleAbstractMethod != null) {
-                        singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
-                        log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
-                    }
-                    org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
-
-                    MethodInfo sam;
-                    boolean artificial;
-                    if (fieldInfo.type.isFunctionalInterface()) {
-                        List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
-                        artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
-
-                        if (!artificial) {
-                            NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).findFirst().orElseThrow();
-                            TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass);
-                            sam = anonymousType.findOverriddenSingleAbstractMethod();
-                        } else {
-                            // implicit anonymous type
-                            // no point in creating something that we cannot (yet) deal with...
-                            if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
-                                sam = null;
-                            } else if (parsedExpression instanceof Lambda) {
-                                sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
-                            } else if (parsedExpression instanceof MethodReference) {
-                                Resolver resolver = new Resolver(true);
-                                sam = typeInfo.convertMethodReferenceIntoLambda(fieldInfo.type, typeInfo, (MethodReference) parsedExpression, expressionContext, resolver);
-                                messages.addAll(resolver.getMessageStream());
-                            } else {
-                                throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
-                            }
-                        }
-                    } else {
-                        sam = null;
-                        artificial = false;
-                    }
-                    fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
-                    Element toVisit = sam != null ? sam.methodInspection.get().methodBody.get() : parsedExpression;
-                    MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
-                    methodsAndFieldsVisited.visit(toVisit);
-                    dependencies = ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields);
-                } else {
-                    fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null, false);
-                    dependencies = List.of();
+            fieldInfo.fieldInspection.get().annotations.forEach(annotationExpression -> {
+                if (!annotationExpression.expressions.isSet()) {
+                    annotationExpression.resolve(expressionContext);
                 }
-                methodGraph.addNode(fieldInfo, dependencies);
-                fieldInspection.initialiser.set(fieldInitialiser);
+            });
+
+            if (!fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                doFieldInitialiser(fieldInfo, expressionContext, methodFieldSubTypeGraph);
             }
         });
+    }
 
-        // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
+    private void doFieldInitialiser(FieldInfo fieldInfo,
+                                    ExpressionContext expressionContext,
+                                    DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+        FieldInspection fieldInspection = fieldInfo.fieldInspection.get();
 
-        typeInspection.methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
-            try {
-                MethodInspection methodInspection = methodInfo.methodInspection.get();
+        Expression expression = fieldInspection.initialiser.getFirst();
+        FieldInspection.FieldInitialiser fieldInitialiser;
+        List<WithInspectionAndAnalysis> dependencies;
 
-                // TYPE PARAMETERS OF METHOD
+        if (expression != FieldInspection.EMPTY) {
+            ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
 
-                List<TypeParameter> typeParameters = methodInspection.typeParameters;
-                ExpressionContext subContext;
-                if (typeParameters.isEmpty()) {
-                    subContext = expressionContext.newTypeContext("new method dependencies");
+            // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
+            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface();
+            if (singleAbstractMethod != null) {
+                singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
+                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
+            }
+            org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
+
+            MethodInfo sam;
+            boolean artificial;
+            if (fieldInfo.type.isFunctionalInterface()) {
+                List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
+                artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
+
+                if (!artificial) {
+                    NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).findFirst().orElseThrow();
+                    TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass);
+                    sam = anonymousType.findOverriddenSingleAbstractMethod();
                 } else {
-                    subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
-                            methodInfo.name);
-                    typeParameters.forEach(subContext.typeContext::addToContext);
-                }
-
-                // ANNOTATIONS
-
-                methodInspection.annotations.forEach(annotationExpression -> {
-                    if (!annotationExpression.expressions.isSet()) {
-                        annotationExpression.resolve(subContext);
-                    }
-                });
-                methodInspection.parameters.forEach(parameterInfo -> parameterInfo.parameterInspection
-                        .get().annotations.forEach(annotationExpression -> {
-                            if (!annotationExpression.expressions.isSet()) {
-                                annotationExpression.resolve(subContext);
-                            }
-                        }));
-
-                // BODY
-
-                boolean doBlock = !methodInspection.methodBody.isSet();
-                if (doBlock) {
-                    BlockStmt block = methodInspection.methodBody.getFirst();
-                    if (!block.getStatements().isEmpty()) {
-                        log(RESOLVE, "Parsing block of method {}", methodInfo.name);
-                        doBlock(subContext, methodInfo, block);
-                        MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
-                        methodsAndFieldsVisited.visit(methodInspection.methodBody.get());
-                        methodGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
+                    // implicit anonymous type
+                    // no point in creating something that we cannot (yet) deal with...
+                    if (parsedExpression instanceof NullConstant || parsedExpression == EmptyExpression.EMPTY_EXPRESSION) {
+                        sam = null;
+                    } else if (parsedExpression instanceof Lambda) {
+                        sam = ((Lambda) parsedExpression).implementation.typeInfo.findOverriddenSingleAbstractMethod();
+                    } else if (parsedExpression instanceof MethodReference) {
+                        Resolver resolver = new Resolver(true);
+                        sam = fieldInfo.owner.convertMethodReferenceIntoLambda(fieldInfo.type, fieldInfo.owner,
+                                (MethodReference) parsedExpression, expressionContext, resolver);
+                        messages.addAll(resolver.getMessageStream());
                     } else {
-                        methodInspection.methodBody.set(Block.EMPTY_BLOCK);
+                        throw new UnsupportedOperationException("Cannot (yet) deal with " + parsedExpression.getClass());
                     }
                 }
+            } else {
+                sam = null;
+                artificial = false;
+            }
+            fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
+            Element toVisit = sam != null ? sam.methodInspection.get().methodBody.get() : parsedExpression;
+            MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
+            methodsAndFieldsVisited.visit(toVisit);
+            dependencies = ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields);
+        } else {
+            fieldInitialiser = new FieldInspection.FieldInitialiser(EmptyExpression.EMPTY_EXPRESSION, null, false);
+            dependencies = List.of();
+        }
+        methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
+        fieldInspection.initialiser.set(fieldInitialiser);
+    }
+
+    private void doMethodsAndConstructors(TypeInspection typeInspection, ExpressionContext expressionContext,
+                                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+        // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
+        typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
+            try {
+                doMethodOrConstructor(methodInfo, expressionContext, methodFieldSubTypeGraph);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
                 throw rte;
             }
         });
-        log(RESOLVE, "Method graph of {} has {} entries", typeInfo.fullyQualifiedName, methodGraph.size());
-        methodGraph.visit((n, list) -> log(RESOLVE, " -- Node {} --> {}", n.name(),
-                list == null ? "[]" : StringUtil.join(list, WithInspectionAndAnalysis::name)));
-        return methodGraph;
+    }
+
+    private void doMethodOrConstructor(MethodInfo methodInfo,
+                                       ExpressionContext expressionContext,
+                                       DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+
+        // TYPE PARAMETERS OF METHOD
+
+        List<TypeParameter> typeParameters = methodInspection.typeParameters;
+        ExpressionContext subContext;
+        if (typeParameters.isEmpty()) {
+            subContext = expressionContext.newTypeContext("new method dependencies");
+        } else {
+            subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
+                    methodInfo.name);
+            typeParameters.forEach(subContext.typeContext::addToContext);
+        }
+
+        // ANNOTATIONS
+
+        methodInspection.annotations.forEach(annotationExpression -> {
+            if (!annotationExpression.expressions.isSet()) {
+                annotationExpression.resolve(subContext);
+            }
+        });
+        methodInspection.parameters.forEach(parameterInfo -> parameterInfo.parameterInspection
+                .get().annotations.forEach(annotationExpression -> {
+                    if (!annotationExpression.expressions.isSet()) {
+                        annotationExpression.resolve(subContext);
+                    }
+                }));
+
+        // BODY
+
+        boolean doBlock = !methodInspection.methodBody.isSet();
+        if (doBlock) {
+            BlockStmt block = methodInspection.methodBody.getFirst();
+            if (!block.getStatements().isEmpty()) {
+                log(RESOLVE, "Parsing block of method {}", methodInfo.name);
+                doBlock(subContext, methodInfo, block);
+                MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
+                methodsAndFieldsVisited.visit(methodInspection.methodBody.get());
+                methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
+            } else {
+                methodInspection.methodBody.set(Block.EMPTY_BLOCK);
+            }
+        }
     }
 
     private static class MethodsAndFieldsVisited {

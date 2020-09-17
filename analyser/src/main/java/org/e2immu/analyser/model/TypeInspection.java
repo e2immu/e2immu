@@ -60,6 +60,7 @@ public class TypeInspection extends Inspection {
     public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
 
     // only valid for types that have been defined, and empty when not the primary type
+    // it does include the primary type itself
     public final List<TypeInfo> allTypesInPrimaryType;
     public final TypeModifier access;
 
@@ -129,8 +130,15 @@ public class TypeInspection extends Inspection {
     }
 
     public enum Methods {
-        ALL, EXCLUDE_FIELD_SAM, EXCLUDE_FIELD_ARTIFICIAL_SAM,
-        ALL_RECURSIVE
+
+        THIS_TYPE_ONLY(false), THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM(false), THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM(false),
+        INCLUDE_SUBTYPES(true),;
+
+        private Methods(boolean recurse) {
+            this.recurse = recurse;
+        }
+
+        public final boolean recurse;
     }
 
     public Stream<MethodInfo> methodsAndConstructors(Methods methodsMode) {
@@ -138,8 +146,8 @@ public class TypeInspection extends Inspection {
     }
 
     public Stream<MethodInfo> methodStream(Methods methodsMode) {
-        if (methodsMode == Methods.EXCLUDE_FIELD_SAM) return methods.stream();
-        return Stream.concat(methods.stream(), methodsInFieldInitializers(methodsMode == Methods.ALL));
+        if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods.stream();
+        return Stream.concat(methods.stream(), methodsInFieldInitializers(methodsMode == Methods.THIS_TYPE_ONLY));
     }
 
     public Iterable<MethodInfo> methodsAndConstructors() {

@@ -54,7 +54,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
+        return typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .map(methodInfo -> methodInfo.methodInspection.get().methodBody.get()).collect(Collectors.toList());
     }
 }

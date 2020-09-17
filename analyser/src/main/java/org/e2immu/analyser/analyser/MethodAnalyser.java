@@ -779,7 +779,7 @@ public class MethodAnalyser {
         // and calls a modification directly)
 
         Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
-                .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
                         !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
                                 (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
@@ -793,7 +793,7 @@ public class MethodAnalyser {
             return null;
         }
         return methodInfo.typeInfo.typeInspection.getPotentiallyRun()
-                .methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
                         !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) &&
                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);

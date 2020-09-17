@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
-import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.junit.BeforeClass;
@@ -44,7 +43,7 @@ public class TestKVStore {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", sortedType.typeInfo.stream());
+            LOGGER.info("Stream:\n{}", sortedType.primaryType.stream());
         }
         parser.getMessages().forEach(message -> {
             LOGGER.info(message.toString());

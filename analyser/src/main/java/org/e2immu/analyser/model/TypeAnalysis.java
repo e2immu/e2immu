@@ -54,11 +54,6 @@ public class TypeAnalysis extends Analysis {
 
     public final SetOnce<Set<TypeInfo>> circularDependencies = new SetOnce<>();
 
-    // to avoid repetitions
-    public final SetOnce<Boolean> startedPostAnalysisIntoNestedTypes = new SetOnce<>();
-
-    public final SetOnce<Boolean> doNotAllowDelaysOnNotModified = new SetOnce<>();
-
     private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
 
     public ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {

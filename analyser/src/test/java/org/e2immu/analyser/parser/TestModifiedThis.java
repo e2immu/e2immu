@@ -50,6 +50,12 @@ public class TestModifiedThis extends CommonTestRunner {
         if ("clear".equals(methodInfo.name) && "ParentClass".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
             Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
+        if ("clear".equals(methodInfo.name) && "InnerOfChild".equals(methodInfo.typeInfo.simpleName)) {
+            Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().thisSummary.get().properties.get(VariableProperty.MODIFIED));
+            if(iteration == 100) {
+                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            }
+        }
     };
 
 

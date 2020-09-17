@@ -64,7 +64,6 @@ import static org.e2immu.analyser.util.Logger.log;
 public class TypeAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyser.class);
 
-    public static final int POST_ANALYSIS = 100;
     private final MethodAnalyser methodAnalyser;
     private final FieldAnalyser fieldAnalyser;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
@@ -94,14 +93,14 @@ public class TypeAnalyser {
     }
 
     public void check(SortedType sortedType) {
-        TypeInfo typeInfo = sortedType.typeInfo;
+        TypeInfo typeInfo = sortedType.primaryType;
 
         // before we check, we copy the properties into annotations
         typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
-        for (WithInspectionAndAnalysis m : sortedType.methodsAndFields) {
+        for (WithInspectionAndAnalysis m : sortedType.methodsFieldsSubTypes) {
             if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
             else if (m instanceof FieldInfo) {
                 FieldInfo fieldInfo = (FieldInfo) m;
@@ -135,25 +134,21 @@ public class TypeAnalyser {
         });
     }
 
-    public void analyse(SortedType sortedType, boolean postAnalysis) {
+    public void analyse(SortedType sortedType) {
         DebugConfiguration debugConfiguration = configuration.debugConfiguration;
-        TypeInfo typeInfo = sortedType.typeInfo;
-        log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
+        TypeInfo typeInfo = sortedType.primaryType;
+        assert typeInfo.isPrimaryType();
 
-        // this needs to be done as soon as, so that @Independent computations can be based on the support data only
-        boolean changes = analyseImplicitlyImmutableTypes(typeInfo);
+        boolean changes = true;
+        int iteration = 0;
 
-        int cnt = 0;
         while (changes) {
-            log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", cnt, typeInfo.fullyQualifiedName);
+            log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", iteration, typeInfo.fullyQualifiedName);
             changes = false;
 
-            int iteration = postAnalysis ? POST_ANALYSIS + cnt : cnt;
-            // TODO check that separate field properties work...
-            //VariableProperties fieldProperties = new VariableProperties(typeContext, typeInfo, iteration, debugConfiguration);
             patternMatcher.startNewIteration();
 
-            for (WithInspectionAndAnalysis member : sortedType.methodsAndFields) {
+            for (WithInspectionAndAnalysis member : sortedType.methodsFieldsSubTypes) {
                 if (member instanceof MethodInfo) {
                     VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
                             iteration, configuration, patternMatcher, (MethodInfo) member);
@@ -164,7 +159,7 @@ public class TypeAnalyser {
                         methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
                     }
                     messages.addAll(methodProperties.messages);
-                } else {
+                } else if (member instanceof FieldInfo) {
                     FieldInfo fieldInfo = (FieldInfo) member;
                     // these are the "hidden" methods: fields of functional interfaces
                     if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
@@ -199,39 +194,41 @@ public class TypeAnalyser {
                         fieldAnalyserVisitor.visit(iteration, fieldInfo);
                     }
                     messages.addAll(fieldProperties.messages);
+                } else {
+                    TypeInfo subType = (TypeInfo) member;
+                    if (analyseType(subType, iteration, debugConfiguration)) changes = true;
                 }
             }
 
-            if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
-                if (analyseOnlyMarkEventuallyE1Immutable(typeInfo)) changes = true;
-                if (analyseEffectivelyE1Immutable(typeInfo)) changes = true;
-                if (analyseIndependent(typeInfo)) changes = true;
-                if (analyseEffectivelyEventuallyE2Immutable(typeInfo)) changes = true;
-                if (analyseContainer(typeInfo)) changes = true;
-                if (analyseUtilityClass(typeInfo)) changes = true;
-                if (analyseExtensionClass(typeInfo)) changes = true;
-            }
+            if (analyseType(typeInfo, iteration, debugConfiguration)) changes = true;
 
-            for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.afterTypePropertyComputations) {
-                typeAnalyserVisitor.visit(iteration, typeInfo);
-            }
-
-            cnt++;
-            if (cnt > 10) {
+            iteration++;
+            if (iteration > 10) {
                 throw new UnsupportedOperationException("More than 10 iterations needed for type " + typeInfo.simpleName + "?");
             }
         }
+    }
 
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        // from now on, even if we come back here, all @NotModifieds have been set, no delays allowed anymore
-        if (!typeAnalysis.doNotAllowDelaysOnNotModified.isSet()) {
-            typeAnalysis.doNotAllowDelaysOnNotModified.set(true);
+    private boolean analyseType(TypeInfo typeInfo, int iteration, DebugConfiguration debugConfiguration) {
+        boolean changes = analyseImplicitlyImmutableTypes(typeInfo);
+
+        log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
+
+        if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
+            if (analyseOnlyMarkEventuallyE1Immutable(typeInfo)) changes = true;
+            if (analyseEffectivelyE1Immutable(typeInfo)) changes = true;
+            if (analyseIndependent(typeInfo)) changes = true;
+            if (analyseEffectivelyEventuallyE2Immutable(typeInfo)) changes = true;
+            if (analyseContainer(typeInfo)) changes = true;
+            if (analyseUtilityClass(typeInfo)) changes = true;
+            if (analyseExtensionClass(typeInfo)) changes = true;
         }
 
-        if (!typeInfo.typeInspection.getPotentiallyRun().subTypes.isEmpty() && !typeAnalysis.startedPostAnalysisIntoNestedTypes.isSet()) {
-            postAnalysisIntoNestedTypes(typeInfo, configuration);
-            typeAnalysis.startedPostAnalysisIntoNestedTypes.set(true);
+        for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.afterTypePropertyComputations) {
+            typeAnalyserVisitor.visit(iteration, typeInfo);
         }
+
+        return changes;
     }
 
     private boolean analyseImplicitlyImmutableTypes(TypeInfo typeInfo) {
@@ -282,25 +279,6 @@ public class TypeAnalyser {
         return true;
     }
 
-    /**
-     * Lets analyse the sub-types again, so that we're guaranteed that @NotModified on the enclosing type's methods have been computed.
-     *
-     * @param typeInfo the enclosing type
-     */
-    private void postAnalysisIntoNestedTypes(TypeInfo typeInfo, Configuration configuration) {
-        log(ANALYSER, "\n--------\nStarting post-analysis into method calls from nested types to {}\n--------",
-                typeInfo.fullyQualifiedName);
-        for (TypeInfo nestedType : typeInfo.typeInspection.getPotentiallyRun().subTypes) {
-            SortedType sortedType = new SortedType(nestedType);
-            // the order of analysis is not important anymore, we just have to go over the method calls to the enclosing type
-
-            analyse(sortedType, true);
-            check(sortedType); // we're not checking at top level!
-        }
-        log(ANALYSER, "\n--------\nEnded post-analysis into method calls from nested types to {}\n--------",
-                typeInfo.fullyQualifiedName);
-    }
-
     /*
       writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
 
@@ -311,7 +289,7 @@ public class TypeAnalyser {
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
         }
-        final TypeInspection.Methods methodsMode = TypeInspection.Methods.EXCLUDE_FIELD_SAM;
+        final TypeInspection.Methods methodsMode = TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM;
         boolean someModifiedNotSet = typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(methodsMode)
                 .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
@@ -428,7 +406,7 @@ public class TypeAnalyser {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return false;
         }
-        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL).allMatch(
+        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY).allMatch(
                 m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
                         !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
                                 parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));
@@ -542,7 +520,7 @@ public class TypeAnalyser {
 
         // RULE 3
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.ALL)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY)) {
             if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
                 boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
                         .anyMatch(tv -> !tv.linkedVariables.isSet());
@@ -729,7 +707,7 @@ public class TypeAnalyser {
 
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
                 ParameterizedType typeOfFirstParameter;
@@ -775,7 +753,7 @@ public class TypeAnalyser {
             return true;
         }
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.isStatic) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
@@ -801,7 +779,7 @@ public class TypeAnalyser {
         }
 
         // and there should be no means of generating an object
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
             if (!methodInfo.methodAnalysis.get().createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
                         typeInfo.fullyQualifiedName, methodInfo.name);

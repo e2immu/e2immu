@@ -576,7 +576,7 @@ public class ParameterizedType {
 
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(boolean complain) {
         if (!isFunctionalInterface()) return null;
-        Optional<MethodInfo> theMethod = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        Optional<MethodInfo> theMethod = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
         if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
         for (ParameterizedType extension : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {

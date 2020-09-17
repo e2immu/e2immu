@@ -139,7 +139,7 @@ public class AnnotationUploader {
                 break;
             }
         }
-        type.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
+        type.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {

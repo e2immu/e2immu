@@ -72,14 +72,14 @@ public class Parser {
         return parseJavaFiles(input.getSourceURLs());
     }
 
-    public List<SortedType> runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
+    // method result only used in tests
+    public List<TypeInfo> runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
         InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, e2ImmuAnnotationExpressions, byteCodeInspector);
-        List<TypeInfo> types = inspectAnnotatedAPIs.inspect(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
-        return types.stream().map(SortedType::new).collect(Collectors.toList());
+        return inspectAnnotatedAPIs.inspect(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
     }
 
     public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) {
-        Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile = new HashMap<>();
+        Map<TypeInfo, TypeContext> inspectedPrimaryTypesToTypeContextOfFile = new HashMap<>();
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
         urls.forEach((typeInfo, url) -> typeInfo.typeInspection.setRunnable(() -> {
             if (!typeInfo.typeInspection.isSet()) {
@@ -88,8 +88,8 @@ public class Parser {
                     InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
                     String source = IOUtils.toString(isr);
                     TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
-                    List<TypeInfo> types = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
-                    types.forEach(t -> inspectedTypesToTypeContextOfFile.put(t, inspectionTypeContext));
+                    List<TypeInfo> primaryTypes = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
+                    primaryTypes.forEach(t -> inspectedPrimaryTypesToTypeContextOfFile.put(t, inspectionTypeContext));
                 } catch (RuntimeException rte) {
                     LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
                     throw rte;
@@ -103,16 +103,16 @@ public class Parser {
         }));
         // TODO this can be a bit more efficient
         urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e -> e.getKey().typeInspection.getPotentiallyRun());
-        return phase2ResolveAndAnalyse(inspectedTypesToTypeContextOfFile);
+        return phase2ResolveAndAnalyse(inspectedPrimaryTypesToTypeContextOfFile);
     }
 
-    private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedTypesToTypeContextOfFile) {
+    private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedPrimaryTypesToTypeContextOfFile) {
         // phase 2: resolve methods and fields
         Resolver resolver = new Resolver(false);
-        List<SortedType> sortedTypes = resolver.sortTypes(inspectedTypesToTypeContextOfFile, e2ImmuAnnotationExpressions);
+        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(inspectedPrimaryTypesToTypeContextOfFile, e2ImmuAnnotationExpressions);
         messages.addAll(resolver.getMessageStream());
 
-        if (configuration.skipAnalysis) return sortedTypes;
+        if (configuration.skipAnalysis) return sortedPrimaryTypes;
 
         checkTypeAnalysisOfLoadedObjects();
 
@@ -121,25 +121,25 @@ public class Parser {
         }
 
         TypeAnalyser typeAnalyser = new TypeAnalyser(configuration, e2ImmuAnnotationExpressions);
-        for (SortedType sortedType : sortedTypes) {
+        for (SortedType sortedType : sortedPrimaryTypes) {
             try {
-                typeAnalyser.analyse(sortedType, false);
+                typeAnalyser.analyse(sortedType);
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.typeInfo.fullyQualifiedName);
+                LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType.fullyQualifiedName);
                 throw rte;
             }
             try {
-                if (!sortedType.typeInfo.isNestedType()) {
+                if (!sortedType.primaryType.isNestedType()) {
                     typeAnalyser.check(sortedType);
                 } // else: nested types get checked after we've analysed their enclosing type
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while checking type {}", sortedType.typeInfo.fullyQualifiedName);
+                LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType.fullyQualifiedName);
                 throw rte;
             }
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
-            Map<String, String> map = annotationUploader.createMap(sortedTypes.stream().map(sortedType -> sortedType.typeInfo).collect(Collectors.toSet()));
+            Map<String, String> map = annotationUploader.createMap(sortedPrimaryTypes.stream().map(sortedType -> sortedType.primaryType).collect(Collectors.toSet()));
             annotationUploader.writeMap(map);
         }
         if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
@@ -151,7 +151,7 @@ public class Parser {
             }
         }
         messages.addAll(typeAnalyser.getMessageStream());
-        return sortedTypes;
+        return sortedPrimaryTypes;
     }
 
     private void checkTypeAnalysisOfLoadedObjects() {

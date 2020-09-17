@@ -736,8 +736,8 @@ public class StatementAnalyser {
             return;
         }
         int modified = methodCalled.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.get().doNotAllowDelaysOnNotModified.isSet();
-        if (allowDelays && modified == Level.DELAY) return; // delaying
+        //boolean allowDelays = !methodCalled.typeInfo.typeAnalysis.get().doNotAllowDelaysOnNotModified.isSet();
+        //if (allowDelays && modified == Level.DELAY) return; // delaying
         boolean error = modified == Level.TRUE;
         currentMethod.methodAnalysis.get().errorCallingModifyingMethodOutsideType.put(methodCalled, error);
         if (error) {

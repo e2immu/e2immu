@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -26,28 +27,23 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This order(s) will be used by
- * (1) the algorithm that sets the
- * (2)the analyzer.
+ * Main usage: defined types, where the order of methods, fields and sub-types is important for the analysis phase.
+ * <p>
+ * This type is also used for sub-resolvers. In that case, the TypeInfo object is not a primary type, but either
+ * a locally declared type, an anonymous type, a lambda, ...
  */
 public class SortedType {
-    public final TypeInfo typeInfo;
+    public final TypeInfo primaryType;
 
-    public final List<WithInspectionAndAnalysis> methodsAndFields;
+    public final List<WithInspectionAndAnalysis> methodsFieldsSubTypes;
 
-    public SortedType(TypeInfo typeInfo, List<WithInspectionAndAnalysis> methodsAndFields) {
-        this.typeInfo = Objects.requireNonNull(typeInfo);
-        this.methodsAndFields = Objects.requireNonNull(methodsAndFields);
-    }
-
-    public SortedType(TypeInfo typeInfo) {
-        this.typeInfo = typeInfo;
-        this.methodsAndFields = ListUtil.immutableConcat(typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(),
-                typeInfo.typeInspection.getPotentiallyRun().fields);
+    public SortedType(TypeInfo primaryType, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
+        this.primaryType = Objects.requireNonNull(primaryType);
+        this.methodsFieldsSubTypes = Objects.requireNonNull(methodsFieldsSubTypes);
     }
 
     @Override
     public String toString() {
-        return typeInfo.fullyQualifiedName + ": " + methodsAndFields;
+        return primaryType.fullyQualifiedName + ": " + methodsFieldsSubTypes;
     }
 }

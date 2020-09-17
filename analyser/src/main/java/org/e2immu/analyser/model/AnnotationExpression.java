@@ -137,7 +137,7 @@ public class AnnotationExpression {
         if (expressions.get().isEmpty()) return defaultValue;
         for (Expression expression : expressions.get()) {
             if (typeInfo.typeInspection.isSetPotentiallyRun()) {
-                ParameterizedType returnType = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+                ParameterizedType returnType = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                         .filter(m -> m.name.equals(fieldName))
                         .findFirst()
                         .map(MethodInfo::returnType).orElseThrow();

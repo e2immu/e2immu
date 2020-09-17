@@ -268,7 +268,7 @@ public class TypeContext {
         if (!typeInfo.typeInspection.isSetPotentiallyRun()) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected yet");
         }
-        typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)

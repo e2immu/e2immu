@@ -180,20 +180,21 @@ public class ParseAndInspect {
         List<TypeInfo> result = new ArrayList<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeStore.get(packageName + "." + name);
+            TypeInfo primaryType = typeContextOfFile.typeStore.get(packageName + "." + name);
             // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
             // have already been inspected (AnnotationType as well)
-            if (!typeInfo.typeInspection.isSet()) {
+            if (!primaryType.typeInspection.isSet()) {
                 try {
-                    ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
+                    ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(primaryType,
                             new TypeContext(packageName, typeContextOfFile));
-                    typeInfo.inspect(hasBeenDefined, false, null, td, expressionContext);
+                    primaryType.inspect(hasBeenDefined, false, null, td, expressionContext);
                 } catch (RuntimeException rte) {
-                    LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
+                    LOGGER.error("Caught runtime exception inspecting type {}", primaryType.fullyQualifiedName);
                     throw rte;
                 }
             }
-            result.add(typeInfo);
+            assert primaryType.isPrimaryType();
+            result.add(primaryType);
         }
         return result;
     }

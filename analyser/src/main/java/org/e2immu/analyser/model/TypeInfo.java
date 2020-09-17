@@ -34,7 +34,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.*;
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -433,7 +432,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
-        if (typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        if (typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
         for (ParameterizedType superInterface : typeInspection.getPotentiallyRun().interfacesImplemented) {
             if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
@@ -695,15 +694,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return result;
     }
 
-    private boolean inSamePackage(String i) {
-        // TODO this should be done better
-        int lastDot = i.lastIndexOf('.');
-        if (lastDot > 0 && hasBeenInspected() && typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isLeft()) {
-            return typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(i.substring(0, lastDot));
-        }
-        return false;
-    }
-
     private static void niceStream(StringBuilder sb, Stream<String> stream, String separator, String suffix) {
         AtomicInteger cnt = new AtomicInteger();
         stream.forEach(s -> {
@@ -746,13 +736,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection ti = typeInspection.getPotentiallyRun();
         return UpgradableBooleanMap.of(
                 ti.parentClass.typesReferenced(true),
-                ti.packageNameOrEnclosingType.isRight() && !isStatic() ?
+                ti.packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
                         UpgradableBooleanMap.of(ti.packageNameOrEnclosingType.getRight(), false) :
                         UpgradableBooleanMap.of(),
                 ti.interfacesImplemented.stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
                 ti.annotations.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                ti.methodsAndConstructors(TypeInspection.Methods.ALL)
+                //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                ti.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
                 ti.fields.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
         );
@@ -940,7 +930,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo getMethodOrConstructorByDistinguishingName(String distinguishingName) {
-        return typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        return typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName))
                 .findFirst().orElse(null);
     }
@@ -1118,7 +1108,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo sizeMethod() {
-        MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
                 .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
@@ -1177,7 +1167,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo findUniqueMethod(String methodName, int parameters) {
-        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM).
+        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).
                 filter(m -> m.name.equals(methodName) && m.methodInspection.get().parameters.size() == parameters)
                 .findAny().orElseThrow();
     }
@@ -1207,14 +1197,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     // this type implements a functional interface, and we need to find the single abstract method
     public MethodInfo findOverriddenSingleAbstractMethod() {
-        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.EXCLUDE_FIELD_SAM)
+        return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
                 .findFirst().orElseThrow();
     }
 
     public Set<ParameterizedType> explicitTypes() {
         // handles SAMs of fields as well
-        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.ALL)
+        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
         Stream<ParameterizedType> fields = typeInspection.getPotentiallyRun().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
         return Stream.concat(methods, fields).collect(Collectors.toSet());
@@ -1224,5 +1214,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.getPotentiallyRun().constructors.stream()
                 .filter(c -> c.methodInspection.get().parameters.size() == parameters)
                 .findFirst().orElseThrow();
+    }
+
+    public boolean isPrimaryType() {
+        return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType.isLeft();
     }
 }
