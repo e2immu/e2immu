@@ -83,15 +83,15 @@ public class NotModifiedChecks {
     @E1Immutable // final fields, not all parameters @NotModified
     static class C1 {
         @Linked(to = {"C1.set1"})
-        @NotNull
+        @NotNull1
         @Modified
         final Set<String> set; // linked to set1
 
-        C1(@NotNull @Modified Set<String> set1) {
+        C1(@NotNull1 @Modified Set<String> set1) {
             this.set = Objects.requireNonNull(set1);
         }
 
-        @NotNull
+        @NotNull1
         @NotModified // do not change the fields
         @Linked(to = {"C1.set1"})
         @Independent(type = VERIFY_ABSENT)

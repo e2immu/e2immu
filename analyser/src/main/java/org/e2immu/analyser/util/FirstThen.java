@@ -36,8 +36,10 @@ import java.util.Objects;
 @E2Container(after = "first")
 public class FirstThen<S, T> {
     @Linked(to = {"first"})
+    @Final(after = "first")
     private volatile S first;
     @Linked(to = {"then"})
+    @Final(after = "first")
     private volatile T then;
 
     /**

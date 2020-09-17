@@ -34,6 +34,7 @@ public class DynamicTypeAnnotation {
     }
 
     @E2Container
+    @Size(equals = 1)
     public static Set<String> createSet(String a) {
         return ImmutableSet.of(a);
     }

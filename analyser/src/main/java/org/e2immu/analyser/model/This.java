@@ -51,7 +51,7 @@ public class This implements Variable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         This aThis = (This) o;
-        return typeInfo.equals(aThis.typeInfo);
+        return typeInfo.equals(aThis.typeInfo) && writeSuper == aThis.writeSuper;
     }
 
     @Override

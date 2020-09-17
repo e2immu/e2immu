@@ -88,14 +88,6 @@ public class FieldAnalysis extends Analysis {
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
-            case MODIFIED:
-                if (bestType == null && type.arrays == 0) {
-                    return Level.FALSE; // we cannot modify because we cannot even execute a method
-                }
-                int immutable = getProperty(VariableProperty.IMMUTABLE);
-                if (MultiLevel.isE2Immutable(immutable)) return Level.FALSE;
-                break;
-
             case FINAL:
                 int immutableOwner = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
                 if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;

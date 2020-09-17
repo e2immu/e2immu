@@ -308,15 +308,22 @@ public class ComputeLinking {
                     TransferValue tv = new TransferValue();
                     methodAnalysis.fieldSummaries.put(fieldInfo, tv);
                     changes = true;
-                    copy(aboutVariable, tv, VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD);
+                    copy(aboutVariable, tv);
                 }
             } else if (variable instanceof This) {
-                // TODO there may be multiple This's, and Super's
                 if (!methodAnalysis.thisSummary.isSet()) {
                     TransferValue tv = new TransferValue();
                     methodAnalysis.thisSummary.set(tv);
                     changes = true;
-                    copy(aboutVariable, tv, VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD_THIS);
+                    copy(aboutVariable, tv);
+                }
+                int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
+                int methodCalled = aboutVariable.getProperty(VariableProperty.METHOD_CALLED);
+
+                if (methodDelay != Level.TRUE && methodCalled == Level.TRUE) {
+                    int modified = aboutVariable.getProperty(VariableProperty.MODIFIED);
+                    TransferValue tv = methodAnalysis.thisSummary.get();
+                    tv.properties.put(VariableProperty.MODIFIED, modified);
                 }
             }
         }
@@ -332,8 +339,8 @@ public class ComputeLinking {
         return changes;
     }
 
-    private static void copy(AboutVariable aboutVariable, TransferValue transferValue, Set<VariableProperty> properties) {
-        for (VariableProperty variableProperty : properties) {
+    private static void copy(AboutVariable aboutVariable, TransferValue transferValue) {
+        for (VariableProperty variableProperty : VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD) {
             int value = aboutVariable.getProperty(variableProperty);
             transferValue.properties.put(variableProperty, value);
         }

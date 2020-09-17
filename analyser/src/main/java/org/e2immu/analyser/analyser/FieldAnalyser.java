@@ -608,7 +608,21 @@ public class FieldAnalyser {
                         m.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet() && (
                                 !m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) ||
                                         m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet()));
-        if (!allDefined) return false;
+        if (!allDefined) {
+            if (Logger.isLogEnabled(DELAYED)) {
+                log(DELAYED, "VariablesLinkedToFieldsAndParameters not yet set for methods: [{}]",
+                        primaryType.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES)
+                                .filter(m -> !m.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet())
+                                .map(m -> m.name).collect(Collectors.joining(", ")));
+                log(DELAYED, "LinkedVariables not yet set for methods: [{}]",
+                        primaryType.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES)
+                                .filter(m -> m.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet())
+                                .filter(m -> m.methodAnalysis.get().fieldSummaries.isSet(fieldInfo) &&
+                                        !m.methodAnalysis.get().fieldSummaries.get(fieldInfo).linkedVariables.isSet())
+                                .map(m -> m.name).collect(Collectors.joining(", ")));
+            }
+            return false;
+        }
 
         Set<Variable> links = new HashSet<>();
         primaryType.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES)
@@ -659,30 +673,20 @@ public class FieldAnalyser {
                                     TypeInspection primaryType,
                                     boolean fieldSummariesNotYetSet) {
         if (fieldAnalysis.getProperty(VariableProperty.MODIFIED) != Level.UNDEFINED) return false;
-        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (isFinal == Level.DELAY) {
-            log(DELAYED, "Delaying @NotModified on {} until we know about @Final", fieldInfo.fullyQualifiedName());
-            return false;
-        }
-        if (isFinal == Level.FALSE) {
-            log(NOT_MODIFIED, "Field {} cannot be @NotModified, as it is not @Final", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
-            return true;
-        }
 
         if (fieldInfo.type.isFunctionalInterface()) {
             return analyseNotModifiedFunctionalInterface(fieldInfo, fieldAnalysis);
         }
 
+        // the reason we intercept this here is that while the type may be dynamically level 2 immutable, the user
+        // may still try to call a modifying method. This will cause an error, however, it would also change the modification status
+        // of the field, which is not good.
         int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
-        int e2immutable = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
-        if (e2immutable == MultiLevel.DELAY) {
-            log(DELAYED, "Delaying @NotModified, no idea about dynamic type @E2Immutable");
-            return false;
+        if (MultiLevel.isE2Immutable(immutable)) {
+            log(NOT_MODIFIED, "Field {} is @NotModified, since it is @Final and @E2Immutable", fieldInfo.fullyQualifiedName());
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+            return true;
         }
-
-        // NOTE: we do not need code to check if e2immutable is at least eventually level 2, since the getProperty(MODIFIED) in the first line
-        // intercepts this!
 
         if (fieldSummariesNotYetSet) return false;
 

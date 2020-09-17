@@ -17,18 +17,17 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Set;
 
-/*
-https://github.com/bnaudts/e2immu/issues/11
- */
 public class TestNotModifiedChecks extends CommonTestRunner {
     public TestNotModifiedChecks() {
         super(true);
@@ -56,8 +55,11 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             }
         }
         if ("NotModifiedChecks".equals(d.methodInfo.name) && "NotModifiedChecks.this.s2".equals(d.variableName)) {
-            Assert.assertEquals("this.set", d.currentValue.toString());
-           // Assert.assertTrue(d.currentValue.isInstanceOf(MethodValue.class));
+            if (d.iteration < 2) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+            } else {
+                Assert.assertEquals("set2", d.currentValue.toString());
+            }
         }
         if ("C1".equals(d.methodInfo.name) && "C1.this.set".equals(d.variableName)) {
             Assert.assertEquals("set1,@NotNull", d.currentValue.toString());
@@ -83,6 +85,14 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
             }
+            FieldInfo s2 = methodInfo.typeInfo.getFieldByName("s2", true);
+            if (iteration > 1) {
+                Set<Variable> s2links = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
+                        .get(new FieldReference(s2, new This(s2.owner)));
+                Assert.assertTrue("Got: " + s2links, s2links.isEmpty());
+            }
+            FieldInfo set = methodInfo.typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
+            Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.isSet(set));
         }
         if ("addAllOnC".equals(methodInfo.name)) {
             ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(0);
@@ -94,7 +104,17 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 int identity = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0").getProperty(VariableProperty.IDENTITY);
                 Assert.assertEquals(Level.FALSE, identity);
                 Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+
             }
+            if (iteration > 1) {
+                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Assert.assertEquals("inline getSet on this.set", value.toString());
+            }
+        }
+        if ("C1".equals(methodInfo.name)) {
+            FieldInfo fieldInfo = methodInfo.typeInfo.getFieldByName("set", true);
+            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo);
+            Assert.assertEquals("[0:set1]", tv.linkedVariables.get().toString());
         }
     };
 
@@ -113,8 +133,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             if (iteration > 0) {
                 Assert.assertEquals("this.set", fieldInfo.fieldAnalysis.get().effectivelyFinalValue.get().toString());
             }
-            if (iteration > 1) {
-                Assert.assertEquals("[0:set1]", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+            if (iteration > 0) {
+                //     Assert.assertEquals("[0:set1]", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
             }
         }
     };
