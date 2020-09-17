@@ -19,35 +19,20 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
-import org.e2immu.analyser.model.FieldAnalysis;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.value.StringValue;
-import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class TestFieldResolution extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestFieldResolution.class);
 
     public TestFieldResolution() {
         super(false);
     }
 
-    // expect 1 warning, for circular depedencies
-
     @Test
     public void test() throws IOException {
-        testClass("FieldResolution", 0, 1, new DebugConfiguration.Builder()
+        testClass("FieldResolution", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

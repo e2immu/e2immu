@@ -79,7 +79,7 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("LoopStatementChecks", 3, new DebugConfiguration.Builder()
+        testClass("LoopStatementChecks", 3, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

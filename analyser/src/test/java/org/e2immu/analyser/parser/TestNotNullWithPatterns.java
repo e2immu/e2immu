@@ -62,7 +62,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("NotNullWithPatterns", 0, new DebugConfiguration.Builder()
+        testClass("NotNullWithPatterns", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

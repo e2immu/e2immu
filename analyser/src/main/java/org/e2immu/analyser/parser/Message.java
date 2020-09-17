@@ -103,7 +103,6 @@ public class Message {
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
         map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
-        map.put(WORSE_THAN_OVERRIDDEN_METHOD, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }

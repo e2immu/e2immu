@@ -13,7 +13,7 @@ public class TestInlineMethods extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("InlineMethods", 0, new DebugConfiguration.Builder()
+        testClass("InlineMethods", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

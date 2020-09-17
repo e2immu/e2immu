@@ -24,58 +24,17 @@ import org.junit.Test;
 @E2Container
 public class ModificationGraphInterface {
 
-    interface Incrementer {
-        int incrementAndGet();
-    }
-
-    @Container
-    static class C1 {
-
-        @Variable
-        private int i;
-
-        @Modified
-        public int incrementAndGet() {
-            return ++i;
-        }
-
-        @Modified // <1>
-        public int useC2(Incrementer incrementer) {
-            return i + incrementer.incrementAndGet();
-        }
-
-    }
-
-    @E1Immutable
-    static class C2 {
-
-        private final int j;
-
-        @Modified
-        private final C1 c1;
-
-        public C2(int j, @Modified C1 c1) {
-            this.c1 = c1;
-            this.j = j;
-        }
-
-        @Modified
-        public int incrementAndGetWithI() {
-            return c1.incrementAndGet() + j;
-        }
-    }
-
     @Test
     public void useC1AndC2() {
-        C1 c1 = new C1();
-        C2 c2 = new C2(2, c1);
+        ModificationGraphInterfaceC1 c1 = new ModificationGraphInterfaceC1();
+        ModificationGraphInterfaceC2 c2 = new ModificationGraphInterfaceC2(2, c1);
         Assert.assertEquals(3, c2.incrementAndGetWithI());
-        Assert.assertEquals(1, c1.i);
+        Assert.assertEquals(1, c1.getI());
         Assert.assertEquals(5, c1.useC2(c2::incrementAndGetWithI));
-        Assert.assertEquals(2, c1.i);
+        Assert.assertEquals(2, c1.getI());
         Assert.assertEquals(5, c2.incrementAndGetWithI());
-        Assert.assertEquals(3, c1.i);
+        Assert.assertEquals(3, c1.getI());
         Assert.assertEquals(9, c1.useC2(c2::incrementAndGetWithI));
-        Assert.assertEquals(4, c1.i);
+        Assert.assertEquals(4, c1.getI());
     }
 }

@@ -91,7 +91,7 @@ public class TestBasics extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("Basics", 0, new DebugConfiguration.Builder()
+        testClass("Basics", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)

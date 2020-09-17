@@ -63,7 +63,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SwitchStatementChecks", 3, new DebugConfiguration.Builder()
+        testClass("SwitchStatementChecks", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

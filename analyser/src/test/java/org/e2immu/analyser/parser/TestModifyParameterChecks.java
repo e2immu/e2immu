@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,6 @@ public class TestModifyParameterChecks extends CommonTestRunner {
 
     @Test
     public void testModifyParameterChecks() throws IOException {
-        testClass("ModifyParameterChecks", 2);
+        testClass("ModifyParameterChecks", 2, 0, new DebugConfiguration.Builder().build());
     }
 }

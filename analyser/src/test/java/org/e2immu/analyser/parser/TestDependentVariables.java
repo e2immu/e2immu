@@ -47,7 +47,7 @@ public class TestDependentVariables extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("DependentVariables", 0, new DebugConfiguration.Builder()
+        testClass("DependentVariables", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

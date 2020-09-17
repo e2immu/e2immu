@@ -173,7 +173,7 @@ public class ParameterAnalysis extends Analysis {
         // implicitly @NotModified when E2Immutable, or functional interface
         int modified = getProperty(VariableProperty.MODIFIED);
         if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
-                !parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable()) {
+                parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable() != Boolean.TRUE) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);

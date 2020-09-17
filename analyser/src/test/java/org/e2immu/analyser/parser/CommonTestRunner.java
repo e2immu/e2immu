@@ -54,22 +54,28 @@ public abstract class CommonTestRunner {
         org.e2immu.analyser.util.Logger.activate();
     }
 
-    protected TypeContext testClass(String className, int errorsToExpect) throws IOException {
-        return testClass(className, errorsToExpect, 0, new DebugConfiguration.Builder().build());
-    }
-
-    protected TypeContext testClass(String className, int errorsToExpect, DebugConfiguration debugConfiguration) throws IOException {
-        return testClass(className, errorsToExpect, 0, debugConfiguration);
-    }
-
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
-        return testClass(className, errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build());
+        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build());
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration) throws IOException {
+        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, analyserConfiguration);
+    }
+
+    protected TypeContext testClass(List<String> classNames, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
+                                    AnalyserConfiguration analyserConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
+        InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
+                .addSources("src/test/java")
+                .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core");
+        classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
 
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
@@ -96,17 +102,7 @@ public abstract class CommonTestRunner {
                         PATTERN,
                         MARK,
                         OBJECT_FLOW).stream().map(Enum::toString).collect(Collectors.joining(",")))
-
-                .setInputConfiguration(new InputConfiguration.Builder()
-                        .addSources("src/test/java")
-                        .addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className)
-                        .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
-                        .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")
-                        .build())
+                .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);
     }

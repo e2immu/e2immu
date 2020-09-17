@@ -347,20 +347,25 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 returnTypeObserved, "Null return type for " + fullyQualifiedName() + ", inspected? " + hasBeenInspected());
     }
 
-    @Override
-    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
+    public Optional<AnnotationExpression> hasTestAnnotation(String annotationFQN) {
         if (!hasBeenDefined()) return Optional.empty();
-        String annotationFQN = annotation.getName();
         Optional<AnnotationExpression> fromMethod = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromMethod.isPresent()) return fromMethod;
         if (methodInspection.isSet()) {
             for (MethodInfo interfaceMethod : methodInspection.get().implementationOf) {
-                Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasTestAnnotation(annotation));
+                Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasTestAnnotation(annotationFQN));
                 if (fromInterface.isPresent()) return fromInterface;
             }
         }
         return Optional.empty();
+    }
+
+    @Override
+    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
+        if (!hasBeenDefined()) return Optional.empty();
+        String annotationFQN = annotation.getName();
+        return hasTestAnnotation(annotationFQN);
     }
 
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
@@ -616,5 +621,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 result.add(formal);
             }
         }
+    }
+
+    public boolean isTestMethod() {
+        return hasTestAnnotation("org.junit.Test").isPresent();
     }
 }

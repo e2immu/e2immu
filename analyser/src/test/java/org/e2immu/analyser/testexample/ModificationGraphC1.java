@@ -17,24 +17,28 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
-import org.junit.Assert;
-import org.junit.Test;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.MutableModifiesArguments;
+import org.e2immu.annotation.Variable;
 
-@E2Container
-public class ModificationGraph {
+@MutableModifiesArguments
+class ModificationGraphC1 {
 
-    @Test
-    public void useC1AndC2() {
-        ModificationGraphC1 c1 = new ModificationGraphC1();
-        ModificationGraphC2 c2 = new ModificationGraphC2(2, c1);
-        Assert.assertEquals(3, c2.incrementAndGetWithI());
-        Assert.assertEquals(1, c1.getI());
-        Assert.assertEquals(5, c1.useC2(c2));
-        Assert.assertEquals(2, c1.getI());
-        Assert.assertEquals(5, c2.incrementAndGetWithI());
-        Assert.assertEquals(3, c1.getI());
-        Assert.assertEquals(9, c1.useC2(c2));
-        Assert.assertEquals(4, c1.getI());
+    @Variable
+    private int i;
+
+    @Modified
+    public int incrementAndGet() {
+        return ++i;
     }
+
+    public int getI() {
+        return i;
+    }
+
+    @Modified // <1>
+    public int useC2(@Modified ModificationGraphC2 c2) {
+        return i + c2.incrementAndGetWithI();
+    }
+
 }

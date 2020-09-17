@@ -92,7 +92,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("SimpleSizeChecks", 3, new DebugConfiguration.Builder()
+        testClass("SimpleSizeChecks", 3, 0, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

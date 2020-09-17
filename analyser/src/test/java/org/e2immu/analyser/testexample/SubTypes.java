@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Nullable;
+
 import java.util.Iterator;
 
 public class SubTypes {
@@ -60,7 +62,9 @@ public class SubTypes {
         return kv1.toString();
     }
 
+    // ERROR: toString is @Nullable, which is worse than what we demand in Object.toString()
     class NonStaticSubType {
+        @Nullable
         @Override
         public String toString() {
             return field;

@@ -49,7 +49,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("BasicsOpposite", 0, new DebugConfiguration.Builder()
+        testClass("BasicsOpposite", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

@@ -20,10 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -31,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class TestModificationGraph extends CommonTestRunner {
 
@@ -39,9 +37,9 @@ public class TestModificationGraph extends CommonTestRunner {
     }
 
     FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if("c1".equals(fieldInfo.name)) {
+        if ("c1".equals(fieldInfo.name)) {
             int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
-            int expect = iteration < 2 ? Level.DELAY: Level.TRUE;
+            int expect = iteration < 2 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expect, modified);
         }
     };
@@ -58,7 +56,7 @@ public class TestModificationGraph extends CommonTestRunner {
             if (iteration > 0) {
                 Assert.assertEquals("c1", c1.parameterAnalysis.get().assignedToField.get().name);
                 if (iteration > 1) {
-               //     Assert.assertTrue(c1.parameterAnalysis.get().copiedFromFieldToParameters.get());
+                    Assert.assertTrue(c1.parameterAnalysis.get().copiedFromFieldToParameters.get());
                 }
             }
         }
@@ -78,11 +76,12 @@ public class TestModificationGraph extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("ModificationGraph", 0, 1, new DebugConfiguration.Builder()
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build());
+        testClass(List.of("ModificationGraph", "ModificationGraphC1", "ModificationGraphC2"),
+                0, 1, new DebugConfiguration.Builder()
+                        .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(), new AnalyserConfiguration.Builder().build());
 
     }
 

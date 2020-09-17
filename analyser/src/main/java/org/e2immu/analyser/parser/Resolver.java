@@ -136,6 +136,7 @@ public class Resolver {
         List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
         typeDependencies.removeAll(allTypesInPrimaryType);
         typeDependencies.retainAll(stayWithin);
+        typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
 
         ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());
 
@@ -144,7 +145,6 @@ public class Resolver {
             log(RESOLVE, "Method and field order in {}: {}", typeInfo.fullyQualifiedName,
                     methodFieldSubTypeOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
             log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
-            typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
         }
 
         return new SortedType(typeInfo, methodFieldSubTypeOrder);
