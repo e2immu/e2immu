@@ -126,7 +126,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
         }
         if (fieldInfo.name.equals("set2bis")) {
-            if (iteration == 0) {
+            if (iteration <= 1) {
                 Assert.assertEquals(Level.DELAY, modified);
             } else {
                 Assert.assertEquals(Level.TRUE, modified);

@@ -26,7 +26,7 @@ public class TestInnerClass extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("InnerClass", 5, 4, new DebugConfiguration.Builder()
+        testClass("InnerClass", 5, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

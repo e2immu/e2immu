@@ -16,6 +16,17 @@ The main reason it has to do this is that all fields are visible to all sub-type
 
 The processing list determines the order in which the analyser processes fields, methods and sub-types.
 
+==== Nested classes
+
+{final}: across all methods in the primary type
+
+Parent or enclosing type when non-static must be have the property as well: {e1immutable}, {e2immutable}, {container}, {independent}.
+
+What to do with abstract superclasses?
+They cause a problem because of the abstract methods, which can have any modification status. #TODO# think and implement.
+
+Eventual? #TODO# think and implement.
+
 ==== Modification of a field
 
 The code executes the following steps:

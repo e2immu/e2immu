@@ -86,6 +86,14 @@ public class AnnotationExpression {
         return AnnotationExpression.fromJavaParserExpression(ti, ae);
     }
 
+    @Override
+    public String toString() {
+        return "AnnotationExpression{" +
+                "typeInfo=" + typeInfo +
+                ", expressions=" + expressions +
+                '}';
+    }
+
     public void resolve(ExpressionContext expressionContext) {
         if (expressions.isSet()) throw new UnsupportedOperationException();
         com.github.javaparser.ast.expr.Expression ae = expressions.getFirst();

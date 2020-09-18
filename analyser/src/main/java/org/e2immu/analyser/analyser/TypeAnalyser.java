@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Variable;
@@ -31,11 +32,14 @@ import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.pattern.ConditionalAssignment;
 import org.e2immu.analyser.pattern.Pattern;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -93,15 +97,9 @@ public class TypeAnalyser {
     }
 
     public void check(SortedType sortedType) {
-        TypeInfo typeInfo = sortedType.primaryType;
-
-        // before we check, we copy the properties into annotations
-        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
-
-        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
-
         for (WithInspectionAndAnalysis m : sortedType.methodsFieldsSubTypes) {
-            if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
+            if (m instanceof TypeInfo) check((TypeInfo) m);
+            else if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
             else if (m instanceof FieldInfo) {
                 FieldInfo fieldInfo = (FieldInfo) m;
                 if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
@@ -113,6 +111,13 @@ public class TypeAnalyser {
                 fieldAnalyser.check(fieldInfo);
             }
         }
+    }
+
+    private void check(TypeInfo typeInfo) {
+        // before we check, we copy the properties into annotations
+        log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
+        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+
         check(typeInfo, UtilityClass.class, e2ImmuAnnotationExpressions.utilityClass.get());
         check(typeInfo, E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
         check(typeInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
@@ -283,6 +288,8 @@ public class TypeAnalyser {
       writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
 
       when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
+
+      TODO: parents, enclosing types
      */
     private boolean analyseOnlyMarkEventuallyE1Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
@@ -399,6 +406,10 @@ public class TypeAnalyser {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return false;
 
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
+        if (parentOrEnclosing == null) return false;
+        if (parentOrEnclosing) return true;
+
         boolean fieldsReady = typeInfo.typeInspection.getPotentiallyRun().fields.stream().allMatch(
                 fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE ||
                         fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
@@ -437,8 +448,14 @@ public class TypeAnalyser {
 
     private boolean analyseEffectivelyE1Immutable(TypeInfo typeInfo) {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return false; // we have a decision already
+
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.IMMUTABLE,
+                i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
+        if (parentOrEnclosing == null) return false;
+        if (parentOrEnclosing) return true;
 
         for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
             int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
@@ -453,6 +470,12 @@ public class TypeAnalyser {
         log(E1IMMUTABLE, "Improve IMMUTABLE property of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
         return true;
+    }
+
+    private static int convertMultiLevelEffectiveToDelayTrue(int i) {
+        if (i <= MultiLevel.DELAY) return Level.DELAY;
+        if (i == MultiLevel.EFFECTIVE) return Level.TRUE;
+        return Level.FALSE;
     }
 
     /**
@@ -474,6 +497,10 @@ public class TypeAnalyser {
 
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return false;
+
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
+        if (parentOrEnclosing == null) return false;
+        if (parentOrEnclosing) return true;
 
         boolean variablesLinkedNotSet = typeInfo.typeInspection.getPotentiallyRun().fields.stream()
                 .anyMatch(fieldInfo -> !fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
@@ -551,6 +578,52 @@ public class TypeAnalyser {
         return true;
     }
 
+    private static Boolean parentOrEnclosingMustHaveTheSameProperty(TypeInfo typeInfo, VariableProperty variableProperty,
+                                                                    Function<Integer, Integer> mapProperty,
+                                                                    int falseValue) {
+        List<TypeInfo> parentAndOrEnclosing = parentAndOrEnclosing(typeInfo);
+        List<Integer> propertyValues = parentAndOrEnclosing.stream()
+                .map(t -> mapProperty.apply(t.typeAnalysis.get().getProperty(variableProperty)))
+                .collect(Collectors.toList());
+        if (propertyValues.stream().anyMatch(level -> level == Level.DELAY)) {
+            log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
+                    variableProperty, typeInfo.fullyQualifiedName);
+            return null;
+        }
+        if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
+            log(DELAYED, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
+            typeInfo.typeAnalysis.get().improveProperty(variableProperty, falseValue);
+            return true;
+        }
+        return false;
+    }
+
+    private static List<TypeInfo> parentAndOrEnclosing(TypeInfo typeInfo) {
+        Either<String, TypeInfo> pe = typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType;
+        return ListUtil.immutableConcat(
+                pe.isRight() && !typeInfo.isStatic() ? List.of(pe.getRight()) : List.of(),
+                typeInfo.typeInspection.getPotentiallyRun().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT ?
+                        List.of(typeInfo.typeInspection.getPotentiallyRun().parentClass.typeInfo) : List.of()
+        );
+    }
+    /*
+       List<TypeInfo> mustBeE1Too = parentAndOrEnclosing(typeInfo);
+        List<Integer> mustBeE1TooLevels = mustBeE1Too.stream()
+                .map(t -> MultiLevel.value(t.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE))
+                .collect(Collectors.toList());
+        if (mustBeE1TooLevels.stream().anyMatch(level -> level == MultiLevel.DELAY)) {
+            log(DELAYED, "Waiting with E1Immutable on {}, parent or enclosing class's E1Immutable status not yet known",
+                    typeInfo.fullyQualifiedName);
+            return false;
+        }
+        if (mustBeE1TooLevels.stream().anyMatch(level -> level != MultiLevel.EFFECTIVE)) {
+            log(DELAYED, "{} cannot be level 1 immutable, parent or enclosing class is not", typeInfo.fullyQualifiedName);
+            typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+            return true;
+        }
+
+     */
+
     /**
      * Rules as of 30 July 2020: Definition on top of @E1Immutable
      * <p>
@@ -575,6 +648,12 @@ public class TypeAnalyser {
             return false;
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
+
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.IMMUTABLE,
+                i -> convertMultiLevelEventualToDelayTrue(MultiLevel.value(i, MultiLevel.E2IMMUTABLE)), no);
+        if (parentOrEnclosing == null) return false;
+        if (parentOrEnclosing) return true;
+
         boolean eventual = typeAnalysis.isEventual();
         boolean haveToEnforcePrivateAndIndependenceRules = false;
 
@@ -687,6 +766,12 @@ public class TypeAnalyser {
         int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
         typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
         return true;
+    }
+
+    private static int convertMultiLevelEventualToDelayTrue(int i) {
+        if (i <= MultiLevel.DELAY) return Level.DELAY;
+        if (i >= MultiLevel.EVENTUAL) return Level.TRUE;
+        return Level.FALSE;
     }
 
     private boolean analyseExtensionClass(TypeInfo typeInfo) {
