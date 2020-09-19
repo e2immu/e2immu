@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestExampleManualIterator1 extends CommonTestRunner {
@@ -22,6 +23,12 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("iterator".equals(methodInfo.name)) {
             //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             Assert.assertTrue(methodInfo.methodAnalysis.get().returnStatementSummaries.isSet("0"));
+        }
+
+        if (Set.of("hasNext", "next").contains(methodInfo.name) && "MyIteratorImpl".equals(methodInfo.typeInfo.simpleName)) {
+            if (iteration > 0) {
+                Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
+            }
         }
     };
 
@@ -72,6 +79,11 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
             int expect = iteration <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expect, modified);
+
+            if (iteration > 0) {
+                //       Assert.assertTrue(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+                //       Assert.assertEquals("", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+            }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {
             if (iteration > 0) {
