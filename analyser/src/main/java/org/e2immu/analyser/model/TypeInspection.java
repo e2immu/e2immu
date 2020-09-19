@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -197,6 +198,14 @@ public class TypeInspection extends Inspection {
                 ListUtil.immutableConcat(methods, extraMethods),
                 fields, modifiers, subTypes,
                 ImmutableList.copyOf(alternativeAnnotations));
+    }
+
+    public Set<ParameterizedType> explicitTypes() {
+        // handles SAMs of fields as well
+        Stream<ParameterizedType> methodTypes = methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
+        Stream<ParameterizedType> fieldTypes = fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
+        return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
     }
 
     @Container(builds = TypeInspection.class)

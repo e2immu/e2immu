@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser;
 
 import org.apache.commons.io.IOUtils;
+import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
 import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
@@ -120,22 +121,21 @@ public class Parser {
             typeContextVisitor.visit(globalTypeContext);
         }
 
-        TypeAnalyser typeAnalyser = new TypeAnalyser(configuration, e2ImmuAnnotationExpressions);
         for (SortedType sortedType : sortedPrimaryTypes) {
+            PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, e2ImmuAnnotationExpressions);
             try {
-                typeAnalyser.analyse(sortedType);
+                primaryTypeAnalyser.analyse();
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType.fullyQualifiedName);
                 throw rte;
             }
             try {
-                if (!sortedType.primaryType.isNestedType()) {
-                    typeAnalyser.check(sortedType);
-                } // else: nested types get checked after we've analysed their enclosing type
+                primaryTypeAnalyser.check();
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType.fullyQualifiedName);
                 throw rte;
             }
+            messages.addAll(primaryTypeAnalyser.getMessageStream());
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
@@ -150,7 +150,6 @@ public class Parser {
                 throw new RuntimeException(ioe);
             }
         }
-        messages.addAll(typeAnalyser.getMessageStream());
         return sortedPrimaryTypes;
     }
 

@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -27,8 +26,8 @@ import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
+import org.e2immu.annotation.NotModified;
 
-import java.util.List;
 import java.util.Set;
 
 public class FieldAnalysis extends Analysis {
@@ -38,16 +37,17 @@ public class FieldAnalysis extends Analysis {
     public final boolean isExplicitlyFinal;
     public final ParameterizedType type;
     public final Location location;
-    public final FieldInfo fieldInfo;
+    public final MethodInfo sam;
 
-    public FieldAnalysis(FieldInfo fieldInfo) {
+    public FieldAnalysis(@NotModified FieldInfo fieldInfo) {
         super(fieldInfo.hasBeenDefined(), fieldInfo.name);
         this.owner = fieldInfo.owner;
         this.bestType = fieldInfo.type.bestTypeInfo();
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         type = fieldInfo.type;
         location = new Location(fieldInfo);
-        this.fieldInfo = fieldInfo;
+        this.sam = !fieldInfo.fieldInspection.get().initialiser.isSet() ? null :
+                fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
         ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type,
                 Origin.INITIAL_FIELD_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
@@ -145,7 +145,7 @@ public class FieldAnalysis extends Analysis {
         if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
             String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
             annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
-        } else if (allowModificationAnnotation(fieldInfo)) {
+        } else if (allowModificationAnnotation()) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);
@@ -167,11 +167,10 @@ public class FieldAnalysis extends Analysis {
         }
     }
 
-    private boolean allowModificationAnnotation(FieldInfo fieldInfo) {
-        if (fieldInfo.type.isAtLeastEventuallyE2Immutable() == Boolean.TRUE) return false;
-        if (fieldInfo.type.isFunctionalInterface()) {
-            return fieldInfo.fieldInspection.get().initialiser.isSet() &&
-                    fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null;
+    private boolean allowModificationAnnotation() {
+        if (type.isAtLeastEventuallyE2Immutable() == Boolean.TRUE) return false;
+        if (type.isFunctionalInterface()) {
+            return sam != null;
         }
         return true;
     }

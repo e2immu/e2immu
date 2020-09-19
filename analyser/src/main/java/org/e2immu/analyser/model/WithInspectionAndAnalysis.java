@@ -18,6 +18,11 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.Analyser;
+import org.e2immu.analyser.analyser.MethodAnalyser;
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;

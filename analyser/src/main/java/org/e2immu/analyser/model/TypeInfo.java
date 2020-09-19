@@ -25,7 +25,11 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.Analyser;
+import org.e2immu.analyser.analyser.MethodAnalyser;
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -33,6 +37,7 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -1111,7 +1116,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public MethodInfo sizeMethod() {
         MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
-                .filter(mi -> mi.getAnalysis().getProperty(VariableProperty.SIZE) > Level.FALSE)
+                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.SIZE) > Level.FALSE)
                 .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
                 .findFirst().orElse(null);
         if (methodInfo != null) {
@@ -1201,14 +1206,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
                 .findFirst().orElseThrow();
-    }
-
-    public Set<ParameterizedType> explicitTypes() {
-        // handles SAMs of fields as well
-        Stream<ParameterizedType> methods = typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
-        Stream<ParameterizedType> fields = typeInspection.getPotentiallyRun().fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
-        return Stream.concat(methods, fields).collect(Collectors.toSet());
     }
 
     public MethodInfo findConstructor(int parameters) {

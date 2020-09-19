@@ -28,15 +28,10 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.SortedType;
-import org.e2immu.analyser.pattern.ConditionalAssignment;
-import org.e2immu.analyser.pattern.Pattern;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -65,55 +60,107 @@ import static org.e2immu.analyser.util.Logger.log;
  * Errors related to those constraints are added to the type making the violation.
  */
 
-public class TypeAnalyser {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TypeAnalyser.class);
-
-    private final MethodAnalyser methodAnalyser;
-    private final FieldAnalyser fieldAnalyser;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+public class TypeAnalyser extends AbstractAnalyser {
     private final Messages messages = new Messages();
-    private final PatternMatcher patternMatcher;
-    private final Configuration configuration;
+    public final TypeInfo primaryType;
+    public final TypeInfo typeInfo;
+    public final TypeInspection typeInspection;
+    public final TypeAnalysis typeAnalysis;
 
-    public TypeAnalyser(Configuration configuration, @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        fieldAnalyser = new FieldAnalyser(e2ImmuAnnotationExpressions);
-        methodAnalyser = new MethodAnalyser(e2ImmuAnnotationExpressions);
-        this.configuration = configuration;
+    // initialized in a separate method
+    private List<MethodAnalyser> myMethodAnalysersExcludingSAMs;
+    private List<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs;
+    private List<MethodAnalyser> myMethodAnalysers;
+    private List<MethodAnalyser> myConstructors;
 
-        // TODO move to some other place
-        Pattern pattern1 = ConditionalAssignment.pattern1();
-        Pattern pattern2 = ConditionalAssignment.pattern2();
-        Pattern pattern3 = ConditionalAssignment.pattern3();
-        patternMatcher = new PatternMatcher(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1),
-                pattern2, ConditionalAssignment.replacement1ToPattern2(pattern2),
-                pattern3, ConditionalAssignment.replacement1ToPattern3(pattern3)));
+    private List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis;
+    private List<FieldAnalyser> myFieldAnalysers;
 
-        this.e2ImmuAnnotationExpressions = Objects.requireNonNull(e2ImmuAnnotationExpressions);
+    public TypeAnalyser(@NotModified TypeInfo typeInfo,
+                        TypeInfo primaryType,
+                        Configuration configuration,
+                        PatternMatcher patternMatcher,
+                        E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        super(e2ImmuAnnotationExpressions, patternMatcher, configuration);
+        this.typeInfo = typeInfo;
+        this.primaryType = primaryType;
+        typeInspection = typeInfo.typeInspection.get();
+
+        typeAnalysis = new TypeAnalysis(typeInfo);
     }
 
-    public Stream<Message> getMessageStream() {
-        return Stream.concat(Stream.concat(fieldAnalyser.getMessageStream(),
-                methodAnalyser.getMessageStream()), messages.getMessageStream());
+    @Override
+    public WithInspectionAndAnalysis getMember() {
+        return typeInfo;
     }
 
-    public void check(SortedType sortedType) {
-        for (WithInspectionAndAnalysis m : sortedType.methodsFieldsSubTypes) {
-            if (m instanceof TypeInfo) check((TypeInfo) m);
-            else if (m instanceof MethodInfo) methodAnalyser.check((MethodInfo) m);
-            else if (m instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) m;
-                if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
-                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
-                    if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                        methodAnalyser.check(fieldInitialiser.implementationOfSingleAbstractMethod);
+    // slightly ugly code, but speed is of the issue
+    @Override
+    public void initialize(List<Analyser> analysers,
+                           Map<ParameterInfo, ParameterAnalyser> parameterAnalyserMap,
+                           Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
+
+        ImmutableList.Builder<MethodAnalyser> myMethodAnalysersExcludingSAMs = new ImmutableList.Builder<>();
+        ImmutableList.Builder<MethodAnalyser> myMethodAnalysers = new ImmutableList.Builder<>();
+        ImmutableList.Builder<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs = new ImmutableList.Builder<>();
+        ImmutableList.Builder<MethodAnalyser> myConstructors = new ImmutableList.Builder<>();
+        ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
+
+        Map<TypeInfo, TypeAnalysis> localTypeAnalysis = new HashMap<>();
+
+        analysers.forEach(analyser -> {
+            if (analyser instanceof MethodAnalyser) {
+                MethodAnalyser methodAnalyser = (MethodAnalyser) analyser;
+                if (methodAnalyser.methodInfo.typeInfo == typeInfo) {
+                    if (methodAnalyser.methodInfo.isConstructor) {
+                        myConstructors.add(methodAnalyser);
+                    } else {
+                        myMethodAnalysers.add(methodAnalyser);
+                        if (!methodAnalyser.isSAM) {
+                            myMethodAnalysersExcludingSAMs.add(methodAnalyser);
+                        }
+                    }
+                    if (!methodAnalyser.isSAM) {
+                        myMethodAndConstructorAnalysersExcludingSAMs.add(methodAnalyser);
                     }
                 }
-                fieldAnalyser.check(fieldInfo);
+            } else if (analyser instanceof FieldAnalyser) {
+                FieldAnalyser fieldAnalyser = (FieldAnalyser) analyser;
+                if (fieldAnalyser.fieldInfo.owner == typeInfo) {
+                    myFieldAnalysers.add(fieldAnalyser);
+                }
+            } else if (analyser instanceof TypeAnalyser) {
+                TypeAnalyser typeAnalyser = (TypeAnalyser) analyser;
+                localTypeAnalysis.put(typeAnalyser.typeInfo, typeAnalyser.typeAnalysis);
             }
-        }
+        });
+        this.myMethodAnalysersExcludingSAMs = myMethodAnalysersExcludingSAMs.build();
+        this.myConstructors = myConstructors.build();
+        this.myMethodAnalysers = myMethodAnalysers.build();
+        this.myMethodAndConstructorAnalysersExcludingSAMs = myMethodAndConstructorAnalysersExcludingSAMs.build();
+        this.myFieldAnalysers = myFieldAnalysers.build();
+
+        Either<String, TypeInfo> pe = typeInspection.packageNameOrEnclosingType;
+        parentAndOrEnclosingTypeAnalysis = ListUtil.immutableConcat(
+                pe.isRight() && !typeInfo.isStatic() ? List.of(localTypeAnalysis.get(pe.getRight())) : List.of(),
+                typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT ?
+                        List.of(localTypeAnalysis.getOrDefault(typeInspection.parentClass.typeInfo,
+                                typeInspection.parentClass.typeInfo.typeAnalysis.get())) : List.of()
+        );
     }
 
-    private void check(TypeInfo typeInfo) {
+    @Override
+    public Analysis getAnalysis() {
+        return typeAnalysis;
+    }
+
+    @Override
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
+    }
+
+    @Override
+    public void check() {
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
         typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
@@ -139,115 +186,41 @@ public class TypeAnalyser {
         });
     }
 
-    public void analyse(SortedType sortedType) {
-        DebugConfiguration debugConfiguration = configuration.debugConfiguration;
-        TypeInfo typeInfo = sortedType.primaryType;
-        assert typeInfo.isPrimaryType();
+    @Override
+    public boolean analyse(int iteration) {
 
-        boolean changes = true;
-        int iteration = 0;
-
-        while (changes) {
-            log(ANALYSER, "\n******\nStarting iteration {} of the type analyser on {}\n******", iteration, typeInfo.fullyQualifiedName);
-            changes = false;
-
-            patternMatcher.startNewIteration();
-
-            for (WithInspectionAndAnalysis member : sortedType.methodsFieldsSubTypes) {
-                if (member instanceof MethodInfo) {
-                    VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
-                            iteration, configuration, patternMatcher, (MethodInfo) member);
-
-                    if (methodAnalyser.analyse((MethodInfo) member, methodProperties))
-                        changes = true;
-                    for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
-                        methodAnalyserVisitor.visit(iteration, (MethodInfo) member);
-                    }
-                    messages.addAll(methodProperties.messages);
-                } else if (member instanceof FieldInfo) {
-                    FieldInfo fieldInfo = (FieldInfo) member;
-                    // these are the "hidden" methods: fields of functional interfaces
-                    if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
-                        FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
-                        if (fieldInitialiser.implementationOfSingleAbstractMethod != null) {
-                            VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
-                                    iteration, configuration, patternMatcher, fieldInitialiser.implementationOfSingleAbstractMethod);
-
-                            try {
-                                if (methodAnalyser.analyse(fieldInitialiser.implementationOfSingleAbstractMethod, methodProperties)) {
-                                    changes = true;
-                                }
-                            } catch (RuntimeException rte) {
-                                LOGGER.warn("Caught exception in method analysis of SAM of field " + fieldInfo.fullyQualifiedName());
-                                if (fieldInitialiser.artificial) {
-                                    LOGGER.warn("Method's code is artificial:\n{}", fieldInitialiser.implementationOfSingleAbstractMethod.stream(0));
-                                }
-                                throw rte;
-                            }
-                            for (MethodAnalyserVisitor methodAnalyserVisitor : debugConfiguration.afterMethodAnalyserVisitors) {
-                                methodAnalyserVisitor.visit(iteration, fieldInitialiser.implementationOfSingleAbstractMethod);
-                            }
-                            messages.addAll(methodProperties.messages);
-                        }
-                    }
-
-                    VariableProperties fieldProperties = new VariableProperties(e2ImmuAnnotationExpressions,
-                            iteration, configuration, patternMatcher, fieldInfo);
-                    if (fieldAnalyser.analyse(fieldInfo, fieldProperties))
-                        changes = true;
-                    for (FieldAnalyserVisitor fieldAnalyserVisitor : debugConfiguration.afterFieldAnalyserVisitors) {
-                        fieldAnalyserVisitor.visit(iteration, fieldInfo);
-                    }
-                    messages.addAll(fieldProperties.messages);
-                } else {
-                    TypeInfo subType = (TypeInfo) member;
-                    if (analyseType(subType, iteration, debugConfiguration)) changes = true;
-                }
-            }
-
-            if (analyseType(typeInfo, iteration, debugConfiguration)) changes = true;
-
-            iteration++;
-            if (iteration > 10) {
-                throw new UnsupportedOperationException("More than 10 iterations needed for type " + typeInfo.simpleName + "?");
-            }
-        }
-    }
-
-    private boolean analyseType(TypeInfo typeInfo, int iteration, DebugConfiguration debugConfiguration) {
-        boolean changes = analyseImplicitlyImmutableTypes(typeInfo);
+        boolean changes = analyseImplicitlyImmutableTypes();
 
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
 
         if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
-            if (analyseOnlyMarkEventuallyE1Immutable(typeInfo)) changes = true;
-            if (analyseEffectivelyE1Immutable(typeInfo)) changes = true;
-            if (analyseIndependent(typeInfo)) changes = true;
-            if (analyseEffectivelyEventuallyE2Immutable(typeInfo)) changes = true;
-            if (analyseContainer(typeInfo)) changes = true;
-            if (analyseUtilityClass(typeInfo)) changes = true;
-            if (analyseExtensionClass(typeInfo)) changes = true;
+            if (analyseOnlyMarkEventuallyE1Immutable()) changes = true;
+            if (analyseEffectivelyE1Immutable()) changes = true;
+            if (analyseIndependent()) changes = true;
+            if (analyseEffectivelyEventuallyE2Immutable()) changes = true;
+            if (analyseContainer()) changes = true;
+            if (analyseUtilityClass()) changes = true;
+            if (analyseExtensionClass()) changes = true;
         }
 
-        for (TypeAnalyserVisitor typeAnalyserVisitor : debugConfiguration.afterTypePropertyComputations) {
+        for (TypeAnalyserVisitor typeAnalyserVisitor : configuration.debugConfiguration.afterTypePropertyComputations) {
             typeAnalyserVisitor.visit(iteration, typeInfo);
         }
 
         return changes;
     }
 
-    private boolean analyseImplicitlyImmutableTypes(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+    private boolean analyseImplicitlyImmutableTypes() {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return false;
 
         log(E2IMMUTABLE, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
-        Set<ParameterizedType> typesOfFields = typeInfo.typeInspection.getPotentiallyRun().fields.stream()
+        Set<ParameterizedType> typesOfFields = typeInspection.fields.stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
         typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
         typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
         log(E2IMMUTABLE, "Types of fields, methods and constructors: {}", typesOfFields);
 
-        Set<ParameterizedType> explicitTypes = typeInfo.explicitTypes();
+        Set<ParameterizedType> explicitTypes = typeInspection.explicitTypes();
         log(E2IMMUTABLE, "Explicit types: {}", explicitTypes);
 
         typesOfFields.removeIf(type -> {
@@ -291,41 +264,36 @@ public class TypeAnalyser {
 
       TODO: parents, enclosing types
      */
-    private boolean analyseOnlyMarkEventuallyE1Immutable(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+    private boolean analyseOnlyMarkEventuallyE1Immutable() {
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done
         }
-        final TypeInspection.Methods methodsMode = TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM;
-        boolean someModifiedNotSet = typeInfo.typeInspection.getPotentiallyRun()
-                .methodStream(methodsMode)
-                .anyMatch(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+        boolean someModifiedNotSet = myMethodAnalysersExcludingSAMs.stream()
+                .anyMatch(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
         if (someModifiedNotSet) return false;
 
-        boolean allPreconditionsOnModifyingMethodsSet = typeInfo.typeInspection.getPotentiallyRun()
-                .methodStream(methodsMode)
-                .filter(methodInfo -> methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
-                .allMatch(methodInfo -> methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.isSet());
+        boolean allPreconditionsOnModifyingMethodsSet = myMethodAnalysersExcludingSAMs.stream()
+                .filter(methodAnalyser -> methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
+                .allMatch(methodAnalyser -> methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.isSet());
         if (!allPreconditionsOnModifyingMethodsSet) {
             log(DELAYED, "Not all precondition preps on modifying methods have been set in {}, delaying", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean someInvalidPreconditionsOnModifyingMethods = typeInfo.typeInspection.getPotentiallyRun()
-                .methodStream(methodsMode).anyMatch(methodInfo ->
-                        methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
-                                methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().isEmpty());
+        boolean someInvalidPreconditionsOnModifyingMethods = myMethodAnalysersExcludingSAMs.stream().anyMatch(methodAnalyser ->
+                methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE &&
+                        methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
         if (someInvalidPreconditionsOnModifyingMethods) {
             log(MARK, "Not all modifying methods have a valid precondition in {}", typeInfo.fullyQualifiedName);
             return false;
         }
 
         Map<String, Value> tempApproved = new HashMap<>();
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(methodsMode)) {
-            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
+            int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
-                List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
+                List<Value> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
                 for (Value precondition : preconditions) {
-                    handlePrecondition(methodInfo, precondition, tempApproved);
+                    handlePrecondition(methodAnalyser, precondition, tempApproved);
                 }
             }
         }
@@ -341,12 +309,12 @@ public class TypeAnalyser {
         return true;
     }
 
-    private void handlePrecondition(MethodInfo methodInfo, Value precondition, Map<String, Value> tempApproved) {
+    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Value precondition, Map<String, Value> tempApproved) {
         Value negated = NegatedValue.negate(precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Value inMap = tempApproved.get(label);
 
-        boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodInfo);
+        boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodAnalyser.methodAnalysis);
         if (isMark) {
             if (inMap == null) {
                 tempApproved.put(label, precondition);
@@ -359,20 +327,19 @@ public class TypeAnalyser {
         } else if (inMap == null) {
             tempApproved.put(label, precondition); // no idea yet if before or after
         } else if (!inMap.equals(precondition) && !inMap.equals(negated)) {
-            messages.add(Message.newMessage(new Location(methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
+            messages.add(Message.newMessage(new Location(methodAnalyser.methodInfo), Message.DUPLICATE_MARK_LABEL, "Label: " + label));
         }
     }
 
-    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo) {
+    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, @NotModified MethodAnalysis methodAnalysis) {
         Set<Variable> variables = precondition.variables();
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
-            if (methodInfo.methodAnalysis.get().fieldSummaries.isSet(fieldInfo)) {
+            if (methodAnalysis.fieldSummaries.isSet(fieldInfo)) {
                 TransferValue tv = methodAnalysis.fieldSummaries.get(fieldInfo);
                 boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodAnalysis.methodInfo.distinguishingName(), assigned);
 
                 if (assigned && tv.stateOnAssignment.isSet()) {
                     Value state = tv.stateOnAssignment.get();
@@ -401,40 +368,39 @@ public class TypeAnalyser {
         return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
     }
 
-    private boolean analyseContainer(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+    private boolean analyseContainer() {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return false;
 
-        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
         if (parentOrEnclosing == null) return false;
         if (parentOrEnclosing) return true;
 
-        boolean fieldsReady = typeInfo.typeInspection.getPotentiallyRun().fields.stream().allMatch(
-                fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE ||
-                        fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+        boolean fieldsReady = myFieldAnalysers.stream().allMatch(
+                fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE ||
+                        fieldAnalyser.fieldAnalysis.effectivelyFinalValue.isSet());
         if (!fieldsReady) {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return false;
         }
-        boolean allReady = typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY).allMatch(
-                m -> m.methodInspection.get().parameters.stream().allMatch(parameterInfo ->
-                        !parameterInfo.parameterAnalysis.get().assignedToField.isSet() ||
-                                parameterInfo.parameterAnalysis.get().copiedFromFieldToParameters.isSet()));
+        boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(
+                methodAnalyser -> methodAnalyser.parameterAnalysers.stream().allMatch(parameterAnalyser ->
+                        !parameterAnalyser.parameterAnalysis.assignedToField.isSet() ||
+                                parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet()));
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
             return false;
         }
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors()) {
-            if (!methodInfo.isPrivate()) {
-                for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                    int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
+            if (!methodAnalyser.methodInfo.isPrivate()) {
+                for (ParameterAnalyser parameterAnalyser : methodAnalyser.parameterAnalysers) {
+                    int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                     if (modified == Level.DELAY) return false; // cannot yet decide
                     if (modified == Level.TRUE) {
                         log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo.fullyQualifiedName,
-                                parameterInfo.detailedString(),
-                                methodInfo.distinguishingName());
+                                parameterAnalyser.parameterInfo.detailedString(),
+                                methodAnalyser.methodInfo.distinguishingName());
                         typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
                         return true;
                     }
@@ -446,23 +412,21 @@ public class TypeAnalyser {
         return true;
     }
 
-    private boolean analyseEffectivelyE1Immutable(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-
+    private boolean analyseEffectivelyE1Immutable() {
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return false; // we have a decision already
 
-        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.IMMUTABLE,
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
                 i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
         if (parentOrEnclosing == null) return false;
         if (parentOrEnclosing) return true;
 
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
-            int effectivelyFinal = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            int effectivelyFinal = fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) return false; // cannot decide
             if (effectivelyFinal == Level.FALSE) {
                 log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
-                        typeInfo.fullyQualifiedName, fieldInfo.name);
+                        typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
                 typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return true;
             }
@@ -489,38 +453,35 @@ public class TypeAnalyser {
      * <p>
      * We obviously start by collecting exactly these fields.
      *
-     * @param typeInfo the type to analyse
      * @return true if a decision was made
      */
-    private boolean analyseIndependent(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-
+    private boolean analyseIndependent() {
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return false;
 
-        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
         if (parentOrEnclosing == null) return false;
         if (parentOrEnclosing) return true;
 
-        boolean variablesLinkedNotSet = typeInfo.typeInspection.getPotentiallyRun().fields.stream()
-                .anyMatch(fieldInfo -> !fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+        boolean variablesLinkedNotSet = myFieldAnalysers.stream()
+                .anyMatch(fieldAnalyser -> !fieldAnalyser.fieldAnalysis.variablesLinkedToMe.isSet());
         if (variablesLinkedNotSet) {
             log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
             return false;
         }
-        List<FieldInfo> fieldsLinkedToParameters =
-                typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(fieldInfo -> fieldInfo.fieldAnalysis.get().
-                        variablesLinkedToMe.get().stream().filter(v -> v instanceof ParameterInfo)
+        List<FieldAnalyser> fieldsLinkedToParameters =
+                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.variablesLinkedToMe.get()
+                        .stream().filter(v -> v instanceof ParameterInfo)
                         .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
 
         // RULE 1
 
-        boolean modificationStatusUnknown = fieldsLinkedToParameters.stream().anyMatch(fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY);
+        boolean modificationStatusUnknown = fieldsLinkedToParameters.stream().anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
         if (modificationStatusUnknown) {
             log(DELAYED, "Delay independence of type {}, modification status of linked fields not yet set", typeInfo.fullyQualifiedName);
             return false;
         }
-        boolean someModified = fieldsLinkedToParameters.stream().anyMatch(fieldInfo -> fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+        boolean someModified = fieldsLinkedToParameters.stream().anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (someModified) {
             log(INDEPENDENT, "Type {} cannot be @Independent, some fields linked to parameters are modified", typeInfo.fullyQualifiedName);
             typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
@@ -529,17 +490,17 @@ public class TypeAnalyser {
 
         // RULE 2
 
-        List<FieldInfo> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldInfo -> !fieldInfo.isPrivate()).collect(Collectors.toList());
-        for (FieldInfo nonPrivateField : nonPrivateFields) {
-            int immutable = nonPrivateField.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        List<FieldAnalyser> nonPrivateFields = fieldsLinkedToParameters.stream().filter(fieldAnalyser -> !fieldAnalyser.fieldInfo.isPrivate()).collect(Collectors.toList());
+        for (FieldAnalyser nonPrivateField : nonPrivateFields) {
+            int immutable = nonPrivateField.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
             if (immutable == Level.DELAY) {
                 log(DELAYED, "Delay independence of type {}, field {} is not known to be immutable", typeInfo.fullyQualifiedName,
-                        nonPrivateField.name);
+                        nonPrivateField.fieldInfo.name);
                 return false;
             }
             if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
                 log(INDEPENDENT, "Type {} cannot be @Independent, field {} is non-private and not level 2 immutable",
-                        typeInfo.fullyQualifiedName, nonPrivateField.name);
+                        typeInfo.fullyQualifiedName, nonPrivateField.fieldInfo.name);
                 typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 return true;
             }
@@ -547,16 +508,16 @@ public class TypeAnalyser {
 
         // RULE 3
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY)) {
-            if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
-                boolean notAllSet = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
+        for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+            if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
+                boolean notAllSet = methodAnalyser.methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue)
                         .anyMatch(tv -> !tv.linkedVariables.isSet());
                 if (notAllSet) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
+                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return false;
                 }
-                boolean safeMethod = methodInfo.methodAnalysis.get().returnStatementSummaries.stream().map(Map.Entry::getValue)
+                boolean safeMethod = methodAnalyser.methodAnalysis.returnStatementSummaries.stream().map(Map.Entry::getValue)
                         .allMatch(tv -> {
                             Set<FieldInfo> linkedFields = tv.linkedVariables.get().stream()
                                     .filter(v -> v instanceof FieldReference)
@@ -566,7 +527,7 @@ public class TypeAnalyser {
                         });
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
+                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                     return true;
                 }
@@ -578,12 +539,11 @@ public class TypeAnalyser {
         return true;
     }
 
-    private static Boolean parentOrEnclosingMustHaveTheSameProperty(TypeInfo typeInfo, VariableProperty variableProperty,
-                                                                    Function<Integer, Integer> mapProperty,
-                                                                    int falseValue) {
-        List<TypeInfo> parentAndOrEnclosing = parentAndOrEnclosing(typeInfo);
-        List<Integer> propertyValues = parentAndOrEnclosing.stream()
-                .map(t -> mapProperty.apply(t.typeAnalysis.get().getProperty(variableProperty)))
+    private Boolean parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty,
+                                                             Function<Integer, Integer> mapProperty,
+                                                             int falseValue) {
+        List<Integer> propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
+                .map(typeAnalysis -> mapProperty.apply(typeAnalysis.getProperty(variableProperty)))
                 .collect(Collectors.toList());
         if (propertyValues.stream().anyMatch(level -> level == Level.DELAY)) {
             log(DELAYED, "Waiting with {} on {}, parent or enclosing class's status not yet known",
@@ -598,32 +558,6 @@ public class TypeAnalyser {
         return false;
     }
 
-    private static List<TypeInfo> parentAndOrEnclosing(TypeInfo typeInfo) {
-        Either<String, TypeInfo> pe = typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType;
-        return ListUtil.immutableConcat(
-                pe.isRight() && !typeInfo.isStatic() ? List.of(pe.getRight()) : List.of(),
-                typeInfo.typeInspection.getPotentiallyRun().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT ?
-                        List.of(typeInfo.typeInspection.getPotentiallyRun().parentClass.typeInfo) : List.of()
-        );
-    }
-    /*
-       List<TypeInfo> mustBeE1Too = parentAndOrEnclosing(typeInfo);
-        List<Integer> mustBeE1TooLevels = mustBeE1Too.stream()
-                .map(t -> MultiLevel.value(t.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE))
-                .collect(Collectors.toList());
-        if (mustBeE1TooLevels.stream().anyMatch(level -> level == MultiLevel.DELAY)) {
-            log(DELAYED, "Waiting with E1Immutable on {}, parent or enclosing class's E1Immutable status not yet known",
-                    typeInfo.fullyQualifiedName);
-            return false;
-        }
-        if (mustBeE1TooLevels.stream().anyMatch(level -> level != MultiLevel.EFFECTIVE)) {
-            log(DELAYED, "{} cannot be level 1 immutable, parent or enclosing class is not", typeInfo.fullyQualifiedName);
-            typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
-            return true;
-        }
-
-     */
-
     /**
      * Rules as of 30 July 2020: Definition on top of @E1Immutable
      * <p>
@@ -633,12 +567,9 @@ public class TypeAnalyser {
      * <p>
      * RULE 3: All methods and constructors must be independent of the @SupportData fields
      *
-     * @param typeInfo The type to be analysed
      * @return true if a change was made to typeAnalysis
      */
-    private boolean analyseEffectivelyEventuallyE2Immutable(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-
+    private boolean analyseEffectivelyEventuallyE2Immutable() {
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE2Immutable = MultiLevel.value(typeImmutable, MultiLevel.E2IMMUTABLE);
         if (typeE2Immutable != MultiLevel.DELAY) return false; // we have a decision already
@@ -649,7 +580,7 @@ public class TypeAnalyser {
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
 
-        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(typeInfo, VariableProperty.IMMUTABLE,
+        Boolean parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
                 i -> convertMultiLevelEventualToDelayTrue(MultiLevel.value(i, MultiLevel.E2IMMUTABLE)), no);
         if (parentOrEnclosing == null) return false;
         if (parentOrEnclosing) return true;
@@ -657,10 +588,13 @@ public class TypeAnalyser {
         boolean eventual = typeAnalysis.isEventual();
         boolean haveToEnforcePrivateAndIndependenceRules = false;
 
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
-            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
+            FieldAnalysis fieldAnalysis = fieldAnalyser.fieldAnalysis;
+            FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
+            String fieldFQN = fieldInfo.fullyQualifiedName();
+
             if (!fieldAnalysis.isOfImplicitlyImmutableDataType.isSet()) {
-                log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
+                log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldFQN);
                 return false;
             }
             // RULE 1: ALL FIELDS MUST BE NOT MODIFIED
@@ -675,7 +609,7 @@ public class TypeAnalyser {
             }
             // part of rule 2: we now need to check that @NotModified is on the field
             if (fieldE2Immutable == MultiLevel.DELAY) {
-                log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldInfo.fullyQualifiedName());
+                log(DELAYED, "Field {} not known yet if @E2Immutable, delaying @E2Immutable on type", fieldFQN);
                 return false;
             }
 
@@ -689,7 +623,7 @@ public class TypeAnalyser {
 
                 // we check on !eventual, because in the eventual case, there are no modifying methods callable anymore
                 if (!eventual && modified == Level.DELAY) {
-                    log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldInfo.fullyQualifiedName());
+                    log(DELAYED, "Field {} not known yet if @NotModified, delaying E2Immutable on type", fieldFQN);
                     return false;
                 }
                 if (!eventual && modified == Level.TRUE) {
@@ -709,51 +643,51 @@ public class TypeAnalyser {
                         return true;
                     }
                 } else {
-                    log(E2IMMUTABLE, "Ignoring private modifier check of {}, self-referencing", fieldInfo.fullyQualifiedName());
+                    log(E2IMMUTABLE, "Ignoring private modifier check of {}, self-referencing", fieldFQN);
                 }
             }
         }
 
         if (haveToEnforcePrivateAndIndependenceRules) {
 
-            for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().constructors) {
-                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            for (MethodAnalyser constructor : myConstructors) {
+                int independent = constructor.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                 if (independent == Level.DELAY) {
-                    log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}", methodInfo.distinguishingName());
+                    log(DELAYED, "Cannot decide yet about E2Immutable class, no info on @Independent in constructor {}",
+                            constructor.methodInfo.distinguishingName());
                     return false; //not decided
                 }
                 if (independent == Level.FALSE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
-                            typeInfo.fullyQualifiedName, methodInfo.name);
+                            typeInfo.fullyQualifiedName, constructor.methodInfo.name);
                     typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                     return true;
                 }
             }
 
-            for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods) {
-                if (methodInfo.isVoid()) continue; // we're looking at return types
-                int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
+                if (methodAnalyser.methodInfo.isVoid()) continue; // we're looking at return types
+                int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED);
                 // in the eventual case, we only need to look at the non-modifying methods
                 // calling a modifying method will result in an error
                 if (modified == Level.FALSE || !typeAnalysis.isEventual()) {
-                    MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-                    int returnTypeImmutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                    int returnTypeImmutable = methodAnalyser.methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     int returnTypeE2Immutable = MultiLevel.value(returnTypeImmutable, MultiLevel.E2IMMUTABLE);
                     if (returnTypeE2Immutable == MultiLevel.DELAY) {
-                        log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodInfo.distinguishingName());
+                        log(DELAYED, "Return type of {} not known if @E2Immutable, delaying", methodAnalyser.methodInfo.distinguishingName());
                         return false;
                     }
                     if (returnTypeE2Immutable < MultiLevel.EVENTUAL) {
                         // rule 5, continued: if not primitive, not E2Immutable, then the result must be Independent of the support types
-                        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+                        int independent = methodAnalyser.methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
                         if (independent == Level.DELAY) {
                             log(DELAYED, "Cannot decide yet if {} is an E2Immutable class; not enough info on whether the method {} is @Independent",
-                                    typeInfo.fullyQualifiedName, methodInfo.name);
+                                    typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                             return false; //not decided
                         }
                         if (independent == MultiLevel.FALSE) {
                             log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
-                                    typeInfo.fullyQualifiedName, methodInfo.name);
+                                    typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                             typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
                             return true;
                         }
@@ -774,8 +708,7 @@ public class TypeAnalyser {
         return Level.FALSE;
     }
 
-    private boolean analyseExtensionClass(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+    private boolean analyseExtensionClass() {
         int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
         if (extensionClass != Level.DELAY) return false;
 
@@ -792,7 +725,7 @@ public class TypeAnalyser {
 
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInspection.methods) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
                 ParameterizedType typeOfFirstParameter;
@@ -822,8 +755,7 @@ public class TypeAnalyser {
         return true;
     }
 
-    private boolean analyseUtilityClass(TypeInfo typeInfo) {
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
+    private boolean analyseUtilityClass() {
         int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
         if (utilityClass != Level.DELAY) return false;
 
@@ -838,7 +770,7 @@ public class TypeAnalyser {
             return true;
         }
 
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
+        for (MethodInfo methodInfo : typeInspection.methods) {
             if (!methodInfo.isStatic) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
@@ -847,7 +779,7 @@ public class TypeAnalyser {
             }
         }
         // this is technically enough, but we'll verify the constructors (should be private)
-        for (MethodInfo constructor : typeInfo.typeInspection.getPotentiallyRun().constructors) {
+        for (MethodInfo constructor : typeInspection.constructors) {
             if (!constructor.isPrivate()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
@@ -856,7 +788,7 @@ public class TypeAnalyser {
             }
         }
 
-        if (typeInfo.typeInspection.getPotentiallyRun().constructors.isEmpty()) {
+        if (typeInspection.constructors.isEmpty()) {
             log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
@@ -864,16 +796,16 @@ public class TypeAnalyser {
         }
 
         // and there should be no means of generating an object
-        for (MethodInfo methodInfo : typeInfo.typeInspection.getPotentiallyRun().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
-            if (!methodInfo.methodAnalysis.get().createObjectOfSelf.isSet()) {
+        for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
+            if (!methodAnalyser.methodAnalysis.createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
-                        typeInfo.fullyQualifiedName, methodInfo.name);
+                        typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                 return false;
             }
-            if (methodInfo.methodAnalysis.get().createObjectOfSelf.get()) {
+            if (methodAnalyser.methodAnalysis.createObjectOfSelf.get()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
-                        + methodInfo.fullyQualifiedName());
+                        + methodAnalyser.methodInfo.fullyQualifiedName());
                 typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);
                 return true;
             }

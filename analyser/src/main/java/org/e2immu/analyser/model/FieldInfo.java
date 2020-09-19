@@ -18,10 +18,15 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.Analyser;
+import org.e2immu.analyser.analyser.FieldAnalyser;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;

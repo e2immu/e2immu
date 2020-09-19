@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -30,6 +31,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeAnalysis extends Analysis {
 
@@ -47,7 +51,7 @@ public class TypeAnalysis extends Analysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return typeInfo.typeInspection.getPotentiallyRun().annotationMode;
+        return typeInfo.typeInspection.get().annotationMode;
     }
 
     // computed during inspection

@@ -19,13 +19,16 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckSize;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
@@ -33,35 +36,45 @@ import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Messages messages = new Messages();
+    public final ParameterInfo parameterInfo;
+    public final ParameterAnalysis parameterAnalysis;
+    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
-    public ParameterAnalyser(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
+
+    public ParameterAnalyser(ParameterInfo parameterInfo, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        this.parameterInfo = parameterInfo;
+        parameterAnalysis = new ParameterAnalysis(parameterInfo);
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
-    public void check(ParameterInfo parameterInfo) {
+    public void initialize(Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
+        this.fieldAnalysers = fieldAnalysers;
+    }
+
+    public void check() {
         // before we check, we copy the properties into annotations
-        parameterInfo.parameterAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+        parameterAnalysis.transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
-        check(parameterInfo, NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
-        check(parameterInfo, NotNull.class, List.of(e2ImmuAnnotationExpressions.notNull.get(),
+        check(NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
+        check(NotNull.class, List.of(e2ImmuAnnotationExpressions.notNull.get(),
                 e2ImmuAnnotationExpressions.notNull1.get(),
                 e2ImmuAnnotationExpressions.notNull2.get()));
-        check(parameterInfo, NotNull1.class, List.of(e2ImmuAnnotationExpressions.notNull1.get(), e2ImmuAnnotationExpressions.notNull2.get()));
-        check(parameterInfo, NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
-        check(parameterInfo, NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+        check(NotNull1.class, List.of(e2ImmuAnnotationExpressions.notNull1.get(), e2ImmuAnnotationExpressions.notNull2.get()));
+        check(NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
+        check(NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
 
         // opposites
-        check(parameterInfo, Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
-        check(parameterInfo, Modified.class, e2ImmuAnnotationExpressions.modified.get());
+        check(Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
+        check(Modified.class, e2ImmuAnnotationExpressions.modified.get());
 
         CheckSize.checkSizeForParameters(messages, parameterInfo);
     }
 
-    private void check(ParameterInfo parameterInfo, Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
+    private void check(Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
         parameterInfo.error(annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
@@ -69,7 +82,7 @@ public class ParameterAnalyser {
         });
     }
 
-    private void check(ParameterInfo parameterInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
+    private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         parameterInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
@@ -86,41 +99,39 @@ public class ParameterAnalyser {
      */
     public boolean analyse(VariableProperties methodProperties) {
         boolean changed = false;
-        for (ParameterInfo parameterInfo : methodProperties.getCurrentMethod().methodInspection.get().parameters) {
-            ParameterAnalysis parameterAnalysis = parameterInfo.parameterAnalysis.get();
-            if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
-                FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
-                FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-                boolean delays = false;
-                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
-                    int inField = fieldAnalysis.getProperty(variableProperty);
-                    if (inField != Level.DELAY) {
-                        int inParameter = parameterAnalysis.getProperty(variableProperty);
-                        if (inField > inParameter && verifySizeNotModified(variableProperty, parameterInfo, parameterAnalysis)) {
-                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                    fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
-                            parameterAnalysis.setProperty(methodProperties, variableProperty, inField);
-                            changed = true;
-                        }
-                    } else {
-                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
-                        delays = true;
+        if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
+            FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
+            FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
+            boolean delays = false;
+            for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
+                int inField = fieldAnalysis.getProperty(variableProperty);
+                if (inField != Level.DELAY) {
+                    int inParameter = parameterAnalysis.getProperty(variableProperty);
+                    if (inField > inParameter && verifySizeNotModified(variableProperty)) {
+                        log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                                fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
+                        parameterAnalysis.setProperty(methodProperties, variableProperty, inField);
+                        changed = true;
                     }
-                }
-                if (!delays) {
-                    log(ANALYSER, "No delays anymore on copying from field to parameter");
-                    parameterAnalysis.copiedFromFieldToParameters.set(true);
-                    changed = true;
+                } else {
+                    log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                    delays = true;
                 }
             }
+            if (!delays) {
+                log(ANALYSER, "No delays anymore on copying from field to parameter");
+                parameterAnalysis.copiedFromFieldToParameters.set(true);
+                changed = true;
+            }
         }
+
         return changed;
     }
 
     /**
      * we only copy SIZE when it is also not MODIFIED!
      */
-    private static boolean verifySizeNotModified(VariableProperty variableProperty, ParameterInfo parameterInfo, ParameterAnalysis parameterAnalysis) {
+    private boolean verifySizeNotModified(VariableProperty variableProperty) {
         if (variableProperty != VariableProperty.SIZE) return true;
         int modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
         boolean accept = modified != Level.TRUE;

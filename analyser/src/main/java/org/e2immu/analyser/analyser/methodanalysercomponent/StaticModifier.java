@@ -6,6 +6,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.annotation.NotModified;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,7 +22,7 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 public class StaticModifier {
 
-    public static boolean computeStaticMethodCallsOnly(MethodInfo methodInfo, MethodAnalysis methodAnalysis, List<NumberedStatement> numberedStatements) {
+    public static boolean computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodAnalysis methodAnalysis, List<NumberedStatement> numberedStatements) {
         if (!methodAnalysis.staticMethodCallsOnly.isSet()) {
             if (methodInfo.isStatic) {
                 methodAnalysis.staticMethodCallsOnly.set(true);
@@ -74,7 +75,7 @@ public class StaticModifier {
         return true; // continue
     }
 
-    public static void detectMissingStaticModifier(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public static void detectMissingStaticModifier(Messages messages, @NotModified MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         if (!methodAnalysis.complainedAboutMissingStaticModifier.isSet()) {
             if (!methodInfo.isStatic && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
                 // we need to check if there's fields being read/assigned/

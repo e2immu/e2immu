@@ -708,7 +708,7 @@ public class StatementAnalyser {
         int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
         if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
 
-        int modified = methodCall.methodInfo.getAnalysis().getProperty(VariableProperty.MODIFIED);
+        int modified = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         if (modified == Level.FALSE) {
             messages.add(Message.newMessage(new Location(methodInfo, statement.index),
                     Message.IGNORING_RESULT_OF_METHOD_CALL));
