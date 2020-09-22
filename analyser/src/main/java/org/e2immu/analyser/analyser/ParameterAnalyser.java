@@ -49,6 +49,10 @@ public class ParameterAnalyser {
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
+    public ParameterAnalysis getParameterAnalysis() {
+        return parameterAnalysis;
+    }
+
     public void initialize(Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
         this.fieldAnalysers = fieldAnalysers;
     }

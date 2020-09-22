@@ -18,15 +18,16 @@
 
 package org.e2immu.analyser.model.expression;
 
-
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
 
-public class StringConstant implements Expression, Constant<String> {
+@E2Container
+public class StringConstant implements ConstantExpression<String> {
     @Override
     public ParameterizedType returnType() {
         return Primitives.PRIMITIVES.stringParameterizedType;
@@ -35,13 +36,13 @@ public class StringConstant implements Expression, Constant<String> {
     @NotNull
     public final String constant;
 
-    @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new StringValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
-    }
-
     public StringConstant(@NotNull String constant) {
         this.constant = Objects.requireNonNull(constant);
+    }
+
+    @Override
+    public Value newValue() {
+        return new StringValue(constant);
     }
 
     @Override

@@ -394,7 +394,7 @@ public class ExpressionContext {
                 return new BooleanConstant(booleanLiteralExpr.getValue());
             }
             if (expression.isNullLiteralExpr()) {
-                return NullConstant.nullConstant;
+                return NullConstant.NULL_CONSTANT;
             }
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;

@@ -18,35 +18,36 @@
 package org.e2immu.analyser.model.expression.util;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
-import static org.e2immu.analyser.util.Logger.LogTarget.NOT_NULL;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class EvaluateParameters {
 
-    public static List<Value> transform(List<Expression> parameterExpressions,
-                                        EvaluationContext evaluationContext,
-                                        EvaluationVisitor visitor,
-                                        MethodInfo methodInfo,
-                                        int notModified1Scope,
-                                        Value scopeObject) {
-        List<Value> parameterValues = new ArrayList<>();
+    public static Pair<EvaluationResult.Builder, List<Value>> transform(List<Expression> parameterExpressions,
+                                                                        EvaluationContext evaluationContext,
+                                                                        MethodInfo methodInfo,
+                                                                        int notModified1Scope,
+                                                                        Value scopeObject) {
+        int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().parameters.size();
+        List<Value> parameterValues = new ArrayList<>(n);
+        List<EvaluationResult> parameterResults = new ArrayList<>(n);
         int i = 0;
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
+
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(parameterResults);
+
         for (Expression parameterExpression : parameterExpressions) {
             Value parameterValue;
+            EvaluationResult parameterResult;
             if (methodInfo != null) {
                 List<ParameterInfo> params = methodInfo.methodInspection.get().parameters;
                 ParameterInfo parameterInfo;
@@ -84,15 +85,17 @@ public class EvaluateParameters {
                     Boolean undeclared = tryToDetectUndeclared(evaluationContext, parameterExpression);
                     if (undeclared == Boolean.TRUE &&
                             evaluationContext.getCurrentMethod() != null &&
-                            !evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.isSet(methodInfo)) {
-                        evaluationContext.getCurrentMethod().methodAnalysis.get().copyModificationStatusFrom.put(methodInfo, true);
+                            !evaluationContext.getCurrentMethod().methodAnalysis.copyModificationStatusFrom.isSet(methodInfo)) {
+                        evaluationContext.getCurrentMethod().methodAnalysis.copyModificationStatusFrom.put(methodInfo, true);
                     }
                 }
                 int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
                 minNotNullOverParameters = Math.min(minNotNullOverParameters, notNull);
 
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
-                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, forward);
+                parameterResult = parameterExpression.evaluate(evaluationContext, forward);
+                parameterResults.add(parameterResult);
+                parameterValue = parameterResult.value;
 
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
@@ -100,12 +103,15 @@ public class EvaluateParameters {
                     source.delay();
                 } else {
                     ObjectFlow destination = parameterInfo.parameterAnalysis.get().getObjectFlow();
-                    evaluationContext.addCallOut(modified == Level.TRUE, destination, parameterValue);
+                    builder.addCallOut(modified == Level.TRUE, destination, parameterValue);
                 }
             } else {
-                parameterValue = parameterExpression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT);
+                parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                parameterValue = parameterResult.value;
+                parameterResults.add(parameterResult);
             }
 
+            builder.compose(parameterResult);
             parameterValues.add(parameterValue);
             i++;
         }
@@ -117,7 +123,7 @@ public class EvaluateParameters {
                 scopeObject != null &&
                 methodInfo.typeInfo.isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(ValueWithVariable.class)) != null) {
-            evaluationContext.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
+            builder.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
         if (methodInfo != null && methodInfo.methodAnalysis.isSet() && methodInfo.methodAnalysis.get().precondition.isSet()) {
@@ -132,7 +138,7 @@ public class EvaluateParameters {
             Map<Variable, Value> individualNullClauses = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause).accepted;
             for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
                 if (!(nullClauseEntry.getValue().isInstanceOf(NullValue.class)) && nullClauseEntry.getKey() instanceof ParameterInfo) {
-                    evaluationContext.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    builder.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 }
             }
 
@@ -143,7 +149,7 @@ public class EvaluateParameters {
                 if (sizeRestriction.getKey() instanceof ParameterInfo) {
                     int v = sizeRestriction.getValue().encodedSizeRestriction();
                     if (v > Level.NOT_A_SIZE) {
-                        evaluationContext.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
+                        builder.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
                     }
                 }
             }
@@ -152,10 +158,10 @@ public class EvaluateParameters {
             // TODO: also weed out conditions that are not on parameters, and not on `this`
             Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, Value::isIndividualSizeRestrictionOnParameter).rest;
             if (rest != null) {
-                evaluationContext.addPrecondition(rest);
+                builder.addPrecondition(rest);
             }
         }
-        return parameterValues;
+        return new Pair<>(builder, parameterValues);
     }
 
     public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {

@@ -22,11 +22,12 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ByteValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-@E2Immutable
-public class ByteConstant implements Expression, Constant<Byte> {
+@E2Container
+public class ByteConstant implements ConstantExpression<Byte> {
     @Override
     @NotNull
     public ParameterizedType returnType() {
@@ -52,9 +53,8 @@ public class ByteConstant implements Expression, Constant<Byte> {
     }
 
     @Override
-    @NotNull
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new ByteValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
+    public Value newValue() {
+        return new ByteValue(constant);
     }
 
     @Override

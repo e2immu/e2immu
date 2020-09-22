@@ -18,15 +18,15 @@
 
 package org.e2immu.analyser.model.expression;
 
-
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.FloatValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-@E2Immutable
-public class FloatConstant implements Expression, Constant<Float> {
+@E2Container
+public class FloatConstant implements ConstantExpression<Float> {
     @Override
     @NotNull
     public ParameterizedType returnType() {
@@ -52,8 +52,7 @@ public class FloatConstant implements Expression, Constant<Float> {
     }
 
     @Override
-    @NotNull
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public Value newValue() {
         return constant;
     }
 

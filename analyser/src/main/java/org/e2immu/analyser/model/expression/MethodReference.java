@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
@@ -27,13 +26,10 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -74,7 +70,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         Objects.requireNonNull(evaluationContext);
         // we know the method we're passing on...
-        if (evaluationContext.getCurrentType().inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
+        if (evaluationContext.getCurrentType().typeInfo.inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
             return SideEffect.NONE_CONTEXT;
         }
         // no idea which method we're passing on... should not be a problem
@@ -82,50 +78,52 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
 
-        Value value = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
-        Value result;
+        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+
+        EvaluationResult scopeResult = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        builder.compose(scopeResult);
 
         if (methodInfo.isConstructor) {
             // construction, similar to NewObject, without parameters
             // TODO arrays?
-            result = new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext);
+            builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext));
         } else {
             // normal method call, very similar to MethodCall.evaluate
-
+            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             // check the not-null aspect
-            int notNull = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+            int notNull = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             int forwardNotNull = MultiLevel.value(forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
 
             if (forwardNotNull == MultiLevel.EFFECTIVE && notNull == MultiLevel.FALSE) {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
-                evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
+                builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
             }
+            Value result;
             ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
-            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
-                Value singleValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            if (methodAnalysis.singleReturnValue.isSet()) {
+                Value singleValue = methodAnalysis.singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {
-                    if (value instanceof NullValue) {
-                        evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+                    if (scopeResult.value instanceof NullValue) {
+                        builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodValue(methodInfo, value, List.of(), objectFlow);
+                    result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasBeenDefined()) {
                 result = UnknownValue.NO_VALUE; // delay, waiting
             } else {
-                if (value instanceof NullValue) {
-                    evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+                if (scopeResult.value instanceof NullValue) {
+                    builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodValue(methodInfo, value, List.of(), objectFlow);
+                result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
             }
-
+            builder.setValue(result);
         }
-        visitor.visit(this, evaluationContext, result);
-        return result;
+        return builder.build();
     }
 
     @Override

@@ -18,7 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -34,11 +34,13 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
@@ -80,21 +82,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        StatementAnalyser.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
 
         // potential circular reference?
         boolean alwaysModifying;
         boolean delayUndeclared = false;
 
         if (evaluationContext.getCurrentMethod() != null) {
-            MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethod().methodAnalysis.get();
-            TypeInfo primaryType = evaluationContext.getCurrentType().primaryType();
-            assert primaryType.typeAnalysis.isSet() : "Type analysis of " + primaryType.fullyQualifiedName + " not set";
-            assert primaryType.typeAnalysis.get().circularDependencies.isSet() :
-                    "Circular dependencies of type " + primaryType.fullyQualifiedName + " not yet set";
+            MethodAnalysis currentMethodAnalysis = evaluationContext.getCurrentMethodAnalysis();
+            TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType;
+            TypeAnalysis currentPrimaryTypeAnalysis = evaluationContext.getCurrentPrimaryTypeAnalysis();
 
-            boolean circularCall = primaryType.typeAnalysis.get().circularDependencies.get().contains(methodInfo.typeInfo);
+            assert currentPrimaryTypeAnalysis.circularDependencies.isSet() :
+                    "Circular dependencies of type " + currentPrimaryType.fullyQualifiedName + " not yet set";
+
+            boolean circularCall = currentPrimaryTypeAnalysis.circularDependencies.get().contains(methodInfo.typeInfo);
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
                 Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
@@ -103,16 +107,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 undeclaredFunctionalInterface = false;
             }
-            if ((circularCall || undeclaredFunctionalInterface) && !methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
-                methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+            if ((circularCall || undeclaredFunctionalInterface) && !currentMethodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+                currentMethodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
             }
             alwaysModifying = circularCall || undeclaredFunctionalInterface;
         } else {
             alwaysModifying = false;
         }
 
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+
         // is the method modifying, do we need to wait?
-        int modified = alwaysModifying ? Level.TRUE : methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int modified = alwaysModifying ? Level.TRUE : methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -120,22 +126,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
         // scope
-        Value objectValue = computedScope.evaluate(evaluationContext, visitor, new ForwardEvaluationInfo(Map.of(
+        EvaluationResult objectResult = computedScope.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
                 VariableProperty.MODIFIED, modified), true));
 
-
         // null scope
+        Value objectValue = objectResult.value;
         if (objectValue.isInstanceOf(NullValue.class)) {
-            evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
 
         // process parameters
         int notModified1Scope = objectValue.getProperty(evaluationContext, VariableProperty.NOT_MODIFIED_1);
-        List<Value> parameterValues = EvaluateParameters.transform(parameterExpressions, evaluationContext, visitor,
-                methodInfo, notModified1Scope, objectValue);
+        Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
+        List<Value> parameterValues = res.v;
+        builder.compose(objectResult, res.k.build());
 
         // access
         ObjectFlow objectFlow = objectValue.getObjectFlow();
@@ -146,23 +153,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
                 MethodAccess methodAccess = new MethodAccess(methodInfo, flowsOfArguments);
-                evaluationContext.addAccess(modified == Level.TRUE, methodAccess, objectValue);
+                builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
         ValueWithVariable valueWithVariable;
         if (modified == Level.TRUE && (valueWithVariable = objectValue.asInstanceOf(ValueWithVariable.class)) != null) {
-            evaluationContext.modifyingMethodAccess(valueWithVariable.variable);
+            builder.modifyingMethodAccess(valueWithVariable.variable);
         }
 
         // @Only check
-        checkOnly(objectFlow, evaluationContext);
+        checkOnly(builder, objectFlow);
 
         // return value
         ObjectFlow objectFlowOfResult;
         if (!methodInfo.returnType().isVoid()) {
-            ObjectFlow returnedFlow = methodInfo.methodAnalysis.get().getObjectFlow();
+            ObjectFlow returnedFlow = methodAnalysis.getObjectFlow();
 
-            objectFlowOfResult = evaluationContext.createInternalObjectFlow(methodInfo.returnType(), Origin.RESULT_OF_METHOD);
+            objectFlowOfResult = builder.createInternalObjectFlow(methodInfo.returnType(), Origin.RESULT_OF_METHOD);
             objectFlowOfResult.addPrevious(returnedFlow);
             // cross-link, possible because returnedFlow is already permanent
             // TODO ObjectFlow check cross-link
@@ -173,18 +180,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         Value result;
         if (!methodInfo.isVoid()) {
-            complianceWithForwardRequirements(methodInfo.methodAnalysis.get(), forwardEvaluationInfo, evaluationContext, contentNotNullRequired);
+            MethodInspection methodInspection = methodInfo.methodInspection.get();
+            complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            result = methodValue(evaluationContext, methodInfo, objectValue, parameterValues, objectFlowOfResult);
+            result = methodValue(builder, evaluationContext, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
+        builder.setValue(result);
 
-        visitor.visit(this, evaluationContext, result);
+        checkCommonErrors(builder, evaluationContext, objectValue);
 
-        checkCommonErrors(evaluationContext, objectValue);
-
-        return result;
+        return builder.build();
     }
 
 
@@ -195,7 +202,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return MultiLevel.EFFECTIVELY_NOT_NULL;
     }
 
-    private void checkOnly(ObjectFlow objectFlow, EvaluationContext evaluationContext) {
+    private void checkOnly(EvaluationResult.Builder builder, ObjectFlow objectFlow) {
         Optional<AnnotationExpression> oOnly = methodInfo.methodInspection.get().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Only.class.getName())).findFirst();
         if (oOnly.isPresent()) {
@@ -204,25 +211,25 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (!before.isEmpty()) {
                 Set<String> marks = objectFlow.marks();
                 if (marks.contains(before)) {
-                    evaluationContext.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
+                    builder.raiseError(Message.ONLY_BEFORE, methodInfo.fullyQualifiedName() +
                             ", mark \"" + before + "\"");
                 }
             } else {
                 String after = ae.extract("after", "");
                 Set<String> marks = objectFlow.marks();
                 if (!marks.contains(after)) {
-                    evaluationContext.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
+                    builder.raiseError(Message.ONLY_AFTER, methodInfo.fullyQualifiedName() +
                             ", mark \"" + after + "\"");
                 }
             }
         }
     }
 
-    private void checkCommonErrors(EvaluationContext evaluationContext, Value objectValue) {
+    private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value objectValue) {
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.type();
             if (type != null && type.typeInfo != null && type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo) {
-                evaluationContext.raiseError(Message.UNNECESSARY_METHOD_CALL);
+                builder.raiseError(Message.UNNECESSARY_METHOD_CALL);
             }
         }
 
@@ -232,15 +239,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             method = methodInfo;
         }
-        int modified = method.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(method);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int immutable = objectValue.getProperty(evaluationContext, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
-            evaluationContext.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
+            builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.type());
         }
     }
 
-    public static Value methodValue(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue, List<Value> parameters, ObjectFlow objectFlowOfResult) {
+    public Value methodValue(EvaluationResult.Builder builder,
+                             EvaluationContext evaluationContext,
+                             MethodAnalysis methodAnalysis,
+                             Value objectValue,
+                             List<Value> parameters,
+                             ObjectFlow objectFlowOfResult) {
         Objects.requireNonNull(evaluationContext);
 
         // no value (method call on field that does not have effective value yet)
@@ -255,12 +268,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // @Size as method annotation
-        Value sizeShortCut = computeSize(methodInfo, objectValue, parameters, evaluationContext);
+        Value sizeShortCut = computeSize(builder, methodAnalysis, objectValue, parameters, evaluationContext);
         if (sizeShortCut != null) {
             return sizeShortCut;
         }
-
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
         // @Identity as method annotation
         Value identity = computeIdentity(methodAnalysis, parameters, objectFlowOfResult);
@@ -275,7 +286,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         InlineValue inlineValue;
-        if (methodInfo.typeInfo.isFunctionalInterface() && (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
+        if (methodInfo.typeInfo.isFunctionalInterface() &&
+                (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
             Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
             return inlineValue.reEvaluate(evaluationContext, translationMap);
@@ -294,12 +306,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Variable variable = ((ValueWithVariable) iv.value).variable;
                     if (variable instanceof FieldReference) {
                         FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                        if (fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.TRUE) {
+                        FieldAnalysis fieldAnalysis = evaluationContext.getFieldAnalysis(fieldInfo);
+                        if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
                             Instance instance = (Instance) objectValue;
                             int i = 0;
-                            for (ParameterInfo parameterInfo : instance.constructor.methodInspection.get().parameters) {
-                                if (parameterInfo.parameterAnalysis.get().assignedToField.isSet() &&
-                                        parameterInfo.parameterAnalysis.get().assignedToField.get() == fieldInfo) {
+                            List<ParameterAnalysis> parameterAnalyses = evaluationContext
+                                    .getParameterAnalyses(instance.constructor).collect(Collectors.toList());
+                            for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
+                                if (parameterAnalysis.assignedToField.isSet() &&
+                                        parameterAnalysis.assignedToField.get() == fieldInfo) {
                                     return instance.constructorParameterValues.get(i);
                                 }
                                 i++;
@@ -307,13 +322,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         }
                     }
                 }
-                Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
+                Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext,
+                        methodInfo, parameters);
                 return srv.reEvaluate(evaluationContext, translationMap);
             }
             if (srv.isConstant()) {
                 return srv;
             }
-        } else if (methodInfo.hasBeenDefined()) {
+        } else if (methodAnalysis.hasBeenDefined) {
             // we will, at some point, analyse this method
             return UnknownValue.NO_VALUE;
         }
@@ -332,10 +348,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return null;
     }
 
-    private void complianceWithForwardRequirements(MethodAnalysis methodAnalysis,
-                                                   ForwardEvaluationInfo forwardEvaluationInfo,
-                                                   EvaluationContext evaluationContext,
-                                                   boolean contentNotNullRequired) {
+    private static void complianceWithForwardRequirements(EvaluationResult.Builder builder,
+                                                          MethodAnalysis methodAnalysis,
+                                                          MethodInspection methodInspection,
+                                                          ForwardEvaluationInfo forwardEvaluationInfo,
+                                                          boolean contentNotNullRequired) {
         if (!contentNotNullRequired) {
             int requiredNotNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
             if (MultiLevel.isEffectivelyNotNull(requiredNotNull)) {
@@ -343,8 +360,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (methodNotNull != Level.DELAY) {
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
-                        evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Result of method call " + methodInfo.distinguishingName());
+                        builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                                "Result of method call " + methodInspection.distinguishingName);
                     }
                 } // else: delaying is fine
             }
@@ -354,7 +371,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (requiredSize > Level.IS_A_SIZE) {
             int currentSize = methodAnalysis.getProperty(VariableProperty.SIZE);
             if (!Level.compatibleSizes(currentSize, requiredSize)) {
-                evaluationContext.raiseError(Message.POTENTIAL_SIZE_PROBLEM);
+                builder.raiseError(Message.POTENTIAL_SIZE_PROBLEM);
             }
         }
     }
@@ -380,55 +397,61 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
     }
 
-    private static Value computeSize(MethodInfo methodInfo, Value objectValue, List<Value> parameters, EvaluationContext evaluationContext) {
-        // if (!computedScope.returnType().hasSize()) return null; // this type does not do size computations
+    private Value computeSize(EvaluationResult.Builder builder,
+                              MethodAnalysis methodAnalysis,
+                              Value objectValue,
+                              List<Value> parameters,
+                              EvaluationContext evaluationContext) {
         if (!methodInfo.typeInfo.hasSize()) return null;
 
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             return null; // ignore
         }
         if (modified == Level.TRUE) {
-            return computeSizeModifyingMethod(methodInfo, objectValue, evaluationContext);
+            MethodAnalyser methodAnalyser = evaluationContext.getMethodAnalysers().get(methodInfo);
+            Stream<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(methodInfo);
+
+            return computeSizeModifyingMethod(builder, methodAnalysis, parameterAnalyses, objectValue, evaluationContext);
         }
 
-        int requiredSize = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+        int requiredSize = methodAnalysis.getProperty(VariableProperty.SIZE);
         if (requiredSize <= Level.NOT_A_SIZE) return null;
         // we have an @Size annotation on the method that we're calling
         int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
 
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
+        MethodAnalysis sizeMethodAnalysis = evaluationContext.getMethodAnalysis(methodInfo.typeInfo.sizeMethod());
 
-        // TODO causes null pointer exception
         if (methodInfo.returnType().isBoolean()) {
             // there is an @Size annotation on a method returning a boolean...
             if (sizeOfObject <= Level.IS_A_SIZE) {
                 log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
-                return sizeMethodValue(methodInfo, objectValue, requiredSize, evaluationContext);
+                return sizeMethodValue(builder, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize);
             }
             // we have a requirement, and we have a size.
             if (Level.haveEquals(requiredSize)) {
                 // we require a fixed size.
                 if (Level.haveEquals(sizeOfObject)) {
-                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
                     return sizeOfObject == requiredSize ? BoolValue.TRUE : BoolValue.FALSE;
                 }
                 if (sizeOfObject > requiredSize) {
                     log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
-                    evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                    builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     return BoolValue.FALSE;
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-                return sizeMethodValue(methodInfo, objectValue, requiredSize, evaluationContext); // we want =3, but we have >= 2; could be anything
+                return sizeMethodValue(builder, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
             }
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
-                evaluationContext.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
+                builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                 return BoolValue.TRUE;
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-            return sizeMethodValue(methodInfo, objectValue, requiredSize, evaluationContext);
+            return sizeMethodValue(builder, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize);
         }
 
         // SITUATION 2: @Size int size(): this method returns the size
@@ -436,7 +459,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (Level.haveEquals(sizeOfObject)) {
                 return new IntValue(Level.decodeSizeEquals(sizeOfObject));
             }
-            ObjectFlow objectFlow = sizeObjectFlow(methodInfo, evaluationContext, objectValue);
+            ObjectFlow objectFlow = sizeObjectFlow(builder, sizeMethodAnalysis, objectValue);
             return ConstrainedNumericValue.lowerBound(new MethodValue(methodInfo, objectValue, parameters, objectFlow),
                     Level.decodeSizeMin(sizeOfObject));
         }
@@ -445,14 +468,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // instead of returning isEmpty(), we return size() == 0
     // instead of returning isNotEmpty(), we return size() >= 1
-    private static Value sizeMethodValue(MethodInfo methodInfo, Value objectValue, int requiredSize, EvaluationContext evaluationContext) {
-        MethodInfo sizeMethodInfo = methodInfo.typeInfo.sizeMethod();
-        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(sizeMethodInfo, objectValue, evaluationContext);
+    private static Value sizeMethodValue(EvaluationResult.Builder builder, EvaluationContext evaluationContext,
+                                         MethodAnalysis sizeMethodAnalysis, Value objectValue, int requiredSize) {
+        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(builder, sizeMethodAnalysis, objectValue, evaluationContext);
         if (Level.haveEquals(requiredSize)) {
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(sizeMethod, 0);
-            ObjectFlow objectFlow = evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
             return EqualsValue.equals(new IntValue(Level.decodeSizeEquals(requiredSize),
-                            evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD)),
+                            builder.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD)),
                     constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Level.decodeSizeMin(requiredSize));
@@ -461,10 +484,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // we normally return  objectValue.size();
     // but if objectValue is a method itself, and that method preserves the size, then we remove that method
     // object.entrySet().size() == object.size(); the entrySet() method has a @Size(copy = true) annotation
-    private static MethodValue createSizeMethodCheckForSizeCopyTrue(MethodInfo sizeMethodInfo, Value objectValue, EvaluationContext evaluationContext) {
+    private static MethodValue createSizeMethodCheckForSizeCopyTrue(EvaluationResult.Builder builder,
+                                                                    MethodAnalysis sizeMethodAnalysis,
+                                                                    Value objectValue,
+                                                                    EvaluationContext evaluationContext) {
         MethodValue methodValue;
         if ((methodValue = objectValue.asInstanceOf(MethodValue.class)) != null) {
-            if (methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
+            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodValue.methodInfo);
+            if (methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
                 // there must be a sizeMethod()
                 TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
                 if (typeInfo == null)
@@ -472,43 +499,47 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod();
                 if (sizeMethodInfoOnObject == null)
                     throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
-                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(), sizeObjectFlow(sizeMethodInfo, evaluationContext, objectValue));
+                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(),
+                        sizeObjectFlow(builder, sizeMethodAnalysis, objectValue));
             }
         }
-        return new MethodValue(sizeMethodInfo, objectValue, List.of(), sizeObjectFlow(sizeMethodInfo, evaluationContext, objectValue));
+        return new MethodValue(sizeMethodAnalysis.methodInfo, objectValue, List.of(),
+                sizeObjectFlow(builder, sizeMethodAnalysis, objectValue));
     }
 
-    private static ObjectFlow sizeObjectFlow(MethodInfo sizeMethodInfo, EvaluationContext evaluationContext, Value object) {
+    private static ObjectFlow sizeObjectFlow(EvaluationResult.Builder builder, MethodAnalysis sizeMethodAnalysis, Value object) {
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
-            evaluationContext.addAccess(false, new MethodAccess(sizeMethodInfo, List.of()), object);
+            builder.addAccess(false, new MethodAccess(sizeMethodAnalysis.methodInfo, List.of()), object);
 
-            ObjectFlow source = sizeMethodInfo.methodAnalysis.get().getObjectFlow();
-            ObjectFlow resultOfMethod = evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
+            ObjectFlow source = sizeMethodAnalysis.getObjectFlow();
+            ObjectFlow resultOfMethod = builder.createInternalObjectFlow(Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
             resultOfMethod.addPrevious(source);
             return resultOfMethod;
         }
         return ObjectFlow.NO_FLOW;
     }
 
-    private static Value computeSizeModifyingMethod(MethodInfo methodInfo, Value objectValue, EvaluationContext evaluationContext) {
-        int sizeOfMethod = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-        List<Integer> sizeInParameters = methodInfo.methodInspection.get()
-                .parameters.stream()
-                .map(p -> p.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY))
+    private Value computeSizeModifyingMethod(EvaluationResult.Builder builder,
+                                             MethodAnalysis methodAnalysis,
+                                             Stream<ParameterAnalysis> parameterAnalyses,
+                                             Value objectValue, EvaluationContext evaluationContext) {
+        int sizeOfMethod = methodAnalysis.getProperty(VariableProperty.SIZE);
+        List<Integer> sizeInParameters = parameterAnalyses
+                .map(p -> p.getProperty(VariableProperty.SIZE_COPY))
                 .filter(v -> v > Level.FALSE)
                 .collect(Collectors.toList());
         int numSizeInParameters = sizeInParameters.size();
         boolean haveSizeOnMethod = sizeOfMethod > Level.FALSE;
         if (numSizeInParameters == 0 && !haveSizeOnMethod) return null;
         if (numSizeInParameters > 1) {
-            evaluationContext.raiseError(Message.MULTIPLE_SIZE_ANNOTATIONS);
+            builder.raiseError(Message.MULTIPLE_SIZE_ANNOTATIONS);
             return null;
         }
         int newSize = numSizeInParameters == 1 ? sizeInParameters.get(0) : sizeOfMethod;
         int currentSize = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
         VariableValue variableValue;
         if (newSize > currentSize && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
-            evaluationContext.addProperty(variableValue.variable, VariableProperty.SIZE, newSize);
+            builder.addProperty(variableValue.variable, VariableProperty.SIZE, newSize);
             log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variableValue.variable.detailedString(), newSize,
                     methodInfo.distinguishingName());
         } else {
@@ -564,16 +595,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
 
-        SideEffect methodsSideEffect = sideEffectNotTakingEventualIntoAccount(methodInfo);
+        SideEffect methodsSideEffect = sideEffectNotTakingEventualIntoAccount(evaluationContext);
         if (methodsSideEffect == SideEffect.STATIC_ONLY && params.lessThan(SideEffect.SIDE_EFFECT)) {
             return SideEffect.STATIC_ONLY;
         }
         return methodsSideEffect.combine(params);
     }
 
-    private static SideEffect sideEffectNotTakingEventualIntoAccount(MethodInfo methodInfo) {
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        int immutable = methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+    private SideEffect sideEffectNotTakingEventualIntoAccount(EvaluationContext evaluationContext) {
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+
+        TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
+        int immutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
+
         boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
         if (effectivelyE2Immutable || modified == Level.FALSE) {

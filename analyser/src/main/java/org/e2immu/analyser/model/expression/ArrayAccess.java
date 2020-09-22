@@ -18,14 +18,12 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.Sets;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -34,6 +32,7 @@ import java.util.*;
  * We do not override variablesMarkRead(), because both the array and the index will be read in the initial
  * evaluations; so an empty list is what is needed.
  */
+@E2Container
 public class ArrayAccess implements Expression {
 
     public final Expression expression;
@@ -75,35 +74,35 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value array = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
-        Value indexValue = index.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult array = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(array, indexValue);
 
-        Value value;
-        if (array instanceof ArrayValue && indexValue instanceof NumericValue) {
-            int intIndex = (indexValue).toInt().value;
-            ArrayValue arrayValue = (ArrayValue) array;
+        if (array.value instanceof ArrayValue && indexValue instanceof NumericValue) {
+            int intIndex = (indexValue).value.toInt().value;
+            ArrayValue arrayValue = (ArrayValue) array.value;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
                 throw new ArrayIndexOutOfBoundsException();
             }
-            value = arrayValue.values.get(intIndex);
+            builder.setValue(arrayValue.values.get(intIndex));
         } else {
             Set<Variable> dependencies = new HashSet<>(expression.variables());
             dependencies.addAll(index.variables());
             Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue) expression).variable : null;
-            value = evaluationContext.arrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
+            Value avv = builder.createArrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
+            builder.setValue(avv);
 
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                evaluationContext.markRead(dependentVariableName(array, indexValue));
+                builder.markRead(dependentVariableName(array.value, indexValue.value));
             }
         }
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (notNullRequired > MultiLevel.NULLABLE && value instanceof VariableValue) {
-            StatementAnalyser.variableOccursInNotNullContext(((VariableValue) value).variable, value, evaluationContext, notNullRequired);
+        if (notNullRequired > MultiLevel.NULLABLE && builder.getValue() instanceof VariableValue) {
+            builder.variableOccursInNotNullContext(((VariableValue) builder.getValue()).variable, builder.getValue(), evaluationContext, notNullRequired);
         }
-        visitor.visit(this, evaluationContext, value);
-        return value;
+        return builder.build();
     }
 
     public static String dependentVariableName(Value array, Value index) {

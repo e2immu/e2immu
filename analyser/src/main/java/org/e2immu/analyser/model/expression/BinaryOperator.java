@@ -30,6 +30,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -56,7 +57,7 @@ import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
  * precedence 4: && logical AND
  * precedence 3: || logical OR
  */
-@E2Immutable
+@E2Container
 public class BinaryOperator implements Expression {
     public final Expression lhs;
     public final Expression rhs;
@@ -93,18 +94,27 @@ public class BinaryOperator implements Expression {
     // NOTE: we're not visiting here!
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         // we need to handle the short-circuit operators differently
         if (operator == PRIMITIVES.orOperatorBool) {
-            return shortCircuit(evaluationContext, visitor, false);
+            return shortCircuit(evaluationContext, false);
         }
         if (operator == PRIMITIVES.andOperatorBool) {
-            return shortCircuit(evaluationContext, visitor, true);
+            return shortCircuit(evaluationContext, true);
         }
 
         ForwardEvaluationInfo forward = allowsForNullOperands() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
-        Value l = lhs.evaluate(evaluationContext, visitor, forward);
-        Value r = rhs.evaluate(evaluationContext, visitor, forward);
+        EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
+        EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(leftResult, rightResult);
+        builder.setValue(determineValue(leftResult, rightResult, evaluationContext));
+        return builder.build();
+    }
+
+    private Value determineValue(EvaluationResult left, EvaluationResult right, EvaluationContext evaluationContext) {
+        Value l = left.value;
+        Value r = right.value;
+
         if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
@@ -112,8 +122,8 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) return BoolValue.TRUE;
 
             // HERE are the ==null checks
-            if (l == NullValue.NULL_VALUE && evaluationContext.isNotNull0(r) ||
-                    r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
+            if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
+                    r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
                 return BoolValue.FALSE;
             }
             return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext));
@@ -129,8 +139,8 @@ public class BinaryOperator implements Expression {
             if (l.equals(r)) return BoolValue.FALSE;
 
             // HERE are the !=null checks
-            if (l == NullValue.NULL_VALUE && evaluationContext.isNotNull0(r) ||
-                    r == NullValue.NULL_VALUE && evaluationContext.isNotNull0(l)) {
+            if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
+                    r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
             }
             return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext)));
@@ -203,27 +213,31 @@ public class BinaryOperator implements Expression {
         return new ObjectFlow(evaluationContext.getLocation(), PRIMITIVES.intParameterizedType, Origin.RESULT_OF_OPERATOR);
     }
 
-    private Value shortCircuit(EvaluationContext evaluationContext, EvaluationVisitor visitor, boolean and) {
+    private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
         ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
 
-        Value l = lhs.evaluate(evaluationContext, visitor, forward);
+        EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Value constant = and ? BoolValue.FALSE : BoolValue.TRUE;
-        if (l == constant) {
-            evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
-            return constant;
+        if (l.value == constant) {
+            builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            return builder.compose(l).build();
         }
-        Value condition = and ? l : NegatedValue.negate(l);
+
+        Value condition = and ? l.value : NegatedValue.negate(l.value);
         EvaluationContext child = evaluationContext.child(condition, null, false);
-        Value r = rhs.evaluate(child, visitor, forward);
-        if (r == constant) {
-            evaluationContext.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
-            return constant;
+        EvaluationResult r = rhs.evaluate(child, forward);
+        if (r.value == constant) {
+            builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
+            return builder.compose(l, r).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            return new AndValue(objectFlow).append(l, r);
+            builder.setValue(new AndValue(objectFlow).append(l.value, r.value));
+        } else {
+            builder.setValue(new OrValue(objectFlow).append(l.value, r.value));
         }
-        return new OrValue(objectFlow).append(l, r);
+        return builder.build();
     }
 
     private boolean allowsForNullOperands() {

@@ -19,6 +19,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.E2Container;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
  * Blocks can only translate into blocks;
  * statements can translate into lists of statements.
  */
+@E2Container
 public class TranslationMap {
 
     public static final TranslationMap EMPTY_MAP = new TranslationMap(Map.of(), Map.of(), Map.of(), Map.of());

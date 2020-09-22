@@ -22,12 +22,14 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-@E2Immutable
+@E2Container
 public class NullConstant implements Expression, Constant<Object> {
-    public static final NullConstant nullConstant = new NullConstant();
+    public static final NullConstant NULL_CONSTANT = new NullConstant();
+    private static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setValue(NullValue.NULL_VALUE).build();
 
     @Override
     @NotNull
@@ -47,13 +49,11 @@ public class NullConstant implements Expression, Constant<Object> {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) > MultiLevel.NULLABLE) {
-            evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+            return new EvaluationResult.Builder().raiseError(Message.NULL_POINTER_EXCEPTION).setValue(NullValue.NULL_VALUE).build();
         }
-        Value result = NullValue.NULL_VALUE;
-        visitor.visit(this, evaluationContext, result);
-        return result;
+        return NULL_RESULT;
     }
 
     @Override

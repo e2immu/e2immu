@@ -19,12 +19,10 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -132,62 +130,73 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+
         Variable at;
         if (target instanceof ArrayAccess) {
             ArrayAccess arrayAccess = (ArrayAccess) target;
-            Value array = arrayAccess.expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL_MODIFIED);
-            Value indexValue = arrayAccess.index.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
-            String name = ArrayAccess.dependentVariableName(array, indexValue);
+            EvaluationResult array = arrayAccess.expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL_MODIFIED);
+            EvaluationResult indexValue = arrayAccess.index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+            builder.compose(array, indexValue);
+
+            String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
             Variable arrayVariable = arrayAccess.expression instanceof VariableExpression ? ((VariableExpression) arrayAccess.expression).variable : null;
-            at = evaluationContext.ensureArrayVariable(arrayAccess, name, arrayVariable);
+            at = builder.ensureArrayVariable(arrayAccess, name, arrayVariable);
             log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
         } else {
-            target.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
+            EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
+            builder.compose(targetResult);
+
             at = target.assignmentTarget().orElseThrow();
             log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
         }
+
+        EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
+        builder.compose(valueResult);
 
         Value resultOfExpression;
         Value assignedToTarget;
         if (binaryOperator != null) {
             BinaryOperator operation = new BinaryOperator(new VariableExpression(at), binaryOperator, value,
                     BinaryOperator.precedence(binaryOperator));
+            EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
+            builder.compose(operationResult);
+
             if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
                 // ++i, i += 1
-                resultOfExpression = operation.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
-                assignedToTarget = resultOfExpression;
+                resultOfExpression = operationResult.value;
+                assignedToTarget = operationResult.value;
             } else {
                 // i++
-                resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
-                assignedToTarget = operation.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+                resultOfExpression = valueResult.value;
+                assignedToTarget = operationResult.value;
             }
         } else {
-            resultOfExpression = value.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
-            assignedToTarget = resultOfExpression;
+            resultOfExpression = valueResult.value;
+            assignedToTarget = valueResult.value;
         }
-        doAssignmentWork(evaluationContext, at, assignedToTarget);
-        visitor.visit(this, evaluationContext, resultOfExpression);
+        doAssignmentWork(builder, evaluationContext, at, assignedToTarget);
 
         // we let the assignment code decide what to do; we'll read the value of the variable afterwards
         // TODO this does not work well with i++
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
-        return evaluationContext.currentValue(assignmentTarget);
+        Value currentValue = builder.currentValue(assignmentTarget, evaluationContext);
+
+        return builder.setValueAndResultOfExpression(currentValue, resultOfExpression).build();
     }
 
-    private void doAssignmentWork(EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
-        MethodInfo methodInfo = evaluationContext.getCurrentMethod();
-        Messages messages = evaluationContext.getMessages();
-        NumberedStatement statement = evaluationContext.getCurrentStatement();
+    private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
         if (at instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
             FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
             // only change fields of "our" class, otherwise, raise error
+            MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
             if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
                 if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
-                    messages.add(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+                    builder.addMessage(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
                     fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
                 }
                 return;
@@ -202,20 +211,21 @@ public class Assignment implements Expression {
                 resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo) {
-            if (!statement.inErrorState()) {
-                messages.add(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
-                statement.errorValue.set(true);
+            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
+            if (!statementAnalyser.statementAnalysis.inErrorState()) {
+                builder.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
+                builder.changeCurrentStatementToErrorState();
                 return;
             }
         }
-        evaluationContext.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
+        builder.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
 
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
             Set<Variable> linked = resultOfExpression.linkedVariables(evaluationContext);
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
                     Variable.detailedString(linked), Variable.detailedString(linked));
-            evaluationContext.linkVariables(at, linked);
+            builder.linkVariables(at, linked);
         }
     }
 }

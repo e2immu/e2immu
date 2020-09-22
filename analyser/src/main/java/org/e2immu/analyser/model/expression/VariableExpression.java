@@ -18,27 +18,20 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 
+@E2Container
 public class VariableExpression implements Expression {
     public final Variable variable;
 
     public VariableExpression(@NotNull Variable variable) {
         this.variable = Objects.requireNonNull(variable);
-    }
-
-    @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value value = evaluationContext.currentValue(variable);
-        processVariable(variable, value, evaluationContext, forwardEvaluationInfo);
-        visitor.visit(this, evaluationContext, value);
-        return value;
     }
 
     @Override
@@ -50,33 +43,42 @@ public class VariableExpression implements Expression {
         return this;
     }
 
-    static void processVariable(Variable variable,
-                                Value currentValue,
-                                EvaluationContext evaluationContext,
-                                ForwardEvaluationInfo forwardEvaluationInfo) {
+    @Override
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return evaluate(evaluationContext, forwardEvaluationInfo, variable);
+    }
+
+    // code also used by FieldAccess
+    public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        Value currentValue = builder.currentValue(variable, evaluationContext);
+
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-            evaluationContext.markRead(variable);
+            builder.markRead(variable);
         }
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
-            StatementAnalyser.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
+            builder.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
-        StatementAnalyser.markContentModified(evaluationContext, variable, currentValue, modified);
+        builder.markContentModified(evaluationContext, variable, currentValue, modified);
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
         if (notModified1 == Level.TRUE) {
-            StatementAnalyser.variableOccursInNotModified1Context(variable, currentValue, evaluationContext);
+            builder.variableOccursInNotModified1Context(variable, currentValue, evaluationContext);
         }
 
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        StatementAnalyser.markSizeRestriction(evaluationContext, variable, size);
+        builder.markSizeRestriction(evaluationContext, variable, size);
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-        StatementAnalyser.markMethodCalled(evaluationContext, variable, methodCalled);
+        builder.markMethodCalled(evaluationContext, variable, methodCalled);
 
         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        StatementAnalyser.markMethodDelay(evaluationContext, variable, methodDelay);
+        builder.markMethodDelay(evaluationContext, variable, methodDelay);
+
+        builder.setValue(currentValue);
+        return builder.build();
     }
 
     @Override

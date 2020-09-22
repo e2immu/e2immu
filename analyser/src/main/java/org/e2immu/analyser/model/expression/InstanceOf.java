@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -27,15 +26,14 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
+
+@E2Container
 public class InstanceOf implements Expression {
     public final ParameterizedType parameterizedType;
     public final Expression expression;
@@ -51,12 +49,15 @@ public class InstanceOf implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value value = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
-        return localEvaluation(evaluationContext, visitor, value);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        return new EvaluationResult.Builder()
+                .compose(evaluationResult)
+                .setValue(localEvaluation(evaluationContext, evaluationResult.value))
+                .build();
     }
 
-    private Value localEvaluation(EvaluationContext evaluationContext, EvaluationVisitor visitor, Value value) {
+    private Value localEvaluation(EvaluationContext evaluationContext, Value value) {
         Value result;
         if (value.isUnknown()) {
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
@@ -65,7 +66,7 @@ public class InstanceOf implements Expression {
         } else if (value instanceof CombinedValue) {
             CombinedValue combinedValue = (CombinedValue) value;
             if (combinedValue.values.size() == 1) {
-                return localEvaluation(evaluationContext, visitor, combinedValue.values.get(0));
+                return localEvaluation(evaluationContext, combinedValue.values.get(0));
             }
             result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         } else if (value instanceof ValueWithVariable) {
@@ -83,7 +84,6 @@ public class InstanceOf implements Expression {
             // horrible practice. We leave the bug for now.
             throw new UnsupportedOperationException("? have expression of " + expression.getClass() + " value is " + value + " of " + value.getClass());
         }
-        visitor.visit(this, evaluationContext, result);
         return result;
     }
 

@@ -22,11 +22,12 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-@E2Immutable
-public class BooleanConstant implements Expression, Constant<Boolean> {
+@E2Container
+public class BooleanConstant implements ConstantExpression<Boolean> {
     public static final BooleanConstant TRUE = new BooleanConstant(true);
 
     @Override
@@ -39,11 +40,6 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
 
     public BooleanConstant(boolean constant) {
         this.constant = constant;
-    }
-
-    @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new BoolValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
     }
 
     @Override
@@ -60,5 +56,10 @@ public class BooleanConstant implements Expression, Constant<Boolean> {
     @Override
     public Boolean getValue() {
         return constant;
+    }
+
+    @Override
+    public Value newValue() {
+        return new BoolValue(constant);
     }
 }

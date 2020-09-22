@@ -108,31 +108,34 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder();
         Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
 
-            MethodAnalyser methodAnalyser = new MethodAnalyser(evaluationContext.getE2ImmuAnnotationExpressions());
-            boolean changes = methodAnalyser.analyse(methodInfo, child);
+            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, true, evaluationContext.getConfiguration(),
+                    evaluationContext.getPatternMatcher(), evaluationContext.getE2ImmuAnnotationExpressions());
+            builder.addResultOfMethodAnalyser(methodAnalyser.analyse(evaluationContext.getIteration()));
 
-            evaluationContext.copyMessages(methodAnalyser.getMessageStream());
-            evaluationContext.merge(child);
+            methodAnalyser.getMessageStream().forEach(builder::addMessage);
+            builder.merge(child);
 
-            if (methodInfo.methodAnalysis.get().singleReturnValue.isSet()) {
-                InlineValue inlineValue = methodInfo.methodAnalysis.get().singleReturnValue.get().asInstanceOf(InlineValue.class);
+            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            if (methodAnalysis.singleReturnValue.isSet()) {
+                InlineValue inlineValue = methodAnalysis.singleReturnValue.get().asInstanceOf(InlineValue.class);
                 if (inlineValue != null) {
                     result = inlineValue;
                 }
             } else {
                 result = UnknownValue.NO_VALUE; // DELAY, we may have to iterate again
             }
-            visitor.visit(this, child, result, changes);
         }
 
-        return result;
+        builder.setValue(result);
+        return builder.build();
     }
 
     @Override

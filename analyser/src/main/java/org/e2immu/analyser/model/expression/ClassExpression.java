@@ -22,13 +22,15 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class ClassExpression implements Expression, Constant<ParameterizedType> {
+@E2Container
+public class ClassExpression implements ConstantExpression<ParameterizedType> {
     @NotNull
     public final ParameterizedType parameterizedType;
     @NotNull
@@ -45,7 +47,7 @@ public class ClassExpression implements Expression, Constant<ParameterizedType> 
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public Value newValue() {
         return new ClassValue(parameterizedType);
     }
 

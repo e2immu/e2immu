@@ -54,22 +54,26 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor evaluationVisitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value c = condition.evaluate(evaluationContext, evaluationVisitor, ForwardEvaluationInfo.NOT_NULL);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult conditionResult = condition.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(conditionResult);
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
-        EvaluationContext copyForThen = evaluationContext.child(c, null, false);
-        Value t = ifTrue.evaluate(copyForThen, evaluationVisitor, forwardEvaluationInfo);
-        evaluationContext.merge(copyForThen);
+        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value, null, false);
+        EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
+        builder.compose(ifTrueResult);
+        builder.merge(copyForThen);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(c), null, false);
-        Value f = ifFalse.evaluate(copyForElse, evaluationVisitor, forwardEvaluationInfo);
-        evaluationContext.merge(copyForElse);
-        
+        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(conditionResult.value), null, false);
+        EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
+        builder.compose(ifFalseResult);
+        builder.merge(copyForElse);
+
         // TODO ObjectFlow
-        Value res = ConditionalValue.conditionalValueCurrentState(evaluationContext, c, t, f, ObjectFlow.NO_FLOW);
-        evaluationVisitor.visit(this, evaluationContext, res);
-        return res;
+        Value res = ConditionalValue.conditionalValueCurrentState(evaluationContext,
+                conditionResult.value, ifTrueResult.value, ifFalseResult.value, ObjectFlow.NO_FLOW);
+        builder.setValue(res);
+        return builder.build();
     }
 
     @Override

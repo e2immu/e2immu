@@ -18,12 +18,12 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -48,6 +48,8 @@ public class NewObject implements HasParameterExpressions {
         this.arrayInitializer = arrayInitializer;
     }
 
+    // constructor can be null, when we create an anonymous class that doesn't derive from a class with constructor
+    // in that case, there is a default, parameterless constructor
     public NewObject(@NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
         this.anonymousClass = Objects.requireNonNull(anonymousClass);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
@@ -113,20 +115,23 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value value;
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (arrayInitializer != null) {
-            List<Value> values = arrayInitializer.expressions.stream()
-                    .map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT))
+            EvaluationResult.Builder builder = new EvaluationResult.Builder();
+            List<EvaluationResult> results = arrayInitializer.expressions.stream()
+                    .map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
-            value = new ArrayValue(evaluationContext.createLiteralObjectFlow(arrayInitializer.commonType), values);
-        } else {
-            List<Value> parameterValues = EvaluateParameters.transform(parameterExpressions,
-                    evaluationContext, visitor, constructor, Level.FALSE, null);
-            value = new Instance(parameterizedType, constructor, parameterValues, evaluationContext);
+            builder.compose(results);
+            List<Value> values = results.stream().map(EvaluationResult::getValue).collect(Collectors.toList());
+            ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.commonType);
+            builder.setValue(new ArrayValue(objectFlow, values));
+            return builder.build();
+
         }
-        visitor.visit(this, evaluationContext, value);
-        return value;
+        Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions,
+                evaluationContext, constructor, Level.FALSE, null);
+        res.k.setValue(new Instance(parameterizedType, constructor, res.v, evaluationContext));
+        return res.k.build();
     }
 
 

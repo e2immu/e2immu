@@ -19,11 +19,13 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 
+@E2Container
 public class MemberValuePair implements Expression {
 
     public final String name;
@@ -60,7 +62,7 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 }

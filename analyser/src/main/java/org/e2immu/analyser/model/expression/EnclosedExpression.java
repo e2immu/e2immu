@@ -19,10 +19,12 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Map;
 
+@E2Container
 public class EnclosedExpression implements Expression {
     public final Expression inner;
 
@@ -56,7 +58,7 @@ public class EnclosedExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return inner.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return inner.evaluate(evaluationContext, forwardEvaluationInfo);
     }
 }

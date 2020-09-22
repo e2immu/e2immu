@@ -20,15 +20,17 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@E2Container
 public class ArrayInitializer implements Expression {
     public final List<Expression> expressions;
     public final ParameterizedType commonType;
@@ -52,7 +54,7 @@ public class ArrayInitializer implements Expression {
     private static ParameterizedType commonType(List<Expression> expressions) {
         ParameterizedType commonType = null;
         for (Expression expression : expressions) {
-            if (expression != NullConstant.nullConstant) {
+            if (expression != NullConstant.NULL_CONSTANT) {
                 ParameterizedType parameterizedType = expression.returnType();
                 if (commonType == null) commonType = parameterizedType;
                 else commonType = commonType.commonType(parameterizedType);
@@ -77,11 +79,14 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        List<Value> values = expressions.stream().map(e -> e.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        List<EvaluationResult> results = expressions.stream().map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
+        List<Value> values = results.stream().map(EvaluationResult::getValue).collect(Collectors.toList());
 
-        ArrayValue arrayValue = new ArrayValue(evaluationContext.createLiteralObjectFlow(commonType), values);
-        visitor.visit(this, evaluationContext, arrayValue);
-        return arrayValue;
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(results);
+        ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
+        builder.setValue(new ArrayValue(objectFlow, values));
+
+        return builder.build();
     }
 }

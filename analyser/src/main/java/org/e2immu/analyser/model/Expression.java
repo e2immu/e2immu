@@ -18,13 +18,12 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
 import java.util.*;
 
-// at the moment we're modifying evaluation context, we want to be @E2Container
+@E2Container
 public interface Expression extends Element {
 
     @NotModified
@@ -37,7 +36,7 @@ public interface Expression extends Element {
     int precedence();
 
     @NotModified
-    Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo);
+    EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo);
 
     @NotModified
     default String bracketedExpressionString(int indent, Expression expression) {

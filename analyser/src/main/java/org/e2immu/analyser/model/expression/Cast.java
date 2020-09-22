@@ -39,9 +39,10 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         // for now, casting will simply keep the value
-        return expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo);
+        // TODO should we not wrap in PropertyWrapper, with explicit type?
+        return expression.evaluate(evaluationContext, forwardEvaluationInfo);
     }
 
     @Override

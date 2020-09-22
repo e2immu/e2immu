@@ -69,6 +69,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final MethodAnalysis methodAnalysis;
 
     public final List<ParameterAnalyser> parameterAnalysers;
+    private Map<ParameterInfo, ParameterAnalyser> parameterAnalyserMap;
+    private Map<FieldInfo, FieldAnalyser> fieldAnalyserMap;
+    private List<FieldAnalyser> myFieldAnalysers;
 
     public List<ParameterAnalyser> getParameterAnalysers() {
         return parameterAnalysers;
@@ -101,6 +104,19 @@ public class MethodAnalyser extends AbstractAnalyser {
     public void initialize(List<Analyser> analysers, Map<ParameterInfo, ParameterAnalyser> parameterAnalysers,
                            Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
         parameterAnalysers.values().forEach(parameterAnalyser -> parameterAnalyser.initialize(fieldAnalysers));
+        this.parameterAnalyserMap = parameterAnalysers;
+        this.fieldAnalyserMap = fieldAnalysers;
+
+        ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
+        analysers.forEach(analyser -> {
+            if (analyser instanceof FieldAnalyser) {
+                FieldAnalyser fieldAnalyser = (FieldAnalyser) analyser;
+                if (fieldAnalyser.fieldInfo.owner == methodInfo.typeInfo) {
+                    myFieldAnalysers.add(fieldAnalyser);
+                }
+            }
+        });
+        this.myFieldAnalysers = myFieldAnalysers.build();
     }
 
     @Override
@@ -388,8 +404,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (methodAnalysis.preconditionForMarkAndOnly.isSet()) return false; // already done
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
-            boolean haveNonFinalFields = typeInfo.typeInspection.getPotentiallyRun().fields.stream().anyMatch(field ->
-                    field.fieldAnalysis.get().getProperty(VariableProperty.FINAL) == Level.FALSE);
+            boolean haveNonFinalFields = myFieldAnalysers.stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }
@@ -810,10 +825,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private Boolean findOtherModifyingElements(MethodInfo methodInfo) {
-        boolean nonPrivateFields = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream()
-                .filter(fieldInfo -> fieldInfo.type.isFunctionalInterface() &&
-                        fieldInfo.fieldAnalysis.get().isDeclaredFunctionalInterface())
-                .anyMatch(fieldInfo -> !fieldInfo.isPrivate());
+        boolean nonPrivateFields = myFieldAnalysers.stream()
+                .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
+                .anyMatch(fa -> !fa.fieldInfo.isPrivate());
         if (nonPrivateFields) {
             return true;
         }
@@ -931,15 +945,19 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
             return null;
         }
+
+        // TODO convert the variables into field analysers
+        
         int e2ImmutableStatusOfFieldRefs = variables.stream()
                 .filter(MethodAnalyser::isFieldNotOfImplicitlyImmutableType)
-                .mapToInt(v -> MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
+                .map(v -> fieldAnalyserMap.get(((FieldReference) v).fieldInfo))
+                .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     variables.stream()
                             .filter(v -> isFieldNotOfImplicitlyImmutableType(v) &&
-                                    MultiLevel.value(((FieldReference) v).fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE),
+                                    MultiLevel.value(fieldAnalyserMap.get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
                                             MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                             .map(Variable::detailedString)
                             .collect(Collectors.joining(", ")));

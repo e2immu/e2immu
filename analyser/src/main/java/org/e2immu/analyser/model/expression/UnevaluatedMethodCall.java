@@ -59,8 +59,8 @@ public class UnevaluatedMethodCall implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return UnknownValue.NO_VALUE;
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        return EmptyExpression.EMPTY_RESULT;
     }
 
     @Override

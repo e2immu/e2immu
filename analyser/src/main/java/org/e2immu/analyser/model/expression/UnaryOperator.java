@@ -28,9 +28,7 @@ import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * From https://introcs.cs.princeton.edu/java/11precedence/
@@ -70,8 +68,17 @@ public class UnaryOperator implements Expression {
     // NOTE: we're not visiting here!
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value v = expression.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        return new EvaluationResult.Builder()
+                .compose(evaluationResult)
+                .setValue(computeValue(evaluationResult))
+                .build();
+    }
+
+    private Value computeValue(EvaluationResult evaluationResult) {
+        Value v = evaluationResult.value;
+
         if (v.isUnknown()) return v;
 
         if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
@@ -100,7 +107,6 @@ public class UnaryOperator implements Expression {
         throw new UnsupportedOperationException();
     }
 
-    // TODO interesting case for null not allowed on typeInfo :-)
     public static MethodInfo getOperator(@NotNull @NotModified UnaryExpr.Operator operator, @NotNull @NotModified TypeInfo typeInfo) {
         if (typeInfo.isNumericPrimitive()) {
             switch (operator) {

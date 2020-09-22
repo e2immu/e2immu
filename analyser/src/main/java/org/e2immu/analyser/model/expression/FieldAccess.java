@@ -18,13 +18,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -82,24 +80,21 @@ public class FieldAccess implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value currentValue = evaluationContext.currentValue(variable);
-        VariableExpression.processVariable(variable, currentValue, evaluationContext, forwardEvaluationInfo);
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
+        EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(evaluationResult, scopeResult);
+        builder.setValue(evaluationResult.value);
 
-        Value scope = expression.evaluate(evaluationContext, visitor, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        if (scope != UnknownValue.NO_VALUE) {
-            if (scope instanceof NullValue) {
-                evaluationContext.raiseError(Message.NULL_POINTER_EXCEPTION);
+        if (scopeResult.value != UnknownValue.NO_VALUE) {
+            if (scopeResult.value instanceof NullValue) {
+                builder.raiseError(Message.NULL_POINTER_EXCEPTION);
             } else {
-                int notNull = evaluationContext.getProperty(scope, VariableProperty.NOT_NULL);
-                if (notNull == MultiLevel.DELAY) {
-                    if (!MultiLevel.isEffectivelyNotNull(notNull)) {
-                        evaluationContext.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scope);
-                    }
+                if (!scopeResult.isNotNull0(evaluationContext)) {
+                    builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);
                 }
             }
         }
-        visitor.visit(this, evaluationContext, currentValue);
-        return currentValue;
+        return builder.build();
     }
 }

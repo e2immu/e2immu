@@ -23,12 +23,14 @@ import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@E2Container
 public class ArrayLengthExpression implements Expression {
 
     public final Expression scope;
@@ -63,16 +65,16 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Value v = scope.evaluate(evaluationContext, visitor, ForwardEvaluationInfo.NOT_NULL);
-        Value result;
-        if (v instanceof ArrayValue) {
-            ArrayValue arrayValue = (ArrayValue) v;
-            result = new IntValue(arrayValue.values.size());
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(result);
+
+        if (result.value instanceof ArrayValue) {
+            ArrayValue arrayValue = (ArrayValue) result.value;
+            builder.setValue(new IntValue(arrayValue.values.size()));
         } else {
-            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+            builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE);
         }
-        visitor.visit(this, evaluationContext, result);
-        return result;
+        return builder.build();
     }
 }

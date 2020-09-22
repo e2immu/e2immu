@@ -18,14 +18,11 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.expression.LocalVariableModifier;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public class LocalVariable {
     public final List<AnnotationExpression> annotations;

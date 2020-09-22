@@ -57,6 +57,8 @@ public class StatementAnalyser {
     private final MethodInfo methodInfo;
     private final Messages messages = new Messages();
 
+    public final StatementAnalysis statementAnalysis;
+
     public StatementAnalyser(MethodInfo methodInfo) {
         this.methodAnalysis = methodInfo.methodAnalysis.get();
         this.methodInfo = methodInfo;

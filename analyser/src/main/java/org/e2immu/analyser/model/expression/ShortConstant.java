@@ -22,11 +22,12 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ShortValue;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-@E2Immutable
-public class ShortConstant implements Expression, Constant<Short> {
+@E2Container
+public class ShortConstant implements ConstantExpression<Short> {
     @Override
     @NotNull
     public ParameterizedType returnType() {
@@ -52,9 +53,8 @@ public class ShortConstant implements Expression, Constant<Short> {
     }
 
     @Override
-    @NotNull
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new ShortValue(constant, evaluationContext.createLiteralObjectFlow(returnType()));
+    public Value newValue() {
+        return new ShortValue(constant);
     }
 
     @Override

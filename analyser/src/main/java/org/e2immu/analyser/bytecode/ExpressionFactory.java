@@ -26,7 +26,7 @@ import org.e2immu.annotation.AnnotationType;
 public class ExpressionFactory {
 
     public static Expression from(TypeContext typeContext, Object value) {
-        if (value == null) return NullConstant.nullConstant;
+        if (value == null) return NullConstant.NULL_CONSTANT;
         if (value instanceof String) return new StringConstant((String) value);
         if (value instanceof Integer) return new IntConstant((Integer) value);
         if (value instanceof Short) return new ShortConstant((Short) value);
@@ -39,7 +39,7 @@ public class ExpressionFactory {
 
         if (value instanceof AnnotationType) {
             // TODO
-            return NullConstant.nullConstant;
+            return NullConstant.NULL_CONSTANT;
         }
         throw new UnsupportedOperationException("Value " + value + " is of class " + value.getClass());
     }

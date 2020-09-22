@@ -4,6 +4,92 @@
 
 === Analysis
 
+==== Code structure
+
+`PrimaryTypeAnalyser`:
+
+* starts from a `SortedType`, which contains one `PrimaryType` and a list of `WithInspectionAndAnalysis` (methods, fields, sub-types)
+* creates and calls `TypeAnalyser`, `MethodAnalyser`, `FieldAnalyser`, and assigns `TypeAnalysis`, `MethodAnalysis`, `FieldAnalysis`
+to `TypeInfo.typeAnalysis`, `MethodInfo.methodAnalysis`, `FieldInfo.fieldAnalysis`.
+
+* the `TypeAnalyser` creates, fills, and returns the `TypeAnalysis` object
+* the `FieldAnalyser` creates, fills, and returns the `FieldAnalysis` object
+* the `MethodAnalyser` creates, fills, and returns the `MethodAnalysis` object, but it also creates:
+
+** `ParameterAnalyser` objects, which fill, create and return `ParameterAnalysis` objects
+** `StatementAnalyser` objects, which fill, create and return `StatementAnalysis` objects.
+Each `StatementAnalysis` object corresponds recursively to a `Statement` in the `methodBody` block.
+
+
+`TypeResolution` contains:
+
+* the list of circular dependencies
+* the set of implicitly immutable data types for this type
+
+The `TypeAnalysis` object holds:
+
+
+* a map of constant object flows
+* a map of approved preconditions, ready for {mark} and {only}
+* annotations and properties via the parent `Analysis` object
+
+`FieldResolution` contains:
+
+* a flag marking if the type is implicitly immutable
+
+
+The `FieldAnalysis` object holds:
+
+* the object flow of the field
+* an effectively final value, which is an instance of `FinalFieldValue` unless we know better; it is not set when the field is {variable}
+* a list of variables linked to the field (other fields, parameters)
+* a set of internal object flows
+* an error map for marking illegal assignments
+* an error flag
+* annotations and properties via the parent `Analysis` object
+
+`MethodResolution` contains:
+
+* a set of methods of the same type that this method (transitively) calls
+* a flag noting whether it is part of construction
+* a flag whether it creates an object of itself
+* a flag indicating that it only calls static methods
+
+
+The `MethodAnalysis` object holds:
+
+* a single return value, if available
+* summary information about `This` (mostly modification, we can maybe reduce this to single boolean?)
+* a list of `StatementAnalysis` objects holding return value information.
+#NOTE# we can also store them in the method analyser, there may not be a need to hold on to them.
+* a map of variables linked to fields and parameters
+* a set of variables linked to the return value(s) of the method
+* the joint precondition
+* the precondition part for {mark} and {only}
+* information about possible {mark} and {only} annotations (can maybe moved directly into the annotations)
+* a set of internal object flows
+* the object flow of the method
+* a fair number of error flags
+
+
+The `StatementAnalysis` object holds:
+
+* information about the statement: `Statement` reference, parent, next, list of blocks, indices and index
+* a flag indicating if the statement (or block represented by the initial statement of the block) ecapes
+* a flag indicating that the next statement is never reached
+* an error flag
+* a precondition represented by this statement
+* the state of the method after evaluating this statement
+* the precondition of the method after evaluating this statement
+* if the statement has an expression part, the value of the expression
+* replacement information
+* a flag indicating if the method flow reaches the statement
+* all variables referenced so far, and their properties (fully incremental)
+* dependency information so far
+
+Evaluation of expressions requires an `EvaluationContext` object which moves from statement to statement, applying resulting changes into the `StatementAnalysis` object after each evaluation.
+Some of these changes then trickle down to the method analyser which updates the `MethodAnalysis` object.
+
 ==== Circular dependencies
 
 The analyser approaches primary types independently, albeit in a carefully computed order of dependency between them.
@@ -23,9 +109,11 @@ The processing list determines the order in which the analyser processes fields,
 Parent or enclosing type when non-static must be have the property as well: {e1immutable}, {e2immutable}, {container}, {independent}.
 
 What to do with abstract superclasses?
-They cause a problem because of the abstract methods, which can have any modification status. #TODO# think and implement.
+They cause a problem because of the abstract methods, which can have any modification status.
+#TODO# think and implement.
 
-Eventual? #TODO# think and implement.
+Eventual?
+#TODO# think and implement.
 
 ==== Modification of a field
 
