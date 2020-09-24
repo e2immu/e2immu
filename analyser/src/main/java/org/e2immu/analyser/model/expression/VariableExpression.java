@@ -24,7 +24,9 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @E2Container
 public class VariableExpression implements Expression {
@@ -50,32 +52,32 @@ public class VariableExpression implements Expression {
 
     // code also used by FieldAccess
     public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
-        Value currentValue = builder.currentValue(variable, evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        Value currentValue = builder.currentValue(variable);
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
         }
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
-            builder.variableOccursInNotNullContext(variable, currentValue, evaluationContext, notNull);
+            builder.variableOccursInNotNullContext(variable, currentValue, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
-        builder.markContentModified(evaluationContext, variable, currentValue, modified);
+        builder.markContentModified(variable, modified);
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
         if (notModified1 == Level.TRUE) {
-            builder.variableOccursInNotModified1Context(variable, currentValue, evaluationContext);
+            builder.variableOccursInNotModified1Context(variable, currentValue);
         }
 
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        builder.markSizeRestriction(evaluationContext, variable, size);
+        builder.markSizeRestriction(variable, size);
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-        builder.markMethodCalled(evaluationContext, variable, methodCalled);
+        builder.markMethodCalled(variable, methodCalled);
 
         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        builder.markMethodDelay(evaluationContext, variable, methodDelay);
+        builder.markMethodDelay(variable, methodDelay);
 
         builder.setValue(currentValue);
         return builder.build();

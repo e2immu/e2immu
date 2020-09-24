@@ -27,15 +27,16 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapSet;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -104,9 +105,10 @@ public class Resolver {
         });
         for (TypeInfo typeInfo : sorted) {
             Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-            assert typeInfo.typeAnalysis.isSet() : "Type analysis of " + typeInfo.fullyQualifiedName + " has not been set";
+            TypeResolution typeResolution = new TypeResolution();
+            typeResolution.circularDependencies.set(circularDependencies == null ? Set.of() : ImmutableSet.copyOf(circularDependencies));
 
-            typeInfo.typeAnalysis.get().circularDependencies.set(circularDependencies == null ? Set.of() : ImmutableSet.copyOf(circularDependencies));
+            typeInfo.typeResolution.set(typeResolution);
         }
         return sorted;
     }
@@ -120,7 +122,7 @@ public class Resolver {
         // main call
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
-        doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
+        List<MethodInfo> methods = doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
         if (subResolver) {
             typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "sub-resolver");
@@ -147,17 +149,18 @@ public class Resolver {
             log(RESOLVE, "Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
         }
 
-        return new SortedType(typeInfo, methodFieldSubTypeOrder);
+        return new SortedType(typeInfo, allTypesInPrimaryType, methods, methodFieldSubTypeOrder);
     }
 
-    private void doType(TypeInfo typeInfo, TypeContext typeContextOfType,
-                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+    private List<MethodInfo> doType(TypeInfo typeInfo, TypeContext typeContextOfType,
+                                    DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         TypeInspection typeInspection = typeInfo.typeInspection.getPotentiallyRun();
 
         typeInspection.subTypes.forEach(typeContextOfType::addToContext);
+        List<MethodInfo> methods = new ArrayList<>();
 
         // recursion, do sub-types first
-        typeInspection.subTypes.forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
+        typeInspection.subTypes.forEach(subType -> methods.addAll(doType(subType, typeContextOfType, methodFieldSubTypeGraph)));
 
         log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
         ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
@@ -181,7 +184,7 @@ public class Resolver {
         });
 
         doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
-        doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
+        methods.addAll(doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph));
 
         // dependencies of the type
 
@@ -189,6 +192,7 @@ public class Resolver {
         List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
         typeDependencies.retainAll(allTypesInPrimaryType);
         methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+        return methods;
     }
 
     private void doFields(TypeInspection typeInspection,
@@ -273,17 +277,20 @@ public class Resolver {
         fieldInspection.initialiser.set(fieldInitialiser);
     }
 
-    private void doMethodsAndConstructors(TypeInspection typeInspection, ExpressionContext expressionContext,
-                                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+    private List<MethodInfo> doMethodsAndConstructors(TypeInspection typeInspection, ExpressionContext expressionContext,
+                                                      DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
+        List<MethodInfo> methods = new ArrayList<>();
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
                 doMethodOrConstructor(methodInfo, expressionContext, methodFieldSubTypeGraph);
+                methods.add(methodInfo);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
                 throw rte;
             }
         });
+        return methods;
     }
 
     private void doMethodOrConstructor(MethodInfo methodInfo,
@@ -382,17 +389,61 @@ public class Resolver {
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
-                assert methodInfo.methodAnalysis.isSet() : "Method analysis of " + methodInfo.distinguishingName() + " not yet set";
+                MethodResolution methodResolution = new MethodResolution();
+                methodResolution.methodsOfOwnClassReached.set(methodsReached);
+                methodInfo.methodResolution.set(methodResolution);
 
-                methodInfo.methodAnalysis.get().methodsOfOwnClassReached.set(methodsReached);
+                methodCreatesObjectOfSelf(methodInfo, methodResolution);
+                computeStaticMethodCallsOnly(methodInfo, methodResolution);
+
             }
         });
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo) {
                 MethodInfo methodInfo = (MethodInfo) from;
-                methodInfo.methodAnalysis.get().partOfConstruction.set(methodInfo.isConstructor ||
+                methodInfo.methodResolution.get().partOfConstruction.set(methodInfo.isConstructor ||
                         methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
             }
         });
     }
+
+
+    // part of @UtilityClass computation in the type analyser
+    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution methodResolution) {
+        AtomicBoolean createSelf = new AtomicBoolean();
+        methodInfo.methodInspection.get().methodBody.get().visit(element -> {
+            if (element instanceof NewObject) {
+                NewObject newObject = (NewObject) element;
+                if (newObject.parameterizedType.typeInfo == methodInfo.typeInfo) {
+                    createSelf.set(true);
+                }
+            }
+        });
+        methodResolution.createObjectOfSelf.set(createSelf.get());
+    }
+
+    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution methodResolution) {
+        if (!methodResolution.staticMethodCallsOnly.isSet()) {
+            if (methodInfo.isStatic) {
+                methodResolution.staticMethodCallsOnly.set(true);
+            } else {
+                AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
+                Block block = methodInfo.methodInspection.get().methodBody.get();
+                block.visit(element -> {
+                    if (element instanceof MethodCall) {
+                        MethodCall methodCall = (MethodCall) element;
+                        boolean callOnThis = !methodCall.methodInfo.isStatic &&
+                                methodCall.object == null || ((methodCall.object instanceof This) &&
+                                ((This) methodCall.object).typeInfo == methodInfo.typeInfo);
+                        if (callOnThis) atLeastOneCallOnThis.set(true);
+                    }
+                });
+                boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
+                log(STATIC_METHOD_CALLS, "Method {} is not static, does it have no calls on <this> scope? {}", methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
+                methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
+            }
+        }
+    }
+
+
 }

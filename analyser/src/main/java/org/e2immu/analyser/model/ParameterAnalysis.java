@@ -23,14 +23,11 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ParameterAnalysis extends Analysis {
@@ -53,7 +50,7 @@ public class ParameterAnalysis extends Analysis {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
         this.parameterInfo = parameterInfo;
         this.location = new Location(parameterInfo);
-        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
+        ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
                 parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
     }

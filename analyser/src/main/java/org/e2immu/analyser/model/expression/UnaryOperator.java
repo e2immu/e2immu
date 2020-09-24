@@ -70,7 +70,7 @@ public class UnaryOperator implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
                 .setValue(computeValue(evaluationResult))
                 .build();

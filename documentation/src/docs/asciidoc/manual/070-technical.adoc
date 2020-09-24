@@ -17,7 +17,7 @@ to `TypeInfo.typeAnalysis`, `MethodInfo.methodAnalysis`, `FieldInfo.fieldAnalysi
 * the `MethodAnalyser` creates, fills, and returns the `MethodAnalysis` object, but it also creates:
 
 ** `ParameterAnalyser` objects, which fill, create and return `ParameterAnalysis` objects
-** `StatementAnalyser` objects, which fill, create and return `StatementAnalysis` objects.
+** `BlockAnalyser` objects, which fill, create and return `StatementAnalysis` objects.
 Each `StatementAnalysis` object corresponds recursively to a `Statement` in the `methodBody` block.
 
 

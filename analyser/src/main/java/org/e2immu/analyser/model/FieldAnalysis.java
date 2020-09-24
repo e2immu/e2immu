@@ -48,7 +48,7 @@ public class FieldAnalysis extends Analysis {
         location = new Location(fieldInfo);
         this.sam = !fieldInfo.fieldInspection.get().initialiser.isSet() ? null :
                 fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
-        ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldInfo), type,
+        ObjectFlow initialObjectFlow = new ObjectFlow(new Location(fieldInfo), type,
                 Origin.INITIAL_FIELD_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
     }

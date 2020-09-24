@@ -18,7 +18,9 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.MethodAnalyser;
+import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
@@ -28,7 +30,8 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Lambda implements Expression {
@@ -109,15 +112,18 @@ public class Lambda implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
 
-            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, true, evaluationContext.getConfiguration(),
-                    evaluationContext.getPatternMatcher(), evaluationContext.getE2ImmuAnnotationExpressions());
+            TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
+            AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
+            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis,
+                    true, analyserContext.getConfiguration(),
+                    analyserContext.getPatternMatcher(), analyserContext.getE2ImmuAnnotationExpressions());
             builder.addResultOfMethodAnalyser(methodAnalyser.analyse(evaluationContext.getIteration()));
 
             methodAnalyser.getMessageStream().forEach(builder::addMessage);

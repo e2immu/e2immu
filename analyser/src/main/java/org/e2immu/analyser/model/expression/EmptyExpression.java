@@ -19,9 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.E2Immutable;
 
 @E2Container
 public class EmptyExpression implements Expression {
@@ -29,8 +27,6 @@ public class EmptyExpression implements Expression {
 
     public static final Expression DEFAULT_EXPRESSION = new EmptyExpression(); // negation of the disjunction of all earlier conditions
     public static final Expression FINALLY_EXPRESSION = new EmptyExpression(); // always true condition
-
-    public static final EvaluationResult EMPTY_RESULT = new EvaluationResult.Builder().setValue(UnknownValue.NO_VALUE).build();
 
     private EmptyExpression() {
     }
@@ -52,6 +48,6 @@ public class EmptyExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return EMPTY_RESULT;
+        return new EvaluationResult.Builder(evaluationContext).build();
     }
 }

@@ -23,13 +23,12 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 @E2Container
 public class NullConstant implements Expression, Constant<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
-    private static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setValue(NullValue.NULL_VALUE).build();
+    public static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setValue(NullValue.NULL_VALUE).build();
 
     @Override
     @NotNull

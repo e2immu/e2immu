@@ -19,12 +19,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckSize;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.*;
 
 import java.util.List;
@@ -39,14 +37,14 @@ public class ParameterAnalyser {
     private final Messages messages = new Messages();
     public final ParameterInfo parameterInfo;
     public final ParameterAnalysis parameterAnalysis;
-    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
+    private final E2ImmuAnnotationExpressions e2;
 
-    public ParameterAnalyser(ParameterInfo parameterInfo, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public ParameterAnalyser(ParameterInfo parameterInfo, AnalyserContext analyserContext) {
+        this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
         parameterAnalysis = new ParameterAnalysis(parameterInfo);
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -59,21 +57,21 @@ public class ParameterAnalyser {
 
     public void check() {
         // before we check, we copy the properties into annotations
-        parameterAnalysis.transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+        parameterAnalysis.transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
 
-        check(NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
-        check(NotNull.class, List.of(e2ImmuAnnotationExpressions.notNull.get(),
-                e2ImmuAnnotationExpressions.notNull1.get(),
-                e2ImmuAnnotationExpressions.notNull2.get()));
-        check(NotNull1.class, List.of(e2ImmuAnnotationExpressions.notNull1.get(), e2ImmuAnnotationExpressions.notNull2.get()));
-        check(NotNull2.class, e2ImmuAnnotationExpressions.notNull2.get());
-        check(NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+        check(NotModified.class, e2.notModified.get());
+        check(NotNull.class, List.of(e2.notNull.get(),
+                e2.notNull1.get(),
+                e2.notNull2.get()));
+        check(NotNull1.class, List.of(e2.notNull1.get(), e2.notNull2.get()));
+        check(NotNull2.class, e2.notNull2.get());
+        check(NotModified1.class, e2.notModified1.get());
 
         // opposites
-        check(Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
-        check(Modified.class, e2ImmuAnnotationExpressions.modified.get());
+        check(Nullable.class, e2.nullable.get());
+        check(Modified.class, e2.modified.get());
 
         CheckSize.checkSizeForParameters(messages, parameterInfo);
     }
@@ -98,10 +96,10 @@ public class ParameterAnalyser {
      * The goal is to ensure that NOT_NULL and SIZE are not unnecessarily delayed. NOT_MODIFIED will be set by the link computer
      * as soon as possible.
      *
-     * @param methodProperties evaluation context
+     * @param evaluationContext evaluation context
      * @return true if changes were made
      */
-    public boolean analyse(VariableProperties methodProperties) {
+    public boolean analyse(EvaluationContext evaluationContext) {
         boolean changed = false;
         if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
             FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
@@ -114,7 +112,7 @@ public class ParameterAnalyser {
                     if (inField > inParameter && verifySizeNotModified(variableProperty)) {
                         log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                 fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
-                        parameterAnalysis.setProperty(methodProperties, variableProperty, inField);
+                        parameterAnalysis.setProperty(evaluationContext, variableProperty, inField);
                         changed = true;
                     }
                 } else {

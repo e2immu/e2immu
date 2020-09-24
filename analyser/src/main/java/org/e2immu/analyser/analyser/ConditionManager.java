@@ -87,7 +87,7 @@ public class ConditionManager {
         return combineWith(state, value);
     }
 
-    private static Value combineWith(Value condition, Value value) {
+    public static Value combineWith(Value condition, Value value) {
         Objects.requireNonNull(value);
         if (condition == UnknownValue.EMPTY) return value;
         if (value == UnknownValue.EMPTY) return condition;

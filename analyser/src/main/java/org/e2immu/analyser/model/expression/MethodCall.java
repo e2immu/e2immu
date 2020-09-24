@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -83,8 +82,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
-        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo);
 
         // potential circular reference?
         boolean alwaysModifying;
@@ -93,12 +92,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (evaluationContext.getCurrentMethod() != null) {
             MethodAnalysis currentMethodAnalysis = evaluationContext.getCurrentMethodAnalysis();
             TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType;
-            TypeAnalysis currentPrimaryTypeAnalysis = evaluationContext.getCurrentPrimaryTypeAnalysis();
 
-            assert currentPrimaryTypeAnalysis.circularDependencies.isSet() :
+            assert currentPrimaryType.typeResolution.get().circularDependencies.isSet() :
                     "Circular dependencies of type " + currentPrimaryType.fullyQualifiedName + " not yet set";
 
-            boolean circularCall = currentPrimaryTypeAnalysis.circularDependencies.get().contains(methodInfo.typeInfo);
+            boolean circularCall = currentPrimaryType.typeResolution.get().circularDependencies.get().contains(methodInfo.typeInfo);
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
                 Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
@@ -409,7 +407,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return null; // ignore
         }
         if (modified == Level.TRUE) {
-            MethodAnalyser methodAnalyser = evaluationContext.getMethodAnalysers().get(methodInfo);
             Stream<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(methodInfo);
 
             return computeSizeModifyingMethod(builder, methodAnalysis, parameterAnalyses, objectValue, evaluationContext);

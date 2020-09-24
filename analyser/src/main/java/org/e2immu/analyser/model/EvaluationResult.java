@@ -17,25 +17,39 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
 
+    private final Stream<StatementAnalysis.StatementAnalysisModification> modificationStream;
+    private final Stream<StatementAnalysis.StateChange> stateChangeStream;
     public final Value value;
+
+    public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
+        return modificationStream;
+    }
+
+    public Stream<StatementAnalysis.StateChange> getStateChangeStream() {
+        return stateChangeStream;
+    }
 
     public Value getValue() {
         return value;
     }
-
-
     // messages
 
     // properties to be added
@@ -46,22 +60,53 @@ public class EvaluationResult {
 
     // mark a variable read
 
-    private EvaluationResult(Value value, EvaluationResult... previous) {
+    private EvaluationResult(Value value, Stream<StatementAnalysis.StatementAnalysisModification> modificationStream,
+                             Stream<StatementAnalysis.StateChange> stateChangeStream) {
+        this.modificationStream = modificationStream;
+        this.stateChangeStream = stateChangeStream;
         this.value = value;
     }
 
     public boolean isNotNull0(EvaluationContext evaluationContext) {
     }
 
+    // lazy creation of lists
     public static class Builder {
-
+        private final EvaluationContext evaluationContext;
+        private final StatementAnalysis statementAnalysis;
+        private List<StatementAnalysis.StatementAnalysisModification> modifications;
+        private List<StatementAnalysis.StateChange> stateChanges;
+        private List<EvaluationResult> previousResults;
         private Value value;
 
+        // for a constant EvaluationResult
+        public Builder() {
+            evaluationContext = null;
+            statementAnalysis = null;
+        }
+
+        public Builder(EvaluationContext evaluationContext) {
+            this.evaluationContext = evaluationContext;
+            this.statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
+        }
+
         public Builder compose(EvaluationResult... previousResults) {
+            if (previousResults != null) {
+                if (this.previousResults == null) {
+                    this.previousResults = new ArrayList<>();
+                }
+                Collections.addAll(this.previousResults, previousResults);
+            }
             return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
+            if (this.previousResults == null) {
+                this.previousResults = new ArrayList<>();
+            }
+            for (EvaluationResult evaluationResult : previousResults) {
+                this.previousResults.add(evaluationResult);
+            }
             return this;
         }
 
@@ -74,6 +119,7 @@ public class EvaluationResult {
 
         // also sets result of expression
         public Builder setValue(Value value) {
+            this.value = value;
             return this;
         }
 
@@ -82,59 +128,142 @@ public class EvaluationResult {
         }
 
         public EvaluationResult build() {
+            Value firstNonNull = value != null || previousResults == null ? value : previousResults.stream()
+                    .map(er -> er.value)
+                    .filter(Objects::nonNull)
+                    .findFirst().orElse(null);
+            Stream<StatementAnalysis.StatementAnalysisModification> modificationStream = modifications == null ? Stream.empty() : modifications.stream();
+            Stream<StatementAnalysis.StateChange> stateChangeStream = stateChanges == null ? Stream.empty() : stateChanges.stream();
+            if (previousResults != null) {
+                for (EvaluationResult evaluationResult : previousResults) {
+                    modificationStream = Stream.concat(evaluationResult.getModificationStream(), modificationStream);
+                    stateChangeStream = Stream.concat(evaluationResult.getStateChangeStream(), stateChangeStream);
+                }
+            }
 
+            return new EvaluationResult(firstNonNull, modificationStream, stateChangeStream);
         }
 
-        // TODO From statement analyser, needs to translate into an action
+        public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
+            if (value == NO_VALUE) return; // not yet
+            if (variable instanceof This) return; // nothing to be done here
 
-        public void variableOccursInNotNullContext(Variable variable, Value value, EvaluationContext evaluationContext, int notNullRequired) {
+            // if we already know that the variable is NOT @NotNull, then we'll raise an error
+            int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
+            if (notNull == MultiLevel.FALSE) {
+                add(statementAnalysis.new RaiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name()));
+            } else if (notNull == MultiLevel.DELAY) {
+                // we only need to mark this in case of doubt (if we already know, we should not mark)
+                add(statementAnalysis.new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
+            }
         }
 
-        // TODO from variable properties, arrayVariableValue
-        // also sets value
-        public Value createArrayVariableValue(EvaluationResult array, EvaluationResult indexValue, ParameterizedType returnType, Set<Variable> dependencies, Variable arrayVariable) {
+        public Value createArrayVariableValue(EvaluationResult array,
+                                              EvaluationResult indexValue,
+                                              ParameterizedType parameterizedType,
+                                              Set<Variable> dependencies,
+                                              Variable arrayVariable) {
+            String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
+            Value current = evaluationContext.currentValue(name);
+            if (current != null) return current;
+            String arrayName = arrayVariable == null ? null : StatementAnalysis.variableName(arrayVariable);
+            DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
+            modifications.add(statementAnalysis.new AddVariable(dependentVariable));
+            return new VariableValue(evaluationContext, dependentVariable, dependentVariable.name());
         }
 
-        // TODO from VariableProperties
         public Builder markRead(String dependentVariableName) {
+            modifications.add(statementAnalysis.new SetProperty(dependentVariableName, VariableProperty.READ, Level.TRUE));
+            return this;
         }
+
         public Builder markRead(Variable variable) {
+            modifications.add(statementAnalysis.new SetProperty(variable, VariableProperty.READ, Level.TRUE));
+            return this;
         }
-        
+
         public ObjectFlow createLiteralObjectFlow(ParameterizedType commonType) {
         }
+
         public ObjectFlow createInternalObjectFlow(ParameterizedType intParameterizedType, Origin resultOfMethod) {
         }
 
+        public void add(StatementAnalysis.StatementAnalysisModification modification) {
+            if (modifications == null) modifications = new LinkedList<>();
+            modifications.add(modification);
+        }
+
+        public void add(StatementAnalysis.StateChange modification) {
+            if (stateChanges == null) stateChanges = new LinkedList<>();
+            stateChanges.add(modification);
+        }
+
         public Builder raiseError(String message) {
+            modifications.add(statementAnalysis.new RaiseError(message));
             return this;
         }
+
         public Builder raiseError(String message, String extra) {
+            modifications.add(statementAnalysis.new RaiseError(message, extra));
             return this;
         }
-        public Builder addMessage(Message newMessage) {
+
+        public Builder addMessage(Message message) {
+            modifications.add(statementAnalysis.new RaiseErrorMessage(message));
             return this;
         }
 
-        public Value currentValue(Variable variable, EvaluationContext evaluationContext) {
+        public Value currentValue(Variable variable) {
+            // TODO we may want to look inside the modifications, to see if there are assignments?
+            return evaluationContext.currentValue(variable);
         }
 
-        public void markMethodDelay(EvaluationContext evaluationContext, Variable variable, int methodDelay) {
+        public void markMethodDelay(Variable variable, int methodDelay) {
+            modifications.add(statementAnalysis.new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
         }
 
-        public void markMethodCalled(EvaluationContext evaluationContext, Variable variable, int methodCalled) {
+        public void markMethodCalled(Variable variable, int methodCalled) {
+            if (methodCalled == Level.TRUE) {
+                Variable v;
+                if (variable instanceof This) {
+                    v = variable;
+                } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType().typeInfo) {
+                    v = new This(evaluationContext.getCurrentType().typeInfo);
+                } else v = null;
+                if (v != null) {
+                    add(statementAnalysis.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
+                }
+            }
         }
 
-        public void markSizeRestriction(EvaluationContext evaluationContext, Variable variable, int size) {
+        public void markSizeRestriction(Variable variable, int size) {
+            add(statementAnalysis.new SetProperty(variable, VariableProperty.SIZE, size));
         }
 
-        public void markContentModified(EvaluationContext evaluationContext, Variable variable, Value currentValue, int modified) {
+        public void markContentModified(Variable variable, int modified) {
+            int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
+            if (ignoreContentModifications != Level.TRUE) {
+                log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
+                add(statementAnalysis.new SetProperty(variable, VariableProperty.MODIFIED, modified));
+            } else {
+                log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
+            }
         }
 
-        public void variableOccursInNotModified1Context(Variable variable, Value currentValue, EvaluationContext evaluationContext) {
+        public void variableOccursInNotModified1Context(Variable variable, Value currentValue) {
+            if (currentValue == NO_VALUE) return; // not yet
+
+            // if we already know that the variable is NOT @NotNull, then we'll raise an error
+            int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
+            if (notModified1 == Level.FALSE) {
+                add(statementAnalysis.new RaiseError(Message.MODIFICATION_NOT_ALLOWED, variable.name()));
+            } else if (notModified1 == Level.DELAY) {
+                // we only need to mark this in case of doubt (if we already know, we should not mark)
+                add(statementAnalysis.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
+            }
         }
 
-        public void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodInfo, EvaluationContext evaluationContext) {
+        public void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodInfo) {
         }
 
 
@@ -143,9 +272,11 @@ public class EvaluationResult {
 
 
         public void changeCurrentStatementToErrorState() {
+            add(statementAnalysis.new SetErrorState());
         }
 
         public void linkVariables(Variable at, Set<Variable> linked) {
+            add(statementAnalysis.new LinkVariable(at, linked));
         }
 
         public void assignmentBasics(Variable at, Value resultOfExpression, boolean b) {
@@ -154,7 +285,8 @@ public class EvaluationResult {
         public void merge(EvaluationContext copyForThen) {
         }
 
-        public void addPropertyRestriction(Variable variable, VariableProperty notNull, int effectivelyContentNotNull) {
+        public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
+            add(statementAnalysis.new SetProperty(variable, property, value));
         }
 
         public void addPrecondition(Value rest) {
@@ -170,6 +302,7 @@ public class EvaluationResult {
         }
 
         public void modifyingMethodAccess(Variable variable) {
+            add(statementAnalysis.new RemoveVariableFromState(variable));
         }
 
         public void addResultOfMethodAnalyser(boolean analyse) {

@@ -12,12 +12,9 @@ public abstract class ValueWithVariable implements Value {
     @NotNull
     public final Variable variable;
 
-    protected ValueWithVariable(@NotNull Variable variable, EvaluationContext evaluationContext) {
+    protected ValueWithVariable(@NotNull Variable variable) {
         this.variable = Objects.requireNonNull(variable);
-        this.evaluationContext = evaluationContext;
     }
-
-    protected final EvaluationContext evaluationContext;
 
     @Override
     public boolean isNumeric() {

@@ -77,7 +77,7 @@ public class ArrayAccess implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult array = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(array, indexValue);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
         if (array.value instanceof ArrayValue && indexValue instanceof NumericValue) {
             int intIndex = (indexValue).value.toInt().value;
@@ -100,7 +100,7 @@ public class ArrayAccess implements Expression {
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNullRequired > MultiLevel.NULLABLE && builder.getValue() instanceof VariableValue) {
-            builder.variableOccursInNotNullContext(((VariableValue) builder.getValue()).variable, builder.getValue(), evaluationContext, notNullRequired);
+            builder.variableOccursInNotNullContext(((VariableValue) builder.getValue()).variable, builder.getValue(), notNullRequired);
         }
         return builder.build();
     }

@@ -78,4 +78,6 @@ public interface WithInspectionAndAnalysis {
     }
 
     String detailedName();
+
+    void setAnalysis(Analysis analysis);
 }

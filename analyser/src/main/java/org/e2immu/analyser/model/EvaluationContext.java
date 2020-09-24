@@ -19,23 +19,9 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.expression.ArrayAccess;
-import org.e2immu.analyser.objectflow.Access;
-import org.e2immu.analyser.objectflow.Location;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -49,69 +35,57 @@ public interface EvaluationContext {
     @NotNull
     TypeAnalyser getCurrentType();
 
-    default MethodAnalyser getCurrentMethod() {
-        return null;
-    }
-
-    Map<MethodInfo, MethodAnalyser> getMethodAnalysers();
-
-    Map<FieldInfo, FieldAnalyser> getFieldAnalysers();
-
-    Map<TypeInfo, TypeAnalyser> getTypeAnalysers();
+    MethodAnalyser getCurrentMethod();
 
     MethodAnalysis getCurrentMethodAnalysis();
 
-    TypeAnalysis getCurrentPrimaryTypeAnalysis();
+    FieldAnalyser getCurrentField();
 
+    StatementAnalyser getCurrentStatement();
 
-    default FieldAnalyser getCurrentField() {
-        return null;
-    }
-
-    default StatementAnalyser getCurrentStatement() {
-        return null;
-    }
-
-    default Location getLocation() {
-        return getCurrentStatement() != null ? new Location(getCurrentMethod().methodInfo, getCurrentStatement().numberedStatement) :
-                getCurrentMethod() != null ? new Location(getCurrentMethod().methodInfo) :
-                        getCurrentField() != null ? new Location(getCurrentField().fieldInfo)
-                                : new Location(getCurrentType().typeInfo);
-    }
+    Location getLocation();
 
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
-    EvaluationContext child(Value condition, Object o, boolean b);
-
-    int getProperty(Value objectValue, VariableProperty size);
+    EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement);
 
     Value currentValue(Variable variable);
 
+    AnalyserContext getAnalyserContext();
+
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
+        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
         return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
     }
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
+        FieldAnalyser fieldAnalyser = getAnalyserContext().getFieldAnalysers().get(fieldInfo);
         return fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldInfo.fieldAnalysis.get();
     }
 
     default Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
+        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
         return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream().map(ParameterAnalyser::getParameterAnalysis)
                 : methodInfo.methodInspection.get().parameters.stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser typeAnalyser = getTypeAnalysers(typeInfo);
+        TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(typeInfo);
         return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
     }
 
-    // constant stuff, needed for Lambda to create a new method analyser
+    Stream<ObjectFlow> getInternalObjectFlows();
 
-    Configuration getConfiguration();
+    default ObjectFlow getObjectFlow(Variable variable) {
+        return currentValue(variable).getObjectFlow();
+    }
 
-    PatternMatcher getPatternMatcher();
+    default int getProperty(Value value, VariableProperty variableProperty) {
+        return value.getPropertyOutsideContext(variableProperty);
+    }
 
-    E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
+    Value currentValue(String variableName);
+
+    default int getProperty(Variable variable, VariableProperty variableProperty) {
+        return currentValue(variable).getPropertyOutsideContext(variableProperty);
+    }
 }

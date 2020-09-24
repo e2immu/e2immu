@@ -18,9 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -37,9 +35,15 @@ public class SortedType {
 
     public final List<WithInspectionAndAnalysis> methodsFieldsSubTypes;
 
-    public SortedType(TypeInfo primaryType, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
+    // these two lists are there to avoid running over the full list 3 times in the PrimaryTypeAnalyser
+    public final List<TypeInfo> types;
+    public final List<MethodInfo> methods;
+
+    public SortedType(TypeInfo primaryType, List<TypeInfo> types, List<MethodInfo> methods, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
         this.primaryType = Objects.requireNonNull(primaryType);
         this.methodsFieldsSubTypes = Objects.requireNonNull(methodsFieldsSubTypes);
+        this.types = types;
+        this.methods = methods;
     }
 
     @Override

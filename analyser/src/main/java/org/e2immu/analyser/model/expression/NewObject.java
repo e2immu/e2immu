@@ -27,7 +27,8 @@ import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class NewObject implements HasParameterExpressions {
@@ -117,7 +118,7 @@ public class NewObject implements HasParameterExpressions {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (arrayInitializer != null) {
-            EvaluationResult.Builder builder = new EvaluationResult.Builder();
+            EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
             List<EvaluationResult> results = arrayInitializer.expressions.stream()
                     .map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());

@@ -26,7 +26,6 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Objects;
-import java.util.Set;
 
 @E2Container
 public class TypeExpression implements Expression {
@@ -58,7 +57,7 @@ public class TypeExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder().setValue(new TypeValue(parameterizedType, evaluationContext)).build();
+        return new EvaluationResult.Builder(evaluationContext).setValue(new TypeValue(parameterizedType, evaluationContext)).build();
     }
 
     @Override

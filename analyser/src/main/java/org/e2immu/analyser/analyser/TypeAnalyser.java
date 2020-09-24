@@ -25,12 +25,11 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -60,12 +59,15 @@ import static org.e2immu.analyser.util.Logger.log;
  * Errors related to those constraints are added to the type making the violation.
  */
 
+@Container(builds = TypeAnalysis.class)
 public class TypeAnalyser extends AbstractAnalyser {
     private final Messages messages = new Messages();
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
     public final TypeAnalysis typeAnalysis;
+
+    public final VariableValue thisVariableValue;
 
     // initialized in a separate method
     private List<MethodAnalyser> myMethodAnalysersExcludingSAMs;
@@ -76,17 +78,17 @@ public class TypeAnalyser extends AbstractAnalyser {
     private List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis;
     private List<FieldAnalyser> myFieldAnalysers;
 
+
     public TypeAnalyser(@NotModified TypeInfo typeInfo,
                         TypeInfo primaryType,
-                        Configuration configuration,
-                        PatternMatcher patternMatcher,
-                        E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        super(e2ImmuAnnotationExpressions, patternMatcher, configuration);
+                        AnalyserContext analyserContext) {
+        super(analyserContext);
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
         typeAnalysis = new TypeAnalysis(typeInfo);
+        thisVariableValue = new VariableValue(new This(typeInfo));
     }
 
     @Override
@@ -96,9 +98,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     // slightly ugly code, but speed is of the issue
     @Override
-    public void initialize(List<Analyser> analysers,
-                           Map<ParameterInfo, ParameterAnalyser> parameterAnalyserMap,
-                           Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
+    public void initialize() {
 
         ImmutableList.Builder<MethodAnalyser> myMethodAnalysersExcludingSAMs = new ImmutableList.Builder<>();
         ImmutableList.Builder<MethodAnalyser> myMethodAnalysers = new ImmutableList.Builder<>();
@@ -106,34 +106,27 @@ public class TypeAnalyser extends AbstractAnalyser {
         ImmutableList.Builder<MethodAnalyser> myConstructors = new ImmutableList.Builder<>();
         ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
 
-        Map<TypeInfo, TypeAnalysis> localTypeAnalysis = new HashMap<>();
-
-        analysers.forEach(analyser -> {
-            if (analyser instanceof MethodAnalyser) {
-                MethodAnalyser methodAnalyser = (MethodAnalyser) analyser;
-                if (methodAnalyser.methodInfo.typeInfo == typeInfo) {
-                    if (methodAnalyser.methodInfo.isConstructor) {
-                        myConstructors.add(methodAnalyser);
-                    } else {
-                        myMethodAnalysers.add(methodAnalyser);
-                        if (!methodAnalyser.isSAM) {
-                            myMethodAnalysersExcludingSAMs.add(methodAnalyser);
-                        }
-                    }
+        analyserContext.getMethodAnalysers().values().forEach(methodAnalyser -> {
+            if (methodAnalyser.methodInfo.typeInfo == typeInfo) {
+                if (methodAnalyser.methodInfo.isConstructor) {
+                    myConstructors.add(methodAnalyser);
+                } else {
+                    myMethodAnalysers.add(methodAnalyser);
                     if (!methodAnalyser.isSAM) {
-                        myMethodAndConstructorAnalysersExcludingSAMs.add(methodAnalyser);
+                        myMethodAnalysersExcludingSAMs.add(methodAnalyser);
                     }
                 }
-            } else if (analyser instanceof FieldAnalyser) {
-                FieldAnalyser fieldAnalyser = (FieldAnalyser) analyser;
-                if (fieldAnalyser.fieldInfo.owner == typeInfo) {
-                    myFieldAnalysers.add(fieldAnalyser);
+                if (!methodAnalyser.isSAM) {
+                    myMethodAndConstructorAnalysersExcludingSAMs.add(methodAnalyser);
                 }
-            } else if (analyser instanceof TypeAnalyser) {
-                TypeAnalyser typeAnalyser = (TypeAnalyser) analyser;
-                localTypeAnalysis.put(typeAnalyser.typeInfo, typeAnalyser.typeAnalysis);
             }
         });
+        analyserContext.getFieldAnalysers().values().forEach(fieldAnalyser -> {
+            if (fieldAnalyser.fieldInfo.owner == typeInfo) {
+                myFieldAnalysers.add(fieldAnalyser);
+            }
+        });
+
         this.myMethodAnalysersExcludingSAMs = myMethodAnalysersExcludingSAMs.build();
         this.myConstructors = myConstructors.build();
         this.myMethodAnalysers = myMethodAnalysers.build();
@@ -141,12 +134,15 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.myFieldAnalysers = myFieldAnalysers.build();
 
         Either<String, TypeInfo> pe = typeInspection.packageNameOrEnclosingType;
-        parentAndOrEnclosingTypeAnalysis = ListUtil.immutableConcat(
-                pe.isRight() && !typeInfo.isStatic() ? List.of(localTypeAnalysis.get(pe.getRight())) : List.of(),
-                typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT ?
-                        List.of(localTypeAnalysis.getOrDefault(typeInspection.parentClass.typeInfo,
-                                typeInspection.parentClass.typeInfo.typeAnalysis.get())) : List.of()
-        );
+        List<TypeAnalysis> tmp = new ArrayList<>(2);
+        if (pe.isRight() && !typeInfo.isStatic()) {
+            tmp.add(analyserContext.getTypeAnalysers().get(pe.getRight()).typeAnalysis);
+        }
+        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalysers().get(typeInspection.parentClass.typeInfo);
+            tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass.typeInfo.typeAnalysis.get());
+        }
+        parentAndOrEnclosingTypeAnalysis = ImmutableList.copyOf(tmp);
     }
 
     @Override
@@ -161,21 +157,23 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     @Override
     public void check() {
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
-        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2);
 
-        check(typeInfo, UtilityClass.class, e2ImmuAnnotationExpressions.utilityClass.get());
-        check(typeInfo, E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
-        check(typeInfo, E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
-        check(typeInfo, ExtensionClass.class, e2ImmuAnnotationExpressions.extensionClass.get());
-        check(typeInfo, Container.class, e2ImmuAnnotationExpressions.container.get());
-        check(typeInfo, E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
-        check(typeInfo, E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
-        check(typeInfo, Independent.class, e2ImmuAnnotationExpressions.independent.get());
+        check(typeInfo, UtilityClass.class, e2.utilityClass.get());
+        check(typeInfo, E1Immutable.class, e2.e1Immutable.get());
+        check(typeInfo, E1Container.class, e2.e1Container.get());
+        check(typeInfo, ExtensionClass.class, e2.extensionClass.get());
+        check(typeInfo, Container.class, e2.container.get());
+        check(typeInfo, E2Immutable.class, e2.e2Immutable.get());
+        check(typeInfo, E2Container.class, e2.e2Container.get());
+        check(typeInfo, Independent.class, e2.independent.get());
 
         // opposites
-        check(typeInfo, MutableModifiesArguments.class, e2ImmuAnnotationExpressions.mutableModifiesArguments.get());
+        check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments.get());
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
@@ -203,7 +201,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (analyseExtensionClass()) changes = true;
         }
 
-        for (TypeAnalyserVisitor typeAnalyserVisitor : configuration.debugConfiguration.afterTypePropertyComputations) {
+        for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
             typeAnalyserVisitor.visit(iteration, typeInfo);
         }
 
@@ -384,8 +382,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             return false;
         }
         boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(
-                methodAnalyser -> methodAnalyser.parameterAnalysers.stream().allMatch(parameterAnalyser ->
-                        !parameterAnalyser.parameterAnalysis.assignedToField.isSet() ||
+                methodAnalyser -> methodAnalyser.getParameterAnalysers().stream().allMatch(parameterAnalyser ->
+                        !parameterAnalyser.getParameterAnalysis().assignedToField.isSet() ||
                                 parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet()));
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
@@ -393,7 +391,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         for (MethodAnalyser methodAnalyser : myMethodAndConstructorAnalysersExcludingSAMs) {
             if (!methodAnalyser.methodInfo.isPrivate()) {
-                for (ParameterAnalyser parameterAnalyser : methodAnalyser.parameterAnalysers) {
+                for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
                     int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                     if (modified == Level.DELAY) return false; // cannot yet decide
                     if (modified == Level.TRUE) {
@@ -797,12 +795,12 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // and there should be no means of generating an object
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            if (!methodAnalyser.methodAnalysis.createObjectOfSelf.isSet()) {
+            if (!methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf.isSet()) {
                 log(UTILITY_CLASS, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
                         typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                 return false;
             }
-            if (methodAnalyser.methodAnalysis.createObjectOfSelf.get()) {
+            if (methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf.get()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.methodInfo.fullyQualifiedName());

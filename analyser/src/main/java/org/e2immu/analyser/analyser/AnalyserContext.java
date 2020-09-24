@@ -17,30 +17,30 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.pattern.PatternMatcher;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-public interface Analyser {
-    Stream<Message> getMessageStream();
+public interface AnalyserContext {
+    Configuration getConfiguration();
 
-    void check();
+    E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 
-    WithInspectionAndAnalysis getMember();
+    PatternMatcher getPatternMatcher();
 
-    boolean analyse(int iteration);
+    TypeInfo getPrimaryType();
 
-    void initialize();
+    Map<MethodInfo, MethodAnalyser> getMethodAnalysers();
 
-    Analysis getAnalysis();
+    Map<FieldInfo, FieldAnalyser> getFieldAnalysers();
 
-    default boolean isSAM() {
-        return false;
-    }
+    Map<TypeInfo, TypeAnalyser> getTypeAnalysers();
+
+    Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers();
+
+    TypeAnalysis getPrimaryTypeAnalysis();
+
 }

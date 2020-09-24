@@ -20,7 +20,9 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -43,7 +45,7 @@ public class EvaluateParameters {
         int i = 0;
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(parameterResults);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(parameterResults);
 
         for (Expression parameterExpression : parameterExpressions) {
             Value parameterValue;
@@ -73,7 +75,8 @@ public class EvaluateParameters {
                 }
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
-                    Boolean cannotBeModified = parameterExpression.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(methodInfo.typeInfo);
+                    TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
+                    Boolean cannotBeModified = parameterExpression.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis);
                     if (cannotBeModified == null) {
                         map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
                     } else if (cannotBeModified) {

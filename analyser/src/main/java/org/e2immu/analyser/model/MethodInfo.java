@@ -62,10 +62,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final boolean isStatic;
     public final boolean isDefaultImplementation;
 
-    //@Immutable(after="this.inspect(),this.inspect()")
     public final SetTwice<MethodInspection> methodInspection = new SetTwice<>();
-    //@Immutable(after="MethodAnalyser.analyse()")
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
+    public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
 
     // for constructors
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
@@ -145,6 +144,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public Analysis getAnalysis() {
         return methodAnalysis.get();
+    }
+
+    @Override
+    public void setAnalysis(Analysis analysis) {
+        methodAnalysis.set((MethodAnalysis) analysis);
     }
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
@@ -515,7 +519,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      */
     public boolean isCalledFromNonPrivateMethod() {
         for (MethodInfo other : typeInfo.typeInspection.getPotentiallyRun().methods) {
-            if (!other.isPrivate() && other.methodAnalysis.get().methodsOfOwnClassReached.get().contains(this)) {
+            if (!other.isPrivate() && other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
@@ -523,7 +527,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiser.isSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod != null &&
-                        fieldInitialiser.implementationOfSingleAbstractMethod.methodAnalysis.get().methodsOfOwnClassReached.get().contains(this)) {
+                        fieldInitialiser.implementationOfSingleAbstractMethod.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                     return true;
                 }
             }

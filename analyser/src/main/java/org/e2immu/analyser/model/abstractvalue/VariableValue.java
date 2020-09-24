@@ -25,14 +25,8 @@ import org.e2immu.annotation.NotNull;
 
 public class VariableValue extends ValueWithVariable {
 
-    @NotNull
-    public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
-
-    public VariableValue(EvaluationContext evaluationContext,
-                         @NotNull Variable variable,
-                         @NotNull String name) {
-        super(variable, evaluationContext);
-        this.name = name;
+    public VariableValue(@NotNull Variable variable) {
+        super(variable);
     }
 
     @Override

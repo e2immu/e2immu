@@ -100,7 +100,7 @@ public class ParseLambdaExpr {
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
         new Resolver(true).sortTypes(Map.of(anonymousType, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
-        ensureLambdaAnalysisDefaults(anonymousType);
+        anonymousType.ensureLambdaResolutionDefaults();
 
         return new Lambda(functionalType, anonymousType.asParameterizedType());
     }
@@ -138,12 +138,5 @@ public class ParseLambdaExpr {
         TypeInfo typeInfo = methodInfo.typeInfo;
         typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
         return typeInfo;
-    }
-
-    public static void ensureLambdaAnalysisDefaults(TypeInfo typeInfo) {
-        MethodInfo sam = typeInfo.findOverriddenSingleAbstractMethod();
-        if (!sam.methodAnalysis.get().partOfConstruction.isSet()) {
-            sam.methodAnalysis.get().partOfConstruction.set(false);
-        }
     }
 }

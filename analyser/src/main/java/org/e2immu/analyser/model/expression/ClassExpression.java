@@ -27,7 +27,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @E2Container
 public class ClassExpression implements ConstantExpression<ParameterizedType> {

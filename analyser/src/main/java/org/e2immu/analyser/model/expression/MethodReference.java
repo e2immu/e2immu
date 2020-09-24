@@ -79,9 +79,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo, evaluationContext);
+        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo);
 
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         builder.compose(scopeResult);

@@ -17,18 +17,43 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.EvaluationResult;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.util.AddOnceSet;
+import org.e2immu.analyser.util.SetOnceMap;
+
+import java.util.stream.Stream;
 
 public abstract class AbstractAnalyser implements Analyser {
-    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-    public final PatternMatcher patternMatcher;
-    public final Configuration configuration;
+    public final AnalyserContext analyserContext;
 
-    protected AbstractAnalyser(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, PatternMatcher patternMatcher, Configuration configuration) {
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        this.patternMatcher = patternMatcher;
-        this.configuration = configuration;
+    protected AbstractAnalyser(AnalyserContext analyserContext) {
+        this.analyserContext = analyserContext;
+    }
+
+    protected final Messages messages = new Messages();
+
+    protected void apply(EvaluationResult evaluationResult) {
+
+    }
+
+    @Override
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
+    }
+
+    protected Variable variableByName(String variableName) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
+
+    protected ValueWithVariable getVariableValue(Variable variable) {
+        throw new UnsupportedOperationException();
     }
 }

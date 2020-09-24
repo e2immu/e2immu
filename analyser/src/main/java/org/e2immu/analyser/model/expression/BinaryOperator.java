@@ -19,26 +19,19 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
-import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 
@@ -106,7 +99,7 @@ public class BinaryOperator implements Expression {
         ForwardEvaluationInfo forward = allowsForNullOperands() ? ForwardEvaluationInfo.DEFAULT : ForwardEvaluationInfo.NOT_NULL;
         EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
         EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(leftResult, rightResult);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
         builder.setValue(determineValue(leftResult, rightResult, evaluationContext));
         return builder.build();
     }
@@ -215,7 +208,7 @@ public class BinaryOperator implements Expression {
 
     private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
         ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Value constant = and ? BoolValue.FALSE : BoolValue.TRUE;

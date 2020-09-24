@@ -19,14 +19,17 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.BlockAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
@@ -131,7 +134,7 @@ public class Assignment implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
         Variable at;
         if (target instanceof ArrayAccess) {
@@ -166,12 +169,11 @@ public class Assignment implements Expression {
             if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
                 // ++i, i += 1
                 resultOfExpression = operationResult.value;
-                assignedToTarget = operationResult.value;
             } else {
                 // i++
                 resultOfExpression = valueResult.value;
-                assignedToTarget = operationResult.value;
             }
+            assignedToTarget = operationResult.value;
         } else {
             resultOfExpression = valueResult.value;
             assignedToTarget = valueResult.value;
@@ -181,7 +183,7 @@ public class Assignment implements Expression {
         // we let the assignment code decide what to do; we'll read the value of the variable afterwards
         // TODO this does not work well with i++
         Variable assignmentTarget = target.assignmentTarget().orElseThrow();
-        Value currentValue = builder.currentValue(assignmentTarget, evaluationContext);
+        Value currentValue = builder.currentValue(assignmentTarget);
 
         return builder.setValueAndResultOfExpression(currentValue, resultOfExpression).build();
     }
@@ -203,7 +205,7 @@ public class Assignment implements Expression {
             }
 
             // even inside our class, there are limitations; potentially raise error
-            if (StatementAnalyser.checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, evaluationContext)) {
+            if (BlockAnalyser.checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, evaluationContext)) {
                 return;
             }
 
@@ -211,8 +213,8 @@ public class Assignment implements Expression {
                 resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo) {
-            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-            if (!statementAnalyser.statementAnalysis.inErrorState()) {
+            BlockAnalyser blockAnalyser = evaluationContext.getCurrentStatement();
+            if (!blockAnalyser.statementAnalysis.inErrorState()) {
                 builder.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
                 builder.changeCurrentStatementToErrorState();
                 return;

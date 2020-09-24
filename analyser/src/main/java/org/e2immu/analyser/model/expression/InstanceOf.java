@@ -51,7 +51,7 @@ public class InstanceOf implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-        return new EvaluationResult.Builder()
+        return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
                 .setValue(localEvaluation(evaluationContext, evaluationResult.value))
                 .build();

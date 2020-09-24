@@ -18,19 +18,14 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.Sets;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.SetUtil;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class InlineConditionalOperator implements Expression {
     public final Expression condition;
@@ -56,7 +51,7 @@ public class InlineConditionalOperator implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult conditionResult = condition.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(conditionResult);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
         EvaluationContext copyForThen = evaluationContext.child(conditionResult.value, null, false);

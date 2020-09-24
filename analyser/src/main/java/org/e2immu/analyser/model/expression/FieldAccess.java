@@ -25,7 +25,9 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @E2Immutable
 public class FieldAccess implements Expression {
@@ -83,7 +85,7 @@ public class FieldAccess implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(evaluationResult, scopeResult);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult, scopeResult);
         builder.setValue(evaluationResult.value);
 
         if (scopeResult.value != UnknownValue.NO_VALUE) {

@@ -27,7 +27,6 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @E2Container
@@ -67,7 +66,7 @@ public class ArrayLengthExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(result);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value instanceof ArrayValue) {
             ArrayValue arrayValue = (ArrayValue) result.value;

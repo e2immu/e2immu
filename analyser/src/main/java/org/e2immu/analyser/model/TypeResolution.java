@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.WithInspectionAndAnalysis;
-import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.SetOnce;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
-public interface Analyser {
-    Stream<Message> getMessageStream();
+public class TypeResolution {
 
-    void check();
+    public final SetOnce<Set<TypeInfo>> circularDependencies = new SetOnce<>();
 
-    WithInspectionAndAnalysis getMember();
-
-    boolean analyse(int iteration);
-
-    void initialize();
-
-    Analysis getAnalysis();
-
-    default boolean isSAM() {
-        return false;
-    }
 }

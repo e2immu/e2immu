@@ -54,10 +54,6 @@ public class TypeAnalysis extends Analysis {
         return typeInfo.typeInspection.get().annotationMode;
     }
 
-    // computed during inspection
-
-    public final SetOnce<Set<TypeInfo>> circularDependencies = new SetOnce<>();
-
     private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
 
     public ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {

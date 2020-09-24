@@ -25,7 +25,6 @@ public class TransferValue {
     // we also need to know if this value is guaranteed to be executed (and does not sit inside an if statement, for example).
 
     public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
-    public final SetOnce<Boolean> guaranteedToBeExecuted = new SetOnce<>();
 
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.

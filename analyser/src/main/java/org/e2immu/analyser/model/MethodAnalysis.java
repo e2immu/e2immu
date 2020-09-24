@@ -27,7 +27,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -40,54 +39,48 @@ import java.util.stream.IntStream;
 
 public class MethodAnalysis extends Analysis {
 
-    public final Set<MethodInfo> overrides;
     public final ParameterizedType returnType;
-    public final TypeInfo typeInfo;
-    public final Location location;
     public final MethodInfo methodInfo;
+    public final TypeAnalysis typeAnalysis;
+    public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
 
-    public MethodAnalysis(MethodInfo methodInfo) {
-        this(methodInfo, methodInfo.typeInfo.overrides(methodInfo, true));
-    }
-
-    private MethodAnalysis(MethodInfo methodInfo, Set<MethodInfo> overrides) {
+    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
-        this.overrides = overrides;
         this.methodInfo = methodInfo;
-        this.typeInfo = methodInfo.typeInfo;
         this.returnType = methodInfo.returnType();
-        location = new Location(methodInfo);
+        this.typeAnalysis = typeAnalysis;
         if (methodInfo.isConstructor || methodInfo.isVoid()) {
             // we set a NO_FLOW, non-modifiable
             objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
             objectFlow.set(ObjectFlow.NO_FLOW);
         } else {
-            ObjectFlow initialObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
+            ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
     }
 
     @Override
     protected Location location() {
-        return location;
+        return new Location(methodInfo);
     }
 
     @Override
     public AnnotationMode annotationMode() {
-        return typeInfo.typeAnalysis.get().annotationMode();
+        return typeAnalysis.annotationMode();
     }
 
-    public void setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
+    public Message setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
         // raise error if the situation gets worse
-        int valueFromOverrides = valueFromOverrides(variableProperty);
+        int valueFromOverrides = valueFromOverrides(evaluationContext, variableProperty);
         if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
             boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
             if (complain) {
-                evaluationContext.raiseError(Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name);
+                return Message.newMessage(evaluationContext.getLocation(), Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name);
             }
         }
         // normal operation
         setProperty(variableProperty, value);
+        return null;
     }
 
     @Override
@@ -97,7 +90,7 @@ public class MethodAnalysis extends Analysis {
                 // all methods in java.lang.String are @NotModified, but we do not bother writing that down
                 // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
                 if (!methodInfo.isConstructor &&
-                        typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
+                        typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }
                 return getPropertyCheckOverrides(VariableProperty.MODIFIED);
@@ -111,16 +104,15 @@ public class MethodAnalysis extends Analysis {
             case NOT_NULL:
                 if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
-                if (fluent == Level.TRUE) return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return getPropertyCheckOverrides(VariableProperty.NOT_NULL);
 
             case IMMUTABLE:
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
                     throw new UnsupportedOperationException(); //we should not even be asking
 
-                int immutableType = formalProperty(VariableProperty.IMMUTABLE);
-                int immutableDynamic = dynamicProperty(immutableType, VariableProperty.IMMUTABLE);
+                int immutableType = formalProperty();
+                int immutableDynamic = dynamicProperty(immutableType);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
@@ -135,17 +127,17 @@ public class MethodAnalysis extends Analysis {
         return super.getProperty(variableProperty);
     }
 
-    private int dynamicProperty(int formalImmutableProperty, VariableProperty variableProperty) {
+    private int dynamicProperty(int formalImmutableProperty) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
-        return Level.best(super.getProperty(variableProperty), immutableTypeAfterEventual);
+        return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 
-    private int formalProperty(VariableProperty variableProperty) {
-        return returnType.getProperty(variableProperty);
+    private int formalProperty() {
+        return returnType.getProperty(VariableProperty.IMMUTABLE);
     }
 
-    private int valueFromOverrides(VariableProperty variableProperty) {
-        return overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+    private int valueFromOverrides(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return overrides.get().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
@@ -154,7 +146,7 @@ public class MethodAnalysis extends Analysis {
         if (hasBeenDefined) {
             theStream = mine;
         } else {
-            IntStream overrideValues = overrides.stream().mapToInt(mi -> mi.methodAnalysis.get().getPropertyAsIs(variableProperty));
+            IntStream overrideValues = overrides.get().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
         }
         int max = theStream.max().orElse(Level.DELAY);
@@ -217,36 +209,21 @@ public class MethodAnalysis extends Analysis {
         doNotModified1(e2ImmuAnnotationExpressions);
 
         // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-        int formallyImmutable = formalProperty(VariableProperty.IMMUTABLE);
-        int dynamicallyImmutable = dynamicProperty(formallyImmutable, VariableProperty.IMMUTABLE);
+        int formallyImmutable = formalProperty();
+        int dynamicallyImmutable = dynamicProperty(formallyImmutable);
         if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
             doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
         }
     }
 
     private boolean allowIndependentOnMethod() {
-        return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeInfo) != Boolean.TRUE;
+        return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) != Boolean.TRUE;
     }
 
     // ************** LOCAL STORAGE
 
     // not to be stored. later, move to separate class...
     public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
-
-    /**
-     * this one contains all own methods called from this method, and the transitive closure.
-     * we use this to compute effective finality: some methods are only called from constructors,
-     * they form part of the construction aspect of the class
-     */
-    public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
-    public final SetOnce<Boolean> partOfConstruction = new SetOnce<>();
-
-    // ************** VARIOUS ODDS AND ENDS
-    // used to check that in a utility class, no objects of the class itself are created
-    public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
-
-    // if true, the method has no (non-static) method calls on the "this" scope
-    public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
 
 
     // ************** Modification computing

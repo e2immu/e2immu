@@ -83,7 +83,7 @@ public class ArrayInitializer implements Expression {
         List<EvaluationResult> results = expressions.stream().map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT)).collect(Collectors.toList());
         List<Value> values = results.stream().map(EvaluationResult::getValue).collect(Collectors.toList());
 
-        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(results);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
         builder.setValue(new ArrayValue(objectFlow, values));
 

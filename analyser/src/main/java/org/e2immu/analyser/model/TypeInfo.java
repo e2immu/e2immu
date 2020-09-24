@@ -25,11 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.MethodAnalyser;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -37,7 +33,6 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -62,6 +57,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     //@Immutable(after="this.inspect()")
     public final SetTwiceSupply<TypeInspection> typeInspection = new SetTwiceSupply<>();
+    public final SetOnce<TypeResolution> typeResolution = new SetOnce<>();
     public final SetOnce<TypeAnalysis> typeAnalysis = new SetOnce<>();
 
     // creates an anonymous version of the parent type parameterizedType
@@ -101,6 +97,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     @NotNull
     public Analysis getAnalysis() {
         return typeAnalysis.get();
+    }
+
+    @Override
+    public void setAnalysis(Analysis analysis) {
+        typeAnalysis.set((TypeAnalysis) analysis);
     }
 
     public boolean hasBeenInspected() {
@@ -1009,10 +1010,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 
         resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
-        ParseLambdaExpr.ensureLambdaAnalysisDefaults(typeInfo);
+        ensureLambdaResolutionDefaults();
 
         return methodInfo;
     }
+
 
     private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInfo concreteMethod) {
         Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().parameters.get(0));
@@ -1216,5 +1218,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isPrimaryType() {
         return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType.isLeft();
+    }
+
+    public void ensureLambdaResolutionDefaults() {
+        MethodInfo sam = findOverriddenSingleAbstractMethod();
+        if (!sam.methodResolution.isSet()) {
+            sam.methodResolution.set(new MethodResolution());
+        }
+        if (!sam.methodResolution.get().partOfConstruction.isSet()) {
+            sam.methodResolution.get().partOfConstruction.set(false);
+        }
     }
 }

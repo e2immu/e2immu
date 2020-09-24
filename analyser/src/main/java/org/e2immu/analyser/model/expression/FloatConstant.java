@@ -18,11 +18,11 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.FloatValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 @E2Container

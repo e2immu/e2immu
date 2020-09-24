@@ -25,14 +25,12 @@ import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
-import org.e2immu.analyser.analyser.methodanalysercomponent.StaticModifier;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -61,32 +59,31 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodAnalyser extends AbstractAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
 
-    private final Messages messages = new Messages();
-
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
     public final boolean isSAM;
     public final MethodAnalysis methodAnalysis;
 
-    public final List<ParameterAnalyser> parameterAnalysers;
-    private Map<ParameterInfo, ParameterAnalyser> parameterAnalyserMap;
-    private Map<FieldInfo, FieldAnalyser> fieldAnalyserMap;
     private List<FieldAnalyser> myFieldAnalysers;
+    private final TypeAnalysis typeAnalysis;
 
-    public List<ParameterAnalyser> getParameterAnalysers() {
-        return parameterAnalysers;
+    public Collection<ParameterAnalyser> getParameterAnalysers() {
+        return analyserContext.getParameterAnalysers().values();
     }
 
-    public MethodAnalyser(MethodInfo methodInfo, boolean isSAM, Configuration configuration, PatternMatcher patternMatcher, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        super(e2ImmuAnnotationExpressions, patternMatcher, configuration);
+    public MethodAnalyser(MethodInfo methodInfo,
+                          TypeAnalysis typeAnalysis,
+                          boolean isSAM,
+                          AnalyserContext analyserContext) {
+        super(analyserContext);
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
         ImmutableList.Builder<ParameterAnalyser> parameterAnalysers = new ImmutableList.Builder<>();
         for (ParameterInfo parameterInfo : methodInspection.parameters) {
-            parameterAnalysers.add(new ParameterAnalyser(parameterInfo, e2ImmuAnnotationExpressions));
+            parameterAnalysers.add(new ParameterAnalyser(parameterInfo, analyserContext));
         }
-        this.parameterAnalysers = parameterAnalysers.build();
-        methodAnalysis = new MethodAnalysis(methodInfo);
+        this.typeAnalysis = typeAnalysis;
+        methodAnalysis = new MethodAnalysis(methodInfo, typeAnalysis);
         this.isSAM = isSAM;
     }
 
@@ -101,19 +98,11 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public void initialize(List<Analyser> analysers, Map<ParameterInfo, ParameterAnalyser> parameterAnalysers,
-                           Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
-        parameterAnalysers.values().forEach(parameterAnalyser -> parameterAnalyser.initialize(fieldAnalysers));
-        this.parameterAnalyserMap = parameterAnalysers;
-        this.fieldAnalyserMap = fieldAnalysers;
-
+    public void initialize() {
         ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
-        analysers.forEach(analyser -> {
-            if (analyser instanceof FieldAnalyser) {
-                FieldAnalyser fieldAnalyser = (FieldAnalyser) analyser;
-                if (fieldAnalyser.fieldInfo.owner == methodInfo.typeInfo) {
-                    myFieldAnalysers.add(fieldAnalyser);
-                }
+        analyserContext.getFieldAnalysers().values().forEach(analyser -> {
+            if (analyser.fieldInfo.owner == methodInfo.typeInfo) {
+                myFieldAnalysers.add(analyser);
             }
         });
         this.myFieldAnalysers = myFieldAnalysers.build();
@@ -124,46 +113,51 @@ public class MethodAnalyser extends AbstractAnalyser {
         return methodAnalysis;
     }
 
+    EvaluationContext newEvaluationContext(int iteration) {
+        return new EvaluationContextImpl();
+    }
+
     @Override
     public void check() {
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
-        check(Independent.class, e2ImmuAnnotationExpressions.independent.get());
+        check(Independent.class, e2.independent.get());
 
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
-                check(NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
-                check(Fluent.class, e2ImmuAnnotationExpressions.fluent.get());
-                check(Identity.class, e2ImmuAnnotationExpressions.identity.get());
-                check(E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
-                check(E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
-                check(Container.class, e2ImmuAnnotationExpressions.container.get());
-                check(E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
-                check(E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
-                check(BeforeMark.class, e2ImmuAnnotationExpressions.beforeMark.get());
+                check(NotNull.class, e2.notNull.get());
+                check(Fluent.class, e2.fluent.get());
+                check(Identity.class, e2.identity.get());
+                check(E1Immutable.class, e2.e1Immutable.get());
+                check(E1Container.class, e2.e1Container.get());
+                check(Container.class, e2.container.get());
+                check(E2Immutable.class, e2.e2Immutable.get());
+                check(E2Container.class, e2.e2Container.get());
+                check(BeforeMark.class, e2.beforeMark.get());
                 CheckConstant.checkConstantForMethods(messages, methodInfo);
 
                 // checks for dynamic properties of functional interface types
-                check(NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+                check(NotModified1.class, e2.notModified1.get());
             }
-            check(NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
+            check(NotModified.class, e2.notModified.get());
 
             // opposites
-            check(Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
-            check(Modified.class, e2ImmuAnnotationExpressions.modified.get());
+            check(Nullable.class, e2.nullable.get());
+            check(Modified.class, e2.modified.get());
         }
         // opposites
-        check(Dependent.class, e2ImmuAnnotationExpressions.dependent.get());
+        check(Dependent.class, e2.dependent.get());
 
         CheckSize.checkSizeForMethods(messages, methodInfo);
         CheckPrecondition.checkPrecondition(messages, methodInfo);
         CheckOnly.checkOnly(messages, methodInfo);
         CheckOnly.checkMark(messages, methodInfo);
 
-        parameterAnalysers.forEach(ParameterAnalyser::check);
+        getParameterAnalysers().forEach(ParameterAnalyser::check);
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
@@ -176,7 +170,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     @Override
     public boolean analyse(int iteration) {
-        VariableProperties methodProperties = new VariableProperties(e2ImmuAnnotationExpressions,
+        VariableProperties methodProperties = new VariableProperties(e2,
                 iteration, configuration, patternMatcher, methodInfo);
         List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().structure.statements;
         if (!statements.isEmpty()) {
@@ -193,9 +187,10 @@ public class MethodAnalyser extends AbstractAnalyser {
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                 methodProperties.createLocalVariableOrParameter(parameterInfo);
             }
-            if (analyseMethod(methodProperties)) changes = true;
+            if (analyseMethod(evaluationContext)) changes = true;
 
-            for (MethodAnalyserVisitor methodAnalyserVisitor : configuration.debugConfiguration.afterMethodAnalyserVisitors) {
+            for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
+                    debugConfiguration.afterMethodAnalyserVisitors) {
                 methodAnalyserVisitor.visit(iteration, methodInfo);
             }
 
@@ -205,7 +200,6 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private boolean analyseMethod(EvaluationContext evaluationContext) {
-        VariableProperties methodProperties = (VariableProperties) evaluationContext;
         try {
             boolean changes = false;
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
@@ -218,9 +212,6 @@ public class MethodAnalyser extends AbstractAnalyser {
                 changes = true;
             }
 
-            if (StaticModifier.computeStaticMethodCallsOnly(methodInfo, methodAnalysis, numberedStatements))
-                changes = true;
-
             if (makeInternalObjectFlowsPermanent(methodProperties)) changes = true;
             if (!methodInfo.isConstructor) {
                 if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
@@ -231,10 +222,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     // methodIsConstant makes use of methodIsNotNull, so order is important
                     if (methodIsConstant()) changes = true;
                 }
-                if (methodInfo.isStatic) {
-                    if (methodCreatesObjectOfSelf(numberedStatements)) changes = true;
-                }
-                StaticModifier.detectMissingStaticModifier(messages, methodInfo, methodAnalysis);
+                detectMissingStaticModifier();
                 if (methodIsModified(methodProperties)) changes = true;
 
                 // @Only, @Mark comes after modifications
@@ -256,6 +244,32 @@ public class MethodAnalyser extends AbstractAnalyser {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
         }
+    }
+
+    private void detectMissingStaticModifier() {
+        if (!methodAnalysis.complainedAboutMissingStaticModifier.isSet()) {
+            if (!methodInfo.isStatic && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
+                // we need to check if there's fields being read/assigned/
+                if (absentUnlessStatic(methodAnalysis, VariableProperty.READ) &&
+                        absentUnlessStatic(methodAnalysis, VariableProperty.ASSIGNED) &&
+                        (methodAnalysis.thisSummary.get().properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                        !methodInfo.hasOverrides() &&
+                        !methodInfo.isDefaultImplementation) {
+                    MethodResolution methodResolution = methodInfo.methodResolution.get();
+                    if (methodResolution.staticMethodCallsOnly.isSet() && methodResolution.staticMethodCallsOnly.get()) {
+                        messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
+                        methodAnalysis.complainedAboutMissingStaticModifier.set(true);
+                        return;
+                    }
+                }
+            }
+            methodAnalysis.complainedAboutMissingStaticModifier.set(false);
+        }
+    }
+
+    private static boolean absentUnlessStatic(MethodAnalysis methodAnalysis, VariableProperty variableProperty) {
+        return methodAnalysis.fieldSummaries.stream().allMatch(e -> e.getValue()
+                .properties.getOtherwise(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
     }
 
     private boolean obtainMostCompletePrecondition(List<NumberedStatement> numberedStatements,
@@ -353,12 +367,13 @@ public class MethodAnalyser extends AbstractAnalyser {
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {
+                    E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
                     log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                    if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.mark.get())) {
-                        methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
+                    if (!methodAnalysis.annotations.isSet(e2.mark.get())) {
+                        methodAnalysis.annotations.put(e2.mark.get(), false);
                     }
-                    if (!methodAnalysis.annotations.isSet(e2ImmuAnnotationExpressions.only.get())) {
-                        methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
+                    if (!methodAnalysis.annotations.isSet(e2.only.get())) {
+                        methodAnalysis.annotations.put(e2.only.get(), false);
                     }
                     return false;
                 }
@@ -386,16 +401,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         MethodAnalysis.MarkAndOnly markAndOnly = new MethodAnalysis.MarkAndOnly(preconditions, jointMarkLabel, mark, after);
         methodAnalysis.markAndOnly.set(markAndOnly);
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (mark) {
-            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.mark.get().typeInfo,
+            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2.mark.get().typeInfo,
                     List.of(new MemberValuePair("value", new StringConstant(jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
-            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.only.get(), false);
+            methodAnalysis.annotations.put(e2.only.get(), false);
         } else {
-            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.only.get().typeInfo,
+            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(e2.only.get().typeInfo,
                     List.of(new MemberValuePair(after ? "after" : "before", new StringConstant(jointMarkLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
-            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.mark.get(), false);
+            methodAnalysis.annotations.put(e2.mark.get(), false);
         }
         return true;
     }
@@ -439,18 +455,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition, filterResult.accepted.keySet(), methodInfo.distinguishingName());
         methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
         return true;
-    }
-
-    // part of @UtilityClass computation in the type analyser
-    private boolean methodCreatesObjectOfSelf(List<NumberedStatement> numberedStatements) {
-        if (!methodAnalysis.createObjectOfSelf.isSet()) {
-            boolean createSelf = numberedStatements.stream().flatMap(ns -> ns.statement.collect(NewObject.class).stream())
-                    .anyMatch(no -> no.parameterizedType.typeInfo == methodInfo.typeInfo);
-            log(UTILITY_CLASS, "Is {} a static non-constructor method that creates self? {}", methodInfo.fullyQualifiedName(), createSelf);
-            methodAnalysis.createObjectOfSelf.set(createSelf);
-            return true;
-        }
-        return false;
     }
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
@@ -502,11 +506,12 @@ public class MethodAnalyser extends AbstractAnalyser {
         boolean isConstant = value.isConstant();
 
         methodAnalysis.singleReturnValue.set(value);
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (isConstant) {
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2ImmuAnnotationExpressions, value);
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2, value);
             methodAnalysis.annotations.put(constantAnnotation, true);
         } else {
-            methodAnalysis.annotations.put(e2ImmuAnnotationExpressions.constant.get(), false);
+            methodAnalysis.annotations.put(e2.constant.get(), false);
         }
         methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
 
@@ -578,7 +583,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         if (value <= currentValue) return false; // not improving.
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(evaluationContext, variableProperty, value);
+        Message message = methodAnalysis.setProperty(evaluationContext, variableProperty, value);
+        if (message != null) messages.add(message);
         return true;
     }
 
@@ -673,7 +679,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (value <= currentValue) return false; // not improving.
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(evaluationContext, variableProperty, value);
+        Message message = methodAnalysis.setProperty(evaluationContext, variableProperty, value);
+        if (message != null) messages.add(message);
         return true;
     }
 
@@ -753,7 +760,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                 .anyMatch(tv -> tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
-            methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, Level.TRUE);
+            Message message = methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, Level.TRUE);
+            if (message != null) messages.add(message);
             return true;
         }
 
@@ -803,7 +811,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return false;
             }
             if (methodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get()) {
-                Boolean haveModifying = findOtherModifyingElements(methodInfo);
+                Boolean haveModifying = findOtherModifyingElements();
                 if (haveModifying == null) return false;
                 isModified = haveModifying;
             }
@@ -820,11 +828,12 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
         }
         // (we could call non-@NM methods on parameters or local variables, but that does not influence this annotation)
-        methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, isModified ? Level.TRUE : Level.FALSE);
+        Message message = methodAnalysis.setProperty(evaluationContext, VariableProperty.MODIFIED, isModified ? Level.TRUE : Level.FALSE);
+        if (message != null) messages.add(message);
         return true;
     }
 
-    private Boolean findOtherModifyingElements(MethodInfo methodInfo) {
+    private Boolean findOtherModifyingElements() {
         boolean nonPrivateFields = myFieldAnalysers.stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
                 .anyMatch(fa -> !fa.fieldInfo.isPrivate());
@@ -840,7 +849,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                         !mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
                                 (!mi.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
                                         (mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
-                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) == null ||
+                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) == null ||
                                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
         if (someOtherMethodNotYetDecided.isPresent()) {
@@ -851,11 +860,11 @@ public class MethodAnalyser extends AbstractAnalyser {
         return methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
-                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(mi.typeInfo) &&
+                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) &&
                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
-    private boolean methodIsIndependent(VariableProperties methodProperties) {
+    private boolean methodIsIndependent(EvaluationContext evaluationContext) {
         if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) {
             return false; // already computed
         }
@@ -864,7 +873,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) return false; // wait
             if (modified == Level.TRUE) {
-                methodAnalysis.setProperty(methodProperties, VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                Message message = methodAnalysis.setProperty(evaluationContext, VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                if (message != null) messages.add(message);
                 return true;
             }
         } // else: for constructors, we assume @Modified so that rule is not that useful
@@ -877,7 +887,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // PART 1: check the return object, if it is there
 
         // support data types are not set for types that have not been defined; there, we rely on annotations
-        Boolean returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo, methodAnalysis, methodProperties);
+        Boolean returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo, methodAnalysis, evaluationContext);
         if (returnObjectIsIndependent == null) {
             return false; // delay
         }
@@ -920,13 +930,14 @@ public class MethodAnalyser extends AbstractAnalyser {
         // conclusion
 
         boolean independent = parametersIndependentOfFields && returnObjectIsIndependent;
-        methodAnalysis.setProperty(methodProperties, VariableProperty.INDEPENDENT, independent ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
+        Message message = methodAnalysis.setProperty(evaluationContext, VariableProperty.INDEPENDENT, independent ? MultiLevel.EFFECTIVE : MultiLevel.FALSE);
+        if (message != null) messages.add(message);
         log(INDEPENDENT, "Mark method/constructor {} " + (independent ? "" : "not ") + "@Independent",
                 methodInfo.fullyQualifiedName());
         return true;
     }
 
-    private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodAnalysis methodAnalysis, VariableProperties methodProperties) {
+    private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodAnalysis methodAnalysis, EvaluationContext evaluationContext) {
         if (methodInfo.isConstructor || methodInfo.isVoid() ||
                 methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
                         methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
@@ -947,17 +958,18 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
 
         // TODO convert the variables into field analysers
-        
+
         int e2ImmutableStatusOfFieldRefs = variables.stream()
                 .filter(MethodAnalyser::isFieldNotOfImplicitlyImmutableType)
-                .map(v -> fieldAnalyserMap.get(((FieldReference) v).fieldInfo))
+                .map(v -> analyserContext.getFieldAnalysers().get(((FieldReference) v).fieldInfo))
                 .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     variables.stream()
                             .filter(v -> isFieldNotOfImplicitlyImmutableType(v) &&
-                                    MultiLevel.value(fieldAnalyserMap.get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
+                                    MultiLevel.value(analyserContext.getFieldAnalysers()
+                                                    .get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
                                             MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
                             .map(Variable::detailedString)
                             .collect(Collectors.joining(", ")));
@@ -976,7 +988,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
 
         if (methodAnalysis.singleReturnValue.isSet()) {
-            int imm = methodAnalysis.singleReturnValue.get().getProperty(methodProperties, VariableProperty.IMMUTABLE);
+            int imm = methodAnalysis.singleReturnValue.get().getProperty(evaluationContext, VariableProperty.IMMUTABLE);
             int dynamicE2ImmutableStatusOfReturnType = MultiLevel.value(imm, MultiLevel.E2IMMUTABLE);
             if (dynamicE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
                 log(DELAYED, "Have dynamic return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
@@ -1000,34 +1012,34 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public Stream<Message> getMessageStream() {
-        return Stream.concat(messages.getMessageStream(), parameterAnalysers.stream().flatMap(ParameterAnalyser::getMessageStream));
+        return Stream.concat(super.getMessageStream(), getParameterAnalysers().stream().flatMap(ParameterAnalyser::getMessageStream));
     }
 
-    public boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements, VariableProperties methodProperties) {
+    public boolean computeVariablePropertiesOfMethod(List<NumberedStatement> statements, EvaluationContext evaluationContext) {
         boolean changes = false;
         try {
-            StatementAnalyser statementAnalyser = new StatementAnalyser(methodInfo);
+            BlockAnalyser blockAnalyser = new BlockAnalyser(methodInfo);
             NumberedStatement startStatement = statements.get(0);
-            if (statementAnalyser.computeVariablePropertiesOfBlock(startStatement, methodProperties)) changes = true;
-            messages.addAll(statementAnalyser.getMessageStream());
+            if (blockAnalyser.computeVariablePropertiesOfBlock(startStatement, evaluationContext)) changes = true;
+            messages.addAll(blockAnalyser.getMessageStream());
             // this method computes, ONLY THE FIRST TIME, the values for READ, ASSIGNED, METHOD_CALLED on fields and this
-            if (copyFieldAndThisProperties(methodProperties)) changes = true;
+            if (copyFieldAndThisProperties(evaluationContext)) changes = true;
 
             // this one can be delayed, it copies the field assignment values
-            if (copyFieldAssignmentValue(methodProperties)) changes = true;
+            if (copyFieldAssignmentValue(evaluationContext)) changes = true;
 
             // SIZE, NOT_NULL into fieldSummaries
-            if (copyContextProperties(methodProperties)) changes = true;
+            if (copyContextProperties(evaluationContext)) changes = true;
 
             // this method computes, unless delayed, the values for
             // - linksComputed
             // - variablesLinkedToFieldsAndParameters
             // - fieldsLinkedToFieldsAndVariables
-            if (establishLinks(methodProperties)) changes = true;
+            if (establishLinks(evaluationContext)) changes = true;
             if (!methodInfo.isConstructor && updateVariablesLinkedToMethodResult())
                 changes = true;
 
-            if (computeContentModifications(methodProperties)) changes = true;
+            if (computeContentModifications(evaluationContext)) changes = true;
 
             return changes;
         } catch (RuntimeException rte) {
@@ -1114,7 +1126,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     */
 
-    private boolean establishLinks(VariableProperties methodProperties) {
+    private boolean establishLinks(EvaluationContext methodProperties) {
         if (methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         // final fields need to have a value set; all the others act as local variables
@@ -1170,7 +1182,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private boolean computeContentModifications(VariableProperties methodProperties) {
+    private boolean computeContentModifications(EvaluationContext methodProperties) {
         if (!methodAnalysis.variablesLinkedToFieldsAndParameters.isSet()) return false;
 
         boolean changes = false;
@@ -1269,12 +1281,12 @@ public class MethodAnalyser extends AbstractAnalyser {
      * There cannot be a delay here.
      * Fields that are not mentioned in the evaluation context should not be present in the fieldSummaries.
      *
-     * @param methodProperties context
+     * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private boolean copyFieldAndThisProperties(VariableProperties methodProperties) {
+    private boolean copyFieldAndThisProperties(EvaluationContext evaluationContext) {
         boolean changes = false;
-        for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
+        for (AboutVariable aboutVariable : evaluationContext.variableProperties()) {
             Variable variable = aboutVariable.variable;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -1320,7 +1332,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
     }
 
-    private boolean copyFieldAssignmentValue(VariableProperties methodProperties) {
+    private boolean copyFieldAssignmentValue(EvaluationContext methodProperties) {
         boolean changes = false;
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
             Variable variable = aboutVariable.variable;
@@ -1345,7 +1357,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     // a DELAY should only be possible for good reasons
     // context can generally only be delayed when there is a method delay
 
-    private boolean copyContextProperties(VariableProperties methodProperties) {
+    private boolean copyContextProperties(EvaluationContext evaluationContext) {
         boolean changes = false;
         boolean anyDelay = false;
         for (AboutVariable aboutVariable : methodProperties.variableProperties()) {
@@ -1391,7 +1403,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                         // we could not find anything related to size, let's advertise that
                         int sizeInParam = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
-                            parameterInfo.parameterAnalysis.get().setProperty(methodProperties, VariableProperty.SIZE, Level.IS_A_SIZE);
+                            parameterInfo.parameterAnalysis.get().setProperty(evaluationContext, VariableProperty.SIZE, Level.IS_A_SIZE);
                         }
                     }
                 }

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
@@ -34,8 +33,6 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.annotation.*;
 
@@ -49,7 +46,6 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class FieldAnalyser extends AbstractAnalyser {
-    private final Messages messages = new Messages();
 
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
@@ -59,14 +55,13 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
-    private Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private TypeAnalyser myTypeAnalyser;
 
     public FieldAnalyser(FieldInfo fieldInfo,
                          TypeInfo primaryType,
                          MethodAnalyser sam,
-                         Configuration configuration, PatternMatcher patternMatcher, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        super(e2ImmuAnnotationExpressions, patternMatcher, configuration);
+                         AnalyserContext analyserContext) {
+        super(analyserContext);
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysis(fieldInfo);
@@ -85,29 +80,17 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public void initialize(List<Analyser> analysers,
-                           Map<ParameterInfo, ParameterAnalyser> parameterAnalysers,
-                           Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
-        this.parameterAnalysers = parameterAnalysers;
-
+    public void initialize() {
         ImmutableList.Builder<MethodAnalyser> allMethodsAndConstructors = new ImmutableList.Builder<>();
         ImmutableList.Builder<MethodAnalyser> myMethodsAndConstructors = new ImmutableList.Builder<>();
 
-        analysers.forEach(analyser -> {
-            if (analyser instanceof MethodAnalyser) {
-                MethodAnalyser methodAnalyser = (MethodAnalyser) analyser;
-                allMethodsAndConstructors.add(methodAnalyser);
-                if (methodAnalyser.methodInfo.typeInfo == fieldInfo.owner) {
-                    myMethodsAndConstructors.add(methodAnalyser);
-                }
-            } else if (analyser instanceof TypeAnalyser) {
-                TypeAnalyser typeAnalyser = (TypeAnalyser) analyser;
-                if (typeAnalyser.typeInfo == fieldInfo.owner) {
-                    myTypeAnalyser = typeAnalyser;
-                }
+        analyserContext.getMethodAnalysers().values().forEach(analyser -> {
+            allMethodsAndConstructors.add(analyser);
+            if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
+                myMethodsAndConstructors.add(analyser);
             }
         });
-
+        myTypeAnalyser = analyserContext.getTypeAnalysers().get(fieldInfo.owner);
         this.allMethodsAndConstructors = allMethodsAndConstructors.build();
         this.myMethodsAndConstructors = myMethodsAndConstructors.build();
     }
@@ -125,35 +108,37 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // STEP 1: THE INITIALISER
 
-        VariableProperties fieldProperties = new VariableProperties(e2ImmuAnnotationExpressions,
-                iteration, configuration, patternMatcher, fieldInfo);
+        EvaluationContext evaluationContext;
 
         Value value;
         boolean haveInitialiser;
         if (fieldInspection.initialiser.isSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.initialiser.get();
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
-                VariableProperties localVariableProperties;
                 if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
-                    localVariableProperties = fieldProperties;
+                    evaluationContext = new EvaluationContextImpl(iteration);
                 } else {
-                    localVariableProperties = fieldProperties.copyWithCurrentMethod(fieldInitialiser.implementationOfSingleAbstractMethod);
+                    evaluationContext = sam.newEvaluationContext(iteration);
                 }
-                value = fieldInitialiser.initialiser.evaluate(localVariableProperties, EvaluationVisitor.NO_VISITOR, ForwardEvaluationInfo.DEFAULT);
+                EvaluationResult evaluationResult = fieldInitialiser.initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                apply(evaluationResult);
+                value = evaluationResult.value;
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
                 haveInitialiser = true;
             } else {
                 value = NO_VALUE; // initialiser set, but to empty expression
                 haveInitialiser = false;
+                evaluationContext = new EvaluationContextImpl(iteration);
             }
         } else {
             value = NO_VALUE;
             haveInitialiser = true;
+            evaluationContext = new EvaluationContextImpl(iteration);
         }
-        boolean fieldSummariesNotYetSet = fieldProperties.iteration == 0;
+        boolean fieldSummariesNotYetSet = iteration == 0;
         boolean isFunctionalInterface = fieldInfo.type.isFunctionalInterface();
 
-        if (makeInternalObjectFlowsPermanent(fieldProperties)) changes = true;
+        if (makeInternalObjectFlowsPermanent(evaluationContext)) changes = true;
 
         // STEP 2: EFFECTIVELY FINAL: @E1Immutable
         if (analyseFinal(fieldCanBeWrittenFromOutsideThisType, fieldSummariesNotYetSet))
@@ -202,7 +187,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // analyser visitors
 
-        for (FieldAnalyserVisitor fieldAnalyserVisitor : configuration.debugConfiguration.afterFieldAnalyserVisitors) {
+        for (FieldAnalyserVisitor fieldAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors) {
             fieldAnalyserVisitor.visit(iteration, fieldInfo);
         }
 
@@ -217,11 +202,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private boolean makeInternalObjectFlowsPermanent(VariableProperties fieldProperties) {
+    private boolean makeInternalObjectFlowsPermanent(EvaluationContext evaluationContext) {
         if (fieldAnalysis.internalObjectFlows.isSet()) return false; // already done
-        boolean noDelays = fieldProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
+        boolean noDelays = evaluationContext.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
-            Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(fieldProperties.getInternalObjectFlows().collect(Collectors.toSet()));
+            Set<ObjectFlow> internalObjectFlows = ImmutableSet.copyOf(evaluationContext.getInternalObjectFlows().collect(Collectors.toSet()));
             internalObjectFlows.forEach(of -> of.finalize(null));
             fieldAnalysis.internalObjectFlows.set(internalObjectFlows);
             log(OBJECT_FLOW, "Set {} internal object flows on {}", internalObjectFlows.size(), fieldInfo.fullyQualifiedName());
@@ -234,8 +219,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private boolean analyseNotModified1() {
         if (fieldAnalysis.getProperty(VariableProperty.NOT_MODIFIED_1) != Level.UNDEFINED) return false;
         if (sam == null) return false;
-
-        boolean someParameterModificationUnknown = sam.parameterAnalysers.stream().anyMatch(p ->
+        boolean someParameterModificationUnknown = sam.getParameterAnalysers().stream().anyMatch(p ->
                 p.parameterAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY);
         if (someParameterModificationUnknown) {
             log(NOT_MODIFIED, "Delaying @NotModified1 on {}, some parameters have no @Modified status", fieldInfo.fullyQualifiedName());
@@ -572,7 +556,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (variableValue != null) {
                 if (variableValue.variable instanceof ParameterInfo) {
                     ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
-                    ParameterAnalyser parameterAnalyser = parameterAnalysers.get(parameterInfo);
+                    ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
                     if (!parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
                         parameterAnalyser.parameterAnalysis.assignedToField.set(fieldInfo);
                         log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
@@ -612,14 +596,15 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // check constant
 
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (effectivelyFinalValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2ImmuAnnotationExpressions, value);
+            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2, value);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
             log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.annotations.put(e2ImmuAnnotationExpressions.constant.get(), false);
+            fieldAnalysis.annotations.put(e2.constant.get(), false);
         }
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
@@ -676,7 +661,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
 
         // explicitly adding the annotation here; it will not be inspected.
-        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(e2ImmuAnnotationExpressions, links);
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(e2, links);
         fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
         return true;
     }
@@ -775,31 +761,32 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     @Override
     public void check() {
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
-        fieldAnalysis.transferPropertiesToAnnotations(e2ImmuAnnotationExpressions);
+        fieldAnalysis.transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
         // TODO check the correct field name in @Linked(to="xxxx")
-        check(Linked.class, e2ImmuAnnotationExpressions.linked.get());
-        check(NotModified.class, e2ImmuAnnotationExpressions.notModified.get());
-        check(NotNull.class, e2ImmuAnnotationExpressions.notNull.get());
-        check(Final.class, e2ImmuAnnotationExpressions.effectivelyFinal.get());
+        check(Linked.class, e2.linked.get());
+        check(NotModified.class, e2.notModified.get());
+        check(NotNull.class, e2.notNull.get());
+        check(Final.class, e2.effectivelyFinal.get());
 
         // dynamic type annotations
-        check(E1Immutable.class, e2ImmuAnnotationExpressions.e1Immutable.get());
-        check(E2Immutable.class, e2ImmuAnnotationExpressions.e2Immutable.get());
-        check(Container.class, e2ImmuAnnotationExpressions.container.get());
-        check(E1Container.class, e2ImmuAnnotationExpressions.e1Container.get());
-        check(E2Container.class, e2ImmuAnnotationExpressions.e2Container.get());
+        check(E1Immutable.class, e2.e1Immutable.get());
+        check(E2Immutable.class, e2.e2Immutable.get());
+        check(Container.class, e2.container.get());
+        check(E1Container.class, e2.e1Container.get());
+        check(E2Container.class, e2.e2Container.get());
 
         // checks for dynamic properties of functional interface types
-        check(NotModified1.class, e2ImmuAnnotationExpressions.notModified1.get());
+        check(NotModified1.class, e2.notModified1.get());
 
         // opposites
-        check(org.e2immu.annotation.Variable.class, e2ImmuAnnotationExpressions.variableField.get());
-        check(Modified.class, e2ImmuAnnotationExpressions.modified.get());
-        check(Nullable.class, e2ImmuAnnotationExpressions.nullable.get());
+        check(org.e2immu.annotation.Variable.class, e2.variableField.get());
+        check(Modified.class, e2.modified.get());
+        check(Nullable.class, e2.nullable.get());
 
         CheckConstant.checkConstantForFields(messages, fieldInfo);
         CheckSize.checkSizeForFields(messages, fieldInfo);
@@ -816,4 +803,126 @@ public class FieldAnalyser extends AbstractAnalyser {
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
     }
+
+    private class EvaluationContextImpl implements EvaluationContext {
+
+        private final int iteration;
+        private final Value condition;
+        private final Value state;
+
+        private EvaluationContextImpl(int iteration) {
+            this(iteration, UnknownValue.EMPTY, UnknownValue.EMPTY);
+        }
+
+        private EvaluationContextImpl(int iteration, Value condition, Value state) {
+            this.iteration = iteration;
+            this.condition = condition;
+            this.state = state;
+        }
+
+        @Override
+        public int getIteration() {
+            return iteration;
+        }
+
+        @Override
+        public TypeAnalyser getCurrentType() {
+            return myTypeAnalyser;
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+
+        @Override
+        public FieldAnalyser getCurrentField() {
+            return FieldAnalyser.this;
+        }
+
+        @Override
+        public MethodAnalysis getCurrentMethodAnalysis() {
+            return null;
+        }
+
+        @Override
+        public MethodAnalyser getCurrentMethod() {
+            return null;
+        }
+
+        @Override
+        public StatementAnalyser getCurrentStatement() {
+            return null;
+        }
+
+        @Override
+        public Location getLocation() {
+            return new Location(fieldInfo);
+        }
+
+        // rest will be more or less the same as for Methods
+
+        // used in short-circuiting, inline conditional, and lambda
+
+        @Override
+        public EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+            Value safeCondition = condition == null ? UnknownValue.EMPTY : condition;
+            return FieldAnalyser.this.new EvaluationContextImpl(iteration, ConditionManager.combineWith(this.condition, safeCondition),
+                    ConditionManager.combineWith(state, safeCondition));
+        }
+
+        @Override
+        public ObjectFlow getObjectFlow(Variable variable) {
+            return currentValue(variable).getObjectFlow();
+        }
+
+        @Override
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return value.getPropertyOutsideContext(variableProperty);
+        }
+
+        @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            return currentValue(variable).getPropertyOutsideContext(variableProperty);
+        }
+
+        @Override
+        public Value currentValue(Variable variable) {
+            if (variable instanceof FieldReference) {
+                FieldReference fieldReference = (FieldReference) variable;
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
+                if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY) return NO_VALUE;
+                if (fieldAnalysis.effectivelyFinalValue.isSet())
+                    return safeFinalFieldValue(fieldAnalysis.effectivelyFinalValue.get());
+                return new VariableValue(fieldReference);
+            }
+            if (variable instanceof This) {
+                This thisVariable = (This) variable;
+                TypeAnalyser theAnalyser = analyserContext.getTypeAnalysers().get(thisVariable.typeInfo);
+                return theAnalyser.thisVariableValue;
+            }
+            // otherwise, handled by the local type
+            if (variable instanceof DependentVariable) {
+                return myTypeAnalyser.getVariableValue(variable);
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        private Value safeFinalFieldValue(Value v) {
+            FinalFieldValue finalFieldValue;
+            return (finalFieldValue = v.asInstanceOf(FinalFieldValue.class)) != null ? finalFieldValue.copy(this) : v;
+        }
+
+        @Override
+        public Stream<ObjectFlow> getInternalObjectFlows() {
+            return internalObjectFlows.stream();
+        }
+
+        @Override
+        public Value currentValue(String variableName) {
+            return currentValue(variableByName(variableName));
+        }
+
+    }
+
 }

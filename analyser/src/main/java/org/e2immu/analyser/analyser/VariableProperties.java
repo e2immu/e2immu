@@ -55,7 +55,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 // used in MethodAnalyser
 
-class VariableProperties implements EvaluationContext {
+class VariableProperties   {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableProperties.class);
 
     // the following two variables can be assigned to as we progress through the statements
@@ -195,46 +195,6 @@ class VariableProperties implements EvaluationContext {
         return preconditions.stream();
     }
 
-    @Override
-    public Messages getMessages() {
-        return messages;
-    }
-
-    @Override
-    public void copyMessages(Stream<Message> messageStream) {
-        messages.addAll(messageStream);
-    }
-
-    @Override
-    public org.e2immu.analyser.objectflow.Location getLocation() {
-        if (currentStatement != null) {
-            return new org.e2immu.analyser.objectflow.Location(getCurrentMethod(), currentStatement);
-        }
-        if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod);
-        return new org.e2immu.analyser.objectflow.Location(currentField);
-    }
-
-    private org.e2immu.analyser.objectflow.Location getLocation(int counter) {
-        if (currentStatement != null) {
-            return new org.e2immu.analyser.objectflow.Location(getCurrentMethod(), currentStatement, counter);
-        }
-        if (currentMethod != null) return new org.e2immu.analyser.objectflow.Location(currentMethod, counter);
-        return new org.e2immu.analyser.objectflow.Location(currentField, counter);
-    }
-
-    @Override
-    public NumberedStatement getCurrentStatement() {
-        return currentStatement;
-    }
-
-    public void setCurrentStatement(NumberedStatement currentStatement) {
-        this.currentStatement = currentStatement;
-    }
-
-    @Override
-    public int getIteration() {
-        return iteration;
-    }
 
     @Override
     public void linkVariables(Variable from, Set<Variable> to) {
@@ -247,16 +207,6 @@ class VariableProperties implements EvaluationContext {
 
     public boolean isDelaysInDependencyGraph() {
         return delaysInDependencyGraph;
-    }
-
-    @Override
-    public MethodInfo getCurrentMethod() {
-        return currentMethod;
-    }
-
-    @Override
-    public TypeInfo getCurrentType() {
-        return currentType;
     }
 
     @Override
@@ -385,9 +335,7 @@ class VariableProperties implements EvaluationContext {
             int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
             boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
-            boolean inConstructionPhase = currentMethod != null &&
-                    currentMethod.methodAnalysis.get()
-                            .partOfConstruction.get();
+            boolean inConstructionPhase = currentMethod != null && currentMethod.methodResolution.get().partOfConstruction.get();
             return isEffectivelyFinal || inSyncBlock || inConstructionPhase ? SINGLE_COPY : MULTI_COPY;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception while creating a single copy for field reference: {}, current method {}, current field {}",
@@ -438,13 +386,13 @@ class VariableProperties implements EvaluationContext {
         ObjectFlow objectFlow;
         if (variable instanceof ParameterInfo) {
             ParameterInfo parameterInfo = (ParameterInfo) variable;
-            objectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(parameterInfo),
+            objectFlow = new ObjectFlow(new Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.PARAMETER);
             if (!internalObjectFlows.add(objectFlow))
                 throw new UnsupportedOperationException("? should not yet be there: " + objectFlow + " vs " + internalObjectFlows);
         } else if (variable instanceof FieldReference) {
             FieldReference fieldReference = (FieldReference) variable;
-            ObjectFlow fieldObjectFlow = new ObjectFlow(new org.e2immu.analyser.objectflow.Location(fieldReference.fieldInfo),
+            ObjectFlow fieldObjectFlow = new ObjectFlow(new Location(fieldReference.fieldInfo),
                     fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
             if (internalObjectFlows.contains(fieldObjectFlow)) {
                 objectFlow = internalObjectFlows.stream().filter(of -> of.equals(fieldObjectFlow)).findFirst().orElseThrow();
@@ -1187,7 +1135,7 @@ class VariableProperties implements EvaluationContext {
     public ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, Origin origin) {
         int counter = 0;
         while (true) {
-            org.e2immu.analyser.objectflow.Location location = getLocation(counter);
+            Location location = getLocation(counter);
             ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
             if (!internalObjectFlows.contains(objectFlow)) {
                 internalObjectFlows.add(objectFlow);
@@ -1248,7 +1196,6 @@ class VariableProperties implements EvaluationContext {
         return objectFlow;
     }
 
-    @Override
     public Value getCurrentState() {
         return conditionManager.getState();
     }
@@ -1261,7 +1208,6 @@ class VariableProperties implements EvaluationContext {
         return conditionManager.delayedState() || delayedEvaluation;
     }
 
-    @Override
     public Set<String> allUnqualifiedVariableNames() {
         Set<String> fromParent;
         if (parent == null) {
@@ -1275,7 +1221,7 @@ class VariableProperties implements EvaluationContext {
         return SetUtil.immutableUnion(fromParent, local);
     }
 
-    @Override
+
     public PatternMatcher getPatternMatcher() {
         return patternMatcher;
     }

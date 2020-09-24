@@ -19,13 +19,9 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.NotNull;
-
-import java.util.Set;
 
 @E2Immutable
 public class UnevaluatedMethodCall implements Expression {
@@ -60,7 +56,7 @@ public class UnevaluatedMethodCall implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return EmptyExpression.EMPTY_RESULT;
+        return NullConstant.NULL_RESULT;
     }
 
     @Override

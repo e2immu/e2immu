@@ -1,65 +1,70 @@
+/*
+ * e2immu: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.e2immu.analyser.model;
+
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Objects;
 
 public class Location {
+    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null, 0);
 
-    public final TypeInfo typeInfo;
-    public final MethodInfo methodInfo;
-    public final FieldInfo fieldInfo;
-    public final String statementId;
-    public final ParameterInfo parameterInfo;
+    public final WithInspectionAndAnalysis info;
+    public final String statementWithinMethod;
+    public final int counter; // in the same statement, there can be multiple identical flows starting...
 
-    public Location(FieldInfo fieldInfo) {
-        this.typeInfo = fieldInfo.owner;
-        this.fieldInfo = fieldInfo;
-        this.methodInfo = null;
-        this.statementId = null;
-        this.parameterInfo = null;
+    public Location(WithInspectionAndAnalysis info) {
+        this(Objects.requireNonNull(info), null, 0);
     }
 
-    public Location(TypeInfo typeInfo) {
-        this.typeInfo = Objects.requireNonNull(typeInfo);
-        this.fieldInfo = null;
-        this.methodInfo = null;
-        this.statementId = null;
-        this.parameterInfo = null;
+    public Location(WithInspectionAndAnalysis info, int counter) {
+        this(Objects.requireNonNull(info), null, counter);
     }
 
-    public Location(MethodInfo methodInfo) {
-        this(methodInfo, null);
+    public Location(MethodInfo methodInfo, String statementIndex) {
+        this(Objects.requireNonNull(methodInfo), statementIndex, 0);
     }
 
-    public Location(MethodInfo methodInfo, String statementId) {
-        this.typeInfo = methodInfo.typeInfo;
-        this.fieldInfo = null;
-        this.methodInfo = Objects.requireNonNull(methodInfo);
-        this.statementId = statementId;
-        this.parameterInfo = null;
+    private Location(WithInspectionAndAnalysis info, String statementWithinMethod, int counter) {
+        this.info = info;
+        this.statementWithinMethod = statementWithinMethod;
+        this.counter = counter;
     }
 
-    public Location(ParameterInfo parameterInfo) {
-        this.parameterInfo = parameterInfo;
-        this.methodInfo = parameterInfo.owner;
-        this.typeInfo = this.methodInfo == null ? null : this.methodInfo.typeInfo;
-        this.statementId = null;
-        this.fieldInfo = null;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Location location = (Location) o;
+        return Objects.equals(info, location.info) &&
+                Objects.equals(statementWithinMethod, location.statementWithinMethod) &&
+                counter == location.counter;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(info, statementWithinMethod, counter);
     }
 
     @Override
     public String toString() {
-        if (statementId != null) {
-            return "method " + methodInfo.distinguishingName() + ", statement " + statementId;
-        }
-        if (parameterInfo != null) {
-            return "parameter " + parameterInfo.name + (methodInfo == null ? "in lambda" : " of " + methodInfo.distinguishingName());
-        }
-        if (methodInfo != null) {
-            return "method " + methodInfo.distinguishingName();
-        }
-        if (fieldInfo != null) {
-            return "field " + fieldInfo.fullyQualifiedName();
-        }
-        return "type " + typeInfo.fullyQualifiedName;
+        return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name()
+                + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
+                + (counter == 0 ? "" : "#" + counter);
     }
 }
