@@ -65,20 +65,6 @@ public class ParameterAnalysis extends Analysis {
         return parameterInfo.owner.typeInfo.typeAnalysis.get().annotationMode();
     }
 
-    public void setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
-        // raise error if the situation gets worse
-        int valueFromOverrides = parameterInfo.owner.methodAnalysis.get().overrides.stream()
-                .map(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index))
-                .mapToInt(pi -> pi.parameterAnalysis.get().getProperty(variableProperty)).max().orElse(Level.DELAY);
-        if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-            boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
-            if (complain) {
-                evaluationContext.raiseError(Message.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER, variableProperty.name + ", parameter " + parameterInfo.name);
-            }
-        }
-        super.setProperty(variableProperty, value);
-    }
-
     @Override
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
@@ -148,8 +134,9 @@ public class ParameterAnalysis extends Analysis {
         if (hasBeenDefined) {
             theStream = mine;
         } else {
-            IntStream overrideValues = parameterInfo.owner.methodAnalysis.get().overrides.stream()
-                    .mapToInt(mi -> mi.methodInspection.get().parameters.get(parameterInfo.index).parameterAnalysis.get().getPropertyAsIs(variableProperty));
+            IntStream overrideValues = parameterInfo.owner.methodAnalysis.get().overrides.get().stream()
+                    .map(methodAnalysis -> methodAnalysis.parameterAnalyses.get(parameterInfo.index))
+                    .mapToInt(parameterAnalysis -> parameterAnalysis.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
         }
         int max = theStream.max().orElse(Level.DELAY);

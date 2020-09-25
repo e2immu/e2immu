@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class NavigationData {
-    public SetOnce<List<BlockAnalysis>> blocks = new SetOnce<>();
+    public SetOnce<List<StatementAnalysis>> blocks = new SetOnce<>();
     public SetOnce<Optional<StatementAnalysis>> next = new SetOnce<>();
     public final SetOnce<StatementAnalysis> replacement = new SetOnce<>();
 

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -46,6 +47,7 @@ public class MethodAnalysis extends Analysis {
 
     public final StatementAnalysis firstStatement;
     public final StatementAnalysis lastStatement;
+    public final List<ParameterAnalysis> parameterAnalyses;
 
     // the value here (size will be one)
     public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
@@ -70,9 +72,9 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> precondition = new SetOnce<>();
 
 
-
-    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
+    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
+        this.parameterAnalyses = parameterAnalyses;
         this.methodInfo = methodInfo;
         this.returnType = methodInfo.returnType();
         this.typeAnalysis = typeAnalysis;
@@ -84,6 +86,13 @@ public class MethodAnalysis extends Analysis {
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
+        Block block = methodInfo.methodInspection.get().methodBody.get();
+        firstStatement = StatementAnalysis.recursivelyCreateAnalysisObjects(null, block.structure.statements, "", true);
+        lastStatement = follow(firstStatement);
+    }
+
+    private StatementAnalysis follow(StatementAnalysis statementAnalysis) {
+        return statementAnalysis.navigationData.next.get().map(this::follow).orElse(statementAnalysis);
     }
 
     @Override
@@ -94,20 +103,6 @@ public class MethodAnalysis extends Analysis {
     @Override
     public AnnotationMode annotationMode() {
         return typeAnalysis.annotationMode();
-    }
-
-    public Message setProperty(EvaluationContext evaluationContext, VariableProperty variableProperty, int value) {
-        // raise error if the situation gets worse
-        int valueFromOverrides = valueFromOverrides(evaluationContext, variableProperty);
-        if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
-            boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
-            if (complain) {
-                return Message.newMessage(evaluationContext.getLocation(), Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name);
-            }
-        }
-        // normal operation
-        setProperty(variableProperty, value);
-        return null;
     }
 
     @Override

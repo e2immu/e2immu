@@ -74,6 +74,24 @@ public class ParameterAnalyser {
         check(Modified.class, e2.modified.get());
 
         CheckSize.checkSizeForParameters(messages, parameterInfo);
+
+        checkWorseThanParent();
+    }
+
+    private void checkWorseThanParent() {
+        for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
+            int valueFromOverrides = parameterInfo.owner.methodAnalysis.get().overrides.get().stream()
+                    .map(ma -> ma.methodInfo.methodInspection.get().parameters.get(parameterInfo.index))
+                    .mapToInt(pi -> pi.parameterAnalysis.get().getProperty(variableProperty)).max().orElse(Level.DELAY);
+            int value = parameterAnalysis.getProperty(variableProperty);
+            if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
+                boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
+                if (complain) {
+                    messages.add(Message.newMessage(parameterAnalysis.location, Message.WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER,
+                            variableProperty.name + ", parameter " + parameterInfo.name));
+                }
+            }
+        }
     }
 
     private void check(Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
@@ -96,15 +114,15 @@ public class ParameterAnalyser {
      * The goal is to ensure that NOT_NULL and SIZE are not unnecessarily delayed. NOT_MODIFIED will be set by the link computer
      * as soon as possible.
      *
-     * @param evaluationContext evaluation context
      * @return true if changes were made
      */
-    public boolean analyse(EvaluationContext evaluationContext) {
+    public AnalysisResult analyse() {
         boolean changed = false;
+        boolean delays = false;
+        // TODO we need to make a distinction between the field, and whether it has been assigned or not
         if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
             FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
             FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
-            boolean delays = false;
             for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
                 int inField = fieldAnalysis.getProperty(variableProperty);
                 if (inField != Level.DELAY) {
@@ -112,7 +130,7 @@ public class ParameterAnalyser {
                     if (inField > inParameter && verifySizeNotModified(variableProperty)) {
                         log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                 fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
-                        parameterAnalysis.setProperty(evaluationContext, variableProperty, inField);
+                        parameterAnalysis.setProperty(variableProperty, inField);
                         changed = true;
                     }
                 } else {
@@ -127,7 +145,7 @@ public class ParameterAnalyser {
             }
         }
 
-        return changed;
+        return delays ? (changed ? AnalysisResult.PROGRESS : AnalysisResult.DELAYS) : AnalysisResult.DONE;
     }
 
     /**

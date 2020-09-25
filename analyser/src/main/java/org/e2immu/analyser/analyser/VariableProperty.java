@@ -128,4 +128,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> REMOVE_AFTER_ASSIGNMENT = Set.of(NOT_NULL, SIZE);
 
     public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
+
+    public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(SIZE, NOT_NULL, MODIFIED);
+
 }

@@ -55,6 +55,11 @@ public class VariableData {
         public Value getStateOnAssignment() {
         }
     }
+    enum FieldReferenceState {
+        EFFECTIVELY_FINAL_DELAYED,
+        SINGLE_COPY,
+        MULTI_COPY,
+    }
 
     @NotNull
     public static String variableName(@NotNull Variable variable) {
