@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -38,7 +37,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement numberedStatement) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         return typeInfo.stream(indent);
     }
 

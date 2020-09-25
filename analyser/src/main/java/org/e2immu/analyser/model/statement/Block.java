@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
@@ -73,14 +72,14 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement numberedStatement) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         if (label != null) {
             sb.append(label);
             sb.append(":");
         }
         sb.append(" {");
-        if (numberedStatement == null) {
+        if (statementAnalysis == null) {
             if (structure.statements.isEmpty()) {
                 sb.append(" }\n");
             } else {
@@ -93,31 +92,31 @@ public class Block extends StatementWithStructure {
             }
         } else {
             sb.append("\n");
-            sb.append(statementsString(indent + 4, numberedStatement));
+            sb.append(statementsString(indent + 4, statementAnalysis));
             StringUtil.indent(sb, indent);
             sb.append("}");
         }
         return sb.toString();
     }
 
-    private String statementsString(int indent, NumberedStatement numberedStatement) {
-        NumberedStatement ns = numberedStatement;
+    private String statementsString(int indent, StatementAnalysis statementAnalysis) {
+        StatementAnalysis sa = statementAnalysis;
         StringBuilder sb = new StringBuilder();
-        while (ns != null) {
-            if (ns.replacement.isSet()) {
+        while (sa != null) {
+            if (sa.navigationData.replacement.isSet()) {
                 StringUtil.indent(sb, indent);
                 sb.append("/* code will be replaced\n");
-                sb.append(ns.statement.statementString(indent, ns));
-                NumberedStatement moreReplaced = ns.next.isSet() ? ns.next.get().orElse(null) : null;
+                sb.append(sa.statement.statementString(indent, sa));
+                StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
                 if (moreReplaced != null) {
                     sb.append(statementsString(indent, moreReplaced));
                 }
                 StringUtil.indent(sb, indent);
                 sb.append("*/\n");
-                ns = ns.replacement.get();
+                sa = sa.navigationData.replacement.get();
             }
-            sb.append(ns.statement.statementString(indent, ns));
-            ns = ns.next.isSet() ? ns.next.get().orElse(null) : null;
+            sb.append(sa.statement.statementString(indent, sa));
+            sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
         return sb.toString();
     }

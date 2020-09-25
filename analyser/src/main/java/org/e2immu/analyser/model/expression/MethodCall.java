@@ -292,9 +292,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 
-        if (methodAnalysis.lastStatement.methodLevelData.singleReturnValue.isSet()) {
+        if (methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
             // if this method was identity?
-            Value srv = methodAnalysis.lastStatement.methodLevelData.singleReturnValue.get();
+            Value srv = methodAnalysis.methodLevelData().singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {
                 InlineValue iv = srv.asInstanceOf(InlineValue.class);
 

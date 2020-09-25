@@ -20,13 +20,14 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.MethodAnalyser;
-import org.e2immu.analyser.analyser.NumberedStatement;
+import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -85,9 +86,8 @@ public class Lambda implements Expression {
         } else {
             if (block.structure.statements.isEmpty()) blockString = "{ }";
             else {
-                List<NumberedStatement> statements = methodInfo.methodAnalysis.get().numberedStatements.get();
-                NumberedStatement numberedStatement = statements.isEmpty() ? null : statements.get(0);
-                blockString = block.statementString(indent, numberedStatement);
+                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().firstStatement.followReplacements();
+                blockString = block.statementString(indent, firstStatement);
             }
         }
         if (parameters.size() == 1) {
@@ -119,19 +119,18 @@ public class Lambda implements Expression {
             // we have no guarantee that this block will be executed. maybe there are situations?
             EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
 
-            TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
+            TypeAnalyser typeAnalyser = evaluationContext.getCurrentType();
             AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis,
-                    true, analyserContext.getConfiguration(),
-                    analyserContext.getPatternMatcher(), analyserContext.getE2ImmuAnnotationExpressions());
+            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalyser, true, analyserContext);
             builder.addResultOfMethodAnalyser(methodAnalyser.analyse(evaluationContext.getIteration()));
 
             methodAnalyser.getMessageStream().forEach(builder::addMessage);
             builder.merge(child);
 
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-            if (methodAnalysis.singleReturnValue.isSet()) {
-                InlineValue inlineValue = methodAnalysis.singleReturnValue.get().asInstanceOf(InlineValue.class);
+            SetOnce<Value> srv = methodAnalysis.methodLevelData().singleReturnValue;
+            if (srv.isSet()) {
+                InlineValue inlineValue = srv.get().asInstanceOf(InlineValue.class);
                 if (inlineValue != null) {
                     result = inlineValue;
                 }

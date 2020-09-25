@@ -17,16 +17,22 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -46,11 +52,76 @@ public class StatementAnalyser extends AbstractAnalyser {
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
 
-    public StatementAnalyser(AnalyserContext analyserContext, MethodAnalyser methodAnalyser) {
+    public SetOnce<List<StatementAnalyser>> blocks = new SetOnce<>();
+    public SetOnce<Optional<StatementAnalyser>> next = new SetOnce<>();
+    public final SetOnce<StatementAnalyser> replacement = new SetOnce<>();
+
+    private StatementAnalyser(AnalyserContext analyserContext,
+                              MethodAnalyser methodAnalyser,
+                              Statement statement,
+                              StatementAnalysis parent,
+                              String index) {
         super(analyserContext);
         this.myMethodAnalyser = methodAnalyser;
+        this.statementAnalysis = new StatementAnalysis(statement, parent, index);
+    }
 
-        statementAnalysis = new StatementAnalysis(enclosingMethod, statement, parent, index);
+    public static StatementAnalyser recursivelyCreateAnalysisObjects(
+            AnalyserContext analyserContext,
+            MethodAnalyser myMethodAnalyser,
+            StatementAnalysis parent,
+            List<Statement> statements,
+            String indices,
+            boolean setNextAtEnd) {
+        int statementIndex;
+        if (setNextAtEnd) {
+            statementIndex = 0;
+        } else {
+            // we're in the replacement mode; replace the existing index value
+            int pos = indices.lastIndexOf(".");
+            statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
+        }
+        StatementAnalyser first = null;
+        StatementAnalyser previous = null;
+        for (Statement statement : statements) {
+            String iPlusSt = indices + "." + statementIndex;
+            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt);
+            if (previous != null) {
+                previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
+                previous.next.set(Optional.of(statementAnalyser));
+            }
+            previous = statementAnalyser;
+            if (first == null) first = statementAnalyser;
+
+            int blockIndex = 0;
+            List<StatementAnalyser> blocks = new ArrayList<>();
+            List<StatementAnalysis> analysisBlocks = new ArrayList<>();
+
+            Structure structure = statement.getStructure();
+            if (structure.haveStatements()) {
+                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements, iPlusSt + "." + blockIndex, true);
+                blocks.add(subStatementAnalyser);
+                analysisBlocks.add(subStatementAnalyser.statementAnalysis);
+                blockIndex++;
+            }
+            for (Structure subStatements : structure.subStatements) {
+                if (subStatements.haveStatements()) {
+                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements, iPlusSt + "." + blockIndex, true);
+                    blocks.add(subStatementAnalyser);
+                    analysisBlocks.add(subStatementAnalyser.statementAnalysis);
+                    blockIndex++;
+                }
+            }
+            statementAnalyser.statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
+            statementAnalyser.blocks.set(ImmutableList.copyOf(blocks));
+            ++statementIndex;
+        }
+        if (previous != null && setNextAtEnd) {
+            previous.statementAnalysis.navigationData.next.set(Optional.empty());
+            previous.next.set(Optional.empty());
+        }
+        return first;
+
     }
 
     public void apply(EvaluationResult evaluationResult, StatementAnalysis previous) {
@@ -58,6 +129,13 @@ public class StatementAnalyser extends AbstractAnalyser {
 
         // all modifications get applied
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
+    }
+
+    public StatementAnalyserResult update(int iteration) {
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
+        StatementAnalyserResult result = statementAnalysis.methodLevelData.update(evaluationContext);
+
+        return result;
     }
 
     @Override
@@ -101,7 +179,7 @@ public class StatementAnalyser extends AbstractAnalyser {
 
         @Override
         public TypeAnalyser getCurrentType() {
-            return myTypeAnalyser;
+            return myMethodAnalyser.myTypeAnalyser;
         }
 
         @Override
@@ -141,26 +219,7 @@ public class StatementAnalyser extends AbstractAnalyser {
 
         @Override
         public Value currentValue(Variable variable) {
-            if (variable instanceof FieldReference) {
-                FieldReference fieldReference = (FieldReference) variable;
-                TransferValue tv;
-                if (!myMethodAnalyser.methodAnalysis.fieldSummaries.isSet(fieldReference.fieldInfo)) {
-                    tv = new TransferValue();
-                    myMethodAnalyser.methodAnalysis.fieldSummaries.put(fieldReference.fieldInfo, tv);
-                } else {
-                    tv = myMethodAnalyser.methodAnalysis.fieldSummaries.get(fieldReference.fieldInfo);
-                }
-                if (tv.value.isSet()) {
-                    return tv.value.get();
-                }
-                // no value (yet)
-                return UnknownValue.NO_VALUE;
-            }
-            if (variable instanceof This) {
-                This thisVariable = (This) variable;
-                TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(thisVariable.typeInfo);
-                return typeAnalyser.thisVariableValue;
-            }
+
             return null;
         }
 

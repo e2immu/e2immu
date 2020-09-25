@@ -18,14 +18,13 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 
-import static org.e2immu.analyser.analyser.NumberedStatement.startOfBlock;
+import static org.e2immu.analyser.model.StatementAnalysis.startOfBlock;
 
 public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;
@@ -63,16 +62,16 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement ns) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("if (");
         sb.append(expression.expressionString(indent));
         sb.append(")");
-        sb.append(structure.block.statementString(indent, startOfBlock(ns, 0)));
+        sb.append(structure.block.statementString(indent, startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             sb.append(" else");
-            sb.append(elseBlock.statementString(indent, startOfBlock(ns, 1)));
+            sb.append(elseBlock.statementString(indent, startOfBlock(statementAnalysis, 1)));
         }
         sb.append("\n");
         return sb.toString();

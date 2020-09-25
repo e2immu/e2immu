@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.BlockAnalysis;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.util.SetOnce;
 

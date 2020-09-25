@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -65,16 +66,16 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final MethodAnalysis methodAnalysis;
 
     private List<FieldAnalyser> myFieldAnalysers;
-    private final TypeAnalysis typeAnalysis;
-    public final MethodLevelData methodLevelData;
+    public final TypeAnalyser myTypeAnalyser;
     public final List<ParameterAnalyser> parameterAnalysers;
+    public final StatementAnalyser firstStatementAnalyser;
 
     public Collection<ParameterAnalyser> getParameterAnalysers() {
         return analyserContext.getParameterAnalysers().values();
     }
 
     public MethodAnalyser(MethodInfo methodInfo,
-                          TypeAnalysis typeAnalysis,
+                          TypeAnalyser myTypeAnalyser,
                           boolean isSAM,
                           AnalyserContext analyserContext) {
         super(analyserContext);
@@ -85,11 +86,13 @@ public class MethodAnalyser extends AbstractAnalyser {
             parameterAnalysersBuilder.add(new ParameterAnalyser(parameterInfo, analyserContext));
         }
         parameterAnalysers = parameterAnalysersBuilder.build();
-        this.typeAnalysis = typeAnalysis;
+        this.myTypeAnalyser = myTypeAnalyser;
         List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
                 .map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
-        methodAnalysis = new MethodAnalysis(methodInfo, typeAnalysis, parameterAnalyses);
-        methodLevelData = methodAnalysis.lastStatement.methodLevelData; // shortcut
+        Block block = methodInspection.methodBody.get();
+        firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
+                this, null, block.structure.statements, "", true);
+        methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
     }
 
@@ -175,7 +178,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
                 if (complain) {
-                    messages.add(Message.newMessage(new Location(methodInfo), Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name);
+                    messages.add(Message.newMessage(new Location(methodInfo), Message.WORSE_THAN_OVERRIDDEN_METHOD, variableProperty.name));
                 }
             }
         }
@@ -234,28 +237,29 @@ public class MethodAnalyser extends AbstractAnalyser {
                 changes = true;
             }
 
-            if (makeInternalObjectFlowsPermanent()) changes = true;
+            MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+            if (makeInternalObjectFlowsPermanent(methodLevelData)) changes = true;
             if (!methodInfo.isConstructor) {
-                if (!methodAnalysis.returnStatementSummaries.isEmpty()) {
+                if (!methodLevelData.returnStatementSummaries.isEmpty()) {
                     // internal check
                     if (methodInfo.isVoid()) throw new UnsupportedOperationException();
-                    if (propertiesOfReturnStatements())
+                    if (propertiesOfReturnStatements(methodLevelData))
                         changes = true;
                     // methodIsConstant makes use of methodIsNotNull, so order is important
-                    if (methodIsConstant()) changes = true;
+                    if (methodIsConstant(methodLevelData)) changes = true;
                 }
                 detectMissingStaticModifier();
-                if (methodIsModified()) changes = true;
+                if (methodIsModified(methodLevelData)) changes = true;
 
                 // @Only, @Mark comes after modifications
                 if (computeOnlyMarkPrepWork()) changes = true;
                 if (computeOnlyMarkAnnotate()) changes = true;
             }
-            if (methodIsIndependent()) changes = true;
+            if (methodIsIndependent(methodLevelData)) changes = true;
 
             // size comes after modifications
-            if (computeSize()) changes = true;
-            if (computeSizeCopy()) changes = true;
+            if (computeSize(methodLevelData)) changes = true;
+            if (computeSizeCopy(methodLevelData)) changes = true;
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 if (parameterAnalyser.analyse()) changes = true;
@@ -274,7 +278,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 // we need to check if there's fields being read/assigned/
                 if (absentUnlessStatic(VariableProperty.READ) &&
                         absentUnlessStatic(VariableProperty.ASSIGNED) &&
-                        (methodAnalysis.lastStatement.methodLevelData.thisSummary.get().properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                        (methodAnalysis.methodLevelData().thisSummary.get().properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                         !methodInfo.hasOverrides() &&
                         !methodInfo.isDefaultImplementation) {
                     MethodResolution methodResolution = methodInfo.methodResolution.get();
@@ -290,7 +294,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private boolean absentUnlessStatic(VariableProperty variableProperty) {
-        return methodLevelData.fieldSummaries.stream().allMatch(e -> e.getValue()
+        return methodLevelData().fieldSummaries.stream().allMatch(e -> e.getValue()
                 .properties.getOtherwise(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
     }
 
@@ -321,7 +325,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private boolean makeInternalObjectFlowsPermanent(VariableProperties methodProperties) {
+    private boolean makeInternalObjectFlowsPermanent() {
         if (methodAnalysis.internalObjectFlows.isSet()) return false; // already done
         boolean noDelays = methodProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
         if (noDelays) {
@@ -481,7 +485,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private boolean methodIsConstant() {
+    private boolean methodIsConstant(MethodLevelData methodLevelData) {
         if (methodLevelData.singleReturnValue.isSet()) return false;
 
         boolean allReturnValuesSet = methodLevelData.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
@@ -572,10 +576,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private boolean propertiesOfReturnStatements() {
+    private boolean propertiesOfReturnStatements(MethodLevelData methodLevelData) {
         boolean changes = false;
         for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            if (propertyOfReturnStatements(variableProperty))
+            if (propertyOfReturnStatements(methodLevelData, variableProperty))
                 changes = true;
         }
         return changes;
@@ -583,7 +587,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private boolean propertyOfReturnStatements(VariableProperty variableProperty) {
+    private boolean propertyOfReturnStatements(MethodLevelData methodLevelData, VariableProperty variableProperty) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return false;
@@ -609,7 +613,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private boolean computeSize() {
+    private boolean computeSize(MethodLevelData methodLevelData) {
         int current = methodAnalysis.getProperty(VariableProperty.SIZE);
         if (current != Level.DELAY) return false;
 
@@ -635,7 +639,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
-            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations());
+            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations(methodLevelData));
         }
 
         // modifying method
@@ -649,7 +653,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
 
-    private boolean computeSizeCopy() {
+    private boolean computeSizeCopy(MethodLevelData methodLevelData) {
         int current = methodAnalysis.getProperty(VariableProperty.SIZE_COPY);
         if (current != Level.DELAY) return false;
 
@@ -701,7 +705,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private int propagateSizeAnnotations() {
+    private int propagateSizeAnnotations(MethodLevelData methodLevelData) {
         if (methodLevelData.returnStatementSummaries.size() != 1) {
             return Level.DELAY;
         }
@@ -768,7 +772,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
-    private boolean methodIsModified() {
+    private boolean methodIsModified(MethodLevelData methodLevelData) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return false;
 
         // first step, check field assignments
@@ -827,7 +831,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return false;
             }
             if (methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get()) {
-                Boolean haveModifying = findOtherModifyingElements();
+                Boolean haveModifying = findOtherModifyingElements(methodLevelData);
                 if (haveModifying == null) return false;
                 isModified = haveModifying;
             }
@@ -848,7 +852,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private Boolean findOtherModifyingElements() {
+    private Boolean findOtherModifyingElements(MethodLevelData methodLevelData) {
         boolean nonPrivateFields = myFieldAnalysers.stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
                 .anyMatch(fa -> !fa.fieldInfo.isPrivate());
@@ -861,10 +865,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
-                        !mi.methodAnalysis.get().lastStatement.methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
-                                (!mi.methodAnalysis.get().lastStatement.methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
+                        !mi.methodAnalysis.get().methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
+                                (!mi.methodAnalysis.get().methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
                                         (mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
-                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) == null ||
+                                                mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(myTypeAnalyser.typeAnalysis) == null ||
                                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
         if (someOtherMethodNotYetDecided.isPresent()) {
@@ -875,11 +879,11 @@ public class MethodAnalyser extends AbstractAnalyser {
         return methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
-                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) &&
+                        !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(myTypeAnalyser.typeAnalysis) &&
                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
-    private boolean methodIsIndependent() {
+    private boolean methodIsIndependent(MethodLevelData methodLevelData) {
         if (methodAnalysis.getProperty(VariableProperty.INDEPENDENT) != Level.DELAY) {
             return false; // already computed
         }
@@ -901,7 +905,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // PART 1: check the return object, if it is there
 
         // support data types are not set for types that have not been defined; there, we rely on annotations
-        Boolean returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo);
+        Boolean returnObjectIsIndependent = independenceStatusOfReturnType(methodInfo, methodLevelData);
         if (returnObjectIsIndependent == null) {
             return false; // delay
         }
@@ -950,7 +954,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return true;
     }
 
-    private Boolean independenceStatusOfReturnType(MethodInfo methodInfo) {
+    private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
         if (methodInfo.isConstructor || methodInfo.isVoid() ||
                 methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
                         methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
@@ -1029,4 +1033,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
 
+    public MethodLevelData methodLevelData() {
+        return methodAnalysis.methodLevelData();
+    }
 }

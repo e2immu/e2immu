@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -36,7 +35,7 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement numberedStatement) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("return");

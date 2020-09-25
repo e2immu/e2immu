@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
@@ -42,7 +41,7 @@ public class WhileStatement extends LoopStatement {
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement numberedStatement) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         if (label != null) {
@@ -51,7 +50,7 @@ public class WhileStatement extends LoopStatement {
         sb.append("while (");
         sb.append(expression.expressionString(indent));
         sb.append(")");
-        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         sb.append("\n");
         return sb.toString();
     }

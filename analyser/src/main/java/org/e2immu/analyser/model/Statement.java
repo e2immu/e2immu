@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.annotation.E2Container;
 
@@ -32,6 +31,6 @@ public interface Statement extends Element {
         return this;
     }
 
-    String statementString(int indent, NumberedStatement numberedStatement);
+    String statementString(int indent, StatementAnalysis statementAnalysis);
 
 }

@@ -52,55 +52,11 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
-    private StatementAnalysis(Statement statement, StatementAnalysis parent, String index) {
+    public StatementAnalysis(Statement statement, StatementAnalysis parent, String index) {
         super(true, index);
         this.index = super.simpleName;
         this.statement = statement;
         this.parent = parent;
-    }
-
-    public static StatementAnalysis recursivelyCreateAnalysisObjects(StatementAnalysis parent,
-                                                                     List<Statement> statements,
-                                                                     String indices,
-                                                                     boolean setNextAtEnd) {
-        int statementIndex;
-        if (setNextAtEnd) {
-            statementIndex = 0;
-        } else {
-            // we're in the replacement mode; replace the existing index value
-            int pos = indices.lastIndexOf(".");
-            statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
-        }
-        StatementAnalysis first = null;
-        StatementAnalysis previous = null;
-        for (Statement statement : statements) {
-            String iPlusSt = indices + "." + statementIndex;
-            StatementAnalysis statementAnalysis = new StatementAnalysis(statement, parent, iPlusSt);
-            if (previous != null) previous.navigationData.next.set(Optional.of(statementAnalysis));
-            previous = statementAnalysis;
-            if (first == null) first = statementAnalysis;
-
-            int blockIndex = 0;
-            List<StatementAnalysis> blocks = new ArrayList<>();
-            Structure structure = statement.getStructure();
-            if (structure.haveStatements()) {
-                blocks.add(recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true));
-                blockIndex++;
-            }
-            for (Structure subStatements : structure.subStatements) {
-                if (subStatements.haveStatements()) {
-                    blocks.add(recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true));
-                    blockIndex++;
-                }
-            }
-            statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(blocks));
-
-            ++statementIndex;
-        }
-        if (previous != null && setNextAtEnd)
-            previous.navigationData.next.set(Optional.empty());
-        return first;
-
     }
 
     public String toString() {

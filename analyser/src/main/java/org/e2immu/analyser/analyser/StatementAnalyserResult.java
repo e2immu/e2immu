@@ -19,13 +19,17 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Analysis;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class StatementAnalyserResult {
-    private Stream<Analysis.Modification> modifications;
+    private final Stream<Analysis.Modification> modifications;
+    public final AnalysisResult analysisResult;
 
-    private StatementAnalyserResult(Stream<Analysis.Modification> modifications) {
+    private StatementAnalyserResult(AnalysisResult analysisResult, Stream<Analysis.Modification> modifications) {
         this.modifications = modifications;
+        this.analysisResult = analysisResult;
     }
 
     public Stream<Analysis.Modification> getModifications() {
@@ -33,12 +37,18 @@ public class StatementAnalyserResult {
     }
 
     public static class Builder {
+        private List<Analysis.Modification> modifications;
 
         public Builder add(Analysis.Modification modification) {
+            if (modifications == null) {
+                modifications = new LinkedList<>();
+            }
+            modifications.add(modification);
             return this;
         }
 
         public StatementAnalyserResult build(AnalysisResult analysisResult) {
+            return new StatementAnalyserResult(analysisResult, modifications == null ? Stream.empty() : modifications.stream());
         }
     }
 }

@@ -18,8 +18,8 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -27,14 +27,11 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -46,7 +43,6 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
 
     public final StatementAnalysis firstStatement;
-    public final StatementAnalysis lastStatement;
     public final List<ParameterAnalysis> parameterAnalyses;
 
     // the value here (size will be one)
@@ -67,12 +63,17 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
 
 
+    // replacements
+
+    // set when all replacements have been done
+    public final SetOnce<StatementAnalysis> lastStatement = new SetOnce<>();
+
     // ************** PRECONDITION
 
     public final SetOnce<Value> precondition = new SetOnce<>();
 
 
-    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses) {
+    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses, StatementAnalyser firstStatmenteAnalyser) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.parameterAnalyses = parameterAnalyses;
         this.methodInfo = methodInfo;
@@ -87,8 +88,11 @@ public class MethodAnalysis extends Analysis {
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
         Block block = methodInfo.methodInspection.get().methodBody.get();
-        firstStatement = StatementAnalysis.recursivelyCreateAnalysisObjects(null, block.structure.statements, "", true);
-        lastStatement = follow(firstStatement);
+        firstStatement = firstStatmenteAnalyser.statementAnalysis;
+    }
+
+    public MethodLevelData methodLevelData() {
+        return lastStatement.isSet() ? lastStatement.get().methodLevelData : follow(firstStatement).methodLevelData;
     }
 
     private StatementAnalysis follow(StatementAnalysis statementAnalysis) {

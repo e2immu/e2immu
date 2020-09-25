@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
@@ -28,7 +27,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.pattern.*;
@@ -63,7 +61,7 @@ public class BlockAnalyser {
         this.methodInfo = methodInfo;
     }
 
-    public boolean computeVariablePropertiesOfBlock(NumberedStatement startStatementIn, EvaluationContext evaluationContext) {
+    public boolean computeVariablePropertiesOfBlock(StatementAnalysis startStatementIn, EvaluationContext evaluationContext) {
         VariableProperties variableProperties = (VariableProperties) evaluationContext;
         boolean changes = false;
 

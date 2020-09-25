@@ -6,6 +6,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+import java.awt.color.CMMException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -14,8 +15,8 @@ import java.util.stream.Collectors;
 
 public class ConditionManager {
 
-    private Value condition;
-    private Value state;
+    public final Value condition;
+    public final Value state;
 
     public ConditionManager(Value condition, Value state) {
         this.condition = Objects.requireNonNull(condition);
@@ -30,22 +31,19 @@ public class ConditionManager {
         return state;
     }
 
-    private void setState(Value state) {
-        this.state = state;
-    }
-
     // adding a condition always adds to the state as well (testing only)
-    public void addCondition(Value value) {
+    public ConditionManager addCondition(Value value) {
         if (value != BoolValue.TRUE) {
-            condition = combineWithCondition(value);
-            setState(combineWithState(value));
+            return new ConditionManager(combineWithCondition(value), combineWithState(value));
         }
+        return this;
     }
 
-    public void addToState(Value value) {
+    public ConditionManager addToState(Value value) {
         if (!(value.isInstanceOf(BoolValue.class))) {
-            setState(combineWithState(value));
+            return new ConditionManager(condition, combineWithState(value));
         }
+        return this;
     }
 
     /**
@@ -101,7 +99,7 @@ public class ConditionManager {
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullConditions() {
-        if (condition == null || delayedCondition()) {
+        if (condition == UnknownValue.EMPTY || delayedCondition()) {
             return Set.of();
         }
         Map<Variable, Value> individualNullClauses = condition.filter(Value.FilterMode.REJECT,
@@ -132,9 +130,9 @@ public class ConditionManager {
     }
 
     public boolean isNotNull(Variable variable) {
-        if (state == null || isDelayed(state)) return false;
+        if (state == UnknownValue.EMPTY || isDelayed(state)) return false;
 
-        VariableValue vv = new VariableValue(null, variable, variable.name());
+        VariableValue vv = new VariableValue(variable);
         return MultiLevel.isEffectivelyNotNull(notNull(vv));
     }
 
@@ -183,13 +181,13 @@ public class ConditionManager {
     }
 
     // used in assignments (it gets a new value, so whatever was known, must go)
-    public void variableReassigned(Variable variable) {
-        setState(removeClausesInvolving(state, variable, true));
+    public ConditionManager variableReassigned(Variable variable) {
+        return new ConditionManager(condition, removeClausesInvolving(state, variable, true));
     }
 
     // after a modifying method call, we lose whatever we know about this variable; except assignment!
-    public void modifyingMethodAccess(Variable variable) {
-        setState(removeClausesInvolving(state, variable, false));
+    public ConditionManager modifyingMethodAccess(Variable variable) {
+        return new ConditionManager(condition, removeClausesInvolving(state, variable, false));
     }
 
     private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {

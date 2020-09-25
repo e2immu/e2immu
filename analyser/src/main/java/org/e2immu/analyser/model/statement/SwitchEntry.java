@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -116,7 +115,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public String statementString(int indent, NumberedStatement numberedStatement) {
+        public String statementString(int indent, StatementAnalysis statementAnalysis) {
             StringBuilder sb = new StringBuilder();
 
             // TODO use the method from Block to catch replacements!
@@ -124,10 +123,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
             appendLabels(sb, indent, java12Style, structure.statements.size() > 1);
             if (structure.statements.size() == 1) {
                 sb.append(" ");
-                sb.append(structure.statements.get(0).statementString(0, numberedStatement));
+                sb.append(structure.statements.get(0).statementString(0, statementAnalysis));
             } else {
                 for (Statement statement : structure.statements) {
-                    sb.append(statement.statementString(indent + 4, numberedStatement));
+                    sb.append(statement.statementString(indent + 4, statementAnalysis));
                 }
             }
             return sb.toString();
@@ -156,10 +155,10 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public String statementString(int indent, NumberedStatement numberedStatement) {
+        public String statementString(int indent, StatementAnalysis statementAnalysis) {
             StringBuilder sb = new StringBuilder();
             appendLabels(sb, indent, true, false);
-            sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(numberedStatement, 0)));
+            sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
             return sb.toString();
         }
 

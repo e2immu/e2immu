@@ -1,7 +1,6 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.util.ListUtil;
@@ -96,14 +95,13 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
         }
-
     }
 
     @Override
-    public String statementString(int indent, NumberedStatement ns) {
+    public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         sb.append("try");
@@ -112,18 +110,18 @@ public class TryStatement extends StatementWithStructure {
             sb.append(resources.stream().map(r -> r.expressionString(0)).collect(Collectors.joining("; ")));
             sb.append(")");
         }
-        sb.append(structure.block.statementString(indent, NumberedStatement.startOfBlock(ns, 0)));
+        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             sb.append(" catch(");
             sb.append(pair.k.expressionString(0));
             sb.append(")");
-            sb.append(pair.v.statementString(indent, NumberedStatement.startOfBlock(ns, i)));
+            sb.append(pair.v.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         if (finallyBlock != Block.EMPTY_BLOCK) {
             sb.append(" finally");
-            sb.append(finallyBlock.statementString(indent, NumberedStatement.startOfBlock(ns, i)));
+            sb.append(finallyBlock.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, i)));
         }
         sb.append("\n");
         return sb.toString();
