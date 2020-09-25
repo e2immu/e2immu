@@ -187,4 +187,5 @@ public class ParameterAnalysis extends Analysis {
     public ObjectFlow getObjectFlow() {
         return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
     }
+
 }

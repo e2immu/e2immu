@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -68,6 +69,10 @@ public interface EvaluationContext {
                 : methodInfo.methodInspection.get().parameters.stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
     }
 
+    default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+        return getAnalyserContext().getParameterAnalysers().get(parameterInfo).parameterAnalysis;
+    }
+
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(typeInfo);
         return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
@@ -87,5 +92,20 @@ public interface EvaluationContext {
 
     default int getProperty(Variable variable, VariableProperty variableProperty) {
         return currentValue(variable).getPropertyOutsideContext(variableProperty);
+    }
+
+    default int summarizeModification(Set<Variable> linkedVariables) {
+        boolean hasDelays = false;
+        for (Variable variable : linkedVariables) {
+            int modified = getProperty(variable, VariableProperty.MODIFIED);
+            int methodDelay = getProperty(variable, VariableProperty.METHOD_DELAY);
+            if (modified == Level.TRUE) return Level.TRUE;
+            if (methodDelay == Level.TRUE) hasDelays = true;
+        }
+        return hasDelays ? Level.DELAY : Level.FALSE;
+    }
+
+    default String logLocation() {
+        return getLocation().toString();
     }
 }

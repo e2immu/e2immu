@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.VariableData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
@@ -151,10 +152,11 @@ public class EvaluationResult {
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             if (notNull == MultiLevel.FALSE) {
-                add(statementAnalysis.new RaiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name()));
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
+                add(statementAnalysis.errorFlags.new RaiseErrorMessage(message));
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                add(statementAnalysis.new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
+                add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
             }
         }
 
@@ -166,19 +168,19 @@ public class EvaluationResult {
             String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
             Value current = evaluationContext.currentValue(name);
             if (current != null) return current;
-            String arrayName = arrayVariable == null ? null : StatementAnalysis.variableName(arrayVariable);
+            String arrayName = arrayVariable == null ? null : VariableData.variableName(arrayVariable);
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
-            modifications.add(statementAnalysis.new AddVariable(dependentVariable));
+            modifications.add(statementAnalysis.variableData.new AddVariable(dependentVariable));
             return new VariableValue(evaluationContext, dependentVariable, dependentVariable.name());
         }
 
         public Builder markRead(String dependentVariableName) {
-            modifications.add(statementAnalysis.new SetProperty(dependentVariableName, VariableProperty.READ, Level.TRUE));
+            modifications.add(statementAnalysis.variableData.new SetProperty(dependentVariableName, VariableProperty.READ, Level.TRUE));
             return this;
         }
 
         public Builder markRead(Variable variable) {
-            modifications.add(statementAnalysis.new SetProperty(variable, VariableProperty.READ, Level.TRUE));
+            modifications.add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.READ, Level.TRUE));
             return this;
         }
 
@@ -198,18 +200,20 @@ public class EvaluationResult {
             stateChanges.add(modification);
         }
 
-        public Builder raiseError(String message) {
-            modifications.add(statementAnalysis.new RaiseError(message));
+        public Builder raiseError(String messageString) {
+            Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
+            modifications.add(statementAnalysis.errorFlags.new RaiseErrorMessage(message));
             return this;
         }
 
-        public Builder raiseError(String message, String extra) {
-            modifications.add(statementAnalysis.new RaiseError(message, extra));
+        public Builder raiseError(String messageString, String extra) {
+            Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
+            modifications.add(statementAnalysis.errorFlags.new RaiseErrorMessage(message));
             return this;
         }
 
         public Builder addMessage(Message message) {
-            modifications.add(statementAnalysis.new RaiseErrorMessage(message));
+            modifications.add(statementAnalysis.errorFlags.new RaiseErrorMessage(message));
             return this;
         }
 
@@ -219,7 +223,7 @@ public class EvaluationResult {
         }
 
         public void markMethodDelay(Variable variable, int methodDelay) {
-            modifications.add(statementAnalysis.new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
+            modifications.add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
         }
 
         public void markMethodCalled(Variable variable, int methodCalled) {
@@ -231,20 +235,20 @@ public class EvaluationResult {
                     v = new This(evaluationContext.getCurrentType().typeInfo);
                 } else v = null;
                 if (v != null) {
-                    add(statementAnalysis.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
+                    add(statementAnalysis.variableData.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
                 }
             }
         }
 
         public void markSizeRestriction(Variable variable, int size) {
-            add(statementAnalysis.new SetProperty(variable, VariableProperty.SIZE, size));
+            add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.SIZE, size));
         }
 
         public void markContentModified(Variable variable, int modified) {
             int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
             if (ignoreContentModifications != Level.TRUE) {
                 log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
-                add(statementAnalysis.new SetProperty(variable, VariableProperty.MODIFIED, modified));
+                add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.MODIFIED, modified));
             } else {
                 log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
             }
@@ -256,10 +260,11 @@ public class EvaluationResult {
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
-                add(statementAnalysis.new RaiseError(Message.MODIFICATION_NOT_ALLOWED, variable.name()));
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.name());
+                add(statementAnalysis.errorFlags.new RaiseErrorMessage(message));
             } else if (notModified1 == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                add(statementAnalysis.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
+                add(statementAnalysis.variableData.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
             }
         }
 
@@ -272,11 +277,11 @@ public class EvaluationResult {
 
 
         public void changeCurrentStatementToErrorState() {
-            add(statementAnalysis.new SetErrorState());
+            add(statementAnalysis.errorFlags.new SetErrorState());
         }
 
         public void linkVariables(Variable at, Set<Variable> linked) {
-            add(statementAnalysis.new LinkVariable(at, linked));
+            add(statementAnalysis.variableData.new LinkVariable(at, linked));
         }
 
         public void assignmentBasics(Variable at, Value resultOfExpression, boolean b) {
@@ -286,7 +291,7 @@ public class EvaluationResult {
         }
 
         public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
-            add(statementAnalysis.new SetProperty(variable, property, value));
+            add(statementAnalysis.variableData.new SetProperty(variable, property, value));
         }
 
         public void addPrecondition(Value rest) {
@@ -302,7 +307,7 @@ public class EvaluationResult {
         }
 
         public void modifyingMethodAccess(Variable variable) {
-            add(statementAnalysis.new RemoveVariableFromState(variable));
+            add(statementAnalysis.stateData.new RemoveVariableFromState(variable));
         }
 
         public void addResultOfMethodAnalyser(boolean analyse) {

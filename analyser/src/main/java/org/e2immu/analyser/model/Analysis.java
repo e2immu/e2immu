@@ -403,4 +403,23 @@ public abstract class Analysis {
         }
         return res;
     }
+
+
+    public interface Modification extends Runnable {
+    }
+
+    public class SetProperty implements Modification {
+        private final VariableProperty variableProperty;
+        private int value;
+
+        public SetProperty(VariableProperty variableProperty, int value) {
+            this.value = value;
+            this.variableProperty = variableProperty;
+        }
+
+        @Override
+        public void run() {
+            setProperty(variableProperty, value);
+        }
+    }
 }

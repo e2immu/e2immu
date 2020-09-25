@@ -44,32 +44,20 @@ applies EvaluationResults to statement analysis
 public class StatementAnalyser extends AbstractAnalyser {
 
     public final StatementAnalysis statementAnalysis;
-    private final TypeAnalyser myTypeAnalyser;
     private final MethodAnalyser myMethodAnalyser;
 
-    public StatementAnalyser(AnalyserContext analyserContext) {
+    public StatementAnalyser(AnalyserContext analyserContext, MethodAnalyser methodAnalyser) {
         super(analyserContext);
+        this.myMethodAnalyser = methodAnalyser;
+
         statementAnalysis = new StatementAnalysis(enclosingMethod, statement, parent, index);
     }
 
     public void apply(EvaluationResult evaluationResult, StatementAnalysis previous) {
-        if (evaluationResult.value != UnknownValue.NO_VALUE && !statementAnalysis.valueOfExpression.isSet()) {
-            statementAnalysis.valueOfExpression.set(evaluationResult.value);
-        }
+        statementAnalysis.stateData.apply(evaluationResult, previous == null ? null : previous.stateData);
 
         // all modifications get applied
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
-
-        // state changes get composed into one big operation, applied, and the result set
-        if (!statementAnalysis.state.isSet()) {
-            Value state = previous == null ? UnknownValue.EMPTY : previous.state.get();
-            Function<Value, Value> composite = evaluationResult.getStateChangeStream()
-                    .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
-            Value reduced = composite.apply(state);
-            if (reduced != UnknownValue.NO_VALUE) {
-                statementAnalysis.state.set(reduced);
-            }
-        }
     }
 
     @Override

@@ -44,6 +44,33 @@ public class MethodAnalysis extends Analysis {
     public final TypeAnalysis typeAnalysis;
     public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
 
+    public final StatementAnalysis firstStatement;
+    public final StatementAnalysis lastStatement;
+
+    // the value here (size will be one)
+    public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
+    public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
+
+    // ************* object flow
+
+    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
+
+    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
+
+    public ObjectFlow getObjectFlow() {
+        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
+    }
+
+    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
+    public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
+
+
+    // ************** PRECONDITION
+
+    public final SetOnce<Value> precondition = new SetOnce<>();
+
+
+
     public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.methodInfo = methodInfo;
@@ -220,46 +247,6 @@ public class MethodAnalysis extends Analysis {
         return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) != Boolean.TRUE;
     }
 
-    // ************** LOCAL STORAGE
-
-    // not to be stored. later, move to separate class...
-    public final SetOnce<List<NumberedStatement>> numberedStatements = new SetOnce<>();
-
-
-    // ************** Modification computing
-
-    public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
-    public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
-
-    // ************** ERRORS
-
-    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
-    public final SetOnceMap<ParameterInfo, Boolean> parameterAssignments = new SetOnceMap<>();
-    public final SetOnceMap<LocalVariable, Boolean> unusedLocalVariables = new SetOnceMap<>();
-    public final SetOnceMap<Variable, Boolean> uselessAssignments = new SetOnceMap<>();
-    public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
-    public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
-    public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
-
-    // ************** SUMMARIES
-    // in combination with the properties in the super class, this forms the knowledge about the method itself
-    public final SetOnce<Value> singleReturnValue = new SetOnce<>();
-
-    public final SetOnce<TransferValue> thisSummary = new SetOnce<>();
-    public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
-    public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
-
-    // ************** LINKING
-
-    // this one is the marker that says that links have been established
-    public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
-
-    public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
-
-    // ************** PRECONDITION
-
-    public final SetOnce<Value> precondition = new SetOnce<>();
-
     protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
         ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
         preconditionForMarkAndOnly.set(List.of(contractMark));
@@ -287,17 +274,4 @@ public class MethodAnalysis extends Analysis {
         }
     }
 
-    // the value here (size will be one)
-    public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
-    public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
-
-    // ************* object flow
-
-    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
-
-    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
-
-    public ObjectFlow getObjectFlow() {
-        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
-    }
 }

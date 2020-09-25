@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -90,7 +91,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean delayUndeclared = false;
 
         if (evaluationContext.getCurrentMethod() != null) {
-            MethodAnalysis currentMethodAnalysis = evaluationContext.getCurrentMethodAnalysis();
             TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType;
 
             assert currentPrimaryType.typeResolution.get().circularDependencies.isSet() :
@@ -105,8 +105,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 undeclaredFunctionalInterface = false;
             }
-            if ((circularCall || undeclaredFunctionalInterface) && !currentMethodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
-                currentMethodAnalysis.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+            if ((circularCall || undeclaredFunctionalInterface)) {
+                MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
+                builder.add(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
             }
             alwaysModifying = circularCall || undeclaredFunctionalInterface;
         } else {
@@ -291,9 +292,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return inlineValue.reEvaluate(evaluationContext, translationMap);
         }
 
-        if (methodAnalysis.singleReturnValue.isSet()) {
+        if (methodAnalysis.lastStatement.methodLevelData.singleReturnValue.isSet()) {
             // if this method was identity?
-            Value srv = methodAnalysis.singleReturnValue.get();
+            Value srv = methodAnalysis.lastStatement.methodLevelData.singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {
                 InlineValue iv = srv.asInstanceOf(InlineValue.class);
 
