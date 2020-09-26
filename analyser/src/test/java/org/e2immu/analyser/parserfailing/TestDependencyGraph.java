@@ -51,7 +51,7 @@ public class TestDependencyGraph extends CommonTestRunner {
         }
         // we have to make sure that there is no "Empty loop" error raised
         if ("sorted".equals(d.methodInfo.name) && "3.0.1".equals(d.statementId)) {
-            Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
     };
 

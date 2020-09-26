@@ -45,21 +45,21 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, modified);
             }
             FieldInfo ts = methodInfo.typeInfo.getFieldByName("ts", true);
-            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(ts);
+            TransferValue tv = methodInfo.methodAnalysis.get().methodLevelData().fieldSummaries.get(ts);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             if (iteration > 1) {
                 Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.MODIFIED));
             }
             MethodInfo doTheVisiting = methodInfo.typeInfo.findUniqueMethod("doTheVisiting", 2);
-            Assert.assertTrue(methodInfo.methodAnalysis.get().copyModificationStatusFrom.isSet(doTheVisiting));
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData().copyModificationStatusFrom.isSet(doTheVisiting));
         }
     };
 
     @Test
     public void test() throws IOException {
         testClass("FunctionalInterfaceModified4", 0, 0, new DebugConfiguration.Builder()
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

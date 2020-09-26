@@ -31,31 +31,28 @@ public class TestLoopStatementChecks extends CommonTestRunner {
         super(false);
     }
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            if ("method6".equals(methodInfo.name)) {
-                Assert.assertEquals(1, methodAnalysis.uselessAssignments.size());
-                Assert.assertEquals(1, methodAnalysis.unusedLocalVariables.size());
-            }
-            if ("method3".equals(methodInfo.name)) {
-                TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
-                Assert.assertNotNull(tv);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL)); // (3)
-            }
-            if ("method3bis".equals(methodInfo.name)) {
-                TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
-                Assert.assertNotNull(tv);
-                Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        if ("method3".equals(methodInfo.name)) {
+            TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
+            Assert.assertNotNull(tv);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL)); // (3)
+        }
+        if ("method3bis".equals(methodInfo.name)) {
+            TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
+            Assert.assertNotNull(tv);
+            Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method3bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+        }
+        if ("method6".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+            Assert.assertEquals(1, d.statementAnalysis.errorFlags.uselessAssignments.size());
+            Assert.assertEquals(1, d.statementAnalysis.errorFlags.unusedLocalVariables.size());
         }
     };
 

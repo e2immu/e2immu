@@ -17,16 +17,13 @@ public class TestMethodReferences extends CommonTestRunner {
         super(false);
     }
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-            Assert.assertNotNull(collection);
-            MethodInfo stream = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        Assert.assertNotNull(collection);
+        MethodInfo stream = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
 
-            // NOTE: 0 because we do not parse the AnnotatedAPIs. This causes a warning!
-            Assert.assertEquals(MultiLevel.FALSE, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
+        // NOTE: 0 because we do not parse the AnnotatedAPIs. This causes a warning!
+        Assert.assertEquals(MultiLevel.FALSE, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     @Test

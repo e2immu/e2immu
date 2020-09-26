@@ -31,23 +31,23 @@ public class TestEvaluationErrors extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("testDivisionByZero".equals(d.methodInfo.name)) {
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
             }
             if ("1.0.0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
             }
             if ("2".equals(d.statementId)) {
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
         if ("testDeadCode".equals(d.methodInfo.name)) {
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
             }
             // this one does not render a dead-code error, because its parent already has an error raised
             if ("1.0.0".equals(d.statementId)) {
                 Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
     };

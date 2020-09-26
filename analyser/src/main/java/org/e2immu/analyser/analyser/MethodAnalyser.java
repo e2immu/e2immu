@@ -85,8 +85,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
                 .map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
         Block block = methodInspection.methodBody.get();
-        firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
-                this, null, block.structure.statements, "", true);
+        if (block == Block.EMPTY_BLOCK) {
+            firstStatementAnalyser = null;
+        } else {
+            firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
+                    this, null, block.structure.statements, "", true);
+            firstStatementAnalyser.initialiseParametersAsVariables(parameterAnalysers);
+        }
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
     }
@@ -115,10 +120,6 @@ public class MethodAnalyser extends AbstractAnalyser {
     @Override
     public Analysis getAnalysis() {
         return methodAnalysis;
-    }
-
-    EvaluationContext newEvaluationContext(int iteration) {
-        return new EvaluationContextImpl();
     }
 
     @Override
@@ -190,36 +191,9 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     @Override
     public boolean analyse(int iteration) {
-        VariableProperties methodProperties = new VariableProperties(e2,
-                iteration, configuration, patternMatcher, methodInfo);
-        List<Statement> statements = methodInfo.methodInspection.get().methodBody.get().structure.statements;
-        if (!statements.isEmpty()) {
-            boolean changes = false;
-            log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
+        if (firstStatementAnalyser == null) return false;
+        log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
 
-            if (!methodInfo.methodAnalysis.get().numberedStatements.isSet()) {
-                List<NumberedStatement> numberedStatements = new LinkedList<>();
-                Stack<Integer> indices = new Stack<>();
-                CreateNumberedStatements.recursivelyCreateNumberedStatements(null, statements, indices, numberedStatements, true);
-                methodInfo.methodAnalysis.get().numberedStatements.set(ImmutableList.copyOf(numberedStatements));
-                changes = true;
-            }
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                methodProperties.createLocalVariableOrParameter(parameterInfo);
-            }
-            if (analyseMethod()) changes = true;
-
-            for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
-                    debugConfiguration.afterMethodAnalyserVisitors) {
-                methodAnalyserVisitor.visit(iteration, methodInfo);
-            }
-
-            return changes;
-        }
-        return false;
-    }
-
-    private boolean analyseMethod(EvaluationContext evaluationContext) {
         try {
             boolean changes = false;
             List<NumberedStatement> numberedStatements = methodAnalysis.numberedStatements.get();
@@ -260,6 +234,10 @@ public class MethodAnalyser extends AbstractAnalyser {
                 if (parameterAnalyser.analyse()) changes = true;
             }
 
+            for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
+                    debugConfiguration.afterMethodAnalyserVisitors) {
+                methodAnalyserVisitor.visit(iteration, methodInfo);
+            }
             return changes;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());

@@ -191,20 +191,21 @@ public class Assignment implements Expression {
     private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
-        ErrorFlags errorFlags = evaluationContext.getCurrentStatement().statementAnalysis.errorFlags;
         if (at instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
             // check illegal assignment into nested type
             if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType().typeInfo)) {
-                builder.add(errorFlags.new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
+                builder.add(evaluationContext.getCurrentStatement()
+                        .new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
             }
 
             if (resultOfExpression.getObjectFlow() != ObjectFlow.NO_FLOW) {
                 resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo) {
-            builder.add(errorFlags.new ParameterShouldNotBeAssignedTo((ParameterInfo) at, evaluationContext.getLocation()));
+            builder.add(evaluationContext.getCurrentStatement()
+                    .new ParameterShouldNotBeAssignedTo((ParameterInfo) at, evaluationContext.getLocation()));
         }
         builder.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
 

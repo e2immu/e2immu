@@ -20,32 +20,15 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.model.MethodInfo;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class TestEventuallyE1Immutable1 extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestEventuallyE1Immutable1.class);
-
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if("setString".equals(methodInfo.name) && iteration>0) {
-               // Assert.assertEquals("", methodInfo.methodAnalysis.get().preconditionForOnlyData.get().toString());
-            }
-        }
-    };
 
     @Test
     public void test() throws IOException {
         testClass("EventuallyE1Immutable1", 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
-
     }
-
 }

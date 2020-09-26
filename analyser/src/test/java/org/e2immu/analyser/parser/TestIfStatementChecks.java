@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Value;
@@ -46,7 +47,8 @@ public class TestIfStatementChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertEquals("not (null == a)", d.statementAnalysis.state.get().toString());
+                Assert.assertEquals("not (null == a)",
+                        d.statementAnalysis.stateData.conditionManager.get().state.toString());
             }
         }
     };
@@ -54,23 +56,24 @@ public class TestIfStatementChecks extends CommonTestRunner {
     // inlining happens when the replacements are active
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if (iteration > 0) {
+            MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
             if ("method1".equals(methodInfo.name)) {
-                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value value = methodLevelData.singleReturnValue.get();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method2".equals(methodInfo.name)) {
-                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value value = methodLevelData.singleReturnValue.get();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method3".equals(methodInfo.name)) {
-                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value value = methodLevelData.singleReturnValue.get();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method4".equals(methodInfo.name)) {
-                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value value = methodLevelData.singleReturnValue.get();
                 // with more transformations, we can make this into an inline value TODO
                 Assert.assertEquals("<return value>", value.toString());
             }

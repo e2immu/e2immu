@@ -45,78 +45,69 @@ public class TestObjectFlow1 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("useKv".equals(methodInfo.name)) {
-                ParameterAnalysis p0 = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
-                Assert.assertTrue(p0.objectFlow.isSet());
-                ObjectFlow objectFlowP0 = p0.objectFlow.get();
-                Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
-                Assert.assertEquals(1L, objectFlowP0.getNonModifyingCallouts().count());
-                ObjectFlow callOutP0 = objectFlowP0.getNonModifyingCallouts().findAny().orElseThrow();
-                Assert.assertSame(Origin.PARAMETER, callOutP0.origin);
-                Assert.assertEquals("value", callOutP0.location.info.name());
-                Assert.assertTrue(callOutP0.containsPrevious(objectFlowP0));
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("useKv".equals(methodInfo.name)) {
+            ParameterAnalysis p0 = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
+            Assert.assertTrue(p0.objectFlow.isSet());
+            ObjectFlow objectFlowP0 = p0.objectFlow.get();
+            Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
+            Assert.assertEquals(1L, objectFlowP0.getNonModifyingCallouts().count());
+            ObjectFlow callOutP0 = objectFlowP0.getNonModifyingCallouts().findAny().orElseThrow();
+            Assert.assertSame(Origin.PARAMETER, callOutP0.origin);
+            Assert.assertEquals("value", callOutP0.location.info.name());
+            Assert.assertTrue(callOutP0.containsPrevious(objectFlowP0));
 
-                Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
-                Set<ObjectFlow> internalFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
-                LOGGER.info("Have internal flows of useKv: {}", internalFlows);
-                Assert.assertEquals(2, internalFlows.size());
-                ObjectFlow newKeyValue = internalFlows.stream()
-                        .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
-                        .findAny().orElseThrow();
-                Assert.assertEquals("KeyValue", newKeyValue.type.typeInfo.simpleName);
-                ObjectFlow valueFieldOfNewKeyValue = internalFlows.stream()
-                        .filter(of -> of.origin == Origin.FIELD_ACCESS)
-                        .findAny().orElseThrow();
-                Assert.assertEquals("value", valueFieldOfNewKeyValue.location.info.name());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
+            Set<ObjectFlow> internalFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+            LOGGER.info("Have internal flows of useKv: {}", internalFlows);
+            Assert.assertEquals(2, internalFlows.size());
+            ObjectFlow newKeyValue = internalFlows.stream()
+                    .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
+                    .findAny().orElseThrow();
+            Assert.assertEquals("KeyValue", newKeyValue.type.typeInfo.simpleName);
+            ObjectFlow valueFieldOfNewKeyValue = internalFlows.stream()
+                    .filter(of -> of.origin == Origin.FIELD_ACCESS)
+                    .findAny().orElseThrow();
+            Assert.assertEquals("value", valueFieldOfNewKeyValue.location.info.name());
 
-                Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-                ObjectFlow returnFlow = methodInfo.methodAnalysis.get().objectFlow.get();
-                Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
-                Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
+            Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
+            ObjectFlow returnFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+            Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
+            Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
+        }
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("key".equals(fieldInfo.name)) {
+            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+            Assert.assertNotNull(objectFlow);
+            LOGGER.info("Object flow is {}", objectFlow.detailed());
+
+            // after the first iteration, the object flow becomes that of the parameter
+            // in the first iteration, the field value is NO_VALUE
+            if (iteration == 0) {
+                Assert.assertTrue(objectFlow.location.info instanceof FieldInfo);
+            } else {
+                Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
+            }
+            ParameterInfo key = fieldInfo.owner.typeInspection.getPotentiallyRun().constructors.get(0).methodInspection.get().parameters.get(0);
+            ObjectFlow objectFlowPI = key.parameterAnalysis.get().getObjectFlow();
+            if (iteration > 0) {
+                Assert.assertSame(objectFlow, objectFlowPI);
+                Assert.assertEquals(1L, objectFlow.getLocalAssignments().count());
+            } else {
+                Assert.assertNotSame(objectFlow, objectFlowPI);
             }
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("key".equals(fieldInfo.name)) {
-                ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
-                Assert.assertNotNull(objectFlow);
-                LOGGER.info("Object flow is {}", objectFlow.detailed());
-
-                // after the first iteration, the object flow becomes that of the parameter
-                // in the first iteration, the field value is NO_VALUE
-                if (iteration == 0) {
-                    Assert.assertTrue(objectFlow.location.info instanceof FieldInfo);
-                } else {
-                    Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
-                }
-                ParameterInfo key = fieldInfo.owner.typeInspection.getPotentiallyRun().constructors.get(0).methodInspection.get().parameters.get(0);
-                ObjectFlow objectFlowPI = key.parameterAnalysis.get().getObjectFlow();
-                if (iteration > 0) {
-                    Assert.assertSame(objectFlow, objectFlowPI);
-                    Assert.assertEquals(1L, objectFlow.getLocalAssignments().count());
-                } else {
-                    Assert.assertNotSame(objectFlow, objectFlowPI);
-                }
-            }
-        }
-    };
-
-    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, TypeInfo typeInfo) {
-            if ("ObjectFlow1".equals(typeInfo.simpleName)) {
-                Assert.assertEquals(1L, typeInfo.typeAnalysis.get().getConstantObjectFlows().count());
-                ObjectFlow literal = typeInfo.typeAnalysis.get().getConstantObjectFlows().findAny().orElseThrow();
-                Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
-                Assert.assertSame(Origin.LITERAL, literal.origin);
-                Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());
-            }
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if ("ObjectFlow1".equals(typeInfo.simpleName)) {
+            Assert.assertEquals(1L, typeInfo.typeAnalysis.get().getConstantObjectFlows().count());
+            ObjectFlow literal = typeInfo.typeAnalysis.get().getConstantObjectFlows().findAny().orElseThrow();
+            Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
+            Assert.assertSame(Origin.LITERAL, literal.origin);
+            Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());
         }
     };
 

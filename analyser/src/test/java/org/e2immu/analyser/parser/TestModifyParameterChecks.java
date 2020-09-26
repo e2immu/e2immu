@@ -21,13 +21,10 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class TestModifyParameterChecks extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestModifyParameterChecks.class);
 
     public TestModifyParameterChecks() {
         super(false);

@@ -159,7 +159,7 @@ public class MethodAnalysis extends Analysis {
         return returnType.getProperty(VariableProperty.IMMUTABLE);
     }
 
-    private int valueFromOverrides(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+    public int valueFromOverrides(VariableProperty variableProperty) {
         return overrides.get().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 

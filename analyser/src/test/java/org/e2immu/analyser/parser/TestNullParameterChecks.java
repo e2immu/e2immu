@@ -44,7 +44,6 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", d.iteration, d.properties, d.currentValue);
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED)); //FALSE at level 1
-                //Assert.assertEquals(Level.compose(Level.TRUE, 1), (int) d.properties.get(VariableProperty.NOT_NULL));
                 return;
             }
             if ("NullParameterChecks.this.s".equals(d.variableName)) {
@@ -53,12 +52,8 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT)); // even field will have this
                 return;
             }
-            //Assert.fail();
         }
         if ("method8Implicit".equals(d.methodInfo.name)) {
-            if ("0.0.0".equals(d.statementId) && "NullParameterChecks.this.s".equals(d.variableName)) {
-                // TODO
-            }
             // the parameter "s" is not present in the variable d.properties at the 0.0.0 level; it is one higher
             if ("0".equals(d.statementId)) {
                 if ("s".equals(d.variableName)) {
@@ -88,7 +83,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method9".equals(d.methodInfo.name) && d.iteration > 0) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
     };
 

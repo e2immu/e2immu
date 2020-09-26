@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -37,7 +38,7 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         if ("Container4".equals(d.methodInfo.name)) {
             if ("strings4Param".equals(d.variableName)) {
-                //    Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
             }
             if ("Container4.this.strings4".equals(d.variableName)) {
                 Assert.assertTrue(d.currentValue instanceof PropertyWrapper);
@@ -65,56 +66,51 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         // POTENTIAL NULL POINTER EXCEPTION
         if ("add2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if (d.iteration > 0) Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            if (d.iteration > 0) Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("setStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
-                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
-            }
-            if ("getStrings1".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
-                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
-                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
-                Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
+        if ("setStrings1".equals(methodInfo.name)) {
+            FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
+            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
+        }
+        if ("getStrings1".equals(methodInfo.name)) {
+            FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
+            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
+            Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
+        }
 
-            if ("setStrings2".equals(methodInfo.name)) {
-                ParameterInfo strings2 = methodInfo.methodInspection.get().parameters.get(0);
-                Assert.assertEquals("strings2param", strings2.name);
-                if (iteration > 2) {
-                    //   Assert.assertTrue(strings2.parameterAnalysis.get().assignedToField.isSet());
-                }
-            }
-            if ("add2".equals(methodInfo.name) && iteration >= 1) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
-                Assert.assertEquals("strings2", strings.name);
-                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
-                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
-            }
-            if ("add2b".equals(methodInfo.name)) {
-                FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
-                Assert.assertEquals("strings2b", strings.name);
-                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(strings);
-                Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
-                Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
-            }
-            if ("addAll5".equals(methodInfo.name)) {
-                FieldInfo list = methodInfo.typeInfo.getFieldByName("list", true);
-                TransferValue transferValue = methodInfo.methodAnalysis.get().fieldSummaries.get(list);
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
-                if (iteration > 0) {
-                    Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));
-                }
+        if ("setStrings2".equals(methodInfo.name)) {
+            ParameterInfo strings2 = methodInfo.methodInspection.get().parameters.get(0);
+            Assert.assertEquals("strings2param", strings2.name);
+        }
+        if ("add2".equals(methodInfo.name) && iteration >= 1) {
+            FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+            Assert.assertEquals("strings2", strings.name);
+            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
+        }
+        if ("add2b".equals(methodInfo.name)) {
+            FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+            Assert.assertEquals("strings2b", strings.name);
+            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
+            Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
+            Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+        }
+        if ("addAll5".equals(methodInfo.name)) {
+            FieldInfo list = methodInfo.typeInfo.getFieldByName("list", true);
+            TransferValue transferValue = methodLevelData.fieldSummaries.get(list);
+            Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
+            if (iteration > 0) {
+                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

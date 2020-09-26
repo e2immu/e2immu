@@ -25,7 +25,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.junit.Assert;
@@ -61,20 +60,17 @@ public class TestEither extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("getLeftOrElse".equals(methodInfo.name) && iteration > 0) {
-                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
-                Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
-                ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
-                Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            }
-            if ("Either".equals(methodInfo.name) && iteration > 0) {
-                Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
-                        methodInfo.methodAnalysis.get().precondition.get().toString());
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("getLeftOrElse".equals(methodInfo.name) && iteration > 0) {
+            TransferValue tv = methodInfo.methodAnalysis.get().methodLevelData().returnStatementSummaries.get("1");
+            Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
+            ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
+            Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        }
+        if ("Either".equals(methodInfo.name) && iteration > 0) {
+            Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
+                    methodInfo.methodAnalysis.get().precondition.get().toString());
         }
     };
 

@@ -6,7 +6,6 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,46 +17,40 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
         super(false);
     }
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(Data d) {
-            if ("method7".equals(d.methodInfo.name) && "3".equals(d.statementId) && "res".equals(d.variableName)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
-            }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method7".equals(d.methodInfo.name) && "3".equals(d.statementId) && "res".equals(d.variableName)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method7".equals(d.methodInfo.name)) {
             if ("2".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
             }
             if ("2.2.0".equals(d.statementId)) {
                 Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
         if ("method3".equals(d.methodInfo.name) && "0.2.0".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.get()); // method evaluates to constant
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // method evaluates to constant
         }
         if ("method3".equals(d.methodInfo.name) && "0.2.0.0.0".equals(d.statementId)) {
             Assert.assertTrue(d.statementAnalysis.inErrorState());
-            Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
     };
 
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("method3".equals(methodInfo.name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
-            if ("method7".equals(methodInfo.name) && iteration > 0) {
-                // @Constant annotation missing, but is marked as constant
-                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONSTANT));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("method3".equals(methodInfo.name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+        if ("method7".equals(methodInfo.name) && iteration > 0) {
+            // @Constant annotation missing, but is marked as constant
+            Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONSTANT));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -112,7 +113,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("add4".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertFalse(d.statementAnalysis.errorValue.isSet()); // no potential null pointer exception
+            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet()); // no potential null pointer exception
         }
     };
 
@@ -181,11 +182,12 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
         if ("size".equals(methodInfo.name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
             if (iteration > 0) {
                 FieldInfo set2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("set2", set2.name);
-                TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(set2);
+                TransferValue tv = methodLevelData.fieldSummaries.get(set2);
                 Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
             }
             if (iteration > 1) {
@@ -202,7 +204,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add4".equals(methodInfo.name)) {
             if (iteration >= 1) {
                 FieldInfo set4 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("set4")).findAny().orElseThrow();
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set4).properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodLevelData.fieldSummaries.get(set4)
+                        .properties.get(VariableProperty.NOT_NULL));
             }
             if (iteration >= 2) {
                 Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
@@ -223,7 +226,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             FieldInfo set6 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("set6")).findAny().orElseThrow();
 
             if (iteration >= 2) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().fieldSummaries.get(set6).properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodLevelData.fieldSummaries.get(set6)
+                        .properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }

@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
     public final StatementAnalysis statementAnalysis;
-    private  VariableDataImpl.Builder variableDataBuilder = new VariableDataImpl.Builder();
+    private VariableDataImpl.Builder variableDataBuilder = new VariableDataImpl.Builder();
 
     private final MethodAnalyser myMethodAnalyser;
 
@@ -185,8 +186,9 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         StatementAnalyserResult result = statementAnalysis.methodLevelData.update(evaluationContext);
 
         statementAnalysis.variableData.set(variableDataBuilder.build());
-        variableDataBuilder = null;
+        variableDataBuilder = null; // drop some data
 
+        statementAnalysis.errorFlags.finalise(statementAnalysis.parent.errorFlags);
         return result;
     }
 
@@ -531,26 +533,26 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         boolean changes = false;
         // we run at the local level
         List<String> toRemove = new ArrayList<>();
-        for (VariableDataImpl.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
-            if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
-                boolean notAssignedInLoop = aboutVariable.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
+        for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
+            if (variableInfo.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
+                boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
                 // TODO at some point we will do better than "notAssignedInLoop"
                 boolean useless = escapesViaException || notAssignedInLoop && (
-                        neverContinuesBecauseOfReturn && statementAnalysis.variableData.isLocalVariable(aboutVariable) ||
-                                aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariableReference());
+                        neverContinuesBecauseOfReturn && variableDataBuilder.isLocalVariable(variableInfo) ||
+                                variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference());
                 if (useless) {
-                    if (!statementAnalysis.errorFlags.uselessAssignments.isSet(aboutVariable.variable)) {
-                        statementAnalysis.errorFlags.uselessAssignments.put(aboutVariable.variable, true);
-                        messages.add(Message.newMessage(location, Message.USELESS_ASSIGNMENT, aboutVariable.variable.name()));
+                    if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.getVariable())) {
+                        statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.getVariable(), true);
+                        messages.add(Message.newMessage(location, Message.USELESS_ASSIGNMENT, variableInfo.getName()));
                         changes = true;
                     }
-                    if (aboutVariable.isLocalCopy()) toRemove.add(aboutVariable.name);
+                    if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.getName());
                 }
             }
         }
         if (!toRemove.isEmpty()) {
             log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-            variableProperties.removeAll(toRemove);
+            variableDataBuilder.removeAllVariables(toRemove);
         }
         return changes;
     }
@@ -558,13 +560,13 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
     private void unusedLocalVariablesCheck(Location location) {
         // we run at the local level
-        for (VariableDataImpl.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
-            if (aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariableReference()
-                    && aboutVariable.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
-                if (!(aboutVariable.variable instanceof LocalVariableReference)) {
+        for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
+            if (variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference()
+                    && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
+                if (!(variableInfo.isLocalVariableReference())) {
                     throw new UnsupportedOperationException("?? CREATED only added to local variables");
                 }
-                LocalVariable localVariable = ((LocalVariableReference) aboutVariable.variable).variable;
+                LocalVariable localVariable = ((LocalVariableReference) variableInfo.getVariable()).variable;
                 if (!statementAnalysis.errorFlags.unusedLocalVariables.isSet(localVariable)) {
                     statementAnalysis.errorFlags.unusedLocalVariables.put(localVariable, true);
                     messages.add(Message.newMessage(location, Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
@@ -616,6 +618,11 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     @Override
     public Analysis getAnalysis() {
         return statementAnalysis;
+    }
+
+
+    public void initialiseParametersAsVariables(List<ParameterAnalyser> parameterAnalysers) {
+        // TODO
     }
 
 
@@ -691,6 +698,129 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         @Override
         public Stream<ObjectFlow> getInternalObjectFlows() {
             return null;
+        }
+    }
+
+
+    public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
+        private final Either<Variable, String> variable;
+        private final VariableProperty property;
+        private final int value;
+
+        public SetProperty(Variable variable, VariableProperty property, int value) {
+            this.value = value;
+            this.property = property;
+            this.variable = Either.left(variable);
+        }
+
+        public SetProperty(String variableName, VariableProperty property, int value) {
+            this.value = value;
+            this.property = property;
+            this.variable = Either.right(variableName);
+        }
+
+        @Override
+        public void run() {
+            VariableInfoImpl.Builder aboutVariable = variable.isLeft() ? variableDataBuilder.find(variable.getLeft()) :
+                    variableDataBuilder.find(variable.getRight());
+            if (aboutVariable == null) {
+                if (variable.isLeft()) {
+                    if (variable.getLeft() instanceof FieldReference)
+                        aboutVariable = ensureFieldReference((FieldReference) variable.getLeft());
+                } else return;
+            }
+            int current = aboutVariable.getProperty(property);
+            if (current < value) {
+                aboutVariable.setProperty(property, value);
+            }
+
+            Value currentValue = aboutVariable.getCurrentValue();
+            ValueWithVariable valueWithVariable;
+            if ((valueWithVariable = currentValue.asInstanceOf(ValueWithVariable.class)) == null) return;
+            Variable other = valueWithVariable.variable;
+            if (!variable.equals(other)) {
+                variableDataBuilder.addProperty(other, property, value);
+            }
+        }
+    }
+
+
+    public class RaiseErrorMessage implements StatementAnalysis.StatementAnalysisModification {
+        private final Message message;
+
+        public RaiseErrorMessage(Message message) {
+            this.message = message;
+        }
+
+        @Override
+        public void run() {
+            messages.add(message);
+        }
+    }
+
+
+    public class ErrorAssigningToFieldOutsideType implements StatementAnalysis.StatementAnalysisModification {
+        private final FieldInfo fieldInfo;
+        private final Location location;
+
+        public ErrorAssigningToFieldOutsideType(FieldInfo fieldInfo, Location location) {
+            this.fieldInfo = fieldInfo;
+            this.location = location;
+        }
+
+        @Override
+        public void run() {
+            if (!statementAnalysis.errorFlags.errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
+                statementAnalysis.errorFlags.errorAssigningToFieldOutsideType.put(fieldInfo, true);
+                messages.add(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+            }
+        }
+    }
+
+    public class ParameterShouldNotBeAssignedTo implements StatementAnalysis.StatementAnalysisModification {
+        private final ParameterInfo parameterInfo;
+        private final Location location;
+
+        public ParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo, Location location) {
+            this.parameterInfo = parameterInfo;
+            this.location = location;
+        }
+
+        @Override
+        public void run() {
+            if (!statementAnalysis.errorFlags.parameterAssignments.isSet(parameterInfo)) {
+                statementAnalysis.errorFlags.parameterAssignments.put(parameterInfo, true);
+                messages.add(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
+            }
+        }
+    }
+
+
+    public class AddVariable implements StatementAnalysis.StatementAnalysisModification {
+        private final Variable variable;
+
+        public AddVariable(Variable variable) {
+            this.variable = variable;
+        }
+
+        @Override
+        public void run() {
+
+        }
+    }
+
+    public class LinkVariable implements StatementAnalysis.StatementAnalysisModification {
+        private final Variable variable;
+        private final Set<Variable> to;
+
+        public LinkVariable(Variable variable, Set<Variable> to) {
+            this.variable = variable;
+            this.to = to;
+        }
+
+        @Override
+        public void run() {
+
         }
     }
 }

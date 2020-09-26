@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -42,7 +43,7 @@ public class TestIdentityChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Value value = d.statementAnalysis.valueOfExpression.get();
+            Value value = d.statementAnalysis.stateData.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
             Value valueInside = ((PropertyWrapper) value).value;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);
@@ -55,9 +56,10 @@ public class TestIdentityChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         if ("idem".equals(methodInfo.name)) {
 
-            TransferValue tv = methodAnalysis.returnStatementSummaries.get("1");
+            TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
             Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
 
             // @NotModified decided straight away, @Identity as well
@@ -66,9 +68,9 @@ public class TestIdentityChecks extends CommonTestRunner {
         }
 
         if ("idem3".equals(methodInfo.name)) {
-            TransferValue tv1 = methodAnalysis.returnStatementSummaries.get("1.0.0");
+            TransferValue tv1 = methodLevelData.returnStatementSummaries.get("1.0.0");
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv1.getProperty(VariableProperty.NOT_NULL));
-            TransferValue tv2 = methodAnalysis.returnStatementSummaries.get("1.1.0");
+            TransferValue tv2 = methodLevelData.returnStatementSummaries.get("1.1.0");
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv2.getProperty(VariableProperty.NOT_NULL));
             // combining both, we obtain:
             //Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));

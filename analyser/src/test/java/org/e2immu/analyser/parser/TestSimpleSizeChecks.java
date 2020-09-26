@@ -45,13 +45,13 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
         if ("method1bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
         if ("method1bis".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
     };
 
@@ -60,7 +60,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         if ("method1".equals(methodInfo.name)) {
-            TransferValue tv = methodAnalysis.returnStatementSummaries.get("2");
+            TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(SIZE_EQUALS_1, tv.properties.get(VariableProperty.SIZE)); // (1)

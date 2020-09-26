@@ -17,10 +17,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.junit.Assert;
@@ -35,23 +35,23 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("conditionalValue".equals(methodInfo.name) && iteration > 2) {
-            Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Value srv = methodInfo.methodAnalysis.get().methodLevelData().singleReturnValue.get();
             Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
             Assert.assertTrue(srv instanceof InlineValue);
 
         }
 
         if ("method4bis".equals(methodInfo.name) && iteration > 0) {
-            NumberedStatement start = methodInfo.methodAnalysis.get().numberedStatements.get().get(0).followReplacements();
+            StatementAnalysis start = methodInfo.methodAnalysis.get().firstStatement.followReplacements();
             Assert.assertEquals("return a1 == null ? a2 == null ? \"abc\" : a2 : a3 == null ? \"xyz\" : a1;\n",
                     start.statement.statementString(0, null));
-            Assert.assertNull(start.next.get().orElse(null));
+            Assert.assertNull(start.navigationData.next.get().orElse(null));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertEquals("null == a1?Was null...:a1", d.statementAnalysis.valueOfExpression.get().toString());
+        if ("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
+            Assert.assertEquals("null == a1?Was null...:a1", d.statementAnalysis.stateData.valueOfExpression.get().toString());
         }
     };
 

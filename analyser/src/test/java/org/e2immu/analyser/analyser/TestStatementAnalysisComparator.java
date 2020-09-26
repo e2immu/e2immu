@@ -19,23 +19,22 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
-
-public class TestNumberedStatement {
+public class TestStatementAnalysisComparator {
     @Test
     public void test() {
         Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
-        NumberedStatement parent = null;
+        StatementAnalysis parent = null;
 
-        NumberedStatement ns0 = new NumberedStatement(emptyStatement, parent, List.of());
-        NumberedStatement ns1 = new NumberedStatement(emptyStatement, parent, List.of(1));
-        NumberedStatement ns01 = new NumberedStatement(emptyStatement, parent, List.of(0, 1));
-        NumberedStatement ns10 = new NumberedStatement(emptyStatement, parent, List.of(1, 0));
+        StatementAnalysis ns0 = new StatementAnalysis(emptyStatement, parent, "");
+        StatementAnalysis ns1 = new StatementAnalysis(emptyStatement, parent, "1");
+        StatementAnalysis ns01 = new StatementAnalysis(emptyStatement, parent, "0.1");
+        StatementAnalysis ns10 = new StatementAnalysis(emptyStatement, parent, "1.0");
 
         Assert.assertTrue(ns0.compareTo(ns0) == 0);
         Assert.assertTrue(ns0.compareTo(ns1) < 0);

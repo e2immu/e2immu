@@ -20,20 +20,17 @@ public class TestSizeChecks2 extends CommonTestRunner {
     }
 
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
 
-            TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-            MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
-                    .filter(m -> m.methodInspection.get().parameters.size() == 1)
-                    .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
-                    .findAny().orElseThrow();
-            ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
-            int size = param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
-            Assert.assertEquals(Level.SIZE_COPY_TRUE, size);
-        }
+        TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
+        MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
+                .filter(m -> m.methodInspection.get().parameters.size() == 1)
+                .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+                .findAny().orElseThrow();
+        ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
+        int size = param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+        Assert.assertEquals(Level.SIZE_COPY_TRUE, size);
     };
 
     @Test

@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -41,12 +42,13 @@ import java.util.stream.Collectors;
 public class TestSetOnceMap extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
         if ("get".equals(methodInfo.name) && iteration > 0) {
-            Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Value srv = methodLevelData.singleReturnValue.get();
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
             InlineValue inlineValue = (InlineValue) srv;
             Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
-            TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1");
+            TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
 
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
@@ -60,7 +62,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("getOtherwiseNull".equals(methodInfo.name)) {
             if (iteration > 0) {
-                Set<Variable> linkedVariables = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0").linkedVariables.get();
+                Set<Variable> linkedVariables = methodLevelData.returnStatementSummaries.get("0").linkedVariables.get();
                 Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
                 // independent, because does not return a support data type
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
@@ -68,21 +70,21 @@ public class TestSetOnceMap extends CommonTestRunner {
             }
         }
         if ("isEmpty".equals(methodInfo.name)) {
-            TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
+            TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
             Assert.assertNotNull(tv);
             Assert.assertEquals("0 == this.map.size(),?>=0", tv.value.get().toString());
 
             // there is no reason to have a @Size annotation on this expression
             Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
             if (iteration > 0) {
-                Value srv = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value srv = methodLevelData.singleReturnValue.get();
                 Assert.assertEquals("inline isEmpty on 0 == this.map.size(),?>=0", srv.toString());
                 // @Size(equals = 0)
                 Assert.assertEquals(Level.SIZE_EMPTY, methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE));
             }
         }
         if ("stream".equals(methodInfo.name)) {
-            TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
+            TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
             Assert.assertNotNull(tv);
             Value stream = tv.value.get();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
@@ -90,10 +92,12 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("put".equals(methodInfo.name)) {
             if (iteration > 0) {
-                Assert.assertEquals("(not (this.map.containsKey(k)) and not (this.frozen))", methodInfo.methodAnalysis.get().precondition.get().toString());
+                Assert.assertEquals("(not (this.map.containsKey(k)) and not (this.frozen))",
+                        methodInfo.methodAnalysis.get().precondition.get().toString());
             }
             if (iteration > 1) {
-                Assert.assertEquals("[not (this.frozen), not (this.map.containsKey(k))]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+                Assert.assertEquals("[not (this.frozen), not (this.map.containsKey(k))]",
+                        methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
             }
         }
     };

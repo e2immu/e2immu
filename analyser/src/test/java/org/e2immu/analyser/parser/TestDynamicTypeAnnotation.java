@@ -38,10 +38,10 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (d.iteration > 0) {
             if ("modifySetCreated".equals(d.methodInfo.name)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
             if ("modifySet1".equals(d.methodInfo.name)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
     };

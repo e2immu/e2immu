@@ -74,12 +74,12 @@ public class TestPreconditionChecks extends CommonTestRunner {
                 Assert.assertEquals("iteration " + d.iteration, "(null == this.integer and ii >= 0)", d.state.toString());
 
                 // set at the end of the synchronized block
-                Assert.assertEquals("ii >= 0", d.statementAnalysis.state.get().toString());
+                Assert.assertEquals("ii >= 0", d.statementAnalysis.stateData.conditionManager.get().state.toString());
             }
         }
         if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
             if (d.iteration > 0) {
-                Assert.assertTrue("Iteration: " + d.iteration, d.statementAnalysis.errorValue.isSet());
+                Assert.assertTrue("Iteration: " + d.iteration, d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
     };

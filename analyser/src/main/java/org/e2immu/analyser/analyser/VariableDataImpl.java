@@ -29,9 +29,7 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -48,7 +46,7 @@ public class VariableDataImpl implements VariableData {
         dependencyGraph.freeze();
     }
 
-    public Iterable<VariableInfo> variableProperties() {
+    public Iterable<VariableInfo> variableInfos() {
         return variables.values();
     }
 
@@ -70,6 +68,26 @@ public class VariableDataImpl implements VariableData {
     @Container(builds = VariableDataImpl.class)
     public static class Builder implements VariableData {
 
+        private final Map<String, VariableInfo> variables = new HashMap<>();
+        private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
+        private boolean delaysInDependencyGraph;
+
+        @Override
+        public Collection<Map.Entry<String, VariableInfo>> variables() {
+            return variables.entrySet();
+        }
+
+        @Override
+        public DependencyGraph<Variable> getDependencyGraph() {
+            return dependencyGraph;
+        }
+
+        @Override
+        public Iterable<VariableInfo> variableInfos() {
+            return variables.values();
+        }
+
+
         public void createLocalVariableOrParameter(LocalVariableReference theLocalVariableReference) {
         }
 
@@ -77,7 +95,7 @@ public class VariableDataImpl implements VariableData {
         }
 
 
-        public boolean isLocalVariable(AboutVariable aboutVariable) {
+        public boolean isLocalVariable(VariableInfo aboutVariable) {
             if (aboutVariable.isLocalVariableReference()) return true;
             if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.isLocalVariableReference())
                 return true;
@@ -172,7 +190,7 @@ public class VariableDataImpl implements VariableData {
         }
 
 
-        private VariableInfoImpl.Builder find(@NotNull Variable variable) {
+        VariableInfoImpl.Builder find(@NotNull Variable variable) {
             String name = variableName(variable);
             if (name == null) return null;
             return find(name);
@@ -190,80 +208,16 @@ public class VariableDataImpl implements VariableData {
 
         @Override
         public boolean isDelaysInDependencyGraph() {
-            return false;
+            return delaysInDependencyGraph;
         }
 
         public VariableDataImpl build() {
+            return new VariableDataImpl(variables, dependencyGraph);
         }
 
 
-        public class AddVariable implements StatementAnalysis.StatementAnalysisModification {
-            private final Variable variable;
-
-            public AddVariable(Variable variable) {
-                this.variable = variable;
-            }
-
-            @Override
-            public void run() {
-
-            }
-        }
-
-        public class LinkVariable implements StatementAnalysis.StatementAnalysisModification {
-            private final Variable variable;
-            private final Set<Variable> to;
-
-            public LinkVariable(Variable variable, Set<Variable> to) {
-                this.variable = variable;
-                this.to = to;
-            }
-
-            @Override
-            public void run() {
-
-            }
-        }
-
-        public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
-            private final Either<Variable, String> variable;
-            private final VariableProperty property;
-            private final int value;
-
-            public SetProperty(Variable variable, VariableProperty property, int value) {
-                this.value = value;
-                this.property = property;
-                this.variable = Either.left(variable);
-            }
-
-            public SetProperty(String variableName, VariableProperty property, int value) {
-                this.value = value;
-                this.property = property;
-                this.variable = Either.right(variableName);
-            }
-
-            @Override
-            public void run() {
-                VariableInfoImpl.Builder aboutVariable = variable.isLeft() ? find(variable.getLeft()) : find(variable.getRight());
-                if (aboutVariable == null) {
-                    if (variable.isLeft()) {
-                        if (variable.getLeft() instanceof FieldReference)
-                            aboutVariable = ensureFieldReference((FieldReference) variable.getLeft());
-                    } else return;
-                }
-                int current = aboutVariable.getProperty(property);
-                if (current < value) {
-                    aboutVariable.setProperty(property, value);
-                }
-
-                Value currentValue = aboutVariable.getCurrentValue();
-                ValueWithVariable valueWithVariable;
-                if ((valueWithVariable = currentValue.asInstanceOf(ValueWithVariable.class)) == null) return;
-                Variable other = valueWithVariable.variable;
-                if (!variable.equals(other)) {
-                    addProperty(other, property, value);
-                }
-            }
+        public void removeAllVariables(List<String> toRemove) {
+            variables.keySet().removeAll(toRemove);
         }
     }
 }

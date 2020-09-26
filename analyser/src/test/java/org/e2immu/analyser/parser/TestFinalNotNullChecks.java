@@ -32,7 +32,6 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         }
         if ("FinalNotNullChecks".equals(d.methodInfo.name) && "param".equals(d.variableName)) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            int notNull = d.properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
             if (d.iteration == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
@@ -44,38 +43,29 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo objects = typeContext.getFullyQualified(Objects.class);
-            MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
-                    1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
-            ParameterInfo parameterInfo = requireNonNull.methodInspection.get().parameters.get(0);
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo objects = typeContext.getFullyQualified(Objects.class);
+        MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
+                1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+        ParameterInfo parameterInfo = requireNonNull.methodInspection.get().parameters.get(0);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if (iteration == 0 && "input".equals(fieldInfo.name)) {
+            Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+        if (iteration >= 2 && "input".equals(fieldInfo.name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        }
+    };
+
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if (methodInfo.name.equals("FinalNotNullChecks")) {
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if (iteration == 0 && "input".equals(fieldInfo.name)) {
-                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
-            if (iteration >= 2 && "input".equals(fieldInfo.name)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
-        }
-    };
-
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if (methodInfo.name.equals("FinalNotNullChecks")) {
-                ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            }
         }
     };
 

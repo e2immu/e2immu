@@ -4,7 +4,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,14 +26,8 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("len".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertEquals("inline len on null == s?(-1):s.length(),?>=0", methodInfo.methodAnalysis.get().singleReturnValue.get().toString());
-        }
-
-        if ("len6".equals(methodInfo.name)) {
-            // Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
-        }
-        if ("len7".equals(methodInfo.name)) {
-            //  Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.get() instanceof InlineValue);
+            Assert.assertEquals("inline len on null == s?(-1):s.length(),?>=0", methodInfo.methodAnalysis.get()
+                    .methodLevelData().singleReturnValue.get().toString());
         }
     };
 

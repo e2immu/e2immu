@@ -133,9 +133,9 @@ public class TestWithSkeleton {
         Assert.assertEquals(DELAY, variableProperties.getProperty(localS, VariableProperty.NOT_NULL));
 
         // add s != null
-        Value sIsNotNull = NegatedValue.negate(new EqualsValue(new VariableValue( localS), NullValue.NULL_VALUE, ObjectFlow.NO_FLOW));
+        Value sIsNotNull = NegatedValue.negate(new EqualsValue(new VariableValue(localS), NullValue.NULL_VALUE, ObjectFlow.NO_FLOW));
         variableProperties.conditionManager.addCondition(sIsNotNull);
-        Assert.assertEquals("not (null == s)", variableProperties.conditionManager.getCondition().toString());
+        Assert.assertEquals("not (null == s)", variableProperties.conditionManager.condition.toString());
 
         // s is not a parameter, therefore, this still will be empty
         Set<Variable> nullConditionals2 = variableProperties.conditionManager.findIndividualNullConditions();
@@ -201,7 +201,7 @@ public class TestWithSkeleton {
         Assert.assertTrue(variableProperties.isKnown(finalStringRef));
 
         VariableValue nvv = variableProperties.newVariableValue(finalStringRef);
-        Assert.assertEquals("TestSkeleton.this.finalString", nvv.name);
+        Assert.assertEquals("TestSkeleton.this.finalString", nvv.toString());
 
         Value currentValue = variableProperties.currentValue(finalStringRef);
         Assert.assertTrue("Have " + currentValue.getClass(), currentValue instanceof StringValue);

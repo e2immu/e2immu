@@ -254,10 +254,11 @@ Steps:
 The results of the initialisers need to be known to the evaluation context, but cannot be permanent yet.
 . evaluate updates (classic `for`).
 The results of the updaters need to be known to the evaluation context, but cannot be permanent yet.
-. evaluate main expression (many statements). The results need to be known to the evaluation context.
+. evaluate main expression (many statements).
+The results need to be known to the evaluation context.
 . specific `return` statement code, update method-level data;
 . specific `if`, `switch` code to check evaluations to constant
-. primary block, recursive call; merge back
-. sub-blocks, recursive calls; merge back
+. primary block, recursive call; merge back by calling `lift`
+. sub-blocks, recursive calls; merge back by calling `lift`
 . determine state after this statement
-. finally, make the results of the evaluation(s) permanent in the variable data, state data
+. finally, make the results of the evaluation(s) permanent by calling `finalise`

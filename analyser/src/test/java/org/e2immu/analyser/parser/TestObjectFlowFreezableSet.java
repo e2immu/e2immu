@@ -132,18 +132,18 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
         if ("method3".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
         }
         // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
         if ("method9".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
     };
@@ -183,10 +183,10 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("ObjectFlowFreezableSet", 3, 0, new DebugConfiguration.Builder()
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-              //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-              //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .build());
 

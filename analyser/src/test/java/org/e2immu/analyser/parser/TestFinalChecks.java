@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -56,15 +57,16 @@ public class TestFinalChecks extends CommonTestRunner {
 
         // there is no size restriction
         if (iteration > 0) {
+            MethodLevelData methodLevelData  = methodInfo.methodAnalysis.get().methodLevelData();
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
             if ("toString".equals(methodInfo.name)) {
-                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
             }
             if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
-                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
             }
             if ("FinalChecks".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 2) {
-                Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
             }
         }
     };

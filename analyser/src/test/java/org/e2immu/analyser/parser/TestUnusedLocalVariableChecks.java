@@ -21,16 +21,16 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         // ERROR: t.trim() result is not used
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertTrue(d.statementAnalysis.errorValue.get());
+            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
         }
 
         if ("method2".equals(d.methodInfo.name) && d.iteration > 2) {
             if ("1".equals(d.statementAnalysis.index)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get()); // if switches
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // if switches
             }
             if ("1.0.0".equals(d.statementAnalysis.index)) {
                 Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
 
@@ -39,18 +39,55 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 Assert.assertEquals("param.contains(a)", d.state.toString());
 
                 if (d.iteration > 1) {
-                    Value value = d.statementAnalysis.valueOfExpression.get();
+                    Value value = d.statementAnalysis.stateData.valueOfExpression.get();
                     Assert.assertEquals("xzy.toLowerCase()", value.toString());
                     Assert.assertTrue("Is " + value.getClass(), value instanceof MethodValue);
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis.index)) {
-                if (d.iteration > 1) Assert.assertTrue(d.statementAnalysis.errorValue.get()); // if switches
+                if (d.iteration > 1) Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // if switches
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis.index) && d.iteration > 1) {
                 Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
+        }
+        // ERROR: Unused variable "a"
+        // ERROR: useless assignment to "a" as well
+        if ("UnusedLocalVariableChecks".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+            Assert.assertEquals(1L,
+                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("a", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
+                    .findFirst().orElseThrow().getKey().name);
+
+            Assert.assertEquals(1L,
+                    d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("a", d.statementAnalysis.errorFlags.uselessAssignments.stream()
+                    .findFirst().orElseThrow().getKey().name());
+        }
+
+        if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            // ERROR: unused variable "s"
+            Assert.assertEquals(1L,
+                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("s", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
+                    .findFirst().orElseThrow().getKey().name);
+
+            // but NO useless assignment anymore
+            Assert.assertEquals(0L,
+                    d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+
+            // ERROR: method should be static
+            Assert.assertTrue(d.methodInfo.methodAnalysis.get().complainedAboutMissingStaticModifier.get());
+        }
+        if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+            Assert.assertEquals(1L, d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+        }
+        if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+            Assert.assertEquals(1L,
+                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("loopVar", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
+                    .findFirst().orElseThrow().getKey().name);
         }
     };
 
@@ -92,42 +129,9 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
 
-        // ERROR: Unused variable "a"
-        // ERROR: useless assignment to "a" as well
-        if ("UnusedLocalVariableChecks".equals(methodInfo.name)) {
-            Assert.assertEquals(1L,
-                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("a", methodAnalysis.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
-
-            Assert.assertEquals(1L,
-                    methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("a", methodAnalysis.uselessAssignments.stream()
-                    .findFirst().orElseThrow().getKey().name());
-        }
-
         if ("method1".equals(methodInfo.name)) {
-            // ERROR: unused variable "s"
-            Assert.assertEquals(1L,
-                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("s", methodAnalysis.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
-
-            // but NO useless assignment anymore
-            Assert.assertEquals(0L,
-                    methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
-
             // ERROR: method should be static
             Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticModifier.get());
-        }
-        if ("checkArray2".equals(methodInfo.name)) {
-            Assert.assertEquals(1L, methodAnalysis.uselessAssignments.stream().filter(Map.Entry::getValue).count());
-        }
-        if ("checkForEach".equals(methodInfo.name)) {
-            Assert.assertEquals(1L,
-                    methodAnalysis.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("loopVar", methodAnalysis.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
         }
     };
 

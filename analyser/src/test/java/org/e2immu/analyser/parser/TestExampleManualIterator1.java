@@ -50,7 +50,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, param0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
         if ("MyIterator".equals(typeInfo.simpleName)) {
-            MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
+            //MethodInfo hasNext = typeInfo.findUniqueMethod("hasNext", 0);
             Assert.assertSame(AnnotationMode.DEFENSIVE, typeInfo.typeInspection.getPotentiallyRun().annotationMode);
             // Assert.assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
@@ -65,7 +65,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
             int independent = typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
             int expectIndependent = iteration < 2 ? Level.DELAY : Level.TRUE;
-            // Assert.assertEquals(expectIndependent, independent);
+            Assert.assertEquals(expectIndependent, independent);
         }
     };
 
@@ -83,8 +83,8 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             Assert.assertEquals(expect, modified);
 
             if (iteration > 0) {
-                //       Assert.assertTrue(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
-                //       Assert.assertEquals("", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+                Assert.assertTrue(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
+                Assert.assertEquals("", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
             }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {
@@ -105,9 +105,9 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, iteratorTv.properties.get(VariableProperty.READ));
 
                 if (iteration > 1) {
-                    //    Assert.assertEquals(Level.FALSE, iteratorTv.properties.get(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, iteratorTv.properties.get(VariableProperty.MODIFIED));
 
-                    int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                    // int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
                     //    Assert.assertEquals(Level.FALSE, modified);
                 }
             }
@@ -125,11 +125,11 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
     public void test() throws IOException {
         testClass("ExampleManualIterator1", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeContextVisitor(typeContextVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

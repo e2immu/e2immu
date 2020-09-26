@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -20,29 +21,30 @@ public class TestEvaluateConstants extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("print".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get()); // if conditional
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // if conditional
             }
             if ("0.0.0".equals(d.statementId)) {
                 Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
+                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
             }
         }
         if ("print2".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorValue.get()); // inline conditional
+                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // inline conditional
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
         if ("print".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.isSet());
-            Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
+            Value singleReturnValue = methodLevelData.singleReturnValue.get();
             Assert.assertSame(UnknownValue.RETURN_VALUE, singleReturnValue); // not constant, the ee() error is ignored
         }
         if ("print2".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().singleReturnValue.isSet());
-            Value singleReturnValue = methodInfo.methodAnalysis.get().singleReturnValue.get();
+            Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
+            Value singleReturnValue = methodLevelData.singleReturnValue.get();
             Assert.assertTrue(singleReturnValue instanceof StringValue); // inline conditional works as advertised
         }
     };

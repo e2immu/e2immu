@@ -66,21 +66,18 @@ public class TestObjectFlow3 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            if ("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName)) {
-                if (iteration < 100) {
-                    Assert.assertFalse(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
-                } else {
-                    Set<ObjectFlow> objectFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
-                    LOGGER.info("Have flows in Main.go(): {}", objectFlows);
-                    Assert.assertEquals(2, objectFlows.size());
-                    ObjectFlow newInBetween = objectFlows.stream().filter(of -> of.origin == Origin.NEW_OBJECT_CREATION).findFirst().orElseThrow();
-                    Assert.assertEquals("InBetween", newInBetween.type.typeInfo.simpleName);
-                    ObjectFlow fieldAccess = objectFlows.stream().filter(of -> of.origin == Origin.FIELD_ACCESS).findFirst().orElseThrow();
-                    Assert.assertEquals("config", fieldAccess.location.info.name());
-                }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        if ("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName)) {
+            if (iteration < 100) {
+                Assert.assertFalse(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
+            } else {
+                Set<ObjectFlow> objectFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+                LOGGER.info("Have flows in Main.go(): {}", objectFlows);
+                Assert.assertEquals(2, objectFlows.size());
+                ObjectFlow newInBetween = objectFlows.stream().filter(of -> of.origin == Origin.NEW_OBJECT_CREATION).findFirst().orElseThrow();
+                Assert.assertEquals("InBetween", newInBetween.type.typeInfo.simpleName);
+                ObjectFlow fieldAccess = objectFlows.stream().filter(of -> of.origin == Origin.FIELD_ACCESS).findFirst().orElseThrow();
+                Assert.assertEquals("config", fieldAccess.location.info.name());
             }
         }
     };

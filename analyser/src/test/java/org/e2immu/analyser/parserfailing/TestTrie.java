@@ -39,23 +39,20 @@ https://github.com/bnaudts/e2immu/issues/14
 
 public class TestTrie extends CommonTestRunner {
 
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = new StatementAnalyserVariableVisitor() {
-        @Override
-        public void visit(Data d) {
-            if ("add".equals(d.methodInfo.name) && "newTrieNode".equals(d.variableName)) {
-                if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId)) {
-                    Assert.assertTrue(d.currentValue instanceof VariableValue);
-                    Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
-                }
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("add".equals(d.methodInfo.name) && "newTrieNode".equals(d.variableName)) {
+            if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId)) {
+                Assert.assertTrue(d.currentValue instanceof VariableValue);
+                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_NULL));
             }
-            if ("goTo".equals(d.methodInfo.name) && "1.0.1".equals(d.statementId) && "node".equals(d.variableName)) {
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.FALSE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
-            }
+        }
+        if ("goTo".equals(d.methodInfo.name) && "1.0.1".equals(d.statementId) && "node".equals(d.variableName)) {
+            Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.FALSE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        }
 
-            if ("get".equals(d.methodInfo.name) && "0".equals(d.statementId) && "node".equals(d.variableName)) {
-                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
-            }
+        if ("get".equals(d.methodInfo.name) && "0".equals(d.statementId) && "node".equals(d.variableName)) {
+            Assert.assertNull(d.properties.get(VariableProperty.MODIFIED));
         }
     };
 

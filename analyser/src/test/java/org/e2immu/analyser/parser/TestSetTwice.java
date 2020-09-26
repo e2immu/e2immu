@@ -21,7 +21,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,13 +29,6 @@ import java.util.List;
 import java.util.Set;
 
 public class TestSetTwice extends CommonTestRunner {
-
-
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if (iteration > 0) {
-            // Assert.assertEquals(2, typeInfo.typeAnalysis.get().approvedPreconditions.size());
-        }
-    };
 
     private static final String PRECONDITION = "(not (this.overwritten) and not (null == this.t))";
 
@@ -58,7 +50,6 @@ public class TestSetTwice extends CommonTestRunner {
     public void test() throws IOException {
         testUtilClass(List.of("SetTwice"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 

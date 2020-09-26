@@ -100,26 +100,21 @@ public abstract class CommonAbstractValue {
                 .setPackageName("org.e2immu.test")
                 .addMethod(methodInfo)
                 .build(true, someType));
-        methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
+        //methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
         return pi;
     }
 
     static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
-        public TypeInfo getCurrentType() {
-            return null; // should be enough to determine "self"
-        }
-
-        @Override
         public Value currentValue(Variable variable) {
-            return new VariableValue(this, variable, variable.name());
+            return new VariableValue(variable);
         }
 
-        @Override
-        public boolean equals(Variable variable, Variable other) {
-            return variable.name().equals(other.name());
-        }
+        //@Override
+        // public boolean equals(Variable variable, Variable other) {
+        //    return variable.name().equals(other.name());
+        //}
 
     };
 
@@ -127,25 +122,25 @@ public abstract class CommonAbstractValue {
     static final Variable vb = createVariable("b");
     static final Variable vc = createVariable("c");
     static final Variable vd = createVariable("d");
-    static final VariableValue a = new VariableValue(minimalEvaluationContext, va, "a");
-    static final VariableValue b = new VariableValue(minimalEvaluationContext, vb, "b");
-    static final VariableValue c = new VariableValue(minimalEvaluationContext, vc, "c");
-    static final VariableValue d = new VariableValue(minimalEvaluationContext, vd, "d");
+    static final VariableValue a = new VariableValue(va);
+    static final VariableValue b = new VariableValue(vb);
+    static final VariableValue c = new VariableValue(vc);
+    static final VariableValue d = new VariableValue(vd);
 
     static final Variable vi = createVariable("i");
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
-    static final VariableValue i = new VariableValue(minimalEvaluationContext, vi, "i");
+    static final VariableValue i = new VariableValue(vi);
     static final VariableValuePlaceholder iph = new VariableValuePlaceholder(i, i, minimalEvaluationContext, ObjectFlow.NO_FLOW);
-    static final VariableValue j = new VariableValue(minimalEvaluationContext, vj, "j");
-    static final VariableValue k = new VariableValue(minimalEvaluationContext, vk, "k");
+    static final VariableValue j = new VariableValue(vj);
+    static final VariableValue k = new VariableValue(vk);
 
     static final Variable vs = createVariable("s");
     static final Variable vt = createVariable("t");
-    static final VariableValue s = new VariableValue(minimalEvaluationContext, vs, "s");
-    static final VariableValue t = new VariableValue(minimalEvaluationContext, vt, "t");
+    static final VariableValue s = new VariableValue(vs);
+    static final VariableValue t = new VariableValue(vt);
 
     static final Variable vp = createParameter("p");
-    static final VariableValue p = new VariableValue(minimalEvaluationContext, vp, "p");
+    static final VariableValue p = new VariableValue(vp);
 
 }

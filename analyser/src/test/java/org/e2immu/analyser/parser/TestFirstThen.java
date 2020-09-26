@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -42,7 +43,7 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.state); // delay
             } else {
                 Assert.assertEquals("not (null == this.first)", d.state.toString());
-                Assert.assertEquals("not (null == this.first)", d.statementAnalysis.precondition.get().toString());
+                Assert.assertEquals("not (null == this.first)", d.statementAnalysis.stateData.precondition.get().toString());
             }
         }
         if("set".equals(d.methodInfo.name) && d.iteration == 0 && "1.0.0".compareTo(d.statementId) <= 0) {
@@ -68,6 +69,7 @@ public class TestFirstThen extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         if ("set".equals(methodInfo.name)) {
             if (iteration == 0) {
                 Assert.assertFalse(methodAnalysis.precondition.isSet());
@@ -76,12 +78,12 @@ public class TestFirstThen extends CommonTestRunner {
             }
         }
         if ("getFirst".equals(methodInfo.name)) {
-            TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
+            TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
             Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, tv.properties.get(VariableProperty.READ));
         }
         if ("hashCode".equals(methodInfo.name)) {
-            Assert.assertEquals(2, methodAnalysis.fieldSummaries.size());
-            TransferValue tv = methodAnalysis.fieldSummaries.stream().findAny().orElseThrow().getValue();
+            Assert.assertEquals(2, methodLevelData.fieldSummaries.size());
+            TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
 

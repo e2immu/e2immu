@@ -28,6 +28,8 @@ public interface VariableData {
 
     boolean isDelaysInDependencyGraph();
 
+    Iterable<VariableInfo> variableInfos();
+
     Collection<Map.Entry<String, VariableInfo>> variables();
 
     DependencyGraph<Variable> getDependencyGraph();

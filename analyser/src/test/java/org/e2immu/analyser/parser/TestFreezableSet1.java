@@ -25,9 +25,6 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,42 +36,36 @@ public class TestFreezableSet1 extends CommonTestRunner {
         super(true);
     }
 
-    TypeAnalyserVisitor typeAnalyserVisitor = new TypeAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, TypeInfo typeInfo) {
-            if (iteration > 1) {
-                Assert.assertEquals(1L, typeInfo.typeAnalysis.get().approvedPreconditions.size());
-                Assert.assertEquals("frozen", typeInfo.typeAnalysis.get().allLabelsRequiredForImmutable());
-            }
+    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+        if (iteration > 1) {
+            Assert.assertEquals(1L, typeInfo.typeAnalysis.get().approvedPreconditions.size());
+            Assert.assertEquals("frozen", typeInfo.typeAnalysis.get().allLabelsRequiredForImmutable());
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            if (iteration > 0) {
-                if ("stream".equals(methodInfo.name)) {
-                    Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertEquals("[this.frozen]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
-                }
-                if ("streamEarly".equals(methodInfo.name)) {
-                    Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
-                }
-                if ("add".equals(methodInfo.name)) {
-                    Assert.assertEquals(Level.TRUE, modified);
-                    Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
-                }
-                if ("freeze".equals(methodInfo.name)) {
-                    Assert.assertEquals(Level.TRUE, modified);
-                    Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
-                }
-                if ("isFrozen".equals(methodInfo.name)) {
-                    Assert.assertEquals(Level.FALSE, modified);
-                    Assert.assertTrue(methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
-                }
+    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        if (iteration > 0) {
+            if ("stream".equals(methodInfo.name)) {
+                Assert.assertEquals(Level.FALSE, modified);
+                Assert.assertEquals("[this.frozen]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
+            }
+            if ("streamEarly".equals(methodInfo.name)) {
+                Assert.assertEquals(Level.FALSE, modified);
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
+            }
+            if ("add".equals(methodInfo.name)) {
+                Assert.assertEquals(Level.TRUE, modified);
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
+            }
+            if ("freeze".equals(methodInfo.name)) {
+                Assert.assertEquals(Level.TRUE, modified);
+                Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
+            }
+            if ("isFrozen".equals(methodInfo.name)) {
+                Assert.assertEquals(Level.FALSE, modified);
+                Assert.assertTrue(methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
             }
         }
     };

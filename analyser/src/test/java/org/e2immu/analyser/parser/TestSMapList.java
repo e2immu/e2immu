@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -55,15 +56,15 @@ public class TestSMapList extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
         if ("list".equals(methodInfo.name)) {
+            TransferValue returnValue1 = methodLevelData.returnStatementSummaries.get("2");
             if (iteration == 0) {
-                TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
                 // the end result
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
             } else {
-                TransferValue returnValue1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
                 // the end result
@@ -71,7 +72,7 @@ public class TestSMapList extends CommonTestRunner {
             }
         }
         if ("copy".equals(methodInfo.name)) {
-            TransferValue returnValue = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2");
+            TransferValue returnValue = methodLevelData.returnStatementSummaries.get("2");
             Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
         }
         if ("add".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 3) {

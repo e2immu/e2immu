@@ -24,9 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeContextVisitor;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,12 +40,9 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         super(true);
     }
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = new FieldAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, FieldInfo fieldInfo) {
-            if ("runnable".equals(fieldInfo.name) && iteration > 0) {
-                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-            }
+    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+        if ("runnable".equals(fieldInfo.name) && iteration > 0) {
+            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
         }
     };
 

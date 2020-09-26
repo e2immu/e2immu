@@ -17,14 +17,11 @@ public class TestTypeParameters extends CommonTestRunner {
         super(true);
     }
 
-    TypeContextVisitor typeContextVisitor = new TypeContextVisitor() {
-        @Override
-        public void visit(TypeContext typeContext) {
-            TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-            Assert.assertNotNull(collection);
-            MethodInfo stream = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        Assert.assertNotNull(collection);
+        MethodInfo stream = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     @Test
