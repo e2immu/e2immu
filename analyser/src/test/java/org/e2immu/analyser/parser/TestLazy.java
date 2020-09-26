@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -71,9 +72,10 @@ public class TestLazy extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         FieldInfo supplier = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
         FieldInfo t = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
 
         if ("Lazy".equals(methodInfo.name)) {
-            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
+            TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
             Assert.assertTrue(tv.value.isSet());
 
             ParameterInfo supplierParam = methodInfo.methodInspection.get().parameters.get(0);
@@ -84,17 +86,17 @@ public class TestLazy extends CommonTestRunner {
             }
         }
         if ("get".equals(methodInfo.name)) {
-            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(supplier);
+            TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
 
-            TransferValue ret1 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("1.0.0");
-            TransferValue ret2 = methodInfo.methodAnalysis.get().returnStatementSummaries.get("2.0.1");
+            TransferValue ret1 = methodLevelData.returnStatementSummaries.get("1.0.0");
+            TransferValue ret2 = methodLevelData.returnStatementSummaries.get("2.0.1");
             if (iteration >= 1) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
 
-                Assert.assertTrue(methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.isSet());
-                Set<Variable> linkedToT = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
+                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
+                Set<Variable> linkedToT = methodLevelData.variablesLinkedToFieldsAndParameters.get()
                         .entrySet().stream()
                         .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
                         .map(Map.Entry::getValue).findFirst().orElseThrow();

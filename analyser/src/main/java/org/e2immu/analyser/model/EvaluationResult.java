@@ -18,7 +18,8 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.VariableData;
+import org.e2immu.analyser.analyser.StateData;
+import org.e2immu.analyser.analyser.VariableDataImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
@@ -168,7 +169,7 @@ public class EvaluationResult {
             String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
             Value current = evaluationContext.currentValue(name);
             if (current != null) return current;
-            String arrayName = arrayVariable == null ? null : VariableData.variableName(arrayVariable);
+            String arrayName = arrayVariable == null ? null : VariableDataImpl.variableName(arrayVariable);
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             modifications.add(statementAnalysis.variableData.new AddVariable(dependentVariable));
             return new VariableValue(evaluationContext, dependentVariable, dependentVariable.name());
@@ -268,17 +269,9 @@ public class EvaluationResult {
             }
         }
 
-        public void checkForIllegalMethodUsageIntoNestedOrEnclosingType(MethodInfo methodInfo) {
-        }
-
-
         public Variable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
         }
 
-
-        public void changeCurrentStatementToErrorState() {
-            add(statementAnalysis.errorFlags.new SetErrorState());
-        }
 
         public void linkVariables(Variable at, Set<Variable> linked) {
             add(statementAnalysis.variableData.new LinkVariable(at, linked));
@@ -307,7 +300,7 @@ public class EvaluationResult {
         }
 
         public void modifyingMethodAccess(Variable variable) {
-            add(statementAnalysis.stateData.new RemoveVariableFromState(variable));
+            add(new StateData.RemoveVariableFromState(variable));
         }
 
         public void addResultOfMethodAnalyser(boolean analyse) {

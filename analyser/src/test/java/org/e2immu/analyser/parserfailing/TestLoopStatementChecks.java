@@ -55,7 +55,7 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method3bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
     };
 

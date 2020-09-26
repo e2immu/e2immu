@@ -42,7 +42,8 @@ public class TestModificationGraphInterface extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("useC2".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("incrementAndGetWithI".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));

@@ -137,4 +137,8 @@ public interface EvaluationContext {
     default Set<String> allUnqualifiedVariableNames() {
         return Set.of();
     }
+
+    default ConditionManager getConditionManager() {
+        return null;
+    }
 }

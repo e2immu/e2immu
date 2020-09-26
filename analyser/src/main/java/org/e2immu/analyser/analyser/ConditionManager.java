@@ -23,14 +23,6 @@ public class ConditionManager {
         this.state = Objects.requireNonNull(state);
     }
 
-    public Value getCondition() {
-        return condition;
-    }
-
-    public Value getState() {
-        return state;
-    }
-
     // adding a condition always adds to the state as well (testing only)
     public ConditionManager addCondition(Value value) {
         if (value != BoolValue.TRUE) {
@@ -220,7 +212,7 @@ public class ConditionManager {
      * @param variable                 the variable to be removed
      * @param removeEqualityOnVariable in the case of modifying method access, clauses with equality should STAY rather than be removed
      */
-    private static Value removeClausesInvolving(Value conditional, Variable variable, boolean removeEqualityOnVariable) {
+    public static Value removeClausesInvolving(Value conditional, Variable variable, boolean removeEqualityOnVariable) {
         Value.FilterResult filterResult = conditional.filter(Value.FilterMode.ALL,
                 value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
         return filterResult.rest;

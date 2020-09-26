@@ -58,6 +58,7 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));
+        // TODO not setting analysis here, necessary data is missing
         return constructor;
     }
 

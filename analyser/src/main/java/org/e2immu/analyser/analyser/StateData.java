@@ -29,6 +29,7 @@ import java.util.function.Function;
 
 public class StateData {
 
+    // precondition = conditions that cause an escape
     public final SetOnce<Value> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
 
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
@@ -36,23 +37,31 @@ public class StateData {
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
     @Modified
-    public void apply(EvaluationResult evaluationResult, StateData previous) {
-        if (evaluationResult.value != UnknownValue.NO_VALUE && !valueOfExpression.isSet()) {
+    public AnalysisResult apply(EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
+        AnalysisResult result = AnalysisResult.DONE;
+        if (evaluationResult.value != UnknownValue.NO_VALUE) {
             valueOfExpression.set(evaluationResult.value);
+        } else {
+            result = AnalysisResult.DELAYS;
         }
-        // state changes get composed into one big operation, applied, and the result set
-        if (!state.isSet()) {
-            Value state = previous == null ? UnknownValue.EMPTY : previous.state.get();
-            Function<Value, Value> composite = evaluationResult.getStateChangeStream()
-                    .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
-            Value reduced = composite.apply(state);
-            if (reduced != UnknownValue.NO_VALUE) {
-                this.state.set(reduced);
-            }
+
+        // state changes get composed into one big operation, applied, and the result is set
+        // the condition is copied from the evaluation context
+        ConditionManager current = evaluationContext.getConditionManager();
+        Function<Value, Value> composite = evaluationResult.getStateChangeStream()
+                .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
+        Value reducedState = composite.apply(current.state);
+        if (reducedState != UnknownValue.NO_VALUE) {
+            conditionManager.set(new ConditionManager(current.condition, reducedState));
+        } else {
+            result = AnalysisResult.DELAYS;
         }
+
+
+        return result;
     }
 
-    public class RemoveVariableFromState implements StatementAnalysis.StateChange {
+    public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;
 
         public RemoveVariableFromState(Variable variable) {
@@ -61,7 +70,7 @@ public class StateData {
 
         @Override
         public Value apply(Value value) {
-            return null;
+            return ConditionManager.removeClausesInvolving(value, variable, true);
         }
     }
 

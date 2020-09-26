@@ -53,13 +53,6 @@ public class ErrorFlags {
         messages.addAll(lastStatementSubBlock.messages);
     }
 
-    public class SetErrorState implements StatementAnalysis.StatementAnalysisModification {
-        @Override
-        public void run() {
-            if (!errorValue.isSet()) errorValue.set(true);
-        }
-    }
-
     public class ErrorAssigningToFieldOutsideType implements StatementAnalysis.StatementAnalysisModification {
         private final FieldInfo fieldInfo;
         private final Location location;

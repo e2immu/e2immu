@@ -46,10 +46,12 @@ public class TestModificationGraph extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("incrementAndGetWithI".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("useC2".equals(methodInfo.name) && iteration > 1) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("C2".equals(methodInfo.name)) {
             ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(1);
@@ -64,10 +66,10 @@ public class TestModificationGraph extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
         if ("C1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(2, typeInfo.typeAnalysis.get().circularDependencies.get().size());
+            Assert.assertEquals(2, typeInfo.typeResolution.get().circularDependencies.get().size());
         }
         if ("C2".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(2, typeInfo.typeAnalysis.get().circularDependencies.get().size());
+            Assert.assertEquals(2, typeInfo.typeResolution.get().circularDependencies.get().size());
             Assert.assertEquals("[]", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().toString());
         }
     };

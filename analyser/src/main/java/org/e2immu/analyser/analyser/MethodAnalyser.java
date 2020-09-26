@@ -322,39 +322,40 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private boolean makeInternalObjectFlowsPermanent() {
         if (methodAnalysis.internalObjectFlows.isSet()) return false; // already done
-        boolean noDelays = methodProperties.getInternalObjectFlows().noneMatch(ObjectFlow::isDelayed);
-        if (noDelays) {
-            Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows()
-                    .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
-                    .collect(Collectors.toSet()));
-
-            internalObjectFlowsWithoutParametersAndLiterals.forEach(of -> of.finalize(null));
-            methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
-
-            methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
-                ParameterAnalysis parameterAnalysis = ((ParameterInfo) of.location.info).parameterAnalysis.get();
-                if (!parameterAnalysis.objectFlow.isSet()) {
-                    of.finalize(parameterAnalysis.objectFlow.getFirst());
-                    parameterAnalysis.objectFlow.set(of);
-                }
-            });
-
-            TypeAnalysis typeAnalysis = methodInfo.typeInfo.typeAnalysis.get();
-            methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
-                ObjectFlow inType = typeAnalysis.ensureConstantObjectFlow(of);
-                of.moveAllInto(inType);
-            });
-
-            log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParametersAndLiterals.size(), methodInfo.distinguishingName());
-            return true;
+        boolean delays = methodProperties.getInternalObjectFlows().anyMatch(ObjectFlow::isDelayed);
+        if (delays) {
+            log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());
+            return false;
         }
-        log(DELAYED, "Not yet setting internal object flows on {}, delaying", methodInfo.distinguishingName());
-        return false;
+
+        Set<ObjectFlow> internalObjectFlowsWithoutParametersAndLiterals = ImmutableSet.copyOf(methodProperties.getInternalObjectFlows()
+                .filter(of -> of.origin != Origin.PARAMETER && of.origin != Origin.LITERAL)
+                .collect(Collectors.toSet()));
+
+        internalObjectFlowsWithoutParametersAndLiterals.forEach(of -> of.finalize(null));
+        methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
+
+        methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
+            ParameterAnalysis parameterAnalysis = ((ParameterInfo) of.location.info).parameterAnalysis.get();
+            if (!parameterAnalysis.objectFlow.isSet()) {
+                of.finalize(parameterAnalysis.objectFlow.getFirst());
+                parameterAnalysis.objectFlow.set(of);
+            }
+        });
+
+        TypeAnalysis typeAnalysis = methodInfo.typeInfo.typeAnalysis.get();
+        methodProperties.getInternalObjectFlows().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
+            ObjectFlow inType = typeAnalysis.ensureConstantObjectFlow(of);
+            of.moveAllInto(inType);
+        });
+
+        log(OBJECT_FLOW, "Made permanent {} internal object flows in {}", internalObjectFlowsWithoutParametersAndLiterals.size(), methodInfo.distinguishingName());
+        return true;
     }
 
     private boolean computeOnlyMarkAnnotate() {
         if (methodAnalysis.markAndOnly.isSet()) return false; // done
-        SetOnceMap<String, Value> approvedPreconditions = methodInfo.typeInfo.typeAnalysis.get().approvedPreconditions;
+        SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
         if (approvedPreconditions.isEmpty()) {
             log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
             return false;
@@ -404,7 +405,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
                 // for the before methods, we need to check again if we were mark or only
-                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodAnalysis));
+                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo, methodLevelData()));
             }
         }
         if (after == null) {

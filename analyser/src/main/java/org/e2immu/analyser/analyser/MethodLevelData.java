@@ -36,8 +36,6 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
-    private final VariableData variableData;
-
     public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -56,33 +54,28 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-
-    public MethodLevelData(VariableData variableData) {
-        this.variableData = variableData;
-    }
-
-    public StatementAnalyserResult update(EvaluationContext evaluationContext) {
+    public StatementAnalyserResult finalise(EvaluationContext evaluationContext, VariableData variableData) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
         try {
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
 
             // start with a one-off copying
-            AnalysisResult analysisResult = copyFieldAndThisProperties(evaluationContext)
+            AnalysisResult analysisResult = copyFieldAndThisProperties(evaluationContext, variableData)
 
                     // this one can be delayed, it copies the field assignment values
-                    .combine(copyFieldAssignmentValue(evaluationContext))
+                    .combine(copyFieldAssignmentValue(variableData))
 
                     // SIZE, NOT_NULL into fieldSummaries
-                    .combine(copyContextProperties(evaluationContext, builder))
+                    .combine(copyContextProperties(evaluationContext, variableData, builder))
 
                     // this method computes, unless delayed, the values for
                     // - linksComputed
                     // - variablesLinkedToFieldsAndParameters
                     // - fieldsLinkedToFieldsAndVariables
-                    .combine(establishLinks(evaluationContext, logLocation))
+                    .combine(establishLinks(variableData, evaluationContext, logLocation))
                     .combine(methodInfo.isConstructor ? DONE : updateVariablesLinkedToMethodResult(evaluationContext, builder, logLocation))
-                    .combine(computeContentModifications(evaluationContext, builder, logLocation));
+                    .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation));
 
             return builder.build(analysisResult);
         } catch (RuntimeException rte) {
@@ -126,11 +119,11 @@ public class MethodLevelData {
 
     */
 
-    private AnalysisResult establishLinks(EvaluationContext evaluationContext, String logLocation) {
+    private AnalysisResult establishLinks(VariableData variableData, EvaluationContext evaluationContext, String logLocation) {
         if (variablesLinkedToFieldsAndParameters.isSet()) return DONE;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someVariablesHaveNotBeenEvaluated = variableData.variables.stream()
+        boolean someVariablesHaveNotBeenEvaluated = variableData.variables().stream()
                 .anyMatch(av -> av.getValue().getCurrentValue() == UnknownValue.NO_VALUE);
         if (someVariablesHaveNotBeenEvaluated) {
             log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links");
@@ -148,8 +141,8 @@ public class MethodLevelData {
         }
 
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
-        variableData.dependencyGraph.visit((variable, dependencies) -> {
-            Set<Variable> fieldAndParameterDependencies = new HashSet<>(variableData.dependencyGraph.dependencies(variable));
+        variableData.getDependencyGraph().visit((variable, dependencies) -> {
+            Set<Variable> fieldAndParameterDependencies = new HashSet<>(variableData.getDependencyGraph().dependencies(variable));
             fieldAndParameterDependencies.removeIf(v -> !(v instanceof FieldReference) && !(v instanceof ParameterInfo));
             if (dependencies != null) {
                 dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(fieldAndParameterDependencies::add);
@@ -248,16 +241,20 @@ public class MethodLevelData {
         reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
     }
 
-    private AnalysisResult computeContentModifications(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder, String logLocation) {
+    private AnalysisResult computeContentModifications(EvaluationContext evaluationContext,
+                                                       VariableData variableData,
+                                                       StatementAnalyserResult.Builder builder,
+                                                       String logLocation) {
         if (!variablesLinkedToFieldsAndParameters.isSet()) return DELAYS;
 
         AnalysisResult analysisResult = DONE;
         boolean changes = false;
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        for (VariableData.AboutVariable aboutVariable : variableData.variableProperties()) {
+        for (Map.Entry<String, VariableInfo> entry : variableData.variables()) {
+            VariableInfo variableInfo = entry.getValue();
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(variablesLinkedToFieldsAndParameters.get(),
-                    aboutVariable.variable);
+                    variableInfo.getVariable());
             int summary = evaluationContext.summarizeModification(linkedVariables);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
@@ -320,29 +317,30 @@ public class MethodLevelData {
      * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private AnalysisResult copyFieldAndThisProperties(EvaluationContext evaluationContext) {
+    private AnalysisResult copyFieldAndThisProperties(EvaluationContext evaluationContext, VariableData variableData) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        for (VariableData.AboutVariable aboutVariable : variableData.variableProperties()) {
-            Variable variable = aboutVariable.variable;
+        for (Map.Entry<String, VariableInfo> entry : variableData.variables()) {
+            VariableInfo variableInfo = entry.getValue();
+            Variable variable = variableInfo.getVariable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!fieldSummaries.isSet(fieldInfo)) {
                     TransferValue tv = new TransferValue();
                     fieldSummaries.put(fieldInfo, tv);
-                    copy(aboutVariable, tv);
+                    copy(variableInfo, tv);
                 }
             } else if (variable instanceof This) {
                 if (!thisSummary.isSet()) {
                     TransferValue tv = new TransferValue();
                     thisSummary.set(tv);
-                    copy(aboutVariable, tv);
+                    copy(variableInfo, tv);
                 }
-                int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
-                int methodCalled = aboutVariable.getProperty(VariableProperty.METHOD_CALLED);
+                int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
+                int methodCalled = variableInfo.getProperty(VariableProperty.METHOD_CALLED);
 
                 if (methodDelay != Level.TRUE && methodCalled == Level.TRUE) {
-                    int modified = aboutVariable.getProperty(VariableProperty.MODIFIED);
+                    int modified = variableInfo.getProperty(VariableProperty.MODIFIED);
                     TransferValue tv = thisSummary.get();
                     tv.properties.put(VariableProperty.MODIFIED, modified);
                 }
@@ -359,22 +357,23 @@ public class MethodLevelData {
         return DONE;
     }
 
-    private static void copy(VariableData.AboutVariable aboutVariable, TransferValue transferValue) {
+    private static void copy(VariableInfo variableInfo, TransferValue transferValue) {
         for (VariableProperty variableProperty : VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD) {
-            int value = aboutVariable.getProperty(variableProperty);
+            int value = variableInfo.getProperty(variableProperty);
             transferValue.properties.put(variableProperty, value);
         }
     }
 
-    private AnalysisResult copyFieldAssignmentValue(EvaluationContext methodProperties) {
+    private AnalysisResult copyFieldAssignmentValue(VariableData variableData) {
         boolean changes = false;
         AnalysisResult analysisResult = DONE;
-        for (VariableData.AboutVariable aboutVariable : variableData.variableProperties()) {
-            Variable variable = aboutVariable.variable;
-            if (variable instanceof FieldReference && aboutVariable.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
+        for (Map.Entry<String, VariableInfo> entry : variableData.variables()) {
+            VariableInfo variableInfo = entry.getValue();
+            Variable variable = variableInfo.getVariable();
+            if (variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = fieldSummaries.get(fieldInfo);
-                Value value = aboutVariable.getCurrentValue();
+                Value value = variableInfo.getCurrentValue();
                 if (value == UnknownValue.NO_VALUE) {
                     analysisResult = DELAYS;
                 } else if (!tv.value.isSet()) {
@@ -382,7 +381,7 @@ public class MethodLevelData {
                     tv.value.set(value);
                 }
                 // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
-                Value stateOnAssignment = aboutVariable.getStateOnAssignment();
+                Value stateOnAssignment = variableInfo.getStateOnAssignment();
                 if (stateOnAssignment == UnknownValue.NO_VALUE) {
                     analysisResult = DELAYS;
                 } else if (stateOnAssignment != UnknownValue.EMPTY && !tv.stateOnAssignment.isSet()) {
@@ -397,20 +396,23 @@ public class MethodLevelData {
     // a DELAY should only be possible for good reasons
     // context can generally only be delayed when there is a method delay
 
-    private AnalysisResult copyContextProperties(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder) {
+    private AnalysisResult copyContextProperties(EvaluationContext evaluationContext,
+                                                 VariableData variableData,
+                                                 StatementAnalyserResult.Builder builder) {
         boolean changes = false;
         boolean anyDelay = false;
-        for (VariableData.AboutVariable aboutVariable : variableData.variableProperties()) {
-            Variable variable = aboutVariable.variable;
-            int methodDelay = aboutVariable.getProperty(VariableProperty.METHOD_DELAY);
-            boolean haveDelay = methodDelay == Level.TRUE || aboutVariable.getCurrentValue() == UnknownValue.NO_VALUE;
+        for (Map.Entry<String, VariableInfo> entry : variableData.variables()) {
+            VariableInfo variableInfo = entry.getValue();
+            Variable variable = variableInfo.getVariable();
+            int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
+            boolean haveDelay = methodDelay == Level.TRUE || variableInfo.getCurrentValue() == UnknownValue.NO_VALUE;
             if (haveDelay) anyDelay = true;
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 TransferValue tv = fieldSummaries.get(fieldInfo);
 
                 // SIZE
-                int size = aboutVariable.getProperty(VariableProperty.SIZE);
+                int size = variableInfo.getProperty(VariableProperty.SIZE);
                 int currentSize = tv.properties.getOtherwise(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
                 if (size > currentSize) {
                     tv.properties.put(VariableProperty.SIZE, size);
@@ -418,7 +420,7 @@ public class MethodLevelData {
                 }
 
                 // NOT_NULL (slightly different from SIZE, different type of level)
-                int notNull = aboutVariable.getProperty(VariableProperty.NOT_NULL);
+                int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL);
                 int currentNotNull = tv.properties.getOtherwise(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
                 if (notNull > currentNotNull) {
                     tv.properties.put(VariableProperty.NOT_NULL, notNull);
@@ -427,18 +429,18 @@ public class MethodLevelData {
 
                 int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
                 if (currentDelayResolved == Level.FALSE && !haveDelay) {
-                    log(DELAYED, "Delays on {} have now been resolved", aboutVariable.variable.name());
+                    log(DELAYED, "Delays on {} have now been resolved", variable.name());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
                 if (currentDelayResolved == Level.DELAY && haveDelay) {
-                    log(DELAYED, "Marking that delays need resolving on {}", aboutVariable.variable.name());
+                    log(DELAYED, "Marking that delays need resolving on {}", variable.name());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
             } else if (variable instanceof ParameterInfo) {
                 ParameterInfo parameterInfo = (ParameterInfo) variable;
 
                 if (parameterInfo.parameterizedType.hasSize()) {
-                    int size = aboutVariable.getProperty(VariableProperty.SIZE);
+                    int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that
                         int sizeInParam = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);

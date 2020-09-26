@@ -22,7 +22,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +38,7 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
     // it should not yet cause an error in the first.
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if("getFirst".equals(d.methodInfo.name) && d.iteration == 0) {
-            Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+            Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
         }
     };
 

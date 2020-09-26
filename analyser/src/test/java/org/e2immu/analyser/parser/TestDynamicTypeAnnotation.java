@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,10 +38,10 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (d.iteration > 0) {
             if ("modifySetCreated".equals(d.methodInfo.name)) {
-                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
             }
             if ("modifySet1".equals(d.methodInfo.name)) {
-                Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
             }
         }
     };

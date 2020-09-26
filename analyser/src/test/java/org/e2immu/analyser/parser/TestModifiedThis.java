@@ -37,7 +37,7 @@ public class TestModifiedThis extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("clear".equals(d.methodInfo.name) && "InnerOfChild".equals(d.methodInfo.typeInfo.simpleName)) {
-            Expression scope = ((MethodCall) ((ExpressionAsStatement) d.numberedStatement.statement).expression).computedScope;
+            Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis.statement).expression).computedScope;
             VariableExpression variableExpression = (VariableExpression) scope;
             This t = (This) variableExpression.variable;
             Assert.assertTrue(t.explicitlyWriteType);
@@ -54,7 +54,8 @@ public class TestModifiedThis extends CommonTestRunner {
         }
         if ("clear".equals(methodInfo.name) && "InnerOfChild".equals(methodInfo.typeInfo.simpleName)) {
             if (iteration > 0) {
-                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().thisSummary.get().properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().methodLevelData().
+                        thisSummary.get().properties.get(VariableProperty.MODIFIED));
            //     Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }

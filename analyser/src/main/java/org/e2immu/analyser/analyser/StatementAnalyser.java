@@ -27,14 +27,12 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -56,6 +54,8 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
     public final StatementAnalysis statementAnalysis;
+    private  VariableDataImpl.Builder variableDataBuilder = new VariableDataImpl.Builder();
+
     private final MethodAnalyser myMethodAnalyser;
 
     public NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
@@ -180,24 +180,27 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
     }
 
-    public StatementAnalyserResult update(int iteration) {
+    public StatementAnalyserResult finalise(int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
         StatementAnalyserResult result = statementAnalysis.methodLevelData.update(evaluationContext);
+
+        statementAnalysis.variableData.set(variableDataBuilder.build());
+        variableDataBuilder = null;
 
         return result;
     }
 
 
-    private boolean computeVariablePropertiesOfStatement(int iteration) {
+    public boolean analyser(EvaluationContext evaluationContext) {
         boolean changes = false;
 
         Structure structure = statementAnalysis.statement.getStructure();
 
-        boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
 
         // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
         // but then for variables in catch clauses)
 
+        boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
         LocalVariableReference theLocalVariableReference;
         if (structure.localVariableCreation != null) {
             theLocalVariableReference = new LocalVariableReference(structure.localVariableCreation,
@@ -211,8 +214,6 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
         // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
         // (normal local variables)
-
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
 
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation) {
@@ -530,7 +531,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         boolean changes = false;
         // we run at the local level
         List<String> toRemove = new ArrayList<>();
-        for (VariableData.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
+        for (VariableDataImpl.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
             if (aboutVariable.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
                 boolean notAssignedInLoop = aboutVariable.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
                 // TODO at some point we will do better than "notAssignedInLoop"
@@ -557,7 +558,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
     private void unusedLocalVariablesCheck(Location location) {
         // we run at the local level
-        for (VariableData.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
+        for (VariableDataImpl.AboutVariable aboutVariable : statementAnalysis.variableData.variableProperties()) {
             if (aboutVariable.isNotLocalCopy() && aboutVariable.isLocalVariableReference()
                     && aboutVariable.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
                 if (!(aboutVariable.variable instanceof LocalVariableReference)) {

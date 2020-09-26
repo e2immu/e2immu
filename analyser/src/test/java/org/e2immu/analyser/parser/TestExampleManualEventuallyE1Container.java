@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
         if ("addIfGreater".equals(methodInfo.name)) {
             if (iteration > 0) {
                 List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
@@ -30,7 +32,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("[(-this.j) >= 0]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
 
                 FieldInfo fieldJ = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "j".equals(f.name)).findAny().orElseThrow();
-                TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldJ);
+                TransferValue tv = methodLevelData.fieldSummaries.get(fieldJ);
                 Assert.assertNotNull(tv);
                 Value value = tv.value.get();
                 Assert.assertEquals("j", value.toString());
@@ -40,11 +42,11 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
         if ("getIntegers".equals(methodInfo.name)) {
             if (iteration > 0) {
-                TransferValue tv = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0");
+                TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
             }
             if (iteration > 1) {
-                Set<Variable> variables = methodInfo.methodAnalysis.get().variablesLinkedToMethodResult.get();
+                Set<Variable> variables = methodLevelData.variablesLinkedToMethodResult.get();
                 Assert.assertEquals(1, variables.size());
                 int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.FALSE, independent);
@@ -84,7 +86,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                     .collect(Collectors.joining(";")));
         }
         Set<ParameterizedType> implicitlyImmutable = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get();
-        Assert.assertTrue( implicitlyImmutable.isEmpty());
+        Assert.assertTrue(implicitlyImmutable.isEmpty());
     };
 
     @Test

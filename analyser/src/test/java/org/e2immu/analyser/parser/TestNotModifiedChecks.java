@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -67,6 +68,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
+
         if ("NotModifiedChecks".equals(methodInfo.name)) {
             ParameterAnalysis list = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
             ParameterAnalysis set2 = methodInfo.methodInspection.get().parameters.get(1).parameterAnalysis.get();
@@ -87,12 +90,12 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             }
             FieldInfo s2 = methodInfo.typeInfo.getFieldByName("s2", true);
             if (iteration > 1) {
-                Set<Variable> s2links = methodInfo.methodAnalysis.get().variablesLinkedToFieldsAndParameters.get()
+                Set<Variable> s2links = methodLevelData.variablesLinkedToFieldsAndParameters.get()
                         .get(new FieldReference(s2, new This(s2.owner)));
                 Assert.assertEquals("[1:set2]", s2links.toString());
             }
             FieldInfo set = methodInfo.typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
-            Assert.assertFalse(methodInfo.methodAnalysis.get().fieldSummaries.isSet(set));
+            Assert.assertFalse(methodLevelData.fieldSummaries.isSet(set));
         }
         if ("addAllOnC".equals(methodInfo.name)) {
             ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(0);
@@ -101,19 +104,19 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
         if ("getSet".equals(methodInfo.name)) {
             if (iteration > 0) {
-                int identity = methodInfo.methodAnalysis.get().returnStatementSummaries.get("0").getProperty(VariableProperty.IDENTITY);
+                int identity = methodLevelData.returnStatementSummaries.get("0").getProperty(VariableProperty.IDENTITY);
                 Assert.assertEquals(Level.FALSE, identity);
                 Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
 
             }
             if (iteration > 1) {
-                Value value = methodInfo.methodAnalysis.get().singleReturnValue.get();
+                Value value = methodLevelData.singleReturnValue.get();
                 Assert.assertEquals("inline getSet on this.set", value.toString());
             }
         }
         if ("C1".equals(methodInfo.name)) {
             FieldInfo fieldInfo = methodInfo.typeInfo.getFieldByName("set", true);
-            TransferValue tv = methodInfo.methodAnalysis.get().fieldSummaries.get(fieldInfo);
+            TransferValue tv = methodLevelData.fieldSummaries.get(fieldInfo);
             Assert.assertEquals("[0:set1]", tv.linkedVariables.get().toString());
         }
     };

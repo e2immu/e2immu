@@ -42,7 +42,7 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.state); // delay
             } else {
                 Assert.assertEquals("not (null == this.first)", d.state.toString());
-                Assert.assertEquals("not (null == this.first)", d.numberedStatement.precondition.get().toString());
+                Assert.assertEquals("not (null == this.first)", d.statementAnalysis.precondition.get().toString());
             }
         }
         if("set".equals(d.methodInfo.name) && d.iteration == 0 && "1.0.0".compareTo(d.statementId) <= 0) {

@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -81,8 +82,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo);
-
         EvaluationResult scopeResult = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         builder.compose(scopeResult);
 
@@ -103,8 +102,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             }
             Value result;
             ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
-            if (methodAnalysis.singleReturnValue.isSet()) {
-                Value singleValue = methodAnalysis.singleReturnValue.get();
+            SetOnce<Value> singleReturnValue = methodAnalysis.methodLevelData().singleReturnValue;
+            if (singleReturnValue.isSet()) {
+                Value singleValue = singleReturnValue.get();
                 if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
                     result = singleValue;
                 } else {

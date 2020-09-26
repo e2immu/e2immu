@@ -54,7 +54,7 @@ public class TestSizeChecks extends CommonTestRunner {
             Assert.assertEquals("((-3) + input1.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
 
         if ("method2".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
@@ -64,21 +64,21 @@ public class TestSizeChecks extends CommonTestRunner {
             Assert.assertEquals("Statement " + d.statementId, "((-3) + input2.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
 
         if ("method3".equals(d.methodInfo.name) && Set.of("1", "2.0.0").contains(d.statementId)) {
             Assert.assertEquals("Statement " + d.statementId, "((-1) + input3.size(),?>=0) >= 0", d.state.toString());
         }
         if ("method3".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
 
         if ("method4".equals(d.methodInfo.name) && Set.of("0.0.0", "0.0.1").contains(d.statementId)) {
             Assert.assertEquals("((-1) + input4.size(),?>=0) >= 0", d.condition.toString());
         }
         if ("method4".equals(d.methodInfo.name) && "0.0.1".equals(d.statementId)) {
-            Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
     };
 

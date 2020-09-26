@@ -39,7 +39,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class PrimaryTypeAnalyser implements AnalyserContext {
 
-    private final PatternMatcher patternMatcher;
+    private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final TypeInfo primaryType;
     public final List<Analyser> analysers;
     public final Configuration configuration;
@@ -58,7 +58,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         Pattern pattern1 = ConditionalAssignment.pattern1();
         Pattern pattern2 = ConditionalAssignment.pattern2();
         Pattern pattern3 = ConditionalAssignment.pattern3();
-        patternMatcher = new PatternMatcher(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1),
+        patternMatcher = new PatternMatcher<>(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1),
                 pattern2, ConditionalAssignment.replacement1ToPattern2(pattern2),
                 pattern3, ConditionalAssignment.replacement1ToPattern3(pattern3)));
 
@@ -101,7 +101,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod;
                     if (sam != null) {
-                        samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner).typeAnalysis, true, this);
+                        samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner), true, this);
                         samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
                     }
                 }

@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -48,19 +49,20 @@ public class TestSetOnce extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         if ("get".equals(methodInfo.name)) {
             if (iteration == 0) {
-                Assert.assertFalse(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
-                Assert.assertFalse(methodAnalysis.variablesLinkedToMethodResult.isSet());
+                Assert.assertFalse(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertFalse(methodLevelData.variablesLinkedToMethodResult.isSet());
             } else {
-                Assert.assertTrue(methodAnalysis.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
 
-                TransferValue tv = methodAnalysis.returnStatementSummaries.get("1");
+                TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.linkedVariables.isSet());
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
                 if (iteration > 1) {
-                    Set<Variable> set = methodAnalysis.variablesLinkedToMethodResult.get();
+                    Set<Variable> set = methodLevelData.variablesLinkedToMethodResult.get();
                     Assert.assertEquals(2, set.size());
                 }
             }
@@ -69,7 +71,7 @@ public class TestSetOnce extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("set".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && d.iteration > 0) {
-            Assert.assertEquals("null == this.t", d.numberedStatement.precondition.get().toString());
+            Assert.assertEquals("null == this.t", d.statementAnalysis.stateData.precondition.get().toString());
         }
     };
 

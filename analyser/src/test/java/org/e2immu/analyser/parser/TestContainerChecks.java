@@ -65,7 +65,7 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         // POTENTIAL NULL POINTER EXCEPTION
         if ("add2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if (d.iteration > 0) Assert.assertTrue(d.numberedStatement.errorValue.isSet());
+            if (d.iteration > 0) Assert.assertTrue(d.statementAnalysis.errorValue.isSet());
         }
     };
 

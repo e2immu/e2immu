@@ -4,7 +4,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,7 +46,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertEquals("not (null == a)", d.numberedStatement.state.get().toString());
+                Assert.assertEquals("not (null == a)", d.statementAnalysis.state.get().toString());
             }
         }
     };

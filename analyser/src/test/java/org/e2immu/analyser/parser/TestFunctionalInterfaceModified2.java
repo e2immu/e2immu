@@ -25,14 +25,15 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
             if ("FunctionalInterfaceModified2.this.myCounter1".equals(d.variableName)) {
-           //     Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+                //     Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if (Set.of("acceptMyCounter1", "acceptMyCounter2", "acceptInt1").contains(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
     };
 

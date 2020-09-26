@@ -53,7 +53,8 @@ public class TestSetTwiceSupply extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
         if ("isSetPotentiallyRun".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData().
+                    callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
         if ("set".equals(methodInfo.name) && "SetTwiceSupply".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
             Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());

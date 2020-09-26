@@ -18,16 +18,11 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.value.StringValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,7 +51,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertEquals("null == a1?Was null...:a1", d.numberedStatement.valueOfExpression.get().toString());
+            Assert.assertEquals("null == a1?Was null...:a1", d.statementAnalysis.valueOfExpression.get().toString());
         }
     };
 

@@ -20,16 +20,16 @@ public class TestEvaluateConstants extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("print".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertTrue(d.numberedStatement.errorValue.get()); // if conditional
+                Assert.assertTrue(d.statementAnalysis.errorValue.get()); // if conditional
             }
             if ("0.0.0".equals(d.statementId)) {
-                Assert.assertTrue(d.numberedStatement.inErrorState());
-                Assert.assertFalse(d.numberedStatement.errorValue.isSet());
+                Assert.assertTrue(d.statementAnalysis.inErrorState());
+                Assert.assertFalse(d.statementAnalysis.errorValue.isSet());
             }
         }
         if ("print2".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertTrue(d.numberedStatement.errorValue.get()); // inline conditional
+                Assert.assertTrue(d.statementAnalysis.errorValue.get()); // inline conditional
             }
         }
     };

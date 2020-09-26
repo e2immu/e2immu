@@ -42,7 +42,7 @@ public class TestIdentityChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Value value = d.numberedStatement.valueOfExpression.get();
+            Value value = d.statementAnalysis.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
             Value valueInside = ((PropertyWrapper) value).value;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);

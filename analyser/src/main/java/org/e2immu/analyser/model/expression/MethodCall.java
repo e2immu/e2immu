@@ -84,7 +84,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        builder.checkForIllegalMethodUsageIntoNestedOrEnclosingType(methodInfo);
 
         // potential circular reference?
         boolean alwaysModifying;
