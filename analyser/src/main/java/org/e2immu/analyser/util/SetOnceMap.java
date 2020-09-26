@@ -83,4 +83,15 @@ public class SetOnceMap<K, V> extends Freezable {
     public Stream<Map.Entry<K, V>> stream() {
         return map.entrySet().stream();
     }
+
+    public void putAll(SetOnceMap<K, V> setOnceMap) {
+        setOnceMap.stream().forEach(e -> put(e.getKey(), e.getValue()));
+    }
+
+    @Only(before = "frozen,map")
+    public void putAll(SetOnceMap<K, V> setOnceMap, boolean complainWhenAlreadySet) {
+        setOnceMap.stream().forEach(e -> {
+            if (complainWhenAlreadySet || !isSet(e.getKey())) put(e.getKey(), e.getValue());
+        });
+    }
 }

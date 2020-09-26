@@ -31,8 +31,7 @@ public class StateData {
 
     public final SetOnce<Value> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
 
-    public final SetOnce<Value> state = new SetOnce<>(); // the state as it is after evaluating the statement
-    public final SetOnce<Value> condition = new SetOnce<>(); // the condition as it is after evaluating the statement
+    public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
 
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 

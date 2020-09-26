@@ -17,8 +17,6 @@
 
 package org.e2immu.analyser.pattern;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
-import org.e2immu.analyser.analyser.methodanalysercomponent.CreateNumberedStatements;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.UtilityClass;
 
@@ -26,25 +24,25 @@ import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
 import static org.e2immu.analyser.util.Logger.log;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 @UtilityClass
 public class Replacer {
 
-    public static void replace(EvaluationContext evaluationContext, MatchResult matchResult, Replacement replacement) {
+    public static <T extends HasNavigationData<T>> void replace(EvaluationContext evaluationContext, MatchResult<T> matchResult, Replacement replacement) {
         if (!matchResult.pattern.equals(replacement.pattern)) throw new UnsupportedOperationException("Double check");
 
-        log(TRANSFORM, "Start pasting replacement {} onto {} after matching pattern {}", replacement.name,
-                matchResult.start.index, replacement.pattern.name);
+        log(TRANSFORM, "Start pasting replacement {} onto {} after matching pattern {}", replacement.name, matchResult.start.index(), replacement.pattern.name);
         if (replacement.statements.isEmpty()) return;
         TranslationMap update1 = applyTranslationsToPlaceholders(matchResult.translationMap, replacement.translationsOnExpressions);
         TranslationMap update2 = createNewLocalVariableNames(evaluationContext, update1,
                 replacement.namesCreatedInReplacement, replacement.newLocalVariables);
+        BiFunction<List<Statement>, String, T> generator = matchResult.start.generator(evaluationContext);
+        List<T> replacementNsAtStartLevel = startReplacing(update2, generator, matchResult.start.index(), replacement.statements);
 
-        List<NumberedStatement> replacementNsAtStartLevel = startReplacing(update2,
-                matchResult.start.indices, matchResult.start.parent, replacement.statements);
-        wireStart(replacementNsAtStartLevel.get(0), matchResult.start);
-        NumberedStatement lastReplacement = replacementNsAtStartLevel.get(replacementNsAtStartLevel.size() - 1);
-        lastReplacement.next.set(Optional.ofNullable(matchResult.next));
+        matchResult.start.wireNext(replacementNsAtStartLevel.get(0));
+        T lastReplacement = replacementNsAtStartLevel.get(replacementNsAtStartLevel.size() - 1);
+        lastReplacement.wireNext(matchResult.next);
     }
 
     private static TranslationMap applyTranslationsToPlaceholders(TranslationMap translationMap,
@@ -93,52 +91,31 @@ public class Replacer {
         return translationMap.overwriteVariableMap(overwrite);
     }
 
-    private static void wireEnd(NumberedStatement lastReplacement, NumberedStatement nextOriginal) {
-        lastReplacement.next.set(Optional.ofNullable(nextOriginal));
-    }
-
-    private static void wireStart(NumberedStatement firstReplacement, NumberedStatement start) {
-        start.replacement.set(firstReplacement);
-    }
-
-    private static List<NumberedStatement> startReplacing(TranslationMap translationMap,
-                                                          List<Integer> indices,
-                                                          NumberedStatement parent,
-                                                          List<Statement> statements) {
-        List<NumberedStatement> result = new LinkedList<>();
-        List<Integer> currentIndices = indices;
-        log(TRANSFORM, "Start replacing at {}", currentIndices);
-        NumberedStatement previous = null;
+    private static <T extends HasNavigationData<T>> List<T> startReplacing(TranslationMap translationMap,
+                                                                           BiFunction<List<Statement>, String, T> generator,
+                                                                           String index,
+                                                                           List<Statement> statements) {
+        List<T> result = new LinkedList<>();
+        String currentIndex = index;
+        log(TRANSFORM, "Start replacing at {}", currentIndex);
+        T previous = null;
         for (Statement statement : statements) {
-            List<NumberedStatement> resultingNumberedStatements = replace(translationMap, statement, parent, currentIndices);
-            result.addAll(resultingNumberedStatements);
-            NumberedStatement lastOne = result.get(result.size() - 1);
-            currentIndices = incrementLastInIndices(lastOne.indices);
+            List<Statement> replacements = translationMap.translateStatement(statement);
+            T newStatement = generator.apply(replacements, currentIndex);
+            result.add(newStatement);
+            T lastStatement = newStatement.lastStatement();
+            currentIndex = incrementLastInIndices(lastStatement.index());
             if (previous != null) {
-                previous.next.set(Optional.of(resultingNumberedStatements.get(0)));
+                previous.wireNext(newStatement);
             }
-            previous = lastOne;
+            previous = lastStatement;
         }
         return result;
     }
 
-    private static List<Integer> incrementLastInIndices(List<Integer> indices) {
-        ArrayList<Integer> res = new ArrayList<>(indices);
-        res.set(indices.size() - 1, res.get(indices.size() - 1) + 1);
-        return res;
+    private static String incrementLastInIndices(String index) {
+        int pos = index.lastIndexOf(".");
+        if (pos < 0) return Integer.toString(Integer.parseInt(index) + 1);
+        return index.substring(0, pos + 1) + (Integer.parseInt(index.substring(pos + 1)) + 1);
     }
-
-    private static List<NumberedStatement> replace(TranslationMap translationMap,
-                                                   Statement statement,
-                                                   NumberedStatement parent,
-                                                   List<Integer> newIndices) {
-        List<Statement> replacements = translationMap.translateStatement(statement);
-        List<NumberedStatement> result = new LinkedList<>();
-        Stack<Integer> indicesInStack = new Stack<>();
-        indicesInStack.addAll(newIndices);
-        CreateNumberedStatements.recursivelyCreateNumberedStatements(parent, replacements, indicesInStack, result, false);
-        result.removeIf(ns -> ns.indices.size() > newIndices.size());
-        return result;
-    }
-
 }

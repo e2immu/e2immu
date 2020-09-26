@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
@@ -26,32 +27,51 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * As soon as a change is registered in the EvaluationResult.Builder, and it is to be used further down
- * the evaluation chain, it should be visible here.
+ * Defaults because of tests
  */
 public interface EvaluationContext {
 
-    int getIteration();
+    default int getIteration() {
+        return 0;
+    }
 
     @NotNull
-    TypeAnalyser getCurrentType();
+    default TypeAnalyser getCurrentType() {
+        return null;
+    }
 
-    MethodAnalyser getCurrentMethod();
+    default MethodAnalyser getCurrentMethod() {
+        return null;
+    }
 
-    MethodAnalysis getCurrentMethodAnalysis();
+    default MethodAnalysis getCurrentMethodAnalysis() {
+        return null;
+    }
 
-    FieldAnalyser getCurrentField();
+    default FieldAnalyser getCurrentField() {
+        return null;
+    }
 
-    StatementAnalyser getCurrentStatement();
+    default StatementAnalyser getCurrentStatement() {
+        return null;
+    }
 
-    Location getLocation();
+    default Location getLocation() {
+        return null;
+    }
 
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
-    EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement);
+    default EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+        throw new UnsupportedOperationException();
+    }
 
-    Value currentValue(Variable variable);
+    default Value currentValue(Variable variable) {
+        return UnknownValue.NO_VALUE;
+    }
 
-    AnalyserContext getAnalyserContext();
+    default AnalyserContext getAnalyserContext() {
+        return null;
+    }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
@@ -78,7 +98,9 @@ public interface EvaluationContext {
         return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
     }
 
-    Stream<ObjectFlow> getInternalObjectFlows();
+    default Stream<ObjectFlow> getInternalObjectFlows() {
+        return Stream.empty();
+    }
 
     default ObjectFlow getObjectFlow(Variable variable) {
         return currentValue(variable).getObjectFlow();
@@ -88,7 +110,9 @@ public interface EvaluationContext {
         return value.getPropertyOutsideContext(variableProperty);
     }
 
-    Value currentValue(String variableName);
+    default Value currentValue(String variableName) {
+        return UnknownValue.NO_VALUE;
+    }
 
     default int getProperty(Variable variable, VariableProperty variableProperty) {
         return currentValue(variable).getPropertyOutsideContext(variableProperty);
@@ -107,5 +131,10 @@ public interface EvaluationContext {
 
     default String logLocation() {
         return getLocation().toString();
+    }
+
+    // Replacer
+    default Set<String> allUnqualifiedVariableNames() {
+        return Set.of();
     }
 }

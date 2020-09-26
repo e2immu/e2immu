@@ -15,16 +15,27 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.analyser.NavigationData;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiFunction;
 
-public class NavigationData<T> {
-    public SetOnce<List<T>> blocks = new SetOnce<>();
-    public SetOnce<Optional<T>> next = new SetOnce<>();
-    public final SetOnce<T> replacement = new SetOnce<>();
+public interface HasNavigationData<T extends HasNavigationData<T>> {
+    NavigationData<T> getNavigationData();
 
+    T followReplacements();
+
+    T lastStatement();
+
+    String index();
+
+    Statement statement();
+
+    StatementAnalysis parent();
+
+    void wireNext(T newStatement);
+
+    BiFunction<List<Statement>, String, T> generator(EvaluationContext evaluationContext);
 }

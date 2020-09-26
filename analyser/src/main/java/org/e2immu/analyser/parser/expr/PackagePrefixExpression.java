@@ -43,7 +43,7 @@ class PackagePrefixExpression implements Expression {
     }
 
     @Override
-    public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
     }
 }

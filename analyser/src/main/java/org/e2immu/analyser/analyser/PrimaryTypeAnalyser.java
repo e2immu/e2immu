@@ -81,7 +81,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methods.forEach(methodInfo -> {
-            MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
+            MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
                     false, this);
             for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
                 parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);

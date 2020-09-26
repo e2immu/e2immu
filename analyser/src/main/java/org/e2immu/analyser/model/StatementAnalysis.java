@@ -19,33 +19,25 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
-import static org.e2immu.analyser.util.Logger.log;
 
 @Container
-public class StatementAnalysis extends Analysis implements Comparable<StatementAnalysis> {
+public class StatementAnalysis extends Analysis implements Comparable<StatementAnalysis>, HasNavigationData<StatementAnalysis> {
 
     public final Statement statement;
     public final String index;
     public final StatementAnalysis parent;
 
     public final ErrorFlags errorFlags = new ErrorFlags();
-    public final NavigationData navigationData = new NavigationData();
+    public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
     public final VariableData variableData = new VariableData();
     public final MethodLevelData methodLevelData = new MethodLevelData(variableData);
     public final StateData stateData = new StateData();
@@ -68,6 +60,11 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         return index.compareTo(o.index);
     }
 
+    @Override
+    public NavigationData<StatementAnalysis> getNavigationData() {
+        return navigationData;
+    }
+
     public boolean inErrorState() {
         boolean parentInErrorState = parent != null && parent.inErrorState();
         if (parentInErrorState) return true;
@@ -84,11 +81,91 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         return i >= list.size() ? null : list.get(i);
     }
 
+    @Override
     public StatementAnalysis followReplacements() {
         if (navigationData.replacement.isSet()) {
             return navigationData.replacement.get().followReplacements();
         }
         return this;
+    }
+
+    @Override
+    public String index() {
+        return index;
+    }
+
+    @Override
+    public Statement statement() {
+        return statement;
+    }
+
+    @Override
+    public StatementAnalysis lastStatement() {
+        return followReplacements().navigationData.next.get().map(StatementAnalysis::lastStatement).orElse(this);
+    }
+
+    @Override
+    public StatementAnalysis parent() {
+        return parent;
+    }
+
+    @Override
+    public void wireNext(StatementAnalysis newStatement) {
+        navigationData.next.set(Optional.ofNullable(newStatement));
+    }
+
+    @Override
+    public BiFunction<List<Statement>, String, StatementAnalysis> generator(EvaluationContext evaluationContext) {
+        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(parent(), statements, startIndex, false);
+    }
+
+    public static StatementAnalysis recursivelyCreateAnalysisObjects(
+            StatementAnalysis parent,
+            List<Statement> statements,
+            String indices,
+            boolean setNextAtEnd) {
+        int statementIndex;
+        if (setNextAtEnd) {
+            statementIndex = 0;
+        } else {
+            // we're in the replacement mode; replace the existing index value
+            int pos = indices.lastIndexOf(".");
+            statementIndex = Integer.parseInt(pos < 0 ? indices : indices.substring(pos + 1));
+        }
+        StatementAnalysis first = null;
+        StatementAnalysis previous = null;
+        for (Statement statement : statements) {
+            String iPlusSt = indices + "." + statementIndex;
+            StatementAnalysis statementAnalysis = new StatementAnalysis(statement, parent, iPlusSt);
+            if (previous != null) {
+                previous.navigationData.next.set(Optional.of(statementAnalysis));
+            }
+            previous = statementAnalysis;
+            if (first == null) first = statementAnalysis;
+
+            int blockIndex = 0;
+            List<StatementAnalysis> analysisBlocks = new ArrayList<>();
+
+            Structure structure = statement.getStructure();
+            if (structure.haveStatements()) {
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true);
+                analysisBlocks.add(subStatementAnalysis);
+                blockIndex++;
+            }
+            for (Structure subStatements : structure.subStatements) {
+                if (subStatements.haveStatements()) {
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true);
+                    analysisBlocks.add(subStatementAnalysis);
+                    blockIndex++;
+                }
+            }
+            statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
+            ++statementIndex;
+        }
+        if (previous != null && setNextAtEnd) {
+            previous.navigationData.next.set(Optional.empty());
+        }
+        return first;
     }
 
     public interface StateChange extends Function<Value, Value> {

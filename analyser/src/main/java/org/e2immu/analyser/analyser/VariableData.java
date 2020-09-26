@@ -42,9 +42,16 @@ public class VariableData {
     public boolean isDelaysInDependencyGraph() {
     }
 
+    public void createLocalVariableOrParameter(LocalVariableReference theLocalVariableReference) {
+    }
+
+    public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
+    }
+
     static class AboutVariable {
 
         public final Variable variable;
+        public final AboutVariable localCopyOf;
 
         public int getProperty(VariableProperty methodDelay) {
         }
@@ -54,7 +61,35 @@ public class VariableData {
 
         public Value getStateOnAssignment() {
         }
+
+
+        boolean isLocalCopy() {
+            return localCopyOf == null;
+        }
+
+        public boolean isNotLocalCopy() {
+            return localCopyOf != null;
+        }
+
+        public boolean isLocalVariableReference() {
+            return variable instanceof LocalVariableReference;
+        }
     }
+
+    public boolean isLocalVariable(AboutVariable aboutVariable) {
+        if (aboutVariable.isLocalVariableReference()) return true;
+        if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.isLocalVariableReference())
+            return true;
+        if (aboutVariable.variable instanceof DependentVariable) {
+            DependentVariable dependentVariable = (DependentVariable) aboutVariable.variable;
+            if (dependentVariable.arrayName != null) {
+                AboutVariable avArray = find(dependentVariable.arrayName);
+                return avArray != null && isLocalVariable(avArray);
+            }
+        }
+        return false;
+    }
+
     enum FieldReferenceState {
         EFFECTIVELY_FINAL_DELAYED,
         SINGLE_COPY,
@@ -86,9 +121,9 @@ public class VariableData {
     }
 
 
-    public org.e2immu.analyser.analyser.AboutVariable ensureFieldReference(FieldReference fieldReference) {
+    public OldAboutVariable ensureFieldReference(FieldReference fieldReference) {
         String name = variableName(fieldReference);
-        org.e2immu.analyser.analyser.AboutVariable av = find(name);
+        OldAboutVariable av = find(name);
         if (find(name) != null) return;
         Value resetValue;
         StatementAnalysis.FieldReferenceState fieldReferenceState = singleCopy(fieldReference);
@@ -124,8 +159,8 @@ public class VariableData {
         internalCreate(thisVariable, name, resetValue, resetValue, StatementAnalysis.FieldReferenceState.SINGLE_COPY);
     }
 
-    private org.e2immu.analyser.analyser.AboutVariable findComplain(@NotNull Variable variable) {
-        org.e2immu.analyser.analyser.AboutVariable aboutVariable = find(variable);
+    private AboutVariable findComplain(@NotNull Variable variable) {
+        AboutVariable aboutVariable = find(variable);
         if (aboutVariable != null) {
             return aboutVariable;
         }
@@ -134,29 +169,28 @@ public class VariableData {
         } else if (variable instanceof This) {
             ensureThisVariable((This) variable);
         }
-        org.e2immu.analyser.analyser.AboutVariable aboutVariable2ndAttempt = find(variable);
+        AboutVariable aboutVariable2ndAttempt = find(variable);
         if (aboutVariable2ndAttempt != null) {
             return aboutVariable2ndAttempt;
         }
         throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
 
-    private org.e2immu.analyser.analyser.AboutVariable find(@NotNull Variable variable) {
+    private AboutVariable find(@NotNull Variable variable) {
         String name = variableName(variable);
         if (name == null) return null;
         return find(name);
     }
 
-    private org.e2immu.analyser.analyser.AboutVariable find(String name) {
+    private AboutVariable find(String name) {
         StatementAnalysis level = this;
         while (level != null) {
-            org.e2immu.analyser.analyser.AboutVariable aboutVariable = level.variables.get(name);
+            AboutVariable aboutVariable = level.variables.get(name);
             if (aboutVariable != null) return aboutVariable;
             level = level.parent;
         }
         return null;
     }
-
 
 
     public class AddVariable implements StatementAnalysis.StatementAnalysisModification {
@@ -206,7 +240,7 @@ public class VariableData {
 
         @Override
         public void run() {
-            org.e2immu.analyser.analyser.AboutVariable aboutVariable = variable.isLeft() ? find(variable.getLeft()) : find(variable.getRight());
+            OldAboutVariable aboutVariable = variable.isLeft() ? find(variable.getLeft()) : find(variable.getRight());
             if (aboutVariable == null) {
                 if (create && variable.isLeft()) {
                     if (variable.getLeft() instanceof FieldReference)

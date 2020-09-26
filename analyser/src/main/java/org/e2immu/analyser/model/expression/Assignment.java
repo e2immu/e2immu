@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.BlockAnalyser;
+import org.e2immu.analyser.analyser.ErrorFlags;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
@@ -191,34 +191,20 @@ public class Assignment implements Expression {
     private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
+        ErrorFlags errorFlags = evaluationContext.getCurrentStatement().statementAnalysis.errorFlags;
         if (at instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
-            FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-            // only change fields of "our" class, otherwise, raise error
-            MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
-            if (fieldInfo.owner.primaryType() != methodInfo.typeInfo.primaryType()) {
-                if (!fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.isSet(methodInfo)) {
-                    builder.addMessage(Message.newMessage(new Location(fieldInfo), Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
-                    fieldAnalysis.errorsForAssignmentsOutsidePrimaryType.put(methodInfo, true);
-                }
-                return;
-            }
 
-            // even inside our class, there are limitations; potentially raise error
-            if (BlockAnalyser.checkForIllegalAssignmentIntoNestedOrEnclosingType((FieldReference) at, evaluationContext)) {
-                return;
+            // check illegal assignment into nested type
+            if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType().typeInfo)) {
+                builder.add(errorFlags.new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
             }
 
             if (resultOfExpression.getObjectFlow() != ObjectFlow.NO_FLOW) {
                 resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
         } else if (at instanceof ParameterInfo) {
-            BlockAnalyser blockAnalyser = evaluationContext.getCurrentStatement();
-            if (!blockAnalyser.statementAnalysis.inErrorState()) {
-                builder.addMessage(Message.newMessage(new Location((ParameterInfo) at), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
-                builder.changeCurrentStatementToErrorState();
-                return;
-            }
+            builder.add(errorFlags.new ParameterShouldNotBeAssignedTo((ParameterInfo) at, evaluationContext.getLocation()));
         }
         builder.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
 
@@ -229,5 +215,16 @@ public class Assignment implements Expression {
                     Variable.detailedString(linked), Variable.detailedString(linked));
             builder.linkVariables(at, linked);
         }
+    }
+
+    private static boolean checkIllegalAssignmentIntoNestedType(Variable at, FieldInfo fieldInfo, TypeInfo currentType) {
+        TypeInfo owner = fieldInfo.owner;
+        if (owner.primaryType() != currentType.primaryType()) return true; // outside primary type
+        if (owner == currentType) { // in the same type
+            // so if x is a local variable of the current type, we can do this.field =, but not x.field = !
+            return !(((FieldReference) at).scope instanceof This);
+        }
+        // outside current type, but inside primary type, only records
+        return !(owner.isRecord() && currentType.isAnEnclosingTypeOf(owner));
     }
 }

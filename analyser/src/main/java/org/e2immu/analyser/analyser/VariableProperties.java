@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AboutVariable.FieldReferenceState.*;
+import static org.e2immu.analyser.analyser.OldAboutVariable.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
@@ -92,7 +92,7 @@ class VariableProperties   {
 
     // locally modified
 
-    private final Map<String, AboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
+    private final Map<String, OldAboutVariable> variableProperties = new HashMap<>(); // at their level, 1x per var
     private final Set<ObjectFlow> internalObjectFlows;
     private final List<Value> preconditions = new ArrayList<>();
 
@@ -251,12 +251,12 @@ class VariableProperties   {
     }
 
 
-    public Collection<AboutVariable> variableProperties() {
+    public Collection<OldAboutVariable> variableProperties() {
         return variableProperties.values();
     }
 
-    private AboutVariable findComplain(@NotNull Variable variable) {
-        AboutVariable aboutVariable = find(variable);
+    private OldAboutVariable findComplain(@NotNull Variable variable) {
+        OldAboutVariable aboutVariable = find(variable);
         if (aboutVariable != null) {
             return aboutVariable;
         }
@@ -265,23 +265,23 @@ class VariableProperties   {
         } else if (variable instanceof This) {
             ensureThisVariable((This) variable);
         }
-        AboutVariable aboutVariable2ndAttempt = find(variable);
+        OldAboutVariable aboutVariable2ndAttempt = find(variable);
         if (aboutVariable2ndAttempt != null) {
             return aboutVariable2ndAttempt;
         }
         throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
     }
 
-    private AboutVariable find(@NotNull Variable variable) {
+    private OldAboutVariable find(@NotNull Variable variable) {
         String name = variableName(variable);
         if (name == null) return null;
         return find(name);
     }
 
-    private AboutVariable find(String name) {
+    private OldAboutVariable find(String name) {
         VariableProperties level = this;
         while (level != null) {
-            AboutVariable aboutVariable = level.variableProperties.get(name);
+            OldAboutVariable aboutVariable = level.variableProperties.get(name);
             if (aboutVariable != null) return aboutVariable;
             level = level.parent;
         }
@@ -292,7 +292,7 @@ class VariableProperties   {
         String name = variableName(fieldReference);
         if (find(name) != null) return;
         Value resetValue;
-        AboutVariable.FieldReferenceState fieldReferenceState = singleCopy(fieldReference);
+        OldAboutVariable.FieldReferenceState fieldReferenceState = singleCopy(fieldReference);
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
             resetValue = UnknownValue.NO_VALUE; // delay
         } else if (fieldReferenceState == MULTI_COPY) {
@@ -330,7 +330,7 @@ class VariableProperties   {
         internalCreate(thisVariable, name, resetValue, resetValue, SINGLE_COPY);
     }
 
-    private AboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
+    private OldAboutVariable.FieldReferenceState singleCopy(FieldReference fieldReference) {
         try {
             int effectivelyFinal = fieldReference.fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
@@ -382,7 +382,7 @@ class VariableProperties   {
                                 String name,
                                 Value initialValue,
                                 Value resetValue,
-                                AboutVariable.FieldReferenceState fieldReferenceState) {
+                                OldAboutVariable.FieldReferenceState fieldReferenceState) {
         ObjectFlow objectFlow;
         if (variable instanceof ParameterInfo) {
             ParameterInfo parameterInfo = (ParameterInfo) variable;
@@ -407,7 +407,7 @@ class VariableProperties   {
             objectFlow = ObjectFlow.NO_FLOW; // will be assigned to soon enough
         }
 
-        AboutVariable aboutVariable = new AboutVariable(variable, Objects.requireNonNull(name), null,
+        OldAboutVariable aboutVariable = new OldAboutVariable(variable, Objects.requireNonNull(name), null,
                 Objects.requireNonNull(initialValue),
                 Objects.requireNonNull(resetValue),
                 objectFlow,
@@ -485,7 +485,7 @@ class VariableProperties   {
     @Override
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
-        AboutVariable aboutVariable = find(variable);
+        OldAboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return;
         int current = aboutVariable.getProperty(variableProperty);
         if (current < value) {
@@ -501,7 +501,7 @@ class VariableProperties   {
         }
     }
 
-    private static List<String> variableNamesOfLocalRecordVariables(AboutVariable aboutVariable) {
+    private static List<String> variableNamesOfLocalRecordVariables(OldAboutVariable aboutVariable) {
         TypeInfo recordType = aboutVariable.variable.parameterizedType().typeInfo;
         return recordType.typeInspection.getPotentiallyRun().fields.stream()
                 .map(fieldInfo -> aboutVariable.name + "." + fieldInfo.name).collect(Collectors.toList());
@@ -511,16 +511,16 @@ class VariableProperties   {
     // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
 
     public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty, int value) {
-        AboutVariable aboutVariable = find(variable);
+        OldAboutVariable aboutVariable = find(variable);
         if (aboutVariable == null) return; //not known to us, ignoring!
         recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty, value);
     }
 
-    private void recursivelyAddPropertyAlsoRecords(AboutVariable aboutVariable, VariableProperty variableProperty, int value) {
+    private void recursivelyAddPropertyAlsoRecords(OldAboutVariable aboutVariable, VariableProperty variableProperty, int value) {
         aboutVariable.setProperty(variableProperty, value);
         if (isRecordType(aboutVariable.variable)) {
             for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
-                AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                OldAboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
                 recursivelyAddPropertyAlsoRecords(aboutLocalVariable, variableProperty, value);
             }
         }
@@ -546,7 +546,7 @@ class VariableProperties   {
     }
 
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
-    private void resetToNewInstance(AboutVariable aboutVariable, Instance instance) {
+    private void resetToNewInstance(OldAboutVariable aboutVariable, Instance instance) {
         // this breaks an infinite NO_VALUE cycle
         if (aboutVariable.resetValue != UnknownValue.NO_VALUE) {
             aboutVariable.setCurrentValue(aboutVariable.resetValue,
@@ -565,13 +565,13 @@ class VariableProperties   {
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
             for (String name : recordNames) {
-                AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                OldAboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
                 resetToInitialValues(aboutLocalVariable);
             }
         }
     }
 
-    private void resetToInitialValues(AboutVariable aboutVariable) {
+    private void resetToInitialValues(OldAboutVariable aboutVariable) {
         Instance instance;
         if ((instance = aboutVariable.initialValue.asInstanceOf(Instance.class)) != null) {
             resetToNewInstance(aboutVariable, instance);
@@ -582,21 +582,21 @@ class VariableProperties   {
             if (isRecordType(aboutVariable.variable)) {
                 List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
                 for (String name : recordNames) {
-                    AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                    OldAboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
                     resetToInitialValues(aboutLocalVariable);
                 }
             }
         }
     }
 
-    private void resetToUnknownValue(AboutVariable aboutVariable) {
+    private void resetToUnknownValue(OldAboutVariable aboutVariable) {
         aboutVariable.setCurrentValue(aboutVariable.resetValue,
                 stateOfValue(aboutVariable.variable, aboutVariable.resetValue),
                 ObjectFlow.NO_FLOW);
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
             for (String name : recordNames) {
-                AboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
+                OldAboutVariable aboutLocalVariable = Objects.requireNonNull(find(name));
                 resetToUnknownValue(aboutLocalVariable);
             }
         }
@@ -616,7 +616,7 @@ class VariableProperties   {
     @Override
     @NotNull
     public Value currentValue(Variable variable) {
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         if (aboutVariable.getProperty(ASSIGNED_IN_LOOP) == Level.TRUE) {
             return aboutVariable.resetValue;
         }
@@ -629,7 +629,7 @@ class VariableProperties   {
         if (variable instanceof FieldReference) {
             ensureFieldReference((FieldReference) variable);
         }
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         // TODO ObjectFlow
         return new VariableValue(this, variable, aboutVariable.name);
     }
@@ -652,7 +652,7 @@ class VariableProperties   {
 
     // first we only keep those that have been assigned at the lower level
     // then we get rid of those that are local variables created at the lower level; all the rest stays
-    private static final Predicate<AboutVariable> ASSIGNED_NOT_LOCAL_VAR = aboutVariable ->
+    private static final Predicate<OldAboutVariable> ASSIGNED_NOT_LOCAL_VAR = aboutVariable ->
             MultiLevel.value(aboutVariable.getProperty(ASSIGNED), 0) == Level.TRUE &&
                     (!aboutVariable.isLocalVariable() || aboutVariable.isLocalCopy());
 
@@ -711,7 +711,7 @@ class VariableProperties   {
             String name = entry.getKey();
             List<VariableProperties> assignmentContexts = trimContexts(entry.getValue());
 
-            AboutVariable localAv = variableProperties.get(name);
+            OldAboutVariable localAv = variableProperties.get(name);
             boolean movedUpFirstOne = localAv == null;
             if (movedUpFirstOne) {
                 localAv = assignmentContexts.stream().map(vp -> vp.variableProperties.get(name)).findFirst().orElseThrow();
@@ -750,7 +750,7 @@ class VariableProperties   {
                 localAv.setCurrentValue(variableValue, stateOfValue(localAv.variable, variableValue), ObjectFlow.NO_FLOW);
             } else {
                 // single context, guaranteed to be reached; include this has become irrelevant
-                AboutVariable av = assignmentContexts.get(0).variableProperties.get(name);
+                OldAboutVariable av = assignmentContexts.get(0).variableProperties.get(name);
                 Value singleValue = av.getCurrentValue();
                 log(VARIABLE_PROPERTIES, "--- variable {}: value set to {}", singleValue);
                 localAv.setCurrentValue(singleValue, stateOfValue(localAv.variable, singleValue), av.getObjectFlow());
@@ -767,7 +767,7 @@ class VariableProperties   {
                 .flatMap(ec -> ec.variableProperties.keySet().stream()).collect(Collectors.toSet());
         log(VARIABLE_PROPERTIES, "Coping back other properties of {}", allVariableNames);
         for (String name : allVariableNames) {
-            AboutVariable localAv = variableProperties.get(name);
+            OldAboutVariable localAv = variableProperties.get(name);
             boolean movedUpFirstOne = localAv == null;
             if (movedUpFirstOne) {
                 localAv = evaluationContextsGathered.stream()
@@ -894,7 +894,7 @@ class VariableProperties   {
 
     @Override
     public int getProperty(Variable variable, VariableProperty variableProperty) {
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         if (VariableProperty.NOT_NULL == variableProperty && conditionManager.isNotNull(variable)) {
             return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
         }
@@ -946,21 +946,21 @@ class VariableProperties   {
 
         // we allow find( ) to fail (typically comparisons out of scope)
         if (!(variable instanceof ParameterInfo)) {
-            AboutVariable av = find(variable);
+            OldAboutVariable av = find(variable);
             if (av != null && av.fieldReferenceState == MULTI_COPY) return false;
         }
         if (!(other instanceof ParameterInfo)) {
-            AboutVariable avOther = find(other);
+            OldAboutVariable avOther = find(other);
             if (avOther != null && avOther.fieldReferenceState == MULTI_COPY) return false;
         }
         return name.equals(nameOther);
     }
 
-    private AboutVariable ensureLocalCopy(Variable variable) {
-        AboutVariable master = findComplain(variable);
+    private OldAboutVariable ensureLocalCopy(Variable variable) {
+        OldAboutVariable master = findComplain(variable);
         if (!variableProperties.containsKey(master.name)) {
             // we'll make a local copy
-            AboutVariable copy = master.localCopy();
+            OldAboutVariable copy = master.localCopy();
             variableProperties.put(copy.name, copy);
             return copy;
         }
@@ -971,7 +971,7 @@ class VariableProperties   {
     public void assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression) {
         // assignment to local variable: could be that we're in the block where it was created, then nothing happens
         // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-        AboutVariable aboutVariable = ensureLocalCopy(at);
+        OldAboutVariable aboutVariable = ensureLocalCopy(at);
 
         if (assignmentToNonEmptyExpression) {
             aboutVariable.removeProperties(VariableProperty.REMOVE_AFTER_ASSIGNMENT);
@@ -981,7 +981,7 @@ class VariableProperties   {
             if ((instance = value.asInstanceOf(Instance.class)) != null) {
                 resetToNewInstance(aboutVariable, instance);
             } else if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
-                AboutVariable other = findComplain(variableValue.variable);
+                OldAboutVariable other = findComplain(variableValue.variable);
                 if (other.fieldReferenceState == SINGLE_COPY) {
                     aboutVariable.setCurrentValue(value, stateOfValue(at, value), value.getObjectFlow());
                 } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
@@ -1002,7 +1002,7 @@ class VariableProperties   {
         }
     }
 
-    public boolean guaranteedToBeReached(AboutVariable aboutVariable) {
+    public boolean guaranteedToBeReached(OldAboutVariable aboutVariable) {
         if (!guaranteedToBeReachedInCurrentBlock) return false;
         return recursivelyCheckGuaranteedToBeReachedByParent(aboutVariable.name);
     }
@@ -1018,13 +1018,13 @@ class VariableProperties   {
 
     @Override
     public void markRead(Variable variable) {
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         aboutVariable.markRead();
     }
 
     @Override
     public void markRead(String variableName) {
-        AboutVariable aboutVariable = find(variableName);
+        OldAboutVariable aboutVariable = find(variableName);
         if (aboutVariable != null) {
             aboutVariable.markRead();
         }
@@ -1033,7 +1033,7 @@ class VariableProperties   {
     @Override
     public Value arrayVariableValue(Value array, Value indexValue, ParameterizedType parameterizedType, Set<Variable> dependencies, Variable arrayVariable) {
         String name = ArrayAccess.dependentVariableName(array, indexValue);
-        AboutVariable aboutVariable = find(name);
+        OldAboutVariable aboutVariable = find(name);
         if (aboutVariable != null) return aboutVariable.getCurrentValue();
         String arrayName = arrayVariable == null ? null : variableName(arrayVariable);
         DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
@@ -1065,19 +1065,7 @@ class VariableProperties   {
         return dependentVariable;
     }
 
-    public boolean isLocalVariable(AboutVariable aboutVariable) {
-        if (aboutVariable.isLocalVariable()) return true;
-        if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.isLocalVariable())
-            return true;
-        if (aboutVariable.variable instanceof DependentVariable) {
-            DependentVariable dependentVariable = (DependentVariable) aboutVariable.variable;
-            if (dependentVariable.arrayName != null) {
-                AboutVariable avArray = find(dependentVariable.arrayName);
-                return avArray != null && isLocalVariable(avArray);
-            }
-        }
-        return false;
-    }
+
 
     private Location location() {
         if (currentStatement != null) return new Location(currentMethod, currentStatement.index);
@@ -1121,13 +1109,13 @@ class VariableProperties   {
 
     @Override
     public ObjectFlow getObjectFlow(Variable variable) {
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         return aboutVariable.getObjectFlow();
     }
 
     @Override
     public void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
-        AboutVariable aboutVariable = findComplain(variable);
+        OldAboutVariable aboutVariable = findComplain(variable);
         aboutVariable.setObjectFlow(objectFlow);
     }
 
@@ -1216,7 +1204,7 @@ class VariableProperties   {
             fromParent = parent.allUnqualifiedVariableNames();
         }
         Set<String> local = variableProperties.values().stream()
-                .filter(AboutVariable::isNotLocalCopy)
+                .filter(OldAboutVariable::isNotLocalCopy)
                 .map(av -> av.name).collect(Collectors.toSet());
         return SetUtil.immutableUnion(fromParent, local);
     }

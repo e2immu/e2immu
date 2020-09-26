@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.pattern;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -43,7 +42,7 @@ import static org.e2immu.analyser.util.Logger.log;
  * Implement a speed-up by making a distinction between failure because of a DELAY, or structural failure.
  * Only combinations of patterns + start statements that cause a DELAY have to be tried again.
  */
-public class PatternMatcher {
+public class PatternMatcher<T extends HasNavigationData<T>> {
     private final Map<Pattern, Replacement> patternToReplacements;
 
     private final Map<MethodInfo, Map<Pattern, Set<String>>> delayedInThisIteration = new HashMap<>();
@@ -52,20 +51,20 @@ public class PatternMatcher {
         this.patternToReplacements = patternToReplacements;
     }
 
-    public Optional<MatchResult> match(MethodInfo methodInfo, NumberedStatement startStatement) {
+    public Optional<MatchResult<T>> match(MethodInfo methodInfo, T startStatement) {
         Map<Pattern, Set<String>> map = mapForMethod(methodInfo);
         Set<Pattern> newDelays = new HashSet<>();
         for (Map.Entry<Pattern, Set<String>> entry : map.entrySet()) {
             Pattern pattern = entry.getKey();
             Set<String> delays = entry.getValue();
             if (!skip(delays, startStatement)) {
-                MatchResult.MatchResultBuilder builder = new MatchResult.MatchResultBuilder(pattern, startStatement);
+                MatchResult.MatchResultBuilder<T> builder = new MatchResult.MatchResultBuilder<T>(pattern, startStatement);
                 SimpleMatchResult isMatch = match(builder, pattern.statements, startStatement);
                 if (isMatch == SimpleMatchResult.YES) return Optional.of(builder.build());
                 if (isMatch == SimpleMatchResult.DELAY) newDelays.add(pattern);
             }
         }
-        newDelays.forEach(p -> SMapSet.add(map, p, startStatement.index));
+        newDelays.forEach(p -> SMapSet.add(map, p, startStatement.index()));
         return Optional.empty();
     }
 
@@ -98,46 +97,46 @@ public class PatternMatcher {
         YES, NO, DELAY, NOT_YET,
     }
 
-    private boolean skip(Set<String> indices, NumberedStatement startStatement) {
+    private boolean skip(Set<String> indices, T startStatement) {
         if (indices.isEmpty()) return false; // first round only
         // after the first round, we skip when it was NOT delayed
-        return !indices.contains(startStatement.index);
+        return !indices.contains(startStatement.index());
     }
 
     // -- STATIC AREA; here we don't care about speed-ups, Optionals, etc.
 
-    private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           List<Statement> templateStatements,
-                                           NumberedStatement startStatement) {
-        NumberedStatement currentNumberedStatement = startStatement;
+    private static <T extends HasNavigationData<T>> SimpleMatchResult match(MatchResult.MatchResultBuilder<T> builder,
+                                                                            List<Statement> templateStatements,
+                                                                            T startStatement) {
+        T currentStatementAnalyser = startStatement;
         for (Statement template : templateStatements) {
-            if (currentNumberedStatement != null) {
-                currentNumberedStatement = currentNumberedStatement.followReplacements();
+            if (currentStatementAnalyser != null) {
+                currentStatementAnalyser = currentStatementAnalyser.followReplacements();
             }
-            SimpleMatchResult isFastMatch = fastMatch(template, currentNumberedStatement);
+            SimpleMatchResult isFastMatch = fastMatch(template, currentStatementAnalyser);
             if (isFastMatch == SimpleMatchResult.NO) return SimpleMatchResult.NO;
             if (isFastMatch == SimpleMatchResult.YES) continue;
-            assert currentNumberedStatement != null;
+            assert currentStatementAnalyser != null;
 
             // slower method, first computing code organization
             Structure structure = template.getStructure();
-            SimpleMatchResult isMatch = match(builder, structure, currentNumberedStatement);
+            SimpleMatchResult isMatch = match(builder, structure, currentStatementAnalyser);
             if (isMatch != SimpleMatchResult.YES) return isMatch;
 
-            log(TRANSFORM, "Successfully matched {}", currentNumberedStatement.index);
+            log(TRANSFORM, "Successfully matched {}", currentStatementAnalyser.index());
 
-            currentNumberedStatement = currentNumberedStatement.next.get().orElse(null);
+            currentStatementAnalyser = currentStatementAnalyser.getNavigationData().next.get().orElse(null);
         }
-        builder.setNext(currentNumberedStatement);
+        builder.setNext(currentStatementAnalyser);
         return SimpleMatchResult.YES;
     }
 
     @NotNull
-    private static SimpleMatchResult fastMatch(Statement template, NumberedStatement actualNs) {
+    private static <T extends HasNavigationData<T>> SimpleMatchResult fastMatch(Statement template, T actualNs) {
         if (actualNs == null) {
             return template instanceof Pattern.PlaceHolderStatement ? SimpleMatchResult.YES : SimpleMatchResult.NO;
         }
-        Statement actual = actualNs.statement;
+        Statement actual = actualNs.statement();
         if (template instanceof Pattern.PlaceHolderStatement) {
             return SimpleMatchResult.YES;
         }
@@ -145,10 +144,10 @@ public class PatternMatcher {
     }
 
     @NotNull
-    private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           Structure templateCo,
-                                           NumberedStatement actualNs) {
-        Statement actual = actualNs.statement;
+    private static <T extends HasNavigationData<T>> SimpleMatchResult match(MatchResult.MatchResultBuilder<T> builder,
+                                                                            Structure templateCo,
+                                                                            T actualNs) {
+        Statement actual = actualNs.statement();
         Structure actualCo = actual.getStructure();
         {
             SimpleMatchResult smr = match(builder, templateCo.expression, actualCo.expression);
@@ -171,7 +170,7 @@ public class PatternMatcher {
             builder.matchLocalVariable(templateCo.localVariableCreation, actualCo.localVariableCreation);
         }
         // primary block
-        int numActualBlocks = actualNs.blocks.get().size();
+        int numActualBlocks = actualNs.getNavigationData().blocks.get().size();
         int blocksPresent = 0;
         if (templateCo.block != null) {
             if (templateCo.block == Block.EMPTY_BLOCK) {
@@ -179,9 +178,8 @@ public class PatternMatcher {
             } else {
                 if (numActualBlocks == 0) return SimpleMatchResult.NO;
                 ++blocksPresent;
-                NumberedStatement firstInBlock = actualNs.blocks.get().get(0);
-                SimpleMatchResult smr = match(builder, templateCo.getStatements(),
-                        firstInBlock);
+                T firstInBlock = actualNs.getNavigationData().blocks.get().get(0);
+                SimpleMatchResult smr = match(builder, templateCo.getStatements(), firstInBlock);
                 if (smr != SimpleMatchResult.YES) return smr;
             }
         } else if (templateCo.statements != null && !templateCo.statements.isEmpty()) {
@@ -191,7 +189,7 @@ public class PatternMatcher {
         int blockCount = 1;
         for (Structure subCo : templateCo.subStatements) {
             if (numActualBlocks <= blockCount) return SimpleMatchResult.NO;
-            NumberedStatement firstInBlock = actualNs.blocks.get().get(blockCount);
+            T firstInBlock = actualNs.getNavigationData().blocks.get().get(blockCount);
             SimpleMatchResult smr = match(builder, subCo.getStatements(), firstInBlock);
             if (smr != SimpleMatchResult.YES) return smr;
             ++blocksPresent;
@@ -201,9 +199,9 @@ public class PatternMatcher {
         return SimpleMatchResult.YES;
     }
 
-    private static SimpleMatchResult match(MatchResult.MatchResultBuilder builder,
-                                           Expression template,
-                                           Expression actual) {
+    private static <T extends HasNavigationData<T>> SimpleMatchResult match(MatchResult.MatchResultBuilder<T> builder,
+                                                                            Expression template,
+                                                                            Expression actual) {
         if (template == actual) return SimpleMatchResult.YES; // mainly for EmptyExpression
 
         if (template instanceof Pattern.PlaceHolderExpression && actual != EmptyExpression.EMPTY_EXPRESSION) {

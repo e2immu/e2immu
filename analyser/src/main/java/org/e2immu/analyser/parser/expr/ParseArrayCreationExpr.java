@@ -44,6 +44,7 @@ public class ParseArrayCreationExpr {
                 parameterizedType, indexExpressions, arrayInitializer);
     }
 
+    // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
     static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInfo constructor = new MethodInfo(parameterizedType.typeInfo, List.of());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder()
@@ -57,8 +58,6 @@ public class ParseArrayCreationExpr {
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));
-        constructor.methodAnalysis.set(new MethodAnalysis(constructor));
-        constructor.methodAnalysis.get().properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
         return constructor;
     }
 

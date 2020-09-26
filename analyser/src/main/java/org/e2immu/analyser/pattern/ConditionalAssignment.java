@@ -17,16 +17,11 @@
 
 package org.e2immu.analyser.pattern;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.analyser.util.ListUtil;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.TRANSFORM;
-import static org.e2immu.analyser.util.Logger.log;
 
 import java.util.*;
 import java.util.function.Predicate;

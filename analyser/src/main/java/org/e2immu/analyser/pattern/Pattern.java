@@ -19,7 +19,6 @@ package org.e2immu.analyser.pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.Primitives;
@@ -258,7 +257,7 @@ public class Pattern {
         }
 
         @Override
-        public Value evaluate(EvaluationContext evaluationContext, EvaluationVisitor visitor, ForwardEvaluationInfo forwardEvaluationInfo) {
+        public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
         }
 
@@ -289,7 +288,7 @@ public class Pattern {
         }
 
         @Override
-        public String statementString(int indent, NumberedStatement numberedStatement) {
+        public String statementString(int indent, StatementAnalysis numberedStatement) {
             return null;
         }
 

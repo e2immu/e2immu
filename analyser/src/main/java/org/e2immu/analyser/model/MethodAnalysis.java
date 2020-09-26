@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -73,7 +72,7 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> precondition = new SetOnce<>();
 
 
-    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses, StatementAnalyser firstStatmenteAnalyser) {
+    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses, StatementAnalyser firstStatementAnalyser) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.parameterAnalyses = parameterAnalyses;
         this.methodInfo = methodInfo;
@@ -87,16 +86,11 @@ public class MethodAnalysis extends Analysis {
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
-        Block block = methodInfo.methodInspection.get().methodBody.get();
-        firstStatement = firstStatmenteAnalyser.statementAnalysis;
+        firstStatement = firstStatementAnalyser.statementAnalysis;
     }
 
     public MethodLevelData methodLevelData() {
-        return lastStatement.isSet() ? lastStatement.get().methodLevelData : follow(firstStatement).methodLevelData;
-    }
-
-    private StatementAnalysis follow(StatementAnalysis statementAnalysis) {
-        return statementAnalysis.navigationData.next.get().map(this::follow).orElse(statementAnalysis);
+        return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.lastStatement().methodLevelData;
     }
 
     @Override
@@ -123,8 +117,11 @@ public class MethodAnalysis extends Analysis {
 
             case FLUENT:
             case IDENTITY:
-            case INDEPENDENT:
             case SIZE:
+                return getPropertyCheckOverrides(variableProperty);
+
+            case INDEPENDENT:
+                // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT
                 return getPropertyCheckOverrides(variableProperty);
 
             case NOT_NULL:

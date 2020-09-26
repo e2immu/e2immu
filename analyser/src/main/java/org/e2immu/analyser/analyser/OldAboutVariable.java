@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-class AboutVariable {
+class OldAboutVariable {
 
     enum FieldReferenceState {
         EFFECTIVELY_FINAL_DELAYED,
@@ -33,15 +33,15 @@ class AboutVariable {
     // accessible to the outside world, but not modified
     final Value initialValue;
     final Value resetValue;
-    final AboutVariable localCopyOf;
+    final OldAboutVariable localCopyOf;
     final Variable variable;
     final String name;
 
     final FieldReferenceState fieldReferenceState;
 
-    AboutVariable(Variable variable, String name, AboutVariable localCopyOf, Value initialValue, Value resetValue,
-                  ObjectFlow initialObjectFlow,
-                  FieldReferenceState fieldReferenceState) {
+    OldAboutVariable(Variable variable, String name, OldAboutVariable localCopyOf, Value initialValue, Value resetValue,
+                     ObjectFlow initialObjectFlow,
+                     FieldReferenceState fieldReferenceState) {
         this.localCopyOf = localCopyOf;
         this.initialValue = initialValue;
         this.currentValue = resetValue;
@@ -70,8 +70,8 @@ class AboutVariable {
         return stateOnAssignment;
     }
 
-    AboutVariable localCopy() {
-        AboutVariable av = new AboutVariable(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
+    OldAboutVariable localCopy() {
+        OldAboutVariable av = new OldAboutVariable(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
         av.properties.putAll(properties);
         return av;
     }

@@ -35,11 +35,64 @@ public class ErrorFlags {
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 
+    public void update(ErrorFlags parent) {
+        parameterAssignments.putAll(parent.parameterAssignments);
+        unusedLocalVariables.putAll(parent.unusedLocalVariables);
+        uselessAssignments.putAll(parent.uselessAssignments);
+        errorAssigningToFieldOutsideType.putAll(parent.errorAssigningToFieldOutsideType);
+        errorCallingModifyingMethodOutsideType.putAll(errorCallingModifyingMethodOutsideType);
+        messages.addAll(parent.messages);
+    }
+
+    public void lift(ErrorFlags lastStatementSubBlock) {
+        parameterAssignments.putAll(lastStatementSubBlock.parameterAssignments, false);
+        unusedLocalVariables.putAll(lastStatementSubBlock.unusedLocalVariables, false);
+        uselessAssignments.putAll(lastStatementSubBlock.uselessAssignments, false);
+        errorAssigningToFieldOutsideType.putAll(lastStatementSubBlock.errorAssigningToFieldOutsideType, false);
+        errorCallingModifyingMethodOutsideType.putAll(errorCallingModifyingMethodOutsideType, false);
+        messages.addAll(lastStatementSubBlock.messages);
+    }
 
     public class SetErrorState implements StatementAnalysis.StatementAnalysisModification {
         @Override
         public void run() {
             if (!errorValue.isSet()) errorValue.set(true);
+        }
+    }
+
+    public class ErrorAssigningToFieldOutsideType implements StatementAnalysis.StatementAnalysisModification {
+        private final FieldInfo fieldInfo;
+        private final Location location;
+
+        public ErrorAssigningToFieldOutsideType(FieldInfo fieldInfo, Location location) {
+            this.fieldInfo = fieldInfo;
+            this.location = location;
+        }
+
+        @Override
+        public void run() {
+            if (!errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
+                errorAssigningToFieldOutsideType.put(fieldInfo, true);
+                messages.add(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+            }
+        }
+    }
+
+    public class ParameterShouldNotBeAssignedTo implements StatementAnalysis.StatementAnalysisModification {
+        private final ParameterInfo parameterInfo;
+        private final Location location;
+
+        public ParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo, Location location) {
+            this.parameterInfo = parameterInfo;
+            this.location = location;
+        }
+
+        @Override
+        public void run() {
+            if (!parameterAssignments.isSet(parameterInfo)) {
+                parameterAssignments.put(parameterInfo, true);
+                messages.add(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
+            }
         }
     }
 

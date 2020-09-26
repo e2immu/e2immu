@@ -17,41 +17,42 @@
 
 package org.e2immu.analyser.pattern;
 
-import org.e2immu.analyser.analyser.NumberedStatement;
 import org.e2immu.analyser.model.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MatchResult {
-    public final NumberedStatement start;
+// HasNavigationData hides the choice between StatementAnalyser (during analysis) and StatementAnalysis (during testing)
+
+public class MatchResult<T extends HasNavigationData<T>> {
+    public final T start;
     public final Pattern pattern;
     public final TranslationMap translationMap;
-    public final NumberedStatement next;
+    public final T next;
 
-    private MatchResult(Pattern pattern, NumberedStatement start, NumberedStatement next, TranslationMap translationMap) {
+    private MatchResult(Pattern pattern, T start, T next, TranslationMap translationMap) {
         this.start = start;
         this.pattern = pattern;
         this.translationMap = translationMap;
         this.next = next;
     }
 
-    public static class MatchResultBuilder {
-        private final NumberedStatement start;
+    public static class MatchResultBuilder<T extends HasNavigationData<T>> {
+        private final T start;
         private final Pattern pattern;
         // template variable matching is one-on-one, so we keep maps in both directions
         private final Map<String, Variable> actualVariableNameToTemplateVariable = new HashMap<>();
         private final Map<String, Variable> templateVariableNameToActualVariable = new HashMap<>();
         private final TranslationMap.TranslationMapBuilder translationMapBuilder = new TranslationMap.TranslationMapBuilder();
-        private NumberedStatement next;
+        private T next;
 
-        public MatchResultBuilder(Pattern pattern, NumberedStatement start) {
+        public MatchResultBuilder(Pattern pattern, T start) {
             this.pattern = pattern;
             this.start = start;
         }
 
-        public MatchResult build() {
-            return new MatchResult(pattern, start, next, translationMapBuilder.build());
+        public MatchResult<T> build() {
+            return new MatchResult<>(pattern, start, next, translationMapBuilder.build());
         }
 
         public void matchLocalVariable(LocalVariable templateVar, LocalVariable actualVar) {
@@ -83,7 +84,7 @@ public class MatchResult {
             translationMapBuilder.put(template, actual);
         }
 
-        public void setNext(NumberedStatement next) {
+        public void setNext(T next) {
             this.next = next;
         }
     }
