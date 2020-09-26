@@ -29,7 +29,7 @@ public interface AnalyserContext {
 
     E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 
-    PatternMatcher getPatternMatcher();
+    PatternMatcher<StatementAnalyser> getPatternMatcher();
 
     TypeInfo getPrimaryType();
 

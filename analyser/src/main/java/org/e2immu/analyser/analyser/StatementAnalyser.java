@@ -18,8 +18,11 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -27,17 +30,24 @@ import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.pattern.MatchResult;
+import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.pattern.Replacement;
+import org.e2immu.analyser.pattern.Replacer;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 /*
@@ -190,6 +200,209 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
         statementAnalysis.errorFlags.finalise(statementAnalysis.parent.errorFlags);
         return result;
+    }
+
+
+    public static boolean analyseAllStatementsInBlock(StatementAnalyser firstStatement, AnalyserContext analyserContext) {
+        boolean changes = false;
+
+        StatementAnalyser statementAnalyser = firstStatement.followReplacements();
+
+        boolean neverContinues = false;
+        boolean escapesViaException = false;
+        List<BreakOrContinueStatement> breakAndContinueStatementsInBlocks = new ArrayList<>();
+
+        try {
+            while (statementAnalyser != null) {
+
+                // first attempt at detecting a transformation
+                PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
+                if (!analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
+                    MethodInfo methodInfo = statementAnalyser.myMethodAnalyser.methodInfo;
+                    Optional<MatchResult<StatementAnalyser>> matchResult = analyserContext.getPatternMatcher().match(methodInfo, statementAnalyser);
+                    if (matchResult.isPresent()) {
+                        MatchResult<StatementAnalyser> mr = matchResult.get();
+                        Optional<Replacement> replacement = analyserContext.getPatternMatcher().registeredReplacement(mr.pattern);
+                        if (replacement.isPresent()) {
+                            Replacement r = replacement.get();
+                            log(TRANSFORM, "Replacing {} with {} in {} at {}", mr.pattern.name, r.name,
+                                    methodInfo.distinguishingName(), statementAnalyser.statementAnalysis.index);
+                            Replacer.replace(variableProperties, mr, r);
+                            patternMatcher.reset(methodInfo);
+                            changes = true;
+                        }
+                    }
+                }
+                statementAnalyser = statementAnalyser.followReplacements();
+
+                String statementId = statementAnalyser.statementAnalysis.index;
+                variableProperties.setCurrentStatement(statementAnalyser);
+
+                if (variableProperties.conditionManager.inErrorState()) {
+                    variableProperties.raiseError(Message.UNREACHABLE_STATEMENT);
+                }
+
+                if (computeVariablePropertiesOfStatement(statementAnalyser, variableProperties)) {
+                    changes = true;
+                }
+                statementAnalyser = statementAnalyser.followReplacements();
+
+                for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
+                        ((VariableProperties) evaluationContext).configuration.debugConfiguration.statementAnalyserVariableVisitors) {
+                    variableProperties.variableProperties().forEach(aboutVariable ->
+                            statementAnalyserVariableVisitor.visit(
+                                    new StatementAnalyserVariableVisitor.Data(((VariableProperties) evaluationContext).iteration, methodInfo,
+                                            statementId, aboutVariable.name, aboutVariable.variable,
+                                            aboutVariable.getCurrentValue(),
+                                            aboutVariable.getStateOnAssignment(),
+                                            aboutVariable.getObjectFlow(), aboutVariable.properties())));
+                }
+                for (StatementAnalyserVisitor statementAnalyserVisitor : ((VariableProperties) evaluationContext)
+                        .configuration.debugConfiguration.statementAnalyserVisitors) {
+                    statementAnalyserVisitor.visit(
+                            new StatementAnalyserVisitor.Data(
+                                    ((VariableProperties) evaluationContext).iteration, methodInfo, statementAnalyser, statementAnalyser.index,
+                                    variableProperties.conditionManager.getCondition(),
+                                    variableProperties.conditionManager.getState()));
+                }
+                Statement statement = statementAnalyser.statement();
+                if (statement instanceof ReturnStatement || statement instanceof ThrowStatement) {
+                    neverContinues = true;
+                }
+                if (statement instanceof ThrowStatement) {
+                    escapesViaException = true;
+                }
+                if (statement instanceof BreakOrContinueStatement) {
+                    breakAndContinueStatementsInBlocks.add((BreakOrContinueStatement) statement);
+                }
+                // it is here that we'll inherit from blocks inside the statement
+                if (statementAnalyser.statementAnalysis.stateData.neverContinues.isSet() && statementAnalyser.neverContinues.get())
+                    neverContinues = true;
+                if (statementAnalyser.breakAndContinueStatements.isSet()) {
+                    breakAndContinueStatementsInBlocks.addAll(filterBreakAndContinue(statementAnalyser, statementAnalyser.breakAndContinueStatements.get()));
+                    if (!breakAndContinueStatementsInBlocks.isEmpty()) {
+                        variableProperties.setGuaranteedToBeReachedInCurrentBlock(false);
+                    }
+                }
+                if (statementAnalyser.escapes.isSet() && statementAnalyser.escapes.get()) escapesViaException = true;
+                statementAnalyser = statementAnalyser.next.get().orElse(null);
+                if (statementAnalyser != null && statementAnalyser.replacement.isSet()) {
+                    statementAnalyser = statementAnalyser.replacement.get();
+                }
+            }
+            // at the end, at the top level, there is a return, even if it is implicit
+            boolean atTopLevel = variableProperties.depth == 0;
+            if (atTopLevel) {
+                neverContinues = true;
+            }
+
+            if (!startStatement.neverContinues.isSet()) {
+                log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.index, neverContinues);
+                startStatement.neverContinues.set(neverContinues);
+            }
+            if (!startStatement.escapes.isSet()) {
+                if (variableProperties.conditionManager.delayedCondition() || variableProperties.delayedState()) {
+                    log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.index);
+                } else {
+                    log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.index, escapesViaException);
+                    startStatement.escapes.set(escapesViaException);
+
+                    if (escapesViaException) {
+                        if (startStatement.parent == null) {
+                            log(VARIABLE_PROPERTIES, "Observing unconditional escape");
+                        } else {
+                            notNullEscapes(variableProperties);
+                            sizeEscapes(variableProperties);
+                            precondition(variableProperties, startStatement.parent);
+                        }
+                    }
+                }
+            }
+            // order is important, because unused gets priority
+            if (unusedLocalVariablesCheck(variableProperties)) changes = true;
+            if (uselessAssignments(variableProperties, escapesViaException, neverContinues)) changes = true;
+
+            if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
+                log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
+                variableProperties.dependencyGraph.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
+                        list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
+            }
+
+            if (!startStatement.breakAndContinueStatements.isSet())
+                startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
+            return changes;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception in statement analyser: {}", statementAnalyser);
+            throw rte;
+        }
+    }
+
+    // whatever that has not been picked up by the notNull and the size escapes
+    private static void precondition(VariableProperties variableProperties, NumberedStatement parentStatement) {
+        Value precondition = variableProperties.conditionManager.escapeCondition(variableProperties);
+        if (precondition != UnknownValue.EMPTY) {
+            boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
+            if (atLeastFieldOrParameterInvolved) {
+                log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
+
+                // set the precondition on the top level statement
+                if (!parentStatement.precondition.isSet()) {
+                    parentStatement.precondition.set(precondition);
+                }
+                if (variableProperties.uponUsingConditional != null) {
+                    log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+                    variableProperties.uponUsingConditional.run();
+                }
+            }
+        }
+    }
+
+    private static void notNullEscapes(VariableProperties variableProperties) {
+        Set<Variable> nullVariables = variableProperties.conditionManager.findIndividualNullConditions();
+        for (Variable nullVariable : nullVariables) {
+            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
+            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+            // as a context property
+            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            if (variableProperties.uponUsingConditional != null) {
+                log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                variableProperties.uponUsingConditional.run();
+            }
+        }
+    }
+
+    private static void sizeEscapes(VariableProperties variableProperties) {
+        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionManager.findIndividualSizeRestrictionsInCondition();
+        for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
+            ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
+            Value negated = NegatedValue.negate(entry.getValue());
+            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.detailedString(), negated);
+            int sizeRestriction = negated.encodedSizeRestriction();
+            if (sizeRestriction > 0) { // if the complement is a meaningful restriction
+                parameterInfo.parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
+
+                variableProperties.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
+                if (variableProperties.uponUsingConditional != null) {
+                    log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
+                    variableProperties.uponUsingConditional.run();
+                }
+            }
+        }
+    }
+
+
+    private Collection<? extends BreakOrContinueStatement> filterBreakAndContinue(NumberedStatement statement,
+                                                                                  List<BreakOrContinueStatement> statements) {
+        if (statement.statement instanceof LoopStatement) {
+            String label = ((LoopStatement) statement.statement).label;
+            // we only retain those break and continue statements for ANOTHER labelled statement
+            // (the break statement has a label, and it does not equal the one of this loop)
+            return statements.stream().filter(s -> s.label != null && !s.label.equals(label)).collect(Collectors.toList());
+        } else if (statement.statement instanceof SwitchStatement) {
+            // continue statements cannot be for a switch; must have a labelled statement to break from a loop outside the switch
+            return statements.stream().filter(s -> s instanceof ContinueStatement || s.label != null).collect(Collectors.toList());
+        } else return statements;
     }
 
 
@@ -517,6 +730,19 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
         }
 
         return changes;
+    }
+
+    private static boolean haveSubBlocks(Structure structure) {
+        return structure.haveNonEmptyBlock() ||
+                structure.statements != null && !structure.statements.isEmpty() ||
+                !structure.subStatements.isEmpty();
+    }
+
+    private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties variableProperties) {
+        return statement.collect(Assignment.class).stream()
+                .flatMap(a -> a.assignmentTarget().stream())
+                .filter(variableProperties::isKnown)
+                .collect(Collectors.toSet());
     }
 
     /**
