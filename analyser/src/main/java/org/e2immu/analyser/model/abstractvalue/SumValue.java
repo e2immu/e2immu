@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -43,10 +40,11 @@ public class SumValue extends PrimitiveValue {
         this.rhs = rhs;
     }
 
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reLhs = lhs.reEvaluate(evaluationContext, translation);
-        Value reRhs = rhs.reEvaluate(evaluationContext, translation);
-        return SumValue.sum(reLhs, reRhs, getObjectFlow());
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
+        return builder.setValue(SumValue.sum(reLhs.value, reRhs.value, getObjectFlow())).build();
     }
 
     // testing only
@@ -71,11 +69,11 @@ public class SumValue extends PrimitiveValue {
         if (l instanceof ProductValue && ((ProductValue) l).lhs instanceof NumericValue &&
                 r.equals(((ProductValue) l).rhs))
             return ProductValue.product(new IntValue(1 + ((ProductValue) l).lhs.toInt().value,
-                    ((ProductValue)l).lhs.getObjectFlow()), r, objectFlow);
+                    ((ProductValue) l).lhs.getObjectFlow()), r, objectFlow);
         if (r instanceof ProductValue && ((ProductValue) r).lhs instanceof NumericValue &&
                 l.equals(((ProductValue) r).rhs))
             return ProductValue.product(new IntValue(1 + ((ProductValue) r).lhs.toInt().value,
-                    ((ProductValue)r).lhs.getObjectFlow()), l, objectFlow);
+                    ((ProductValue) r).lhs.getObjectFlow()), l, objectFlow);
 
         // n*a + m*a
         if (l instanceof ProductValue && r instanceof ProductValue &&

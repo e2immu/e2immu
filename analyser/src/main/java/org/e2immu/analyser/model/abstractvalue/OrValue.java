@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
@@ -222,8 +219,13 @@ public class OrValue extends PrimitiveValue {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        return new OrValue(objectFlow).append(values.stream().map(v -> v.reEvaluate(evaluationContext, translation)).toArray(Value[]::new));
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        List<EvaluationResult> reClauseERs = values.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        Value[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Value[]::new);
+        return new EvaluationResult.Builder()
+                .compose(reClauseERs)
+                .setValue(new OrValue(objectFlow).append(reClauses))
+                .build();
     }
 
     @Override

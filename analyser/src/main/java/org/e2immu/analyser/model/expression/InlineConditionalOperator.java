@@ -65,10 +65,9 @@ public class InlineConditionalOperator implements Expression {
         builder.merge(copyForElse);
 
         // TODO ObjectFlow
-        Value res = ConditionalValue.conditionalValueCurrentState(evaluationContext,
+        EvaluationResult cv = ConditionalValue.conditionalValueCurrentState(evaluationContext,
                 conditionResult.value, ifTrueResult.value, ifFalseResult.value, ObjectFlow.NO_FLOW);
-        builder.setValue(res);
-        return builder.build();
+        return builder.setValue(cv.value).compose(cv).build();
     }
 
     @Override

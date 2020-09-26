@@ -31,7 +31,7 @@ public class FinalFieldValue extends ValueWithVariable {
     private final ObjectFlow objectFlow;
 
     public FinalFieldValue(Variable variable, ObjectFlow objectFlow) {
-        super(variable, null);
+        super(variable);
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
     }

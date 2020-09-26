@@ -100,11 +100,14 @@ public class BinaryOperator implements Expression {
         EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
         EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
-        builder.setValue(determineValue(leftResult, rightResult, evaluationContext));
+        builder.setValue(determineValue(builder, leftResult, rightResult, evaluationContext));
         return builder.build();
     }
 
-    private Value determineValue(EvaluationResult left, EvaluationResult right, EvaluationContext evaluationContext) {
+    private Value determineValue(EvaluationResult.Builder builder,
+                                 EvaluationResult left,
+                                 EvaluationResult right,
+                                 EvaluationContext evaluationContext) {
         Value l = left.value;
         Value r = right.value;
 
@@ -157,10 +160,14 @@ public class BinaryOperator implements Expression {
             return ProductValue.product(l, r, intObjectFlow(evaluationContext));
         }
         if (operator == PRIMITIVES.divideOperatorInt) {
-            return DivideValue.divide(evaluationContext, l, r, intObjectFlow(evaluationContext));
+            EvaluationResult er = DivideValue.divide(evaluationContext, l, r, intObjectFlow(evaluationContext));
+            builder.compose(er);
+            return er.value;
         }
         if (operator == PRIMITIVES.remainderOperatorInt) {
-            return RemainderValue.remainder(evaluationContext, l, r, intObjectFlow(evaluationContext));
+            EvaluationResult er = RemainderValue.remainder(evaluationContext, l, r, intObjectFlow(evaluationContext));
+            builder.compose(er);
+            return er.value;
         }
         if (operator == PRIMITIVES.lessEqualsOperatorInt) {
             return GreaterThanZeroValue.less(l, r, true, booleanObjectFlow(evaluationContext));

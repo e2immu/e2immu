@@ -51,9 +51,10 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (value instanceof NegatedValue) throw new UnsupportedOperationException();
     }
 
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reValue = value.reEvaluate(evaluationContext, translation);
-        return NegatedValue.negate(reValue);
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
+        return builder.setValue(NegatedValue.negate(reValue.value)).build();
     }
 
     public static Value negate(@NotNull Value v) {

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
@@ -141,4 +142,5 @@ public interface EvaluationContext {
     default ConditionManager getConditionManager() {
         return null;
     }
+
 }

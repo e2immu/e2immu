@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -43,20 +40,21 @@ public class RemainderValue extends PrimitiveValue {
         this.rhs = rhs;
     }
 
-    public static Value remainder(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
-        if (l instanceof NumericValue && l.toInt().value == 0) return l;
+    public static EvaluationResult remainder(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        if (l instanceof NumericValue && l.toInt().value == 0) return builder.setValue(l).build();
         if (r instanceof NumericValue && r.toInt().value == 0) {
-            evaluationContext.raiseError(Message.DIVISION_BY_ZERO);
-            return l;
+            builder.raiseError(Message.DIVISION_BY_ZERO);
+            return builder.setValue(l).build();
         }
-        if (r instanceof NumericValue && r.toInt().value == 1) return l;
+        if (r instanceof NumericValue && r.toInt().value == 1) return builder.setValue(l).build();
         if (l instanceof IntValue && r instanceof IntValue)
-            return new IntValue(l.toInt().value % r.toInt().value, objectFlow);
+            return builder.setValue(new IntValue(l.toInt().value % r.toInt().value, objectFlow)).build();
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
 
-        return new RemainderValue(l, r, objectFlow);
+        return builder.setValue(new RemainderValue(l, r, objectFlow)).build();
     }
 
     @Override

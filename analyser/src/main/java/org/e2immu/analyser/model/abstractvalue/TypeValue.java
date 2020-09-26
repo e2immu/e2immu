@@ -14,9 +14,9 @@ public class TypeValue implements Value {
     public final ParameterizedType parameterizedType;
     public final ObjectFlow objectFlow;
 
-    public TypeValue(ParameterizedType parameterizedType, EvaluationContext evaluationContext) {
+    public TypeValue(ParameterizedType parameterizedType, ObjectFlow objectFlow) {
         this.parameterizedType = parameterizedType;
-        objectFlow = evaluationContext.createLiteralObjectFlow(Primitives.PRIMITIVES.classTypeInfo.asParameterizedType());
+        this.objectFlow = objectFlow;
     }
 
     @Override

@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -43,10 +40,11 @@ public class ProductValue extends PrimitiveValue {
         this.rhs = rhs;
     }
 
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reLhs = lhs.reEvaluate(evaluationContext, translation);
-        Value reRhs = rhs.reEvaluate(evaluationContext, translation);
-        return ProductValue.product(reLhs, reRhs, getObjectFlow());
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
+        return builder.setValue(ProductValue.product(reLhs.value, reRhs.value, getObjectFlow())).build();
     }
 
     public static Value product(Value l, Value r) {

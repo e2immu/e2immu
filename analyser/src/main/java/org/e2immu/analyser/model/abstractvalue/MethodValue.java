@@ -86,10 +86,12 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        List<Value> reParams = parameters.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
-        Value reObject = object.reEvaluate(evaluationContext, translation);
-        return MethodCall.methodValue(evaluationContext, methodInfo, reObject, reParams, getObjectFlow());
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        List<EvaluationResult> reParams = parameters.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
+        List<Value> reParamValues = reParams.stream().map(er -> er.value).collect(Collectors.toList());
+        EvaluationResult mv = MethodCall.methodValue(evaluationContext, methodInfo, methodInfo.methodAnalysis.get(), reObject.value, reParamValues, getObjectFlow());
+        return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv).setValue(mv.value).build();
     }
 
     @Override
@@ -130,7 +132,7 @@ public class MethodValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod();
+        boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
             return variableProperty.best;
         }
@@ -203,7 +205,7 @@ public class MethodValue implements Value {
         if (returnType.isVoid()) return NOT_LINKED; // no assignment
 
         // RULE 1: if the return type is E2IMMU, then no links at all
-        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
+        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType().typeInfo;
         if (notSelf) {
             int immutable = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
@@ -228,7 +230,7 @@ public class MethodValue implements Value {
         int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
         int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
-        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
+        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType().typeInfo;
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
             Set<Variable> b = object.linkedVariables(evaluationContext);
             if (b == null) return null;

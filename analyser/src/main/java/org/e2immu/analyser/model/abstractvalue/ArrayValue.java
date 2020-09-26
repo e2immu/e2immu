@@ -7,6 +7,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -22,6 +23,16 @@ public class ArrayValue implements Value {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.values = ImmutableList.copyOf(values);
         combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(values);
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        List<EvaluationResult> reClauseERs = values.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        List<Value> reValues = reClauseERs.stream().map(er -> er.value).collect(Collectors.toList());
+        return new EvaluationResult.Builder()
+                .compose(reClauseERs)
+                .setValue(new ArrayValue(objectFlow, reValues))
+                .build();
     }
 
     @Override

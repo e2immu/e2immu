@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -131,7 +132,8 @@ public class NewObject implements HasParameterExpressions {
         }
         Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, constructor, Level.FALSE, null);
-        res.k.setValue(new Instance(parameterizedType, constructor, res.v, evaluationContext));
+        ObjectFlow objectFlow = res.k.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
+        res.k.setValue(new Instance(parameterizedType, constructor, res.v, objectFlow));
         return res.k.build();
     }
 

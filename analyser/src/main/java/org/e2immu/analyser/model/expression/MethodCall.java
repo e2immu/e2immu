@@ -181,7 +181,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            result = methodValue(builder, evaluationContext, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
+            EvaluationResult mv = methodValue(evaluationContext, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
+            builder.compose(mv);
+            result = mv.value;
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
@@ -246,41 +248,44 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    public Value methodValue(EvaluationResult.Builder builder,
-                             EvaluationContext evaluationContext,
-                             MethodAnalysis methodAnalysis,
-                             Value objectValue,
-                             List<Value> parameters,
-                             ObjectFlow objectFlowOfResult) {
+    // static, also used in MethodValue re-evaluation
+    public static EvaluationResult methodValue(EvaluationContext evaluationContext,
+                                               MethodInfo methodInfo,
+                                               MethodAnalysis methodAnalysis,
+                                               Value objectValue,
+                                               List<Value> parameters,
+                                               ObjectFlow objectFlowOfResult) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+
         Objects.requireNonNull(evaluationContext);
 
         // no value (method call on field that does not have effective value yet)
         if (objectValue == UnknownValue.NO_VALUE) {
-            return UnknownValue.NO_VALUE; // this will delay
+            return builder.setValue(UnknownValue.NO_VALUE).build(); // this will delay
         }
 
         // eval on constant, like "abc".length()
         Value evaluationOnConstant = computeEvaluationOnConstant(methodInfo, objectValue);
         if (evaluationOnConstant != null) {
-            return evaluationOnConstant;
+            return builder.setValue(evaluationOnConstant).build();
         }
 
         // @Size as method annotation
-        Value sizeShortCut = computeSize(builder, methodAnalysis, objectValue, parameters, evaluationContext);
+        Value sizeShortCut = computeSize(builder, methodInfo, methodAnalysis, objectValue, parameters, evaluationContext);
         if (sizeShortCut != null) {
-            return sizeShortCut;
+            return builder.setValue(sizeShortCut).build();
         }
 
         // @Identity as method annotation
         Value identity = computeIdentity(methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
-            return identity;
+            return builder.setValue(identity).build();
         }
 
         // @Fluent as method annotation
         Value fluent = computeFluent(methodAnalysis, objectValue);
         if (fluent != null) {
-            return fluent;
+            return builder.setValue(fluent).build();
         }
 
         InlineValue inlineValue;
@@ -288,7 +293,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
             Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
-            return inlineValue.reEvaluate(evaluationContext, translationMap);
+            EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
+            return builder.compose(reInline).setValue(reInline.value).build();
         }
 
         if (methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
@@ -313,7 +319,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                                 if (parameterAnalysis.assignedToField.isSet() &&
                                         parameterAnalysis.assignedToField.get() == fieldInfo) {
-                                    return instance.constructorParameterValues.get(i);
+                                    return builder.setValue(instance.constructorParameterValues.get(i)).build();
                                 }
                                 i++;
                             }
@@ -322,18 +328,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 }
                 Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext,
                         methodInfo, parameters);
-                return srv.reEvaluate(evaluationContext, translationMap);
+                EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
+                return builder.compose(reSrv).setValue(reSrv.value).build();
             }
             if (srv.isConstant()) {
-                return srv;
+                return builder.setValue(srv).build();
             }
         } else if (methodAnalysis.hasBeenDefined) {
             // we will, at some point, analyse this method
-            return UnknownValue.NO_VALUE;
+            return builder.setValue(UnknownValue.NO_VALUE).build();
         }
 
         // normal method value
-        return new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
+        return builder.setValue(new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult)).build();
     }
 
     private static Value computeEvaluationOnConstant(MethodInfo methodInfo, Value objectValue) {
@@ -395,11 +402,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
     }
 
-    private Value computeSize(EvaluationResult.Builder builder,
-                              MethodAnalysis methodAnalysis,
-                              Value objectValue,
-                              List<Value> parameters,
-                              EvaluationContext evaluationContext) {
+    private static Value computeSize(EvaluationResult.Builder builder,
+                                     MethodInfo methodInfo,
+                                     MethodAnalysis methodAnalysis,
+                                     Value objectValue,
+                                     List<Value> parameters,
+                                     EvaluationContext evaluationContext) {
         if (!methodInfo.typeInfo.hasSize()) return null;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
@@ -409,7 +417,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (modified == Level.TRUE) {
             Stream<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(methodInfo);
 
-            return computeSizeModifyingMethod(builder, methodAnalysis, parameterAnalyses, objectValue, evaluationContext);
+            return computeSizeModifyingMethod(builder, methodInfo, methodAnalysis, parameterAnalyses, objectValue, evaluationContext);
         }
 
         int requiredSize = methodAnalysis.getProperty(VariableProperty.SIZE);
@@ -516,10 +524,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return ObjectFlow.NO_FLOW;
     }
 
-    private Value computeSizeModifyingMethod(EvaluationResult.Builder builder,
-                                             MethodAnalysis methodAnalysis,
-                                             Stream<ParameterAnalysis> parameterAnalyses,
-                                             Value objectValue, EvaluationContext evaluationContext) {
+    private static Value computeSizeModifyingMethod(EvaluationResult.Builder builder,
+                                                    MethodInfo methodInfo,
+                                                    MethodAnalysis methodAnalysis,
+                                                    Stream<ParameterAnalysis> parameterAnalyses,
+                                                    Value objectValue, EvaluationContext evaluationContext) {
         int sizeOfMethod = methodAnalysis.getProperty(VariableProperty.SIZE);
         List<Integer> sizeInParameters = parameterAnalyses
                 .map(p -> p.getProperty(VariableProperty.SIZE_COPY))

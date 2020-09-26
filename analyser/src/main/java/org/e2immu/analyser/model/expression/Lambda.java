@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -113,7 +115,9 @@ public class Lambda implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Value result = new Instance(methodInfo.typeInfo.asParameterizedType(), null, List.of(), evaluationContext);
+        ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType();
+        ObjectFlow objectFlow = builder.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
+        Value result = new Instance(parameterizedType, null, List.of(), objectFlow);
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?

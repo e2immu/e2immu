@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -86,10 +87,11 @@ public class EvaluateParameters {
 
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
                     Boolean undeclared = tryToDetectUndeclared(evaluationContext, parameterExpression);
-                    if (undeclared == Boolean.TRUE &&
-                            evaluationContext.getCurrentMethod() != null &&
-                            !evaluationContext.getCurrentMethod().methodAnalysis.copyModificationStatusFrom.isSet(methodInfo)) {
-                        evaluationContext.getCurrentMethod().methodAnalysis.copyModificationStatusFrom.put(methodInfo, true);
+                    MethodLevelData methodLevelData = evaluationContext.getCurrentMethod() != null ?
+                            evaluationContext.getCurrentMethod().methodLevelData() : null;
+                    if (undeclared == Boolean.TRUE && methodLevelData != null &&
+                            !methodLevelData.copyModificationStatusFrom.isSet(methodInfo)) {
+                        methodLevelData.copyModificationStatusFrom.put(methodInfo, true);
                     }
                 }
                 int notNull = map.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
@@ -134,7 +136,10 @@ public class EvaluateParameters {
             // the precondition is using parameter info's as variables so we'll have to substitute
             Value precondition = methodInfo.methodAnalysis.get().precondition.get();
             Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
-            Value reEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
+            EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
+            Value reEvaluated = eRreEvaluated.value;
+            builder.compose(eRreEvaluated);
+
             // from the result we either may infer another condition, or values to be set...
 
             // NOT_NULL
@@ -172,7 +177,7 @@ public class EvaluateParameters {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(evaluationContext, parameterInfo, parameterInfo.name);
+            Value vv = new VariableValue(parameterInfo);
             builder.put(vv, parameterValue);
             i++;
         }

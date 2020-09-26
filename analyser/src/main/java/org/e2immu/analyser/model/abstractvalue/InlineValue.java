@@ -1,10 +1,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
@@ -91,7 +88,7 @@ public class InlineValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         return value.reEvaluate(evaluationContext, translation);
     }
 
@@ -122,7 +119,7 @@ public class InlineValue implements Value {
             case METHOD:
                 return methodInfo.equals(evaluationContext.getCurrentMethod());
             case PACKAGE:
-                return evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
+                return evaluationContext.getCurrentType().typeInfo.packageName().equals(methodInfo.typeInfo.packageName());
             case PROTECTED:
             default:
                 throw new UnsupportedOperationException("TODO");

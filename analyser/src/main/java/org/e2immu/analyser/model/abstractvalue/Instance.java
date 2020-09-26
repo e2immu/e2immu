@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -45,11 +44,11 @@ public class Instance implements Value {
     public final MethodInfo constructor;
     public final ObjectFlow objectFlow;
 
-    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, EvaluationContext evaluationContext) {
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
-        objectFlow = evaluationContext.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
+        this.objectFlow = objectFlow;
     }
 
     // every new instance is different.
@@ -98,7 +97,7 @@ public class Instance implements Value {
         }
 
         // RULE 2, 3
-        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
+        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType().typeInfo;
         if (notSelf) {
             int immutable = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
             int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);

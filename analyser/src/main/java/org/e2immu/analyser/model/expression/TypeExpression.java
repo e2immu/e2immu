@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.TypeValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -57,7 +58,9 @@ public class TypeExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResult.Builder(evaluationContext).setValue(new TypeValue(parameterizedType, evaluationContext)).build();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        ObjectFlow objectFlow = builder.createLiteralObjectFlow(parameterizedType);
+        return builder.setValue(new TypeValue(parameterizedType, objectFlow)).build();
     }
 
     @Override

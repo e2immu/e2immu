@@ -64,10 +64,10 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value re = value.reEvaluate(evaluationContext, translation);
-        if (re.isConstant()) return re;
-        return ConstrainedNumericValue.create(re, lowerBound, upperBound);
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult re = value.reEvaluate(evaluationContext, translation);
+        if (re.value.isConstant()) return re;
+        return new EvaluationResult.Builder().compose(re).setValue(ConstrainedNumericValue.create(re.value, lowerBound, upperBound)).build();
     }
 
     private static Value create(Value value, double lowerBound, double upperBound) {

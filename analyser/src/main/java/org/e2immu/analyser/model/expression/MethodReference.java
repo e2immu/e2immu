@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -88,7 +89,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (methodInfo.isConstructor) {
             // construction, similar to NewObject, without parameters
             // TODO arrays?
-            builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), evaluationContext));
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
+            builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow));
         } else {
             // normal method call, very similar to MethodCall.evaluate
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);

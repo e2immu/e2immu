@@ -19,10 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.HashMap;
@@ -59,9 +56,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reValue = value.reEvaluate(evaluationContext, translation);
-        return PropertyWrapper.propertyWrapper(reValue, properties, getObjectFlow());
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
+        return builder.setValue(PropertyWrapper.propertyWrapper(reValue.value, properties, getObjectFlow())).build();
     }
 
     public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {

@@ -1,10 +1,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
@@ -31,7 +28,7 @@ public abstract class ConstantValue implements Value {
     // executed without context, default for all constant types
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        switch(variableProperty) {
+        switch (variableProperty) {
             case CONTAINER:
                 return Level.TRUE;
             case IMMUTABLE:
@@ -55,8 +52,8 @@ public abstract class ConstantValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        return this; // minor speedup + security, we're not allowed to mess with constants :-)
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        return new EvaluationResult.Builder().setValue(this).build();
     }
 
     @Override

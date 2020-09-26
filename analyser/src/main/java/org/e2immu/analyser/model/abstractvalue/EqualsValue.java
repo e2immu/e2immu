@@ -49,10 +49,11 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reLhs = lhs.reEvaluate(evaluationContext, translation);
-        Value reRhs = rhs.reEvaluate(evaluationContext, translation);
-        return EqualsValue.equals(reLhs, reRhs, objectFlow);
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
+        return builder.setValue(EqualsValue.equals(reLhs.value, reRhs.value, objectFlow)).build();
     }
 
     // testing only

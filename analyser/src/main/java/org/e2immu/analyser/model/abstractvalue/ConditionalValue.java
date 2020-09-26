@@ -53,32 +53,28 @@ public class ConditionalValue implements Value {
         return objectFlow;
     }
 
-    public static Value conditionalValueCurrentState(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
-        Value condition = checkState(evaluationContext.getCurrentState(), conditionBeforeState);
+    public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+        Value condition = checkState(evaluationContext.getConditionManager().state, conditionBeforeState);
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 
-    public static Value conditionalValueWithState(EvaluationContext evaluationContext, Value conditionBeforeState, Value state, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
-        Value condition = checkState(state, conditionBeforeState);
-        return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
-    }
-
-    private static Value conditionalValueConditionResolved(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+    private static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;
-            evaluationContext.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
-            return first ? ifTrue : ifFalse;
+            builder.raiseError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
+            return builder.setValue(first ? ifTrue : ifFalse).build();
         }
 
         Value edgeCase = edgeCases(condition, ifTrue, ifFalse);
-        if (edgeCase != null) return edgeCase;
+        if (edgeCase != null) return builder.setValue(edgeCase).build();
 
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
         if (condition instanceof NegatedValue) {
-            return new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue, objectFlow);
+            return builder.setValue(new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue, objectFlow)).build();
         }
-        return new ConditionalValue(condition, ifTrue, ifFalse, objectFlow);
+        return builder.setValue(new ConditionalValue(condition, ifTrue, ifFalse, objectFlow)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
@@ -104,17 +100,18 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public Value reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
-        Value reCondition = condition.reEvaluate(evaluationContext, translation);
-        Value reTrue = ifTrue.reEvaluate(evaluationContext, translation);
-        Value reFalse = ifFalse.reEvaluate(evaluationContext, translation);
-        if (reCondition == BoolValue.TRUE) {
-            return reTrue;
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+        EvaluationResult reCondition = condition.reEvaluate(evaluationContext, translation);
+        EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
+        EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
+        if (reCondition.value == BoolValue.TRUE) {
+            return builder.setValue(reTrue.value).build();
         }
-        if (reCondition == BoolValue.FALSE) {
-            return reFalse;
+        if (reCondition.value == BoolValue.FALSE) {
+            return builder.setValue(reFalse.value).build();
         }
-        return new ConditionalValue(reCondition, reTrue, reFalse, getObjectFlow());
+        return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();
     }
 
     @Override
