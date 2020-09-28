@@ -6,6 +6,7 @@ import org.e2immu.annotation.NotNull1;
 import java.util.Objects;
 import java.util.Set;
 
+// variable representing a[b] (a field within an array)
 public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
     public final Set<Variable> dependencies;
@@ -21,6 +22,11 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         this.dependencies = dependencies;
         this.name = name;
         this.arrayName = arrayName;
+    }
+
+    // array access
+    public static String dependentVariableName(Value array, Value index) {
+        return array.toString() + "[" + index.toString() + "]";
     }
 
     @Override

@@ -37,6 +37,19 @@ public class VariableExpression implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        VariableExpression that = (VariableExpression) o;
+        return variable.equals(that.variable);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(variable);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         Variable inMap = translationMap.variables.get(variable);
         if (inMap != null) {

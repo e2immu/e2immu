@@ -1138,7 +1138,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Set<ObjectFlow> objectFlows() {
-        Set<ObjectFlow> result = typeAnalysis.get().getConstantObjectFlows().collect(Collectors.toCollection(HashSet::new));
+        Set<ObjectFlow> result = typeAnalysis.get().constantObjectFlows.stream().collect(Collectors.toCollection(HashSet::new));
         for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             // set, because the returned object flow could equal either one of the non-returned, or parameter flows
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {

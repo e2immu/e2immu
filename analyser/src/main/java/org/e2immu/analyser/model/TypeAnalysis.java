@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
@@ -54,18 +55,8 @@ public class TypeAnalysis extends Analysis {
         return typeInfo.typeInspection.get().annotationMode;
     }
 
-    private final Map<ObjectFlow, ObjectFlow> constantObjectFlows = new HashMap<>();
-
-    public ObjectFlow ensureConstantObjectFlow(ObjectFlow objectFlow) {
-        if (objectFlow == ObjectFlow.NO_FLOW) throw new UnsupportedOperationException();
-        if (constantObjectFlows.containsKey(objectFlow)) return constantObjectFlows.get(objectFlow);
-        this.constantObjectFlows.put(objectFlow, objectFlow);
-        return objectFlow;
-    }
-
-    public Stream<ObjectFlow> getConstantObjectFlows() {
-        return constantObjectFlows.values().stream();
-    }
+    // no delays when frozen
+    public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
 
     // from label to condition BEFORE (used by @Mark and @Only(before="label"))
     public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();

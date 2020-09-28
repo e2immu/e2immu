@@ -17,10 +17,11 @@
 
 package org.e2immu.analyser.analyser;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public enum AnalysisResult {
-    PROGRESS(0), // changes, but not done
+    PROGRESS(0), // changes, but not yet fully done
     DELAYS(1), // no changes, due to delays
     DONE(2),
     ;
@@ -38,7 +39,7 @@ public enum AnalysisResult {
 
 
     @FunctionalInterface
-    interface AnalysisResultSupplier extends Supplier<AnalysisResult> {
+    interface AnalysisResultSupplier extends Function<Integer, AnalysisResult> {
 
     }
 }

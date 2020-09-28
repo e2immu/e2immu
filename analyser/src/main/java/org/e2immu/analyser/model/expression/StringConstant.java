@@ -42,6 +42,19 @@ public class StringConstant implements ConstantExpression<String> {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StringConstant that = (StringConstant) o;
+        return constant.equals(that.constant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(constant);
+    }
+
+    @Override
     public Value newValue() {
         return new StringValue(constant);
     }

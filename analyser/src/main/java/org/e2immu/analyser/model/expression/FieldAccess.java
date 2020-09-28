@@ -39,6 +39,20 @@ public class FieldAccess implements Expression {
         this.expression = Objects.requireNonNull(expression);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FieldAccess that = (FieldAccess) o;
+        return expression.equals(that.expression) &&
+                variable.equals(that.variable);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expression, variable);
+    }
+
     public static Expression orElse(Expression expression, Expression alternative) {
         return expression == null ? alternative : expression;
     }

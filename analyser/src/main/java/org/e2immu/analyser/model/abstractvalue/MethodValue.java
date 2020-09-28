@@ -90,7 +90,8 @@ public class MethodValue implements Value {
         List<EvaluationResult> reParams = parameters.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Value> reParamValues = reParams.stream().map(er -> er.value).collect(Collectors.toList());
-        EvaluationResult mv = MethodCall.methodValue(evaluationContext, methodInfo, methodInfo.methodAnalysis.get(), reObject.value, reParamValues, getObjectFlow());
+        Location location = getObjectFlow().location;
+        EvaluationResult mv = MethodCall.methodValue(evaluationContext, location, methodInfo, methodInfo.methodAnalysis.get(), reObject.value, reParamValues, getObjectFlow());
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv).setValue(mv.value).build();
     }
 

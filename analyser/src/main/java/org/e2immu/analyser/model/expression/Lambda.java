@@ -60,6 +60,20 @@ public class Lambda implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Lambda lambda = (Lambda) o;
+        return abstractFunctionalType.equals(lambda.abstractFunctionalType) &&
+                implementation.equals(lambda.implementation);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(abstractFunctionalType, implementation);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         throw new UnsupportedOperationException();
         //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
@@ -116,7 +130,8 @@ public class Lambda implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType();
-        ObjectFlow objectFlow = builder.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
+        Location location = evaluationContext.getLocation(this);
+        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
         Value result = new Instance(parameterizedType, null, List.of(), objectFlow);
 
         if (block != Block.EMPTY_BLOCK) {

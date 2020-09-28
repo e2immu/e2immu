@@ -41,6 +41,19 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClassExpression that = (ClassExpression) o;
+        return parameterizedType.equals(that.parameterizedType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parameterizedType);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new ClassExpression(translationMap.translateType(parameterizedType));
     }

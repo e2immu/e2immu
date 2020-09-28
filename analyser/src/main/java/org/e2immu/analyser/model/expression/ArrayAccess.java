@@ -44,6 +44,20 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArrayAccess that = (ArrayAccess) o;
+        return expression.equals(that.expression) &&
+                index.equals(that.index);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expression, index);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayAccess(translationMap.translateExpression(expression), translationMap.translateExpression(index));
     }
@@ -80,6 +94,7 @@ public class ArrayAccess implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
         if (array.value instanceof ArrayValue && indexValue instanceof NumericValue) {
+            // known array, known index (a[] = {1,2,3}, a[2] == 3)
             int intIndex = (indexValue).value.toInt().value;
             ArrayValue arrayValue = (ArrayValue) array.value;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
@@ -89,12 +104,17 @@ public class ArrayAccess implements Expression {
         } else {
             Set<Variable> dependencies = new HashSet<>(expression.variables());
             dependencies.addAll(index.variables());
-            Variable arrayVariable = expression instanceof VariableValue ? ((VariableValue) expression).variable : null;
-            Value avv = builder.createArrayVariableValue(array, indexValue, expression.returnType(), dependencies, arrayVariable);
+            Variable arrayVariable = expression instanceof VariableExpression ? ((VariableExpression) expression).variable : null;
+            Location location = evaluationContext.getLocation(this);
+            Value avv = builder.createArrayVariableValue(array, indexValue, location, expression.returnType(), dependencies, arrayVariable);
             builder.setValue(avv);
 
-            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                builder.markRead(dependentVariableName(array.value, indexValue.value));
+            if (arrayVariable != null) {
+                builder.variableOccursInNotNullContext(arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
+            }
+            VariableValue vv = avv.asInstanceOf(VariableValue.class);
+            if (forwardEvaluationInfo.isNotAssignmentTarget() && vv != null) {
+                builder.markRead(vv.variable);
             }
         }
 
@@ -103,9 +123,5 @@ public class ArrayAccess implements Expression {
             builder.variableOccursInNotNullContext(((VariableValue) builder.getValue()).variable, builder.getValue(), notNullRequired);
         }
         return builder.build();
-    }
-
-    public static String dependentVariableName(Value array, Value index) {
-        return array.toString() + "[" + index.toString() + "]";
     }
 }

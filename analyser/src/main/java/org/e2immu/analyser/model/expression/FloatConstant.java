@@ -25,6 +25,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Objects;
+
 @E2Container
 public class FloatConstant implements ConstantExpression<Float> {
     @Override
@@ -38,6 +40,19 @@ public class FloatConstant implements ConstantExpression<Float> {
 
     public FloatConstant(float constant) {
         this.constant = new FloatValue(constant);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FloatConstant that = (FloatConstant) o;
+        return constant.equals(that.constant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(constant);
     }
 
     @Override

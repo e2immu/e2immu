@@ -61,6 +61,10 @@ public interface EvaluationContext {
         return null;
     }
 
+    default Location getLocation(Expression expression) {
+        return null;
+    }
+
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
     default EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
         throw new UnsupportedOperationException();

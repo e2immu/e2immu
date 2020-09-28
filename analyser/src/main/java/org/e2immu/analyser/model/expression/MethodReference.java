@@ -44,6 +44,19 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MethodReference that = (MethodReference) o;
+        return scope.equals(that.scope) && methodInfo.equals(that.methodInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(scope, methodInfo);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new MethodReference(translationMap.translateExpression(scope),
                 methodInfo,
@@ -89,7 +102,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         if (methodInfo.isConstructor) {
             // construction, similar to NewObject, without parameters
             // TODO arrays?
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
+            Location location = evaluationContext.getLocation(this);
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow));
         } else {
             // normal method call, very similar to MethodCall.evaluate

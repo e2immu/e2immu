@@ -35,6 +35,20 @@ public class Cast implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Cast cast = (Cast) o;
+        return expression.equals(cast.expression) &&
+                parameterizedType.equals(cast.parameterizedType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expression, parameterizedType);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new Cast(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
     }

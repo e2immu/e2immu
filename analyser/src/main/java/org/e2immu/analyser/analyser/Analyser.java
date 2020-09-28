@@ -34,7 +34,7 @@ public interface Analyser {
 
     WithInspectionAndAnalysis getMember();
 
-    boolean analyse(int iteration);
+    AnalysisResult analyse(int iteration);
 
     void initialize();
 

@@ -48,6 +48,11 @@ public class NullConstant implements Expression, Constant<Object> {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        return obj == this;
+    }
+
+    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) > MultiLevel.NULLABLE) {
             return new EvaluationResult.Builder().raiseError(Message.NULL_POINTER_EXCEPTION).setValue(NullValue.NULL_VALUE).build();

@@ -116,7 +116,7 @@ public class ParameterAnalyser {
      *
      * @return true if changes were made
      */
-    public AnalysisResult analyse() {
+    public AnalysisResult analyse( ) {
         boolean changed = false;
         boolean delays = false;
         // TODO we need to make a distinction between the field, and whether it has been assigned or not

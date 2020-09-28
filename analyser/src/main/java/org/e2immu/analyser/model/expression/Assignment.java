@@ -63,6 +63,22 @@ public class Assignment implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Assignment that = (Assignment) o;
+        return target.equals(that.target) &&
+                value.equals(that.value) &&
+                Objects.equals(assignmentOperator, that.assignmentOperator) &&
+                Objects.equals(prefixPrimitiveOperator, that.prefixPrimitiveOperator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(target, value, assignmentOperator, prefixPrimitiveOperator);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new Assignment(translationMap.translateExpression(target),
                 translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator);
@@ -135,28 +151,12 @@ public class Assignment implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-
-        Variable at;
-        if (target instanceof ArrayAccess) {
-            ArrayAccess arrayAccess = (ArrayAccess) target;
-            EvaluationResult array = arrayAccess.expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL_MODIFIED);
-            EvaluationResult indexValue = arrayAccess.index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
-            builder.compose(array, indexValue);
-
-            String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
-            Variable arrayVariable = arrayAccess.expression instanceof VariableExpression ? ((VariableExpression) arrayAccess.expression).variable : null;
-            at = builder.ensureArrayVariable(arrayAccess, name, arrayVariable);
-            log(VARIABLE_PROPERTIES, "Assignment to array: {} = {}", at.detailedString(), value);
-        } else {
-            EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
-            builder.compose(targetResult);
-
-            at = target.assignmentTarget().orElseThrow();
-            log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
-        }
-
         EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
-        builder.compose(valueResult);
+        EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL_MODIFIED);
+        builder.compose(targetResult, valueResult);
+
+        Variable at = target.assignmentTarget().orElseThrow();
+        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
 
         Value resultOfExpression;
         Value assignedToTarget;

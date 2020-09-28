@@ -50,16 +50,6 @@ import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
-/*
-block analyser: organises a list of statement analysers, organises the recursions
-
-
-statement analyser: creates and modifies statement analysis
-applies EvaluationResults to statement analysis
-
-
- */
-
 @Container(builds = StatementAnalysis.class)
 public class StatementAnalyser extends AbstractAnalyser implements HasNavigationData<StatementAnalyser> {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
@@ -70,6 +60,11 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     private final MethodAnalyser myMethodAnalyser;
 
     public NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
+
+    // if true, we should ignore errors on the condition in the next iterations
+    // if(x == null) throw ... causes x to become @NotNull; in the next iteration, x==null cannot happen,
+    // which would cause an error; it is this error that is eliminated
+    private boolean ignoreErrorsOnCondition;
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -338,7 +333,9 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     }
 
     // whatever that has not been picked up by the notNull and the size escapes
-    private static void precondition(EvaluationContext evaluationContext, StatementAnalyser parentStatement) {
+    // + preconditions by calling other methods with preconditions!
+
+    private void precondition(EvaluationContext evaluationContext, StatementAnalyser parentStatement) {
         EvaluationResult preconditionResult = conditionManager.escapeCondition(variableProperties);
         if (precondition != UnknownValue.EMPTY) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
@@ -349,15 +346,15 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
                 if (!parentStatement.precondition.isSet()) {
                     parentStatement.precondition.set(precondition);
                 }
-                if (variableProperties.uponUsingConditional != null) {
+                if (!ignoreErrorsOnCondition) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-                    variableProperties.uponUsingConditional.run();
+                    ignoreErrorsOnCondition = true;
                 }
             }
         }
     }
 
-    private static void notNullEscapes(VariableProperties variableProperties) {
+    private void notNullEscapes(VariableProperties variableProperties) {
         Set<Variable> nullVariables = variableProperties.conditionManager.findIndividualNullConditions();
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
@@ -365,14 +362,14 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
             // as a context property
             variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-            if (variableProperties.uponUsingConditional != null) {
-                log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
-                variableProperties.uponUsingConditional.run();
+            if (!ignoreErrorsOnCondition) {
+                log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+                ignoreErrorsOnCondition = true;
             }
         }
     }
 
-    private static void sizeEscapes(VariableProperties variableProperties) {
+    private void sizeEscapes(VariableProperties variableProperties) {
         Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionManager.findIndividualSizeRestrictionsInCondition();
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
@@ -383,9 +380,9 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
                 parameterInfo.parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
 
                 variableProperties.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
-                if (variableProperties.uponUsingConditional != null) {
-                    log(VARIABLE_PROPERTIES, "Disabled errors on if-statement");
-                    variableProperties.uponUsingConditional.run();
+                if (!ignoreErrorsOnCondition) {
+                    log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+                    ignoreErrorsOnCondition = true;
                 }
             }
         }
@@ -570,7 +567,6 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
         // PART 6: checks for IfElse
 
-        Runnable uponUsingConditional;
         boolean haveADefaultCondition = false;
 
         if (statementAnalysis.statement instanceof IfElseStatement || statementAnalysis.statement instanceof SwitchStatement) {
@@ -587,18 +583,12 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
                     (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
                     || combinedWithCondition.isConstant();
 
-            if (noEffect && !statementAnalysis.inErrorState()) {
+            if (noEffect && !ignoreErrorsOnCondition && !statementAnalysis.inErrorState()) {
                 messages.add(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
                 statementAnalysis.errorFlags.errorValue.set(true);
             }
 
-            uponUsingConditional = () -> {
-                log(VARIABLE_PROPERTIES, "Triggering errorValue true on if-else-statement {}", statementAnalysis.index);
-                if (!statementAnalysis.inErrorState()) statementAnalysis.errorFlags.errorValue.set(true);
-            };
-
         } else {
-            uponUsingConditional = null;
 
             if (value != null && statementAnalysis.statement instanceof ForEachStatement) {
                 int size = variableProperties.getProperty(value, VariableProperty.SIZE);
@@ -832,7 +822,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     }
 
     @Override
-    public boolean analyse(int iteration) {
+    public AnalysisResult analyse(int iteration) {
         return false;
     }
 
@@ -929,31 +919,21 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
 
     public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
-        private final Either<Variable, String> variable;
+        private final Variable variable;
         private final VariableProperty property;
         private final int value;
 
         public SetProperty(Variable variable, VariableProperty property, int value) {
             this.value = value;
             this.property = property;
-            this.variable = Either.left(variable);
-        }
-
-        public SetProperty(String variableName, VariableProperty property, int value) {
-            this.value = value;
-            this.property = property;
-            this.variable = Either.right(variableName);
+            this.variable = variable;
         }
 
         @Override
         public void run() {
-            VariableInfoImpl.Builder aboutVariable = variable.isLeft() ? variableDataBuilder.find(variable.getLeft()) :
-                    variableDataBuilder.find(variable.getRight());
+            VariableInfoImpl.Builder aboutVariable = variableDataBuilder.find(variable);
             if (aboutVariable == null) {
-                if (variable.isLeft()) {
-                    if (variable.getLeft() instanceof FieldReference)
-                        aboutVariable = ensureFieldReference((FieldReference) variable.getLeft());
-                } else return;
+                return;
             }
             int current = aboutVariable.getProperty(property);
             if (current < value) {
@@ -961,8 +941,8 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
             }
 
             Value currentValue = aboutVariable.getCurrentValue();
-            ValueWithVariable valueWithVariable;
-            if ((valueWithVariable = currentValue.asInstanceOf(ValueWithVariable.class)) == null) return;
+            VariableValue valueWithVariable;
+            if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
             Variable other = valueWithVariable.variable;
             if (!variable.equals(other)) {
                 variableDataBuilder.addProperty(other, property, value);

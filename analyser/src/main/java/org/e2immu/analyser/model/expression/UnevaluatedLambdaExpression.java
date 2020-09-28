@@ -25,6 +25,7 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Objects;
 import java.util.Set;
 
 @E2Immutable
@@ -35,6 +36,20 @@ public class UnevaluatedLambdaExpression implements Expression {
     public UnevaluatedLambdaExpression(Set<Integer> numberOfParameters, Boolean nonVoid) {
         this.numberOfParameters = ImmutableSet.copyOf(numberOfParameters);
         this.nonVoid = nonVoid;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UnevaluatedLambdaExpression that = (UnevaluatedLambdaExpression) o;
+        return numberOfParameters.equals(that.numberOfParameters) &&
+                Objects.equals(nonVoid, that.nonVoid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(numberOfParameters, nonVoid);
     }
 
     // this is NOT a functional interface, merely the return type of the lambda

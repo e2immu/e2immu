@@ -22,28 +22,28 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import java.util.Objects;
 
 public class Location {
-    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null, 0);
+    public static final Location NO_LOCATION = new Location((WithInspectionAndAnalysis) null, null, null);
 
     public final WithInspectionAndAnalysis info;
     public final String statementWithinMethod;
-    public final int counter; // in the same statement, there can be multiple identical flows starting...
+    public final Expression expression; // in the same statement, there can be multiple identical flows starting...
 
     public Location(WithInspectionAndAnalysis info) {
-        this(Objects.requireNonNull(info), null, 0);
+        this(Objects.requireNonNull(info), null, null);
     }
 
-    public Location(WithInspectionAndAnalysis info, int counter) {
-        this(Objects.requireNonNull(info), null, counter);
+    public Location(WithInspectionAndAnalysis info, Expression expression) {
+        this(Objects.requireNonNull(info), null, expression);
     }
 
     public Location(MethodInfo methodInfo, String statementIndex) {
-        this(Objects.requireNonNull(methodInfo), statementIndex, 0);
+        this(Objects.requireNonNull(methodInfo), statementIndex, null);
     }
 
-    private Location(WithInspectionAndAnalysis info, String statementWithinMethod, int counter) {
+    public Location(WithInspectionAndAnalysis info, String statementWithinMethod, Expression expression) {
         this.info = info;
         this.statementWithinMethod = statementWithinMethod;
-        this.counter = counter;
+        this.expression = expression;
     }
 
     @Override
@@ -53,18 +53,18 @@ public class Location {
         Location location = (Location) o;
         return Objects.equals(info, location.info) &&
                 Objects.equals(statementWithinMethod, location.statementWithinMethod) &&
-                counter == location.counter;
+                Objects.equals(expression, location.expression);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(info, statementWithinMethod, counter);
+        return Objects.hash(info, statementWithinMethod, expression);
     }
 
     @Override
     public String toString() {
         return info == null ? "<no location>" : ObjectFlow.typeLetter(info) + ":" + info.name()
                 + (statementWithinMethod == null ? "" : ":" + statementWithinMethod)
-                + (counter == 0 ? "" : "#" + counter);
+                + (expression == null ? "" : "#" + expression.toString());
     }
 }

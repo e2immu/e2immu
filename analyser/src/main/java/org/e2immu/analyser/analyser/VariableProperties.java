@@ -1118,25 +1118,6 @@ class VariableProperties   {
     }
 
     @Override
-    public ObjectFlow createInternalObjectFlow(ParameterizedType parameterizedType, Origin origin) {
-        int counter = 0;
-        while (true) {
-            Location location = getLocation(counter);
-            ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
-            if (!internalObjectFlows.contains(objectFlow)) {
-                internalObjectFlows.add(objectFlow);
-                log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
-                return objectFlow;
-            }
-            ++counter;
-        }
-    }
-
-    Stream<ObjectFlow> getInternalObjectFlows() {
-        return internalObjectFlows.stream();
-    }
-
-    @Override
     public ObjectFlow addAccess(boolean modifying, Access access, Value value) {
         if (value.getObjectFlow() == ObjectFlow.NO_FLOW) return value.getObjectFlow();
         ObjectFlow potentiallySplit = splitIfNeeded(value);

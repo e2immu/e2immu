@@ -79,6 +79,21 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BinaryOperator that = (BinaryOperator) o;
+        return lhs.equals(that.lhs) &&
+                rhs.equals(that.rhs) &&
+                operator.equals(that.operator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lhs, rhs, operator);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new BinaryOperator(translationMap.translateExpression(lhs),
                 operator, translationMap.translateExpression(rhs), precedence);

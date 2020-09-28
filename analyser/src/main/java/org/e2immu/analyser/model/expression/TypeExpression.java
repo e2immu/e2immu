@@ -37,6 +37,19 @@ public class TypeExpression implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TypeExpression that = (TypeExpression) o;
+        return parameterizedType.equals(that.parameterizedType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parameterizedType);
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return parameterizedType;
     }

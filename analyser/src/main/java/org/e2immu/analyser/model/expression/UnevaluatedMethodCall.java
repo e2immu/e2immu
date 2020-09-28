@@ -23,12 +23,27 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Objects;
+
 @E2Immutable
 public class UnevaluatedMethodCall implements Expression {
     public final String methodName;
 
     public UnevaluatedMethodCall(String methodName) {
         this.methodName = methodName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UnevaluatedMethodCall that = (UnevaluatedMethodCall) o;
+        return Objects.equals(methodName, that.methodName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(methodName);
     }
 
     // this is NOT a functional interface, merely the return type of the lambda

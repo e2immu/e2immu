@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
+import java.util.Objects;
 
 @E2Container
 public class EnclosedExpression implements Expression {
@@ -29,6 +30,19 @@ public class EnclosedExpression implements Expression {
 
     public EnclosedExpression(Expression inner) {
         this.inner = inner;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EnclosedExpression that = (EnclosedExpression) o;
+        return inner.equals(that.inner);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(inner);
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @E2Container
@@ -39,8 +40,22 @@ public class InstanceOf implements Expression {
     public final Expression expression;
 
     public InstanceOf(Expression expression, ParameterizedType parameterizedType) {
-        this.parameterizedType = parameterizedType;
-        this.expression = expression;
+        this.parameterizedType = Objects.requireNonNull(parameterizedType);
+        this.expression = Objects.requireNonNull(expression);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InstanceOf that = (InstanceOf) o;
+        return parameterizedType.equals(that.parameterizedType) &&
+                expression.equals(that.expression);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parameterizedType, expression);
     }
 
     @Override
@@ -71,18 +86,21 @@ public class InstanceOf implements Expression {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
         }
         if (value instanceof VariableValue) {
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
+            Location location = evaluationContext.getLocation(this);
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
             return builder.setValue(new InstanceOfValue(((VariableValue) value).variable, parameterizedType, objectFlow)).build();
         }
         if (value instanceof Instance) {
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext, Origin.RESULT_OF_OPERATOR);
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType),
+                    evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }
         if (value instanceof MethodValue) {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build(); // no clue, too deep
         }
         if (value instanceof ClassValue) {
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext, Origin.RESULT_OF_OPERATOR);
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value),
+                    evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }
         // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than

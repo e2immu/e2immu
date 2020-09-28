@@ -5,7 +5,7 @@ public enum Origin {
 
     RESULT_OF_METHOD,
     RESULT_OF_OPERATOR, // very similar to result of method
-    FIELD_ACCESS, // access to field without assigning to it
+    FIELD_ACCESS, // access to field or array element without assigning to it
 
     PARAMETER,
     INTERNAL,

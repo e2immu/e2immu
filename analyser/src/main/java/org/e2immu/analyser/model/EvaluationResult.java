@@ -18,12 +18,8 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.StateData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableDataImpl;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
@@ -34,16 +30,22 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
+import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
 
     private final Stream<StatementAnalysis.StatementAnalysisModification> modificationStream;
     private final Stream<StatementAnalysis.StateChange> stateChangeStream;
+    private final Stream<ObjectFlow> objectFlowStream;
     public final Value value;
 
     public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
         return modificationStream;
+    }
+
+    public Stream<ObjectFlow> getObjectFlowStream() {
+        return objectFlowStream;
     }
 
     public Stream<StatementAnalysis.StateChange> getStateChangeStream() {
@@ -63,10 +65,13 @@ public class EvaluationResult {
 
     // mark a variable read
 
-    private EvaluationResult(Value value, Stream<StatementAnalysis.StatementAnalysisModification> modificationStream,
-                             Stream<StatementAnalysis.StateChange> stateChangeStream) {
+    private EvaluationResult(Value value,
+                             Stream<StatementAnalysis.StatementAnalysisModification> modificationStream,
+                             Stream<StatementAnalysis.StateChange> stateChangeStream,
+                             Stream<ObjectFlow> objectFlowStream) {
         this.modificationStream = modificationStream;
         this.stateChangeStream = stateChangeStream;
+        this.objectFlowStream = objectFlowStream;
         this.value = value;
     }
 
@@ -80,12 +85,13 @@ public class EvaluationResult {
         private List<StatementAnalysis.StatementAnalysisModification> modifications;
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<EvaluationResult> previousResults;
+        private List<ObjectFlow> objectFlows;
         private Value value;
 
         // for a constant EvaluationResult
         public Builder() {
             evaluationContext = null;
-            statementAnalysis = null;
+            statementAnalyser = null;
         }
 
         public Builder(EvaluationContext evaluationContext) {
@@ -137,14 +143,16 @@ public class EvaluationResult {
                     .findFirst().orElse(null);
             Stream<StatementAnalysis.StatementAnalysisModification> modificationStream = modifications == null ? Stream.empty() : modifications.stream();
             Stream<StatementAnalysis.StateChange> stateChangeStream = stateChanges == null ? Stream.empty() : stateChanges.stream();
+            Stream<ObjectFlow> objectFlowStream = objectFlows == null ? Stream.empty() : objectFlows.stream();
             if (previousResults != null) {
                 for (EvaluationResult evaluationResult : previousResults) {
                     modificationStream = Stream.concat(evaluationResult.getModificationStream(), modificationStream);
                     stateChangeStream = Stream.concat(evaluationResult.getStateChangeStream(), stateChangeStream);
+                    objectFlowStream = Stream.concat(evaluationResult.getObjectFlowStream(), objectFlowStream);
                 }
             }
 
-            return new EvaluationResult(firstNonNull, modificationStream, stateChangeStream);
+            return new EvaluationResult(firstNonNull, modificationStream, stateChangeStream, objectFlowStream);
         }
 
         public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
@@ -164,21 +172,19 @@ public class EvaluationResult {
 
         public Value createArrayVariableValue(EvaluationResult array,
                                               EvaluationResult indexValue,
+                                              Location location,
                                               ParameterizedType parameterizedType,
                                               Set<Variable> dependencies,
                                               Variable arrayVariable) {
-            String name = ArrayAccess.dependentVariableName(array.value, indexValue.value);
+            String name = DependentVariable.dependentVariableName(array.value, indexValue.value);
             Value current = evaluationContext.currentValue(name);
             if (current != null) return current;
             String arrayName = arrayVariable == null ? null : VariableDataImpl.Builder.variableName(arrayVariable);
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             modifications.add(statementAnalyser.new AddVariable(dependentVariable));
-            return new VariableValue(evaluationContext, dependentVariable, dependentVariable.name());
-        }
 
-        public Builder markRead(String dependentVariableName) {
-            modifications.add(statementAnalyser.new SetProperty(dependentVariableName, VariableProperty.READ, Level.TRUE));
-            return this;
+            ObjectFlow objectFlow = createInternalObjectFlow(location, parameterizedType, Origin.FIELD_ACCESS);
+            return new VariableValue(dependentVariable, dependentVariable.name(), Map.of(), Set.of(), objectFlow, false);
         }
 
         public Builder markRead(Variable variable) {
@@ -186,10 +192,18 @@ public class EvaluationResult {
             return this;
         }
 
-        public ObjectFlow createLiteralObjectFlow(ParameterizedType commonType) {
+        public ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
+            return createInternalObjectFlow(new Location(evaluationContext.getCurrentType().typeInfo), parameterizedType, Origin.LITERAL);
         }
 
-        public ObjectFlow createInternalObjectFlow(ParameterizedType intParameterizedType, Origin resultOfMethod) {
+        public ObjectFlow createInternalObjectFlow(Location location, ParameterizedType parameterizedType, Origin origin) {
+            ObjectFlow objectFlow = new ObjectFlow(location, parameterizedType, origin);
+            if (objectFlows == null) objectFlows = new LinkedList<>();
+            if (!objectFlows.contains(objectFlow)) {
+                objectFlows.add(objectFlow);
+            }
+            log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
+            return objectFlow;
         }
 
         public void add(StatementAnalysis.StatementAnalysisModification modification) {
@@ -270,9 +284,6 @@ public class EvaluationResult {
             }
         }
 
-        public Variable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
-        }
-
 
         public void linkVariables(Variable at, Set<Variable> linked) {
             add(statementAnalyser.new LinkVariable(at, linked));
@@ -304,7 +315,7 @@ public class EvaluationResult {
             add(new StateData.RemoveVariableFromState(variable));
         }
 
-        public void addResultOfMethodAnalyser(boolean analyse) {
+        public void addResultOfMethodAnalyser(AnalysisResult analysisResult) {
         }
     }
 }

@@ -51,6 +51,20 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UnaryOperator that = (UnaryOperator) o;
+        return expression.equals(that.expression) &&
+                operator.equals(that.operator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expression, operator);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new UnaryOperator(operator, translationMap.translateExpression(expression), precedence);
     }

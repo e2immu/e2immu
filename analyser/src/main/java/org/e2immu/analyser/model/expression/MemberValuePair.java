@@ -37,6 +37,20 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MemberValuePair that = (MemberValuePair) o;
+        return name.equals(that.name) &&
+                value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, value);
+    }
+
+    @Override
     public List<? extends Element> subElements() {
         return List.of(value);
     }

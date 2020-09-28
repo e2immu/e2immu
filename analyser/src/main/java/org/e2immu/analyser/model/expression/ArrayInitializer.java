@@ -41,6 +41,20 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArrayInitializer that = (ArrayInitializer) o;
+        return expressions.equals(that.expressions) &&
+                commonType.equals(that.commonType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expressions, commonType);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayInitializer(expressions.stream().map(translationMap::translateExpression)
                 .collect(Collectors.toList()));

@@ -42,6 +42,20 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LocalVariableCreation that = (LocalVariableCreation) o;
+        return localVariable.equals(that.localVariable) &&
+                expression.equals(that.expression);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(localVariable, expression);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new LocalVariableCreation(translationMap.translateLocalVariable(localVariable),
                 translationMap.translateExpression(expression));

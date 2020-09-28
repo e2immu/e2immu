@@ -39,6 +39,19 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArrayLengthExpression that = (ArrayLengthExpression) o;
+        return scope.equals(that.scope);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(scope);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayLengthExpression(translationMap.translateExpression(scope));
     }

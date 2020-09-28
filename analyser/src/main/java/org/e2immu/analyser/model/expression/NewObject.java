@@ -61,6 +61,23 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NewObject newObject = (NewObject) o;
+        return parameterizedType.equals(newObject.parameterizedType) &&
+                parameterExpressions.equals(newObject.parameterExpressions) &&
+                Objects.equals(anonymousClass, newObject.anonymousClass) &&
+                Objects.equals(constructor, newObject.constructor) &&
+                Objects.equals(arrayInitializer, newObject.arrayInitializer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new NewObject(constructor,
                 translationMap.translateType(parameterizedType),
@@ -132,7 +149,8 @@ public class NewObject implements HasParameterExpressions {
         }
         Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, constructor, Level.FALSE, null);
-        ObjectFlow objectFlow = res.k.createInternalObjectFlow(parameterizedType, Origin.NEW_OBJECT_CREATION);
+        Location location = evaluationContext.getLocation(this);
+        ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
         res.k.setValue(new Instance(parameterizedType, constructor, res.v, objectFlow));
         return res.k.build();
     }

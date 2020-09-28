@@ -26,6 +26,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Objects;
+
 @E2Container
 public class DoubleConstant implements ConstantExpression<Double> {
     @Override
@@ -39,6 +41,19 @@ public class DoubleConstant implements ConstantExpression<Double> {
 
     public DoubleConstant(double constant) {
         this.constant = constant;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DoubleConstant that = (DoubleConstant) o;
+        return Double.compare(that.constant, constant) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(constant);
     }
 
     @Override

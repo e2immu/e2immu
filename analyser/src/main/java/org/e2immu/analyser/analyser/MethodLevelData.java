@@ -18,7 +18,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.analyser.util.SetUtil;
@@ -39,6 +42,12 @@ public class MethodLevelData {
     public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
+    // aggregates the preconditions on individual statements
+    public final SetOnce<Value> combinedPrecondition = new SetOnce<>();
+
+    // no delays when frozen
+    public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
+
     // ************** SUMMARIES
     // in combination with the properties in the super class, this forms the knowledge about the method itself
     public final SetOnce<Value> singleReturnValue = new SetOnce<>();
@@ -54,7 +63,8 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    public StatementAnalyserResult finalise(EvaluationContext evaluationContext, VariableData variableData) {
+    public StatementAnalyserResult finalise(EvaluationContext evaluationContext, VariableData variableData,
+                                            MethodLevelData previous, StateData stateData) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
         try {
@@ -75,13 +85,39 @@ public class MethodLevelData {
                     // - fieldsLinkedToFieldsAndVariables
                     .combine(establishLinks(variableData, evaluationContext, logLocation))
                     .combine(methodInfo.isConstructor ? DONE : updateVariablesLinkedToMethodResult(evaluationContext, builder, logLocation))
-                    .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation));
+                    .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation)
+                            .combine(combinePrecondition(previous, stateData))
+                    );
 
             return builder.build(analysisResult);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, method {}", logLocation);
             throw rte;
         }
+    }
+
+    // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
+    // in the state.precondition field
+
+    private AnalysisResult combinePrecondition(MethodLevelData previous, StateData stateData) {
+        if (!combinedPrecondition.isSet()) {
+            Value result;
+            if (previous == null) {
+                result = stateData.precondition.get();
+            } else {
+                Value v1 = previous.combinedPrecondition.get();
+                Value v2 = stateData.precondition.get();
+                if (v1 == UnknownValue.EMPTY) {
+                    result = v2;
+                } else if (v2 == UnknownValue.EMPTY) {
+                    result = v1;
+                } else {
+                    result = new AndValue().append(v1, v2);
+                }
+            }
+            combinedPrecondition.set(result);
+        }
+        return DONE;
     }
 
     /*

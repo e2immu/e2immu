@@ -41,6 +41,21 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InlineConditionalOperator that = (InlineConditionalOperator) o;
+        return condition.equals(that.condition) &&
+                ifTrue.equals(that.ifTrue) &&
+                ifFalse.equals(that.ifFalse);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(condition, ifTrue, ifFalse);
+    }
+
+    @Override
     public Expression translate(TranslationMap translationMap) {
         return new InlineConditionalOperator(
                 translationMap.translateExpression(condition),
